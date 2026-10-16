@@ -69,6 +69,52 @@ pub(crate) async fn read_world_party_in_transaction(
     let character = authority.character_id_bytes();
     observe_world_party(tx, world, character).await
 }
+/// Same-transaction setting plus its strong membership predecessor. This is data, not a
+/// current-authority token; the kill owner must hold its existing runtime/SQL fences through use.
+#[derive(Debug)]
+pub(crate) struct WorldPartyXp {
+    pub(crate) source: PartySnapshot,
+    pub(crate) enabled: bool,
+}
+/// Read the existing PARTY-1 toggle without changing the shared PartySnapshot contract.
+/// The native World lock and party/member row locks remain held by this transaction.
+pub(crate) async fn read_world_party_xp_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+) -> Result<WorldPartyXp> {
+    let source = read_world_party_in_transaction(tx, authority).await?;
+    observe_world_party_xp(tx, source).await
+}
+/// Autonomous kill owners use the existing current scope+actor resolution; no fake cast command.
+pub(crate) async fn read_world_party_xp_for_scope_actor_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> Result<WorldPartyXp> {
+    let source =
+        read_world_party_for_scope_actor_in_transaction(tx, root, scope, runtime, actor, session)
+            .await?;
+    observe_world_party_xp(tx, source).await
+}
+async fn observe_world_party_xp(
+    tx: &mut Transaction<'_, Postgres>,
+    source: PartySnapshot,
+) -> Result<WorldPartyXp> {
+    let enabled = if let Some(party) = source.party_id {
+        sqlx::query_scalar("SELECT shared_xp_enabled FROM game_parties WHERE party_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND revision=$3::text::numeric FOR SHARE")
+            .bind(party.as_slice())
+            .bind(source.world.as_slice())
+            .bind(source.revision.ok_or(reject("party XP revision unavailable"))?.to_string())
+            .fetch_optional(&mut **tx).await?
+            .ok_or(reject("party XP predecessor changed"))?
+    } else {
+        false
+    };
+    Ok(WorldPartyXp { source, enabled })
+}
 /// A real commandless source owner read for periodic Serene; no synthetic cast command.
 pub(crate) async fn read_world_party_for_scope_actor_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
@@ -88,6 +134,144 @@ pub(crate) async fn read_world_party_for_scope_actor_in_transaction(
         .await?;
     observe_world_party(tx, world, character).await
 }
+/// Full-refresh/revision-check producer for the actual complete current scope census.
+/// Canonical admission bindings are resolved independently before a single indexed SQL
+/// statement reads all local memberships, party revisions and member presence records.
+/// The caller retains the real runtime borrow and must COMMIT before publishing these DATA.
+pub(crate) async fn read_world_party_views_for_scope_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &super::DurabilityRoot,
+    scope: &super::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+) -> Result<Vec<PartySnapshot>> {
+    super::spell_item_transaction::check_scope_transaction(tx, scope).await?;
+    if scope.world_bytes() != *runtime.binding().world_id().as_bytes()
+        || scope.channel_bytes() != *runtime.binding().channel_id().as_bytes()
+        || scope.generation() != runtime.binding().scope_generation().get()
+    {
+        return Err(reject("party refresh scope binding"));
+    }
+    let census = runtime
+        .positioned_actor_census()
+        .map_err(|_| reject("party refresh census"))?;
+    let mut characters = std::collections::BTreeSet::new();
+    for (actor, _, session) in census {
+        let Some(session) = session else { continue };
+        let character = super::admission_journal::party_target_binding::current_colocated_party_character_for_scope_in_transaction(
+            tx, root, scope, runtime, actor, session).await?
+            .ok_or(reject("party refresh current actor"))?;
+        if !characters.insert(character) {
+            return Err(reject("party refresh duplicate Character"));
+        }
+    }
+    let world = scope.world_bytes();
+    sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
+        .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
+        .execute(&mut **tx)
+        .await?;
+    observe_world_party_batch(tx, world, characters.into_iter().collect()).await
+}
+
+async fn observe_world_party_batch(
+    tx: &mut Transaction<'_, Postgres>,
+    world: [u8; 16],
+    characters: Vec<[u8; 16]>,
+) -> Result<Vec<PartySnapshot>> {
+    if characters.is_empty() {
+        return Ok(Vec::new());
+    }
+    let requested: Vec<String> = characters
+        .iter()
+        .map(|id| id.iter().map(|byte| format!("{byte:02x}")).collect())
+        .collect();
+    // One statement snapshot prevents torn membership/revision/presence reads. The World
+    // advisory lock also serializes it with this owner's membership and presence writers.
+    let rows = sqlx::query(
+        "WITH requested AS (SELECT unnest($1::text[]) AS character), observed AS MATERIALIZED (SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint AS micros) \
+         SELECT requested.character, r.world_id::text AS character_world, p.world_id::text AS party_world, p.party_id::text, p.revision::text, p.leader_character_id::text, p.shared_xp_enabled, \
+         m.character_id::text AS member, m.seq::text, m.presence_revision::text, m.presence_state, m.presence_channel_id::text, observed.micros \
+         FROM requested CROSS JOIN observed LEFT JOIN game_character_roots r ON r.character_id=requested.character::uuid \
+         LEFT JOIN game_party_members own ON own.character_id=r.character_id LEFT JOIN game_parties p ON p.party_id=own.party_id \
+         LEFT JOIN game_party_members m ON m.party_id=p.party_id ORDER BY requested.character,m.seq"
+    ).bind(requested).fetch_all(&mut **tx).await?;
+    let mut snapshots = std::collections::BTreeMap::new();
+    for row in rows {
+        let character = uuid(row.try_get("character")?)?;
+        if row
+            .try_get::<Option<String>, _>("character_world")?
+            .map(uuid)
+            .transpose()?
+            != Some(world)
+        {
+            return Err(reject("party refresh Character world"));
+        }
+        let party_id = row
+            .try_get::<Option<String>, _>("party_id")?
+            .map(uuid)
+            .transpose()?;
+        if party_id.is_some()
+            && row
+                .try_get::<Option<String>, _>("party_world")?
+                .map(uuid)
+                .transpose()?
+                != Some(world)
+        {
+            return Err(reject("party refresh party world"));
+        }
+        if let std::collections::btree_map::Entry::Vacant(entry) = snapshots.entry(character) {
+            entry.insert(PartySnapshot {
+                world,
+                character,
+                party_id,
+                revision: row
+                    .try_get::<Option<String>, _>("revision")?
+                    .map(number)
+                    .transpose()?,
+                leader: row
+                    .try_get::<Option<String>, _>("leader_character_id")?
+                    .map(uuid)
+                    .transpose()?,
+                shared_xp_enabled: row
+                    .try_get::<Option<bool>, _>("shared_xp_enabled")?
+                    .unwrap_or(false),
+                members: Vec::new(),
+                observed_database_micros: row.try_get("micros")?,
+            });
+        }
+        let snapshot = snapshots
+            .get_mut(&character)
+            .ok_or(reject("party refresh Character"))?;
+        if let Some(member) = row.try_get::<Option<String>, _>("member")? {
+            if snapshot.members.len() >= 50 {
+                return Err(reject("party size50"));
+            }
+            snapshot.members.push(PartyMemberSnapshot {
+                character: uuid(member)?,
+                invitation_order: number(row.try_get("seq")?)?,
+                presence_revision: number(row.try_get("presence_revision")?)?,
+                presence: match row.try_get::<i16, _>("presence_state")? {
+                    1 => PartyPresence::Channel,
+                    2 => PartyPresence::Hidden,
+                    3 => PartyPresence::Offline,
+                    _ => return Err(reject("stored party presence")),
+                },
+                channel: row
+                    .try_get::<Option<String>, _>("presence_channel_id")?
+                    .map(uuid)
+                    .transpose()?,
+            });
+        }
+    }
+    if snapshots.len() != characters.len()
+        || snapshots
+            .values()
+            .any(|snapshot| !snapshot.is_well_formed())
+    {
+        return Err(reject("party refresh incomplete snapshot"));
+    }
+    Ok(snapshots.into_values().collect())
+}
+
 async fn observe_world_party(
     tx: &mut Transaction<'_, Postgres>,
     world: [u8; 16],
@@ -248,6 +432,18 @@ async fn apply_world_party_command_inner(
     } else {
         false
     };
+    // Consent writes serialize on the stable acting root even if no consent row exists.
+    // This precedes every party/member/consent-row lock taken by these operations.
+    if matches!(
+        action,
+        PartyAction::Block { .. }
+            | PartyAction::Unblock { .. }
+            | PartyAction::SetPartyInvites { .. }
+            | PartyAction::SetChannelVisibility { .. }
+    ) {
+        sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE")
+            .bind(character.as_slice()).bind(world.as_slice()).fetch_one(&mut **tx).await?;
+    }
     let mut snapshot = read_world_party_in_transaction(tx, authority).await?;
     let mut disposition = "APPLIED";
     let mut party = snapshot.party_id;
@@ -274,7 +470,8 @@ async fn apply_world_party_command_inner(
                             && s.try_get::<String, _>("source_policy")?
                                 == "PARTYPVP0-PARTIES-AND-PVP-V1"
                     }
-                    None => false,
+                    // PARTY_PVP0 §3: an absent settings row has ANYONE/PARTY defaults.
+                    None => true,
                 };
                 if target_world.as_deref() != Some(world.as_slice())
                     || !allowed
@@ -293,7 +490,9 @@ async fn apply_world_party_command_inner(
                                 .await?;
                         let id = uuid(new.clone())?;
                         sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,2)").bind(&new).bind(world.as_slice()).bind(character.as_slice()).execute(&mut **tx).await?;
-                        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,$2::uuid,1,1,encode($3,'hex')::uuid)").bind(character.as_slice()).bind(&new).bind(channel.as_slice()).execute(&mut **tx).await?;
+                        let (presence, presence_channel) =
+                            initial_member_presence(tx, character, channel).await?;
+                        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,$2::uuid,1,$3,CASE WHEN $4::bytea IS NULL THEN NULL ELSE encode($4,'hex')::uuid END)").bind(character.as_slice()).bind(&new).bind(presence).bind(presence_channel).execute(&mut **tx).await?;
                         party = Some(id);
                     }
                     let id = party.ok_or(reject("created party identity"))?;
@@ -320,7 +519,9 @@ async fn apply_world_party_command_inner(
                     {
                         disposition = "NOT_INVITED"
                     } else {
-                        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,1,encode($4,'hex')::uuid)").bind(character.as_slice()).bind(requested.as_slice()).bind(r.try_get::<String,_>("seq")?).bind(channel.as_slice()).execute(&mut **tx).await?;
+                        let (presence, presence_channel) =
+                            initial_member_presence(tx, character, channel).await?;
+                        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,CASE WHEN $5::bytea IS NULL THEN NULL ELSE encode($5,'hex')::uuid END)").bind(character.as_slice()).bind(requested.as_slice()).bind(r.try_get::<String,_>("seq")?).bind(presence).bind(presence_channel).execute(&mut **tx).await?;
                         sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($2,'hex')::uuid AND invitee=encode($1,'hex')::uuid").bind(character.as_slice()).bind(requested.as_slice()).execute(&mut **tx).await?;
                         sqlx::query("UPDATE game_parties SET revision=revision+1 WHERE party_id=encode($1,'hex')::uuid").bind(requested.as_slice()).execute(&mut **tx).await?;
                     }
@@ -360,11 +561,88 @@ async fn apply_world_party_command_inner(
             if snapshot.leader != Some(character) {
                 disposition = "NOT_LEADER";
             } else {
-                sqlx::query("UPDATE game_parties SET shared_xp_enabled=$1,revision=revision+1 WHERE party_id=encode($2,'hex')::uuid")
+                sqlx::query("UPDATE game_parties SET shared_xp_enabled=$1,revision=revision+1 WHERE party_id=encode($2,'hex')::uuid AND shared_xp_enabled IS DISTINCT FROM $1")
                     .bind(enabled)
                     .bind(party.ok_or(reject("leader party"))?.as_slice())
                     .execute(&mut **tx)
                     .await?;
+            }
+        }
+        PartyAction::Block { target } => {
+            crate::domain::CharacterId::from_bytes(target)
+                .map_err(|_| reject("block target UUIDv7"))?;
+            if target == character
+                || !visible.is_some_and(|target_proof| {
+                    target_proof.character() == target && target_proof.matches(authority)
+                })
+            {
+                disposition = "NOT_VISIBLE";
+            } else {
+                let existing: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_social_blocks WHERE character_id=encode($1,'hex')::uuid AND blocked_character_id=encode($2,'hex')::uuid)")
+                    .bind(character.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await?;
+                let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_social_blocks WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(character.as_slice()).fetch_one(&mut **tx).await?;
+                if !existing && count >= 100 {
+                    disposition = "RESOURCE_LIMIT";
+                } else {
+                    // Lock the invitation's owning party before either its row or consent rows.
+                    // The target leads at most one party. A block cancels only that party's invite.
+                    let inviting_party: Option<String> = sqlx::query_scalar("SELECT p.party_id::text FROM game_parties p WHERE p.world_id=encode($1,'hex')::uuid AND p.leader_character_id=encode($2,'hex')::uuid AND EXISTS(SELECT 1 FROM game_party_invitations i WHERE i.party_id=p.party_id AND i.invitee=encode($3,'hex')::uuid) FOR UPDATE OF p")
+                        .bind(world.as_slice()).bind(target.as_slice()).bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+                    if let Some(inviting_party) = inviting_party {
+                        let inviting_party = uuid(inviting_party)?;
+                        let deleted = sqlx::query("DELETE FROM game_party_invitations WHERE party_id=encode($1,'hex')::uuid AND invitee=encode($2,'hex')::uuid")
+                            .bind(inviting_party.as_slice()).bind(character.as_slice()).execute(&mut **tx).await?.rows_affected();
+                        if deleted != 0 {
+                            sqlx::query("UPDATE game_parties SET revision=revision+1 WHERE party_id=encode($1,'hex')::uuid")
+                                .bind(inviting_party.as_slice()).execute(&mut **tx).await?;
+                            close_leader_only_party_without_invitations(tx, inviting_party).await?;
+                        }
+                    }
+                    sqlx::query("INSERT INTO game_character_social_blocks(character_id,blocked_character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid) ON CONFLICT DO NOTHING")
+                        .bind(character.as_slice()).bind(target.as_slice()).execute(&mut **tx).await?;
+                }
+            }
+        }
+        PartyAction::Unblock { target } => {
+            crate::domain::CharacterId::from_bytes(target)
+                .map_err(|_| reject("unblock target UUIDv7"))?;
+            // The server resolves its retained block handle to this existing own-list key.
+            // No target existence/presence query or target DATA is returned.
+            sqlx::query("DELETE FROM game_character_social_blocks WHERE character_id=encode($1,'hex')::uuid AND blocked_character_id=encode($2,'hex')::uuid")
+                .bind(character.as_slice()).bind(target.as_slice()).execute(&mut **tx).await?;
+        }
+        PartyAction::SetPartyInvites { anyone } => {
+            sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,$2,1,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT(character_id) DO UPDATE SET party_invites=EXCLUDED.party_invites")
+                .bind(character.as_slice()).bind(if anyone {1_i16} else {2_i16}).execute(&mut **tx).await?;
+        }
+        PartyAction::SetChannelVisibility { hidden } => {
+            if let Some(id) = party {
+                sqlx::query("SELECT party_id FROM game_parties WHERE party_id=encode($1,'hex')::uuid FOR UPDATE")
+                    .bind(id.as_slice()).fetch_one(&mut **tx).await?;
+            }
+            let old: Option<i16> = sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+                .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+            let setting = if hidden { 2_i16 } else { 1_i16 };
+            sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,$2,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT(character_id) DO UPDATE SET channel_visibility=EXCLUDED.channel_visibility")
+                .bind(character.as_slice()).bind(setting).execute(&mut **tx).await?;
+            if let Some(id) = party {
+                let presence_changed = snapshot
+                    .members
+                    .iter()
+                    .find(|member| member.character == character)
+                    .is_some_and(|member| match member.presence {
+                        PartyPresence::Channel => hidden,
+                        PartyPresence::Hidden => !hidden,
+                        PartyPresence::Offline => true,
+                    });
+                // The effective default is PARTY. Any actual authorization change, including
+                // repairing an inconsistent old visible record, invalidates the party epoch.
+                if old.unwrap_or(1) != setting || presence_changed {
+                    sqlx::query("UPDATE game_parties SET revision=revision+1 WHERE party_id=encode($1,'hex')::uuid")
+                        .bind(id.as_slice()).execute(&mut **tx).await?;
+                }
+                refresh_current_member_presence(tx, world, channel, character).await?;
             }
         }
         PartyAction::Leave => {
@@ -467,8 +745,8 @@ pub(crate) async fn cleanup_expired_world_party_invitations_in_transaction(
     close_leader_only_party_without_invitations(tx, party).await?;
     usize::try_from(removed).map_err(|_| reject("party cleanup bound"))
 }
-/// Explicit social-baseline initialization at genuine admission. Invite itself never guesses
-/// settings from an absent row; this named source producer materializes the accepted defaults.
+/// Explicit social-baseline initialization at genuine admission. The accepted default for
+/// an absent row is ANYONE/PARTY; this source producer may materialize those same defaults.
 pub(crate) async fn initialize_party_social_baseline_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
@@ -479,16 +757,32 @@ pub(crate) async fn initialize_party_social_baseline_in_transaction(
         .bind(authority.character_id_bytes().as_slice()).execute(&mut **tx).await?;
     Ok(())
 }
+/// Joining/creating a party consumes current durable privacy. Absence has the accepted
+/// PARTY default (§3), while a present HIDDEN setting never writes a Channel identifier.
+async fn initial_member_presence(
+    tx: &mut Transaction<'_, Postgres>,
+    character: [u8; 16],
+    channel: [u8; 16],
+) -> Result<(i16, Option<Vec<u8>>)> {
+    let setting: Option<i16> = sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+    match setting {
+        None | Some(1) => Ok((1, Some(channel.to_vec()))),
+        Some(2) => Ok((2, None)),
+        _ => Err(reject("stored party channel visibility")),
+    }
+}
+
 async fn refresh_current_member_presence(
     tx: &mut Transaction<'_, Postgres>,
     world: [u8; 16],
     channel: [u8; 16],
     character: [u8; 16],
 ) -> Result<()> {
-    let setting:Option<i16>=sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid AND source_policy='PARTYPVP0-PARTIES-AND-PVP-V1' FOR SHARE")
+    let setting:Option<i16>=sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
         .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
     let state = match setting {
-        Some(1) => 1_i16,
+        None | Some(1) => 1_i16,
         Some(2) => 2,
         _ => return Err(reject("current party presence consent unavailable")),
     };
@@ -563,6 +857,51 @@ impl super::DurabilityRoot {
                             .map_err(|_| super::DurabilityError::Unavailable)?;
                     super::db::commit_semantic_transaction(tx, deadline).await?;
                     Ok(count)
+                })
+            })
+            .await
+            .map_err(SpellItemError::from)
+    }
+    /// Complete current Channel-census source pass for node refresh/revision checks.
+    /// The membership batch and its source authority stay inside one native transaction.
+    pub(crate) async fn read_current_world_party_views(
+        &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+    ) -> Result<Vec<PartySnapshot>> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| reject("party refresh recovery authority"))?;
+        let node = node.clone();
+        let scope = RuntimeScopeRefV1::channel(
+            runtime.binding().world_id(),
+            runtime.binding().channel_id(),
+        );
+        let generation = runtime.binding().scope_generation().get();
+        let mut context = (self, runtime, permit);
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (root, runtime, permit) = context;
+                    let mut tx = super::spell_item_transaction::begin_spell_owner_transaction(
+                        holder, deadline,
+                    )
+                    .await?;
+                    let authority =
+                        super::spell_item_transaction::assert_spell_item_scope_with_recovery(
+                            &mut tx, permit, &record, &node, scope, generation,
+                        )
+                        .await
+                        .map_err(|_| super::DurabilityError::Unavailable)?;
+                    let views = read_world_party_views_for_scope_in_transaction(
+                        &mut tx, root, &authority, runtime,
+                    )
+                    .await
+                    .map_err(|_| super::DurabilityError::Unavailable)?;
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(views)
                 })
             })
             .await

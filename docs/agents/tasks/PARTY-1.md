@@ -9,16 +9,16 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/party-1
 issue: 1622
-pr: null
+pr: 2201
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 5 PARTY-1 (row 112); App. 7 PARTY/PVP; wave 2"
 class: "hard (shared state)"
 migration: yes
 registry: yes
-owner: unassigned (builder)
+owner: family worker /root/party_owner (sole author)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/world_party.rs
@@ -327,3 +327,180 @@ qualifies this shared-XP command/flag component only. The remaining family and
 CP integration boundaries above still apply; no publication or full PARTY-1
 completion is claimed by this worker. The actual proof and every earlier failed
 attempt remain retained under `reviews/party-pc` with exact source/body hashes.
+
+
+## Family implementation checkpoint — 2026-10-16
+
+AUTHORING only on existing draft #2201, `skeleton/party-1`, exact starting head
+`5b46fefaa424fabc754239c8d7dc987ba1766ed4`. Author `/root/party_owner` is the
+sole writer of this checkout and `world_party.rs`; the PARTY-XP worker is read-only.
+Lead refreshed #2201 and CP comment 6215954536 and supplied bound META 3.1.0 at
+`1bfb5ff98c8aa156e73669a14e083a1d464c29fb`. No commit, push, slot allocation,
+production mutation or completion claim is made here.
+
+Current protected main `24fc332f256638e3b784bff1b3c85b18e2665a76` marks PARTY_PVP0
+ACCEPTED. Its §4.2/§4.4 and accepted SOCIAL-MAP §1.1/§2.1 govern these changes.
+The historical CANDIDATE conflict above is resolved. CHAT-2B #2128 closed without
+merging; a sealed relay payload/listener successor and runtime composition remain
+gates, rather than a reason to withhold independent cache source authoring.
+
+Initial file plan before edits: `durability/world_party.rs`,
+`foundation/runtime_actor_party.rs`, new `party/mod.rs`, `party/view.rs`,
+`party/view_tests.rs`, possible `party/ingress.rs`, `tests/party_shared_xp_postgres.rs`
+and this record. No ingress file was created because the accepted ownership and
+wire schema gate below prevents exposing a fabricated protocol. Shared registrations,
+connection/capabilities, migrations, registries and pins are untouched.
+
+### Implemented source
+
+- The real shared-XP writer increments the party revision only when the durable flag
+  changes. An authorized no-op still writes its occurrence receipt and audit; replay
+  keeps the original receipt and does not change the current flag or revision.
+- `party/view.rs` owns node-local membership/presence DATA with explicit full-refresh,
+  admission and invalidation tickets. Startup/reconnect/revision-gap reads disable
+  readiness until replacement; superseded or consumed tickets cannot restore it.
+  Revision polling is due at 5 seconds, unconfirmed views are stale at 10 seconds,
+  and clock regressions fail closed. Periodic membership and presence replacement
+  catches lost hints. Admission withdraws the old local observation before the source
+  transaction; failure leaves that Character unavailable. Admission cannot confirm
+  another party's age or replace the mandatory full-node refresh. Last local departure
+  removes a view. Inconsistent, malformed or regressing reads are rejected atomically.
+- The only public projection is membership DATA, without remote channel, position,
+  health or mana. Cached presence/hints never build outbound exact-channel messages,
+  authorize a mutation, decide harm or grant a shared benefit. Authoritative consumers
+  continue to use their existing same-transaction World read.
+- The native Root now exposes a committed scope-refresh pass. It validates actual
+  recovery/Node/scope authority and the actual borrowed Channel runtime, derives its
+  complete positioned-player census, resolves each canonical current actor/session
+  binding, and reads all memberships, party revisions and presence in **one SQL
+  statement**. This is a single indexed membership batch per scope, after the separate
+  canonical authority checks. The World advisory lock orders it with native writers.
+  SQL errors, missing roots, wrong Worlds or incomplete/invalid snapshots fail closed.
+  Its snapshots become available only after the native transaction commits.
+- `party/mod.rs` exposes the committed scope read and admission pass. Admission uses
+  the existing native same-transaction presence writer, not a new permission source.
+  The node owner must collect all its actual Channel scopes before installing the full
+  refresh; runtime scheduling/ownership of that complete node census is shared wiring.
+- The same native command engine now implements server-only Block, Unblock,
+  party-invite setting and Channel-visibility setting operations. Block requires the
+  genuine visible target qualifier, serializes its 100-entry bound on the acting root,
+  deletes the blocked leader's invitation and closes its now-empty party in the same
+  transaction. Unblock touches only the actor's own list. Visibility changes write
+  current presence and invalidate the party revision atomically; idempotent writes
+  retain both revisions. Invite creation and Accept now produce HIDDEN/NULL initial
+  presence when the durable setting is HIDDEN. Missing settings consume the explicitly
+  accepted ANYONE/PARTY defaults, while actual read errors still fail closed.
+- `PartySnapshot::is_well_formed` rejects duplicate members/sequences, missing self or
+  leader, zero revisions, and illegal presence/channel combinations at both cache
+  boundaries. It is a shape check and makes no current-authority claim.
+
+### Validation and executable handoff
+
+18 cache regression bodies cover startup, solo versus unknown, 5s/10s boundaries,
+lost hints, reconnect, superseded/replayed tickets, failed admission, full-refresh
+readiness, local departure, old membership/presence rejection, channel movement without
+party revision change, malformed/inconsistent reads and clock regression. One new
+native PostgreSQL body covers false/false, true/true and false/false toggle no-ops,
+receipts/audit counts and exact replay. The **13 original PostgreSQL bodies remain
+literal and unchanged**; the ordinary wrapper now contains original13 + sharedXP18 (31 owned PG bodies).
+Additional native tests invoke the actual Root with real Fresh-derived runtime actors:
+complete solo/party census, committed toggle/privacy data, missing independently current
+Character eligibility, physical transaction substitution, actual Node revocation,
+privacy no-op/replay/rollback, visible block plus invitation cancellation/own Unblock,
+100/101 blocks, HIDDEN before creation/Accept, and missing-setting defaults at Invite,
+Accept and Channel entry. Historical cap targets use the real native bootstrap and retain
+complete creation receipts/history; raw root insertion cannot qualify native recovery.
+
+Direct pinned Rust 1.94 `rustfmt --edition 2024 --check` on all changed Rust files
+and `git diff --check` pass. No worker Cargo job was launched: the lead owns the one
+native cloud validation slot. Rust compilation, Clippy and PostgreSQL runtime outcomes
+must come from its exact-source overlay, not from the presence of these test bodies.
+
+Minimum validation-only registration: add `mod party;` to the native server library
+root. For the existing native PG wrapper, remove only its first `cfg(any())` in the
+validation overlay. Do not change its original cases, fences, schema or grants. Run
+strict package Clippy, the 18 party cache unit tests and configured PostgreSQL17.6
+`party_shared_xp_postgres` filters `shared_xp_cases::` (18 bodies) and
+`world_party_runtime_postgres_cases::` (13 original bodies). The new complete-census SQL
+and current-source refusals now have executable native tests; runtime outcomes remain
+pending lead execution. Governance validation and 124 agent tests pass.
+
+One inherited assertion conflicts with the accepted contract: original
+`genuine_two_fresh_players_require_target_consent_and_block_policy_before_invite_accept`
+expects NOT_VISIBLE for its first Invite when settings are absent, while PARTY_PVP0 §3
+requires ANYONE/PARTY defaults. Production now obeys the accepted default; that literal
+original test is retained unchanged and is expected to expose its obsolete assertion.
+No fixture workaround, skip, assertion edit or false green result is authorized here.
+The lead must record actual results and resolve this test ownership/constraint conflict.
+
+### Remaining scope and concrete gates
+
+1. **Wire/ingress ownership conflict:** CP2201 asks for `party*.rs` ingress, but accepted
+   SOCIAL-MAP §1.1 explicitly says “No wire. Party commands are built as server
+   operations with their tests. The client messages are PVP-WIRE-1's and
+   PARTY-CHAT-1's.” Its §2.1 excludes wire; PARTY_PVP0 §11 names PVP-WIRE-1 and requires
+   per-session invitation handles, never a raw PartyId/CharacterId. No later accepted
+   schema/handle producer/number allocation was supplied. CP/architect must reconcile
+   this request with the owning wire child before protocol authoring; existing internal
+   raw-ID `PartyAction` values must not become untrusted wire authority.
+2. **CP shared integration:** register `party`, compose the complete node scope census,
+   apply the committed source result to the cache before command results/presence,
+   schedule 5-second checks, and call admission invalidation/read at every admission,
+   readmission, reconnect and Channel entry. Wire command admission must fail with
+   PARTY_UNAVAILABLE while node/view/Character is unavailable. Nothing currently claims
+   this production composition is present.
+3. **CHAT-2 successor:** add only `{party_id,revision}` to its real sealed payload enum,
+   send after commit, and call reconnect/gap invalidation from its real listener. No
+   alternate relay, payload schema or invented sealing/transport was added.
+4. **Full accepted family residue:** logout and legally-absent/combat-clear cleanup;
+   native combat-lock owner hookup; production SECURITY DEFINER/grants/deferred presence/channel guards; ordered
+   session view generations and fresh-read-only remote presence output; required
+   concurrent accepts/recovery/privacy/performance qualification and independent
+   exact-head hard/persistence/security/privacy review. These are not certified by this
+   cache/no-op increment. Benefits remain PARTY-XP-1 and party chat PARTY-CHAT-1.
+
+Final packaging, candidate freeze, native results and any publication belong to the
+lead. Integration remains NOT_REQUIRED for this AUTHORING-only increment / CP_ONLY
+for shared composition; full PARTY-1 completion and readiness remain unclaimed.
+
+
+### Independent finding dispositions for this source generation
+
+- P2 mixed-time local/party membership accepted and repaired: full replacement validates
+  local observations against all party rosters; admission validates its merged candidate
+  against retained views and disables readiness on a conflict.
+- P2 disconnect/replacement race accepted and repaired: removing a local Character
+  advances the generation, rejecting old full-refresh and admission completions.
+- P1 HIDDEN join privacy accepted and repaired: initial Invite/Accept member records
+  consume current durable visibility; the native regression verifies source census.
+- P2 cap fixture recovery invalidity accepted and repaired: all 100 retained block
+  targets are created through the real native bootstrap with their history intact.
+- P2 absent-setting semantics accepted and repaired: Invite and admission presence use
+  the accepted defaults. The contradictory inherited test remains literally unchanged.
+
+The family reviewer independently rechecked all five repaired finding families against
+final source hashes (`world_party.rs` db91b5bf… and native wrapper6f40a065…). No further
+confirmed product finding remained. Native execution and exact frozen-candidate review
+remain pending. The inherited default-test contradiction remains an actual publication
+hold; its external minimal proposal is `/workspace/oteryn-family/party-defaults-test-proposal.patch`.
+The original test file is outside PARTY-1 owned_paths and remains literal.
+
+
+### Family-owned XP read union — lead-directed, 2026-10-16
+
+The sole family author added PARTY-XP-1's existing `WorldPartyXp`, command-authority
+and autonomous scope-actor read ports plus their strong toggle/predecessor query to
+this task's owned World source. PARTY commands/defaults/cache behavior and the
+PARTY-owned current foundation snapshot remain intact. This private source union
+adds no contract, reward mutation, authority reconstruction or registration.
+World source SHA256 now
+`99d3c9eaf8843cc7897e9c2ab32ab62c59ba893ff249db58d95a2b38413c65a0`.
+
+The XP card does not allocate the PARTY foundation file; lead explicitly prohibited
+copying that provider into the XP branch. XP production remains canonical, with its
+new native regression increment separate. CP composition must carry the exact
+World+foundation provider after upstream/main and adapt XP's owned pure fixture
+helper to the real added snapshot field, retaining all test bodies. Separate old-XP
+native qualification does not certify the final joint-source candidate. No main or
+other branch was merged and no cross-card path was silently written. Publication
+remains held on the inherited default-test constraint and final native/review gates.

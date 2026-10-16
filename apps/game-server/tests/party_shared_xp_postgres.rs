@@ -1004,6 +1004,534 @@ mod shared_xp_cases {
         Ok(receipt)
     }
 
+    struct RuntimePlayers {
+        runtime: crate::foundation::ChannelRuntimeV1,
+        leader: crate::foundation::ExactActorRef,
+        member: crate::foundation::ExactActorRef,
+    }
+
+    fn runtime_players(
+        h: &Harness,
+        leader: &CurrentSession,
+        member: &CurrentSession,
+    ) -> TestResult<RuntimePlayers> {
+        use crate::foundation::{ChannelContentPin, ChannelId, ChannelRuntimeV1, WorldId};
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            h.node.fact().node_id(),
+            h.node.fact().registration_revision(),
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            ChannelContentPin::test(world),
+        )
+        .map_err(debug)?;
+        let mut actors = Vec::new();
+        for current in [leader, member] {
+            let reservation = runtime
+                .reserve_fresh_session(current.current_game_session_id())
+                .map_err(debug)?;
+            let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .initialize_first_entry_position(actor)
+                .map_err(debug)?;
+            actors.push(actor);
+        }
+        Ok(RuntimePlayers {
+            runtime,
+            leader: actors[0],
+            member: actors[1],
+        })
+    }
+
+    async fn visible_action(
+        h: &Harness,
+        leader: &CurrentSession,
+        member: &CurrentSession,
+        players: &RuntimePlayers,
+        command: u64,
+        action: PartyAction,
+    ) -> TestResult<PreparedWorldPartyReceipt> {
+        use crate::durability::admission_journal::party_target_binding::prove_visible_party_target_in_transaction;
+        let mut tx = h.pool.begin().await?;
+        let authority = authority(&mut tx, h, member, command).await?;
+        let visible = prove_visible_party_target_in_transaction(
+            &mut tx,
+            &h.root,
+            &authority,
+            &players.runtime,
+            players.member,
+            players.leader,
+            leader.current_game_session_id(),
+        )
+        .await
+        .map_err(debug)?
+        .ok_or("actual visible leader unavailable")?;
+        let receipt =
+            apply_world_party_command_in_transaction(&mut tx, &authority, action, Some(&visible))
+                .await
+                .map_err(debug)?;
+        tx.commit().await?;
+        Ok(receipt)
+    }
+
+    async fn block_visible(
+        h: &Harness,
+        leader: &CurrentSession,
+        member: &CurrentSession,
+        players: &RuntimePlayers,
+        command: u64,
+    ) -> TestResult<PreparedWorldPartyReceipt> {
+        visible_action(
+            h,
+            leader,
+            member,
+            players,
+            command,
+            PartyAction::Block {
+                target: *leader.current_character_lease().character_id().as_bytes(),
+            },
+        )
+        .await
+    }
+
+    #[test]
+    fn party_missing_settings_defaults_allow_invite_accept_and_current_channel_entry() -> TestResult
+    {
+        run(
+            "party_missing_setting_defaults",
+            async |h, leader, member| {
+                let players = runtime_players(h, &leader, &member)?;
+                let settings: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_social_settings WHERE character_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                .bind(leader.current_character_lease().character_id().as_bytes().as_slice())
+                .bind(member.current_character_lease().character_id().as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(settings, 0);
+                let invitation = visible_action(
+                    h,
+                    &leader,
+                    &member,
+                    &players,
+                    1,
+                    PartyAction::Invite {
+                        target: *leader.current_character_lease().character_id().as_bytes(),
+                    },
+                )
+                .await?;
+                assert_eq!(invitation.disposition, "APPLIED");
+                let accepted = apply(
+                    h,
+                    &leader,
+                    1,
+                    PartyAction::Accept {
+                        party: invitation.party_id.ok_or("created party missing")?,
+                    },
+                )
+                .await?;
+                assert_eq!(accepted.disposition, "APPLIED");
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let recovery = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let snapshot = h
+                    .root
+                    .refresh_current_world_party_presence(
+                        &lane_permit().await?,
+                        &recovery,
+                        &h.node,
+                        &players.runtime,
+                        players.leader,
+                        leader.current_game_session_id(),
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert_eq!(snapshot.members.len(), 2);
+                assert!(snapshot.members.iter().all(|member| member.presence
+                    == crate::foundation::PartyPresence::Channel
+                    && member.channel == Some(id(CHANNEL))
+                    && member.presence_revision == 1));
+                Ok(())
+            },
+        )
+    }
+
+    #[test]
+    fn party_hidden_before_create_and_accept_never_produces_a_channel_record() -> TestResult {
+        run("party_hidden_join", async |h, leader, member| {
+            let players = runtime_players(h, &leader, &member)?;
+            apply(
+                h,
+                &member,
+                1,
+                PartyAction::SetChannelVisibility { hidden: true },
+            )
+            .await?;
+            apply(h, &leader, 1, PartyAction::SetPartyInvites { anyone: true }).await?;
+            let invitation = visible_action(
+                h,
+                &leader,
+                &member,
+                &players,
+                2,
+                PartyAction::Invite {
+                    target: *leader.current_character_lease().character_id().as_bytes(),
+                },
+            )
+            .await?;
+            assert_eq!(invitation.disposition, "APPLIED");
+            apply(
+                h,
+                &leader,
+                2,
+                PartyAction::SetChannelVisibility { hidden: true },
+            )
+            .await?;
+            let party = invitation.party_id.ok_or("created party missing")?;
+            let accepted = apply(h, &leader, 3, PartyAction::Accept { party }).await?;
+            assert_eq!(accepted.disposition, "APPLIED");
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let snapshots = h
+                .root
+                .read_current_world_party_views(
+                    &lane_permit().await?,
+                    &recovery,
+                    &h.node,
+                    &players.runtime,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(snapshots.len(), 2);
+            assert!(snapshots.iter().all(|snapshot| snapshot.members.len() == 2
+                && snapshot.members.iter().all(|member| member.presence
+                    == crate::foundation::PartyPresence::Hidden
+                    && member.channel.is_none()
+                    && member.presence_revision == 1)));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn party_scope_census_reads_committed_solo_membership_toggle_and_presence() -> TestResult {
+        run("party_scope_census", async |h, leader, member| {
+            let players = runtime_players(h, &leader, &member)?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let permit = lane_permit().await?;
+            let solo = h
+                .root
+                .read_current_world_party_views(&permit, &recovery, &h.node, &players.runtime)
+                .await
+                .map_err(debug)?;
+            assert_eq!(solo.len(), 2);
+            assert!(
+                solo.iter()
+                    .all(|snapshot| snapshot.party_id.is_none() && snapshot.members.is_empty())
+            );
+            membership(h, &leader, &member).await?;
+            apply(
+                h,
+                &leader,
+                1,
+                PartyAction::SetSharedExperience { enabled: true },
+            )
+            .await?;
+            apply(
+                h,
+                &member,
+                1,
+                PartyAction::SetChannelVisibility { hidden: true },
+            )
+            .await?;
+            let committed = h
+                .root
+                .read_current_world_party_views(&permit, &recovery, &h.node, &players.runtime)
+                .await
+                .map_err(debug)?;
+            assert_eq!(committed.len(), 2);
+            for snapshot in committed {
+                assert_eq!(snapshot.party_id, Some(id(90)));
+                assert_eq!(snapshot.revision, Some(3));
+                assert!(snapshot.shared_xp_enabled);
+                assert_eq!(snapshot.members.len(), 2);
+                let hidden = snapshot
+                    .members
+                    .iter()
+                    .find(|entry| {
+                        entry.character
+                            == *member.current_character_lease().character_id().as_bytes()
+                    })
+                    .ok_or("member missing")?;
+                assert_eq!(hidden.presence, crate::foundation::PartyPresence::Hidden);
+                assert_eq!(hidden.presence_revision, 2);
+                assert_eq!(hidden.channel, None);
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn party_scope_census_refuses_missing_current_actor_claim_without_partial_data() -> TestResult {
+        run("party_scope_current_claim", async |h, leader, member| {
+            let players = runtime_players(h, &leader, &member)?;
+            membership(h, &leader, &member).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let permit = lane_permit().await?;
+            assert_eq!(
+                h.root
+                    .read_current_world_party_views(&permit, &recovery, &h.node, &players.runtime)
+                    .await
+                    .map_err(debug)?
+                    .len(),
+                2
+            );
+            // Change exactly one independently resolved current fact. Retained session,
+            // immutable Fresh receipt, runtime actor and Node/scope remain valid.
+            sqlx::query("UPDATE game_durability_admission_character_guards SET eligible=false WHERE character_id=encode($1,'hex')::uuid")
+                .bind(member.current_character_lease().character_id().as_bytes().as_slice()).execute(&h.pool).await?;
+            assert!(
+                h.root
+                    .read_current_world_party_views(&permit, &recovery, &h.node, &players.runtime)
+                    .await
+                    .is_err()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn party_scope_census_rejects_foreign_physical_transaction_and_revoked_node() -> TestResult {
+        run("party_scope_fences", async |h, leader, member| {
+            use crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction;
+            let players = runtime_players(h, &leader, &member)?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let recovery = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let permit = lane_permit().await?;
+            let mut prepared = h.pool.begin().await?;
+            let scope = assert_spell_item_scope_in_transaction(
+                &mut prepared,
+                &permit,
+                &h.root,
+                &recovery,
+                &h.node,
+                leader.current_runtime_scope(),
+                1,
+            )
+            .await
+            .map_err(debug)?;
+            let mut foreign = h.pool.begin().await?;
+            assert!(
+                crate::durability::world_party::read_world_party_views_for_scope_in_transaction(
+                    &mut foreign,
+                    &h.root,
+                    &scope,
+                    &players.runtime
+                )
+                .await
+                .is_err()
+            );
+            foreign.rollback().await?;
+            prepared.rollback().await?;
+            h.root
+                .revoke_node_registration(h.node.fact())
+                .await
+                .map_err(debug)?;
+            assert!(
+                h.root
+                    .read_current_world_party_views(&permit, &recovery, &h.node, &players.runtime)
+                    .await
+                    .is_err()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn party_visibility_and_invite_consent_are_current_atomic_idempotent_operations() -> TestResult
+    {
+        run("party_consent_operations", async |h, leader, member| {
+            membership(h, &leader, &member).await?;
+            for (command, hidden, revision, presence_revision) in [
+                (1, true, 2, 2),
+                (2, true, 2, 2),
+                (3, false, 3, 3),
+                (4, false, 3, 3),
+            ] {
+                let receipt = apply(
+                    h,
+                    &member,
+                    command,
+                    PartyAction::SetChannelVisibility { hidden },
+                )
+                .await?;
+                assert_eq!(receipt.revision, Some(revision));
+                let row: (i16, Option<Vec<u8>>, String) = sqlx::query_as("SELECT presence_state,uuid_send(presence_channel_id),presence_revision::text FROM game_party_members WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(member.current_character_lease().character_id().as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(
+                    row,
+                    (
+                        if hidden { 2 } else { 1 },
+                        if hidden {
+                            None
+                        } else {
+                            Some(id(CHANNEL).to_vec())
+                        },
+                        presence_revision.to_string()
+                    )
+                );
+                let replay = apply(
+                    h,
+                    &member,
+                    command,
+                    PartyAction::SetChannelVisibility { hidden },
+                )
+                .await?;
+                assert!(replay.replayed);
+                assert_eq!(replay.receipt_id, receipt.receipt_id);
+            }
+            for (command, anyone, setting) in [(5, false, 2_i16), (6, true, 1_i16)] {
+                let receipt =
+                    apply(h, &member, command, PartyAction::SetPartyInvites { anyone }).await?;
+                assert_eq!(receipt.revision, Some(3));
+                let actual: i16 = sqlx::query_scalar("SELECT party_invites FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(member.current_character_lease().character_id().as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                assert_eq!(actual, setting);
+            }
+            let mut tx = h.pool.begin().await?;
+            let proof = authority(&mut tx, h, &member, 7).await?;
+            apply_world_party_command_in_transaction(
+                &mut tx,
+                &proof,
+                PartyAction::SetChannelVisibility { hidden: true },
+                None,
+            )
+            .await
+            .map_err(debug)?;
+            tx.rollback().await?;
+            let actual: i16 = sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid")
+                .bind(member.current_character_lease().character_id().as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(actual, 1);
+            assert_eq!(state(h).await?.1, "3");
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn party_visible_block_cancels_only_the_blocked_leaders_invitation_and_unblock_is_owned()
+    -> TestResult {
+        run("party_block_operations", async |h, leader, member| {
+            let players = runtime_players(h, &leader, &member)?;
+            let target = *leader.current_character_lease().character_id().as_bytes();
+            let owner = *member.current_character_lease().character_id().as_bytes();
+            assert_eq!(
+                apply(h, &member, 1, PartyAction::Block { target })
+                    .await?
+                    .disposition,
+                "NOT_VISIBLE"
+            );
+            assert_eq!(h.count("game_character_social_blocks").await?, 0);
+            // Constraint fixture: a leader-only party whose sole invitation is to the blocker.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
+                .bind(id(90).as_slice()).bind(id(WORLD).as_slice()).bind(target.as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,encode($3,'hex')::uuid)")
+                .bind(target.as_slice()).bind(id(90).as_slice()).bind(id(CHANNEL).as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_party_invitations(party_id,invitee,seq,created_at,expires_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,clock_timestamp(),clock_timestamp()+interval '5 minutes')")
+                .bind(id(90).as_slice()).bind(owner.as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let blocked = block_visible(h, &leader, &member, &players, 2).await?;
+            assert_eq!(blocked.disposition, "APPLIED");
+            assert_eq!(h.count("game_character_social_blocks").await?, 1);
+            assert_eq!(h.count("game_party_invitations").await?, 0);
+            assert_eq!(h.count("game_parties").await?, 0);
+            // Another Character's unblock cannot mutate the blocker's own list.
+            apply(h, &leader, 1, PartyAction::Unblock { target: owner }).await?;
+            assert_eq!(h.count("game_character_social_blocks").await?, 1);
+            let replay = block_visible(h, &leader, &member, &players, 2).await?;
+            assert!(replay.replayed);
+            assert_eq!(replay.receipt_id, blocked.receipt_id);
+            apply(h, &member, 3, PartyAction::Unblock { target }).await?;
+            assert_eq!(h.count("game_character_social_blocks").await?, 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn party_block_limit_refuses_the_101st_and_allows_an_existing_block_at_100() -> TestResult {
+        run("party_block_bound", async |h, leader, member| {
+            let players = runtime_players(h, &leader, &member)?;
+            let owner = *member.current_character_lease().character_id().as_bytes();
+            let target = *leader.current_character_lease().character_id().as_bytes();
+            // Historical block targets are made by the real creator, retaining the
+            // creation receipts/history that native recovery independently validates.
+            let now: i64 =
+                sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                    .fetch_one(&h.pool)
+                    .await?;
+            let mut historical = Vec::new();
+            for number in 100..200 {
+                let character = bootstrap_party_character(h, number, number, now).await?;
+                sqlx::query("INSERT INTO game_character_social_blocks(character_id,blocked_character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                    .bind(owner.as_slice()).bind(character.as_bytes().as_slice()).execute(&h.pool).await?;
+                historical.push(*character.as_bytes());
+            }
+            assert_eq!(
+                block_visible(h, &leader, &member, &players, 1)
+                    .await?
+                    .disposition,
+                "RESOURCE_LIMIT"
+            );
+            assert_eq!(h.count("game_character_social_blocks").await?, 100);
+            apply(
+                h,
+                &member,
+                2,
+                PartyAction::Unblock {
+                    target: historical[0],
+                },
+            )
+            .await?;
+            assert_eq!(
+                block_visible(h, &leader, &member, &players, 3)
+                    .await?
+                    .disposition,
+                "APPLIED"
+            );
+            assert_eq!(
+                block_visible(h, &leader, &member, &players, 4)
+                    .await?
+                    .disposition,
+                "APPLIED"
+            );
+            let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_social_blocks WHERE character_id=encode($1,'hex')::uuid AND blocked_character_id=encode($2,'hex')::uuid)")
+                .bind(owner.as_slice()).bind(target.as_slice()).fetch_one(&h.pool).await?;
+            assert!(exists);
+            assert_eq!(h.count("game_character_social_blocks").await?, 100);
+            Ok(())
+        })
+    }
+
     async fn state(h: &Harness) -> TestResult<(bool, String, i64, i64)> {
         Ok(sqlx::query_as("SELECT shared_xp_enabled,revision::text,(SELECT count(*) FROM game_world_party_receipts),(SELECT count(*) FROM game_world_party_audit_outbox) FROM game_parties WHERE party_id=encode($1,'hex')::uuid")
             .bind(id(90).as_slice()).fetch_one(&h.pool).await?)
@@ -1051,6 +1579,59 @@ mod shared_xp_cases {
                         revision.to_string(),
                         i64::try_from(command)?,
                         i64::try_from(command)?
+                    )
+                );
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn shared_xp_noop_preserves_revision_but_records_each_occurrence() -> TestResult {
+        run("party_shared_xp_noop", async |h, leader, member| {
+            membership(h, &leader, &member).await?;
+            for (command, enabled, revision) in [
+                (1, false, 1),
+                (2, true, 2),
+                (3, true, 2),
+                (4, false, 3),
+                (5, false, 3),
+            ] {
+                let receipt = apply(
+                    h,
+                    &leader,
+                    command,
+                    PartyAction::SetSharedExperience { enabled },
+                )
+                .await?;
+                assert_eq!(receipt.disposition, "APPLIED");
+                assert_eq!(receipt.revision, Some(revision));
+                assert!(!receipt.replayed);
+                assert_eq!(
+                    state(h).await?,
+                    (
+                        enabled,
+                        revision.to_string(),
+                        command as i64,
+                        command as i64
+                    )
+                );
+                let replay = apply(
+                    h,
+                    &leader,
+                    command,
+                    PartyAction::SetSharedExperience { enabled },
+                )
+                .await?;
+                assert!(replay.replayed);
+                assert_eq!(replay.receipt_id, receipt.receipt_id);
+                assert_eq!(
+                    state(h).await?,
+                    (
+                        enabled,
+                        revision.to_string(),
+                        command as i64,
+                        command as i64
                     )
                 );
             }
