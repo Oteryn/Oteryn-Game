@@ -4,12 +4,12 @@
 task_id: BOOT-RAT-POLICY-1
 title: "BOOT-RAT-POLICY-1: boot-spawned rat binds an AI policy and qualifies for melee (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/boot-rat-policy-1
 issue: 1622
-pr: null
+pr: 2185
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 PREREQ-1; App. 7 Archive follow-ups BOOT-RAT-POLICY-1; wave 2 (PREREQ-1 residue child)"
 class: "hard (combat), combat review"
@@ -21,6 +21,7 @@ created_at: 2026-10-15
 updated_at: 2026-10-15
 execution_policy: continuous_progress
 owned_paths:
+  - apps/game-server/src/content/project/native_entry.rs # D1138: source carrier now
   - apps/game-server/src/ai/behaviour_profile.rs
   - apps/game-server/src/ai/spawn.rs
   - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
@@ -203,3 +204,24 @@ SHA-256 bindings:
 - Boot-rat melee and player attackability remain unaccepted pending the owning Content/boot
   slot. Independent exact-head review, final wiring, full affected-package validation and any
   publication remain future control-plane work; no trigger or external mutation was made here.
+
+
+## D1138 source-carrier checkpoint
+
+CP2131 comment6224930839 grants `content/project/native_entry.rs` now.
+The qualified native spawn now retains the complete original
+`ProjectV2AuthoringProfile` for its exact Creature definition, including its
+authored details; the existing health/speed/placement activation tuple remains
+compatible. The read accessor returns admitted source data, not a compiled policy
+or current runtime authority. No flags, defense values or defaults are invented.
+A regression case follows the actual project parser and qualified-room boundary
+and compares the carried profile with the complete original admitted profile.
+
+NOT_FULLY_QUALIFIED: the new regression runtime and strict all-target Cargo checks
+are NOT_RUN. The earlier genuine boot RED (`NotCreature`) remains OPEN; this
+source carrier does not fix or qualify melee/attackability by itself.
+`native_gameplay.rs` (and activation only if necessary) follows merge #2173;
+`node/serve.rs` follows merge #2187 under D1138. No boot caller, companion-policy
+installation, content pin or spawn determinism change is included here.
+Checkpoint publication follows D1122; full qualification is required before
+final review.
