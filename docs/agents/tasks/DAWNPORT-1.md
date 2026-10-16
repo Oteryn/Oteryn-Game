@@ -294,10 +294,10 @@ Validation state for this exact checkpoint layout:
   execution, with exact source/ELF and no-skip evidence.
 - NOT_RUN: qualification of a real admitted classless Dawnport content/world-start
   pin, caps, nonempty stance fit and departure semantics.
-- RED (known source-composition blocker; not a new compiler result): the production
-  module graph and native test registration remain CP-held. The existing request
-  integration test imports the held gameplay vocation module; moving the two new
-  fixtures alone does not make the package coherent or qualify feature delivery.
+- RED (known source-composition blocker; not a new compiler result): native PG-root registration and the existing request-test composition remain
+  unresolved. Its integration target imports a private gameplay vocation module;
+  the new production registration alone does not make the package coherent or
+  qualify feature delivery.
 
 Historical private R4 native11 PASS belongs only to its retained actual composed
 source and ELF. It is preserved independently and is not PASS evidence for this
@@ -309,3 +309,32 @@ The existing CP request is tracked at
 [2131 comment 6224922436](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6224922436).
 No duplicate request is needed. New blockers or CP requests belong exclusively in
 #2131 prefixed `→ CP #2191`; mechanics status belongs exclusively on #2191.
+
+
+## D1160 minimal production registration successor — NOT_FULLY_QUALIFIED
+
+CP D1160 (2131 comment 6224912485) permits a PR's single own-new-module
+registration without the former shared-file slot. This successor adds exactly one
+`#[path = "../interaction/vocation_choice.rs"] mod vocation_choice;` declaration
+in `gameplay_transport/mod.rs`, targeting the real existing owned source file.
+Production vocation-module registration is therefore no longer reported as a held
+slot. No reexport, foreign method, existing body, Cargo/lib change or extra shared
+registration is introduced. Prior frozen source and historical proofs remain intact.
+
+NOT_RUN: actual successor compilation, full workspace format, clippy all-targets,
+full package tests and fresh native eleven/PostgreSQL qualification. RED remains
+for unresolved test composition: existing `tests/dawnport_vocation.rs` imports
+`crate::gameplay_transport` from a standalone integration crate, while the production
+library's gameplay module is private. That existing test stays byte-identical.
+The private receipt fixture also consumes private native gameplay APIs; canonical
+`tests/durability_postgres.rs` has no gameplay_transport module universe. A mere
+one-line PG-root mount cannot supply those APIs. No lib-PG mount, fabricated module,
+visibility/reexport workaround or unqualified PG registration is claimed here.
+Native NPC/private-fixture mounts remain unimplemented in this minimal successor.
+
+The actual admitted classless Dawnport pin remains held. R4 native11 is historical
+private-composition evidence only; R5 and this successor inherit no PASS. D1122's
+single draft checkpoint allowance must be rechecked by root before publication;
+9229576 was unpublished when this successor proposal was prepared. No duplicate
+CP request is emitted; routing remains `→ CP #2191` in #2131, with mechanics status
+only on #2191.
