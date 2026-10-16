@@ -402,3 +402,21 @@ New-head Cargo/PG/full integration: NOT_RUN; prior bounded native component evid
 is retained only for its original candidate/context. Standalone-root Content/private-domain
 composition remains unqualified, not an assumed PASS. D1122 allows the single coherent
 existing-draft checkpoint after fmt/diff checks; cause/receipts/guards/wire slots remain CP.
+
+### D1158: owner-local offered-item observation port (2026-10-16)
+
+Implemented `TradeOwner::item_reserved_by_trade` against the actual bounded owner book.
+It checks the native runtime carrier fence/full book binding before any empty-book answer,
+reports both offered leaves in Offered/Ready/Transferring, and excludes Closed. It adds no
+DB reservation table, physical custody, authority token or unused transaction-proof argument.
+The caller must retain the actual sole installed book's serialization borrow through the
+same MAIL TX and independently resolve native current session/assignment/item fences there.
+The port's false is local observation, not global send admission; that caller remains CP.
+
+Added a real runtime-carrier negative test (foreign binding/retired owner) and extended the
+existing genuine native inventory case for offered/not-yet-offered/unrelated/backpack IDs,
+cancellation release, both Ready offers and retained ambiguous Transferring membership.
+Root independent source review and fmt/diff PASS; new native/PG cases **NOT_RUN**. Published
+88a47e96 Rust/Clippy and S3-B are RED; concrete log request is #2131 comment6225250171.
+Preserve this successor locally in a verified bundle until the concrete compiler finding
+can be fixed in the same coherent push. No new runner, repeated suite, ready or merge.

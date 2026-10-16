@@ -422,6 +422,35 @@ impl TradeOwner {
         )
         .map_err(|_| OwnerError::Authority)
     }
+    /// Observes offered leaf membership in this owner-local book, not physical custody or
+    /// a durable reservation. The caller must borrow the actual installed sole book under
+    /// its serialization guard through the same transaction that consumes this answer.
+    /// That transaction must independently enforce native current session, assignment and
+    /// item fences. This runtime carrier/book check does not establish DB-current authority.
+    /// No constructor or this query proves that installation; caller wiring remains CP.
+    /// A retired or differently bound runtime refuses even when the book is empty.
+    pub(crate) fn item_reserved_by_trade(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        item: [u8; 16],
+    ) -> Result<bool, OwnerError> {
+        runtime.owner_fence().map_err(|_| OwnerError::Authority)?;
+        if runtime_key(runtime) != self.binding {
+            return Err(OwnerError::Authority);
+        }
+        Ok(self.trades.values().any(|trade| {
+            matches!(
+                trade.session.phase(),
+                Phase::Offered | Phase::Ready | Phase::Transferring
+            ) && trade
+                .session
+                .data
+                .offers
+                .iter()
+                .flatten()
+                .any(|offer| offer.state.item_instance_id.as_slice() == item.as_slice())
+        }))
+    }
     pub(crate) fn phase(&self, actor: ExactActorRef) -> Option<Phase> {
         self.by_actor
             .get(&actor.placement_identity())

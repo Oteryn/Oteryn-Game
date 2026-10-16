@@ -622,6 +622,33 @@ fn runtime_retired_owner_and_unknown_foreign_map_refuse_identical_actor_names() 
 }
 
 #[test]
+fn offered_item_query_rejects_foreign_binding_and_retired_runtime_before_empty_book() {
+    let (_, _, mut runtime, _, _) = geometry_fixture();
+    let owner = TradeOwner::new(&runtime, Instant::now()).unwrap();
+    assert!(!owner.item_reserved_by_trade(&runtime, uuid(240)).unwrap());
+    let (_, _, foreign, _, _) = actual_runtime(
+        WorldId::decode(&uuid(50)).unwrap(),
+        ChannelId::decode(&uuid(53)).unwrap(),
+        crate::foundation::NodeId::decode(&uuid(52)).unwrap(),
+        [0_u8, 1].map(|side| {
+            (
+                GameSessionId::decode(&uuid(31 + side)).unwrap(),
+                crate::foundation::CharacterId::decode(&uuid(1 + side)).unwrap(),
+            )
+        }),
+    );
+    assert!(matches!(
+        owner.item_reserved_by_trade(&foreign, uuid(240)),
+        Err(OwnerError::Authority)
+    ));
+    runtime.retire_owner_cycle();
+    assert!(matches!(
+        owner.item_reserved_by_trade(&runtime, uuid(240)),
+        Err(OwnerError::Authority)
+    ));
+}
+
+#[test]
 fn native_state_and_placement_versions_cancel_same_looking_leaf_and_backpack() {
     for operator in 0..4 {
         let mut trade = ready();
@@ -931,6 +958,43 @@ fn native_root_inventory_and_owner_offer_counter_accept_retain_only_intent_data(
                 .map_err(native::debug)?,
             Phase::Offered
         );
+        assert!(
+            owner
+                .item_reserved_by_trade(&runtime, items[0])
+                .map_err(native::debug)?
+        );
+        assert!(
+            !owner
+                .item_reserved_by_trade(&runtime, items[1])
+                .map_err(native::debug)?
+        );
+        assert!(
+            !owner
+                .item_reserved_by_trade(&runtime, uuid(240))
+                .map_err(native::debug)?
+        );
+        let backpack = h
+            .root
+            .read_character_backpack(&recovery, actors[0].fence.character_id)
+            .await
+            .map_err(native::debug)?
+            .unwrap();
+        assert!(
+            !owner
+                .item_reserved_by_trade(&runtime, backpack.backpack.item_instance_id)
+                .map_err(native::debug)?
+        );
+        // Cancellation releases membership. Restart through the actual native read path.
+        owner.invalidate(actors[0].actor).map_err(native::debug)?;
+        assert!(
+            !owner
+                .item_reserved_by_trade(&runtime, items[0])
+                .map_err(native::debug)?
+        );
+        owner
+            .offer(&context, actors, items[0], native_command(0, 3), now)
+            .await
+            .map_err(native::debug)?;
         // No Character may start another trade in this same book, including with another
         // named actor; Busy is a refusal, never a grant for the other unvalidated name.
         assert!(matches!(
@@ -952,6 +1016,13 @@ fn native_root_inventory_and_owner_offer_counter_accept_retain_only_intent_data(
                 .map_err(native::debug)?,
             Phase::Ready
         );
+        for item in items {
+            assert!(
+                owner
+                    .item_reserved_by_trade(&runtime, item)
+                    .map_err(native::debug)?
+            );
+        }
         let pair = native_command(1, 3);
         assert_eq!(
             owner
@@ -988,6 +1059,13 @@ fn native_root_inventory_and_owner_offer_counter_accept_retain_only_intent_data(
         ));
         assert_eq!(h.footprint().await?, before);
         assert_eq!(owner.phase(actors[0].actor), Some(Phase::Transferring));
+        for item in items {
+            assert!(
+                owner
+                    .item_reserved_by_trade(&runtime, item)
+                    .map_err(native::debug)?
+            );
+        }
         assert_eq!(
             h.root
                 .read_character_backpack(&recovery, actors[0].fence.character_id)
