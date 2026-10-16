@@ -59,20 +59,27 @@ STEP-PACE-WIRE-1 merged as [#2041](https://github.com/Oteryn/Oteryn-Game/pull/20
 
 **PROVEN source gap:** Platform [`7552a5003cf637bee7798743b913d915dd55e825`](https://github.com/Oteryn/Oteryn-Platform/tree/7552a5003cf637bee7798743b913d915dd55e825/deploy/oracle) starts Game `serve` directly in `game-runtime.compose.yml`; its Game environment has no `OTERYN_STEP_WAIT_RECEIPTS`. `game-supervisor.py` has no step-wait marker handling. The historical Game `deploy/synology-game/supervisor.sh` marker implementation does not prove an active VPS integration.
 
-**Integration PR:** [Oteryn-Platform #1652](https://github.com/Oteryn/Oteryn-Platform/pull/1652) (open, head `cd902557532e0a015f3a57c94cf8e230fb617b57`) adds the marker-to-`serve` export to `game-supervisor.py` and `game-runtime.compose.yml`, with 5 new supervisor tests (11 pass). After merge, the owner installs both files into the host, because the Platform deploy does not install the supervisor.
+**Integration PR:** [Oteryn-Platform #1652](https://github.com/Oteryn/Oteryn-Platform/pull/1652) is merged as `562d77bdf90ed6981ae7dac683fd18bd974c70a5` on Platform main. It adds the marker-to-`serve` export to `game-supervisor.py` and `game-runtime.compose.yml`, with 5 new supervisor tests (11 pass). The Platform deploy does not install the supervisor, so both files were installed on the host by hand (see *VPS rollout evidence* below).
 
-**Read-only VPS evidence (2026-10-16):** see the README *Read-only oteryn-vps evidence* paragraph. In short: the installed supervisor matches Platform main sha256 `2d978060…` and has no marker handling. The Game image is `24fc332f`, which has the switch. The latest Platform release receipt is `62ebdaf8`. The marker is absent, and the running incarnation `7ba14b6d…` is ready with no `OTERYN_STEP_WAIT_RECEIPTS`. The supervisor does not read `BASE/run/step-wait-receipts` today. The marker was not set and production was not restarted.
+**Read-only VPS evidence before the rollout (2026-10-16):** see the README *Read-only oteryn-vps evidence* paragraph. In short: the installed supervisor matches Platform main sha256 `2d978060…` and has no marker handling. The Game image is `24fc332f`, which has the switch. The latest Platform release receipt is `62ebdaf8`. The marker is absent, and the running incarnation `7ba14b6d…` is ready with no `OTERYN_STEP_WAIT_RECEIPTS`. The supervisor does not read `BASE/run/step-wait-receipts` today. At that time the marker was not set and production was not restarted.
 
-**Earlier UNKNOWN installed state (partly resolved above):** controller/configuration revision, marker consumption, process environment, enabled receipts and off-state byte identity on the VPS. These are not established by source inspection or by this PR. The marker alone cannot close this evidence gap.
+**VPS rollout evidence (2026-10-16, oteryn-vps, owner-authorized):**
 
-**Owner and trigger:** OWNER-I establishes the supported Platform marker-to-process environment path, applies the owner-authorized rollout and restarts via the durable controller. Any missing controller support is a separately allocated Platform change. Retain links to the installed revision, marker inspection, incarnation/readiness and capability boundary/off-state evidence before claiming operational completion. The owner has already waived waiting for the client release; this gap concerns actual enablement evidence.
+- Installed from Platform `562d77bd`: `game-supervisor.py` (git blob `b4ebc657…`, sha256 `3eb58457b31b10b0668f1f58347abddc57488b0f544661e1ee4f7bcc729ecced`; the previous `2d978060…` was kept as `game-supervisor.py.bak-20261016-210339`) and `game-runtime.compose.yml`, where only the step-wait parts changed (game label `io.oteryn.step-wait-receipts` and env `OTERYN_STEP_WAIT_RECEIPTS`; the previous file was kept as `game-runtime.compose.yml.bak-20261016-210339`). Both `image:` lines stay `oteryn-game:24fc332f…-arm64`. Both files are `root:root 0600`, as before.
+- Marker: `printf 1 > /opt/oteryn-game/run/step-wait-receipts`; the file is 1 byte, owner `ubuntu`, and `run/` is still `0700 ubuntu`.
+- `sudo systemctl restart oteryn-game.service` went through the durable controller. Journal: `oracle_game_step_wait_receipts=1`, then `oracle_game_ready node_id=01a14687-aa4d-7cdb-aa70-1b1867e588d6`. The unit is active, the container is running, `readiness ... ready=true` was logged, and no `reconciliation-required` file exists.
+- `docker inspect oteryn-oracle-runtime-game-1`: env `OTERYN_STEP_WAIT_RECEIPTS=1`, label `io.oteryn.step-wait-receipts=1`. In the installed compose file the variable and label appear only in the `game` service (`ops` has neither).
+- Not established here: on-the-wire proof that only capability 13 sessions get `step_wait_ms`, and off-state byte identity. Both rest on Game #2041 tests, not on live traffic. Rollback: remove the marker, restart the unit (the `.bak` files remain for a full revert).
+
+**Owner and trigger:** OWNER-I establishes the supported Platform marker-to-process environment path, applies the owner-authorized rollout and restarts via the durable controller. Any missing controller support is a separately allocated Platform change. The installed revision, marker, incarnation and readiness evidence is now recorded above; capability boundary and off-state evidence still rest on #2041. The owner has already waived waiting for the client release; this gap concerns actual enablement evidence.
 
 ## Acceptance criteria
 
 - [x] README and task card record the host-marker decision, default-off behavior, capability 13 boundary and owner supersession of the release/retirement gate.
 - [x] Runbook identifies oteryn-vps and Platform controller ownership, historical Synology location, owner-only marker/restart/rollback actions and the exact operational proof gap.
 - [x] No production action is taken by the builder; no release, retirement or active marker integration is claimed without evidence.
-- [ ] OWNER-I supplies active controller support and rollout evidence described above (operational handback, outside builder authoring scope).
+- [x] Active controller support (Platform #1652 merged `562d77bd`) installed on oteryn-vps; marker, restart, label/env and readiness evidence recorded above.
+- [ ] Live capability 13 receipt boundary and off-state byte-identity evidence (owner/CP).
 
 ## Validation
 
