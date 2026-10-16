@@ -311,3 +311,34 @@ The two-line shared workflow registration remedy remains unapplied pending its
 CP slot. The owned candidate is secured as a local commit and verified recovery
 bundle outside this checkout; exact identifiers are in the family recovery record.
 No shared file, ready, merge or rebase is part of this checkpoint.
+
+### D1122 owned-source checkpoint — NOT_FULLY_QUALIFIED
+
+CP D1122 (https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+permits one coherent checkpoint push to this existing draft before full
+qualification, with passing fmt/diff checks and explicit RED/NOT_RUN disclosure.
+This supersedes the earlier AGENTS.md47 publication hold only for that bounded
+checkpoint; full checks remain required before a qualified frozen review head.
+No ready, merge, review trigger or CI restart is authorized by this record.
+
+This increment changes only this task card. The already reviewed owned
+structural predicates and meaningful regression tests retain their exact Rust
+bytes from local recovery commit `46120db4f14ddab2e45281d91561e34ecd673922`.
+Retained native evidence is 9/9, including three actual PostgreSQL17.6 cases;
+private validation-overlay fmt/Clippy and combined-input results keep their
+original source/registration provenance. They are not a fresh checkpoint PASS.
+The historical combined package aggregation-guard failure remains RED.
+
+Own full normal package, exact-checkpoint all-target Clippy, native module
+registration/compilation, a fresh canonical-PG target invocation and new exact-head
+CI are NOT_RUN for this checkpoint. No Imbue or Loop result is borrowed.
+Current formatting/governance checks, if run by the executor, are recorded
+separately; no execution is claimed by this authoring entry.
+
+D1145's atomic fee/dust/item/audit/receipt/RNG writer remains after #2156.
+FORGE-CONTENT executable recipes are missing; the dust limit remains
+OWNER/PARITY_PENDING under D1163, without guessed cap/cost constants. Migration
+0103 is reserved, not installed. D1147/D1182 workflow target and protected-pin
+work follow Storage's merge to main and the required CP pin approval. This
+increment changes no workflow, pin, module registration, schema or shared source.
+It does not enable a runtime Forge operation or close mechanic acceptance.
