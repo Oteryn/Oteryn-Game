@@ -4085,10 +4085,11 @@ mod disband_terminal_tests {
                 .map_err(debug)?;
             let second = other.open_character_authority(&seal).await.map_err(debug)?;
             let before = snapshot(h).await?;
-            let (left, right) = tokio::join!(
+            let (left, right) = fixture::join_two(
                 h.root.advance_guild_disband(&first, &h.node, job()?),
                 other.advance_guild_disband(&second, &h.node, job()?),
-            );
+            )
+            .await;
             assert_eq!(
                 left.map_err(debug)?,
                 GuildDisbandOutcome::WaitingForHouseDisposition
