@@ -247,3 +247,19 @@ Final Rust SHA-256:
 
 - `domain/prey.rs`: `7723fc7778db7e8eb31c5133674deb0b3989b4dac826dcb5808b93a5977c7b34`.
 - `durability/prey_tests.rs`: `342d6c45214b216887bca9bdff68610257a50cdd8ea578ac78789f529c2ea9a4`.
+
+
+### CP review repair: domain test placement (2026-10-16)
+
+The minor finding in CP comment 6216371834 is addressed by placing all 11
+existing pure domain tests inside the owned `domain/prey.rs` test module.
+The cross-layer `#[path = "../durability/prey_tests.rs"]` include and its
+durability file are removed. This uses only already allocated paths; it
+adds no domain-file allocation, registration or runtime behavior.
+
+The production prefix is preserved byte-for-byte; all 11 test bodies are
+unchanged apart from module indentation and rustfmt line wrapping. Historical 11/11 native
+results above remain evidence of the predecessor only. Fresh package Clippy
+and tests remain NOT_RUN; no PG/content/runtime coverage is claimed.
+The writer, accepted PREY-CONTENT-1, reset, content-path allocation and
+slot-only gates described above remain open. This repair does not complete HUNT-1.
