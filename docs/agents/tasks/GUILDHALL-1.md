@@ -407,3 +407,25 @@ GUILD_GUARDS_PROPOSAL SHA256 `343728dac2958c6229532edc98f560f747e98aae1ad445dba3
 Lead's early combined actual native `--lib` source check passed. New eleven-body
 runtime/strict Clippy qualification remains pending; no prior runtime result is
 reused as evidence for this increment. Local governance and124 unit tests pass.
+
+
+### 2026-10-16 — exact native Hall qualification (supersedes pending runtime above)
+
+Hall Rust candidate `75ceb927cd796a7c52facd7086942dff4d344bd1` passed all11
+native bodies (original8 + new3),0failed/0ignored, against actual PostgreSQL17.6.
+The fixture pins genuine Guild guards
+`387ba1c48521bb09a738acd6505084b65a64ec719dc4098171af5c9fb9cbb596`
+after the owner's two CASE-parenthesis syntax repair; table hash is unchanged.
+Evidence: `evidence/guild-terminal-sql-repair/` in the lead's retained family packet,
+including per-body logs/results and source manifest; independent execution review
+`D1102-execution-review.md`. Native ELF SHA256
+`5c0f35c7e979023f5a8d6d8250a47e5da15b96af858d1a3b0da2bb0ad3f3b7aa`;
+exact native input archive SHA256
+`e91d07f37751afc1e1b72d529c795c36f08f7b64c136e9c6d6d8461dd34455f4`.
+This documentation-only successor preserves those qualified compiler inputs.
+
+The real bid refund participant is native-qualified. Genuine C Guild property,
+slot, ACL and fence closure remain missing, so no end-to-end Hall release, Bank
+payout or Guild terminal success is claimed. Whole all-targets Clippy remains
+RED on uninstalled APIs; final strict unit validation is separate lead evidence.
+Full feature remains PARTIAL and final CP integration gates remain open.
