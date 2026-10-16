@@ -4,7 +4,7 @@
 task_id: LOOP-MAP-1
 title: "LOOP-MAP-1: map loop: Cyclopedia discovery, donations and respawn"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -132,10 +132,10 @@ cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
 - Max 2 repair rounds on the PR; then CP closes and splits.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
 
-## REPORT_ONLY input qualification and implementation handoff — 2026-10-15
+## Historical REPORT_ONLY input qualification and implementation handoff — 2026-10-15
 
 This is a concrete input/admission packet, not implementation or full LOOP-MAP-1
-acceptance. The sole current write lease is this task record, at
+acceptance. The then-current write lease was this task record, at
 `skeleton/loop-map-1` source `3732d7b0434ecb5cbb5f62626f332c6d19c7a33a`.
 Protected-main `ac9f172836f00226b68088aa04db95ccf1ab994e` contains the **ACCEPTED**
 CYCLOPEDIA0 decision; its original skeleton/dependency history above is retained.
@@ -275,9 +275,33 @@ report reproduce the read-only checks. Source masks were streamed and discarded;
 no generated atlas, coordinates, POI pools, canonical membership or new IDs were
 written. All counts above are source observations, not runtime admission.
 
-The sole candidate change is this reviewable handoff record. Governance and its
+At that historical checkpoint the sole candidate change was this handoff record. Governance and its
 124 tests, owned-path/source binding and whole-diff whitespace checks pass.
 No Rust/Cargo, gameplay/PG/runtime/E2E tests, paid resources, product code,
 content/schema/registry mutation, commit, push or integration action was run.
 Independent architect/format/persistence/economy/protocol review and all child
 implementations remain required; this is not approval for production activation.
+
+
+## D1133 owned source-mask checkpoint
+
+Current status: NOT_FULLY_QUALIFIED. D1133 source authoring supersedes the historical
+report-only lease for the owned content/cyclopedia candidate/provenance and
+`docs/agents/evidence/LOOP-MAP-1-source-mask-decoding.md`. The candidate retains all209
+pinned source-mask decodes as compact source-pixel runs, not admitted native
+membership or compiled public-map output. Provenance binds exact source/reader/
+crosswalk/extraction hashes; no generator, runtime IDs/flags, canonical parents,
+POI pools, registry or pins are added. The old raw graph/ambiguity is preserved.
+
+Independent source review PASS precedes this package. Exact copy/hash,209JSONL
+records and whitespace are cheap source checks; native/compiler/runtime checks
+remain NOT_RUN. Native frame/served-tile/reachability/overlap and canonical CYC/
+donation/POI qualifications remain pending. D1217's7UNKNOWN1CONFLICT parity is
+preserved; it does not block this unadmitted source checkpoint. No readiness,
+merge, activation or completed CYC-CONTENT claim is made.
+
+Lead independent source/package review PASS: all209 source identities/runs/
+counts and null native qualifications checked; pinned reader semantics and
+source-format/budget provenance reviewed. The evidence report uses the owned
+docs/agents/evidence path. Full runtime/strict/package tests remain NOT_RUN;
+source data do not qualify live membership or unblock OWNER parity values.
