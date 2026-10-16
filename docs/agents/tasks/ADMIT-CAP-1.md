@@ -4,7 +4,7 @@
 task_id: ADMIT-CAP-1
 title: "ADMIT-CAP-1: World capability admission authority (skeleton)"
 mode: IMPLEMENT
-status: in_progress
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/admit-cap-1
@@ -34,6 +34,7 @@ owned_paths:
   - tools/qualification/login_local/run.sh
   - docs/architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md (D1083 map successor correction only)
   - docs/agents/tasks/ADMIT-CAP-1.md (task packet/notes)
+  - apps/game-server/src/gameplay_transport/map_bundle_domain_postgres_tests.rs (D1164: two callers and matching fixture binding only)
 slot_only_paths:
   - capabilities.rs (required set)
   - connection.rs admit path (`admit_frame` l.1101, `required_capability` l.363)
@@ -51,6 +52,31 @@ external_repositories: []
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
 CP and architect do the final review.
+
+## Current checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
+
+The boot-bound `BoundRequiredCapabilities::effective()` read port is published
+on #2187 at `c8b5cb16f54ea54bf5e4a2cc64137c59aafbba13`.
+[D1164](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225159415)
+now allocates only the two obsolete MAP test callers and their matching fixture
+binding in `map_bundle_domain_postgres_tests.rs`, before A2. Other shared A2
+Git files remain unchanged and their existing slot holds still apply.
+
+The new cloud strict-Clippy attempt against the private c8 assembly is historical
+**RED** at those two removed `required_capability()` calls. This checkpoint
+repairs both through the real `for_channel_boot` builder and the same explicit
+scope/generation/policy fixture source used for fresh-session preparation. It
+checks the boot-bound effective set: control `[]`, bundle dependency closure
+`[4, 6, 18]`. The fixture snapshot grants no current authority. This repair is
+**NOT_YET_REQUALIFIED**; no new Clippy, PostgreSQL or runtime PASS is claimed.
+
+Historical 16 pure plus 3 PostgreSQL PASS results remain evidence only for
+`3b80d9a5`; they do not qualify c8 or this successor. Earlier harness/format
+results below retain their original source scopes. The new narrow formatting
+and `git diff --check` PASS concern only this checkpoint's changed files.
+The MAP test source SHA-256 is `21e6b02c431c5476ad5f3864b0fa46243a339ce94eb66672c74f7deb9e268509`.
+The prior private assembly manifest and RED log remain retained; lead owns
+independent validation and publication. No ready/merge claim follows.
 
 ## Goal
 
