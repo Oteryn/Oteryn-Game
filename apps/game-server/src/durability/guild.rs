@@ -3180,7 +3180,7 @@ BEGIN
  SELECT * INTO d FROM game_guild_disband_steps WHERE guild_id=bound_guild AND created_xact_id=pg_current_xact_id();
  IF FOUND THEN
   IF TG_TABLE_NAME='game_guilds' AND TG_OP='UPDATE' THEN
-   IF OLD.state<>3 OR NEW.state<>CASE WHEN d.phase=6 THEN 4 ELSE 3 END
+   IF OLD.state<>3 OR NEW.state<>(CASE WHEN d.phase=6 THEN 4 ELSE 3 END)
       OR OLD.world_id<>d.world_id OR OLD.revision<>d.previous_revision OR NEW.revision<>d.revision
       OR (to_jsonb(OLD)-'state'-'revision'-'name_key') IS DISTINCT FROM (to_jsonb(NEW)-'state'-'revision'-'name_key') THEN
     RAISE EXCEPTION 'Disband changes only its exact current state/revision' USING ERRCODE='23514';END IF;
@@ -3633,7 +3633,7 @@ BEGIN
   RAISE EXCEPTION 'Disband step requires its exact pending Guild/start/revision/time' USING ERRCODE='23514';END IF;
  SELECT * INTO last_step FROM game_guild_disband_steps WHERE guild_id=g.guild_id ORDER BY step DESC LIMIT 1;
  has_last=FOUND;
- IF NEW.step<>CASE WHEN has_last THEN last_step.step+1 ELSE 2 END
+ IF NEW.step<>(CASE WHEN has_last THEN last_step.step+1 ELSE 2 END)
     OR (has_last AND last_step.revision<>NEW.previous_revision)
     OR NOT ((NEW.phase=2 AND NOT has_last)
        OR (NEW.phase=3 AND has_last AND last_step.phase=2)
