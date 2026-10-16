@@ -407,3 +407,99 @@ native anchor remain intact. Final card governance and three-file scope/source m
 bind this frozen packet; independent non-author review and exact immutable candidate C
 binding precede root-controlled publication. All full-family acceptance checkboxes and
 production schema/definers/grants/target-baseline/wire/relay/runtime integration gates stay open.
+
+## Additional owned native Remove preparation (2026-10-15, source phase)
+
+This successor starts from the published Add candidate
+`4efa8e4addd4f8ddf6eb355934a184fadab44cbd`; the frozen Add sources and evidence remain unchanged.
+The exact three-file lease prepares accepted VIP0 §§5, 5.1 and 6 `Remove {entry_no}` through
+`DurabilityRoot::remove_vip_entry`, reusing the existing native consent transaction spine.
+Its dedicated typed request selects only the acting Account+World's current entry number.
+Actual recovery, receipt replay, current session/node/assignment, sorted Character roots,
+list locks, locator revalidation, persisted rate and immutable receipt all remain native.
+There is no Premium argument or benefit/current-authority callback. The private SQL receipt
+arm 6 is a proposed local persistence discriminator, not an allocated protocol opcode.
+
+The same transaction deletes that shared entry. Existing FK cascades remove all attached
+Account-character pending/accepted relationships and entry group memberships; group definitions,
+other entries/Accounts, list history/rate, retained receipts and never-reused allocators survive.
+An independently read physical consent row, including retained expired Pending, requires exactly
+one target consent-view increment under the locked target root. An unconfirmed entry with no
+consent requires neither a settings row nor a new target baseline. A missing required view or
+its overflow aborts the whole transaction. No CharacterRevision/item/presence mutation occurs.
+The first locator read is DATA for root selection; the locked-list recheck cannot reinterpret a
+new mapping as permission to delete an unlocked target. Unknown numbers are receipted NOT_FOUND.
+
+Six appended genuine PG families are authored: Account-wide cascades with mixed consent and
+retained custom group definitions/other relationships; no-consent and expired/blocked entries
+plus overcap removal without Premium; rate/refusal/historical replay and strict post-Remove
+entry/invitation identity; missing-view/overflow/after-delete rollback; current native fence,
+node, independent assignment revocation and recovery-before-replay; and two warmed Roots for
+duplicate/distinct Remove and Add/Remove serialization. Their full-row snapshots include
+accepted state, target view, list/rate/allocator, memberships and receipts. The custom group
+catalogue is minimal, explicitly UNINSTALLED test DATA, not a group writer or admission claim.
+The existing real PG wrapper asserts 170006 and refuses missing database configuration. New
+bodies additionally emit VIP-REMOVE-PG version markers. Native admission relation EXCLUSIVE
+locking also serializes these transactions; no isolated row-contention/load claim is made.
+
+All twenty-five inherited test bodies and the complete intervening helper tail are preserved
+literally. Source-phase total is 31 authored cases (three pure, twenty-eight PG), not an
+execution result. Heavy qualification remains on hold behind the allocated native lanes;
+source/authority matrix, hashes, subsequent actual logs and failure dispositions belong in
+`/workspace/oteryn-prep/vip-1-remove-native-4-evidence`. No source-only check is called a native
+PASS. Production migration/definers/grants, target baseline admission, groups/edit/block/hide,
+shared module/caller/relay/handles/protocol/capability and full VIP integration remain open CP
+gates. Existing acceptance checkboxes and slot-only builder requirements are unchanged.
+
+
+## Remove: actual native qualification and final checkpoint — 2026-10-16
+
+The complete private Remove component now has **actual 31/31 native bodies passing**:
+3 pure and 28 genuine PostgreSQL 17.6 cases, including all 25 inherited bodies and
+six new Remove bodies. The unfiltered driver reports zero failed, ignored or
+filtered tests. Its raw log contains exactly 14 Add fixture and six Remove
+`server_version_num=170006` markers; the 14 earlier PG bodies independently retain
+the real native harness version assertion. The actual runtime invocation records
+its explicit local PG admin route, so their optional-unconfigured branches were
+unreachable. Raw test-log SHA-256: `bdd91a7df79503845678d8dfb15d76996df63dbd029b85ffb674e2e2a14e9623`.
+
+Fresh native Cargo capture reached the intentional sentinel86 (Cargo101, setup
+capture only). Configured selected-native Clippy, same-graph native cfg(test) rlib,
+driver link and actual tests each exited 0. Existing configured Clippy denials and
+unsafe prohibition remained active. The selected context retains 2,303 ordinary
+Rust warnings; **strict production/global lint and the global native unit metadata/
+ELF are not qualified**. No lint suppression or alternative authority was added.
+The full inherited 69,163-byte test/helper tail remains literally unchanged
+(SHA-256 `8343e9a317c144dc21e95ef9e9c2f9b28a1648592eac4222f81cd4bf6673495c`).
+Signature-only selection reconstructs the whole formatted 31-body source exactly;
+the actual Root, recovery/session/Node/current-assignment checks and fixture bodies
+remain native. Source and all captured extern/proc-macro hashes stayed stable.
+
+Failures remain evidence. Initial explicit1.94 formatting check exited1; the
+Root-authorized style-only repair was independently reviewed before qualification.
+Attempt1 then failed during Cargo's `rustc -vV` setup because the direct Cargo
+launcher passed a relative compiler name to `execv`; no native metadata or tests
+ran in that attempt. Its failure and exact input proofs remain intact. The bounded
+repair explicitly pins the verified absolute1.94 `RUSTC`. Attempt2 reuses the same
+fully verified 7,673-file hydration, six detached mutable roots and retained exact
+preimages, with separate new logs/results; no second hydration or product repair
+was performed.
+
+Root budget9320 and typed-reuse96a9 authorized the operating stages. The historical
+pre-hydration entry1,598,439,424B passed1.59GB; the later current-reuse check is
+separately >=1.584GB and is not presented as another1.59GB PASS. The actual critical
+pre-codegen check passed at1,521,684,480B, above1.50GB. Raw native rlib+driver total
+643,171,400B, below800MB. Metadata/rlib/driver capped lossless archives succeeded
+with complete producer, consumer, identity, raw/gzip/stream SHA and restoration
+proofs. The512MB floor and fresh shared cgroup0OOM/0kill held. No shared dependency,
+anchor, source, log or failure evidence was retired.
+
+Coordinator evidence is `vip-1-remove-native-4-evidence/attempt-2/`; the frozen
+recipe is v2e (independent review3577eaa2), and attempt1 is explicitly SETUP_FAILURE.
+This append follows actual validation; the two validated Rust files are unchanged,
+and the prior card is retained byte-for-byte as this card's prefix. Final source/
+card, input/body/extern/archive bindings are recorded in the new final checkpoint.
+Whole final independent execution/source review and Root exact-C publication remain
+separate. Existing production schema/definer/grant, shared caller/wire/relay and full
+VIP-family CP gates still apply; this component does not complete the VIP mechanic.
+No worker commit, push, PR-state change or shared wiring edit was performed.

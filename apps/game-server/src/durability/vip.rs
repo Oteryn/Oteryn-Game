@@ -76,6 +76,11 @@ pub(crate) enum VipEndOperation {
     Revoke(VipInvitationBinding),
     /// Private lifecycle extension; numeric code is fixture-local, not a wire registry ID.
     Accept(VipInvitationBinding),
+    /// Remove the Account-shared entry and every attached relationship/membership.
+    /// The numeric arm remains a private proposed SQL receipt kind, never a wire ID.
+    Remove {
+        entry_no: u64,
+    },
 }
 impl VipEndOperation {
     fn kind(self) -> Option<ConsentEnd> {
@@ -83,7 +88,7 @@ impl VipEndOperation {
             Self::Withdraw { .. } => Some(ConsentEnd::Withdraw),
             Self::Reject(_) => Some(ConsentEnd::Reject),
             Self::Revoke(_) => Some(ConsentEnd::Revoke),
-            Self::Accept(_) => None,
+            Self::Accept(_) | Self::Remove { .. } => None,
         }
     }
     fn code(self) -> i16 {
@@ -92,6 +97,7 @@ impl VipEndOperation {
             Self::Reject(_) => 2,
             Self::Revoke(_) => 3,
             Self::Accept(_) => 4,
+            Self::Remove { .. } => 6,
         }
     }
 }
@@ -109,6 +115,13 @@ pub(crate) struct VipAcceptRequest {
     pub(crate) list: VipListKey,
     pub(crate) command: CommandRef,
     pub(crate) invitation: VipInvitationBinding,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct VipRemoveRequest {
+    pub(crate) list: VipListKey,
+    pub(crate) command: CommandRef,
+    pub(crate) entry_no: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -134,7 +147,9 @@ fn digest(actor: CharacterId, request: VipEndRequest) -> [u8; 32] {
     hash.update(request.list.world_id.as_bytes());
     hash.update(request.operation.code().to_be_bytes());
     match request.operation {
-        VipEndOperation::Withdraw { entry_no } => hash.update(entry_no.to_be_bytes()),
+        VipEndOperation::Withdraw { entry_no } | VipEndOperation::Remove { entry_no } => {
+            hash.update(entry_no.to_be_bytes());
+        }
         VipEndOperation::Reject(key)
         | VipEndOperation::Revoke(key)
         | VipEndOperation::Accept(key) => {
@@ -147,6 +162,30 @@ fn digest(actor: CharacterId, request: VipEndRequest) -> [u8; 32] {
 }
 
 impl DurabilityRoot {
+    /// Remove one Account+World entry under the same native authority/receipt transaction
+    /// as consent mutations. Removal requires no Premium benefit or target settings producer.
+    pub(crate) async fn remove_vip_entry(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: VipRemoveRequest,
+    ) -> Result<VipReceipt> {
+        self.end_vip_consent(
+            authority,
+            node,
+            fence,
+            VipEndRequest {
+                list: request.list,
+                command: request.command,
+                operation: VipEndOperation::Remove {
+                    entry_no: request.entry_no,
+                },
+            },
+        )
+        .await
+    }
+
     /// Accept exactly one retained invitation. Its target is always the independently
     /// current acting Character, never a Character supplied by a resolved handle.
     pub(crate) async fn accept_vip_invitation(
@@ -318,14 +357,16 @@ async fn end_in_transaction(
         return Err(VipError::AuthorityRejected);
     }
     let relation = match request.operation {
-        VipEndOperation::Withdraw { entry_no } => withdraw_target(tx, request.list, entry_no)
-            .await?
-            .map(|target| Relationship {
-                list: request.list,
-                inviter: fence.character_id,
-                target,
-                invitation: None,
-            }),
+        VipEndOperation::Withdraw { entry_no } | VipEndOperation::Remove { entry_no } => {
+            withdraw_target(tx, request.list, entry_no)
+                .await?
+                .map(|target| Relationship {
+                    list: request.list,
+                    inviter: fence.character_id,
+                    target,
+                    invitation: None,
+                })
+        }
         VipEndOperation::Reject(key)
         | VipEndOperation::Revoke(key)
         | VipEndOperation::Accept(key) => Some(Relationship {
@@ -418,7 +459,9 @@ async fn end_in_transaction(
     if let Some(stored) = receipt(tx, fence.character_id, request).await? {
         return Ok(stored);
     }
-    if let VipEndOperation::Withdraw { entry_no } = request.operation {
+    if let VipEndOperation::Withdraw { entry_no } | VipEndOperation::Remove { entry_no } =
+        request.operation
+    {
         // The first read finds roots to lock, never authority. Entry numbers are never reused;
         // a concurrently appearing mapping is retried rather than touching an unlocked target.
         let after = withdraw_target(tx, request.list, entry_no).await?;
@@ -438,12 +481,19 @@ async fn end_in_transaction(
             .await?;
     let (revision, bucket) = acting.ok_or_else(corrupt)?;
     let charge = charge_vip_bucket(bucket, now).ok_or_else(corrupt)?;
-    let result = if let Some(seconds) = charge.exhausted_seconds {
-        VipResult::Exhausted { seconds }
+    // The optional view target is a SQL-derived mutation effect, never caller authority.
+    let (result, changed_view) = if let Some(seconds) = charge.exhausted_seconds {
+        (VipResult::Exhausted { seconds }, None)
     } else if valid_relation {
-        change_consent(tx, relation.ok_or_else(corrupt)?, request.operation, now).await?
+        let key = relation.ok_or_else(corrupt)?;
+        if let VipEndOperation::Remove { entry_no } = request.operation {
+            (VipResult::Ok, remove_shared_entry(tx, key, entry_no).await?)
+        } else {
+            let result = change_consent(tx, key, request.operation, now).await?;
+            (result, (result == VipResult::Ok).then_some(key.target))
+        }
     } else {
-        VipResult::NotFound
+        (VipResult::NotFound, None)
     };
     let revision = revision.checked_add(1).ok_or_else(corrupt)?;
     if result == VipResult::Ok {
@@ -456,12 +506,14 @@ async fn end_in_transaction(
             sqlx::query("UPDATE game_vip_lists SET revision=$3::text::numeric WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
                 .bind(key.list.account_id.as_bytes().as_slice()).bind(key.list.world_id.as_bytes().as_slice()).bind(next.to_string()).execute(&mut **tx).await?;
         }
-        // Every existing consent was produced together with this target-side view revision.
-        // Missing producer state is corrupt, never a reason to invent PARTY settings defaults.
-        let changed = sqlx::query("UPDATE game_character_social_settings SET vip_consent_revision=vip_consent_revision+1 WHERE character_id=encode($1,'hex')::uuid")
-            .bind(key.target.as_bytes().as_slice()).execute(&mut **tx).await?.rows_affected();
-        if changed != 1 {
-            return Err(corrupt());
+        if let Some(target) = changed_view {
+            // Every existing consent was produced together with this target-side view.
+            // PARTY0046 constrains its source_policy; never manufacture a missing baseline.
+            let changed = sqlx::query("UPDATE game_character_social_settings SET vip_consent_revision=vip_consent_revision+1 WHERE character_id=encode($1,'hex')::uuid")
+                .bind(target.as_bytes().as_slice()).execute(&mut **tx).await?.rows_affected();
+            if changed != 1 {
+                return Err(corrupt());
+            }
         }
     }
     sqlx::query("UPDATE game_vip_lists SET revision=$3::text::numeric,rate_tokens=$4,rate_at=$5 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
@@ -483,6 +535,27 @@ async fn end_in_transaction(
         revision,
         replayed: false,
     })
+}
+
+/// Called only after native actor/target roots and the owning list are locked and the
+/// entry locator is revalidated. Cascades use the existing private schema, not a row loop.
+async fn remove_shared_entry(
+    tx: &mut Transaction<'_, Postgres>,
+    key: Relationship,
+    entry_no: u64,
+) -> Result<Option<CharacterId>> {
+    let had_consent: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid)")
+        .bind(key.list.account_id.as_bytes().as_slice()).bind(key.list.world_id.as_bytes().as_slice())
+        .bind(key.target.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let changed = sqlx::query("DELETE FROM game_vip_entries WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid AND entry_no=$4::text::numeric")
+        .bind(key.list.account_id.as_bytes().as_slice()).bind(key.list.world_id.as_bytes().as_slice())
+        .bind(key.target.as_bytes().as_slice()).bind(entry_no.to_string()).execute(&mut **tx).await?.rows_affected();
+    if changed != 1 {
+        return Err(corrupt());
+    }
+    // VIP0 §5.1 expressly covers Remove with a consent row, including retained expired
+    // Pending. An unconfirmed entry with no consent changes no view and needs no settings.
+    Ok(had_consent.then_some(key.target))
 }
 
 async fn change_consent(

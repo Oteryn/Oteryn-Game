@@ -32,10 +32,10 @@ CREATE TABLE game_vip_group_members (
  PRIMARY KEY(account_id,world_id,character_id,group_no),FOREIGN KEY(account_id,world_id,character_id) REFERENCES game_vip_entries ON DELETE CASCADE);
 CREATE TABLE game_vip_command_receipts (
  account_id UUID NOT NULL,world_id UUID NOT NULL,game_session_id UUID NOT NULL,command_id NUMERIC(20,0) NOT NULL CHECK(command_id>0),
- character_id UUID NOT NULL REFERENCES game_character_roots(character_id),kind SMALLINT NOT NULL CHECK(kind IN(1,2,3,4,5)),binding BYTEA NOT NULL CHECK(octet_length(binding)=32),
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),kind SMALLINT NOT NULL CHECK(kind IN(1,2,3,4,5,6)),binding BYTEA NOT NULL CHECK(octet_length(binding)=32),
  result SMALLINT NOT NULL CHECK(result IN(1,2,3,4,5,6,7)),seconds SMALLINT,revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615),committed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),entry_no NUMERIC(20,0) CHECK(entry_no BETWEEN 1 AND 18446744073709551615),
  PRIMARY KEY(account_id,world_id,game_session_id,command_id),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE,
- CHECK((kind=5 AND result IN(1,3,4,5,6,7)) OR(kind IN(1,2,3,4) AND result IN(1,2,3,4))),
+ CHECK((kind=5 AND result IN(1,3,4,5,6,7)) OR(kind IN(1,2,3,4) AND result IN(1,2,3,4)) OR(kind=6 AND result IN(1,2,3))),
  CHECK((kind=5 AND result IN(1,6))=(entry_no IS NOT NULL)),
  CHECK((result=3 AND seconds IS NOT NULL AND seconds BETWEEN 1 AND 3) OR(result<>3 AND seconds IS NULL)));
 CREATE FUNCTION vip_fixture_receipt_immutable() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN
@@ -1954,6 +1954,617 @@ fn vip_add_native_pre_delivery_write_and_actual_latch_writer_serialize() -> Test
             VipAddResult::ListFull
         );
         assert_eq!(h.count("game_vip_entries").await?, 20);
+        Ok(())
+    })
+}
+
+// Remove fixtures append after the complete, unchanged original 25-test tail.
+// run_add enforces the real configured PG17.6 route even for these non-Premium commands.
+fn remove_request(number: u64, entry_no: u64) -> VipRemoveRequest {
+    VipRemoveRequest {
+        list: list(40),
+        command: withdraw(number).command,
+        entry_no,
+    }
+}
+async fn remove(h: &Harness, request: VipRemoveRequest) -> TestResult<VipReceipt> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .remove_vip_entry(&authority, &h.node, harness::item_fence()?, request)
+        .await
+        .map_err(|error| debug(error).into())
+}
+async fn remove_snapshot(h: &Harness) -> TestResult<(String, String)> {
+    // Complete retained rows, not just a count: includes accepted state, target view,
+    // list allocator/rate/revision, memberships and receipt bindings/timestamps.
+    let rows: String = sqlx::query_scalar("SELECT COALESCE(jsonb_agg(x ORDER BY x::text),'[]'::jsonb)::text FROM (SELECT jsonb_build_array('entry',to_jsonb(t)) x FROM game_vip_entries t UNION ALL SELECT jsonb_build_array('consent',to_jsonb(t)) FROM game_vip_consents t UNION ALL SELECT jsonb_build_array('list',to_jsonb(t)) FROM game_vip_lists t UNION ALL SELECT jsonb_build_array('member',to_jsonb(t)) FROM game_vip_group_members t UNION ALL SELECT jsonb_build_array('receipt',to_jsonb(t)) FROM game_vip_command_receipts t UNION ALL SELECT jsonb_build_array('view',to_jsonb(t)) FROM game_character_social_settings t) r")
+        .fetch_one(&h.pool).await?;
+    Ok((rows, h.root_revision().await?))
+}
+async fn own_entry_count(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT count(*) FROM game_vip_entries WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?)
+}
+
+#[test]
+fn vip_remove_native_account_cascade_retains_groups_other_entries_and_foreign_consent() -> TestResult
+{
+    run_add("viprmcascade", async |h| {
+        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        add_target_fixture(h, 60, 70).await?;
+        add_target_fixture(h, 61, 70).await?;
+        fixture_character(h, 62, 40).await?;
+        fixture_character(h, 63, 80).await?;
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        assert_eq!(
+            add(h, &gate, add_request(1, &fixture_name(60)))
+                .await?
+                .entry_no,
+            Some(1)
+        );
+        assert_eq!(
+            add(h, &gate, add_request(2, &fixture_name(61)))
+                .await?
+                .entry_no,
+            Some(2)
+        );
+        fixture_consent(h, 40, 62, 60, 2).await?;
+        fixture_consent(h, 80, 63, 60, 2).await?;
+        // Minimal UNINSTALLED catalogue DATA solely to prove the native entry FK cascades
+        // memberships, not retained custom definitions. No group command/admission claim.
+        h.pool.execute("CREATE TABLE game_vip_groups(account_id UUID NOT NULL,world_id UUID NOT NULL,group_no SMALLINT NOT NULL CHECK(group_no BETWEEN 4 AND 8),name TEXT NOT NULL CHECK(char_length(name) BETWEEN 1 AND 25),PRIMARY KEY(account_id,world_id,group_no),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE);CREATE UNIQUE INDEX vip_fixture_group_names ON game_vip_groups(account_id,world_id,lower(name))").await?;
+        sqlx::query("INSERT INTO game_vip_groups VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,4,'Test Friends')")
+            .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+        for seed in [60, 61] {
+            sqlx::query("INSERT INTO game_vip_group_members VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,4)")
+                .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).bind(id(seed).as_slice()).execute(&h.pool).await?;
+        }
+        let before_view = target_revision(h, 60).await?;
+        let other_view = target_revision(h, 61).await?;
+        let before_revision: String = sqlx::query_scalar(
+            "SELECT revision::text FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(40).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let accepted_before: i64 =
+            sqlx::query_scalar("SELECT count(*) FROM game_vip_consents WHERE consent=2")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(accepted_before, 2);
+        let committed = remove(h, remove_request(3, 1)).await?;
+        assert_eq!(committed.result, VipResult::Ok);
+        assert_eq!(committed.revision, before_revision.parse::<u64>()? + 1);
+        assert_eq!(target_revision(h, 60).await?, before_view + 1);
+        assert_eq!(target_revision(h, 61).await?, other_view);
+        assert_eq!(own_entry_count(h).await?, 1);
+        assert_eq!(h.count("game_vip_groups").await?, 1);
+        let retained_group: (i16, String) =
+            sqlx::query_as("SELECT group_no,name FROM game_vip_groups")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(retained_group, (4, "Test Friends".into()));
+        assert_eq!(h.count("game_vip_group_members").await?, 1);
+        let retained: Vec<(String, String, i16)> = sqlx::query_as("SELECT account_id::text,character_id::text,consent FROM game_vip_consents ORDER BY account_id,character_id").fetch_all(&h.pool).await?;
+        assert_eq!(retained.len(), 2);
+        assert_eq!(retained.iter().filter(|row| row.2 == 2).count(), 1);
+        let untouched_foreign: i64 = sqlx::query_scalar("SELECT count(*) FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND consent=2")
+            .bind(id(80).as_slice()).bind(id(60).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(untouched_foreign, 1);
+        let retained_member: String =
+            sqlx::query_scalar("SELECT character_id::text FROM game_vip_group_members")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(uuid_text(&retained_member).map_err(debug)?, id(61));
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_remove_native_zero_consent_expired_blocked_and_overcap_need_no_premium() -> TestResult {
+    run_add("viprmcaps", async |h| {
+        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        fixture_character(h, 60, 70).await?;
+        fixture_list(h, 40).await?;
+        sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
+            .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).bind(id(60).as_slice()).execute(&h.pool).await?;
+        let settings = h.count("game_character_social_settings").await?;
+        assert_eq!(remove(h, remove_request(1, 1)).await?.result, VipResult::Ok);
+        assert_eq!(h.count("game_character_social_settings").await?, settings);
+        fixture_character(h, 61, 70).await?;
+        fixture_consent(h, 40, CHARACTER, 61, 1).await?;
+        sqlx::query(
+            "UPDATE game_vip_consents SET invite_expires_at=clock_timestamp()-interval '1 day'",
+        )
+        .execute(&h.pool)
+        .await?;
+        // HIDDEN is visibility DATA, not a PARTY block. Install the actual independent
+        // PARTY block too, and prove Remove neither consults it nor deletes it.
+        sqlx::query("UPDATE game_character_social_settings SET vip_status=2 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(61).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_character_social_blocks VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+            .bind(id(61).as_slice()).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+        let before = target_revision(h, 61).await?;
+        assert_eq!(remove(h, remove_request(2, 1)).await?.result, VipResult::Ok);
+        assert_eq!(target_revision(h, 61).await?, before + 1);
+        assert_eq!(h.count("game_character_social_blocks").await?, 1);
+        assert_eq!(h.count("game_vip_consents").await?, 0);
+        for (index, seed) in (62..83).enumerate() {
+            seed_add_entry(h, seed, index as u64 + 2).await?;
+        }
+        assert_eq!(own_entry_count(h).await?, 21);
+        assert_eq!(remove(h, remove_request(3, 2)).await?.result, VipResult::Ok);
+        assert_eq!(own_entry_count(h).await?, 20);
+        assert_eq!(h.count("game_premium_activation_latch").await?, 0);
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_remove_native_unknown_rate_replay_and_never_reused_entry_identity() -> TestResult {
+    run_add("viprmreplay", async |h| {
+        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        add_target_fixture(h, 60, 70).await?;
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        let original = add(h, &gate, add_request(1, &fixture_name(60))).await?;
+        let old_invitation: i64 = sqlx::query_scalar("SELECT invitation_id FROM game_vip_consents")
+            .fetch_one(&h.pool)
+            .await?;
+        let removed = remove(
+            h,
+            remove_request(2, original.entry_no.ok_or("entry missing")?),
+        )
+        .await?;
+        let removed_state = remove_snapshot(h).await?;
+        let replay = remove(h, remove_request(2, 1)).await?;
+        assert!(replay.replayed);
+        assert_eq!(
+            (replay.result, replay.revision),
+            (removed.result, removed.revision)
+        );
+        let old_add = add(h, &gate, add_request(1, &fixture_name(60))).await?;
+        assert!(old_add.replayed);
+        assert_eq!(old_add.entry_no, original.entry_no);
+        assert_eq!(remove_snapshot(h).await?, removed_state);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    remove_request(2, 2)
+                )
+                .await,
+            Err(VipError::ConflictingCommand)
+        ));
+        assert!(matches!(
+            h.root
+                .end_vip_consent(&authority, &h.node, harness::item_fence()?, withdraw(2))
+                .await,
+            Err(VipError::ConflictingCommand)
+        ));
+        let fresh = add(h, &gate, add_request(3, &fixture_name(60))).await?;
+        assert!(fresh.entry_no > original.entry_no);
+        let new_invitation: i64 = sqlx::query_scalar("SELECT invitation_id FROM game_vip_consents")
+            .fetch_one(&h.pool)
+            .await?;
+        assert!(new_invitation > old_invitation);
+        for (command, entry) in [(4, 1), (5, 0), (6, u64::MAX)] {
+            assert_eq!(
+                remove(h, remove_request(command, entry)).await?.result,
+                VipResult::NotFound
+            );
+            assert_eq!(own_entry_count(h).await?, 1);
+        }
+        let view = target_revision(h, 60).await?;
+        sqlx::query("UPDATE game_vip_lists SET rate_tokens=0,rate_at=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint").execute(&h.pool).await?;
+        let exhausted = remove(
+            h,
+            remove_request(7, fresh.entry_no.ok_or("new entry missing")?),
+        )
+        .await?;
+        assert!(matches!(
+            exhausted.result,
+            VipResult::Exhausted { seconds: 1..=3 }
+        ));
+        assert_eq!(own_entry_count(h).await?, 1);
+        assert_eq!(target_revision(h, 60).await?, view);
+        let before = remove_snapshot(h).await?;
+        let replay = remove(
+            h,
+            remove_request(7, fresh.entry_no.ok_or("new entry missing")?),
+        )
+        .await?;
+        assert!(replay.replayed);
+        assert_eq!(replay.result, exhausted.result);
+        assert_eq!(remove_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_remove_native_missing_view_overflow_and_after_delete_fault_roll_back_all_rows() -> TestResult
+{
+    run_add("viprmrollback", async |h| {
+        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        fixture_character(h, 60, 70).await?;
+        fixture_consent(h, 40, CHARACTER, 60, 2).await?;
+        sqlx::query("INSERT INTO game_vip_group_members VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
+            .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).bind(id(60).as_slice()).execute(&h.pool).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        sqlx::query(
+            "DELETE FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(60).as_slice())
+        .execute(&h.pool)
+        .await?;
+        let before = remove_snapshot(h).await?;
+        assert!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    remove_request(1, 1)
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(remove_snapshot(h).await?, before);
+        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy,vip_consent_revision) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1',18446744073709551615)")
+            .bind(id(60).as_slice()).execute(&h.pool).await?;
+        let before = remove_snapshot(h).await?;
+        assert!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    remove_request(1, 1)
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(remove_snapshot(h).await?, before);
+        sqlx::query("UPDATE game_character_social_settings SET vip_consent_revision=1 WHERE character_id=encode($1,'hex')::uuid").bind(id(60).as_slice()).execute(&h.pool).await?;
+        h.pool.execute("CREATE FUNCTION vip_remove_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected after delete' USING ERRCODE='23514';END;$$;CREATE TRIGGER vip_remove_fault AFTER DELETE ON game_vip_entries FOR EACH ROW EXECUTE FUNCTION vip_remove_fault()").await?;
+        let before = remove_snapshot(h).await?;
+        assert!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    remove_request(1, 1)
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(remove_snapshot(h).await?, before);
+        h.pool.execute("DROP TRIGGER vip_remove_fault ON game_vip_entries;DROP FUNCTION vip_remove_fault()").await?;
+        assert_eq!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    remove_request(1, 1)
+                )
+                .await
+                .map_err(debug)?
+                .result,
+            VipResult::Ok
+        );
+        assert_eq!(target_revision(h, 60).await?, 2);
+        assert_eq!(h.count("game_vip_consents").await?, 0);
+        assert_eq!(h.count("game_vip_group_members").await?, 0);
+        assert_eq!(h.count("game_vip_command_receipts").await?, 1);
+        assert_eq!(h.root_revision().await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_remove_native_current_fences_assignment_revoke_and_recovery_before_replay() -> TestResult {
+    run_add("viprmfences", async |h| {
+        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        fixture_character(h, 60, 70).await?;
+        fixture_consent(h, 40, CHARACTER, 60, 1).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let before = remove_snapshot(h).await?;
+        for mutation in 0..8 {
+            let mut fence = harness::item_fence()?;
+            let mut request = remove_request(1, 1);
+            match mutation {
+                0 => fence.connection_generation = ConnectionGeneration::new(2)?,
+                1 => fence.character_lease_generation = 2,
+                2 => fence.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?,
+                3 => request.list.account_id = account(70),
+                4 => request.list.world_id = WorldId::from_bytes(id(90)).map_err(debug)?,
+                5 => {
+                    request.command =
+                        CommandRef::new(GameSessionId::decode(&id(51))?, CommandId::new(1)?)
+                }
+                6 => fence.game_session_id = GameSessionId::decode(&id(51))?,
+                _ => {
+                    fence.runtime_scope = RuntimeScopeRefV1::channel(
+                        crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        crate::foundation::ChannelId::decode(&id(90)).map_err(debug)?,
+                    )
+                }
+            }
+            assert!(matches!(
+                h.root
+                    .remove_vip_entry(&authority, &h.node, fence, request)
+                    .await,
+                Err(VipError::AuthorityRejected)
+            ));
+            assert_eq!(remove_snapshot(h).await?, before);
+        }
+        let wrong_node = harness::register(&h.root, 2).await?;
+        assert!(matches!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &wrong_node,
+                    harness::item_fence()?,
+                    remove_request(1, 1)
+                )
+                .await,
+            Err(VipError::AuthorityRejected)
+        ));
+        assert_eq!(remove_snapshot(h).await?, before);
+        // Actual existing entry in another Account cannot be selected by its entry number.
+        fixture_character(h, 61, 70).await?;
+        fixture_consent(h, 70, 61, 60, 1).await?;
+        let committed = remove(h, remove_request(1, 1)).await?;
+        assert_eq!(committed.result, VipResult::Ok);
+        assert_eq!(h.count("game_vip_entries").await?, 1);
+        assert_eq!(
+            remove(h, remove_request(2, 1)).await?.result,
+            VipResult::NotFound
+        );
+        // Keep an independently stored, actually removable own entry present across
+        // current assignment loss; historical receipt must not erase this replacement.
+        sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,2)")
+            .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).bind(id(60).as_slice()).execute(&h.pool).await?;
+        sqlx::query("UPDATE game_vip_lists SET next_entry_no=3 WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+            .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+        let after = remove_snapshot(h).await?;
+        use crate::durability::runtime_scope_assignment::{
+            AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        };
+        let scope = harness::item_fence()?.runtime_scope;
+        let predecessor = h
+            .root
+            .read_runtime_scope_predecessor(scope)
+            .await
+            .map_err(debug)?
+            .ok_or("current predecessor missing")?;
+        let role: String = sqlx::query_scalar("SELECT session_user")
+            .fetch_one(&h.pool)
+            .await?;
+        let revoked = h
+            .writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([89; 32]),
+                actor: ControlActor::new(&role).map_err(debug)?,
+                command: AssignmentCommand::Revoke { scope, predecessor },
+            })
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(revoked, AssignmentOutcome::Committed(_)),
+            "revoke={revoked:?}"
+        );
+        assert!(matches!(
+            h.root
+                .remove_vip_entry(
+                    &authority,
+                    &h.node,
+                    harness::item_fence()?,
+                    remove_request(3, 2)
+                )
+                .await,
+            Err(VipError::AuthorityRejected)
+        ));
+        assert_eq!(remove_snapshot(h).await?, after);
+        let historical = h
+            .root
+            .remove_vip_entry(
+                &authority,
+                &h.node,
+                harness::item_fence()?,
+                remove_request(1, 1),
+            )
+            .await
+            .map_err(debug)?;
+        assert!(historical.replayed);
+        assert_eq!(
+            (historical.result, historical.revision),
+            (committed.result, committed.revision)
+        );
+        let mut wrong_recovery = authority.record_for(&h.root).map_err(debug)?;
+        wrong_recovery.recovery_generation += 1;
+        let mut tx = h.pool.begin().await?;
+        assert!(matches!(
+            end_in_transaction(
+                &mut tx,
+                &wrong_recovery,
+                &h.node,
+                harness::item_fence()?,
+                request(1, VipEndOperation::Remove { entry_no: 1 })
+            )
+            .await,
+            Err(VipError::Unavailable(_))
+        ));
+        tx.rollback().await?;
+        assert_eq!(remove_snapshot(h).await?, after);
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_remove_native_two_root_duplicate_distinct_and_add_remove_serialization() -> TestResult {
+    run_add("viprmraces", async |h| {
+        eprintln!("VIP-REMOVE-PG server_version_num=170006");
+        add_target_fixture(h, 60, 70).await?;
+        let gate = add_gate(
+            h,
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            false,
+        );
+        add(h, &gate, add_request(1, &fixture_name(60))).await?;
+        let second = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(second.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        // Provision real recovery sequentially before racing the two ready native Roots.
+        let first_authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let second_authority = second
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let (a, b) = both(
+            h.root.remove_vip_entry(
+                &first_authority,
+                &h.node,
+                harness::item_fence()?,
+                remove_request(2, 1),
+            ),
+            second.remove_vip_entry(
+                &second_authority,
+                &h.node,
+                harness::item_fence()?,
+                remove_request(2, 1),
+            ),
+        )
+        .await;
+        let results = [a.map_err(debug)?, b.map_err(debug)?];
+        assert!(results.iter().all(|r| r.result == VipResult::Ok));
+        assert_eq!(results.iter().filter(|r| r.replayed).count(), 1);
+        assert_eq!(h.count("game_vip_command_receipts").await?, 2);
+        assert_eq!(target_revision(h, 60).await?, 2);
+        let fresh = add(h, &gate, add_request(3, &fixture_name(60)))
+            .await?
+            .entry_no
+            .ok_or("fresh entry missing")?;
+        let view = target_revision(h, 60).await?;
+        let (a, b) = both(
+            h.root.remove_vip_entry(
+                &first_authority,
+                &h.node,
+                harness::item_fence()?,
+                remove_request(4, fresh),
+            ),
+            second.remove_vip_entry(
+                &second_authority,
+                &h.node,
+                harness::item_fence()?,
+                remove_request(5, fresh),
+            ),
+        )
+        .await;
+        let results = [a.map_err(debug)?, b.map_err(debug)?];
+        assert_eq!(
+            results.iter().filter(|r| r.result == VipResult::Ok).count(),
+            1
+        );
+        assert_eq!(
+            results
+                .iter()
+                .filter(|r| r.result == VipResult::NotFound)
+                .count(),
+            1
+        );
+        assert!(results.iter().all(|r| !r.replayed));
+        assert_eq!(target_revision(h, 60).await?, view + 1);
+        let entry = add(h, &gate, add_request(6, &fixture_name(60)))
+            .await?
+            .entry_no
+            .ok_or("race entry missing")?;
+        let view = target_revision(h, 60).await?;
+        let second_gate = SpellPremiumCoordinator::new(
+            Arc::new(PremiumConsumer::default()),
+            Some(add_clock()),
+            None,
+            Some(second.clone()),
+        );
+        let (removed, added) = both(
+            h.root.remove_vip_entry(
+                &first_authority,
+                &h.node,
+                harness::item_fence()?,
+                remove_request(7, entry),
+            ),
+            second.add_vip(
+                &second_authority,
+                &h.node,
+                harness::item_fence()?,
+                &second_gate,
+                add_request(8, &fixture_name(60)),
+            ),
+        )
+        .await;
+        let removed = removed.map_err(debug)?;
+        let added = added.map_err(debug)?;
+        assert_eq!(removed.result, VipResult::Ok);
+        match added.result {
+            VipAddResult::Ok => {
+                assert!(added.entry_no.is_some_and(|new| new > entry));
+                assert_eq!(own_entry_count(h).await?, 1);
+                assert_eq!(h.count("game_vip_consents").await?, 1);
+                assert_eq!(target_revision(h, 60).await?, view + 2);
+            }
+            VipAddResult::AlreadyListed => {
+                assert_eq!(added.entry_no, Some(entry));
+                assert_eq!(own_entry_count(h).await?, 0);
+                assert_eq!(h.count("game_vip_consents").await?, 0);
+                assert_eq!(target_revision(h, 60).await?, view + 1);
+            }
+            other => return Err(format!("unexpected serialized Add: {other:?}").into()),
+        }
+        assert_eq!(h.count("game_vip_command_receipts").await?, 8);
+        assert_eq!(h.root_revision().await?, "1");
+        // Native admission-relation locks serialize these real semantic transactions;
+        // this is not a claim of isolated list-row contention or production load testing.
         Ok(())
     })
 }
