@@ -1,10 +1,10 @@
-# HOUSE-RUNTIME-1c — house position persistence (skeleton task record)
+# HOUSE-RUNTIME-1c — house position persistence
 
 ```yaml
 task_id: HOUSE-RUNTIME-1c
 title: "HOUSE-RUNTIME-1c: house position persistence"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -21,6 +21,37 @@ needs_registry: false
 needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+## 2026-10-16 D1122 checkpoint — NOT_FULLY_QUALIFIED
+
+The product storage component remains byte-identical to the existing draft head
+`2d344f427eccbda584475c01917bad2eded5f271`. Source successor
+`a5485e3359d94d2ec850d7f6ec2982300b13ecd4` repairs all four original PG entry points:
+missing/non-Unicode database configuration returns an error, never a skipped PASS.
+The four repaired cases have not been compiled or executed on this generation.
+Historical native/compiler/PG results later in this card retain their historical
+source scope; they do not qualify the changed test source or integrated runtime.
+
+| Check | Current-source disposition |
+|---|---|
+| Independent focused source review | PASS; only four missing-configuration refusal branches changed; existing PG17.6 and isolated-database guards retained. |
+| Changed Rust formatting and complete delta whitespace | PASS, official Rust1.94, edition2024, skip_children; exact receipt `/workspace/house-family-handoff/checkpoint-publication-policy/2166-exact-fmt.json`. |
+| Current-source native compile/Clippy, LIST and all four PG cases | NOT_RUN. |
+| Production single/batch/upsert/respawn/terminal callers, placement/rebind and ADMIT integration | NOT_RUN / incomplete. |
+
+[CP D1168](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225337534)
+assigns #2166 the actual single/batch/upsert callers in
+`durability/character_last_position.rs`, respawn in
+`foundation/runtime_actor_death.rs` and terminal release after #2187. Both House
+columns must clear in the same native upsert as cell and vitals. These callers
+are not implemented by this checkpoint. The migration number has been requested
+in #2131; the existing owned schema fragment remains uninstalled. Loader and
+placement/rebind belong to #2163/#2165. Shared hunks retain the CP merge order;
+no merge/rebase is performed under the current owner instruction.
+
+D1122 permits this one coherent checkpoint before full qualification. The draft
+remains NOT_FULLY_QUALIFIED; no ready action, review trigger or manual CI restart.
+All original acceptance items remain open. Required full checks are still pending.
 
 ## Goal
 
