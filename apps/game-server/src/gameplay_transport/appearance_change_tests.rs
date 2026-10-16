@@ -6,7 +6,9 @@ use oteryn_protocol_oteryn::world_spatial::{ActorPosition, StepDirection};
 use oteryn_protocol_oteryn::world_spatial_entities::{
     WorldSpatialEntity, decode_world_spatial_entities_delta,
 };
-use oteryn_protocol_oteryn::{decode_framed_envelope, decode_state_delta};
+use oteryn_protocol_oteryn::{
+    FrameLength, decode_framed_envelope, decode_state_delta, decode_wire_envelope,
+};
 
 fn context() -> wire::Context {
     wire::Context {
@@ -92,12 +94,26 @@ fn stationary_update_is_preceded_by_its_mapping_in_native_envelope_order() {
     assert_eq!(update.last_sequence, 42);
     assert_eq!(update.visibility_revision, 7);
     let frames = update.into_frames();
-    let first = decode_framed_envelope(&frames[0]).expect("valid fixture or native operation");
-    let second = decode_framed_envelope(&frames[1]).expect("valid fixture or native operation");
+    // encode_state_delta returns an envelope body; native tcp_tls::write_frame adds the
+    // Foundation length prefix. Decode at that boundary, and verify both framing shapes.
+    for body in &frames {
+        let length = FrameLength::new(u32::try_from(body.len()).expect("frame fits u32"))
+            .expect("native frame bound");
+        let mut framed = length.to_prefix().to_vec();
+        framed.extend_from_slice(body);
+        assert_eq!(
+            decode_framed_envelope(&framed).expect("length-prefixed envelope"),
+            decode_wire_envelope(body).expect("envelope body")
+        );
+    }
+    let first = decode_wire_envelope(&frames[0]).expect("valid fixture or native operation");
+    let second = decode_wire_envelope(&frames[1]).expect("valid fixture or native operation");
     let map = decode_state_delta(first.payload()).expect("valid fixture or native operation");
     let spatial = decode_state_delta(second.payload()).expect("valid fixture or native operation");
     assert_eq!(first.connection_generation(), 7);
     assert_eq!(second.connection_generation(), 7);
+    assert_eq!(first.server_sequence(), 41);
+    assert_eq!(second.server_sequence(), 42);
     assert_eq!(map.domain_id, 21);
     assert_eq!(spatial.domain_id, 1);
     let mappings = wire::decode_mappings(map.payload).expect("valid fixture or native operation");
