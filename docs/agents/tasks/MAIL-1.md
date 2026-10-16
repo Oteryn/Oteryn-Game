@@ -4,7 +4,7 @@
 task_id: MAIL-1
 title: "MAIL-1: mail and parcels"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -458,3 +458,17 @@ new freeze, independent review, real native validation and eventual publication;
 this author made no commit/push. Activation still requires admitted Content,
 real offered-trade serialization, numbered migration/grants/cleanup and actual
 transport composition. Full MAIL/WRITE acceptance remains open.
+
+### CP D1160/D1122: publish actual MAIL registration (2026-10-16)
+
+Status NOT_FULLY_QUALIFIED. CP comment6224912485 identifies GitHub CI E0432 for
+`domain::mail`/`durability::item_text` and grants minimal module registrations without
+a shared slot. Add only `pub mod mail;` in domain/mod.rs and `pub(crate) mod item_text;`
+plus `pub mod mail;` in durability/mod.rs; content::mail_text_policy is already registered.
+Both shared files now exactly match the previously tested private mount SHA256 values
+(023d18b7...f8fe62 and9d29956e...9f0f8d), checked in D1160-MAIL-SOURCE-BRIDGE.json.
+The effective source bytes retain prior c8ade87f native18/full-package PASS; this does
+not relabel that run as exact-new-head CI. New-head Cargo/PG/CI: NOT_RUN before checkpoint;
+published predecessor CI: RED (E0432). Rustfmt/diff checks required before the one existing
+DRAFT push under D1122. No new runner, test suppression, visibility shim or production
+activation. Content/trade/migration/transport activation gates remain assigned to CP.
