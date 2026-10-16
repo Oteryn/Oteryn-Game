@@ -420,6 +420,18 @@ fn ambiguous_entries_bad_capacity_and_invalid_repair_items_are_refused() {
 }
 
 #[test]
+fn only_direct_backpack_entries_are_bounded_not_total_snapshot_records() {
+    let mut f = Fixture::new();
+    for tag in 10..29 {
+        let mut nested = entry(tag, u64::from(tag) + 100, definition("fixture:other"));
+        nested.parent = Some(id(7));
+        f.entries.push(nested);
+    }
+    assert!(f.entries.len() > 20);
+    assert!(f.coin_only().is_ok());
+}
+
+#[test]
 fn continuous_exhausted_and_same_definition_targets_are_not_repair_plans() {
     for mutation in 0..3 {
         let mut f = Fixture::new();

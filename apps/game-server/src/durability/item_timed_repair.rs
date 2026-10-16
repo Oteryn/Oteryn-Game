@@ -159,8 +159,7 @@ pub(crate) fn plan_soft_boots_repair(
         .and_then(|value| usize::try_from(value).ok())
         .filter(|value| (1..=BACKPACK_ENTRIES_MAX).contains(value))
         .ok_or(RepairPlanError::InvalidSnapshot)?;
-    if snapshot.entries.len() > BACKPACK_ENTRIES_MAX
-        || snapshot.from == &snapshot.target.definition
+    if snapshot.from == &snapshot.target.definition
         || (snapshot.from.family == COIN_DEFINITION_FAMILY
             && Coin::from_production_key(&snapshot.from.production_key).is_some())
         || snapshot.target.lit_continuous
