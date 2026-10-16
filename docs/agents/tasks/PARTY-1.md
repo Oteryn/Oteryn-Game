@@ -538,3 +538,34 @@ other files, wire/register modules, allocate shared slots, mark ready, merge or
 operate production. Full PARTY runtime/CHAT/cleanup and other integration gates
 remain as recorded above. The lead retains commit/push authority; the worker makes
 no commit or push.
+
+
+### Current b801 native qualification — 2026-10-16
+
+Actual #2201 `b8017162ce09bfd1a56f4c6f4e29f22efca13f2b` changes the cache's
+`remove_local` nested condition to the same edition2024 let-chain; no behavior or
+World/settings source changes. View SHA256 is
+`f01aac5014e732254074b811bd9656a25dbbd7ee5478697f23f294439c04ab30`.
+The lead's new whole-crate native composition executes **18 cache/view bodies and
+13 actual World bodies, all PASS**, each once with0 failed/0 ignored. PostgreSQL
+qualification uses configured17.6 (`server_version_num=170006`). Independent
+`D1102-execution-review.md` verifies exact invocations and archived compiler inputs:
+
+- ELF SHA256: `889ab44ebd5c27b203d921940ced69ed7cb25aa01c15b92a2d5218c84bdc1dd1`.
+- Source archive SHA256: `b67d061700bf01e7620a54eaf7355d23a1b249cfc92e86df865ac4993b4d17d7`.
+
+The compiled World/foundation equal actual2201d2f provider bytes, unchanged in b801:
+World SHA256 `99d3c9eaf8843cc7897e9c2ab32ab62c59ba893ff249db58d95a2b38413c65a0`,
+foundation SHA256 `eb8ca50bfc4f181987e859c1d1857285ef15386418469f5990b67e774929f039`.
+The private World test input additionally carries the outside D1102 consumer patch
+`826c05c129faa2fb6286d91a2ab7d2614cfc8643e329812785e3563ec0fb86e5` and CP
+registration; it is not a canonical2201 test edit or production integration.
+
+Earlier49-body World/settings/cache proof remains bound to its own exact generation
+and unchanged World/settings bytes. Its earlier48PASS/1RED default-fixture outcome
+is preserved as history, followed by the explicit ROOT-HELP-D-PARTY-20261016 fixture
+correction recorded above. **This new execution is18+13, not a new49-body claim.**
+Strict native unit Clippy remains a separate lead qualification. Shared runtime/wire/
+CHAT/cleanup and accepted whole-feature gates remain open; no readiness, complete
+PARTY-1 or production claim follows from these component results. This sequential
+docs-only update changes no Rust, tests, ownership or integration authorization.
