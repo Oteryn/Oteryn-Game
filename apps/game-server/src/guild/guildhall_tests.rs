@@ -225,14 +225,14 @@ fn assert_guild_owner_source() {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>(),
-        "5ae70c7540915ef2368cab887fcaf0a66b0123f71535bb82bc8e71f750cbb3a1"
+        "6d91fc5e5dbe597c72633f46dc328f30525a17498be1acbeabcc75829247343e"
     );
     assert_eq!(
         sha2::Sha256::digest(GUILD_GUARDS_PROPOSAL.as_bytes())
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>(),
-        "1c74f22edc18db2d54b39330038b2c61a5b2cb1d90aab71965c26d08a8dd4a2e"
+        "343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a"
     );
 }
 fn owner_id(kind: u8) -> [u8; 16] {
@@ -366,6 +366,11 @@ async fn install(h: &Harness) -> TestResult {
         .bind(id(40).as_slice()).bind(guild().as_bytes().as_slice()).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
     historical_successor(h).await?;
     h.pool.execute(sqlx::raw_sql(GUILD_GUARDS_PROPOSAL)).await?;
+    // New genuine owner guards read their terminal journal on every Guild mutation.
+    // Qualification read access preserves those guards and applies to inherited bodies too.
+    h.pool
+        .execute("GRANT SELECT ON game_guild_disband_steps TO oteryn_game_runtime")
+        .await?;
     sqlx::query("INSERT INTO game_house_properties(world_id,house_key,revision,acl_revision,state) VALUES(encode($1,'hex')::uuid,$2,1,0,'AUCTION')").bind(id(WORLD).as_slice()).bind("oteryn:content.house.fixture_hall").execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_house_auctions VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'GUILDHALL',10,0,clock_timestamp()+interval '1 day','OPEN')").bind(id(91).as_slice()).bind(id(WORLD).as_slice()).bind("oteryn:content.house.fixture_hall").execute(&h.pool).await?;
     Ok(())
@@ -697,6 +702,239 @@ fn native_real_guild_disband_start_closes_hall_bid_admission_without_fake_termin
                 .await?;
             assert_eq!(state, 3);
             assert_eq!(h.count("game_guild_members").await?, 2); // real pending start, not closure evidence.
+            Ok(())
+        }
+        .await;
+        let cleanup = h.cleanup().await;
+        result?;
+        cleanup
+    })
+}
+
+// D1098 qualification uses the actual Guild owner's capability factory. These fixture-only
+// grants permit locks/reads under runtime; no Guild writer/guard or C authority is replaced.
+async fn disband_fixture_access(h: &Harness) -> TestResult {
+    h.pool.execute(sqlx::raw_sql("GRANT SELECT ON game_guilds,game_guild_members,game_guild_invitations,game_account_guild_leadership,game_guild_job_checkpoints,game_guild_disband_steps TO oteryn_game_runtime; GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime; GRANT UPDATE(character_id) ON game_guild_members,game_guild_invitations TO oteryn_game_runtime; GRANT UPDATE(account_id) ON game_account_guild_leadership TO oteryn_game_runtime;")).await?;
+    Ok(())
+}
+fn disband_job(n: u8) -> TestResult<crate::durability::guild::GuildDisbandJobRequest> {
+    Ok(crate::durability::guild::GuildDisbandJobRequest {
+        world_id: crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+        guild_id: crate::domain::guild::GuildId::from_bytes(*guild().as_bytes()).map_err(debug)?,
+        hall_identity: step(n, Some(1), None)?.identity,
+        bank_identity: bank_identity(n + 1),
+    })
+}
+async fn start_disband(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    actor: CurrentCharacterItemFence,
+    n: u8,
+) -> TestResult {
+    let request = GuildDisbandRequest::new(
+        owner_request(n, actor, GuildCommand::Disband)?,
+        "Guildhall Fixture",
+    )
+    .map_err(debug)?;
+    let result = h
+        .root
+        .commit_guild_disband(authority, &h.node, actor, request)
+        .await
+        .map_err(debug)?;
+    assert!(matches!(result,GuildOutcome::Committed(receipt) if receipt.result==GuildResult::Ok));
+    Ok(())
+}
+
+#[test]
+fn native_disband_bid_refund_real_guild_capability_rollback_replay_and_original_sources()
+-> TestResult {
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin,"hall_disband_refund").await?;
+        let result: TestResult = async {
+            install(&h).await?;
+            disband_fixture_access(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            funded(&h,&a).await?;
+            h.root.guildhall_escrow_financial_step(&a,&h.node,Some(fence()?),step(160,None,Some(70))?).await.map_err(debug)?;
+            resign(&h,&a,fence()?,95,1,161).await?;
+            start_disband(&h,&a,successor_fence()?,162).await?;
+            let job = disband_job(163)?;
+            let before = footprint(&h).await?;
+            // A rollback includes both actual ledger writers and custody, with no minted grant.
+            let mut tx = h.pool.begin().await?;
+            tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&h.node,&job).await.map_err(debug)?.ok_or("real disband context")?;
+            assert_eq!(advance_guild_disband_release_in_transaction(&mut tx,&context).await.map_err(debug)?,GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition);
+            assert!(matches!(assert_guild_disband_released_in_transaction(&mut tx,&context).await,Err(GuildhallEscrowError::HouseDispositionUnavailable)));
+            tx.rollback().await?;
+            assert_eq!(footprint(&h).await?,before);
+            // A capability from the rolled-back transaction cannot authorize a new physical TX.
+            let mut tx = h.pool.begin().await?;
+            assert!(matches!(advance_guild_disband_release_in_transaction(&mut tx,&context).await,Err(GuildhallEscrowError::NotCurrent)));
+            tx.rollback().await?;
+            assert_eq!(footprint(&h).await?,before);
+            let mut tx = h.pool.begin().await?;
+            tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&h.node,&job).await.map_err(debug)?.ok_or("fresh disband context")?;
+            assert_eq!(advance_guild_disband_release_in_transaction(&mut tx,&context).await.map_err(debug)?,GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition);
+            tx.commit().await?;
+            assert_eq!(conserved_gold(&h).await?,100);
+            let account: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid").bind(id(40).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(account,40); // Refund original leader's Account, not the new leader.
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT balance FROM game_guild_bank_balances").fetch_one(&h.pool).await?,60);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_guildhall_bids WHERE state='HELD'").fetch_one(&h.pool).await?,0);
+            // No fabricated RELEASING fixture context was required to refund owned custody.
+            assert_eq!(sqlx::query_scalar::<_,String>("SELECT phase FROM game_house_auctions").fetch_one(&h.pool).await?,"OPEN");
+            let released = footprint(&h).await?;
+            let mut tx = h.pool.begin().await?;
+            tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&h.node,&job).await.map_err(debug)?.ok_or("replay context")?;
+            assert_eq!(advance_guild_disband_release_in_transaction(&mut tx,&context).await.map_err(debug)?,GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition);
+            tx.commit().await?;
+            assert_eq!(footprint(&h).await?,released);
+            let mut conflicting = job.clone(); conflicting.hall_identity.transaction_id = id(169);
+            let mut tx = h.pool.begin().await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&h.node,&conflicting).await.map_err(debug)?.ok_or("conflict context")?;
+            assert!(matches!(advance_guild_disband_release_in_transaction(&mut tx,&context).await,Err(GuildhallEscrowError::ConflictingOccurrence)));
+            tx.rollback().await?;
+            assert_eq!(footprint(&h).await?,released);
+            // Even no HELD and fixture AUCTION/VACANT are not genuine C closure authority.
+            let mut tx = h.pool.begin().await?;
+            let denied = sqlx::query("SELECT game_guildhall_assert_disband_released(encode($1,'hex')::uuid,encode($2,'hex')::uuid)").bind(guild().as_bytes().as_slice()).bind(id(WORLD).as_slice()).execute(&mut *tx).await.expect_err("no C final-release binding");
+            assert_eq!(denied.as_database_error().and_then(|e|e.code()).as_deref(),Some("0A000"));
+            tx.rollback().await?;
+            assert_eq!(sqlx::query_scalar::<_,i16>("SELECT state FROM game_guilds").fetch_one(&h.pool).await?,3);
+            assert_eq!(h.count("game_guild_members").await?,2);
+            Ok(())
+        }.await;
+        let cleanup = h.cleanup().await; result?; cleanup
+    })
+}
+
+#[test]
+fn native_disband_bid_release_rejects_wrong_node_and_revoked_real_world_assignment() -> TestResult {
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin,"hall_disband_authority").await?;
+        let result: TestResult = async {
+            install(&h).await?; disband_fixture_access(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            funded(&h,&a).await?;
+            h.root.guildhall_escrow_financial_step(&a,&h.node,Some(fence()?),step(170,None,Some(70))?).await.map_err(debug)?;
+            start_disband(&h,&a,fence()?,171).await?;
+            let job = disband_job(172)?;
+            let before = footprint(&h).await?;
+            let wrong = NodeIncarnationProof::new(h.node.fact(),crate::durability::runtime_scope_assignment::BootstrapSecret::from_bytes([99;32]));
+            let mut tx = h.pool.begin().await?;
+            assert!(matches!(crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&wrong,&job).await,Err(crate::durability::guild::GuildError::NotCurrent)));
+            tx.rollback().await?;
+            assert_eq!(footprint(&h).await?,before);
+            let mut tx = h.pool.begin().await?;
+            tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&h.node,&job).await.map_err(debug)?.ok_or("current release context")?;
+            assert_eq!(advance_guild_disband_release_in_transaction(&mut tx,&context).await.map_err(debug)?,GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition);
+            tx.commit().await?;
+            let released = footprint(&h).await?;
+            use crate::durability::runtime_scope_assignment::{RuntimeScopeAssignmentWriter,AssignmentRequest,AssignmentCommand,AssignmentPredecessor,OperationKey,ControlActor,AssignmentOutcome};
+            let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(),"item-transfer-writer").await.map_err(debug)?;
+            sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,3)").bind(id(WORLD).as_slice()).bind(id(fixture::CHANNEL).as_slice()).execute(&h.pool).await?;
+            let revoked = writer.submit(&AssignmentRequest{operation_key:OperationKey::from_bytes([45;32]),actor:ControlActor::new("oteryn_test_admin").map_err(debug)?,command:AssignmentCommand::Revoke{scope:fixture::scope()?,predecessor:AssignmentPredecessor{ownership_generation:1,source_revision:1,runtime_guard_publication_revision:Some(1)}}}).await.map_err(debug)?;
+            assert!(matches!(revoked,AssignmentOutcome::Committed(_)));
+            let mut tx = h.pool.begin().await?;
+            assert!(matches!(crate::durability::guild::lock_guild_disband_transaction(&mut tx,&h.root,&a,&h.node,&job).await,Err(crate::durability::guild::GuildError::NotCurrent)));
+            tx.rollback().await?;
+            // Immutable release receipt does not recreate current World-job authority.
+            assert_eq!(footprint(&h).await?,released);
+            assert_eq!(conserved_gold(&h).await?,100);
+            Ok(())
+        }.await;
+        let cleanup = h.cleanup().await; result?; cleanup
+    })
+}
+
+#[test]
+fn native_disband_zero_custody_bid_terminalizes_without_ledger_and_no_bid_never_proves_house_release()
+-> TestResult {
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "hall_disband_zero").await?;
+        let result: TestResult = async {
+            install(&h).await?;
+            disband_fixture_access(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            funded(&h, &a).await?;
+            h.pool
+                .execute("UPDATE game_house_auctions SET rent_gold=0")
+                .await?;
+            h.root
+                .guildhall_escrow_financial_step(
+                    &a,
+                    &h.node,
+                    Some(fence()?),
+                    step(180, None, Some(1))?,
+                )
+                .await
+                .map_err(debug)?;
+            h.root
+                .guildhall_escrow_financial_step(
+                    &a,
+                    &h.node,
+                    Some(fence()?),
+                    step(181, Some(1), Some(0))?,
+                )
+                .await
+                .map_err(debug)?;
+            start_disband(&h, &a, fence()?, 182).await?;
+            let before = footprint(&h).await?;
+            let job = disband_job(183)?;
+            let mut tx = h.pool.begin().await?;
+            tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(
+                &mut tx, &h.root, &a, &h.node, &job,
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("zero held context")?;
+            assert_eq!(
+                advance_guild_disband_release_in_transaction(&mut tx, &context)
+                    .await
+                    .map_err(debug)?,
+                GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition
+            );
+            tx.commit().await?;
+            let after = footprint(&h).await?;
+            assert_eq!(after[0], before[0] + 1);
+            assert_eq!(&after[1..], &before[1..]);
+            let no_bid_job = disband_job(185)?;
+            let mut tx = h.pool.begin().await?;
+            tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+            let context = crate::durability::guild::lock_guild_disband_transaction(
+                &mut tx,
+                &h.root,
+                &a,
+                &h.node,
+                &no_bid_job,
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("no held context")?;
+            assert_eq!(
+                advance_guild_disband_release_in_transaction(&mut tx, &context)
+                    .await
+                    .map_err(debug)?,
+                GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition
+            );
+            tx.commit().await?;
+            assert_eq!(footprint(&h).await?, after);
+            assert_eq!(conserved_gold(&h).await?, 100);
             Ok(())
         }
         .await;

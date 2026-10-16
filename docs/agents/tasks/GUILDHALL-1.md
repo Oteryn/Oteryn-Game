@@ -313,9 +313,9 @@ Guild gold, then refuses a raise needing any extra Account escrow. It checks no
 write on repeated refusal, immutable original funding Account/Character, Account-
 first lowering, same-source release/replay and total100 gold after every stage.
 No financial production behavior changed. Accepted GUILD0 §6.2 fixes refund
-sources but leaves extra Account funding after leader change unresolved; this
-pins the existing safe refusal while CP/architect chooses the eventual policy.
-No new choice to charge the old/new Account or rewrite the funding binding is made.
+sources. CP D1100 (comment6219643346) subsequently accepted this V1 refusal of
+extra Account funding after leader change; the prior policy hold is closed.
+Refunds remain bound to the original contributors.
 
 Current source has eight component bodies (three pure/five PostgreSQL), pending
 actual ordinary native qualification by the lead's shared cloud slot. Owned
@@ -339,3 +339,71 @@ The lead owns the sibling Bank repair and next ordinary native compile. Full RED
 output is retained in the outside-repo `family-native-compile.log`; this failure
 is not relabeled as successful execution. Owned rustfmt/diff checks pass again;
 combined native runtime and strict Clippy remain pending this repaired generation.
+
+
+### 2026-10-16 — D1098 real bid release participant; D1100 policy accepted
+
+Returned to AUTHORING from `b5be57864d6d1d0586ee260360b2040cef82daa1`
+after the lead's fresh open-draft/local-clean preflight. Exactly the allocated
+Hall durability source, existing Hall tests and this record are edited. No
+shared registration, numbered migration, Cargo command, commit or push is made.
+
+The Guild owner alone creates `GuildDisbandTransaction` after Root-bound recovery,
+current native node/World assignment, occurrence locks, locked DISBANDING Guild
+and genuine start checkpoint checks. Hall seals its own occurrence lock and
+physical `pg_current_xact_id` before the Guild lock. Every release/replay boundary
+rechecks the real current Guild capability and physical transaction. Its stable
+operation digest binds Guild, World and all fixed financial identities; identity
+substitution conflicts with the retained receipt. One HELD bid/Guild bounds each
+pass to one actual refund. The bid's immutable original Account/Character remains
+the source; Guild balance then original Account balance locks follow the bid.
+The same transaction writes the conserved custody operation, RELEASED successor
+and genuine Bank participant ledgers. No fixture auction phase/property row
+is interpreted as authority, and no Character/session lock is added to the job.
+Empty HELD custody terminalizes without manufactured zero-value ledger entries.
+
+`WaitingForHouseDisposition` is explicit after real bid progress. No own HELD is
+only a financial predicate. The closure assertion returns typed
+`HouseDispositionUnavailable`; it cannot authorize Bank payout, cleanup or state4.
+The private UNINSTALLED `game_guildhall_assert_disband_released(UUID,UUID)` rejects
+remaining HELD/bad Guild World binding and fails closed with SQLSTATE0A000 while
+true C final release is missing. This SQL exception is used at terminal guard
+boundaries, never caught inside the refund transaction (which would abort real
+progress). The minimal private runtime EXECUTE grant is not installation proof.
+
+Exact C reference: HOUSE-1a#2137@e467fb5f0274ed0a8212e8fcedefd0671fbed215
+contains pure auction logic; HOUSE-1b#2141@37c1879f3e431e5b23a64700bd3285d2bc01c1cd
+contains native bounded100 Inbox item steps and independently checked current
+World jobs. `DispositionView.drained` explicitly retains ownership, fence and
+slot; its current owner port uses Character ownership. Still required is the
+genuine C Guild GUILD_DISBAND disposition initiation and final Guild property,
+slot/fence release proof in this same current physical transaction. No surrogate
+C tables, drained-to-Released conversion or caller boolean is introduced.
+
+Three appended native cases retain the original eight test bodies literally.
+They exercise actual Guild Resign/Disband and the production capability factory:
+original-source split refund, rollback of both ledgers/custody, committed replay,
+conflicting identity, cross-transaction capability refusal; wrong node secret
+and actual World assignment revoke after a committed refund block receipt replay;
+empty custody and no remaining bid both wait for genuine House disposition.
+The terminal SQL prerequisite rejection, conservation and pending Guild/member
+state are asserted. Fixture-only read/row-lock privileges name actual Guild-owner
+tables and preserve all genuine owner guards. These new tests are SOURCE-only
+until the lead executes the actual native frozen successor. Prior eight-body
+native PASS evidence remains historical, not qualification of this generation.
+
+Remaining full-scope gates: genuine C auction/admission/settlement and Guild
+property/Inbox final release; rent/grace/burn and eviction/ban; rank-derived ACL;
+accepted admitted audit/event binding; shared schema/registry/wiring/scheduler
+slots, exact-head independent review, native qualification and final CP readiness.
+D1100 has no remaining policy question. Recheck the C closure prerequisite only
+when its real owner supplies an accepted source and transaction-bound API; then
+bind it in both Rust closure checks and the deferred SQL terminal predicate and
+qualify genuine release-before-payout end to end. Current status remains PARTIAL.
+
+The stable genuine Guild successor literal provenance is now pinned in the fixture:
+GUILD_TABLES_PROPOSAL SHA256 `6d91fc5e5dbe597c72633f46dc328f30525a17498be1acbeabcc75829247343e`,
+GUILD_GUARDS_PROPOSAL SHA256 `343728dac2958c6229532edc98f560f747e98aae1ad445dba349a65345104d9a`.
+Lead's early combined actual native `--lib` source check passed. New eleven-body
+runtime/strict Clippy qualification remains pending; no prior runtime result is
+reused as evidence for this increment. Local governance and124 unit tests pass.

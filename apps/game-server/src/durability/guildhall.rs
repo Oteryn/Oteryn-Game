@@ -140,6 +140,21 @@ DO $$ DECLARE t TEXT; BEGIN
  EXECUTE format('REVOKE ALL ON FUNCTION %I() FROM PUBLIC',t);
  END LOOP;
 END $$;
+-- Terminal no-orphan gate consumed by the Guild controller/guard. Zero financial
+-- custody alone does not prove HOUSE-1b Inbox + Guild property/slot final release.
+-- This private proposal deliberately fails closed until the genuine C owner binds it.
+CREATE FUNCTION game_guildhall_assert_disband_released(p_guild UUID,p_world UUID) RETURNS VOID
+LANGUAGE plpgsql AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=p_guild AND world_id=p_world AND state IN(3,4))
+ OR EXISTS(SELECT 1 FROM game_guildhall_bids WHERE guild_id=p_guild AND state='HELD') THEN
+  RAISE EXCEPTION 'Guild disband has current binding or HELD Hall custody' USING ERRCODE='23514';
+ END IF;
+ RAISE EXCEPTION 'genuine C Guild property/slot final-release binding unavailable' USING ERRCODE='0A000';
+END $$;
+DO $$ BEGIN EXECUTE format('ALTER FUNCTION game_guildhall_assert_disband_released(UUID,UUID) SET search_path=%I,pg_temp',current_schema());END $$;
+REVOKE ALL ON FUNCTION game_guildhall_assert_disband_released(UUID,UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_guildhall_assert_disband_released(UUID,UUID) TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_guildhall_operations TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE ON game_guildhall_bids TO oteryn_game_runtime;
 GRANT SELECT ON game_guildhall_operations,game_guildhall_bids TO oteryn_game_control;
@@ -201,6 +216,8 @@ pub enum GuildhallEscrowError {
     NotLeader,
     GuildIneligible,
     AuctionContextUnavailable,
+    /// Genuine C Guild property/slot final-release binding is not available.
+    HouseDispositionUnavailable,
     StaleBid,
     FundingBindingChanged,
     AlreadyReleased,
@@ -283,6 +300,181 @@ impl GuildhallEscrowStep {
         }
         Ok(())
     }
+}
+
+/// Sealed occurrence lock acquired before the Guild spine. This token binds the actual
+/// physical transaction, not just a supplied operation UUID. Only this module can mint it.
+pub(super) struct GuildhallDisbandOccurrence {
+    identity: GuildhallEscrowIdentity,
+    xact_id: String,
+}
+
+pub(super) async fn lock_guild_disband_release_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    identity: &GuildhallEscrowIdentity,
+) -> Result<GuildhallDisbandOccurrence> {
+    let ids = [
+        identity.occurrence_id,
+        identity.transaction_id,
+        identity.guild_entry_id,
+        identity.account_entry_id,
+    ];
+    if ids.iter().any(|id| check_uuid_v7(id).is_err())
+        || ids.iter().enumerate().any(|(n, id)| ids[..n].contains(id))
+    {
+        return Err(GuildhallEscrowError::InvalidInput);
+    }
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:guildhall-financial:'||encode($1,'hex'),0))")
+        .bind(identity.occurrence_id.as_slice()).execute(&mut **tx).await?;
+    let xact_id = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx)
+        .await?;
+    Ok(GuildhallDisbandOccurrence {
+        identity: identity.clone(),
+        xact_id,
+    })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum GuildhallDisbandReleaseOutcome {
+    WaitingForHouseDisposition,
+    /// Reserved for a genuine C closure; the current participant never constructs this.
+    Released,
+}
+
+fn disband_binding(
+    identity: &GuildhallEscrowIdentity,
+    guild: &[u8; 16],
+    world: &[u8; 16],
+) -> Vec<u8> {
+    let mut hash = Sha256::new();
+    hash.update(b"GUILDHALL_DISBAND_RELEASE_V1\0");
+    hash.update(identity.transaction_id);
+    hash.update(identity.guild_entry_id);
+    hash.update(identity.account_entry_id);
+    hash.update(guild);
+    hash.update(world);
+    hash.finalize().to_vec()
+}
+
+async fn assert_disband_context(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &super::guild::GuildDisbandTransaction,
+) -> Result<()> {
+    context
+        .assert_current(tx)
+        .await
+        .map_err(|error| match error {
+            super::guild::GuildError::Unavailable(error) => {
+                GuildhallEscrowError::Unavailable(error)
+            }
+            _ => GuildhallEscrowError::NotCurrent,
+        })?;
+    let xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx)
+        .await?;
+    if xid != context.hall_occurrence().xact_id {
+        return Err(GuildhallEscrowError::NotCurrent);
+    }
+    Ok(())
+}
+
+/// Actual owned bid custody participant, invoked while the genuine Guild spine is held.
+/// No auction phase/property fixture is consulted as authority. One HELD bid/Guild bounds
+/// the pass to one refund. Both original contributors are credited by the native Bank port.
+pub(super) async fn advance_guild_disband_release_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &super::guild::GuildDisbandTransaction,
+) -> Result<GuildhallDisbandReleaseOutcome> {
+    assert_disband_context(tx, context).await?;
+    let identity = &context.hall_occurrence().identity;
+    let guild = context.guild_id();
+    let world = context.world_id();
+    let binding = disband_binding(identity, guild.as_bytes(), world.as_bytes());
+    let previous = sqlx::query("SELECT request_binding,kind,guild_id::text,world_id::text,escrow_guild_after,escrow_account_after FROM game_guildhall_operations WHERE occurrence_id=encode($1,'hex')::uuid")
+        .bind(identity.occurrence_id.as_slice()).fetch_optional(&mut **tx).await?;
+    if let Some(row) = previous {
+        if row.try_get::<Vec<u8>, _>("request_binding")? != binding
+            || row.try_get::<String, _>("kind")? != "BID_RELEASE"
+            || uuid_text(&row.try_get::<String, _>("guild_id")?)? != *guild.as_bytes()
+            || uuid_text(&row.try_get::<String, _>("world_id")?)? != *world.as_bytes()
+            || value(&row, "escrow_guild_after")? != 0
+            || value(&row, "escrow_account_after")? != 0
+        {
+            return Err(GuildhallEscrowError::ConflictingOccurrence);
+        }
+    } else {
+        let rows = sqlx::query("SELECT bid_id::text,world_id::text,house_key,auction_id::text,funding_account_id::text,funding_character_id::text,escrow_guild_gold,escrow_account_gold,revision::text FROM game_guildhall_bids WHERE guild_id=encode($1,'hex')::uuid AND state='HELD' ORDER BY bid_id LIMIT 2 FOR UPDATE")
+            .bind(guild.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
+        if rows.len() > 1 {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        if let Some(row) = rows.first() {
+            if uuid_text(&row.try_get::<String, _>("world_id")?)? != *world.as_bytes() {
+                return Err(DurabilityError::InvalidStoredState.into());
+            }
+            let bid = uuid_text(&row.try_get::<String, _>("bid_id")?)?;
+            let account = uuid_text(&row.try_get::<String, _>("funding_account_id")?)?;
+            let character = uuid_text(&row.try_get::<String, _>("funding_character_id")?)?;
+            let auction = uuid_text(&row.try_get::<String, _>("auction_id")?)?;
+            let parts = EscrowParts {
+                guild: value(row, "escrow_guild_gold")?,
+                account: value(row, "escrow_account_gold")?,
+            };
+            let revision = numeric_u64(row, "revision")?
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            // GUILD0-LO-01: Guild spine -> bid -> Guild balance -> original Account balance.
+            let gb: i64 = sqlx::query_scalar("SELECT balance FROM game_guild_bank_balances WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
+                .bind(guild.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+            let ab: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE")
+                .bind(account.as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+            let change = parts.release(
+                u64::try_from(gb).map_err(|_| DurabilityError::InvalidStoredState)?,
+                u64::try_from(ab).map_err(|_| DurabilityError::InvalidStoredState)?,
+            )?;
+            let ge = (parts.guild != 0).then_some(identity.guild_entry_id);
+            let ae = (parts.account != 0).then_some(identity.account_entry_id);
+            assert_disband_context(tx, context).await?;
+            sqlx::query("INSERT INTO game_guildhall_operations(transaction_id,occurrence_id,request_binding,kind,bid_id,guild_id,world_id,house_key,auction_id,funding_account_id,funding_character_id,guild_balance_before,guild_balance_after,account_balance_before,account_balance_after,escrow_guild_before,escrow_guild_after,escrow_account_before,escrow_account_after,guild_entry_id,account_entry_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'BID_RELEASE',encode($4,'hex')::uuid,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,encode($8,'hex')::uuid,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11,$12,$13,$14,$15,0,$16,0,encode($17,'hex')::uuid,encode($18,'hex')::uuid)")
+                .bind(identity.transaction_id.as_slice()).bind(identity.occurrence_id.as_slice()).bind(binding).bind(bid.as_slice()).bind(guild.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(row.try_get::<String,_>("house_key")?).bind(auction.as_slice()).bind(account.as_slice()).bind(character.as_slice())
+                .bind(gb).bind(change.guild_balance_after as i64).bind(ab).bind(change.account_balance_after as i64).bind(parts.guild as i64).bind(parts.account as i64).bind(ge.as_ref().map(|id|id.as_slice())).bind(ae.as_ref().map(|id|id.as_slice())).execute(&mut **tx).await?;
+            sqlx::query("UPDATE game_guildhall_bids SET escrow_guild_gold=0,escrow_account_gold=0,state='RELEASED',revision=$2::text::numeric,last_operation_id=encode($3,'hex')::uuid WHERE bid_id=encode($1,'hex')::uuid")
+                .bind(bid.as_slice()).bind(revision.to_string()).bind(identity.transaction_id.as_slice()).execute(&mut **tx).await?;
+            apply_guildhall_escrow_in_transaction(tx, identity.transaction_id)
+                .await
+                .map_err(|error| match error {
+                    GuildBankError::Unavailable(error) => GuildhallEscrowError::Unavailable(error),
+                    error => GuildhallEscrowError::BankParticipant(error),
+                })?;
+        }
+    }
+    match assert_guild_disband_released_in_transaction(tx, context).await {
+        Ok(()) => Ok(GuildhallDisbandReleaseOutcome::Released),
+        Err(GuildhallEscrowError::HouseDispositionUnavailable) => {
+            Ok(GuildhallDisbandReleaseOutcome::WaitingForHouseDisposition)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+/// This is an explicit unmet C prerequisite, not a negative boolean closure witness.
+/// HOUSE-1b#2141 has bounded native Inbox disposition but `drained` retains ownership,
+/// content fence and slot. Its Character ownership port does not bind Guild final release.
+pub(super) async fn assert_guild_disband_released_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &super::guild::GuildDisbandTransaction,
+) -> Result<()> {
+    assert_disband_context(tx, context).await?;
+    let held: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guildhall_bids WHERE guild_id=encode($1,'hex')::uuid AND state='HELD')")
+        .bind(context.guild_id().as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if held {
+        return Err(GuildhallEscrowError::GuildIneligible);
+    }
+    // Do not execute the SQL exception predicate here: catching an SQL exception would
+    // poison this transaction and roll back the genuine bid refund. The deferred terminal
+    // guard calls it only at a proposed terminal write, which must roll back without C.
+    Err(GuildhallEscrowError::HouseDispositionUnavailable)
 }
 
 impl DurabilityRoot {
@@ -508,8 +700,8 @@ async fn financial_step_in_transaction(
         parts.resize(total, guild_balance, account_balance)?
     };
     // GUILD0 §6.2 fixes the original Account as the refund source, including after Resign.
-    // Extra Account funding after leader change awaits CP/architect disposition: retain the
-    // existing safe refusal. A raise covered entirely by Guild gold needs no Account choice;
+    // CP D1100 accepts V1 refusal of extra Account funding after leader change.
+    // A raise covered entirely by Guild gold needs no Account choice;
     // lowering and release continue returning each original contributor's custody.
     if change.after.account > parts.account && account != Some(funding_account) {
         return Err(GuildhallEscrowError::FundingBindingChanged);
