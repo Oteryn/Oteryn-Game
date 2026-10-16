@@ -326,7 +326,7 @@ CREATE CONSTRAINT TRIGGER game_house_location_proven AFTER INSERT OR DELETE OR U
 CREATE OR REPLACE FUNCTION game_item_instance_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.transaction_id=NEW.last_transaction_id
      AND p.item_instance_id=OLD.item_instance_id AND p.world_id=OLD.world_id AND p.quantity_before=OLD.quantity
      AND p.state_revision_before=OLD.state_revision AND p.created_xact_id=pg_current_xact_id()) THEN
@@ -413,7 +413,7 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_instance_change_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.transaction_id=NEW.last_transaction_id
      AND p.item_instance_id=NEW.item_instance_id AND p.created_xact_id=pg_current_xact_id()) THEN
      PERFORM game_house_shape_complete(NEW.last_transaction_id);RETURN NULL;END IF;
@@ -515,7 +515,7 @@ DECLARE
     corpse_top UUID;
     corpse_materialized BIGINT;
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF NEW.shape IN(5,6,7) THEN PERFORM game_house_shape_complete(NEW.transaction_id);RETURN NULL;END IF;
 
     SELECT * INTO src FROM game_item_instances WHERE item_instance_id = NEW.source_item_instance_id;
@@ -659,7 +659,7 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_container_entry_removal_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF TG_OP='DELETE' THEN
      IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.shape=5 AND p.source_kind=1
       AND p.item_instance_id=OLD.item_instance_id AND p.character_id=OLD.character_id AND p.world_id=OLD.world_id
@@ -769,7 +769,7 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_placement_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF TG_TABLE_NAME='game_item_container_entries' THEN
      IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.shape=6 AND p.transaction_id=NEW.placed_transaction_id
       AND p.item_instance_id=NEW.item_instance_id AND p.world_id=NEW.world_id AND p.character_id=NEW.character_id
@@ -907,7 +907,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION game_equipment_slot_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF TG_OP='DELETE' THEN
      IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.shape=5 AND p.source_kind=3
       AND p.item_instance_id=OLD.item_instance_id AND p.world_id=OLD.world_id AND p.character_id=OLD.character_id
@@ -947,7 +947,7 @@ END $$;
 
 CREATE OR REPLACE FUNCTION game_equipment_state_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-    -- 0089: exact owner-produced House shape evidence; all older arms below are unchanged.
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.shape=5 AND p.source_kind=3
      AND p.character_id=NEW.character_id AND p.transaction_id=NEW.last_transaction_id
      AND p.equipment_revision_before=OLD.revision AND NEW.revision=OLD.revision+1

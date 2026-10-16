@@ -4,7 +4,7 @@
 task_id: HOUSE-RUNTIME-1a
 title: "HOUSE-RUNTIME-1a: house interior shapes and item placement"
 mode: IMPLEMENT
-status: slot_implementation_pending_exact_head_qualification
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -66,7 +66,7 @@ To compile on the branch the builder may add only the module registration lines 
 - content/world/pins/*
 - Rust pins (pinned registries / fixtures regenerated from content)
 - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
-- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
+- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0091)
 - apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
 - apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
@@ -247,7 +247,10 @@ event, session/scope mutation fences or full package; all acceptance boxes remai
 
 This section supersedes the earlier preparation-only scope statements for this
 slot; the historical evidence above is retained unchanged. CP #162 comment
-6196051193 allocated #2163 and migration **0089** (0088 belongs to #2208).
+6196051193 allocated #2163 (initially 0089; 0088 belongs to #2208). CP #2131
+[6224954807](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224954807)
+and [6225069600](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225069600)
+supersede that number with migration **0095**.
 The exclusive integration base is `c04ab3fbfad8b7cdbb6310342c06b3fadf6a4f0d`,
 combining the published preparation with main `b62a5595b6be426dd4c9cc016c9b3883e9193c9d`.
 The exact 15-path lease also includes the shared audit/proto/registries, module and
@@ -451,3 +454,16 @@ Production access remains the accepted section10 no-row/false staging boundary.
 No additional mechanic is invented for this limited task; HOUSE-ACL, runtime1b/1c,
 entry/exit contract and content owners retain their integration responsibilities.
 All original acceptance boxes and final CP/CI/merge qualification remain open.
+
+### CP 0095 correction — authoring checkpoint
+
+Only migration numbering, its HOUSEOWN0-RL-14 consumer path and this record change.
+No merge/rebase was performed under the current owner prohibition; CP main
+reconciliation and any additional D1160/D1162 registration remain pending Root/CP
+resolution. Existing House/PG registration stays intact; no new checks or readiness
+are claimed.
+
+D1122 checkpoint state: numbering/JSON/whitespace checks PASS; the renamed0095
+full-package/PG qualification is NOT_RUN. Historical native component evidence
+remains bound to its original source generation; no fresh executable PASS,
+ready or merge/rebase is claimed.

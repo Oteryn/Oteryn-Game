@@ -11298,7 +11298,7 @@
         "empty containers are admitted; containers with contents are refused before write"
       ],
       "consumers": [
-        "apps/game-server/migrations/0089_house_interior_shapes.sql (game_house_item_apply)",
+        "apps/game-server/migrations/0095_house_interior_shapes.sql (game_house_item_apply)",
         "apps/game-server/src/durability/house_interior.rs (typed StorageFull refusal)",
         "apps/game-server/tests/support/house_interior_postgres_cases.rs (real PostgreSQL 17.6 boundary)"
       ],
