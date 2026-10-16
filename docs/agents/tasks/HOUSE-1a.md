@@ -4,7 +4,7 @@
 task_id: HOUSE-1a
 title: "HOUSE-1a: house ownership, auction and rent (skeleton)"
 mode: IMPLEMENT
-status: guild_disband_port_authored_pending_contract_and_native_qualification
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-1a
@@ -32,6 +32,45 @@ slot_only_paths:
   - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## Current checkpoint — real Guildhall release port, NOT_FULLY_QUALIFIED
+
+The product-source candidate is local commit
+`50bc410809bdb0f909160134b487fa7ed76e0c8e`, with independent source-only PASS
+for the actual caller-transaction Guildhall release participant and its twelve
+authored native cases. This task-record update does not change those Rust bytes.
+The earlier storage-only and detached-auction evidence below is historical and
+does not qualify this real D/native port.
+
+CP D1122, [decision6224930201](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201),
+permits one coherent checkpoint push to the existing draft #2137 before full
+qualification. The PR remains draft and NOT_FULLY_QUALIFIED; this exception grants
+no ready, review or merge qualification. No `@codex review` request, ready action
+or manual CI restart accompanies the checkpoint. Publication itself remains for
+Root's exact-candidate review, recovery preservation and guarded remote readback.
+
+Checkpoint check state:
+
+- **PASS, bounded:** retained official Rust1.94 `rustfmt`, edition2024 with
+  `skip_children=true`, is recorded for the exact three Rust source hashes in
+  the frozen50bc source manifest; those bytes remain unchanged. This is focused
+  formatting evidence, not package compilation or all-target qualification.
+- **RED:** none observed for this generation; the native checks below are NOT_RUN.
+- **NOT_RUN:** native Rust compilation and Clippy for this port; all twelve real
+  D-fixture cases, including their PostgreSQL17.6 execution; full package,
+  all-target, runtime-role and gameplay/E2E qualification.
+- **PASS, checkpoint whitespace:** `git diff --check` passes on this task-record
+  delta; Root rechecks the final publication candidate. Full checks remain mandatory
+  before a frozen candidate is submitted for review.
+
+Functional activation remains blocked on the actual D caller/occurrence and
+pre-financial transaction composition, D runtime-role grants and protected
+terminal/current-authority installation, genuine D context/native-node accessors,
+the recipient-pin/late-NOWAIT lock-order contract, and the exact D/C14/BED native
+fixture composition. The authored tests do not replace these missing seams.
+Module/schema/shared-file registration remains uninstalled and follows the CP
+queue after #2163; this checkpoint adds no registration, migration number or
+shared-file hunk. The native12 mount/closure packet remains a proposal only.
 
 ## Goal
 
