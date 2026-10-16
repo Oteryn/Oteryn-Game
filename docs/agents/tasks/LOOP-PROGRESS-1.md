@@ -18,9 +18,10 @@ registry: no
 owner: house_runtime_1a (owned preparation)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
+  - apps/game-server/src/gameplay_transport/attack.rs
   - apps/game-server/src/domain/progression.rs
   - apps/game-server/src/durability/character_progression.rs
   - apps/game-server/src/gameplay_transport/character_progression_binding.rs
@@ -193,3 +194,37 @@ scoped `dead_code` attributes explaining the pending CP slot, proven by an exact
 strip comparison; final native Clippy checked that annotated source. Both source manifests
 and the execution artifacts are retained; this is not a claim that the earlier test binary
 was rebuilt from the final annotated source. No PostgreSQL execution is claimed.
+
+
+## D1102 independent activity handoff (2026-10-16)
+
+CP material assignment2131/comment6219643346 and the direct E–D handoff authorize
+E as the sole native attack/heal activity source author. This increment contains only
+`gameplay_transport/attack.rs` and this task record, isolated from the unpublished
+whole-kill settlement and actor-facts proposals. The other local source preparations
+are not part of this increment. The existing draft remains partial.
+
+The native `ChannelAttackStates` API supplies
+`prepare_shared_experience_record(runtime, actor, session) -> bool`,
+`shared_experience_active(runtime, actor, session, now: SemanticTimeMicros) -> bool`,
+and `record_committed_shared_experience_batch(runtime, content, batch, receipt, party) -> bool`.
+The last method takes actual native `OwnerCombatBatch`/`CombatBatchReceipt` and optional
+transaction-qualified `SourcePartyWorld`; it does not mint membership authority. Native
+positive attacks against a currently qualified aggressive non-summoned creature record
+activity. Spell/heal installation must call the committed-receipt method under the same
+runtime/states/attack guards; its foreign caller hunk remains an explicit proposal.
+Current native owner/session/Character lease and control facts qualify reads. Backward or
+future times refuse; activity expires after120 seconds. Actual membership/range/level and
+leader-PZ qualification stay with D at the kill. No whole-kill XP transaction, journal,
+claim table, migration, capacity/maxima column, registry or shared wiring is published here.
+
+D's actual read-only `PartyXpActivity::recorded_activity` source is
+#2172@b856170ed896ab9b8d8cdbbd554a9c1aa49d3850, file SHA256
+`e85a7d6d54fdf8a5870bb88c7c7273687ca136853dff8a38da59bca8ea019238`.
+It copies retained activity data and adds no current authority or clock renewal. D's getter
+is delivered; remaining whole-kill producer/FND/activation ports are separate.
+
+Native independent-candidate qualification and the exact published head are recorded with
+the handoff on PR2192 after checks. Two exact native activity tests cover native lease/session
+turnover, the120-second boundary, future refusal and out-of-order events. They do not claim
+a complete E–D gameplay/combat/heal or whole-kill settlement qualification.

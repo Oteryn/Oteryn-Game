@@ -218,6 +218,20 @@ pub(crate) fn swing_weapon(
     Some(SwingWeapon::Fists)
 }
 
+/// PARTY-PVP0 §5.1 / PARTYPVP0-RL-06: two minutes, in the native semantic clock.
+#[allow(
+    dead_code,
+    reason = "The independently delivered D party-XP consumer uses this activity window"
+)]
+const SHARED_EXPERIENCE_ACTIVITY_MICROS: u64 = 120_000_000;
+
+#[derive(Debug, Clone, Copy)]
+struct SharedExperienceActivity {
+    character: [u8; 16],
+    lease_generation: u64,
+    at: SemanticTimeMicros,
+}
+
 /// The attack state of one player actor in one session.
 #[derive(Debug, Clone)]
 struct ActorAttack {
@@ -237,6 +251,7 @@ struct ActorAttack {
     weapon: Option<WeaponFacts>,
     /// Bumped by every equipment move, so a read that raced one is not stored.
     weapon_epoch: u64,
+    shared_experience_activity: Option<SharedExperienceActivity>,
 }
 
 impl ActorAttack {
@@ -579,6 +594,7 @@ impl ChannelAttackStates {
                     chase: ChaseState::default(),
                     weapon: None,
                     weapon_epoch: 0,
+                    shared_experience_activity: None,
                 });
                 self.entries.len() - 1
             }
@@ -1439,7 +1455,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
             // batch, its swing defers to a later turn; the held target and swing clock stay.
-            if runtime.assert_actor_spell_unreserved(entry.actor).is_err() {
+            if states.has_pending_spell_commit(entry.actor, entry.session)
+                || runtime.assert_actor_spell_unreserved(entry.actor).is_err()
+            {
                 continue;
             }
             // ATTACK-2: a swing waits for a swing weapon read under this pin within one attack
@@ -1614,6 +1632,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             };
+            if result.applied
+                && result.health_after < result.health_before
+                && aggressive_monster(&runtime, content, target)
+            {
+                entry.record_shared_experience_activity(&runtime, now);
+            }
             run_charm_hook(
                 self.imported_charms,
                 character,
@@ -1827,5 +1851,303 @@ mod weapon_tests {
             mitigated(3, 100, true, 10, 10),
             "every draw is a pure function of the swing"
         );
+    }
+}
+
+/// The active content owner, the exact physical definition/revision, and the master relation
+/// qualify aggression. Attackable alone is not hostility; summons/familiars are not monsters.
+fn aggressive_monster(
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    actor: ExactActorRef,
+) -> bool {
+    if content.source_digest() != runtime.content_pin().server_artifact_digest() {
+        return false;
+    }
+    let Ok(snapshot) = runtime.companion_snapshot(actor) else {
+        return false;
+    };
+    if snapshot.state.master.is_some() || snapshot.state.policy.is_familiar {
+        return false;
+    }
+    content
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|record| {
+            record.profile.target.key == snapshot.state.policy.definition_key
+                && record.profile.target.revision == snapshot.state.policy.definition_revision
+        })
+        .is_some_and(|record| {
+            content.qualifies_current_creature_profile(content.source_digest(), &record.profile)
+                && matches!(record.behavior.as_ref().map(|profile| &profile.data),
+                Some(crate::content::ProjectV2AuthoringProfileData::Behavior(behavior))
+                    if behavior.targeting.hostile && behavior.targeting.can_target)
+        })
+}
+
+impl ActorAttack {
+    fn record_shared_experience_activity(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        at: SemanticTimeMicros,
+    ) -> bool {
+        if runtime.owner_fence().is_err()
+            || !runtime
+                .player_control_facts(self.actor, self.session)
+                .is_ok_and(|control| control.control_loss.is_none())
+        {
+            return false;
+        }
+        let Ok(lease) = runtime.bound_attacker_lease(self.actor, self.session) else {
+            return false;
+        };
+        let next = SharedExperienceActivity {
+            character: *lease.character_id().as_bytes(),
+            lease_generation: lease.generation(),
+            at,
+        };
+        if self.shared_experience_activity.is_some_and(|old| {
+            old.character == next.character
+                && old.lease_generation == next.lease_generation
+                && old.at > at
+        }) {
+            return false;
+        }
+        self.shared_experience_activity = Some(next);
+        true
+    }
+}
+
+#[allow(
+    dead_code,
+    reason = "D #2172 integrates these native activity APIs in its separate draft"
+)]
+impl ChannelAttackStates {
+    /// Preallocate the existing per-player entry BEFORE physical spell installation. No
+    /// activity is granted here; phase 2's receipt recorder never allocates or creates it.
+    pub(crate) fn prepare_shared_experience_record(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        self.entry(runtime, actor, session).is_some()
+    }
+
+    /// Native activity data only. D must independently resolve current strong membership,
+    /// presence, range, levels and leader PZ at the kill; this read grants no authority.
+    pub(crate) fn shared_experience_active(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        let Some(entry) = self.index(actor, session).map(|index| &self.entries[index]) else {
+            return false;
+        };
+        let Some(activity) = entry.shared_experience_activity else {
+            return false;
+        };
+        if runtime.owner_fence().is_err()
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|control| control.control_loss.is_none())
+        {
+            return false;
+        }
+        runtime
+            .bound_attacker_lease(actor, session)
+            .is_ok_and(|lease| {
+                lease.character_id().as_bytes() == &activity.character
+                    && lease.generation() == activity.lease_generation
+                    && now
+                        .elapsed_since(activity.at)
+                        .is_ok_and(|age| age <= SHARED_EXPERIENCE_ACTIVITY_MICROS)
+            })
+    }
+
+    /// Call under the SAME runtime -> states -> attack guards after successful native owner
+    /// install, using that attempt's actual batch and transaction-qualified SourcePartyWorld.
+    /// Captured party data describes membership when the committed heal happened; it never
+    /// authorizes current membership at a later kill. Replay cannot extend the activity clock.
+    pub(crate) fn record_committed_shared_experience_batch(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        content: &NativeGameplayState,
+        batch: &crate::foundation::runtime_actor_spell_types::OwnerCombatBatch,
+        receipt: &crate::foundation::runtime_actor_spell_types::CombatBatchReceipt,
+        party: Option<&super::party_spell_owner::SourcePartyWorld>,
+    ) -> bool {
+        use crate::foundation::runtime_actor_spell_types::OwnerCombatChange;
+        if !receipt.applied
+            || batch.caster != receipt.caster
+            || batch.command != receipt.command
+            || content.source_digest() != runtime.content_pin().server_artifact_digest()
+        {
+            return false;
+        }
+        let session = batch.command.game_session_id();
+        let Ok(lease) = runtime.bound_attacker_lease(batch.caster, session) else {
+            return false;
+        };
+        if lease.character_id() != batch.attacker
+            || lease.generation() != batch.current_lease_generation
+        {
+            return false;
+        }
+        let eligible = receipt.effects.iter().any(|effect| {
+            let Some(health) = effect.health.filter(|health| health.applied) else {
+                return false;
+            };
+            let Some(proposed) = batch.effects.iter().find(|proposed| {
+                proposed.target == effect.target && proposed.sub_ordinal == effect.sub_ordinal
+            }) else {
+                return false;
+            };
+            match &proposed.change {
+                OwnerCombatChange::Damage { .. } | OwnerCombatChange::DamageWithHealing { .. }
+                    if health.health_after < health.health_before =>
+                {
+                    aggressive_monster(runtime, content, effect.target)
+                }
+                OwnerCombatChange::Heal { .. } if health.health_after > health.health_before => {
+                    let Some(party) = party else {
+                        return false;
+                    };
+                    let source = party.source();
+                    source.party_id.is_some()
+                        && source.world == *runtime.binding().world_id().as_bytes()
+                        && source.character == *lease.character_id().as_bytes()
+                        && source
+                            .members
+                            .iter()
+                            .any(|member| member.character == source.character)
+                        && party
+                            .actor_for_id(u64::from(effect.target.actor_local_id()))
+                            .is_some_and(|(actor, target_session)| {
+                                actor == effect.target
+                                    && runtime
+                                        .bound_attacker_lease(actor, target_session)
+                                        .is_ok_and(|target| {
+                                            source.members.iter().any(|member| {
+                                                member.character
+                                                    == *target.character_id().as_bytes()
+                                            })
+                                        })
+                            })
+                }
+                _ => false,
+            }
+        });
+        if !eligible {
+            return false;
+        }
+        let Some(micros) = batch.now_ms.checked_mul(1_000) else {
+            return false;
+        };
+        let Some(index) = self.index(batch.caster, session) else {
+            return false;
+        };
+        self.entries[index]
+            .record_shared_experience_activity(runtime, SemanticTimeMicros::from_micros(micros))
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod shared_experience_activity_tests {
+    use super::*;
+    use crate::foundation::{CharacterId, CharacterLease};
+
+    #[test]
+    fn activity_uses_current_native_lease_and_two_minute_window_without_future_credit() {
+        let (mut runtime, actor, session) =
+            super::super::actor_spell::tests::runtime_with_player(0x71);
+        let mut raw = [1; 16];
+        raw[6] = 0x70;
+        raw[8] = 0x80;
+        let character = CharacterId::decode(&raw).expect("character");
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                CharacterLease::new(character, 7).expect("lease"),
+            )
+            .expect("bind");
+        let mut states = ChannelAttackStates::default();
+        assert!(states.prepare_shared_experience_record(&runtime, actor, session));
+        let at = SemanticTimeMicros::from_micros(2_000_000);
+        let index = states.index(actor, session).expect("entry");
+        assert!(states.entries[index].record_shared_experience_activity(&runtime, at));
+        assert!(!states.shared_experience_active(
+            &runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(1_999_999)
+        ));
+        assert!(states.shared_experience_active(
+            &runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(122_000_000)
+        ));
+        assert!(!states.shared_experience_active(
+            &runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(122_000_001)
+        ));
+        let mut successor_bytes = [3; 16];
+        successor_bytes[6] = 0x70;
+        successor_bytes[8] = 0x80;
+        let successor = GameSessionId::decode(&successor_bytes).expect("successor session");
+        runtime
+            .rebind_player_session(
+                actor,
+                session,
+                successor,
+                CharacterLease::new(character, 8).expect("new lease"),
+            )
+            .expect("native successor rebind");
+        assert!(
+            !states.shared_experience_active(&runtime, actor, session, at),
+            "retained activity is not new lease evidence"
+        );
+    }
+
+    #[test]
+    fn unbound_actor_has_no_activity_and_out_of_order_event_does_not_rewind_it() {
+        let (mut runtime, actor, session) =
+            super::super::actor_spell::tests::runtime_with_player(0x72);
+        let mut states = ChannelAttackStates::default();
+        let entry = states.entry(&runtime, actor, session).expect("entry");
+        assert!(
+            !entry.record_shared_experience_activity(&runtime, SemanticTimeMicros::from_micros(20))
+        );
+        let mut raw = [2; 16];
+        raw[6] = 0x70;
+        raw[8] = 0x80;
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                CharacterLease::new(CharacterId::decode(&raw).expect("character"), 1)
+                    .expect("lease"),
+            )
+            .expect("bind");
+        assert!(
+            entry.record_shared_experience_activity(&runtime, SemanticTimeMicros::from_micros(20))
+        );
+        assert!(
+            !entry.record_shared_experience_activity(&runtime, SemanticTimeMicros::from_micros(19))
+        );
+        assert!(states.shared_experience_active(
+            &runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(20)
+        ));
     }
 }
