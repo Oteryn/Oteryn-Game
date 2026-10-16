@@ -199,7 +199,7 @@
       "command_types": [],
       "state_domains": [17],
       "offered": false,
-      "offer_gate": "MAP-CUTOVER-1b: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. A World offers it only while the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
+      "offer_gate": "MAP-CUTOVER-1b: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. A World offers it only while the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2. With it selected, domain 2 WORLD_OBJECT_OVERLAY is never sent on join, resume or delta (MAP-WIRE-1 \u00a73); its object states are domain 17 tile changes."
     },
     {
       "id": 19,
@@ -211,6 +211,17 @@
       "state_domains": [18],
       "offered": true,
       "offer_gate": "Offered by CLOCK-1 in every offered set (production, Item view and bundle World), requiring 6. With it selected, domain 18 is sent as a snapshot at admission, reconnect and channel transfer at the session's current revision and as a delta on a light change or a new Tibian hour, at most one per 10,000 ms (WORLDINT0-RL-18), read at the node's UTC time fact against the World clock epoch, which is the Unix epoch (a whole UTC hour) until a World ruleset carries world_clock_epoch_utc_ms; and the domain 1 type 2 player and creature entries carry the VIS-2 light (fields 11-12, at most 6 bytes, WORLDINT0-RL-20), changed on the wire at most once per 1,000 ms per entity. A player's light is its current LIGHT condition; equipped items and monster content carry no light source yet. Without it selected, domain 18 and fields 11-12 are never sent and the client renders a fixed day light."
+    },
+    {
+      "id": 21,
+      "name": "LOGOUT_V1",
+      "owner_decision": "ARCH-KILL-REWARD-LOGOUT-1 §1.6 (docs/architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md); the proposed capability 19 was already WORLD_LIGHT_V1 and 20 is leased to CONNECTION_TRACE_V1 (D770), so LOGOUT-WIRE-1 registers the next free capability, 21, with the proposed command type 23; numbers leased to LOGOUT-WIRE-1 by the #1622 control plane",
+      "owner": "current ChannelRuntime (the in-fight deadline) and the GameSession terminal release (session_state = 3)",
+      "requires": [],
+      "command_types": [23],
+      "state_domains": [],
+      "offered": true,
+      "offer_gate": "Offered by LOGOUT-WIRE-1 in every offered set (production, Item view and bundle World). With it selected, command type 23 is answered with one LogoutResultV1: IN_FIGHT with retry_after_ms while the actor's in-fight deadline runs (ATTACK0-RL-03), BUSY while a durable spell commit or an own kill settlement is pending or when the terminal release failed retryably before it committed, and ACCEPTED only after the terminal release (session_state = 3 with the final position write) has committed, after which the transport closes cleanly. At most one logout is outstanding per GameSession (LOGOUT-RL-01); a second one before the first result is a protocol error. Without it selected, command type 23 is refused as an unregistered command."
     },
     {
       "id": 22,
@@ -381,6 +392,16 @@
       "result_schema": "none: an accepted query has an empty result payload and its domain 16 delta follows; an empty oneof, an unknown or unlisted quest index, a copy that is not loaded and a query over QUESTGATE0-RL-09 are REJECTED with an empty payload",
       "max_payload_bytes": 62,
       "max_result_payload_bytes": 0
+    },
+    {
+      "id": 23,
+      "name": "LOGOUT_INTENT",
+      "owner_decision": "ARCH-KILL-REWARD-LOGOUT-1 §1.6 (docs/architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md); the proposed capability 19 was already WORLD_LIGHT_V1 and 20 is leased to CONNECTION_TRACE_V1 (D770), so LOGOUT-WIRE-1 registers the next free capability, 21, with the proposed command type 23; numbers leased to LOGOUT-WIRE-1 by the #1622 control plane",
+      "capability": 21,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutResultV1",
+      "max_payload_bytes": 0,
+      "max_result_payload_bytes": 6
     }
   ],
   "state_domains": [
@@ -423,7 +444,7 @@
     {
       "id": 2,
       "name": "WORLD_OBJECT_OVERLAY",
-      "owner_decision": "USE-WIRE-V1 (#162 owner acceptance 5864914163)",
+      "owner_decision": "USE-WIRE-V1 (#162 owner acceptance 5864914163); never sent on join, resume or delta to a session that selected capability 18 WORLD_MAP_VIEW_V1, whose object states are domain 17 tile changes (MAP-WIRE-1 \u00a73)",
       "owner": "current ChannelRuntime",
       "delta_types": [
         {

@@ -1,7 +1,7 @@
 # MARKET-0 World Market
 
 - Decision: `MARKET0-WORLD-MARKET-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
   economy, security and protocol) and protected integration. It builds on BANK-0 (#1357),
   BANK-FEE-0 (#1361) and DEPOT-0 (#1359), all merged on `main`, and amends them (pending). Owner questions Q1-Q3
   (§13) are answered (#162 5913348961).
