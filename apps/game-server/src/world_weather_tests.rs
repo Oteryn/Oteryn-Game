@@ -96,3 +96,55 @@ fn selection_reuses_the_existing_sim_primitive_without_rng_state()
     }
     Ok(())
 }
+
+#[test]
+fn owned_visual_map_and_policy_contain_only_rain_fog_and_snow() -> Result<(), WeatherPolicyError> {
+    assert_eq!(
+        WEATHER_VISUAL_PRESETS,
+        [
+            (WeatherPreset(1), WeatherVisual::Rain),
+            (WeatherPreset(2), WeatherVisual::Fog),
+            (WeatherPreset(3), WeatherVisual::Snow),
+        ]
+    );
+    let entries = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3];
+    assert_eq!(
+        WEATHER_VISUAL_POLICY,
+        WeatherPolicy::new(&[1, 2, 3], &entries)?
+    );
+    for (bucket, expected) in entries.into_iter().enumerate() {
+        let preset = WEATHER_VISUAL_POLICY.preset_for_draw((bucket as u64) << 60);
+        assert_eq!(preset.index(), expected);
+        assert!(
+            WEATHER_VISUAL_PRESETS
+                .iter()
+                .any(|(known, _)| *known == preset)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn visual_selection_does_not_mutate_native_clock_light_or_gameplay_decision()
+-> Result<(), Box<dyn std::error::Error>> {
+    // This exercises the actual existing clock and SIM primitive in their native unit context.
+    // Transport, movement/combat/storage consumers are not present here; their isolation proof
+    // remains a real-caller integration gate, not a claim based on a fabricated gameplay struct.
+    let epoch = 18_000_000;
+    let time = epoch + 1_234_567;
+    let source = crate::world_clock::WorldClockSource::new(epoch);
+    let before = source.reading(time).ok_or("fixture clock before epoch")?;
+    let root = GameplayDecisionRoot::from_bytes([0x31; 32]);
+    let occurrence = DecisionOccurrenceId::from_bytes([0x72; 16]);
+    let gameplay_before = deterministic_decision_u64(&root, occurrence, "gameplay.fixture.v1", 0)?;
+    for bucket in 0..16_u64 {
+        let _visual = WEATHER_VISUAL_POLICY.preset_for_draw(bucket << 60);
+        let _selected = WEATHER_VISUAL_POLICY.select(&root, occurrence)?;
+        assert_eq!(source.reading(time), Some(before));
+        assert_eq!(
+            deterministic_decision_u64(&root, occurrence, "gameplay.fixture.v1", 0)?,
+            gameplay_before
+        );
+    }
+    Ok(())
+}

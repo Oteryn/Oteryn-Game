@@ -6,6 +6,7 @@
 //! no Channel, process generation, wall-clock read, default epoch or fixture seed is introduced
 //! here. Canonical occurrence derivation and the read-only binding belong to WEATHER-SEAM-1;
 //! the server must not offer weather before that seam and the reviewed wire are integrated.
+//! D1111 assigns the rain/fog/snow map and selector data below to WEATHER-1.
 
 use oteryn_simulation_determinism::{
     DecisionError, DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -26,7 +27,8 @@ pub(crate) fn absolute_weather_slot(epoch_utc_ms: u64, normalized_utc_ms: u64) -
 }
 
 /// An explicitly admitted policy-local preset identity; it is not a registered wire value.
-/// The asset owner maps these identities to the accepted rain, fog and snow presentation.
+/// WEATHER-1 maps shipped identities to rain, fog and snow below; client assets remain a
+/// separate WEATHER-CLIENT-1 integration requirement.
 /// There is deliberately no `Default` or "clear" variant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct WeatherPreset(u8);
@@ -36,6 +38,45 @@ impl WeatherPreset {
         self.0
     }
 }
+
+/// Visual identities only: none is a gameplay modifier or a client asset path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WeatherVisual {
+    Rain,
+    Fog,
+    Snow,
+}
+
+/// D1111: authored in this owned module, without a new content file or a clear preset.
+pub(crate) const WEATHER_VISUAL_PRESETS: [(WeatherPreset, WeatherVisual); 3] = [
+    (WeatherPreset(1), WeatherVisual::Rain),
+    (WeatherPreset(2), WeatherVisual::Fog),
+    (WeatherPreset(3), WeatherVisual::Snow),
+];
+
+/// Explicit authored weights: rain 6/16, fog 5/16, snow 5/16. A World must bind this
+/// policy and its retained revision explicitly; this data never substitutes for a missing
+/// World binding. No implicit default, clock, activation rule or asset admission is supplied.
+pub(crate) const WEATHER_VISUAL_POLICY: WeatherPolicy = WeatherPolicy {
+    selector: [
+        WeatherPreset(1),
+        WeatherPreset(1),
+        WeatherPreset(1),
+        WeatherPreset(1),
+        WeatherPreset(1),
+        WeatherPreset(1),
+        WeatherPreset(2),
+        WeatherPreset(2),
+        WeatherPreset(2),
+        WeatherPreset(2),
+        WeatherPreset(2),
+        WeatherPreset(3),
+        WeatherPreset(3),
+        WeatherPreset(3),
+        WeatherPreset(3),
+        WeatherPreset(3),
+    ],
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WeatherPolicyError {
