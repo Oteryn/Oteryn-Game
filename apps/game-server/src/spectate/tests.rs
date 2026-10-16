@@ -5,7 +5,7 @@ use crate::foundation::{
     FreshAdmissionFacts, WorldId,
 };
 use oteryn_protocol_oteryn::{
-    chat::{ChatLine, ChatRoom},
+    chat::{ChatLine, ChatRoom, ChatSpeaker, ChatSpeechMode},
     world_spatial::{ActorPosition, WorldSpatialObservation},
 };
 
@@ -186,7 +186,7 @@ fn spectate_all_registered_and_future_gameplay_commands_refused_without_side_eff
     r.admit_code(Some(&target), observer, code.expose_to_target())
         .expect("admit");
     let registry: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
+        "../../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
     ))
     .expect("registry");
     let commands = registry["command_types"].as_array().expect("commands");
@@ -356,7 +356,12 @@ fn spectate_private_chat_and_rooms_never_enter_world_queue() {
     );
     // Inventory/account/command outcome payloads have no Projection constructor at all.
     let line = ChatLine::Local {
+        speaker: ChatSpeaker {
+            identity: uuid(1),
+            generation: std::num::NonZeroU64::new(1).expect("speaker generation"),
+        },
         speaker_name: "public".into(),
+        mode: ChatSpeechMode::Say,
         text: "hello".into(),
         position: spatial().actor_position,
     };

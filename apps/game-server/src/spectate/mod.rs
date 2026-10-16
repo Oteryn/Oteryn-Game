@@ -545,7 +545,7 @@ impl SpectateRuntime {
                 Ok(())
             }
             ObserverInput::Keepalive => Ok(()),
-            ObserverInput::Gameplay(_) => Err(Refusal::NotAllowed),
+            ObserverInput::Gameplay(0..=u32::MAX) => Err(Refusal::NotAllowed),
         }
     }
 
