@@ -3,8 +3,8 @@
 ```yaml
 task_id: LOOP-DAMAGE-1
 title: "LOOP-DAMAGE-1: native damage caller and capability residue packet"
-mode: REPORT_ONLY
-status: prepared
+mode: IMPLEMENT
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-damage-1
@@ -15,7 +15,7 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "hard (combat, authority, protocol integration design)"
 migration: none_in_this_packet
 registry: false
-owner: boot_rat_policy_1
+owner: family_F
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-15
@@ -266,3 +266,33 @@ crit/leech descriptor/content and reaction budgets; actual current-provider/life
 source-bound native/PG/replay/negative tests; client and capability qualification; independent
 architect/combat/determinism/persistence/protocol reviews; integration slot. Root alone may
 publish the reviewed card to the existing draft. Worker performed no publication.
+
+
+## D1125 current build/condition provider — NOT_FULLY_QUALIFIED
+
+CP D1125 (2131#issuecomment-6224930545) supersedes the historical card-only scope:
+`gameplay_transport/spell_magnitude_facts.rs` and `spell/actor_conditions.rs` may be
+written now. `attack.rs` composition follows #2192; `monster_ai_cycle.rs` follows
+#2200. Shared wiring and capability offers remain closed.
+
+The current provider checks the native Content digest, Character/Equipment revisions,
+command/session/lease/connection bindings, current PlayerSpellState revision and level.
+It reads all seven skills from the independently loaded durable build; missing or
+mismatched build/vocation/magic refuses. Existing native condition owners supply the
+current skill deltas and source modifiers, with their existing checked arithmetic,
+exact expiry and nonmonotonic-time refusal. No creation-time starting_skill fallback,
+new formula, equipment bonus, crit/leech evidence or attack authority is fabricated.
+The result is point-in-time data: the eventual owning caller must requalify actor and
+binding and recompute after awaits. Equipment effects and CHARM4 pre-hit composition
+remain separate unimplemented requirements. Narrow dead_code allowances document only
+the two new provider entry symbols pending the explicitly ordered caller integration.
+
+Added a meaningful native unit regression for unavailable/mismatched build, current
+melee/distance condition modifiers and exact expiry before cleanup. Source review found
+one P2 dead-code lint issue, addressed with those bounded pending-caller annotations.
+Touched-file rustfmt and diff checks PASS. Actual native unit4/4 PASS, including
+the new current-build regression, on the full18808-source native crate with exactly
+the owned delta; source-before/after equal. Clippy and full package remain NOT_RUN;
+no earlier family test result is imported as this delta's qualification. No production activation or full LOOP-DAMAGE completion is claimed.
+
+Current checkpoint governance validation and all124 governance unit tests PASS.
