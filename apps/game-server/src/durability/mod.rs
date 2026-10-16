@@ -78,6 +78,7 @@ pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub(crate) mod world_house_instance;
+pub(crate) mod world_reset_port;
 pub(crate) mod world_party;
 
 pub use admission_journal::AdmissionReconnectJournal;

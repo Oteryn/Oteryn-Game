@@ -564,3 +564,21 @@ proofs through atomic commit. House preflight, I2187's sealed WorldDrainProof,
 0096 locked-job wrapper/history and final activation/read ports remain to be
 implemented/composed in their assigned order. New strict/runtime/PG checks are
 NOT_RUN; earlier reset/census evidence is preserved without relabelling.
+
+
+D1215 (CP2131 comment6225922014) resolves the cross-root dependency with a new
+`world_reset_port.rs`, registered once under D1160. It contains the exact local
+House source/drain traits and data, importing no content/transport modules.
+G authors the local contracts now; genuine Content implementation must call
+C2163's actual native House encoder, and I2187 implements its sealed drain proof.
+No production fixture implementation or synthetic proof is added. Target
+catalogue revision/digest still needs an actual source to enforce the D1189
+same-key revision-change refusal (CP request6225990483). New port compilation,
+preflight/activation and PostgreSQL execution remain NOT_RUN.
+
+
+The actual native crate successfully compiled the exact0c745974 issuance helper
+with Events/Weather components (ELF89fb3206f720c42b168379022f37198e77b8b4785638ec6b0813e6589fe883d8).
+Dep-info/source-at-close prove that helper file once. This is compile evidence
+only, not reset/PG runtime qualification. D1215's newer local port was not part
+of that frozen compile and remains compile/runtime NOT_RUN.
