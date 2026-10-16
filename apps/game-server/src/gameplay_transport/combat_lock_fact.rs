@@ -102,7 +102,7 @@ mod tests {
             1,
             1,
             1,
-            "combat-lock-fact-unit",
+            "runtime-scope-assignment:1",
             2,
             pin,
         )
@@ -111,6 +111,9 @@ mod tests {
         let foreign = GameSessionId::decode(&id(5)).map_err(error)?;
         let reservation = runtime.reserve_fresh_session(session).map_err(error)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(error)?;
+        runtime
+            .initialize_first_entry_position(actor)
+            .map_err(error)?;
         let states = ChannelSpellStates::default();
         let mut attack = ChannelAttackStates::default();
         let now = SemanticTimeMicros::from_micros(10);

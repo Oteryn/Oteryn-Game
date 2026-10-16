@@ -530,3 +530,10 @@ evidence; earlier ten-case D1180 evidence remains a separate source generation.
 A direct fact regression uses a real ChannelRuntime player/session reservation and
 actual ChannelAttackStates::record_hit_taken; it checks the real deadline, foreign
 session refusal, sample/actor binding and exact expiry. It is prepared NOT_RUN.
+
+The first final-source execution listed this test, then failed with
+`InvalidAssignmentBinding` before exercising its assertions. Returned to AUTHORING:
+the fixture now uses the native `runtime-scope-assignment:1` binding and initializes
+the real first-entry position, matching the existing attack owner fixture. The
+failed source/result remain retained; this repair requires a new frozen source
+and actual scoped execution. No production guard was changed.
