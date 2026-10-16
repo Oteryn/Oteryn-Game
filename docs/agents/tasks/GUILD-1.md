@@ -33,8 +33,8 @@ GUILD-1 (hard, persistence and security review). GUILD-BANK-1, GUILD-CHAT-1 foll
 
 | Dependency | State |
 |---|---|
-| PARTY-1 | BLOCKING (Wave 2, not merged) |
-| NPC-ECON-1 (BANK-1) | BANK-1 MERGED (#1766); NPC-ECON-1 family BLOCKING |
+| PARTY-1 | Not a prerequisite after accepted SOCIAL-MAP §1.2/§2.2; no PARTY schema assumed |
+| BANK-1 | MERGED (#1766); SOCIAL-MAP §1.2/§2.2 narrows the guild-core bank prerequisite to BANK-1 |
 | PREMIUM-1 / PREM-WIRE-1 | MERGED (#2110) |
 | ECON-RET-0 / GUILD-RET-0 | MERGED (#1748) |
 | GUILD0 acceptance | ACCEPTED per plan §7 status list (file Status line still reads CANDIDATE: CP to confirm) |
@@ -854,3 +854,73 @@ gates. Rank-specific lexical/length policy is unallocated; no CharacterName or
 NoStarterIsland until DAWNPORT. Disband remains blocked on genuine GuildBank/
 Hall release and closure ports. No non-test production graph, all-targets/full
 workspace, live Guildhall transition, draft-ready or merge claim is made.
+
+
+### 2026-10-16 — accepted deadline start/checkpoint increment (unregistered)
+
+CP gap review comment6216375759 asks for formation/vice jobs and activation.
+The original SetRank writer already activates FORMING→ACTIVE at four actual
+vices, gates late cures, and maintains the first deficit timestamp; its existing
+`guild_rank_native_formation_and_first_deficit_cure` test is preserved literally.
+No second activation writer has been added.
+
+The new `node/guild_jobs.rs` pass discovers at most100 ordered candidates without
+Guild locks, then processes each in its own native semantic transaction. Current
+reconciled Root recovery and admission relations are rechecked in every boundary
+(GUILDS_V1 §3; GUILD0 §4.1). Current node incarnation is an additional process check,
+not an invented World ownership grant. No session fence or Character root is used.
+The operation key precedes the Guild lock; the locked World/state/database deadline
+is rechecked before writing. Strict formation and14-day comparisons use database
+transaction time and overflow-safe arithmetic.
+
+GUILD0 §3.4 start is retained as (Guild,step1) plus exact private event DATA in the
+same physical transaction as FORMING/ACTIVE→DISBANDING and one revision increment.
+This freezes ordinary commands while real Hall/bid release and Bank payout remain
+pending. Restart reads checkpoints; concurrent starts have a typed AlreadyStarted
+outcome. Closed SQL guards bind revisions, state, database time and whole payload,
+reject missing/forged publication, and refuse updates/deletes/truncation of retained
+checkpoint/event evidence. There is deliberately no terminal DISBANDED writer or
+claim that Bank/Hall closure has occurred.
+
+Seven new bodies (one pure, six PostgreSQL) cover strict boundaries and overflow,
+actual Root restart/new node, pending checkpoint reload, foreign World/no-longer-due,
+publication-fault rollback/retry, concurrent start, current authority and stale
+recovery, bounded100+1 passes and late candidate recheck. The inherited guild_tests
+prefix remains byte-identical. Native execution is pending the lead's cloud
+validation slot; source parsing/rustfmt and diff checks alone do not qualify it.
+
+All production module/scheduler installation, numbered migration, public event
+registry/retention and publication remain CP slot gates. Terminal Disband,
+Hall release, Bank payout, bounded member/invitation cleanup and final no-orphan
+closure remain blocked on CP composition of #2136/#2139/#2153. This increment
+neither supplies fake closure participants nor marks this partial task complete.
+
+
+### 2026-10-16 — independent review repair: explicit player Disband start
+
+Accepted GUILD0 §3.2 requires the current leader's confirmed Disband start even
+while Hall/Bank closure remains pending. The native payload-bearing private
+`GuildDisbandRequest` now enters the existing Root/recovery/admission/occurrence/
+current session/node/Character root/Guild/sorted member lock spine. Only the real
+current same-Guild leader may start. Exact confirmation bytes are bound to replay
+and compared to the current locked name. Name equality is a bounded private
+confirmation choice consistent with proposed GUILDS_V1 §5; that document's heading
+is CANDIDATE, so this does not claim its independent acceptance or mint a wire ID.
+
+The same transaction stores private action13's immutable operation and exact
+command event, reason3's pending disband checkpoint, state DISBANDING and one
+Guild revision increment. It emits no duplicate job event. The SQL precondition
+requires the actual leader and exact name; deferred guards bind the whole event,
+checkpoint and state. Payloadless legacy calls refuse before lookup. Historical
+replay retains its typed outcome without reacquiring current authority; altered
+confirmation conflicts. Real Hall/bid release and Bank payout remain pending and
+no member/rank/leadership rows are removed or terminalized here.
+
+Seven further meaningful bodies (one pure/six PostgreSQL) cover bounded/closed
+confirmation DATA; FORMING and ACTIVE starts, exact-name rejection and replay;
+vice/member/other-Guild leader refusal; current fences/node/Root provenance;
+forged-event whole-transaction rollback/retry; player/job race; and actual Resign
+followed by old-leader refusal/new-leader success. Current source-derived total
+is92 Guild bodies (78 inherited +14 new); runtime qualification remains pending.
+Native review/validation must use this repaired source, superseding the earlier
+held deadline-only manifest. All inherited78 bodies remain literal.

@@ -1,7 +1,7 @@
 //! Native GUILD0 membership/invitation owner preparation, UNREGISTERED and UNINSTALLED.
 //!
-//! Found uses the genuine native Premium gate; activation/jobs, disband, Guild Bank/Hall, wire
-//! and runtime installation remain outside this private component.
+//! Found uses the genuine native Premium gate. Deadline jobs durably begin disband; final
+//! Bank/Hall closure, wire and runtime installation remain outside this private component.
 //! The private schema and event-data proposal require CP admission. Native recovery/session/
 //! node guards remain the actual current-authority source; retained operations are outcomes.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -71,6 +71,7 @@ pub enum GuildCommand {
     EditRanks,
     /// Invited actor deletes only its selected Guild invitation (GUILDS_V1§5).
     Decline,
+    Disband,
 }
 impl GuildCommand {
     fn code(self) -> i16 {
@@ -87,6 +88,7 @@ impl GuildCommand {
             Self::Resign(_) => 10,
             Self::EditRanks => 11,
             Self::Decline => 12,
+            Self::Disband => 13,
         }
     }
     fn target(self, actor: CharacterId) -> CharacterId {
@@ -102,8 +104,30 @@ impl GuildCommand {
             | Self::Found
             | Self::SetMessage
             | Self::EditRanks
-            | Self::Decline => actor,
+            | Self::Decline
+            | Self::Disband => actor,
         }
+    }
+}
+
+/// Accepted Disband confirmation DATA. It never supplies role or current authority.
+#[derive(Debug, Clone)]
+pub(crate) struct GuildDisbandRequest {
+    common: GuildRequest,
+    confirmation: String,
+}
+impl GuildDisbandRequest {
+    pub(crate) fn new(common: GuildRequest, confirmation: &str) -> Result<Self> {
+        if common.operation != GuildCommand::Disband
+            || confirmation.chars().count() > 29
+            || confirmation.contains('\0')
+        {
+            return Err(GuildError::InvalidInput);
+        }
+        Ok(Self {
+            common,
+            confirmation: confirmation.to_owned(),
+        })
     }
 }
 
@@ -397,6 +421,55 @@ fn binding(fence: &CurrentCharacterItemFence, request: &GuildRequest) -> Result<
 }
 
 impl DurabilityRoot {
+    /// GUILD0 §3.2 leader-confirmed start. No Premium/Bank/Hall authority is inferred.
+    pub(crate) async fn commit_guild_disband(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        disband: GuildDisbandRequest,
+    ) -> Result<GuildOutcome> {
+        let mut digest = Sha256::new();
+        digest.update(b"oteryn:guild-disband-proposal:v1");
+        digest.update(binding(&fence, &disband.common)?);
+        digest.update(disband.confirmation.as_bytes());
+        let binding = digest.finalize().to_vec();
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = async {
+                        lock_fenced_guild_operation(&mut tx, &recovery, &disband.common).await?;
+                        let edit = MemberEdit::Disband(&disband);
+                        execute(
+                            &mut tx,
+                            &node,
+                            &fence,
+                            &disband.common,
+                            &binding,
+                            None,
+                            Some(&edit),
+                        )
+                        .await
+                    }
+                    .await;
+                    match result {
+                        Ok(outcome) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(outcome))
+                        }
+                        Err(GuildError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
     /// Actual Found entry. The Account selector is read under the native session fence, never
     /// accepted from the caller. A terminal receipt is read before asking the Premium owner.
     /// NotActivated writes in the gate's physical transaction; it never takes a second holder.
@@ -542,6 +615,7 @@ impl DurabilityRoot {
                 | GuildCommand::SetRank(_)
                 | GuildCommand::Resign(_)
                 | GuildCommand::EditRanks
+                | GuildCommand::Disband
         ) {
             return Err(GuildError::InvalidInput);
         }
@@ -966,6 +1040,7 @@ enum MemberEdit<'a, 'premium> {
     Rank(RankEdit<'a, 'premium>),
     Resign(ResignEdit<'a, 'premium>),
     EditRanks(&'a GuildEditRanksRequest),
+    Disband(&'a GuildDisbandRequest),
 }
 impl ResignWrite {
     async fn execute(
@@ -1117,6 +1192,7 @@ impl FoundWrite {
                     rank: None,
                     resign: None,
                     edit_ranks: None,
+                    disband: None,
                 },
             )
             .await;
@@ -1159,6 +1235,7 @@ impl FoundWrite {
                 rank: None,
                 resign: None,
                 edit_ranks: None,
+                disband: None,
             },
         )
         .await?;
@@ -1296,7 +1373,7 @@ async fn execute(
             target_exists = valid;
         }
     }
-    let guild = sqlx::query("SELECT world_id::text,state,revision::text,formation_deadline,vice_deficit_since FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
+    let guild = sqlx::query("SELECT name,world_id::text,state,revision::text,formation_deadline,vice_deficit_since FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(request.guild_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let Some(guild) = guild else {
         return store(
@@ -1375,6 +1452,69 @@ async fn execute(
     };
     let acting = member(actor)?;
     let subject = member(target)?;
+    if let Some(MemberEdit::Disband(disband)) = edit {
+        if acting.as_ref().is_none_or(|member| member.rank != 1)
+            || disband.confirmation != guild.try_get::<String, _>("name")?
+        {
+            return store(
+                tx,
+                fence,
+                request,
+                binding,
+                GuildResult::NotAllowed,
+                (Some(previous), None),
+                None,
+            )
+            .await;
+        }
+        let next = previous.checked_add(1).ok_or_else(invalid)?;
+        let audit = super::guild_audit::GuildDisbandAuditProposal {
+            operation: GuildAuditProposal {
+                version: 1,
+                occurrence: request.identity.occurrence,
+                transaction_id: request.identity.transaction_id,
+                event_id: request.identity.event_id,
+                guild_id: *request.guild_id.as_bytes(),
+                world_id: *fence.runtime_scope.world_id().as_bytes(),
+                actor: *actor.as_bytes(),
+                target: *actor.as_bytes(),
+                action: 13,
+                previous_revision: previous,
+                revision: next,
+                rank_before: None,
+                rank_after: None,
+                removed_invitations: 0,
+                occurred_at_unix_ms: request.identity.occurred_at_unix_ms,
+            },
+            confirmation: disband.confirmation.clone(),
+        }
+        .checked_bytes()
+        .ok_or_else(invalid)?;
+        let outcome = store_operation(
+            tx,
+            fence,
+            request,
+            binding,
+            GuildResult::Ok,
+            OperationPayload {
+                revisions: (Some(previous), Some(next)),
+                audit: Some(&audit),
+                found_name: None,
+                text: None,
+                rank: None,
+                resign: None,
+                edit_ranks: None,
+                disband: Some(disband),
+            },
+        )
+        .await?;
+        sqlx::query("INSERT INTO game_guild_job_checkpoints(guild_id,step,world_id,reason,previous_revision,revision,occurred_at) VALUES(encode($1,'hex')::uuid,1,encode($2,'hex')::uuid,3,$3::text::numeric,$4::text::numeric,floor(extract(epoch FROM transaction_timestamp())*1000)::bigint)")
+            .bind(request.guild_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+            .bind(previous.to_string()).bind(next.to_string()).execute(&mut **tx).await?;
+        sqlx::query("UPDATE game_guilds SET state=3,revision=$2::text::numeric WHERE guild_id=encode($1,'hex')::uuid")
+            .bind(request.guild_id.as_bytes().as_slice()).bind(next.to_string()).execute(&mut **tx).await?;
+        return Ok(outcome);
+    }
     if let Some(MemberEdit::EditRanks(edit)) = edit {
         // The one sorted member lock query above locks the complete roster for this action.
         // Do not lock the actor first and then acquire smaller CharacterIds out of order.
@@ -1449,6 +1589,7 @@ async fn execute(
                 rank: None,
                 resign: None,
                 edit_ranks: Some(edit),
+                disband: None,
             },
         )
         .await?;
@@ -1608,6 +1749,7 @@ async fn execute(
                 rank: None,
                 resign: Some(edit.request),
                 edit_ranks: None,
+                disband: None,
             },
         )
         .await?;
@@ -1798,6 +1940,7 @@ async fn execute(
                 rank: Some((edit.request, before)),
                 resign: None,
                 edit_ranks: None,
+                disband: None,
             },
         )
         .await?;
@@ -1882,6 +2025,7 @@ async fn execute(
                 rank: None,
                 resign: None,
                 edit_ranks: None,
+                disband: None,
             },
         )
         .await?;
@@ -2017,7 +2161,8 @@ async fn execute(
         | GuildCommand::SetMessage
         | GuildCommand::SetRank(_)
         | GuildCommand::Resign(_)
-        | GuildCommand::EditRanks => {
+        | GuildCommand::EditRanks
+        | GuildCommand::Disband => {
             return Err(GuildError::InvalidInput);
         }
         GuildCommand::Leave => match member_in_guild(&acting, &request.guild_id) {
@@ -2154,7 +2299,8 @@ async fn execute(
         | GuildCommand::SetMessage
         | GuildCommand::SetRank(_)
         | GuildCommand::Resign(_)
-        | GuildCommand::EditRanks => {
+        | GuildCommand::EditRanks
+        | GuildCommand::Disband => {
             return Err(GuildError::InvalidInput);
         }
     }
@@ -2219,6 +2365,7 @@ async fn store(
             rank: None,
             resign: None,
             edit_ranks: None,
+            disband: None,
         },
     )
     .await
@@ -2232,6 +2379,7 @@ struct OperationPayload<'a> {
     rank: Option<(&'a GuildRankRequest, u8)>,
     resign: Option<&'a GuildResignRequest>,
     edit_ranks: Option<&'a GuildEditRanksRequest>,
+    disband: Option<&'a GuildDisbandRequest>,
 }
 
 async fn store_operation(
@@ -2250,14 +2398,15 @@ async fn store_operation(
         rank,
         resign,
         edit_ranks,
+        disband,
     } = payload;
     let event = audit.map(|_| request.identity.event_id);
-    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name,expected_revision,edit_text,previous_rank,edit_rank,edit_rank_names) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17,$18::text::numeric,$19,$20,$21,$22)")
+    sqlx::query("INSERT INTO game_guild_operations(occurrence,transaction_id,requested_event_id,game_session_id,command_id,actor,world_id,guild_id,target,action,request_binding,result,previous_revision,revision,event_id,audit_sha256,found_name,expected_revision,edit_text,previous_rank,edit_rank,edit_rank_names,disband_confirmation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10,$11,$12,$13::text::numeric,$14::text::numeric,encode($15,'hex')::uuid,sha256($16),$17,$18::text::numeric,$19,$20,$21,$22,$23)")
         .bind(request.identity.occurrence.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice())
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.guild_id.as_bytes().as_slice())
         .bind(request.operation.target(fence.character_id).as_bytes().as_slice()).bind(request.operation.code()).bind(binding).bind(result.code())
-        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name).bind(text.map(|t| t.expected_revision).or_else(||rank.map(|(r,_)|r.expected_revision)).or_else(||resign.map(|r|r.expected_revision)).or_else(||edit_ranks.map(|r|r.expected_revision)).map(|r|r.to_string())).bind(text.map(|t| t.text.as_str())).bind(rank.map(|(_,before)|i16::from(before)).or_else(||resign.map(|_|2_i16))).bind(rank.map(|(r,_)|i16::from(r.level.level())).or_else(||resign.map(|_|1_i16))).bind(edit_ranks.map(|r|r.names.as_slice()))
+        .bind(previous.map(|x|x.to_string())).bind(revision.or(previous).map(|x|x.to_string())).bind(event.map(|x|x.to_vec())).bind(audit).bind(found_name).bind(text.map(|t| t.expected_revision).or_else(||rank.map(|(r,_)|r.expected_revision)).or_else(||resign.map(|r|r.expected_revision)).or_else(||edit_ranks.map(|r|r.expected_revision)).map(|r|r.to_string())).bind(text.map(|t| t.text.as_str())).bind(rank.map(|(_,before)|i16::from(before)).or_else(||resign.map(|_|2_i16))).bind(rank.map(|(r,_)|i16::from(r.level.level())).or_else(||resign.map(|_|1_i16))).bind(edit_ranks.map(|r|r.names.as_slice())).bind(disband.map(|r|r.confirmation.as_str()))
         .execute(&mut **tx).await?;
     if let Some(audit) = audit {
         sqlx::query("INSERT INTO game_guild_event_outbox(event_id,occurrence,guild_id,occurred_at,payload,payload_sha256) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,$5,sha256($5))")
@@ -2289,6 +2438,187 @@ fn receipt(row: &sqlx::postgres::PgRow) -> Result<GuildReceipt> {
             .map(|s| uuid_text(&s))
             .transpose()?,
     })
+}
+
+/// GUILD0-RL-09: one World deadline scan admits at most 100 Guild candidates.
+pub(crate) const GUILD_JOB_PASS_MAX: i64 = 100;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GuildDeadlineOutcome {
+    Started,
+    AlreadyStarted,
+    NoLongerDue,
+}
+
+impl DurabilityRoot {
+    /// Candidate discovery takes no Guild locks. The worker must recheck under the Guild lock.
+    pub(crate) async fn guild_deadline_candidates(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        world: crate::foundation::WorldId,
+    ) -> Result<Vec<GuildId>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
+        let node = node.clone();
+        Ok(self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                if !super::runtime_scope_assignment::prove_current_incarnation(&mut tx, &node).await? {
+                    return Err(DurabilityError::Unavailable);
+                }
+                let rows: Vec<String> = sqlx::query_scalar("SELECT guild_id::text FROM game_guilds WHERE world_id=encode($1,'hex')::uuid AND ((state=1 AND formation_deadline<floor(extract(epoch FROM transaction_timestamp())*1000)::bigint) OR (state=2 AND vice_deficit_since IS NOT NULL AND floor(extract(epoch FROM transaction_timestamp())*1000)::numeric-vice_deficit_since::numeric>1209600000)) ORDER BY guild_id LIMIT $2")
+                    .bind(world.as_bytes().as_slice()).bind(GUILD_JOB_PASS_MAX).fetch_all(&mut *tx).await?;
+                let ids = rows.into_iter().map(|id| {
+                    GuildId::from_bytes(uuid_text(&id)?).map_err(|_| DurabilityError::InvalidStoredState)
+                }).collect::<std::result::Result<Vec<_>, _>>()?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(ids)
+            })
+        }).await?)
+    }
+
+    /// Only accepted GUILD0 §3.4 start: freeze commands and retain the pending step durably.
+    /// Bank payout and Hall disposition must finish before any future terminal step is admitted.
+    /// World jobs use current recovery/admission, never a Character session or retained receipt
+    /// as authority (GUILDS_V1 §3; GUILD0 §4.1). The node proof attests only current process.
+    pub(crate) async fn start_guild_deadline_disband(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        world: crate::foundation::WorldId,
+        guild: GuildId,
+    ) -> Result<GuildDeadlineOutcome> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if !super::runtime_scope_assignment::prove_current_incarnation(&mut tx, &node)
+                        .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let outcome = start_deadline_disband(&mut tx, world, guild).await;
+                    match outcome {
+                        Ok(outcome) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(outcome))
+                        }
+                        Err(GuildError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
+    /// Reload pending starts after a process/session change. This is a bounded delivery query,
+    /// not a completion API: no Bank/Hall closure or external work is inferred from a checkpoint.
+    pub(crate) async fn pending_guild_disbands(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        world: crate::foundation::WorldId,
+    ) -> Result<Vec<GuildId>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| GuildError::NotCurrent)?;
+        let node = node.clone();
+        Ok(self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                if !super::runtime_scope_assignment::prove_current_incarnation(&mut tx, &node).await? {
+                    return Err(DurabilityError::Unavailable);
+                }
+                let rows: Vec<String> = sqlx::query_scalar("SELECT j.guild_id::text FROM game_guild_job_checkpoints j JOIN game_guilds g USING(guild_id) WHERE j.world_id=encode($1,'hex')::uuid AND g.world_id=j.world_id AND g.state=3 ORDER BY j.guild_id LIMIT $2")
+                    .bind(world.as_bytes().as_slice()).bind(GUILD_JOB_PASS_MAX).fetch_all(&mut *tx).await?;
+                let ids = rows.into_iter().map(|id| {
+                    GuildId::from_bytes(uuid_text(&id)?).map_err(|_| DurabilityError::InvalidStoredState)
+                }).collect::<std::result::Result<Vec<_>, _>>()?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(ids)
+            })
+        }).await?)
+    }
+}
+
+async fn start_deadline_disband(
+    tx: &mut Transaction<'_, Postgres>,
+    world: crate::foundation::WorldId,
+    guild: GuildId,
+) -> Result<GuildDeadlineOutcome> {
+    // Occurrence first, Guild second. Separate candidate transactions preserve the full order.
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('guild-disband-start:'||encode($1,'hex'),0))")
+        .bind(guild.as_bytes().as_slice()).execute(&mut **tx).await?;
+    let Some(row) = sqlx::query("SELECT world_id::text,state,revision::text,formation_deadline,vice_deficit_since,floor(extract(epoch FROM transaction_timestamp())*1000)::bigint AS now FROM game_guilds WHERE guild_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(guild.as_bytes().as_slice()).fetch_optional(&mut **tx).await? else {
+        return Ok(GuildDeadlineOutcome::NoLongerDue);
+    };
+    if uuid_text(&row.try_get::<String, _>("world_id")?)? != *world.as_bytes() {
+        return Ok(GuildDeadlineOutcome::NoLongerDue);
+    }
+    let state = match row.try_get::<i16, _>("state")? {
+        1 => GuildState::Forming,
+        2 => GuildState::Active,
+        3 => {
+            let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_job_checkpoints WHERE guild_id=encode($1,'hex')::uuid AND step=1)")
+                .bind(guild.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+            return Ok(if exists {
+                GuildDeadlineOutcome::AlreadyStarted
+            } else {
+                GuildDeadlineOutcome::NoLongerDue
+            });
+        }
+        4 => return Ok(GuildDeadlineOutcome::NoLongerDue),
+        _ => return Err(invalid()),
+    };
+    let job = if state == GuildState::Forming {
+        crate::domain::guild::GuildDeadlineJob::Formation
+    } else {
+        crate::domain::guild::GuildDeadlineJob::ViceDeficit
+    };
+    let now: i64 = row.try_get("now")?;
+    if !job.due(
+        state,
+        row.try_get("formation_deadline")?,
+        row.try_get("vice_deficit_since")?,
+        now,
+    ) {
+        return Ok(GuildDeadlineOutcome::NoLongerDue);
+    }
+    let previous = numeric_u64(&row, "revision")?;
+    let revision = previous.checked_add(1).ok_or_else(invalid)?;
+    let audit = super::guild_audit::GuildJobAuditProposal {
+        version: 1,
+        guild_id: *guild.as_bytes(),
+        world_id: *world.as_bytes(),
+        step: 1,
+        reason: job.code(),
+        previous_revision: previous,
+        revision,
+        occurred_at_unix_ms: now,
+    }
+    .checked_bytes()
+    .ok_or_else(invalid)?;
+    sqlx::query("INSERT INTO game_guild_job_checkpoints(guild_id,step,world_id,reason,previous_revision,revision,occurred_at) VALUES(encode($1,'hex')::uuid,1,encode($2,'hex')::uuid,$3,$4::text::numeric,$5::text::numeric,$6)")
+        .bind(guild.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(job.code())
+        .bind(previous.to_string()).bind(revision.to_string()).bind(now).execute(&mut **tx).await?;
+    sqlx::query("UPDATE game_guilds SET state=3,revision=$2::text::numeric WHERE guild_id=encode($1,'hex')::uuid")
+        .bind(guild.as_bytes().as_slice()).bind(revision.to_string()).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_guild_job_event_outbox(guild_id,step,payload,payload_sha256) VALUES(encode($1,'hex')::uuid,1,$2,sha256($2))")
+        .bind(guild.as_bytes().as_slice()).bind(&audit).execute(&mut **tx).await?;
+    Ok(GuildDeadlineOutcome::Started)
 }
 
 /// Complete owner table shape for this private qualification. NOT a numbered migration,
@@ -2339,11 +2669,12 @@ CREATE TABLE game_guild_operations(
  game_session_id UUID NOT NULL CHECK(game_character_is_uuid_v7(game_session_id)),
  command_id NUMERIC(20,0) NOT NULL CHECK(command_id BETWEEN 1 AND 18446744073709551615),
  actor UUID NOT NULL REFERENCES game_character_roots,world_id UUID NOT NULL,guild_id UUID NOT NULL,
- target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 12),
+ target UUID NOT NULL CHECK(game_character_is_uuid_v7(target)),action SMALLINT NOT NULL CHECK(action BETWEEN 1 AND 13),
  request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),result SMALLINT NOT NULL CHECK(result BETWEEN 0 AND 12),
  previous_revision NUMERIC(20,0),revision NUMERIC(20,0),event_id UUID UNIQUE,audit_sha256 BYTEA,
  found_name TEXT CHECK((action=6 AND found_name IS NOT NULL AND game_character_is_name(found_name)) OR (action<>6 AND found_name IS NULL)),
- expected_revision NUMERIC(20,0),edit_text TEXT,previous_rank SMALLINT,edit_rank SMALLINT,edit_rank_names TEXT[],
+ expected_revision NUMERIC(20,0),edit_text TEXT,previous_rank SMALLINT,edit_rank SMALLINT,edit_rank_names TEXT[],disband_confirmation TEXT,
+ CHECK(CASE WHEN action=13 AND result=0 THEN disband_confirmation IS NOT NULL AND char_length(disband_confirmation)<=29 ELSE disband_confirmation IS NULL END),
  CHECK(CASE WHEN action=11 AND result=0 THEN game_guild_rank_names_valid(edit_rank_names) ELSE edit_rank_names IS NULL END),
  CHECK(CASE WHEN action IN(7,8) AND result=0 THEN expected_revision IS NOT NULL AND expected_revision=previous_revision AND expected_revision>=1 AND edit_text IS NOT NULL
    AND ((action=7 AND char_length(edit_text)<=29) OR (action=8 AND char_length(edit_text) BETWEEN 1 AND 255 AND octet_length(edit_text)<=1020))
@@ -2363,6 +2694,22 @@ CREATE TABLE game_guild_event_outbox(
  payload BYTEA NOT NULL CHECK(octet_length(payload) BETWEEN 1 AND 4096),
  payload_sha256 BYTEA NOT NULL CHECK(payload_sha256=sha256(payload)),
  created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id());
+-- Pending start is retained even while external Hall/Bank composition is unavailable.
+-- There is deliberately no terminalizer, fake closure port, or public event allocation.
+CREATE TABLE game_guild_job_checkpoints(
+ guild_id UUID NOT NULL REFERENCES game_guilds,step SMALLINT NOT NULL CHECK(step=1),
+ world_id UUID NOT NULL CHECK(game_character_is_uuid_v7(world_id)),
+ reason SMALLINT NOT NULL CHECK(reason IN(1,2,3)),
+ previous_revision NUMERIC(20,0) NOT NULL CHECK(previous_revision BETWEEN 1 AND 18446744073709551614),
+ revision NUMERIC(20,0) NOT NULL CHECK(revision=previous_revision+1),
+ occurred_at BIGINT NOT NULL CHECK(occurred_at>0),
+ created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),PRIMARY KEY(guild_id,step));
+CREATE TABLE game_guild_job_event_outbox(
+ guild_id UUID NOT NULL,step SMALLINT NOT NULL,
+ payload BYTEA NOT NULL CHECK(octet_length(payload) BETWEEN 1 AND 4096),
+ payload_sha256 BYTEA NOT NULL CHECK(payload_sha256=sha256(payload)),
+ created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),PRIMARY KEY(guild_id,step),
+ FOREIGN KEY(guild_id,step) REFERENCES game_guild_job_checkpoints);
 "#;
 
 /// Private integrity guards for the five commands; no runtime/grant/SECURITY DEFINER shortcut.
@@ -2383,8 +2730,18 @@ DO $$ DECLARE tab TEXT;BEGIN
 END $$;
 
 CREATE FUNCTION game_guild_command_mutation() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE o game_guild_operations%ROWTYPE;r SMALLINT;w UUID;n BIGINT;now_millis BIGINT;rank_state SMALLINT;rank_deficit BIGINT;
+DECLARE o game_guild_operations%ROWTYPE;r SMALLINT;w UUID;n BIGINT;now_millis BIGINT;rank_state SMALLINT;rank_deficit BIGINT;j game_guild_job_checkpoints%ROWTYPE;
 BEGIN
+ IF TG_TABLE_NAME='game_guilds' AND TG_OP='UPDATE' THEN
+  SELECT * INTO j FROM game_guild_job_checkpoints WHERE guild_id=OLD.guild_id AND step=1 AND created_xact_id=pg_current_xact_id();
+  IF FOUND THEN
+   IF OLD.state NOT IN(1,2) OR NEW.state<>3 OR OLD.world_id<>j.world_id
+      OR OLD.revision<>j.previous_revision OR NEW.revision<>j.revision
+      OR (to_jsonb(OLD)-'state'-'revision'-'name_key') IS DISTINCT FROM (to_jsonb(NEW)-'state'-'revision'-'name_key') THEN
+    RAISE EXCEPTION 'Guild job only freezes its due Guild at the exact next revision' USING ERRCODE='23514';END IF;
+   RETURN NEW;
+  END IF;
+ END IF;
  SELECT * INTO o FROM game_guild_operations WHERE created_xact_id=pg_current_xact_id() AND result=0;
  IF NOT FOUND THEN RAISE EXCEPTION 'Guild mutation requires its same-transaction operation' USING ERRCODE='23514';END IF;
  IF TG_TABLE_NAME='game_guilds' THEN
@@ -2612,6 +2969,17 @@ CREATE CONSTRAINT TRIGGER game_guild_invitation_caps AFTER INSERT ON game_guild_
 
 -- The real writer has already locked the Guild and this invitation in accepted order.
 -- A newly proposed success must also see that existing row, not merely a final empty snapshot.
+CREATE FUNCTION game_guild_disband_precondition() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.action=13 AND NEW.result=0 AND (NEW.actor<>NEW.target OR NOT EXISTS(
+    SELECT 1 FROM game_guilds g JOIN game_guild_members m USING(guild_id)
+    WHERE g.guild_id=NEW.guild_id AND g.world_id=NEW.world_id AND g.state IN(1,2)
+      AND g.revision=NEW.previous_revision AND g.name=NEW.disband_confirmation AND m.character_id=NEW.actor AND m.rank_level=1)) THEN
+  RAISE EXCEPTION 'Disband requires exact current leader and bound name confirmation' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_guild_disband_precondition BEFORE INSERT ON game_guild_operations FOR EACH ROW EXECUTE FUNCTION game_guild_disband_precondition();
+
 CREATE FUNCTION game_guild_decline_precondition() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF NEW.action=12 AND NEW.result=0 AND (NEW.actor<>NEW.target OR NOT EXISTS(
@@ -2624,8 +2992,12 @@ CREATE TRIGGER game_guild_decline_precondition BEFORE INSERT ON game_guild_opera
 CREATE FUNCTION game_guild_operation_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF NEW.result=0 THEN
-  IF NEW.created_xact_id<>pg_current_xact_id() OR NOT EXISTS(SELECT 1 FROM game_guilds g WHERE g.guild_id=NEW.guild_id AND g.world_id=NEW.world_id AND g.state IN(1,2) AND g.revision=NEW.revision)
+  IF NEW.created_xact_id<>pg_current_xact_id() OR NOT EXISTS(SELECT 1 FROM game_guilds g WHERE g.guild_id=NEW.guild_id AND g.world_id=NEW.world_id AND ((NEW.action<>13 AND g.state IN(1,2)) OR (NEW.action=13 AND g.state=3)) AND g.revision=NEW.revision)
      OR NOT EXISTS(SELECT 1 FROM game_guild_event_outbox e WHERE e.occurrence=NEW.occurrence AND e.event_id=NEW.event_id AND e.guild_id=NEW.guild_id AND e.payload_sha256=NEW.audit_sha256 AND e.created_xact_id=pg_current_xact_id())
+     OR (NEW.action=13 AND (NEW.actor<>NEW.target
+       OR NOT EXISTS(SELECT 1 FROM game_guild_members WHERE guild_id=NEW.guild_id AND character_id=NEW.actor AND rank_level=1)
+       OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=NEW.guild_id AND name=NEW.disband_confirmation AND state=3)
+       OR NOT EXISTS(SELECT 1 FROM game_guild_job_checkpoints WHERE guild_id=NEW.guild_id AND step=1 AND reason=3 AND world_id=NEW.world_id AND previous_revision=NEW.previous_revision AND revision=NEW.revision AND created_xact_id=pg_current_xact_id())))
      OR (NEW.action=1 AND NOT EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id AND character_id=NEW.target AND inviter=NEW.actor))
      OR (NEW.action=2 AND EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id AND character_id=NEW.target))
      OR (NEW.action=12 AND (NEW.actor<>NEW.target OR EXISTS(SELECT 1 FROM game_guild_invitations WHERE guild_id=NEW.guild_id AND character_id=NEW.actor)))
@@ -2674,6 +3046,15 @@ BEGIN
       AND (convert_from(NEW.payload,'UTF8')::jsonb->>'rank_before')::smallint=o.previous_rank
       AND (convert_from(NEW.payload,'UTF8')::jsonb->>'rank_after')::smallint=o.edit_rank
       AND (convert_from(NEW.payload,'UTF8')::jsonb->>'action')::smallint=o.action))
+   AND (o.action<>13 OR convert_from(NEW.payload,'UTF8')::jsonb =
+     jsonb_build_object('version',1,'action',13,'previous_revision',o.previous_revision,'revision',o.revision,
+       'rank_before',NULL::smallint,'rank_after',NULL::smallint,'removed_invitations',0,'occurred_at_unix_ms',NEW.occurred_at,
+       'confirmation',o.disband_confirmation)
+     || (SELECT jsonb_object_agg(field_name,encoded_bytes) FROM
+       (SELECT field_name,jsonb_agg(get_byte(uuid_send(uuid_value),byte_index) ORDER BY byte_index) AS encoded_bytes
+        FROM (VALUES ('occurrence',o.occurrence),('transaction_id',o.transaction_id),('event_id',o.event_id),
+          ('guild_id',o.guild_id),('world_id',o.world_id),('actor',o.actor),('target',o.target)) AS ids(field_name,uuid_value)
+        CROSS JOIN generate_series(0,15) AS bytes(byte_index) GROUP BY field_name,uuid_value) AS encoded_ids))
    AND (o.action<>12 OR convert_from(NEW.payload,'UTF8')::jsonb =
      jsonb_build_object('version',1,'action',12,'previous_revision',o.previous_revision,'revision',o.revision,
        'rank_before',NULL::smallint,'rank_after',NULL::smallint,'removed_invitations',1,'occurred_at_unix_ms',NEW.occurred_at)
@@ -2704,6 +3085,63 @@ BEGIN
  RETURN NULL;
 END $$;
 CREATE CONSTRAINT TRIGGER game_guild_event_proven AFTER INSERT ON game_guild_event_outbox DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_event_proven();
+-- GUILD0 §3.3/§3.4 start only. The same transaction retains its pending step and publication.
+CREATE FUNCTION game_guild_job_start_allowed() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE g game_guilds%ROWTYPE;n BIGINT;
+BEGIN
+ SELECT * INTO g FROM game_guilds WHERE guild_id=NEW.guild_id;
+ n=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint;
+ IF NOT FOUND OR g.world_id<>NEW.world_id OR g.revision<>NEW.previous_revision
+    OR NEW.occurred_at<>n OR NEW.created_xact_id<>pg_current_xact_id()
+    OR NOT ((NEW.reason=1 AND g.state=1 AND n>g.formation_deadline)
+       OR (NEW.reason=2 AND g.state=2 AND g.vice_deficit_since IS NOT NULL
+          AND n::numeric-g.vice_deficit_since::numeric>1209600000)
+       OR (NEW.reason=3 AND g.state IN(1,2) AND EXISTS(
+          SELECT 1 FROM game_guild_operations o WHERE o.created_xact_id=pg_current_xact_id()
+            AND o.action=13 AND o.result=0 AND o.guild_id=g.guild_id AND o.world_id=g.world_id
+            AND o.previous_revision=NEW.previous_revision AND o.revision=NEW.revision AND o.disband_confirmation=g.name)))
+    OR (NEW.reason<>3 AND EXISTS(SELECT 1 FROM game_guild_operations WHERE created_xact_id=pg_current_xact_id())) THEN
+  RAISE EXCEPTION 'Guild job requires its due locked Guild and exact database time' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_guild_job_stamp BEFORE INSERT ON game_guild_job_checkpoints FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_guild_job_start_allowed BEFORE INSERT ON game_guild_job_checkpoints FOR EACH ROW EXECUTE FUNCTION game_guild_job_start_allowed();
+CREATE TRIGGER game_guild_job_event_stamp BEFORE INSERT ON game_guild_job_event_outbox FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_guild_job_immutable BEFORE UPDATE OR DELETE ON game_guild_job_checkpoints FOR EACH ROW EXECUTE FUNCTION game_guild_rows_immutable();
+CREATE TRIGGER game_guild_job_event_immutable BEFORE UPDATE OR DELETE ON game_guild_job_event_outbox FOR EACH ROW EXECUTE FUNCTION game_guild_rows_immutable();
+CREATE TRIGGER game_guild_job_no_truncate BEFORE TRUNCATE ON game_guild_job_checkpoints FOR EACH STATEMENT EXECUTE FUNCTION game_guild_rows_immutable();
+CREATE TRIGGER game_guild_job_event_no_truncate BEFORE TRUNCATE ON game_guild_job_event_outbox FOR EACH STATEMENT EXECUTE FUNCTION game_guild_rows_immutable();
+CREATE FUNCTION game_guild_job_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE j game_guild_job_checkpoints%ROWTYPE;expected JSONB;
+BEGIN
+ SELECT * INTO j FROM game_guild_job_checkpoints WHERE guild_id=NEW.guild_id AND step=NEW.step;
+ IF NOT FOUND OR j.created_xact_id<>pg_current_xact_id()
+    OR NOT EXISTS(SELECT 1 FROM game_guilds WHERE guild_id=j.guild_id AND world_id=j.world_id AND state=3 AND revision=j.revision) THEN
+  RAISE EXCEPTION 'Guild job must commit its pending start' USING ERRCODE='23514';END IF;
+ IF j.reason=3 THEN
+  IF NOT EXISTS(SELECT 1 FROM game_guild_operations o JOIN game_guild_event_outbox e ON e.occurrence=o.occurrence
+     WHERE o.guild_id=j.guild_id AND o.world_id=j.world_id AND o.action=13 AND o.result=0
+       AND o.previous_revision=j.previous_revision AND o.revision=j.revision
+       AND o.created_xact_id=pg_current_xact_id() AND e.created_xact_id=pg_current_xact_id()
+       AND e.event_id=o.event_id AND e.payload_sha256=o.audit_sha256)
+     OR EXISTS(SELECT 1 FROM game_guild_job_event_outbox WHERE guild_id=j.guild_id AND step=j.step) THEN
+   RAISE EXCEPTION 'Player Disband start requires its one exact command event' USING ERRCODE='23514';END IF;
+  RETURN NULL;
+ END IF;
+ expected=jsonb_build_object('version',1,'step',1,'reason',j.reason,'previous_revision',j.previous_revision,
+   'revision',j.revision,'occurred_at_unix_ms',j.occurred_at)
+   || (SELECT jsonb_object_agg(field_name,encoded_bytes) FROM
+       (SELECT field_name,jsonb_agg(get_byte(uuid_send(uuid_value),byte_index) ORDER BY byte_index) AS encoded_bytes
+        FROM (VALUES ('guild_id',j.guild_id),('world_id',j.world_id)) AS ids(field_name,uuid_value)
+        CROSS JOIN generate_series(0,15) AS bytes(byte_index) GROUP BY field_name,uuid_value) AS encoded_ids);
+ IF NOT EXISTS(SELECT 1 FROM game_guild_job_event_outbox e WHERE e.guild_id=j.guild_id AND e.step=j.step
+    AND e.created_xact_id=pg_current_xact_id() AND e.payload_sha256=sha256(e.payload)
+    AND convert_from(e.payload,'UTF8')::jsonb=expected) THEN
+  RAISE EXCEPTION 'Guild job requires exactly bound same-transaction event DATA' USING ERRCODE='23514';END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_guild_job_proven AFTER INSERT ON game_guild_job_checkpoints DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_job_proven();
+CREATE CONSTRAINT TRIGGER game_guild_job_event_proven AFTER INSERT ON game_guild_job_event_outbox DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_guild_job_proven();
 "#;
 
 #[cfg(test)]

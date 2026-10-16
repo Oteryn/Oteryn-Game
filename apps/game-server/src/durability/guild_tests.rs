@@ -5566,3 +5566,658 @@ fn guild_decline_native_sql_delete_and_event_failure_are_atomic() -> TestResult 
         Ok(())
     })
 }
+
+#[test]
+fn guild_deadline_jobs_strict_bounds_and_closed_states() {
+    use crate::domain::guild::{GuildDeadlineJob, VICE_DEFICIT_GRACE_MS};
+    let formation = GuildDeadlineJob::Formation;
+    let vice = GuildDeadlineJob::ViceDeficit;
+    assert!(!formation.due(GuildState::Forming, 100, None, 100));
+    assert!(formation.due(GuildState::Forming, 100, None, 101));
+    assert!(!vice.due(
+        GuildState::Active,
+        0,
+        Some(100),
+        100 + VICE_DEFICIT_GRACE_MS
+    ));
+    assert!(vice.due(
+        GuildState::Active,
+        0,
+        Some(100),
+        101 + VICE_DEFICIT_GRACE_MS
+    ));
+    assert!(!vice.due(GuildState::Active, 0, None, i64::MAX));
+    assert!(vice.due(GuildState::Active, 0, Some(i64::MIN), i64::MAX));
+    assert!(!vice.due(GuildState::Active, 0, Some(i64::MAX), i64::MIN));
+    for state in [GuildState::Disbanding, GuildState::Disbanded] {
+        assert!(!formation.due(state, 0, None, i64::MAX));
+        assert!(!vice.due(state, 0, Some(0), i64::MAX));
+    }
+    assert!(!formation.due(GuildState::Active, 0, None, i64::MAX));
+    assert!(!vice.due(GuildState::Forming, 0, Some(0), i64::MAX));
+}
+
+async fn guild_job_start(h: &Harness, guild: u32) -> TestResult<GuildDeadlineOutcome> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .start_guild_deadline_disband(
+            &authority,
+            &h.node,
+            fence()?.runtime_scope.world_id(),
+            gid(guild),
+        )
+        .await
+        .map_err(|error| debug(error).into())
+}
+
+#[test]
+fn guild_deadline_native_restart_preserves_pending_step_without_terminalization() -> TestResult {
+    text_run("guild_job_restart", async |h| {
+        initial_guild(h, 1, 0).await?;
+        sqlx::query("UPDATE game_guilds SET state=1,formation_deadline=1")
+            .execute(&h.pool)
+            .await?;
+        guard(h).await?;
+        let before = footprint(h).await?;
+        assert_eq!(guild_job_start(h, 1).await?, GuildDeadlineOutcome::Started);
+        assert_eq!(footprint(h).await?, before); // no members/ranks/leadership are removed early.
+        assert_eq!(revision(h, 1).await?, "2");
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 1);
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 1);
+        let payload: Vec<u8> =
+            sqlx::query_scalar("SELECT payload FROM game_guild_job_event_outbox")
+                .fetch_one(&h.pool)
+                .await?;
+        let audit: super::super::guild_audit::GuildJobAuditProposal =
+            serde_json::from_slice(&payload)?;
+        assert_eq!(
+            (
+                audit.step,
+                audit.reason,
+                audit.previous_revision,
+                audit.revision
+            ),
+            (1, 1, 1, 2)
+        );
+        assert_eq!(audit.checked_bytes(), Some(payload.clone()));
+        let mut forged = audit.clone();
+        forged.revision += 1;
+        assert!(forged.checked_bytes().is_none());
+        let restarted = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(restarted.maintain_ready_once().await?);
+        let new_node = fixture::register(&restarted, 2).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = restarted
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let world = fence()?.runtime_scope.world_id();
+        assert_eq!(
+            restarted
+                .pending_guild_disbands(&authority, &new_node, world)
+                .await
+                .map_err(debug)?,
+            vec![gid(1)]
+        );
+        assert_eq!(
+            restarted
+                .start_guild_deadline_disband(&authority, &new_node, world, gid(1))
+                .await
+                .map_err(debug)?,
+            GuildDeadlineOutcome::AlreadyStarted
+        );
+        assert!(
+            restarted
+                .guild_deadline_candidates(&authority, &new_node, world)
+                .await
+                .map_err(debug)?
+                .is_empty()
+        );
+        assert_eq!(revision(h, 1).await?, "2");
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 1);
+        let state: i16 = sqlx::query_scalar("SELECT state FROM game_guilds")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(state, 3); // pending Hall/Bank work, never falsely DISBANDED.
+        assert_eq!(
+            result(apply(h, request(1, 1, GuildCommand::Leave), fence()?).await?).result,
+            GuildResult::GuildDisbanding
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_deadline_native_vice_and_world_recheck() -> TestResult {
+    text_run("guild_job_world", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let foreign = crate::foundation::WorldId::decode(&sid(9, 40))?;
+        assert!(
+            h.root
+                .guild_deadline_candidates(&authority, &h.node, foreign)
+                .await
+                .map_err(debug)?
+                .is_empty()
+        );
+        assert_eq!(
+            h.root
+                .start_guild_deadline_disband(&authority, &h.node, foreign, gid(1))
+                .await
+                .map_err(debug)?,
+            GuildDeadlineOutcome::NoLongerDue
+        );
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+        assert_eq!(guild_job_start(h, 1).await?, GuildDeadlineOutcome::Started);
+        let reason: i16 = sqlx::query_scalar("SELECT reason FROM game_guild_job_checkpoints")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(reason, 2);
+        assert_eq!(
+            guild_job_start(h, 1).await?,
+            GuildDeadlineOutcome::AlreadyStarted
+        );
+        assert_eq!(
+            guild_job_start(h, 999).await?,
+            GuildDeadlineOutcome::NoLongerDue
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_deadline_native_rollback_on_publication_failure_then_retry() -> TestResult {
+    text_run("guild_job_rollback", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        h.pool.execute("CREATE FUNCTION guild_job_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.payload=convert_to('{}','UTF8');NEW.payload_sha256=sha256(NEW.payload);RETURN NEW;END$$;CREATE TRIGGER aaa_guild_job_fault BEFORE INSERT ON game_guild_job_event_outbox FOR EACH ROW EXECUTE FUNCTION guild_job_fault()").await?;
+        assert!(guild_job_start(h, 1).await.is_err());
+        assert_eq!(revision(h, 1).await?, "1");
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 0);
+        let state: i16 = sqlx::query_scalar("SELECT state FROM game_guilds")
+            .fetch_one(&h.pool)
+            .await?;
+        assert_eq!(state, 2);
+        h.pool
+            .execute("DROP TRIGGER aaa_guild_job_fault ON game_guild_job_event_outbox")
+            .await?;
+        assert_eq!(guild_job_start(h, 1).await?, GuildDeadlineOutcome::Started);
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 1);
+        for statement in [
+            "DELETE FROM game_guild_job_checkpoints",
+            "UPDATE game_guild_job_event_outbox SET payload=payload",
+            "TRUNCATE game_guild_job_event_outbox",
+            "UPDATE game_guilds SET state=4",
+        ] {
+            assert!(h.pool.execute(statement).await.is_err());
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_deadline_native_concurrent_start_has_one_checkpoint_and_event() -> TestResult {
+    text_run("guild_job_race", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let left = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let right = other.open_character_authority(&seal).await.map_err(debug)?;
+        let world = fence()?.runtime_scope.world_id();
+        let (a, b) = fixture::join_two(
+            h.root
+                .start_guild_deadline_disband(&left, &h.node, world, gid(1)),
+            other.start_guild_deadline_disband(&right, &h.node, world, gid(1)),
+        )
+        .await;
+        let a = a.map_err(debug)?;
+        let b = b.map_err(debug)?;
+        assert!(
+            (a == GuildDeadlineOutcome::Started && b == GuildDeadlineOutcome::AlreadyStarted)
+                || (b == GuildDeadlineOutcome::Started
+                    && a == GuildDeadlineOutcome::AlreadyStarted)
+        );
+        assert_eq!(revision(h, 1).await?, "2");
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 1);
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_deadline_native_current_authority_required_even_after_checkpoint() -> TestResult {
+    text_run("guild_job_authority", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let world = fence()?.runtime_scope.world_id();
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        assert!(matches!(
+            other
+                .start_guild_deadline_disband(&authority, &h.node, world, gid(1))
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        let wrong_secret = super::super::runtime_scope_assignment::NodeIncarnationProof::new(
+            h.node.fact(),
+            super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([99; 32]),
+        );
+        assert!(
+            h.root
+                .start_guild_deadline_disband(&authority, &wrong_secret, world, gid(1))
+                .await
+                .is_err()
+        );
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+        assert_eq!(guild_job_start(h, 1).await?, GuildDeadlineOutcome::Started);
+        assert!(
+            h.root
+                .start_guild_deadline_disband(&authority, &wrong_secret, world, gid(1))
+                .await
+                .is_err()
+        );
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 1);
+        h.pool.execute("INSERT INTO game_character_recovery_admissions(authority_scope_id,recovery_generation,recovery_event_id,predecessor_generation,predecessor_digest,issued_at,issuer_identity,reconciled_at) SELECT authority_scope_id,recovery_generation+1,'10000000-0000-7000-8000-000000000001',recovery_generation,decode(repeat('00',32),'hex'),issued_at+1,issuer_identity,reconciled_at FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1").await?;
+        assert!(
+            h.root
+                .start_guild_deadline_disband(&authority, &h.node, world, gid(1))
+                .await
+                .is_err()
+        );
+        assert!(
+            h.root
+                .pending_guild_disbands(&authority, &h.node, world)
+                .await
+                .is_err()
+        );
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 1);
+        Ok(())
+    })
+}
+#[test]
+fn guild_deadline_native_bounded_pass_and_locked_candidate_recheck() -> TestResult {
+    text_run("guild_job_cap", async |h| {
+        for n in 1..=101 {
+            historical_character(h, n, id(WORLD)).await?;
+            initial_guild(h, n, n).await?;
+        }
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let world = fence()?.runtime_scope.world_id();
+        let candidates = h
+            .root
+            .guild_deadline_candidates(&authority, &h.node, world)
+            .await
+            .map_err(debug)?;
+        assert_eq!(candidates.len(), 100);
+        assert!(candidates.windows(2).all(|pair| pair[0] < pair[1]));
+        let first =
+            crate::node::guild_jobs::run_guild_deadline_pass(&h.root, &authority, &h.node, world)
+                .await
+                .map_err(debug)?;
+        assert_eq!(first.started.len(), 100);
+        let second =
+            crate::node::guild_jobs::run_guild_deadline_pass(&h.root, &authority, &h.node, world)
+                .await
+                .map_err(debug)?;
+        assert_eq!(second.started.len(), 1);
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 101);
+        assert_eq!(h.count("game_guild_job_event_outbox").await?, 101);
+        // A candidate selected before another worker starts it must recheck under its Guild lock.
+        assert_eq!(
+            h.root
+                .start_guild_deadline_disband(&authority, &h.node, world, candidates[0])
+                .await
+                .map_err(debug)?,
+            GuildDeadlineOutcome::AlreadyStarted
+        );
+        assert!(
+            h.root
+                .guild_deadline_candidates(&authority, &h.node, world)
+                .await
+                .map_err(debug)?
+                .is_empty()
+        );
+        assert_eq!(
+            h.root
+                .pending_guild_disbands(&authority, &h.node, world)
+                .await
+                .map_err(debug)?
+                .len(),
+            100
+        );
+        Ok(())
+    })
+}
+fn disband_request(
+    n: u32,
+    f: CurrentCharacterItemFence,
+    confirmation: &str,
+) -> GuildDisbandRequest {
+    let mut common = request(n, 1, GuildCommand::Disband);
+    common.command = CommandRef::new(f.game_session_id, CommandId::new(u64::from(n)).unwrap());
+    GuildDisbandRequest::new(common, confirmation).unwrap()
+}
+async fn disband_apply(
+    h: &Harness,
+    disband: GuildDisbandRequest,
+    f: CurrentCharacterItemFence,
+) -> TestResult<GuildOutcome> {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    h.root
+        .commit_guild_disband(&authority, &h.node, f, disband)
+        .await
+        .map_err(|error| debug(error).into())
+}
+
+#[test]
+fn guild_disband_native_confirmation_data_is_bounded_and_codec_closed() -> TestResult {
+    let common = request(1, 1, GuildCommand::Disband);
+    assert!(GuildDisbandRequest::new(common.clone(), &"a".repeat(30)).is_err());
+    assert!(GuildDisbandRequest::new(common.clone(), "Guild\0Name").is_err());
+    assert!(GuildDisbandRequest::new(request(1, 1, GuildCommand::Leave), "Guild").is_err());
+    // Empty/wrong but bounded confirmation is DATA for a typed NotAllowed, never a name normalizer.
+    assert!(GuildDisbandRequest::new(common, "").is_ok());
+    Ok(())
+}
+
+#[test]
+fn guild_disband_native_leader_start_replay_and_exact_confirmation_binding() -> TestResult {
+    for forming in [false, true] {
+        text_run("guild_disband_start", async |h| {
+            initial_guild(h, 1, 0).await?;
+            sqlx::query("UPDATE game_guilds SET state=$1")
+                .bind(if forming { 1_i16 } else { 2 })
+                .execute(&h.pool)
+                .await?;
+            guard(h).await?;
+            let f = fence()?;
+            let wrong = disband_request(1, f, &name(1).to_lowercase());
+            assert_eq!(
+                result(disband_apply(h, wrong, f).await?).result,
+                GuildResult::NotAllowed
+            );
+            assert_eq!(revision(h, 1).await?, "1");
+            assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+            let req = disband_request(2, f, &name(1));
+            let outcome = disband_apply(h, req.clone(), f).await?;
+            assert_eq!(result(outcome).result, GuildResult::Ok);
+            assert_eq!(revision(h, 1).await?, "2");
+            assert_eq!(h.count("game_guild_members").await?, 1);
+            assert_eq!(h.count("game_guild_ranks").await?, 4);
+            assert_eq!(h.count("game_account_guild_leadership").await?, 1);
+            assert_eq!(h.count("game_guild_job_event_outbox").await?, 0);
+            assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+            let reason: i16 = sqlx::query_scalar("SELECT reason FROM game_guild_job_checkpoints")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(reason, 3);
+            let payload: Vec<u8> =
+                sqlx::query_scalar("SELECT payload FROM game_guild_event_outbox")
+                    .fetch_one(&h.pool)
+                    .await?;
+            let audit: super::super::guild_audit::GuildDisbandAuditProposal =
+                serde_json::from_slice(&payload)?;
+            assert_eq!(audit.confirmation, name(1));
+            assert_eq!(audit.checked_bytes(), Some(payload));
+            let mut changed = audit.clone();
+            changed.operation.action = 12;
+            assert!(changed.checked_bytes().is_none());
+            let mut stale = f;
+            stale.connection_generation = ConnectionGeneration::new(99)?;
+            assert!(matches!(
+                disband_apply(h, req.clone(), stale).await?,
+                GuildOutcome::Replayed(_)
+            ));
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let mut changed = req;
+            changed.confirmation.push(' ');
+            assert!(matches!(
+                h.root
+                    .commit_guild_disband(&authority, &h.node, f, changed)
+                    .await,
+                Err(GuildError::ConflictingOccurrence)
+            ));
+            assert!(matches!(
+                h.root
+                    .commit_guild_membership(
+                        &authority,
+                        &h.node,
+                        f,
+                        request(3, 1, GuildCommand::Disband)
+                    )
+                    .await,
+                Err(GuildError::InvalidInput)
+            ));
+            assert_eq!(
+                result(disband_apply(h, disband_request(4, f, &name(1)), f).await?).result,
+                GuildResult::GuildDisbanding
+            );
+            assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+            assert_eq!(text_character_revision(h).await?, "1");
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_disband_native_current_leader_required_not_vice_or_other_guild() -> TestResult {
+    for rank in [None, Some(2_i16), Some(3)] {
+        text_run("guild_disband_role", async |h| {
+            historical_character(h, 90, id(WORLD)).await?;
+            initial_guild(h, 1, 0).await?;
+            if let Some(rank) = rank {
+                initial_member(h, 1, 90, rank).await?;
+            } else {
+                initial_guild(h, 2, 90).await?;
+            }
+            let f = historical_session(h, 90).await?;
+            guard(h).await?;
+            assert_eq!(
+                result(disband_apply(h, disband_request(1, f, &name(1)), f).await?).result,
+                GuildResult::NotAllowed
+            );
+            assert_eq!(revision(h, 1).await?, "1");
+            assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+            assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn guild_disband_native_current_authority_rejections_write_nothing() -> TestResult {
+    text_run("guild_disband_authority", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let f = fence()?;
+        for field in 0..3 {
+            let mut stale = f;
+            match field {
+                0 => stale.connection_generation = ConnectionGeneration::new(2)?,
+                1 => stale.character_lease_generation = 2,
+                _ => stale.scope_ownership_generation = ScopeOwnershipGeneration::new(2)?,
+            }
+            assert!(matches!(
+                h.root
+                    .commit_guild_disband(
+                        &authority,
+                        &h.node,
+                        stale,
+                        disband_request(field + 1, stale, &name(1))
+                    )
+                    .await,
+                Err(GuildError::NotCurrent)
+            ));
+        }
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        assert!(matches!(
+            other
+                .commit_guild_disband(&authority, &h.node, f, disband_request(4, f, &name(1)))
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        let wrong = super::super::runtime_scope_assignment::NodeIncarnationProof::new(
+            h.node.fact(),
+            super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([99; 32]),
+        );
+        assert!(matches!(
+            h.root
+                .commit_guild_disband(&authority, &wrong, f, disband_request(5, f, &name(1)))
+                .await,
+            Err(GuildError::NotCurrent)
+        ));
+        assert_eq!(h.count("game_guild_operations").await?, 0);
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+        assert_eq!(revision(h, 1).await?, "1");
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_disband_native_event_forgery_rolls_back_command_checkpoint_and_state() -> TestResult {
+    text_run("guild_disband_rollback", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        h.pool.execute("CREATE FUNCTION guild_disband_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.payload=convert_to(replace(convert_from(NEW.payload,'UTF8'),'Guild Fixture B','Wrong Guild'),'UTF8');NEW.payload_sha256=sha256(NEW.payload);RETURN NEW;END$$;CREATE TRIGGER aaa_guild_disband_fault BEFORE INSERT ON game_guild_event_outbox FOR EACH ROW EXECUTE FUNCTION guild_disband_fault()").await?;
+        assert!(
+            disband_apply(h, disband_request(1, fence()?, &name(1)), fence()?)
+                .await
+                .is_err()
+        );
+        assert_eq!(h.count("game_guild_operations").await?, 0);
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+        assert_eq!(h.count("game_guild_event_outbox").await?, 0);
+        assert_eq!(revision(h, 1).await?, "1");
+        h.pool
+            .execute("DROP TRIGGER aaa_guild_disband_fault ON game_guild_event_outbox")
+            .await?;
+        assert_eq!(
+            result(disband_apply(h, disband_request(1, fence()?, &name(1)), fence()?).await?)
+                .result,
+            GuildResult::Ok
+        );
+        assert!(
+            h.pool
+                .execute("UPDATE game_guilds SET state=4")
+                .await
+                .is_err()
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_disband_native_deadline_job_race_commits_one_start_only() -> TestResult {
+    text_run("guild_disband_job_race", async |h| {
+        initial_guild(h, 1, 0).await?;
+        guard(h).await?;
+        let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(other.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let b = other.open_character_authority(&seal).await.map_err(debug)?;
+        let f = fence()?;
+        let world = f.runtime_scope.world_id();
+        let (command, job) = fixture::join_two(
+            h.root
+                .commit_guild_disband(&a, &h.node, f, disband_request(1, f, &name(1))),
+            other.start_guild_deadline_disband(&b, &h.node, world, gid(1)),
+        )
+        .await;
+        let command = result(command.map_err(debug)?).result;
+        let job = job.map_err(debug)?;
+        assert!(
+            (command == GuildResult::Ok && job == GuildDeadlineOutcome::AlreadyStarted)
+                || (command == GuildResult::GuildDisbanding
+                    && job == GuildDeadlineOutcome::Started)
+        );
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 1);
+        assert_eq!(
+            h.count("game_guild_job_event_outbox").await?
+                + h.count("game_guild_event_outbox").await?,
+            1
+        );
+        assert_eq!(revision(h, 1).await?, "2");
+        assert_eq!(h.count("game_guild_members").await?, 1);
+        Ok(())
+    })
+}
+#[test]
+fn guild_disband_native_rechecks_real_leader_after_resign() -> TestResult {
+    text_run("guild_disband_resign", async |h| {
+        let successor = resign_fixture(h).await?;
+        guard(h).await?;
+        let premium = pre_delivery(&h.root);
+        assert_eq!(
+            result(resign_apply(h, resign_request(1, 91, 1), &premium).await?).result,
+            GuildResult::Ok
+        );
+        assert_eq!(
+            result(disband_apply(h, disband_request(2, fence()?, &name(1)), fence()?).await?)
+                .result,
+            GuildResult::NotAllowed
+        );
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 0);
+        assert_eq!(
+            result(disband_apply(h, disband_request(3, successor, &name(1)), successor).await?)
+                .result,
+            GuildResult::Ok
+        );
+        assert_eq!(revision(h, 1).await?, "3");
+        assert_eq!(h.count("game_guild_job_checkpoints").await?, 1);
+        Ok(())
+    })
+}

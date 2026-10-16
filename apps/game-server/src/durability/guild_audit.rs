@@ -283,3 +283,74 @@ impl GuildDeclineAuditProposal {
         (bytes.len() <= 4_096).then_some(bytes)
     }
 }
+
+/// Private durable disband-start publication DATA, keyed by (Guild, step=1).
+/// It does not allocate a public event ID, claim external closure, or authorize a job.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GuildJobAuditProposal {
+    pub version: u8,
+    pub guild_id: [u8; 16],
+    pub world_id: [u8; 16],
+    pub step: u8,
+    pub reason: i16,
+    pub previous_revision: u64,
+    pub revision: u64,
+    pub occurred_at_unix_ms: i64,
+}
+impl GuildJobAuditProposal {
+    pub(crate) fn checked_bytes(&self) -> Option<Vec<u8>> {
+        if self.version != 1
+            || self.step != 1
+            || !matches!(self.reason, 1 | 2)
+            || self.previous_revision == 0
+            || self.previous_revision.checked_add(1) != Some(self.revision)
+            || self.occurred_at_unix_ms <= 0
+        {
+            return None;
+        }
+        check_uuid_v7(&self.guild_id).ok()?;
+        check_uuid_v7(&self.world_id).ok()?;
+        serde_json::to_vec(self).ok()
+    }
+}
+
+/// Private Disband confirmation event DATA, with exact input bytes and no public wire ID.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GuildDisbandAuditProposal {
+    #[serde(flatten)]
+    pub operation: GuildAuditProposal,
+    pub confirmation: String,
+}
+impl GuildDisbandAuditProposal {
+    pub(crate) fn checked_bytes(&self) -> Option<Vec<u8>> {
+        let op = &self.operation;
+        if op.version != 1
+            || op.action != 13
+            || op.actor != op.target
+            || op.previous_revision == 0
+            || op.previous_revision.checked_add(1) != Some(op.revision)
+            || op.rank_before.is_some()
+            || op.rank_after.is_some()
+            || op.removed_invitations != 0
+            || op.occurred_at_unix_ms <= 0
+            || self.confirmation.chars().count() > 29
+            || self.confirmation.contains('\0')
+        {
+            return None;
+        }
+        for id in [
+            &op.occurrence,
+            &op.transaction_id,
+            &op.event_id,
+            &op.guild_id,
+            &op.world_id,
+            &op.actor,
+            &op.target,
+        ] {
+            check_uuid_v7(id).ok()?;
+        }
+        serde_json::to_vec(self).ok()
+    }
+}

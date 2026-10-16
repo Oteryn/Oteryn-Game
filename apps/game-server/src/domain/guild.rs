@@ -140,6 +140,38 @@ impl GuildState {
     }
 }
 
+/// Accepted GUILD0 §3.3 deadline source. Premium remains a separate daily job.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GuildDeadlineJob {
+    Formation,
+    ViceDeficit,
+}
+impl GuildDeadlineJob {
+    pub(crate) const fn code(self) -> i16 {
+        match self {
+            Self::Formation => 1,
+            Self::ViceDeficit => 2,
+        }
+    }
+
+    /// Locked facts only; this comparison grants no current World authority.
+    pub(crate) fn due(
+        self,
+        state: GuildState,
+        formation_deadline: i64,
+        vice_deficit_since: Option<i64>,
+        database_now: i64,
+    ) -> bool {
+        match (self, state) {
+            (Self::Formation, GuildState::Forming) => database_now > formation_deadline,
+            (Self::ViceDeficit, GuildState::Active) => vice_deficit_since.is_some_and(|since| {
+                i128::from(database_now) - i128::from(since) > i128::from(VICE_DEFICIT_GRACE_MS)
+            }),
+            _ => false,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
