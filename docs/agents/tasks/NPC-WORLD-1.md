@@ -4,7 +4,7 @@
 task_id: NPC-WORLD-1
 title: "NPC-WORLD-1: NPC world: travel, walking actors and voices"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -433,3 +433,22 @@ NPC content/current admission (#2129/#2184), NPC-TRAVEL-1, PREM-3, fee/cause wri
 relocation/obligation owners, budgeted scheduler, chat-owner egress and all other actor/travel
 activation gates remain open. All original acceptance boxes remain open; no full-package,
 production activation or full NPC-WORLD delivery PASS is claimed.
+
+### CP D1160/D1122: route travel PG entry to canonical target (2026-10-16)
+
+Status NOT_FULLY_QUALIFIED. CP comment6224912485 identifies the ordinary `--lib` CI
+failure: the travel PG entry requires PostgreSQL17.6 in a job without PG. Move its
+`#[test]` entry to support/npc_travel_postgres_cases.rs and register it in the existing
+character_authority_postgres root using the existing D1114 native harness. Preserve the
+complete native exercise in a test-only child fixture of npc_travel (moved physically
+to tests/support); the canonical entry calls that exact exercise. It is no longer a
+lib test entry. All production functions/privacy and negative fence/rollback assertions
+remain unchanged; test-only visibility reaches only the canonical test entry. No cfg(any),
+optional early return, skipped body, alternative harness or test weakening is added.
+
+Prior8196b1e7 final native result is retained: all15 stages pass, focused8/8, 55executables
+9761passed/0failed/37ignored, doctests37. This routing successor needs fresh exact-head CI
+and its new PG entry remains NOT_RUN before the checkpoint. Predecessor GitHub CI is RED
+at the old lib PG entry. Format/diff checks and independent review precede the D1122 single
+existing-draft push. No old job rerun/restart and no new runner. Remaining runtime admission,
+scheduler/chat/travel/fee/position/death callers still require their actual owners/CP slots.
