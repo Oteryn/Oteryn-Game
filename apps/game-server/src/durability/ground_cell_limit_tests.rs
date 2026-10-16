@@ -1151,6 +1151,43 @@ mod postgres {
         })
     }
 
+    // Tokio's configured native runtime has no macros feature. Poll all three
+    // real futures on the current task, retaining each result until all finish.
+    async fn join_three<A: std::future::Future, B: std::future::Future, C: std::future::Future>(
+        a: A,
+        b: B,
+        c: C,
+    ) -> (A::Output, B::Output, C::Output) {
+        use std::task::Poll;
+        let (mut a, mut b, mut c) = (std::pin::pin!(a), std::pin::pin!(b), std::pin::pin!(c));
+        let (mut left, mut right, mut observer) = (None, None, None);
+        std::future::poll_fn(|context| {
+            if left.is_none()
+                && let Poll::Ready(output) = a.as_mut().poll(context)
+            {
+                left = Some(output);
+            }
+            if right.is_none()
+                && let Poll::Ready(output) = b.as_mut().poll(context)
+            {
+                right = Some(output);
+            }
+            if observer.is_none()
+                && let Poll::Ready(output) = c.as_mut().poll(context)
+            {
+                observer = Some(output);
+            }
+            match (left.take(), right.take(), observer.take()) {
+                (Some(l), Some(r), Some(o)) => Poll::Ready((l, r, o)),
+                (l, r, o) => {
+                    (left, right, observer) = (l, r, o);
+                    Poll::Pending
+                }
+            }
+        })
+        .await
+    }
+
     #[test]
     fn concurrent_native_mints_serialize_the_last_physical_root() -> TestResult {
         run("ground_race", async |h| {
@@ -1191,7 +1228,7 @@ mod postgres {
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))")
                 .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
                 .execute(&mut *blocker).await?;
-            let (left, right, overlap) = tokio::join!(
+            let (left, right, overlap) = join_three(
                 left_root.commit_item_mint(&one, &left_authority, &h.node, &mut first),
                 right_root.commit_item_mint(&two, &right_authority, &h.node, &mut second),
                 async {
@@ -1207,7 +1244,7 @@ mod postgres {
                     blocker.commit().await?;
                     Ok::<(), Box<dyn std::error::Error>>(())
                 }
-            );
+            ).await;
             overlap?;
             assert!(matches!(
                 (&left, &right),
