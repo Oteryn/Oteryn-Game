@@ -507,6 +507,10 @@ async fn financial_step_in_transaction(
     } else {
         parts.resize(total, guild_balance, account_balance)?
     };
+    // GUILD0 §6.2 fixes the original Account as the refund source, including after Resign.
+    // Extra Account funding after leader change awaits CP/architect disposition: retain the
+    // existing safe refusal. A raise covered entirely by Guild gold needs no Account choice;
+    // lowering and release continue returning each original contributor's custody.
     if change.after.account > parts.account && account != Some(funding_account) {
         return Err(GuildhallEscrowError::FundingBindingChanged);
     }

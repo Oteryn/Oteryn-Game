@@ -283,3 +283,59 @@ and shared module/caller/schema activation. Release batching must retain GUILD0-
 No new ceiling, event number, migration number, registry or runtime wiring was introduced.
 All original integrated acceptance criteria remain open. The worker leaves only this
 four-file local diff, with no commit/push/lifecycle action; the lead owns the existing draft.
+
+
+### 2026-10-16 — genuine Guild dependency and changed-leader qualification
+
+The inherited Hall tests imported Bank's substitute Guild prerequisite. They now
+import only the genuine GUILD-1 owner's complete tables and guards, pinned by
+exact SQL SHA256 (tables5ae70c75/guards1c74f22e). Validation must supply that real
+unmerged source and the repaired real Bank owner; neither is installed on main.
+Guild setup explicitly inserts full named Guild/rank/member/leadership historical
+rows before installing owner guards. A second native Character/session is seeded
+with the real producer decoder/receipt binding, then current Root reconciliation,
+session/node and Guild predicates remain authoritative. No installed owner guard
+is disabled, no second Guild schema owner or public shim is introduced.
+
+The two inherited financial tests that directly mutated Guild ranks/state now use
+actual Guild Resign transactions to change/restore leadership. The old financial
+resize/lower/refund/release/replay/empty-custody assertions remain. A separate new
+case starts actual player Disband and proves Hall command admission closes at
+DISBANDING without claiming terminal Hall/Bank/property release. House auction,
+property and ban changes remain explicitly fixture DATA, not House writer proof.
+The full original six-body source is preserved outside this checkout as retained
+evidence; adaptations above replace incompatible setup/mutations rather than
+weakening the genuine owner guard.
+
+Another new native regression starts a funded split, adds genuine Guild-bank
+funding, changes the leader through actual Resign, allows a raise paid wholly by
+Guild gold, then refuses a raise needing any extra Account escrow. It checks no
+write on repeated refusal, immutable original funding Account/Character, Account-
+first lowering, same-source release/replay and total100 gold after every stage.
+No financial production behavior changed. Accepted GUILD0 §6.2 fixes refund
+sources but leaves extra Account funding after leader change unresolved; this
+pins the existing safe refusal while CP/architect chooses the eventual policy.
+No new choice to charge the old/new Account or rewrite the funding binding is made.
+
+Current source has eight component bodies (three pure/five PostgreSQL), pending
+actual ordinary native qualification by the lead's shared cloud slot. Owned
+rustfmt and diff checks pass; these are not runtime or performance evidence.
+Full Hall feature remains PARTIAL: real House auction/property, rent/grace/burn,
+eviction→Guild-only ban, actual Hall/Inbox/bid disposition inside Guild disband,
+rank-derived ACL and same-transaction admitted events await their genuine owner
+ports and CP source/migration/registry/wiring slots. No surrogate Character owner,
+fake rent/ban/ACL helper, ready/merge or production claim is added.
+
+
+### 2026-10-16 — actual native compile RED and source repair
+
+The first combined actual native `--lib` test compilation stopped with8 errors:
+four owned Hall free-function calls needed `&h`, two Hall SHA256 assertion encoders
+used LowerHex on the locked sha2 crypto-common Array, and two sibling Bank calls
+had the same hash-encoder issue. Hall's six diagnostics are accepted and repaired
+as one batch: explicit borrowed Harness arguments and bytewise u8 hexadecimal
+encoding, without a shim, new dependency, substituted authority or lint exemption.
+The lead owns the sibling Bank repair and next ordinary native compile. Full RED
+output is retained in the outside-repo `family-native-compile.log`; this failure
+is not relabeled as successful execution. Owned rustfmt/diff checks pass again;
+combined native runtime and strict Clippy remain pending this repaired generation.

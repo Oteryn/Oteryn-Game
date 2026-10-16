@@ -1,18 +1,23 @@
 //! Native PG17.6 financial-component qualification, not a House auction/admission E2E.
-//! Proposed guild/property/auction rows are independently installed fixture DATA.
+//! Exact genuine Guild owner tables/guards; House property/auction context remains fixture DATA.
 #![allow(clippy::expect_used)]
 use super::*;
 use crate::durability::bank::{
     BankCoinFacts, BankDepositRequest, BankOperationIdentity, BankOperationOccurrence,
     BankOperationOutcome, BankResult,
 };
+use crate::durability::guild::{
+    GUILD_GUARDS_PROPOSAL, GUILD_TABLES_PROPOSAL, GuildCommand, GuildDisbandRequest,
+    GuildOperationIdentity, GuildOutcome, GuildRequest, GuildResignRequest, GuildResult,
+};
 use crate::durability::guild_bank::{
-    GUILD_BANK_SCHEMA_PROPOSAL, GUILD_PREREQUISITE_SCHEMA_PROPOSAL,
-    GUILDHALL_LEDGER_SCHEMA_PROPOSAL, GuildBankCommand, GuildBankGuildId, GuildBankIdentity,
-    GuildBankRequest,
+    GUILD_BANK_SCHEMA_PROPOSAL, GUILDHALL_LEDGER_SCHEMA_PROPOSAL, GuildBankCommand,
+    GuildBankGuildId, GuildBankIdentity, GuildBankRequest,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome};
+use crate::foundation::{CommandId, CommandRef, GameSessionId};
+use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use crate::guild::guildhall::{ACCOUNT_BALANCE_MAX, GUILD_BALANCE_MAX};
 use crate::item_transfer_postgres_cases::{
     self as fixture, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id,
@@ -212,7 +217,125 @@ CREATE TABLE game_house_properties(
  OR (owner_kind='GUILD' AND owner_character_id IS NULL AND owner_account_id IS NULL AND owner_guild_id IS NOT NULL)) IS TRUE));
 "#;
 
+// Exact genuine Guild owner dependency; these hashes are a qualification overlay binding,
+// not an installed migration or a second Guild schema owner.
+fn assert_guild_owner_source() {
+    assert_eq!(
+        sha2::Sha256::digest(GUILD_TABLES_PROPOSAL.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "5ae70c7540915ef2368cab887fcaf0a66b0123f71535bb82bc8e71f750cbb3a1"
+    );
+    assert_eq!(
+        sha2::Sha256::digest(GUILD_GUARDS_PROPOSAL.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "1c74f22edc18db2d54b39330038b2c61a5b2cb1d90aab71965c26d08a8dd4a2e"
+    );
+}
+fn owner_id(kind: u8) -> [u8; 16] {
+    let mut value = id(190);
+    value[1] = kind;
+    value
+}
+fn owner_request(
+    n: u8,
+    fence: CurrentCharacterItemFence,
+    operation: GuildCommand,
+) -> TestResult<GuildRequest> {
+    let identity = bank_identity(n);
+    Ok(GuildRequest {
+        identity: GuildOperationIdentity {
+            occurrence: identity.occurrence,
+            transaction_id: identity.transaction_id,
+            event_id: identity.guild_event_id,
+            occurred_at_unix_ms: identity.occurred_at_unix_ms,
+        },
+        command: CommandRef::new(
+            fence.game_session_id,
+            CommandId::new(u64::from(n)).map_err(debug)?,
+        ),
+        guild_id: crate::domain::guild::GuildId::from_bytes(*guild().as_bytes()).map_err(debug)?,
+        operation,
+    })
+}
+fn successor_fence() -> TestResult<CurrentCharacterItemFence> {
+    Ok(CurrentCharacterItemFence {
+        character_id: crate::domain::CharacterId::from_bytes(id(95)).map_err(debug)?,
+        game_session_id: GameSessionId::decode(&id(97)).map_err(debug)?,
+        ..fence()?
+    })
+}
+/// Privileged historical native Character/session DATA before Guild guards. The genuine
+/// producer decoder/binding and independently reconciled Root/session/node predicates remain.
+async fn historical_successor(h: &Harness) -> TestResult {
+    sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
+        .bind(id(96).as_slice())
+        .execute(&h.pool)
+        .await?;
+    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'profile-1','ruleset-1','content-1','starter-1','Hall Successor')")
+        .bind(id(95).as_slice()).bind(id(96).as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+    let operation = owner_id(1);
+    let decision = owner_id(2);
+    let raw = serde_json::to_vec(
+        &serde_json::json!({"contract_version":2,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+        "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":fixture::uuid_text(decision),
+        "source_revision":"195","operation_id":fixture::uuid_text(operation),"operation":"INITIAL_CHARACTER_BOOTSTRAP",
+        "account_id":fixture::uuid_text(id(96)),"target_world_id":fixture::uuid_text(id(WORLD)),"requested_name":"Hall Successor",
+        "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
+        "issued_at_source":"1","expires_at_source":"120","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}),
+    )?;
+    let intent = crate::character_bootstrap_intent::decode_producer_response(&raw, operation)
+        .map_err(debug)?;
+    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id,command_binding,account_id,character_id,world_id,character_revision,event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,intent_source_revision,issued_at_source,expires_at_source) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',encode($7,'hex')::uuid,encode($8,'hex')::uuid,195,1,120)")
+        .bind(operation.as_slice()).bind(intent.binding()).bind(id(96).as_slice()).bind(id(95).as_slice()).bind(id(WORLD).as_slice())
+        .bind(owner_id(3).as_slice()).bind(owner_id(4).as_slice()).bind(decision.as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_character_bootstrap_intent_floors(issuer_scope,source_revision,issuer_decision_id,intent_binding) SELECT 1,intent_source_revision,issuer_decision_id,command_binding FROM game_character_operation_receipts ORDER BY intent_source_revision DESC LIMIT 1 ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding").execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,title,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,'',1)")
+        .bind(id(95).as_slice()).bind(guild().as_bytes().as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_account_guild_leadership(account_id,guild_id,character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+        .bind(id(96).as_slice()).bind(guild().as_bytes().as_slice()).bind(id(95).as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,999999,1,1,1,1,$6,1)")
+        .bind(id(97).as_slice()).bind(id(96).as_slice()).bind(id(95).as_slice()).bind(id(WORLD).as_slice()).bind(id(fixture::CHANNEL).as_slice()).bind(owner_id(5).as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_durability_admission_account_guards VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,'test',1,'account-current',1,0,'{}')")
+        .bind(id(96).as_slice()).bind(id(95).as_slice()).bind(id(97).as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_durability_admission_character_guards VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,true,1,encode($4,'hex')::uuid,1,'test',1,'character-current',1,0,'{}')")
+        .bind(id(95).as_slice()).bind(id(96).as_slice()).bind(id(WORLD).as_slice()).bind(id(97).as_slice()).execute(&h.pool).await?;
+    Ok(())
+}
+async fn resign(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    actor: CurrentCharacterItemFence,
+    successor: u8,
+    revision: u64,
+    command: u8,
+) -> TestResult {
+    let request = GuildResignRequest::new(
+        owner_request(
+            command,
+            actor,
+            GuildCommand::Resign(
+                crate::domain::CharacterId::from_bytes(id(successor)).map_err(debug)?,
+            ),
+        )?,
+        revision,
+    )
+    .map_err(debug)?;
+    let premium =
+        SpellPremiumCoordinator::new(std::sync::Arc::default(), None, None, Some(h.root.clone()));
+    let outcome = h
+        .root
+        .commit_guild_resign(authority, &h.node, actor, request, &premium)
+        .await
+        .map_err(debug)?;
+    assert!(matches!(outcome,GuildOutcome::Committed(receipt) if receipt.result==GuildResult::Ok));
+    Ok(())
+}
 async fn install(h: &Harness) -> TestResult {
+    assert_guild_owner_source();
     assert_eq!(
         sqlx::query_scalar::<_, String>("SHOW server_version_num")
             .fetch_one(&h.pool)
@@ -220,7 +343,7 @@ async fn install(h: &Harness) -> TestResult {
         "170006"
     );
     for schema in [
-        GUILD_PREREQUISITE_SCHEMA_PROPOSAL,
+        GUILD_TABLES_PROPOSAL,
         PROPERTY_DEPENDENCY,
         BID_SOURCE_SCHEMA,
         OPERATION_SCHEMA,
@@ -231,26 +354,18 @@ async fn install(h: &Harness) -> TestResult {
     ] {
         h.pool.execute(sqlx::raw_sql(schema)).await?;
     }
-    sqlx::query(
-        "INSERT INTO game_guilds VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)",
-    )
-    .bind(guild().as_bytes().as_slice())
-    .bind(id(WORLD).as_slice())
-    .execute(&h.pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_guild_ranks SELECT encode($1,'hex')::uuid,n FROM generate_series(1,3)n",
-    )
-    .bind(guild().as_bytes().as_slice())
-    .execute(&h.pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_guild_members VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)",
-    )
-    .bind(id(CHARACTER).as_slice())
-    .bind(guild().as_bytes().as_slice())
-    .execute(&h.pool)
-    .await?;
+    sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,vice_deficit_since,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Guildhall Fixture',2,9999999999999,floor(extract(epoch FROM transaction_timestamp())*1000)::bigint,1,1)")
+        .bind(guild().as_bytes().as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+    for (level, name) in [(1_i16, "Leader"), (2, "Vice Leader"), (3, "Member")] {
+        sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)")
+            .bind(guild().as_bytes().as_slice()).bind(level).bind(name).execute(&h.pool).await?;
+    }
+    sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,title,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,'',1)")
+        .bind(id(CHARACTER).as_slice()).bind(guild().as_bytes().as_slice()).execute(&h.pool).await?;
+    sqlx::query("INSERT INTO game_account_guild_leadership(account_id,guild_id,character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+        .bind(id(40).as_slice()).bind(guild().as_bytes().as_slice()).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+    historical_successor(h).await?;
+    h.pool.execute(sqlx::raw_sql(GUILD_GUARDS_PROPOSAL)).await?;
     sqlx::query("INSERT INTO game_house_properties(world_id,house_key,revision,acl_revision,state) VALUES(encode($1,'hex')::uuid,$2,1,0,'AUCTION')").bind(id(WORLD).as_slice()).bind("oteryn:content.house.fixture_hall").execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_house_auctions VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'GUILDHALL',10,0,clock_timestamp()+interval '1 day','OPEN')").bind(id(91).as_slice()).bind(id(WORLD).as_slice()).bind("oteryn:content.house.fixture_hall").execute(&h.pool).await?;
     Ok(())
@@ -344,7 +459,8 @@ fn native_financial_split_resize_release_and_retained_replay() -> TestResult {
             }
             // Source ownership does not follow the current leader. A release job takes no
             // Character root/session and returns the original funding Account and Guild parts.
-            h.pool.execute("UPDATE game_guild_members SET rank_level=2;UPDATE game_house_auctions SET phase='RELEASING'").await?;
+            resign(&h, &a, fence()?, 95, 1, 140).await?;
+            h.pool.execute("UPDATE game_house_auctions SET phase='RELEASING'").await?;
             let release=step(23,Some(3),None)?;
             let second_root=DurabilityRoot::connect_test_runtime(&h.database.url)?;
             assert!(second_root.maintain_ready_once().await?);
@@ -362,7 +478,7 @@ fn native_financial_split_resize_release_and_retained_replay() -> TestResult {
             assert_eq!(after,footprint(&h).await?);
             // The existing bid may lower to zero when rent/current price are zero. Empty
             // custody still needs a terminal release, without inventing any ledger entry.
-            h.pool.execute("UPDATE game_guild_members SET rank_level=1").await?;
+            resign(&h, &a, successor_fence()?, CHARACTER, 2, 141).await?;
             sqlx::query("INSERT INTO game_house_properties(world_id,house_key,revision,acl_revision,state) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.zero_rent_hall',1,0,'AUCTION')").bind(id(WORLD).as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_house_auctions VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'oteryn:content.house.zero_rent_hall','GUILDHALL',0,0,clock_timestamp()+interval '1 day','OPEN')").bind(id(94).as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
             let mut empty=step(25,None,Some(1))?;empty.bid_id=id(93);empty.auction_id=id(94);
@@ -400,11 +516,10 @@ fn native_financial_current_authority_and_context_negatives_are_write_free() -> 
             let original=footprint(&h).await?;
             let mut stale=fence()?;stale.character_lease_generation+=1;
             assert!(matches!(h.root.guildhall_escrow_financial_step(&a,&h.node,Some(stale),step(30,None,Some(70))?).await,Err(GuildhallEscrowError::NotCurrent)));
-            h.pool.execute("UPDATE game_guild_members SET rank_level=2").await?;
+            resign(&h, &a, fence()?, 95, 1, 150).await?;
             assert!(matches!(h.root.guildhall_escrow_financial_step(&a,&h.node,Some(fence()?),step(31,None,Some(70))?).await,Err(GuildhallEscrowError::NotLeader)));
-            h.pool.execute("UPDATE game_guild_members SET rank_level=1;UPDATE game_guilds SET state=3").await?;
-            assert!(matches!(h.root.guildhall_escrow_financial_step(&a,&h.node,Some(fence()?),step(32,None,Some(70))?).await,Err(GuildhallEscrowError::GuildIneligible)));
-            h.pool.execute("UPDATE game_guilds SET state=2;UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'").await?;
+            resign(&h, &a, successor_fence()?, CHARACTER, 2, 151).await?;
+            h.pool.execute("UPDATE game_house_auctions SET ends_at=clock_timestamp()-interval '1 second'").await?;
             assert!(matches!(h.root.guildhall_escrow_financial_step(&a,&h.node,Some(fence()?),step(33,None,Some(70))?).await,Err(GuildhallEscrowError::AuctionContextUnavailable)));
             h.pool.execute("UPDATE game_house_auctions SET ends_at=clock_timestamp()+interval '1 day'").await?;
             sqlx::query("INSERT INTO game_guild_house_bans VALUES(encode($1,'hex')::uuid,clock_timestamp()+interval '1 day')").bind(guild().as_bytes().as_slice()).execute(&h.pool).await?;
@@ -474,4 +589,119 @@ fn empty_held_custody_can_terminalize_without_a_value_entry() -> TestResult {
         (40, 40)
     );
     Ok(())
+}
+async fn conserved_gold(h: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar("SELECT ((SELECT coalesce(sum(balance),0) FROM game_account_bank_balances)+(SELECT coalesce(sum(balance),0) FROM game_guild_bank_balances)+(SELECT coalesce(sum(escrow_guild_gold+escrow_account_gold),0) FROM game_guildhall_bids WHERE state='HELD'))::bigint")
+        .fetch_one(&h.pool).await?)
+}
+
+#[test]
+fn native_changed_leader_refuses_extra_account_funding_but_allows_guild_only_raise() -> TestResult {
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h=Harness::create(admin,"guildhall_changed_leader").await?;
+        let result:TestResult=async {
+            install(&h).await?;
+            let seal=h.recovery.seal_current().map_err(debug)?;
+            let a=h.root.open_character_authority(&seal).await.map_err(debug)?;
+            funded(&h,&a).await?;
+            let unbound=h.pool.execute("UPDATE game_guilds SET revision=revision+1").await.expect_err("actual owner guard denies unbound mutation");
+            assert!(matches!(unbound,sqlx::Error::Database(ref error) if error.code().as_deref()==Some("23514")));
+            let original=h.root.guildhall_escrow_financial_step(&a,&h.node,Some(fence()?),step(50,None,Some(70))?).await.map_err(debug)?;
+            assert_eq!(original.parts,EscrowParts{guild:60,account:20});
+            h.root.guild_bank_command(&a,&h.node,fence()?,GuildBankRequest{identity:bank_identity(51),guild_id:guild(),command:GuildBankCommand::Deposit,amount:10}).await.map_err(debug)?;
+            assert_eq!(conserved_gold(&h).await?,100);
+            resign(&h,&a,fence()?,95,1,152).await?;
+            let successor=successor_fence()?;
+            // Accepted Guild-first order can satisfy the entire raise without any new Account draw.
+            let raised=h.root.guildhall_escrow_financial_step(&a,&h.node,Some(successor),step(52,Some(1),Some(80))?).await.map_err(debug)?;
+            assert_eq!(raised.parts,EscrowParts{guild:70,account:20});
+            let immutable:(String,String)=sqlx::query_as("SELECT funding_account_id::text,funding_character_id::text FROM game_guildhall_bids").fetch_one(&h.pool).await?;
+            assert_eq!(immutable,(fixture::uuid_text(id(40)),fixture::uuid_text(id(CHARACTER))));
+            let before=footprint(&h).await?;
+            // Neither the old funding Account nor the new leader Account may silently fund
+            // extra Account escrow while the architect's changed-leader policy is unresolved.
+            for _ in 0..2 {
+                assert!(matches!(h.root.guildhall_escrow_financial_step(&a,&h.node,Some(successor),step(53,Some(2),Some(85))?).await,Err(GuildhallEscrowError::FundingBindingChanged)));
+                assert_eq!(footprint(&h).await?,before);assert_eq!(conserved_gold(&h).await?,100);
+            }
+            // Lowering refunds the fixed original Account first, despite the new current leader.
+            let lower=step(54,Some(2),Some(65))?;
+            let lowered=h.root.guildhall_escrow_financial_step(&a,&h.node,Some(successor),lower.clone()).await.map_err(debug)?;
+            assert_eq!(lowered.parts,EscrowParts{guild:70,account:5});
+            let before_replay=footprint(&h).await?;
+            assert!(h.root.guildhall_escrow_financial_step(&a,&h.node,Some(successor),lower).await.map_err(debug)?.replayed);
+            assert_eq!(footprint(&h).await?,before_replay);
+            let original_account:i64=sqlx::query_scalar("SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid").bind(id(40).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(original_account,25);
+            let successor_account:i64=sqlx::query_scalar("SELECT coalesce((SELECT balance FROM game_account_bank_balances WHERE account_id=encode($1,'hex')::uuid),0)").bind(id(96).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(successor_account,0);
+            // House phase is explicit fixture DATA; this is financial release, not House disposition.
+            h.pool.execute("UPDATE game_house_auctions SET phase='RELEASING'").await?;
+            let release=step(55,Some(3),None)?;
+            assert_eq!(h.root.guildhall_escrow_financial_step(&a,&h.node,None,release.clone()).await.map_err(debug)?.parts,EscrowParts::default());
+            assert_eq!(conserved_gold(&h).await?,100);
+            let after=footprint(&h).await?;assert_eq!(&after[4..],&[30,70]);
+            assert!(h.root.guildhall_escrow_financial_step(&a,&h.node,None,release).await.map_err(debug)?.replayed);
+            assert_eq!(footprint(&h).await?,after);
+            Ok(())
+        }.await;
+        let cleanup=h.cleanup().await;result?;cleanup
+    })
+}
+
+#[test]
+fn native_real_guild_disband_start_closes_hall_bid_admission_without_fake_terminalization()
+-> TestResult {
+    let admin = configured_admin().ok_or("native PostgreSQL17.6 required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "guildhall_disband_start").await?;
+        let result: TestResult = async {
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            funded(&h, &a).await?;
+            let request = GuildDisbandRequest::new(
+                owner_request(153, fence()?, GuildCommand::Disband)?,
+                "Guildhall Fixture",
+            )
+            .map_err(debug)?;
+            let result = h
+                .root
+                .commit_guild_disband(&a, &h.node, fence()?, request)
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(result,GuildOutcome::Committed(receipt) if receipt.result==GuildResult::Ok)
+            );
+            let before = footprint(&h).await?;
+            assert!(matches!(
+                h.root
+                    .guildhall_escrow_financial_step(
+                        &a,
+                        &h.node,
+                        Some(fence()?),
+                        step(56, None, Some(70))?
+                    )
+                    .await,
+                Err(GuildhallEscrowError::GuildIneligible)
+            ));
+            assert_eq!(footprint(&h).await?, before);
+            assert_eq!(conserved_gold(&h).await?, 100);
+            let state: i16 = sqlx::query_scalar("SELECT state FROM game_guilds")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(state, 3);
+            assert_eq!(h.count("game_guild_members").await?, 2); // real pending start, not closure evidence.
+            Ok(())
+        }
+        .await;
+        let cleanup = h.cleanup().await;
+        result?;
+        cleanup
+    })
 }
