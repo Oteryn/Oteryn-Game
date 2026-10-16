@@ -335,6 +335,89 @@ fn evaluate(
     ))
 }
 
+/// D1102 consumer DATA; E binds these values to its actual retained kill.
+/// The death key proves no current Character authority or original-time provenance.
+/// `pool` is after the native party bonus and summon share, before Prey/stamina.
+pub(crate) struct PartyXpKillInputs<'a> {
+    pub(crate) death: crate::foundation::CreatureDeathOccurrenceKey,
+    pub(crate) at: SemanticTimeMicros,
+    pub(crate) activity: &'a [PartyXpActivity],
+    pub(crate) leader_pz: Option<LeaderPzObservation>,
+    pub(crate) pool_after_bonus_and_summon: ExactI64,
+}
+
+/// A bound planner observation, never a reservation, receipt or commit authority.
+#[derive(Debug)]
+pub(crate) struct PartyXpKillPlan {
+    pub(crate) death: crate::foundation::CreatureDeathOccurrenceKey,
+    pub(crate) at: SemanticTimeMicros,
+    pub(crate) party_id: Option<[u8; 16]>,
+    pub(crate) party_revision: Option<u64>,
+    pub(crate) decision: PartyXpDecision,
+}
+
+/// Keep unavailable native source facts separate from a valid sharing-Off decision.
+#[derive(Debug)]
+pub(crate) enum PartyXpConsumerError {
+    Source(crate::durability::spell_item_transaction::SpellItemError),
+    Plan(PartyXpError),
+}
+
+/// The owned read/planner consumer; E's atomic settlement caller is separate.
+/// Reads both actual native sources through the caller's SAME SQL transaction.
+/// E retains responsibility for original kill-time provenance, at-kill capture,
+/// lawful reservation/lock ordering and every recipient's independent current fence.
+/// Returning this DATA does not let E hold a runtime lock across a sequencer/write,
+/// reuse it as current authority, or resample a changed party on occurrence replay.
+pub(crate) async fn plan_shared_xp_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    root: &crate::durability::DurabilityRoot,
+    authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    caster: (crate::foundation::ExactActorRef, GameSessionId),
+    input: PartyXpKillInputs<'_>,
+) -> Result<PartyXpKillPlan, PartyXpConsumerError> {
+    use crate::durability::spell_item_transaction::SpellItemError;
+    if input.death.world_id() != runtime.binding().world_id()
+        || input.death.channel_id() != runtime.binding().channel_id()
+        || input.death.scope_ownership_generation() != runtime.binding().scope_generation()
+    {
+        return Err(PartyXpConsumerError::Source(SpellItemError::Rejected(
+            "party XP death scope changed",
+        )));
+    }
+    let setting =
+        crate::durability::world_party::read_world_party_xp_for_scope_actor_in_transaction(
+            tx, root, authority, runtime, caster.0, caster.1,
+        )
+        .await
+        .map_err(PartyXpConsumerError::Source)?;
+    let physical = super::party_spell_owner::read_source_party_world_for_scope_in_transaction(
+        tx, root, authority, runtime, states, caster.0, caster.1,
+    )
+    .await
+    .map_err(PartyXpConsumerError::Source)?;
+    let decision = plan_shared_xp(
+        &physical,
+        &setting,
+        runtime,
+        states,
+        input.activity,
+        input.leader_pz,
+        input.at,
+        input.pool_after_bonus_and_summon,
+    )
+    .map_err(PartyXpConsumerError::Plan)?;
+    Ok(PartyXpKillPlan {
+        death: input.death,
+        at: input.at,
+        party_id: setting.source.party_id,
+        party_revision: setting.source.revision,
+        decision,
+    })
+}
+
 #[cfg(test)]
 #[path = "party_xp_tests.rs"]
 mod tests;

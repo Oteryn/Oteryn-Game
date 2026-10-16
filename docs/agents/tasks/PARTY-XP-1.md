@@ -45,8 +45,11 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 
 ## owned_paths (builder edits freely)
 
-- `apps/game-server/src/durability/world_party.rs`
-- `apps/game-server/src/durability/world_party_tests.rs`
+Current CP6219643346/D1101 removes both `durability/world_party.rs` and
+`durability/world_party_tests.rs` from this card: sole ownership is PARTY-1 #2201.
+The exact inverse removing only this branch's original World hunks is authorized
+reconciliation, not continuing ownership of those files.
+
 - `apps/game-server/src/gameplay_transport/party_spell_owner.rs`
 - `apps/game-server/src/gameplay_transport/party_xp.rs`
 - `apps/game-server/src/gameplay_transport/party_xp_tests.rs`
@@ -345,3 +348,61 @@ feedback through the actual CHAT successor; shared activation/registries/content
 regeneration at CP slot. No full XP gameplay, reward mutation, live feedback or task
 completion is claimed. No commit/push, new PR, ready/merge, production change or paid
 review was performed.
+
+
+## CP6219643346/D1101–D1102 authoring increment — 2026-10-16
+
+Current allocation supersedes the older overlapping World ownership and historical
+hold/integration statements above. Starting head is #2172
+`c617044bf3a1f2de6ee4d0587f840775b411bfbc`; sole author is `/root/party_owner`.
+The lead explicitly released AUTHORING after the three Guild writers released.
+
+D1101: applied the reviewed exact inverse of this branch's own World hunks only:
+46 lines in `world_party.rs` and562 in `world_party_tests.rs`. Both files now match
+immutable parent3789b07c exactly (Git blobs2703a9c9 and6767695e); all original13
+Party cases remain literal. The removed two older/four newer XP cases and genuine
+fixture helpers are preserved in the external inverse/evidence packet. No broad
+restore, shared foundation change, main merge or rebase was used. ONLY #2201
+continues World owner/test edits. Merge main here only AFTER #2201 merges; do not
+recreate its reader types locally to make this intermediate branch compile.
+
+D1102: implemented `plan_shared_xp_in_transaction` in the owned `party_xp.rs` leaf.
+It checks the native death World/Channel/scope generation against the actual runtime,
+then reads sole2201's strong XP membership/toggle port and the existing current
+physical member port on the caller's same actual SQL transaction, before invoking
+the existing planner. Native source refusal remains distinct from a valid sharing-Off
+or planner-input error. Returned death/time/party/revision/shares are DATA, never
+Character write authority, reservation, receipt or an atomic award.
+
+The sole pure fixture helper gains `shared_xp_enabled` for the actual2201 provider;
+all prior15 planner bodies remain unchanged. Two added owned DATA regressions cover
+original microsecond kill time within one millisecond and original-time event replay
+without extending the inclusive two-minute activity window. They do not qualify
+actual combat/heal event producers. No new lint suppression is introduced.
+
+A proposed native consumer test, using the original real Fresh/current-session,
+recovery/Node/scope, player-build and committed-death fixtures, is routed to sole2201
+as the outside-checkout `party-xp-D1102-world-consumer-tests.patch`. It checks actual
+same-TX planning, native Character/session output, unavailable PZ vs Source refusal,
+wrong current session, absent player state and physical-TX substitution. The new
+case is not silently disabled or presented as executed. It needs the actual2201
+World/foundation provider and an explicitly disclosed CP module-registration slot
+(`pub(crate) mod party_xp;`) in native qualification; no private fixture is widened.
+
+Exact E08266 source bindings, existing types and the implemented D consumer handoff
+are in `/workspace/oteryn-family/party-xp-D1102-E-handoff.md`. E #2192 alone owns the
+real50-principal atomic progression/death/kill settlement and actual attack/heal
+engagement ports. E must independently resolve every recipient's current fence,
+policy and stable `(death,Character)` occurrence, obey sequencer/runtime lock order,
+retain original kill/activity/PZ snapshots and semantic microseconds, preserve replay
+and unknown-outcome convergence, and apply party bonus/summon before split then
+individual Prey/stamina. A singleton-award loop is not this integration. Actual PZ
+producer, heal owner routing, atomic rollback/replay qualification and shared wiring
+remain open; this card stays partial, with no gameplay completion claim.
+
+Validation for this new increment: direct pinned rustfmt and whitespace checks plus
+cheap governance checks only. Prior XP34 native PASS is historical evidence for the
+superseded detached increment; it does not qualify these new bytes. The lead owns
+native Clippy/test execution against the actual2201 source in a private disclosed
+qualification composition. No Cargo, commit, push, E/shared-module write, ready,
+merge, production action or paid review was performed by this author.

@@ -32,6 +32,7 @@ fn source(members: &[SourcePartyXpMember]) -> PartySnapshot {
         character: id(10),
         party_id: Some(id(2)),
         revision: Some(1),
+        shared_xp_enabled: true,
         leader: Some(id(10)),
         observed_database_micros: 1,
         members: members
@@ -589,5 +590,53 @@ fn party_xp_level_ratio_and_distance_do_not_overflow_at_integer_limits() {
     off(
         decide(&source(&members), &members, &active(&members, 0), 0),
         SharingOff::Range,
+    );
+}
+
+#[test]
+fn party_xp_original_microsecond_kill_time_preserves_same_millisecond_activity() {
+    let members = [member(10, 100, 0, 0, 0)];
+    let s = source(&members);
+    let activity = active(&members, 1_999);
+    assert!(matches!(
+        decide(&s, &members, &activity, 1_999),
+        Ok(PartyXpDecision::Shares(_))
+    ));
+    // A caller reconstructing the original kill from truncated milliseconds loses
+    // this qualified activity. Never substitute this value or a later retry clock.
+    assert_eq!(
+        decide(&s, &members, &activity, 1_000),
+        Err(PartyXpError::ClockRegressed)
+    );
+}
+
+#[test]
+fn party_xp_original_event_replay_does_not_extend_activity_window() {
+    let members = [member(10, 100, 0, 0, 0), member(11, 100, 1, 1, 0)];
+    let s = source(&members);
+    let mut activity = active(&members, 9);
+    let before = activity.clone();
+    // An actual event owner replay must retain the original committed timestamp.
+    activity[0]
+        .record_members(
+            &s,
+            channel(),
+            &members,
+            PartyActivityEvent::HealedMember {
+                healer: members[0].character,
+                session: members[0].session,
+                healed: members[1].character,
+            },
+            time(9),
+        )
+        .expect("original-time event replay");
+    assert_eq!(activity, before);
+    assert!(matches!(
+        decide(&s, &members, &activity, 120_000_009),
+        Ok(PartyXpDecision::Shares(_))
+    ));
+    off(
+        decide(&s, &members, &activity, 120_000_010),
+        SharingOff::Inactive,
     );
 }
