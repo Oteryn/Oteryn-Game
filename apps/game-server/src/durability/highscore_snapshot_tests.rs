@@ -672,7 +672,7 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
             migration_path.display()
         )
     })?;
-    run("hsoutbox", async |h| {
+    run("hsoutbox", async move |h| {
         // The native harness may already apply 0091 after the slot merges main.
         let installed: bool = sqlx::query_scalar(
             "SELECT to_regprocedure('game_public_highscores_snapshot_trigger()') IS NOT NULL",
