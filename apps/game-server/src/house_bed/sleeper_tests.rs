@@ -23,10 +23,9 @@ fn debug(error: impl std::fmt::Debug) -> Box<dyn std::error::Error> {
 }
 
 fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) -> TestResult {
-    let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
-        eprintln!("PRE-ROUTING/NONCANONICAL: no OTERYN_TEST_POSTGRES_ADMIN_URL");
-        return Ok(());
-    };
+    let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").map_err(|_| {
+        "PostgreSQL sleeper case requires OTERYN_TEST_POSTGRES_ADMIN_URL; case was not executed"
+    })?;
     if !url.starts_with("postgresql://oteryn_test_admin:")
         || !url.ends_with("@127.0.0.1:5432/postgres")
         || !tag.bytes().all(|b| b.is_ascii_lowercase() || b == b'_')
@@ -102,6 +101,17 @@ async fn revision(connection: &mut PgConnection, house: &str) -> Result<String, 
         .bind(house)
         .fetch_one(connection)
         .await
+}
+
+async fn another_connection(
+    c: &mut PgConnection,
+) -> Result<PgConnection, Box<dyn std::error::Error>> {
+    let database: String = sqlx::query_scalar("SELECT current_database()")
+        .fetch_one(c)
+        .await?;
+    let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+    let prefix = url.strip_suffix("/postgres").ok_or("invalid route")?;
+    Ok(PgConnection::connect(&format!("{prefix}/{database}")).await?)
 }
 
 fn code<T: std::fmt::Debug>(result: Result<T, sqlx::Error>, expected: &str) -> TestResult {
@@ -271,12 +281,7 @@ fn invalid_transitions_bindings_and_revision_overflow_fail_closed() -> TestResul
 fn locked_read_pins_row_until_transaction_ends() -> TestResult {
     run_case("locking", async |c| {
         insert(c, 1, "oteryn:content.house.a", 8).await?;
-        let db: String = sqlx::query_scalar("SELECT current_database()")
-            .fetch_one(&mut *c)
-            .await?;
-        let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
-        let prefix = url.strip_suffix("/postgres").ok_or("route")?;
-        let mut other = PgConnection::connect(&format!("{prefix}/{db}")).await?;
+        let mut other = another_connection(c).await?;
         sqlx::query("SET lock_timeout='50ms'")
             .execute(&mut other)
             .await?;
@@ -306,6 +311,109 @@ fn locked_read_pins_row_until_transaction_ends() -> TestResult {
                 .get(),
             2
         );
+        other.close().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn competing_free_keeps_first_cause_time_and_revision_after_reconnect() -> TestResult {
+    run_case("free_race", async |c| {
+        insert(c, 1, "oteryn:content.house.a", 8).await?;
+        let mut other = another_connection(c).await?;
+        sqlx::query("SET lock_timeout='50ms'")
+            .execute(&mut other)
+            .await?;
+        // Raw storage writers only: neither connection represents runtime
+        // authority, a bed-removed proof or an OFFLINE settlement marker.
+        let mut first = c.begin().await?;
+        assert_eq!(sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=110,freed_cause='owner_wake' WHERE freed_at IS NULL")
+            .execute(&mut *first).await?.rows_affected(), 1);
+        code(sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=120,freed_cause='bed_removed' WHERE freed_at IS NULL")
+            .execute(&mut other).await, "55P03")?;
+        first.commit().await?;
+        // Re-evaluate the predicate after the winning commit. The loser may
+        // neither rewrite the first result nor advance the occupancy revision.
+        assert_eq!(sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=120,freed_cause='bed_removed' WHERE freed_at IS NULL")
+            .execute(&mut other).await?.rows_affected(), 0);
+        let expected = read_sleeper(c, character(1)?)
+            .await
+            .map_err(debug)?
+            .ok_or("missing sleeper")?;
+        assert_eq!(
+            expected.freed,
+            Some(FreedSleeper {
+                at: 110,
+                cause: FreedCause::OwnerWake,
+            })
+        );
+        assert_eq!(expected.occupancy_revision.get(), 2);
+        other.close().await?;
+        let mut reconnected = another_connection(c).await?;
+        assert_eq!(
+            read_sleeper(&mut reconnected, character(1)?)
+                .await
+                .map_err(debug)?,
+            Some(expected)
+        );
+        assert_eq!(sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=130,freed_cause='bed_removed' WHERE freed_at IS NULL")
+            .execute(&mut reconnected).await?.rows_affected(), 0);
+        assert_eq!(
+            revision(&mut reconnected, "oteryn:content.house.a").await?,
+            "2"
+        );
+        reconnected.close().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn competing_bed_insert_serializes_commit_and_rollback_without_lost_revision() -> TestResult {
+    run_case("insert_race", async |c| {
+        let mut other = another_connection(c).await?;
+        sqlx::query("SET lock_timeout='50ms'")
+            .execute(&mut other)
+            .await?;
+        let mut first = c.begin().await?;
+        insert(&mut first, 1, "oteryn:content.house.a", 8).await?;
+        code(
+            insert(&mut other, 2, "oteryn:content.house.a", 8).await,
+            "55P03",
+        )?;
+        first.commit().await?;
+        code(
+            insert(&mut other, 2, "oteryn:content.house.a", 8).await,
+            "23505",
+        )?;
+        assert_eq!(revision(c, "oteryn:content.house.a").await?, "1");
+        assert!(
+            read_sleeper(c, character(2)?)
+                .await
+                .map_err(debug)?
+                .is_none()
+        );
+
+        let mut rolled_back = c.begin().await?;
+        insert(&mut rolled_back, 2, "oteryn:content.house.b", 8).await?;
+        code(
+            insert(&mut other, 3, "oteryn:content.house.b", 8).await,
+            "55P03",
+        )?;
+        rolled_back.rollback().await?;
+        insert(&mut other, 3, "oteryn:content.house.b", 8).await?;
+        let winner = read_sleeper(c, character(3)?)
+            .await
+            .map_err(debug)?
+            .ok_or("missing committed winner")?;
+        assert_eq!(winner.occupancy_revision.get(), 1);
+        assert_eq!(winner.bed.house.house_key(), "oteryn:content.house.b");
+        assert!(
+            read_sleeper(c, character(2)?)
+                .await
+                .map_err(debug)?
+                .is_none()
+        );
+        assert_eq!(revision(c, "oteryn:content.house.a").await?, "1");
         other.close().await?;
         Ok(())
     })

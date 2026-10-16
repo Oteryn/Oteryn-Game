@@ -231,3 +231,59 @@ Commands, original logs, initial/final source hashes, native snapshot registrati
 manifest and scope/self-review are in
 `/workspace/oteryn-prep/bed-1-evidence/index.md`. This is private lifecycle/read
 qualification only, not live sleep, wake, offline training or settlement delivery.
+
+## Owner-assigned authoring repair — 2026-10-16
+
+The owner directly confirmed exclusive assignment of this existing draft to the
+current family lead and its sole BED-1 author; the previous team will not write.
+No additional CP lease ID is required. This instruction supersedes the earlier
+missing-allocation-artifact uncertainty; it does not broaden this round's four
+paths: `house_bed/sleeper.rs`, `house_bed/sleeper_tests.rs`,
+`durability/bed_sleeper.rs` and this card. The authoring floor remains exact PR
+head `2d5be266946baae97f988f7cc46f6415464b1ba7`, worktree
+`/workspace/bed-1`. No shared registration, migration, publication or review
+trigger is authorized in this round.
+
+CP finding P2 (silent PostgreSQL success) is **fixed in source, execution pending**:
+`run_case` now returns an error when `OTERYN_TEST_POSTGRES_ADMIN_URL` is missing
+or not Unicode. There is no success/skip fallback. The existing canonical local
+admin-route restriction and exact PostgreSQL `server_version_num=170006` check
+remain mandatory. No credential is printed by the new error.
+
+Two additional PostgreSQL cases exercise the actual existing private schema:
+
+- Competing owner-wake/bed-removed storage transitions: an uncommitted first free
+  blocks the loser (`55P03`), the committed first time/cause remains unchanged,
+  and the losing retry affects zero rows with no extra occupancy revision. A new
+  connection reloads the same first result and repeats the losing no-op.
+- Competing inserts into one bed: a pending winner blocks its competitor; commit
+  preserves uniqueness (`23505`) without an extra revision. A second house case
+  rolls back the initial insert, lets the competitor succeed, and verifies the
+  rolled-back Character row/revision did not survive or affect the other house.
+
+These are migration-owner storage tests, not runtime authority or a real process
+restart qualification. The new connection reload is not a claim that restart,
+OFFLINE receipt replay, current access or a production wake writer is delivered.
+
+On this exact authoring floor `BuildCause` still contains only `Training`,
+`VocationChoice` and `Promotion`; no native logout/offline marker transaction
+exists. `FreshAdmissionStore::release` has no sleeper-marker hook. No registered
+house runtime supplies current house/node/assignment, active head-pair or
+owner-wake/bed-removed proof on this branch. An ACL read alone cannot provide
+those missing facts. Therefore production sleep/free/delete APIs are not added:
+the affected integration remains with OFFLINE/STATUE and HOUSE owners. A missing
+accepted owner seam is not replaced by caller booleans, raw admin SQL or a new
+authority trait. The disposition-before-ownership-UPDATE requirement above
+remains unchanged.
+
+Validation in this round: `git diff --check` and the governance validator pass;
+all 124 governance unit tests pass. The family lead formatted the owned
+`sleeper_tests.rs` source with verified official Rustfmt 1.94
+(`/workspace/house-tools/rustfmt`, edition 2024, `skip_children`); focused source
+formatting passes. Package `cargo fmt`, Clippy, all nine sleeper tests and
+PostgreSQL remain unrun: D1011 requires the owner-PC executor and no global PC
+slot is available. The executor must register/qualify these owned modules under the
+actual native test manifest and run all nine sleeper tests (one pure, eight
+PostgreSQL 17.6), plus required package formatting/Clippy. Missing URL must fail
+the PG cases; canonical 17.6 must execute them, not report skipped success.
+All family acceptance checkboxes remain open; this repair does not close BED-1.
