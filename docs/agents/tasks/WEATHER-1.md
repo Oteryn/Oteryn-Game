@@ -22,6 +22,7 @@ updated_at: 2026-10-16
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/world_clock.rs
+  - apps/game-server/src/world_clock_world_config_tests.rs
   - apps/game-server/src/world_weather.rs
   - apps/game-server/src/world_weather_tests.rs
   - crates/protocol-oteryn/src/world_weather.rs
@@ -34,7 +35,7 @@ slot_only_paths:
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
 public_contracts: []
 depends_on:
-  - "WEATHER-SEAM-1: read-only World binding and canonical occurrence; required before offer"
+  - "D1190: owned World binding plus canonical occurrence/A2 integration required before offer"
   - "D1027: protocol-owner sign-off; candidate codec is not sign-off"
   - "ITEM-LOOK-1 #2182 -> WEATHER-1 -> SEC-1 registry order"
 blocks: []
@@ -42,7 +43,53 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-## D1137 authoring checkpoint — NOT_FULLY_QUALIFIED
+## D1190 resolved World-config source — owned leaf and private A2 proposal
+
+[CP D1190](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225612898)
+resolves the previously missing production source: `[world]` contains seed_file,
+clock_identity and whole-hour clock_epoch_utc_ms; the existing
+`readiness.world_policy_revision` is the single policy source. The earlier
+source-gap request below is historical and superseded, not an open decision.
+
+Owned `world_clock.rs` now retains a non-Clone, redacted-Debug World-bound
+`RetainedWorldConfig`. Its only constructor loads the actual file through
+`secure_file::read_checked(FileClass::Secret)` against the process UID, with a
+32-byte bound and exact length. There is no raw seed/default constructor. The
+read accessor returns borrowed seed/identity/policy plus the retained clock only
+for the bound WorldId. These are immutable input data, not current ownership,
+session or publication authority. Three authored tests use real private temporary
+files to cover exact shape, permission/symlink rejection, metadata, World mismatch,
+redaction and retention after the original file changes. Their runtime is NOT_RUN.
+
+Shared configuration and callers belong to A2 after #2187 and #2182. Exact actual
+source copies and one frozen patch are prepared outside the product checkout at
+`/workspace/oteryn-family-g/evidence/2202-D1190-private-A2/`. The proposal contains
+NodeConfig's optional WorldConfig and validation, serve's single checked load,
+borrowed GameplaySeamOwners/ComposedFreshAdmission propagation, connection clock
+source/no-config offer filtering, both qualification run.sh configs with a real
+once-per-session Secret file, and the one in-process qualification owner literal.
+It removes DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS in the same proposal as its caller
+replacement. That removal is deliberately not published alone in the canonical
+leaf. I-owned ReadinessConfig is byte-unchanged; no parallel node writer publishes.
+
+The slot proposal is based on this branch's exact source; it is not a merge of
+I's unpublished A2 assembly. Final A2 must compose the configured offer predicate
+with I's boot-bound required-set builder/authenticated fresh/resume/recovery
+selection, preserving a single effective offer source and refusing a configured
+required clock when no World binding exists. Weather26 is still unoffered here;
+actual weather publication, canonical occurrence and D1026 current-owner behavior
+remain integration work, not claims derived from this retained loader.
+
+Cheap owned Rustfmt, private changed-Rust formatting, shell syntax and diff/patch
+application/hash checks are retained with the source freeze. New compilation,
+strict lint, three loader tests, private caller/qualification runtime and all
+weather integration remain NOT_RUN. Prior11 native components remain historical
+source proof; the later clock delta and this loader have not been runtime-qualified.
+Status NOT_FULLY_QUALIFIED, production acceptance RED. No shared product source,
+registry, content pin, default seed, feature activation, runner, heavy job, commit,
+push or freeze is performed by this author before the lead's source review.
+
+## Historical D1137 authoring checkpoint — superseded by D1190 source grant
 
 CP [D1137](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930839)
 assigns the seam and World seed accessor in `world_clock.rs` to #2202, capability26
@@ -195,9 +242,14 @@ Later caller/slot integration retains the repository's normal package gates:
 ## Checkpoint
 
 ```yaml
-last_progress: D1137 partial absolute-clock read and leaf IDs authored; source owner gap documented
+last_progress: D1190 real checked-secret retained World loader authored; private A2 caller proposal retained
 status: NOT_FULLY_QUALIFIED
 branch: skeleton/weather-1
-blocker: missing retained World-config seed/epoch/policy source; D1027 review and allocated real-caller slot
-next_action: lead independent source review; CP identifies retained World-config owner and path authority
+blocker: D1190 A2 composition after2187+2182; native loader/caller qualification; canonical occurrence and D1027 review
+next_action: lead reviews owned loader and frozen private A2 proposal; preserve NOT_RUN and no offer before integration
 ```
+
+Lead independent source review PASS for the owned retained-config leaf; changed-file
+Rustfmt/diff and governance validator +124 tests PASS. D1122 permits this
+NOT_FULLY_QUALIFIED checkpoint; new native/strict/runtime remain NOT_RUN. The
+private shared A2 proposal remains uncommitted to the product and slot-bound.
