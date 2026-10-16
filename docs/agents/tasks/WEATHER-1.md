@@ -43,9 +43,12 @@ external_repositories: []
 
 ## Source and accepted scope
 
-Current source head: `e4eedab0440ea6f72751318c818a34d6d7306d98`, on
-`skeleton/weather-1`; its parent is the `base_sha` above. This D1111 authoring
-batch is an uncommitted delta over that head. The observed `main` head is
+Qualified Rust source candidate: `fd2700ea3b646493dc5b8391b655cea32238f125`,
+on `skeleton/weather-1`, parent `e4eedab0440ea6f72751318c818a34d6d7306d98`.
+The original model base is the `base_sha` above. This record-only successor
+changes this card; all three Rust files remain byte-identical to the qualified
+candidate. Its resulting record head is retained in the lead's commit receipt.
+The `main` head observed before D1111 authoring was
 `24fc332f256638e3b784bff1b3c85b18e2665a76`; it has not been merged into this branch.
 Local evidence directories are not repository contracts or production paths.
 
@@ -86,7 +89,8 @@ protocol-owner sign-off. This authoring allocation does not grant it.
 - [x] D1111 rain/fog/snow map and explicit selector authored in owned source.
 - [x] Owned candidate codec and negative tests authored; no registration/sign-off claim.
 - [x] Residue checked against observed main and exact CP ruling before this batch.
-- [ ] Current batch native compilation, strict lint and test qualification.
+- [x] Actual native component compilation, strict lint, discovery and11 tests:6 server +5 protocol.
+- [ ] Production head integration and normal all-target/package CI qualification after the caller slot.
 - [ ] Protocol-owner D1027 sign-off, accepted schema and slot registry bindings.
 - [ ] WEATHER-SEAM-1 actual World/private seed/clock/policy binding and canonical occurrence.
 - [ ] Real caller plus server module declaration/capability/transport in one allocated slot.
@@ -102,29 +106,50 @@ session at publication; the model and codec cannot supply that authority.
 
 ## Validation
 
-The current authoring batch has **not run Cargo, Rust tests, PostgreSQL or a
-build**. Previously reported private assemblies apply only to the older
-`e4eedab0` model and do not establish CI registration or qualify this new codec.
-Owned-file Rust1.94 formatting and diff whitespace checks passed. Governance
-validation passed and124 governance unittests passed. Independent frozen-diff
-review is pending; required native qualification remains open before publication.
+Independent source review of the codec, map and record: **SOURCE PASS**.
+Actual native component qualification of `fd2700ea`: **11 passed,0 failed,0 ignored**
+(6 server,5 protocol). The lead retained `qualification.json`, SHA256
+`71890c4f2b23ae83f1c0edb2bc95593463f2d6f5ad2a4ca23fa6f26fd32c7ed6`.
 
-Required checks when the lead grants the shared execution slot:
+The private full-source checkout used only two additional `#[cfg(test)]` module
+declarations in the real server/protocol crate roots. `cargo fmt --all --check`
+passed. Ordinary Cargo selected both actual native library-unit compilations:
+
+`cargo test --offline --locked -p oteryn-game-server -p oteryn-protocol-oteryn --lib --no-run --message-format=json`
+
+Both actual selected invocations used real Clippy1.94 with identical Cargo
+arguments plus `-D warnings`; no synthesized test/cfg arguments, lint allowances
+or path harness were introduced. Strict lint/codegen, fresh native ELF discovery,
+`--list`, once-only source inventories and all11 literal `--exact` tests passed.
+Owned formatting, whitespace and governance checks passed;124 governance tests
+passed. This record-only successor reruns only cheap governance/whitespace and
+verifies the exact three qualified Rust hashes, without repeating Rust.
+
+This is **component qualification, not production head integration**. The
+canonical crate roots still do not register Weather. Normal all-target Clippy,
+whole-package runtime/duplicate-source CI guards, protocol-owner approval,
+WEATHER-SEAM-1 and actual caller/transport/client behavior are not discharged by
+the private component proof. No PostgreSQL invocation was needed for the11
+selected component tests. No whole-baseline rerun or production offer is claimed.
+The lead handles independent outcome review and publication preflight; this
+record update performs no push or GitHub mutation. The feature remains NOT READY.
+
+Later caller/slot integration retains the repository's normal package gates:
 
 - `cargo fmt --all --check`
 - `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`
 - `cargo clippy --locked -p oteryn-protocol-oteryn --all-targets --quiet -- -D warnings`
 - `cargo test --locked -p oteryn-game-server --quiet`
 - `cargo test --locked -p oteryn-protocol-oteryn --quiet`
-- `python tools/agents/validate_governance.py`
-- `python -m unittest discover -s tools/agents/tests`
+- unchanged repository guards and required CI/protection
+
 
 ## Checkpoint
 
 ```yaml
-last_progress: D1111 owned map and candidate codec authored over e4eedab0
+last_progress: fd2700ea native components PASS11; record-only successor reuses three exact Rust hashes
 status: in_progress
 branch: skeleton/weather-1
-blocker: native qualification, D1027 sign-off, WEATHER-SEAM-1 and allocated real-caller slot
-next_action: freeze owned delta for independent review; no build or push during current Ground pipeline
+blocker: D1027 sign-off, WEATHER-SEAM-1, production head integration and allocated real-caller slot
+next_action: lead independent outcome review and publishing preflight; preserve NOT READY integration gates
 ```
