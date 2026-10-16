@@ -277,10 +277,10 @@ impl PartyViews {
                 return Err(ViewError::Unavailable);
             }
         };
-        if let Some(Some(party)) = self.locals.remove(&character) {
-            if !self.locals.values().any(|local| *local == Some(party)) {
-                self.views.remove(&party);
-            }
+        if let Some(Some(party)) = self.locals.remove(&character)
+            && !self.locals.values().any(|local| *local == Some(party))
+        {
+            self.views.remove(&party);
         }
         Ok(())
     }
