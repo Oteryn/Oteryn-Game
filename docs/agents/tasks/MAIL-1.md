@@ -130,6 +130,10 @@ python3 tools/content-migration/regenerate_content.py   # slot commit only; runs
 
 ## Bounded local MAIL-TEXT/address and recipient preparation — 2026-10-15
 
+Historical snapshot: this section records the earlier bounded subset. Its
+content-model and allocation statements are not current activation authority;
+the native writer and later actual evidence are recorded below.
+
 Existing draft #2133, `skeleton/mail-1`, unchanged authoring base
 `06f4e8ee2479eb5bffce507ba50f9a1c10b4b718`. The active allocation permits only
 the six paths named in `mail-1-allocation.json`; historical broader paths and
@@ -288,8 +292,8 @@ The rate-refusal fixture sets its two stored receipt times to PostgreSQL
 `infinity` so CI delays cannot age them out; it exercises conservative refusal
 and state preservation, not wall-clock expiry. The separate deletion/rewrite
 case explicitly ages its fixture receipts. Neither changes the production clock.
-All six new cases are **unexecuted**: this container has no Cargo/compiler, and
-no global PC test slot was acquired. The lead supplied an isolated official
+At this initial authoring checkpoint all six new cases were **unexecuted**:
+this container had no Cargo/compiler and no global PC test slot had been acquired. The lead supplied an isolated official
 rustfmt 1.94 matching the repository toolchain; the owned source's formatting and
 `--check` passed, as did whitespace checks including the new file. No build, PG
 qualification, frozen-head CI or paid review is claimed. Existing eight-test
@@ -340,6 +344,61 @@ Removing precisely those two new attributes reproduces the old source bytes,
 including schema, every function body, test body and authority check. No source
 behavior or test inventory changes. Focused official rustfmt and whitespace
 checks passed locally. No Cargo/compiler/PG run was performed by this author;
-the successor's native strict-Clippy result remains pending actual recheck and
-independent review. Existing frozen commit, PC snapshots, refs and publication
-state are unchanged by this authoring repair.
+at that checkpoint the successor's native strict-Clippy result was pending
+actual recheck and independent review. Existing frozen commit, PC snapshots, refs
+and publication state were unchanged by that authoring repair.
+
+## SAME3bc actual continuation evidence and docs-only bridge — 2026-10-16
+
+The lead froze the targeted lint successor as
+`3bc9949ef9af75badcf6ba99eafdd71802e2b672`. Its actual native execution is now
+complete for the selected subset: **14/14 passed, zero failed, zero ignored**,
+comprising **8 pure + 6 PostgreSQL** cases, with actual canonical server probe
+`170006`. This supersedes the historical unexecuted/pending statements above.
+
+- `actual-mail-successor-interrupted-1/`: actual library check, complete library
+  test compilation and five domain tests passed before interruption; this is
+  retained stage evidence, not a completed pipeline claim.
+- `actual-mail-successor-nonpg-2/`: workspace `cargo fmt --all --check` and
+  strict library `cargo clippy ... --lib -- -D warnings` exited **0**. The two
+  targeted expectations suffice for this actual library lint run; no payload or
+  blanket module allowance was needed.
+- `actual-mail-successor-pg-3/`: canonical PG lock/version proof and exact native
+  inventories ran the missing three recipient cases plus six item-text cases
+  (three pure, three storage PG), all passed. The five prior domain cases and
+  check/no-run results were retained without rerunning them. Source/compiler/ELF
+  proofs bind the same candidate; the prior test ELF remained byte-identical.
+  The continuations report unchanged source and successful own-child cleanup.
+
+The broader gates remain **failed**: strict all-target Clippy and ordinary
+full-package `cargo test --locked --offline -p oteryn-game-server --no-run`
+both exited **101**. Actual diagnostics are **E0432/E0433**, at
+`apps/game-server/src/durability/item_text.rs:20–21`: integration crates that
+locally include Durability cannot resolve `crate::content` or its
+`native_gameplay` module. Logs identify `runtime_scope_assignment_postgres`,
+`wp5_s3b_composition`, `durability_postgres`, `character_authority_postgres`, and
+(full-package compilation) `native_admission_source_postgres`. These are actual
+shared-composition failures, not unresolved dead-code lint or pending focused PG
+execution. Full-package runtime tests were not run after compilation failed.
+
+CP owns shared module registration and integration-root/Content composition.
+The existing narrow `tests/support/content_shim.rs` does not supply native
+Content; the other affected roots have no Content root. A legitimate native
+composition or agreed bounded leaf text-policy ABI with an actual Content-owner
+adapter needs a shared slot and review. No new shim, cfg exclusion, fake caller,
+unapproved ABI or type-visibility expansion is supplied by this increment.
+
+Evidence directories above are under `/workspace/oteryn-family-b/`.
+Their interrupted results/non-PG summary/PG summary SHA256 values respectively:
+`c15442e4116e42279607741fceeead60c66d612706364e098578d8ceac56b29f`,
+`d59e12c294936733bb0b15369c32f3ee1db00e62dd75e1792a238355b9b424a7`,
+`36566d50f21bd184ec96379380ff9ec0eaff22a567fbe5062ba8793420cde9b5`.
+
+This final authoring bridge changes documentation only. Rust source
+`item_text.rs` remains SHA256
+`5bf55209bc89fd6498d19142d7b3aa97aa09e47b36b3eff7c66c313bd6ed5049`;
+the actual native results bind frozen `3bc9949`, not a later docs-only commit.
+No later-head CI, full current-authority writer/replay/trade qualification,
+production activation, full MAIL acceptance, ready/merge or publication is
+claimed. Content admission, real trade-offer serialization, numbered
+migration/grants/cleanup and wire composition remain activation gates.
