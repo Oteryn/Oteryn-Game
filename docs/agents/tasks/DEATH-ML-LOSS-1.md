@@ -13,9 +13,9 @@ pr: 2193
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 DEATH-ML-LOSS-1 (rows 40, 41); wave 1 (migration chain #4)"
 class: "hard (persistence)"
-migration: yes
+migration: no
 registry: no
-owner: "Codex family lead: Rozwój postaci i trening; domain worker /root/death_review"
+owner: "Codex family lead: Rozwój postaci i trening; D1105 source writer /root/death_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-16
@@ -23,9 +23,10 @@ execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_death.rs
   - apps/game-server/src/domain/death.rs
+  - apps/game-server/src/durability/character_revision_sequencer.rs
   - apps/game-server/tests/death_ml_loss_*.rs (new)
 slot_only_paths:
-  - migration number (chain #4, nullable build columns on the death receipt)
+  - apps/game-server/src/gameplay_transport/mod.rs (runtime caller; not allocated)
 public_contracts: []
 depends_on:
   - "CHAR-BUILD-1: MERGED"
@@ -104,11 +105,11 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: accepted SKILLS-0 domain loss calculation prepared; durable writer remains pending
+last_progress: D1105 exact-source native validation passed; runtime capture/drain integration remains partial
 status: waiting
 branch: skeleton/death-ml-loss-1
-blocker: CP shared character_death.rs author/preimage with PR 2205; LOOP-PROGRESS-1; runtime integration
-next_action: qualify the domain candidate; CP allocates the shared writer and native caller slot
+blocker: LOOP-PROGRESS-1 integration order; actual runtime capture/drain and mod.rs caller slot
+next_action: freeze final validation record for lead publication; integrate runtime capture/drain only in its allocated slot
 ```
 
 
@@ -254,3 +255,84 @@ next_action: qualify the domain candidate; CP allocates the shared writer and na
   queue, merge or deployment. Re-entry is triggered by CP naming the shared-file
   author/preimage and supplying the runtime integration slot, plus the existing
   LOOP-PROGRESS chain condition. No background continuation is asserted.
+
+## D1105 writer and sequencer handoff (2026-10-16)
+
+This checkpoint supersedes the shared-writer blocker in the preceding domain-only
+checkpoint. CP D1105 (comment `6219643346`, relayed by the family lead) selects E
+#2193 as the sole physical author of `durability/character_death.rs`. F #2205 is a
+read-only contributor until #2193 merges; its future hunk is not integrated here.
+The authorized PR preimage is SHA256
+`82e30eb2517c96f48444826521f9bc6b9a2f052febc237326178d59a4d6ff4e3`
+(git blob `44379e7f59092e2ec1f4b1005fdd5f77baa1cb95`), identical at the original
+PR head and the domain candidate `ec0a6978425e3aee50919a9a10b8385605f6c216`.
+It is not the newer main preimage; main has not been merged without its slot.
+
+The lead's explicit handoff and progression worker acknowledgement additionally
+allocate only `RevisionSlot::commit_death_with_build` and its scoped argument-count
+annotation in `character_revision_sequencer.rs`. Progression is paused as physical
+writer while this hunk is authored. No progression atomic-batch hunk or broader
+sequencer ownership is imported. Actual files changed in this increment are
+`domain/death.rs`, `durability/character_death.rs`, this narrow sequencer hunk and
+this task record; no module registration, manifest, migration, registry or content
+pin is changed.
+
+Implemented native behavior:
+
+- The existing fenced death transaction locks and loads current durable build,
+  applies the accepted ratio to all eight families, updates an existing build row
+  only when a family decreases, and writes the existing 33 nullable receipt fields
+  in that same transaction. Vocation is preserved. No build receipt is inserted
+  inside death, and no build row is created at death.
+- `CommittedCharacterDeath::build_loss`, SELECT/decode and reconcile carry the
+  typed before/after payload. Partial NULLs, unsupported binding versions/sizes,
+  increases and no-op non-NULL payloads fail closed.
+- NULL/no-change receipts preserve exact v1 bytes. Non-NULL receipts use version2:
+  version byte, formula digest32, digest32 of the existing v1 intent plus formula
+  and complete build values. The schema is unchanged. Exact historical replay
+  uses receipt values, never today's possibly later build state.
+- `settle_player_death_with_training_and_build` holds one sequencer slot across
+  the earlier training commit and the death; all initial/fallback death dispatches
+  use the build-aware slot method. A retained death bypasses new checkpoint and
+  current-formula processing. New occurrences require current content revision;
+  legacy callers cannot silently skip loss on trained positive-loss deaths.
+- The domain wrapper and the value-only family core share the same accepted
+  native cumulative/re-level arithmetic. The core avoids durable-type identity
+  substitution when existing aggregate tests compile native modules separately.
+
+Final qualification evidence is kept outside the repository under
+`/workspace/oteryn-family/evidence/d1105-death/freeze/`. The lead completed native
+validation on the complete writer, sequencer and composed training/death candidate:
+
+- Domain SHA256 `d32cebc93a9f5201bfdf3e204d35e2a6f410ffcc05d387fdda18b5573b3a4021`;
+  writer SHA256 `74f1d1de4679dcd9d45f0eeabfc367cbe246c8c9c8cce81193b3f2eec34fcae1`;
+  sequencer SHA256 `de49b1da8b2f3c86f918dc9f07f9b74bd46e4f630aabcb03b136361beb6aa88b`.
+- `native-run/result.json`: six exact native tests passed, five actual PostgreSQL17.6
+  cases and one binding case, zero skips, mandatory PG URL present. It binds server
+  version170006 and ELF SHA256
+  `1189d1c3998d4780a9122acb9b680d6d648ea9362891c3433c42f65918ba07bd`.
+  Cases cover the sequenced training/death path, all-family receipt values,
+  reopen/reconcile/replay, retained replay despite changed checkpoint/formula,
+  legacy v1 adoption, receipt-insert rollback, current fences/content, conflicts
+  and concurrent independent roots. Reopening a root is not an OS-process or
+  PostgreSQL-server restart certificate.
+- `full-package-result.json`: `cargo test --locked -p oteryn-game-server --quiet`
+  passed, 57 reports, 9901 passed, zero failed, 37 ignored. This run had no PG URL;
+  it does not qualify conditional PostgreSQL cases. The separate six-test native
+  run above supplies the bounded PostgreSQL evidence.
+- Formatting, strict all-target package Clippy, governance validation and all 124
+  governance tests passed; their logs are retained beside these result manifests.
+  Rust1.94 was used. Earlier pre-sequencer evidence remains preserved separately
+  and is superseded for this candidate by the exact-source results above.
+
+This final documentation update changes no Rust source or tested ELF. The final
+card preimage/postimage and documentation diff are recorded separately under
+`/workspace/oteryn-family/evidence/d1105-death/final-doc-update/`.
+
+Remaining full-task boundary: the owning runtime must capture/drain actual live
+pending deltas, retain/reprepare ambiguous checkpoints, and retire/apply its actor
+state correctly, then call the new settlement from `mod.rs::commit_death` in its
+allocated slot. This increment supplies a typed prepared-checkpoint seam, not
+independent proof of actor drain. Production training is not enabled. LOOP-PROGRESS
+ordering, final CP/CI and ready/queue/merge remain separate conditions. This task
+is not archived or declared complete; no ready, merge or deployment is authorized.

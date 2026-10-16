@@ -5,7 +5,8 @@
 //! and the DUR-03 item moves that follow it are separate children (DEATH-1b, DEATH-3).
 
 use crate::durability::character_build::{
-    BuildFormula, DurableBuildState, MAX_BUILD_LEVEL, MIN_SKILL_LEVEL, cumulative_progress, relevel,
+    BuildFormula, DurableBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL,
+    cumulative_progress, relevel,
 };
 use oteryn_simulation_determinism::{
     DecisionError, DecisionOccurrenceId, ExactI64, GameplayDecisionRoot, deterministic_decision_u64,
@@ -29,6 +30,30 @@ pub fn calculate_death_build_loss(
     experience_before: ExactI64,
     experience_lost: ExactI64,
 ) -> Result<DurableBuildState, DeathBuildLossError> {
+    let mut families = [(0, 0); 8];
+    families[0] = before.magic();
+    families[1..].copy_from_slice(&before.skills());
+    let families = calculate_death_build_family_loss(
+        families,
+        experience_before,
+        experience_lost,
+        |family, next| formula.required(before.vocation(), family, next),
+    )?;
+    let mut skills = [(0, 0); 7];
+    skills.copy_from_slice(&families[1..]);
+    DurableBuildState::new(before.vocation(), families[0], skills)
+        .map_err(|_| DeathBuildLossError::InvalidBuild)
+}
+
+/// Persistence-neutral value boundary of [`calculate_death_build_loss`]. Native
+/// writers compiled in an independent test crate use the same arithmetic without
+/// substituting a second copy of the durable Rust types for the library's types.
+pub fn calculate_death_build_family_loss(
+    mut families: [(u16, u64); 8],
+    experience_before: ExactI64,
+    experience_lost: ExactI64,
+    required: impl Fn(usize, u16) -> Option<u64>,
+) -> Result<[(u16, u64); 8], DeathBuildLossError> {
     let experience = u64::try_from(experience_before.get())
         .map_err(|_| DeathBuildLossError::InvalidExperienceLoss)?;
     let lost = u64::try_from(experience_lost.get())
@@ -36,16 +61,15 @@ pub fn calculate_death_build_loss(
     if lost > experience {
         return Err(DeathBuildLossError::InvalidExperienceLoss);
     }
-    let mut families = [(0, 0); 8];
-    families[0] = before.magic();
-    families[1..].copy_from_slice(&before.skills());
     for (family, (level, progress)) in families.iter_mut().enumerate() {
         let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
-        let required = |next| formula.required(before.vocation(), family, next);
+        let required = |next| required(family, next);
         // A missing requirement above the current level is the accepted ceiling,
         // but an unreachable current level or already-paid next level is invalid.
-        if !(floor.saturating_add(1)..=*level)
-            .all(|next| required(next).is_some_and(|value| value > 0))
+        if !(floor..=MAX_BUILD_LEVEL).contains(level)
+            || *progress > MAX_BUILD_PROGRESS
+            || !(floor.saturating_add(1)..=*level)
+                .all(|next| required(next).is_some_and(|value| value > 0))
             || (*level < MAX_BUILD_LEVEL
                 && required(*level + 1).is_some_and(|value| value == 0 || *progress >= value))
         {
@@ -64,10 +88,7 @@ pub fn calculate_death_build_loss(
             (*level, *progress) = relevel(total - removed, floor, required);
         }
     }
-    let mut skills = [(0, 0); 7];
-    skills.copy_from_slice(&families[1..]);
-    DurableBuildState::new(before.vocation(), families[0], skills)
-        .map_err(|_| DeathBuildLossError::InvalidBuild)
+    Ok(families)
 }
 
 /// Global has 7 regular blessings (tibia.com products 6-3.1); Twist of Fate is PvP-only.
