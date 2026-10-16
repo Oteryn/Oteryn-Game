@@ -100,7 +100,7 @@ pub(crate) fn plan_withdraw(input: &PlanInput<'_>) -> Result<DepotShape, DepotRe
         return Err(DepotRefusal::Native(ItemTransferRefusal::ContainerNotEmpty));
     }
     if input.slot.is_none() {
-        if !input.entries.is_empty() {
+        if input.backpack.is_some() || !input.entries.is_empty() {
             return Err(DepotRefusal::InvalidSnapshot);
         }
         let native = plan_transfer(&PlanInput {
@@ -260,6 +260,11 @@ mod tests {
                 destination: WithdrawDestination::ContainerSlot
             })
         );
+        // Definition facts for an equipped backpack cannot exist in an empty-slot snapshot.
+        // Reject this before the native ContainerSlot planner, which never uses backpack facts.
+        input.backpack = Some(&facts);
+        assert_eq!(plan_withdraw(&input), Err(DepotRefusal::InvalidSnapshot));
+        input.backpack = None;
         input.source_has_entries = true;
         assert_eq!(
             plan_withdraw(&input),

@@ -92,7 +92,7 @@ remain CP slot work. Worker publication/commit authority is absent.
 
 ## Acceptance criteria
 
-- [ ] Depot and stash contents survive restart and are per Character per town as the briefs require.
+- [ ] Depot contents survive restart and are scoped to Character + World, shared across towns and channels (DEPOT0 §3). Stash remains outside this allocation.
 - [ ] Every store/withdraw is one ITEM-MOVE-2 transaction; no item duplication under concurrent moves.
 - [ ] Depot access excluded while the same item is under house custody.
 - [ ] Written text respects the RESOURCE_LIMITS cap and is sanitized.
@@ -290,3 +290,114 @@ are retained. Durable final source copies, original roots, restoration inputs,
 all RED/GREEN/setup/lint logs, hashes and local.patch are in the evidence folder
 above. No native value writer, installed schema/grants, runtime integration or family
 acceptance is claimed; CP composition and independent architecture review remain due.
+
+### Owned continuation (2026-10-16, authoring from `0dbcda9024a1f75b7479ab645bef7a2709fa933d`)
+
+The lead supplied exclusive family authoring authority and retained this record's five
+owned paths; publication and shared-path composition remain with the lead/CP. The prior
+missing-lease concern is superseded. No STASH, WRITE or item_text work is included.
+
+Corrected an inconsistent raw withdrawal snapshot: an empty container slot accompanied
+by facts for an equipped backpack now returns `InvalidSnapshot`. Previously it reached
+the native container-slot planner, which intentionally does not examine backpack facts,
+and accepted the withdrawal. The regression changes only those facts from a valid spare
+container withdrawal; source identity, definition, quantity and empty contents stay valid.
+
+The proposed-schema PostgreSQL qualification now attempts a competing depot insertion,
+instead of manually requesting a root lock. The insertion or its forced deferred guard
+must time out on the winner's Character root lock; rollback must preserve the winner's
+uncommitted count. This qualifies proposed storage contention only, not a native move.
+The native existing `item_storage_postgres` target passed 4/4 on PostgreSQL 17.6
+(server_version_num 170006), including the actual competing INSERT and rollback case.
+In a disposable validation copy, test-only registrations of the exact owned modules
+connected the native library to the withdrawal regression. RED failed as expected:
+the pre-fix condition returned `Ok(BoxToBackpack)` instead of `InvalidSnapshot`.
+After restoring the corrected source, GREEN passed all seven depot tests (three
+durability owner tests and four planner tests; zero ignored, 3,179 filtered). The
+restored planner SHA-256 is
+`aba5f796dcea322114916799fabfa68583efb7ee52089ef62131fdc43a02433e`.
+Rustfmt and `git diff --check` passed; strict Clippy remains pending. These native
+validation overlays do not install a production depot owner or qualify a native move.
+No branch registration, visibility widening, copied native planner or shared-source
+edit is included in the candidate.
+
+The native transaction remains blocked by shared composition, not by authoring authority:
+`ItemTransferDestination` admits only `ContainerSlot` and `MainBackpack`;
+`commit_item_transfer` and `character_item_fence_is_current` currently encode Channel
+pickup authority, while depot custody is Character + World. Existing placement/removal
+proofs and physical exclusivity do not admit depot rows, and native receipts/audit have
+no depot shape. These shared owners must change together before either depot move can
+commit. The raw readers/planners confer no current session, locker reach or open-view
+authority. No duplicate SQL owner or alternate writer is introduced to bypass those gates.
+
+An owned-target planner routing investigation found a concrete visibility barrier:
+`item_transfer::{PlanInput, plan_transfer, stack_maximum}` are `pub(crate)` and cannot
+be imported by reexporting the native library into `item_storage_postgres`. Path-loading
+`item_transfer.rs` would duplicate its test-bearing source into a second strict harness,
+contrary to `tools/repository/check_duplicate_test_sources.py`; the shrinking allowlist
+does not include this target. The inspected `character_forge_dust_postgres` wrapper
+has `test = false`; that is a different target and establishes no manifest fact about
+`forge_postgres`. No Forge-target claim is needed for the visibility/duplication barrier.
+No copied planner or test shim was added. Production planner connectivity still needs
+shared library registration; that edit is outside the owned-path packet. Qualification uses test-only registrations in
+a disposable validation copy of the native library, with an exact delta manifest
+retained by the lead. This validation routing does not install the depot owner or
+authorize a native move.
+
+
+### Terminal private qualification checkpoint (2026-10-16)
+
+The frozen private test input is `PC_SOURCE_PACKET.json` SHA-256
+`ce0c7dc10623a9b54971a7b5ddff1f9cf2101aed34b4123efc9f2c8675ea792d`,
+full source manifest `75fe38c2dd11e827a26d637c0747722175141c6ff8ea86e8ec88ff2065883e4b`.
+Its historical task-card bytes precede this documentation candidate.
+
+Historical combined run `evidence-run-1792167456282407854` in
+`PC_FINAL_EVIDENCE.json` passed fmt and strict package all-target Clippy but
+failed package tests (exit 101): library 3150 passed / 29 ignored; later
+`character_authority_postgres` 1490 passed / 1 failed at
+`postgres_target_aggregation::every_postgres_target_runs_its_cases_in_a_ci_run_target`.
+No focused PG stage executed in that historical run. Launch 041 subsequently
+held before tests on the occupied canonical PG lock (observation 043), neither
+a focused test PASS nor a test FAIL.
+
+Actual focused run `evidence-run-1792176419124648929` is retained in
+`PC_FOCUSED_FINAL_EVIDENCE.json`, including exact native commands, logs and
+hash-verified ELF archive receipts. Runner V3 SHA-256
+`6f86ba9abef7c0dbb611a9bb59b93f3fcc39531253f58016ce67907700fac14a`;
+recipe V3 `8aedcff0eda55fb0d6b61ffa023aaa118e7bad1bc95e42064d7298bc30dace56`.
+Forge passed 9/9, including three actual PostgreSQL 17.6 cases. Imbue passed
+22/22 (12 pure + 10 actual PostgreSQL 17.6 cases, each asserting 170006),
+including complete-before-binding, with the same unchanged Root deadlines.
+Storage passed 7/7 pure native depot tests in the test-only registration overlay;
+its four actual PostgreSQL cloud cases remain separate historical evidence.
+The earlier cloud Imbue 21/22 `RootPassDeadlineExceeded` failure remains retained;
+this later PASS establishes no causal diagnosis for that earlier failure.
+
+Cleanup is clean, source mode plain, with no remaining owned process group.
+`PC_CALL_047_RESULT.json` attests `RELEASED_NO_ACTIVE_CLAIM`, supervisor 163594,
+start ticks 2603394, boot `1de2caf4-8501-4962-98e7-73177714c673`.
+These are private fixture results, not production installation or exact-head CI.
+
+The exact shared CI remedy `CP_PG_TARGET_REGISTRATION.patch` and rationale `.md`
+remain UNAPPLIED: register the existing Storage/Forge targets in
+`.github/workflows/merge-group-gate.yml` through the existing helper. This shared
+workflow slot and qualifying package/CI results remain required for this target.
+
+Other existing product integration slots and full mechanic acceptance remain gated.
+No Rust, workflow or shared source changed here; no commit, publication, new PR,
+ready, merge or complete package qualification is claimed.
+
+### Local recovery checkpoint (2026-10-16)
+
+Owned Rust bytes retain the qualified native depot7/7 pure result and the separate
+cloud4/4 actual PostgreSQL result. Imbue's later normal-package PASS belongs to
+its different frozen input. This Storage-only full normal package is NOT_RUN;
+the combined input's actual aggregation-guard FAIL above remains RED.
+Publication is held under root AGENTS.md47 (run local changed-path checks before
+pushing and fix all failures of a run in one push) and CONTEXT_ROUTING.md68
+(Rust changes require fmt, strict all-target Clippy and normal package tests).
+The two-line shared workflow registration remedy remains unapplied pending its
+CP slot. The owned candidate is secured as a local commit and verified recovery
+bundle outside this checkout; exact identifiers are in the family recovery record.
+No shared file, ready, merge or rebase is part of this checkpoint.

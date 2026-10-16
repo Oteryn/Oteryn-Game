@@ -186,12 +186,23 @@ COMMIT;
     let extra = valid
         .replace("000000003a98'", "000000003a99'")
         .replace("1,15000)", "1,15001)");
-    let error=second_tx.execute("SELECT 1 FROM game_character_roots WHERE character_id='00000000-0000-7000-8000-000000000011' FOR UPDATE").await.err().ok_or("root lock not held")?;
+    // Exercise a competing insertion, not a separate manual root lock. Its Character FK
+    // may already wait for the winner's FOR UPDATE; otherwise force its deferred guard.
+    let error = match second_tx.execute(sqlx::AssertSqlSafe(extra.as_str())).await {
+        Err(error) => error,
+        Ok(_) => second_tx
+            .execute("SET CONSTRAINTS ALL IMMEDIATE")
+            .await
+            .err()
+            .ok_or("competing insertion did not wait for the root lock")?,
+    };
     assert_eq!(
         error.as_database_error().and_then(|e| e.code()).as_deref(),
         Some("55P03")
     );
     second_tx.rollback().await?;
+    // Rolling back the blocked insertion leaves the winner's uncommitted row untouched.
+    assert_eq!(read_summary(&mut first_tx, owner).await?[0], 15000);
     first_tx.commit().await?;
     let mut over = connection.begin().await?;
     over.execute(sqlx::AssertSqlSafe(extra.as_str())).await?;
