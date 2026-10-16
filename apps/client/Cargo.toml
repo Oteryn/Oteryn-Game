@@ -43,7 +43,7 @@ zstd.workspace = true
 url = "=2.5.8"
 zeroize = "=1.9.0"
 tempfile = "=3.27.0"
-zip = { version = "=9.0.1", default-features = false }
+zip = { version = "=9.0.4", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 egui = "=0.35.0"

@@ -330,39 +330,20 @@ impl LoginScreen {
             .set_action_bar_rows_available([false; oteryn_client::action_bar::ACTION_BAR_ROWS]);
         self.paint_background(ctx);
         self.toolbar(ctx);
-        let width = match self.screen {
-            Screen::Characters => 690.0,
-            Screen::Channels => 480.0,
-            _ => 360.0,
-        };
-        egui::Window::new("Oteryn")
-            .id(egui::Id::new("login-panel"))
-            .title_bar(false)
-            .resizable(false)
-            .collapsible(false)
-            .anchor(Align2::CENTER_CENTER, [0.0, 35.0])
-            .fixed_size(Vec2::new(width, 0.0))
-            .frame(
-                egui::Frame::window(&ctx.style_of(egui::Theme::Dark))
-                    // 90% opacity: only the panel background is translucent.
-                    .fill(Color32::from_rgba_unmultiplied(10, 15, 19, 230))
-                    .inner_margin(20.0)
-                    .stroke(egui::Stroke::new(1.0, BORDER)),
-            )
-            .show(ctx, |ui| {
-                match self.screen {
-                    Screen::Welcome => self.welcome(ui),
-                    Screen::Browser => self.browser(ui),
-                    Screen::Authorized => self.authorized(ui),
-                    Screen::Characters => self.characters(ui),
-                    Screen::Channels => self.channels(ui),
-                    Screen::Connecting => self.connecting(ui),
-                }
-                if let Some(error) = &self.error {
-                    ui.add_space(12.0);
-                    ui.colored_label(Color32::from_rgb(237, 149, 128), error);
-                }
-            });
+        login_panel(ctx, self.screen).show(ctx, |ui| {
+            match self.screen {
+                Screen::Welcome => self.welcome(ui),
+                Screen::Browser => self.browser(ui),
+                Screen::Authorized => self.authorized(ui),
+                Screen::Characters => self.characters(ui),
+                Screen::Channels => self.channels(ui),
+                Screen::Connecting => self.connecting(ui),
+            }
+            if let Some(error) = &self.error {
+                ui.add_space(12.0);
+                ui.colored_label(Color32::from_rgb(237, 149, 128), error);
+            }
+        });
         if self.settings.open {
             self.settings_window(ctx);
         }
@@ -672,81 +653,13 @@ impl LoginScreen {
         });
         ui.add_space(8.0);
         ui.columns(2, |columns| {
-            egui::ScrollArea::vertical()
-                .max_height(252.0)
-                .show(&mut columns[0], |ui| {
-                    for (index, character) in account.characters.iter().enumerate() {
-                        let selected = self.selected == index;
-                        let available = character.availability == "AVAILABLE";
-                        let name = &character.name;
-                        let world = account
-                            .worlds
-                            .iter()
-                            .find(|world| world.world_ref.as_str() == character.world_id)
-                            .map(|world| world.display_name.as_str())
-                            .unwrap_or(tr("Świat niedostępny", "World unavailable"));
-                        let (rect, response) = ui.allocate_exact_size(
-                            Vec2::new(ui.available_width(), 68.0),
-                            egui::Sense::click(),
-                        );
-                        let hovered = response.hovered();
-                        let fill = if selected {
-                            Color32::from_rgb(30, 29, 19)
-                        } else if hovered {
-                            Color32::from_rgb(27, 36, 46)
-                        } else {
-                            Color32::from_rgb(14, 19, 24)
-                        };
-                        ui.painter().rect(
-                            rect,
-                            4.0,
-                            fill,
-                            egui::Stroke::new(1.0, if selected { GOLD } else { BORDER }),
-                            egui::StrokeKind::Inside,
-                        );
-                        let icon = egui::pos2(rect.left() + 27.0, rect.center().y);
-                        ui.painter().circle_stroke(
-                            icon,
-                            17.0,
-                            egui::Stroke::new(1.0, if selected { GOLD } else { MUTED }),
-                        );
-                        ui.painter().text(
-                            icon,
-                            Align2::CENTER_CENTER,
-                            name.chars().next().unwrap_or('·'),
-                            FontId::proportional(21.0),
-                            if selected { GOLD } else { MUTED },
-                        );
-                        let x = rect.left() + 55.0;
-                        ui.painter().text(
-                            egui::pos2(x, rect.top() + 12.0),
-                            Align2::LEFT_TOP,
-                            name,
-                            FontId::proportional(16.0),
-                            if selected { GOLD } else { Color32::WHITE },
-                        );
-                        ui.painter().text(
-                            egui::pos2(x, rect.top() + 37.0),
-                            Align2::LEFT_TOP,
-                            if available {
-                                world
-                            } else {
-                                tr("Postać niedostępna", "Character unavailable")
-                            },
-                            FontId::proportional(11.0),
-                            MUTED,
-                        );
-                        if response.clicked() && available {
-                            self.selected = index;
-                        }
-                    }
-                    if account.characters.is_empty() {
-                        ui.label(tr(
-                            "Nie znaleziono postaci dla tego konta. Możesz zmienić konto poniżej.",
-                            "No characters found for this account. You can switch accounts below.",
-                        ));
-                    }
-                });
+            character_choices(
+                &mut columns[0],
+                &account.characters,
+                &account.worlds,
+                &mut self.selected,
+                english,
+            );
             let right = &mut columns[1];
             if let Some(character) = account.characters.get(self.selected) {
                 let world = account
@@ -948,6 +861,115 @@ impl LoginScreen {
     }
 }
 
+fn character_choices(
+    ui: &mut egui::Ui,
+    characters: &[oteryn_platform_client::native_login::NativeCharacterChoice],
+    worlds: &[oteryn_platform_contracts::DirectoryWorld],
+    selected: &mut usize,
+    english: bool,
+) {
+    let tr = |pl, en| if english { en } else { pl };
+    egui::ScrollArea::vertical()
+        .max_height(252.0)
+        .show(ui, |ui| {
+            for (index, character) in characters.iter().enumerate() {
+                let is_selected = *selected == index;
+                let available = character.availability == "AVAILABLE";
+                let name = &character.name;
+                let world = worlds
+                    .iter()
+                    .find(|world| world.world_ref.as_str() == character.world_id)
+                    .map(|world| world.display_name.as_str())
+                    .unwrap_or(tr("Świat niedostępny", "World unavailable"));
+                let (rect, response) = ui.allocate_exact_size(
+                    Vec2::new(ui.available_width(), 68.0),
+                    egui::Sense::click(),
+                );
+                let hovered = response.hovered();
+                let fill = if is_selected {
+                    Color32::from_rgb(30, 29, 19)
+                } else if hovered {
+                    Color32::from_rgb(27, 36, 46)
+                } else {
+                    Color32::from_rgb(14, 19, 24)
+                };
+                ui.painter().rect(
+                    rect,
+                    4.0,
+                    fill,
+                    egui::Stroke::new(1.0, if is_selected { GOLD } else { BORDER }),
+                    egui::StrokeKind::Inside,
+                );
+                let icon = egui::pos2(rect.left() + 27.0, rect.center().y);
+                ui.painter().circle_stroke(
+                    icon,
+                    17.0,
+                    egui::Stroke::new(1.0, if is_selected { GOLD } else { MUTED }),
+                );
+                ui.painter().text(
+                    icon,
+                    Align2::CENTER_CENTER,
+                    name.chars().next().unwrap_or('·'),
+                    FontId::proportional(21.0),
+                    if is_selected { GOLD } else { MUTED },
+                );
+                let x = rect.left() + 55.0;
+                ui.painter().text(
+                    egui::pos2(x, rect.top() + 12.0),
+                    Align2::LEFT_TOP,
+                    name,
+                    FontId::proportional(16.0),
+                    if is_selected { GOLD } else { Color32::WHITE },
+                );
+                ui.painter().text(
+                    egui::pos2(x, rect.top() + 37.0),
+                    Align2::LEFT_TOP,
+                    if available {
+                        world
+                    } else {
+                        tr("Postać niedostępna", "Character unavailable")
+                    },
+                    FontId::proportional(11.0),
+                    MUTED,
+                );
+                if response.clicked() && available {
+                    *selected = index;
+                }
+            }
+            if characters.is_empty() {
+                ui.label(tr(
+                    "Nie znaleziono postaci dla tego konta. Możesz zmienić konto poniżej.",
+                    "No characters found for this account. You can switch accounts below.",
+                ));
+            }
+        });
+}
+
+fn login_panel(ctx: &egui::Context, screen: Screen) -> egui::Window<'static> {
+    let width = match screen {
+        Screen::Characters => 690.0,
+        Screen::Channels => 480.0,
+        _ => 360.0,
+    };
+    egui::Window::new("Oteryn")
+        .id(egui::Id::new("login-panel"))
+        .title_bar(false)
+        .resizable(false)
+        .collapsible(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, 35.0])
+        // A fixed zero height collapses the nested character viewport to 64px.
+        // Bound the width while letting the actual panel content choose its height.
+        .default_width(width)
+        .min_width(width)
+        .max_width(width)
+        .frame(
+            egui::Frame::window(&ctx.style_of(egui::Theme::Dark))
+                .fill(Color32::from_rgba_unmultiplied(10, 15, 19, 230))
+                .inner_margin(20.0)
+                .stroke(egui::Stroke::new(1.0, BORDER)),
+        )
+}
+
 fn status_dot(ui: &mut egui::Ui, color: Color32) {
     let (rect, _) = ui.allocate_exact_size(Vec2::splat(10.0), egui::Sense::hover());
     ui.painter().circle_filled(rect.center(), 4.0, color);
@@ -1004,6 +1026,61 @@ impl Drop for LoginScreen {
 mod tests {
     use super::*;
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn character_panel_shows_and_selects_second_owner_character()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_platform_client::native_login::NativeCharacterChoice;
+        let characters: Vec<_> = ["First character", "Second character"]
+            .into_iter()
+            .enumerate()
+            .map(|(index, name)| NativeCharacterChoice {
+                character_id: format!("character-{index}"),
+                world_id: "world".into(),
+                name: name.into(),
+                availability: "AVAILABLE".into(),
+            })
+            .collect();
+        for english in [false, true] {
+            for size in [Vec2::new(900.0, 620.0), Vec2::new(1280.0, 720.0)] {
+                let ctx = egui::Context::default();
+                let mut selected = 0;
+                let mut draw = |ctx: &egui::Context| {
+                    login_panel(ctx, Screen::Characters).show(ctx, |ui| {
+                        ui.heading("Select character");
+                        ui.add_space(8.0);
+                        ui.columns(2, |columns| {
+                            character_choices(
+                                &mut columns[0],
+                                &characters,
+                                &[],
+                                &mut selected,
+                                english,
+                            );
+                            columns[1]
+                                .allocate_exact_size(Vec2::new(260.0, 230.0), egui::Sense::hover());
+                        });
+                        ui.button("Enter game").on_hover_text("Enter game");
+                    });
+                };
+                let mut output = egui::FullOutput::default();
+                for _ in 0..4 {
+                    output = frame(&ctx, size, vec![], &mut draw).1;
+                }
+                let first = button_position(&output, size, "First character")
+                    .ok_or("first owner character is clipped")?;
+                let second = button_position(&output, size, "Second character")
+                    .ok_or("second owner character is clipped")?;
+                assert!(second.y > first.y);
+                click(&ctx, size, second, &mut draw);
+                assert_eq!(
+                    selected, 1,
+                    "second character did not receive the actual click"
+                );
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn toolbar_language_failure_rolls_back_without_applying_other_draft_edits()

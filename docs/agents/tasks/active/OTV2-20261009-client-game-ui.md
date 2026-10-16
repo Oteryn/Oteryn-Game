@@ -13,6 +13,42 @@ owner: root
 
 ## Authority and publication state
 
+### Launcher / dependency repair — 2026-10-16 / AUTHORING
+
+a5342336 was published and qualified on Windows: client236/226/5 + Session88,
+strict Clippy/fmt/release pass. Immutable executable SHA256
+da4586db56ef0cbe2e0d1173d6a900b8009f1132b1867d3ea6942749d248d5ef.
+DX12 audit validates20 pages/78 captures/0 hash mismatches; the PowerShell
+wrapper subsequently failed on a null ExitCode. Manifest success is established,
+but native audit exit0 is not claimed. These results do not qualify this successor.
+
+Normal QA token exchange and owner-character read passed on a534. The native
+capture showed only Testini, whereas the Platform operator read model has both
+QA characters AVAILABLE. A standalone exact-egui0.35 probe and a failing actual
+launcher/list regression establish the cause: fixed_size(width,0) clips the
+scroll viewport to64px and hides the second row. This supersedes any suggestion
+that the one-row capture proves API/projection loss. Public edge routes to the
+real authenticated Platform handler; no static owner-character fixture was found.
+
+PR1942 was explicitly returned from FREEZE_SHA to AUTHORING before edits. The
+repair bounds only panel width and lets contents determine height. Shared actual
+panel/list rendering tests check fully unclipped names and real second-row clicks
+in both languages at900x620/1280x720: regression RED, then GREEN. Portable launcher
+tests now run on Linux as well as Windows, without enabling a Linux native shell.
+
+Exact-head CI job116934077632 rejects yanked zip9.0.1, used only by client options
+archives. Upgrade upstream to9.0.4; Cargo changes only its version/checksum. Stored,
+flat, bounded single-entry checks, duplicate/encryption/path refusal, atomic export
+and import-to-draft behavior remain unchanged. Local cargo-deny passes all checks;
+no advisory allow-list, trust or CI-policy relaxation. Full successor qualification
+and fresh same-head CI/native evidence are still required.
+
+A later a534 entry attempt reached ticket/Gateway/TLS and UnexpectedEof before
+admission. Its operator/selected character is UNKNOWN: root did not click Enter
+World. Injected input stopped; the owner was asked about concurrent interaction.
+No ServerAccepted or correct-QA gameplay/chat/movement/logout acceptance follows.
+No server/config/DB changes or forced client termination were performed.
+
 ### Playable continuation — 2026-10-16 / AUTHORING
 
 e3ca05b1 was published and frozen for qualification, then explicitly returned to

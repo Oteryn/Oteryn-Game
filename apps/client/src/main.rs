@@ -4,9 +4,11 @@ mod actor_hud;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]
 mod chat_output;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod login_backdrop;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod login_screen;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]

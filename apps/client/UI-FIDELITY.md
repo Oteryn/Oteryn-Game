@@ -18,6 +18,15 @@ patch/lock successor requires fresh qualification and independent security revie
 
 ## Reference audit correction
 
+Launcher correction2026-10-16 removes a fixed zero panel height which clipped
+the owner-character list to64px and hid the second row. Actual shared panel/list
+regression is RED before the fix, GREEN afterward: fully visible second names
+and real selection clicks, PL/EN at900x620/1280x720. A one-row native screenshot
+was not proof that Platform omitted characters. Fresh native successor acceptance
+remains pending; this launcher repair does not establish gameplay or1:1 parity.
+The options ZIP dependency moves from yanked9.0.1 to upstream9.0.4 without
+relaxing the existing bounded archive/import rules or supply-chain checks.
+
 Playable continuation2026-10-16 connects the observed Logout action to the real
 profile/chat-context resolver and typed LOGOUT_V1 consumer. Rebinding replaces
 the old defaults; extra modifiers, key repeats, dialogs and inactive windows do
