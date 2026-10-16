@@ -78,7 +78,7 @@ To compile on the branch the builder may add only module registration lines in s
 ## Acceptance criteria
 
 - [ ] raid schedule deterministic per world epoch
-- [ ] one raid instance per world at a time; restart-safe
+- [ ] At most one running firing per (WorldId, raid key), with persistent raids firing at most once per reset epoch; restart-safe (BOSSRAID0-RL-02).
 - [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
 - [ ] Durable state sufficient to resume after restart / session-generation change.
 - [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
@@ -234,3 +234,46 @@ Mandatory concrete CP seams before runtime activation:
   registration, content population/regeneration/pins, CHAT/BOSS-WIRE and encounter/runtime binding
   remain CP-only. No original acceptance checkbox is closed by this private preparation.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Fixed-calendar conversion preparation — 2026-10-16
+
+Allocation: sole calendar-source writer for existing draft #2177, branch
+`skeleton/events-raid-1`, authoring base `7d2a417c48704fab683413851bdf7e4c87dcf70a`.
+Only `raid/calendar.rs`, `raid/mod.rs`, `raid/tests.rs` and this record are allocated.
+The lead resolved META and confirmed the other boss/raid worker holds no #2177 writes.
+
+Protected local main `24fc332f256638e3b784bff1b3c85b18e2665a76` carries the
+ACCEPTED BOSS_RAID0 decision. Its §4.1 defines fixed weekday/month-day rules with
+an offset after reset; §4.2 defines once-only firing and missed-check behavior.
+ADR-0021 §3 leaves the reset schedule operational. Calendar timezone, current reset
+and content authority therefore remain independently supplied by their real owners.
+
+`calendar.rs` accepts a typed selector, nonnegative offset in internal milliseconds,
+and explicitly caller-resolved reset timestamp/weekday/month-day facts. It matches
+the selector and checked-adds the offset; a nonmatching date returns an explicit
+absent slot. Bounds are intrinsic weekday/month-day bounds and representability;
+no offset cap, midnight truncation, UTC/DST mapping or content encoding is invented.
+Supplied facts remain data rather than a current-authority or content-admission proof.
+
+`Snapshot::check_fixed_calendar` is a concrete consumer: it rejects Random policy
+and a simultaneous raw `fixed_slot_ms`, converts the calendar facts, and enters the
+same existing fixed-check transition. A calendar mismatch consumes a due check without
+creating a synthetic slot. The raw `Snapshot::check` still rejects a missing fixed
+slot. Shared ordinal/deadline advancement, running/persistent guards, fixed-slot
+high-water, missed-slot handling and restart state are preserved. Stored Policy,
+payloads, CAS, schema and DDL are unchanged; no second clock or scheduler is added.
+
+Seven new tests exercise all weekdays, supplied month-day boundaries, mismatches
+with/without a prior firing, zero and multi-day offsets, raw/calendar equivalence,
+exact replay, running/persistent/high-water guards, restart skipping, conflicting
+inputs and invalid/overflow data. Rustfmt and whitespace checks pass. Behavioral
+tests and native compilation have not yet run; they await the lead's shared Rust
+validation slot. No outside-tree harness, shim, production module registration,
+DDL installation or successful native/runtime validation is claimed here.
+Governance validation and all 124 agent unit tests pass for the task-record change.
+
+Remaining production work is unchanged: real calendar/reset/content/channel fact
+producers, sealed recovery/admission transaction boundary, bounded World-job query,
+physical raid actors and announcements, migration/grants and composition wiring.
+Those steps remain separate from this feasible owned-source preparation; no full
+raid acceptance checkbox is closed by the calendar conversion alone.

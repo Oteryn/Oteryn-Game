@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+pub(crate) mod calendar;
 #[cfg(test)]
 mod postgres_tests;
 mod store;
@@ -62,7 +63,7 @@ pub(crate) enum Policy {
     Fixed,
 }
 
-/// Proposed source facts, not admitted content. Fixed slots are resolved outside this core.
+/// Proposed source facts, not admitted content. Fixed calendar interpretation is caller-owned.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Timing {
@@ -222,6 +223,33 @@ impl Snapshot {
     /// One check only. Missed intervals are not caught up; a retry of the same pre-state uses
     /// the same draw. A persisted exact retry is handled by the private store CAS.
     pub(crate) fn check(&self, facts: &CheckFacts) -> Result<Option<Change>> {
+        self.check_resolved_slot(
+            facts,
+            facts.fixed_slot_ms.map(calendar::ResolvedFixedSlot::At),
+        )
+    }
+
+    /// Resolve a fixed calendar rule into this same check/ordinal transition. The caller
+    /// supplies the reset's calendar interpretation; neither this conversion nor its
+    /// proposal establishes current reset/content/channel authority. A nonmatching day
+    /// still consumes the ordinary due check, with no firing and no synthetic slot.
+    pub(crate) fn check_fixed_calendar(
+        &self,
+        facts: &CheckFacts,
+        rule: &calendar::FixedCalendarRule,
+        reset: &calendar::ResetCalendarFacts,
+    ) -> Result<Option<Change>> {
+        if !matches!(self.schedule.timing.policy, Policy::Fixed) || facts.fixed_slot_ms.is_some() {
+            return Err(RaidError::InvalidInput);
+        }
+        self.check_resolved_slot(facts, Some(calendar::resolve(rule, reset)?))
+    }
+
+    fn check_resolved_slot(
+        &self,
+        facts: &CheckFacts,
+        fixed_slot: Option<calendar::ResolvedFixedSlot>,
+    ) -> Result<Option<Change>> {
         self.validate()?;
         if facts.now_ms < 0 {
             return Err(RaidError::InvalidInput);
@@ -251,7 +279,7 @@ impl Snapshot {
                 mean_interval_s,
                 min_gap_s,
             } => {
-                if facts.fixed_slot_ms.is_some() {
+                if fixed_slot.is_some() {
                     return Err(RaidError::InvalidInput);
                 }
                 let gap_ok = match self.schedule.last_fired_at_ms {
@@ -276,18 +304,22 @@ impl Snapshot {
                     && u128::from(draw) * u128::from(mean_interval_s) < (1_u128 << 64) * 60
             }
             Policy::Fixed => {
-                let slot = facts.fixed_slot_ms.ok_or(RaidError::InvalidInput)?;
-                if slot < 0 {
-                    return Err(RaidError::InvalidInput);
+                match fixed_slot.ok_or(RaidError::InvalidInput)? {
+                    calendar::ResolvedFixedSlot::Absent => false,
+                    calendar::ResolvedFixedSlot::At(slot) => {
+                        if slot < 0 {
+                            return Err(RaidError::InvalidInput);
+                        }
+                        // A fixed slot outside the current check interval is missed, not caught up.
+                        allowed
+                            && facts.now_ms >= slot
+                            && slot >= facts.now_ms.saturating_sub(CHECK_MS)
+                            && self
+                                .schedule
+                                .last_fixed_slot_ms
+                                .is_none_or(|last| slot > last)
+                    }
                 }
-                // A fixed slot outside the current check interval is missed, not caught up.
-                allowed
-                    && facts.now_ms >= slot
-                    && slot >= facts.now_ms.saturating_sub(CHECK_MS)
-                    && self
-                        .schedule
-                        .last_fixed_slot_ms
-                        .is_none_or(|last| slot > last)
             }
         };
         if fires {
@@ -326,7 +358,10 @@ impl Snapshot {
                 .ok_or(RaidError::Overflow)?;
             after.schedule.last_fired_at_ms = Some(facts.now_ms);
             if matches!(self.schedule.timing.policy, Policy::Fixed) {
-                after.schedule.last_fixed_slot_ms = facts.fixed_slot_ms;
+                let Some(calendar::ResolvedFixedSlot::At(slot)) = fixed_slot else {
+                    return Err(RaidError::InvalidInput);
+                };
+                after.schedule.last_fixed_slot_ms = Some(slot);
             }
         }
         self.changed(after).map(Some)

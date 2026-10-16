@@ -3,6 +3,7 @@
     clippy::expect_used,
     reason = "Synthetic pure-state fixture construction"
 )]
+use super::calendar::{CalendarSelector, FixedCalendarRule, ResetCalendarFacts, Weekday};
 use super::*;
 
 pub(super) fn id(seed: u8) -> [u8; 16] {
@@ -398,4 +399,367 @@ fn malformed_duplicate_and_overflow_facts_fail_without_state_mutation() {
         Snapshot::initialize(key(), 1, [0; 32], timing(false), 0).err(),
         Some(RaidError::InvalidInput)
     );
+}
+
+fn fixed_initial(persistent: bool) -> Snapshot {
+    let mut config = timing(persistent);
+    config.policy = Policy::Fixed;
+    Snapshot::initialize(key(), 1, [2; 32], config, 0)
+        .expect("fixed initialization")
+        .after
+}
+
+fn reset_calendar() -> ResetCalendarFacts {
+    ResetCalendarFacts {
+        reset_at_ms: 0,
+        weekday: Weekday::Monday,
+        day_of_month: 1,
+    }
+}
+
+fn weekday_rule() -> FixedCalendarRule {
+    FixedCalendarRule {
+        selector: CalendarSelector::Weekday(Weekday::Monday),
+        offset_after_reset_ms: 60_000,
+    }
+}
+
+#[test]
+fn calendar_weekday_uses_the_existing_fixed_transition_and_replays_identically() {
+    for weekday in [
+        Weekday::Monday,
+        Weekday::Tuesday,
+        Weekday::Wednesday,
+        Weekday::Thursday,
+        Weekday::Friday,
+        Weekday::Saturday,
+        Weekday::Sunday,
+    ] {
+        let state = fixed_initial(false);
+        let rule = FixedCalendarRule {
+            selector: CalendarSelector::Weekday(weekday),
+            ..weekday_rule()
+        };
+        let reset = ResetCalendarFacts {
+            weekday,
+            ..reset_calendar()
+        };
+        let input = facts(60_000);
+        let converted = state
+            .check_fixed_calendar(&input, &rule, &reset)
+            .expect("calendar check")
+            .expect("due");
+        let raw = CheckFacts {
+            fixed_slot_ms: Some(60_000),
+            ..input.clone()
+        };
+        assert_eq!(
+            converted.after,
+            state.check(&raw).expect("raw check").expect("due").after
+        );
+        assert_eq!(converted.after.schedule.last_fixed_slot_ms, Some(60_000));
+        assert_eq!(
+            converted.after,
+            state
+                .check_fixed_calendar(&input, &rule, &reset)
+                .expect("retry")
+                .expect("due")
+                .after
+        );
+        assert!(
+            converted
+                .after
+                .check_fixed_calendar(&input, &rule, &reset)
+                .expect("committed replay")
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn calendar_mismatch_consumes_only_due_check_without_a_synthetic_slot() {
+    let state = fixed_initial(false);
+    let rule = weekday_rule();
+    let reset = ResetCalendarFacts {
+        weekday: Weekday::Tuesday,
+        ..reset_calendar()
+    };
+    assert!(
+        state
+            .check_fixed_calendar(&facts(59_999), &rule, &reset)
+            .expect("not due")
+            .is_none()
+    );
+    let next = state
+        .check_fixed_calendar(&facts(60_000), &rule, &reset)
+        .expect("no slot")
+        .expect("due")
+        .after;
+    assert_eq!(next.check_ordinal(), 1);
+    assert_eq!(next.next_check_at_ms(), 120_000);
+    assert_eq!(next.latest, state.latest);
+    assert_eq!(
+        next.schedule.last_fixed_slot_ms,
+        state.schedule.last_fixed_slot_ms
+    );
+    assert_eq!(
+        next.schedule.last_fired_at_ms,
+        state.schedule.last_fired_at_ms
+    );
+    assert_eq!(next.schedule.next_firing_ordinal, 0);
+    let fired = state
+        .check_fixed_calendar(&facts(60_000), &rule, &reset_calendar())
+        .expect("matching day")
+        .expect("due")
+        .after;
+    let absent = fired
+        .check_fixed_calendar(&facts(120_000), &rule, &reset)
+        .expect("no slot with latest firing")
+        .expect("due")
+        .after;
+    assert_eq!(absent.latest, fired.latest);
+    assert_eq!(absent.schedule.last_fixed_slot_ms, Some(60_000));
+}
+
+#[test]
+fn calendar_month_day_matches_supplied_day_and_offset_can_cross_midnight() {
+    for day in [1, 28, 29, 30, 31] {
+        let rule = FixedCalendarRule {
+            selector: CalendarSelector::DayOfMonth(day),
+            offset_after_reset_ms: 86_460_000,
+        };
+        let reset = ResetCalendarFacts {
+            day_of_month: day,
+            ..reset_calendar()
+        };
+        let state = fixed_initial(false);
+        let early = state
+            .check_fixed_calendar(&facts(60_000), &rule, &reset)
+            .expect("future slot")
+            .expect("due")
+            .after;
+        assert!(early.latest.is_none());
+        let fired = early
+            .check_fixed_calendar(&facts(86_460_000), &rule, &reset)
+            .expect("offset beyond a day")
+            .expect("due")
+            .after;
+        assert_eq!(fired.schedule.last_fixed_slot_ms, Some(86_460_000));
+        let mismatch = ResetCalendarFacts {
+            day_of_month: if day == 1 { 2 } else { 1 },
+            ..reset
+        };
+        let absent = state
+            .check_fixed_calendar(&facts(86_460_000), &rule, &mismatch)
+            .expect("other day")
+            .expect("due")
+            .after;
+        assert!(absent.latest.is_none());
+    }
+    let zero = FixedCalendarRule {
+        offset_after_reset_ms: 0,
+        ..weekday_rule()
+    };
+    let reset = ResetCalendarFacts {
+        reset_at_ms: 60_000,
+        ..reset_calendar()
+    };
+    assert!(
+        fixed_initial(false)
+            .check_fixed_calendar(&facts(60_000), &zero, &reset)
+            .expect("zero offset")
+            .expect("due")
+            .after
+            .latest
+            .is_some()
+    );
+}
+
+#[test]
+fn calendar_keeps_running_persistent_and_same_slot_guards() {
+    for persistent in [false, true] {
+        let rule = weekday_rule();
+        let reset = reset_calendar();
+        let state = fixed_initial(persistent);
+        let fired = state
+            .check_fixed_calendar(&facts(60_000), &rule, &reset)
+            .expect("fire")
+            .expect("due")
+            .after;
+        let later_reset_facts = ResetCalendarFacts {
+            reset_at_ms: 60_000,
+            ..reset
+        };
+        let running = fired
+            .check_fixed_calendar(&facts(120_000), &rule, &later_reset_facts)
+            .expect("running guard")
+            .expect("due")
+            .after;
+        assert_eq!(running.latest, fired.latest);
+        let closed = fired.close(90_000).expect("close").expect("deadline").after;
+        let repeated = closed
+            .check_fixed_calendar(&facts(120_000), &rule, &reset)
+            .expect("same slot")
+            .expect("due")
+            .after;
+        assert_eq!(repeated.schedule.next_firing_ordinal, 1);
+        let mut input = facts(120_000);
+        input.proposed_firing_id = id(11);
+        let next = closed
+            .check_fixed_calendar(&input, &rule, &later_reset_facts)
+            .expect("new slot")
+            .expect("due")
+            .after;
+        assert_eq!(
+            next.schedule.next_firing_ordinal,
+            if persistent { 1 } else { 2 }
+        );
+        assert_eq!(
+            next.schedule.last_fixed_slot_ms,
+            Some(if persistent { 60_000 } else { 120_000 })
+        );
+    }
+}
+
+#[test]
+fn calendar_restart_skips_missed_slot_without_reinitializing_check_state() {
+    let rule = weekday_rule();
+    let reset = reset_calendar();
+    let state = fixed_initial(false)
+        .resume_from(300_000)
+        .expect("restart")
+        .after;
+    let missed = state
+        .check_fixed_calendar(&facts(360_000), &rule, &reset)
+        .expect("missed slot")
+        .expect("due")
+        .after;
+    assert!(missed.latest.is_none());
+    assert_eq!(missed.check_ordinal(), 1);
+    assert_eq!(missed.next_check_at_ms(), 420_000);
+    let next_reset = ResetCalendarFacts {
+        reset_at_ms: 360_000,
+        ..reset
+    };
+    let next = missed
+        .check_fixed_calendar(&facts(420_000), &rule, &next_reset)
+        .expect("next supplied slot")
+        .expect("due")
+        .after;
+    assert_eq!(next.schedule.last_fixed_slot_ms, Some(420_000));
+    assert_eq!(next.check_ordinal(), 2);
+}
+
+#[test]
+fn calendar_rejects_conflicting_policy_or_raw_slot_without_mutating_state() {
+    let rule = weekday_rule();
+    let reset = reset_calendar();
+    let random = initial(false).after;
+    let before = random.clone();
+    assert_eq!(
+        random
+            .check_fixed_calendar(&facts(60_000), &rule, &reset)
+            .err(),
+        Some(RaidError::InvalidInput)
+    );
+    assert_eq!(random, before);
+    let state = fixed_initial(false);
+    let before = state.clone();
+    let input = CheckFacts {
+        fixed_slot_ms: Some(60_000),
+        ..facts(60_000)
+    };
+    assert_eq!(
+        state.check_fixed_calendar(&input, &rule, &reset).err(),
+        Some(RaidError::InvalidInput)
+    );
+    assert_eq!(
+        state.check(&facts(60_000)).err(),
+        Some(RaidError::InvalidInput)
+    );
+    assert_eq!(state, before);
+}
+
+#[test]
+fn calendar_invalid_intrinsic_bounds_and_arithmetic_are_refused_without_state_change() {
+    let state = fixed_initial(false);
+    let before = state.clone();
+    let rule = weekday_rule();
+    let reset = reset_calendar();
+    for day in [0, 32, u8::MAX] {
+        let bad_rule = FixedCalendarRule {
+            selector: CalendarSelector::DayOfMonth(day),
+            ..rule
+        };
+        assert_eq!(
+            state
+                .check_fixed_calendar(&facts(60_000), &bad_rule, &reset)
+                .err(),
+            Some(RaidError::InvalidInput)
+        );
+        let bad_reset = ResetCalendarFacts {
+            day_of_month: day,
+            ..reset
+        };
+        assert_eq!(
+            state
+                .check_fixed_calendar(&facts(60_000), &rule, &bad_reset)
+                .err(),
+            Some(RaidError::InvalidInput)
+        );
+    }
+    assert_eq!(
+        state
+            .check_fixed_calendar(
+                &facts(60_000),
+                &FixedCalendarRule {
+                    offset_after_reset_ms: -1,
+                    ..rule
+                },
+                &reset
+            )
+            .err(),
+        Some(RaidError::InvalidInput)
+    );
+    assert_eq!(
+        state
+            .check_fixed_calendar(
+                &facts(60_000),
+                &rule,
+                &ResetCalendarFacts {
+                    reset_at_ms: -1,
+                    ..reset
+                }
+            )
+            .err(),
+        Some(RaidError::InvalidInput)
+    );
+    assert_eq!(
+        state
+            .check_fixed_calendar(
+                &facts(60_000),
+                &rule,
+                &ResetCalendarFacts {
+                    reset_at_ms: i64::MAX,
+                    ..reset
+                }
+            )
+            .err(),
+        Some(RaidError::Overflow)
+    );
+    // No offset cap was accepted: the largest representable sum is valid proposed data.
+    let largest = FixedCalendarRule {
+        offset_after_reset_ms: i64::MAX,
+        ..rule
+    };
+    assert!(
+        state
+            .check_fixed_calendar(&facts(60_000), &largest, &reset)
+            .expect("representable future slot")
+            .expect("due")
+            .after
+            .latest
+            .is_none()
+    );
+    assert_eq!(state, before);
 }
