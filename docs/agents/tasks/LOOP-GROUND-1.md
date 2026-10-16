@@ -10,7 +10,7 @@ integration and DEATH-DUR-1 are blocking, not deferred slot-only work.
 task_id: LOOP-GROUND-1
 title: "LOOP-GROUND-1: ground loop: dropped item decay and cell limit"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 3
@@ -514,3 +514,32 @@ Canonical fixture integration belongs to H/#2170 under D1092; D1096 does not
 allocate `tests/support/bestiary_postgres_harness.rs` or the new readiness helper.
 An exact minimal H handback is prepared outside the checkout; private native
 qualification is permitted, but no canonical fixture edit is made here.
+
+
+## D1122 checkpoint of qualified Source7 enforcement
+
+Status: NOT_FULLY_QUALIFIED. The owned enforcement source is commit
+`2278203ad506a4b81dc1084ffc7c90fed1a0d35d`; this checkpoint preserves its
+Rust bytes. Two private genuine native assemblies passed 30 selected cases
+(12 pure, 18 PostgreSQL17.6), with independent source/recipe/outcome PASS.
+Those are component results, not canonical-head integration or package PASS.
+
+Canonical all-target Clippy and package runtime at this source are NOT_RUN.
+The earlier full-package RED (77 failures, including four subsequently fixed
+owned cases and 73 foreign fixture failures) remains retained; it has not been
+repeated on unchanged foreign failures or relabeled as a current-head result.
+The final integration suite, legacy upgrade, process restart, wire capacity
+refusal and future ITEM-MOVE/DEATH-DUR caller criteria remain open.
+
+D1115/D1119/D1131 assign the new readiness helper to Ground; the exact H
+`handoff/h-ground-57c` branch has not been delivered (REST404 on this
+continuation), so no guessed H transfer or Co-authored-by is included.
+Shared aggregation and fixture hunks remain the D1096/D1116 slot after #2163.
+D1160 permits own-module registration alone, but this checkpoint retains the
+reviewed source topology pending the inseparable canonical assembly; no
+standalone registration is represented as integration.
+
+D1122 explicitly permits this coherent owned checkpoint before full controls:
+draft status, truthful RED/NOT_RUN, formatting and diff checks, no review trigger,
+ready transition or CI restart. The 30-case evidence and source maps are retained
+in the Source7 packet; adding this record does not claim fresh runtime.
