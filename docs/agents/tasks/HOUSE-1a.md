@@ -4,7 +4,7 @@
 task_id: HOUSE-1a
 title: "HOUSE-1a: house ownership, auction and rent (skeleton)"
 mode: IMPLEMENT
-status: owned_property_schema_preparation_pending_native_qualification
+status: guild_disband_port_authored_pending_contract_and_native_qualification
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-1a
@@ -259,3 +259,69 @@ one shared credit-headroom seam before those acquisition operations are activate
 Remaining acquisition gates include current session/recovery fences, accepted runtime
 exit dependencies, Premium before locks, native occurrence/economy/event evidence,
 catalogue admission and tile/Ground guards, and canonical access-function integration.
+
+### ROOT-C-D-TERMINAL-PORT — new isolated authoring generation
+
+Explicit D1098/Root allocation adds the real caller-transaction Guildhall release port
+in `durability/house_ownership.rs` and its private `house/guildhall_release.rs` child.
+Source parent is frozen `c75a0dbe585c746e0f5fca3c1b4000527cb049d2`; that candidate,
+its bundle and PC snapshot remain unchanged. This new generation is AUTHORING.
+
+Canonical storage now distinguishes Guild ownership from Character/Account ownership;
+a Guildhall occupies the unique Guild owner binding and never a personal Account slot.
+The port consumes the genuine D `GuildDisbandTransaction`; it creates no replacement
+Guild context, session, actor, pool getter or independent transaction. A source-derived
+next-at-most-100-recipient reservation acquires sorted native deletion pins before D's
+Guild spine and stamps protected evidence last. Every use checks the same physical
+transaction and database marker. Actual Guild/spine locks are reacquired before property
+and legacy-anchor locks because a D in-memory xid alone survives SAVEPOINT rollback.
+Participant errors explicitly roll back a protected SAVEPOINT before returning.
+
+The bounded House SECURITY DEFINER entrypoints grant runtime EXECUTE only. Protected
+C tables, canonical ownership, ACL and BED receive no runtime DML grant. Their actual
+writer captures an immutable native custody census, explicitly frees genuine BED rows
+with `disposition`, transfers flat House items through native `game_character_inbox_deliver`,
+retains immutable delivery/step evidence, deletes live ACL while preserving receipts and
+editors, and clears canonical/legacy Guild ownership atomically with revision successors.
+The immutable same-transaction terminal journal requires zero native House sources,
+occupants, admission reservations, live ACL, personal slots and open sleepers. Only that
+proof permits the typed Guild operation's terminal state5 and real fence release; ordinary
+MOVE_OUT/DRAINED history remains independently fenced.
+
+The real common item/entry/provenance/ItemInstance hooks are C2141 candidate
+`d77b6a820472329dd452bc2ce3ab32aabc06cdfb`, ABI1. This writer checks all four enabled
+native triggers and their actual functions/operation coverage before freeze. Its hooks
+are not a parallel content flag; late native writers use the accepted-proposal NOWAIT
+anchor fallback. The Guild hook itself acquires no earlier blocking root/Guild/property lock.
+
+Focused tests are authored in `house/guildhall_release_tests.rs` for a private child mount
+inside the genuine D2136 native fixture. Required production-source composition is
+D2136 `caf3c375c02c97db1bb667f384529a110bcfe7d9`, D2153
+`498e44e7ed20b91d121bc4d531cc7d3e49dce6de`, actual D2139 Bank source from the
+verified eight-module `d-terminal-sources/manifest.json`, actual BED2147, and the C2141
+candidate above. No fake Guild tables/context, fake Inbox, or replacement native functions
+are used. Initial retained fixture state is administrative seeding; native release guards
+are active for cases. The separate literal runtime-role case is not qualified by that seeding.
+Twelve cases cover actual Inbox release/rollback/reload; 100+1 bounded work and Root reconstruction;
+actual native frozen mutation boundaries; reservation and release SAVEPOINT invalidation;
+D-context lock loss and real lock reacquisition; exact second-delivery fault with full
+participant footprint conservation even if the caller commits after error; runtime direct
+DML denial; missing native capability; changed recovery, foreign World and canonical
+revision resnapshot. Native compilation and all focused cases are **NOT_RUN**.
+
+Activation remains blocked on the explicitly proposed, unaccepted recipient-pin/late
+NOWAIT lock-order amendment; D's actual occurrence/spine and pre-financial caller
+composition; D's protected SQL terminal delegate/current-authority installation; genuine
+D runtime table/authority grants (its current fragments grant none); and module/schema
+registration plus native qualification. The directly callable definer writer independently checks the full Root-provided recovery
+record, the actual admission lock set, secret-bearing native node possession, current World
+assignment and actual Guild spine. It stamps protected immutable authority evidence only
+after all those locks. Consumers recheck current facts and that same-transaction stamp;
+SAVEPOINT rollback losing any of the locks also removes the stamp. Raw node secrets are
+bound as a separate SQL parameter and are never serialized or retained. The Rust leaf
+requires the separately proposed D context reference getters and native-owned private
+secret accessor, neither of which is silently applied in these owned paths. Deferred Guild
+revision changes require the actual same-transaction D step and complete event successor.
+The protected Guild/world terminal SQL predicate supports D's deferred state3→4 check
+only with current physical-transaction marker and actual release/absence, never history.
+No migration installation, PC call, native execution, push or publication occurred.
