@@ -4,7 +4,7 @@
 task_id: TRADE-PLAYER-1
 title: "TRADE-PLAYER-1: player-to-player trade"
 mode: IMPLEMENT
-status: local_preparation_pending_qualification
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -389,3 +389,16 @@ records its single 170006 marker; optional fixture early returns cannot qualify.
   integration prerequisites, protected exact-head CI, independent frozen-candidate
   review and CP acceptance. This packet is a bounded native read/runtime component,
   not complete player trade or permission to activate/mark ready/merge.
+
+### CP D1160/D1122: register the actual private component (2026-10-16)
+
+Status NOT_FULLY_QUALIFIED. CP comment6224912485 grants own-module registration without
+a slot. Register domain::player_trade and the allocated native owner as one durability
+child using its actual gameplay_transport/player_trade.rs path, as previously qualified
+outside-tree. Its domain/owner retain the scoped dead-code convention for a component
+whose physical reservations and atomic writer are not integrated. No visibility of an
+existing API, actual authority check, test predicate or runtime caller is changed.
+New-head Cargo/PG/full integration: NOT_RUN; prior bounded native component evidence
+is retained only for its original candidate/context. Standalone-root Content/private-domain
+composition remains unqualified, not an assumed PASS. D1122 allows the single coherent
+existing-draft checkpoint after fmt/diff checks; cause/receipts/guards/wire slots remain CP.

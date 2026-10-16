@@ -1,4 +1,9 @@
 //! PLAYER_TRADE0 leaf policy and native offer data, not admission or a reservation proof.
+#![allow(
+    dead_code,
+    reason = "private Trade component awaits physical reservations and atomic writer integration"
+)]
+
 use crate::content::{ReferenceItemField, ReferenceItemTradeRestrictions};
 use crate::domain::AccountId;
 use crate::durability::item_mint_audit::{ITEM_LIFECYCLE_LIVE, OneItemStateV1};

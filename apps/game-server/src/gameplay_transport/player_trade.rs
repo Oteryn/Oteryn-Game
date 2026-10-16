@@ -6,6 +6,11 @@
 //! Physical cross-command reservations, sole-book installation and atomic swap are uninstalled.
 //! TRANSFERRING retains owner-local intent DATA on ambiguity, never a swap grant or custody.
 
+#![allow(
+    dead_code,
+    reason = "private Trade component awaits physical reservations and atomic writer integration"
+)]
+
 use crate::domain::player_trade::{BackpackItemVersion, LeafOffer, Trader};
 use crate::durability::item_transfer::CharacterBackpack;
 use crate::foundation::{CommandRef, GameSessionId, RuntimeScopeRefV1};
