@@ -651,29 +651,9 @@ pub(super) async fn apply_guildhall_escrow_in_transaction(
     Ok(())
 }
 
-/// Uninstalled GUILD1 prerequisite rows; not a complete/current guild lifecycle owner.
-pub const GUILD_PREREQUISITE_SCHEMA_PROPOSAL: &str = r#"
--- Private candidate dependency contract; GUILD1 must replace/admit its complete owner schema
--- at integration. The following minimal accepted rows do not implement guild lifecycle.
-CREATE TABLE game_guilds(guild_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(guild_id)),
- world_id UUID NOT NULL CHECK(game_character_is_uuid_v7(world_id)),
- state SMALLINT NOT NULL CHECK(state IN(1,2,3,4)),revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615));
-CREATE TABLE game_guild_ranks(guild_id UUID NOT NULL REFERENCES game_guilds,
- level SMALLINT NOT NULL CHECK(level BETWEEN 1 AND 20),PRIMARY KEY(guild_id,level));
-CREATE TABLE game_guild_members(character_id UUID PRIMARY KEY REFERENCES game_character_roots,
- guild_id UUID NOT NULL REFERENCES game_guilds,rank_level SMALLINT NOT NULL,
- FOREIGN KEY(guild_id,rank_level) REFERENCES game_guild_ranks(guild_id,level));
-CREATE UNIQUE INDEX game_guild_one_leader ON game_guild_members(guild_id) WHERE rank_level=1;
--- Row locking requires UPDATE privilege. This prerequisite is read/lock-only at runtime:
--- membership/lifecycle mutation remains the separately admitted GUILD1 owner's job.
-CREATE FUNCTION game_guild_candidate_source_runtime_read_only() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN IF current_user='oteryn_game_runtime' THEN RAISE EXCEPTION 'candidate guild source is read/lock only at runtime' USING ERRCODE='42501';END IF;RETURN NEW;END;$$;
-CREATE TRIGGER game_guild_candidate_source_read_only BEFORE UPDATE ON game_guilds FOR EACH ROW EXECUTE FUNCTION game_guild_candidate_source_runtime_read_only();
-CREATE TRIGGER game_guild_member_candidate_source_read_only BEFORE UPDATE ON game_guild_members FOR EACH ROW EXECUTE FUNCTION game_guild_candidate_source_runtime_read_only();
-GRANT SELECT ON game_guilds,game_guild_ranks,game_guild_members TO oteryn_game_runtime;
-GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime;
-GRANT UPDATE(character_id) ON game_guild_members TO oteryn_game_runtime;
-"#;
+// Guild lifecycle tables/guards belong exclusively to GUILD1. This module consumes that
+// owner's schema; it must never install surrogate guild/member tables or denial triggers.
+// Exact unmerged owner inputs for isolated qualification are bound by the owned tests.
 
 /// Private UNINSTALLED proposal. Migration owner executes only in isolated qualification;
 /// never run as runtime startup/compatibility repair. No migration number or wire/event ID.

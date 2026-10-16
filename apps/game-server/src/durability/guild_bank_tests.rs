@@ -6,13 +6,38 @@ use crate::durability::bank::{
     BankCoinFacts, BankDepositRequest, BankOperationIdentity, BankOperationOccurrence,
     BankOperationOutcome, BankResult,
 };
+use crate::durability::guild::{
+    GUILD_GUARDS_PROPOSAL, GUILD_TABLES_PROPOSAL, GuildCommand, GuildOperationIdentity,
+    GuildOutcome, GuildRequest, GuildResult, GuildTextRequest,
+};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome};
+use crate::foundation::{CommandId, CommandRef, GameSessionId};
 use crate::item_transfer_postgres_cases::{
     self as fixture, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id,
     runtime,
 };
 use sqlx::Executor;
+
+// Exact unmerged GUILD1 owner candidate, base 92a5a965db23771d12697c0be9fee25f30d05f86.
+// Source durability/guild.rs SHA256 57935341f8d2d19ef000c0d7c9294035533102698e980adf0078e38e9079f1f1.
+// This is a disclosed validation-overlay dependency, not a schema installed on main.
+fn assert_guild_source() {
+    assert_eq!(
+        Sha256::digest(GUILD_TABLES_PROPOSAL.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "5ae70c7540915ef2368cab887fcaf0a66b0123f71535bb82bc8e71f750cbb3a1"
+    );
+    assert_eq!(
+        Sha256::digest(GUILD_GUARDS_PROPOSAL.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+        "1c74f22edc18db2d54b39330038b2c61a5b2cb1d90aab71965c26d08a8dd4a2e"
+    );
+}
 
 fn identity(n: u8) -> GuildBankIdentity {
     let salted = |salt| {
@@ -58,6 +83,13 @@ fn coins() -> BankCoinFacts {
 }
 
 async fn install(h: &Harness) -> TestResult {
+    install_snapshot(h, 2, Some(1), true).await
+}
+
+/// Independent historical DATA is seeded before guard installation. The guard-free mode is
+/// used only by the preserved financial disband test; it cannot qualify Guild lifecycle.
+async fn install_snapshot(h: &Harness, state: i16, rank: Option<i16>, guards: bool) -> TestResult {
+    assert_guild_source();
     let version: String = sqlx::query_scalar("SHOW server_version_num")
         .fetch_one(&h.pool)
         .await?;
@@ -67,9 +99,7 @@ async fn install(h: &Harness) -> TestResult {
     );
     // Literal coordinated GUILDHALL source DDL is supplied by its owner in validation only.
     // This constant is not a second source owner and contains no funded/HELD fixture row.
-    h.pool
-        .execute(sqlx::raw_sql(GUILD_PREREQUISITE_SCHEMA_PROPOSAL))
-        .await?;
+    h.pool.execute(sqlx::raw_sql(GUILD_TABLES_PROPOSAL)).await?;
     h.pool
         .execute(sqlx::raw_sql(GUILDHALL_SOURCE_DEPENDENCY))
         .await?;
@@ -85,26 +115,25 @@ async fn install(h: &Harness) -> TestResult {
     h.pool
         .execute(sqlx::raw_sql(GUILDHALL_GUARDS_DEPENDENCY))
         .await?;
-    sqlx::query(
-        "INSERT INTO game_guilds VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,1)",
-    )
-    .bind(guild().as_bytes().as_slice())
-    .bind(id(WORLD).as_slice())
-    .execute(&h.pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_guild_ranks SELECT encode($1,'hex')::uuid,n FROM generate_series(1,3) n",
-    )
-    .bind(guild().as_bytes().as_slice())
-    .execute(&h.pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_guild_members VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)",
-    )
-    .bind(id(CHARACTER).as_slice())
-    .bind(guild().as_bytes().as_slice())
-    .execute(&h.pool)
-    .await?;
+    sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,vice_deficit_since,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Guild Bank Fixture',$3,9999999999999,floor(extract(epoch FROM transaction_timestamp())*1000)::bigint,1,1)")
+        .bind(guild().as_bytes().as_slice()).bind(id(WORLD).as_slice()).bind(state).execute(&h.pool).await?;
+    for (level, name) in [(1_i16, "Leader"), (2, "Vice Leader"), (3, "Member")] {
+        sqlx::query("INSERT INTO game_guild_ranks(guild_id,level,name) VALUES(encode($1,'hex')::uuid,$2,$3)")
+            .bind(guild().as_bytes().as_slice()).bind(level).bind(name).execute(&h.pool).await?;
+    }
+    if let Some(rank) = rank {
+        sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,title,joined_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,'',1)")
+            .bind(id(CHARACTER).as_slice()).bind(guild().as_bytes().as_slice()).bind(rank).execute(&h.pool).await?;
+        if rank <= 2 {
+            sqlx::query("INSERT INTO game_account_guild_leadership(account_id,guild_id,character_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
+                .bind(id(40).as_slice()).bind(guild().as_bytes().as_slice()).bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+        }
+    }
+    if guards {
+        h.pool.execute(sqlx::raw_sql(GUILD_GUARDS_PROPOSAL)).await?;
+    }
+    // Qualification-only row-lock privileges; owner triggers still govern every mutation.
+    h.pool.execute(sqlx::raw_sql("GRANT SELECT ON game_guilds,game_guild_members,game_guild_operations TO oteryn_game_runtime;GRANT UPDATE(guild_id) ON game_guilds TO oteryn_game_runtime;GRANT UPDATE(character_id) ON game_guild_members TO oteryn_game_runtime;")).await?;
     Ok(())
 }
 
@@ -261,8 +290,8 @@ fn current_fences_rank_state_and_refusals_write_no_value_or_audit() -> TestResul
         return Ok(());
     };
     runtime()?.block_on(async move {
-        let h = Harness::create(admin, "guild_bank_refuse").await?;
-        install(&h).await?;
+        let h = Harness::create(admin.clone(), "guild_bank_refuse").await?;
+        install_snapshot(&h, 2, Some(3), true).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let a = h
             .root
@@ -270,8 +299,7 @@ fn current_fences_rank_state_and_refusals_write_no_value_or_audit() -> TestResul
             .await
             .map_err(debug)?;
         fund(&h, &a).await?;
-        // Ambient native fixture credentials are admin; qualify candidate runtime lock grants
-        // separately and prove that the lock privilege cannot mutate guild source authority.
+        // Native Guild guards admit locking but reject mutation without a real owner operation.
         let mut runtime_role = h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
             .execute(&mut *runtime_role)
@@ -289,10 +317,10 @@ fn current_fences_rank_state_and_refusals_write_no_value_or_audit() -> TestResul
         let denied = sqlx::query("UPDATE game_guilds SET guild_id=guild_id")
             .execute(&mut *runtime_role)
             .await
-            .expect_err("read/lock-only guild prerequisite");
+            .expect_err("unbound mutation must fail the genuine Guild owner guard");
         assert_eq!(
             denied.as_database_error().and_then(|e| e.code()).as_deref(),
-            Some("42501")
+            Some("23514")
         );
         runtime_role.rollback().await?;
         let fp = footprint(&h).await?;
@@ -331,9 +359,6 @@ fn current_fences_rank_state_and_refusals_write_no_value_or_audit() -> TestResul
                 .await,
             Err(GuildBankError::NotCurrent)
         ));
-        sqlx::query("UPDATE game_guild_members SET rank_level=3")
-            .execute(&h.pool)
-            .await?;
         assert!(matches!(
             h.root
                 .guild_bank_command(
@@ -357,23 +382,33 @@ fn current_fences_rank_state_and_refusals_write_no_value_or_audit() -> TestResul
             .map_err(debug)?;
         let changed = footprint(&h).await?;
         assert_ne!(fp, changed);
-        sqlx::query("UPDATE game_guilds SET state=3")
-            .execute(&h.pool)
-            .await?;
-        sqlx::query("DELETE FROM game_guild_members")
-            .execute(&h.pool)
-            .await?;
+        // Separate independently seeded DISBANDING/no-member snapshot. No installed guard
+        // is bypassed to manufacture a lifecycle transition the real owner does not expose.
+        let disbanding = Harness::create(admin, "guild_bank_state_snapshot").await?;
+        install_snapshot(&disbanding, 3, None, true).await?;
+        let other_seal = disbanding.recovery.seal_current().map_err(debug)?;
+        let other_a = disbanding
+            .root
+            .open_character_authority(&other_seal)
+            .await
+            .map_err(debug)?;
+        let other_fp = footprint(&disbanding).await?;
         assert!(matches!(
-            h.root
+            disbanding
+                .root
                 .guild_bank_command(
-                    &a,
-                    &h.node,
+                    &other_a,
+                    &disbanding.node,
                     fence()?,
                     request(24, GuildBankCommand::Deposit, 1)
                 )
                 .await,
             Err(GuildBankError::GuildDisbanding)
         ));
+        assert_eq!(other_fp, footprint(&disbanding).await?);
+        drop(other_a);
+        drop(other_seal);
+        disbanding.cleanup().await?;
         for amount in [0, BANK_MAX + 1] {
             assert!(matches!(
                 h.root
@@ -430,7 +465,9 @@ fn disband_once_survives_member_cleanup_and_native_root_reopen() -> TestResult {
     };
     runtime()?.block_on(async move {
         let h = Harness::create(admin, "guild_bank_payout").await?;
-        install(&h).await?;
+        // Preserved historical financial-component test: genuine owner tables, but lifecycle
+        // guards are not installed. Admin transitions below are DATA, not real disband proof.
+        install_snapshot(&h, 2, Some(1), false).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let a = h
             .root
@@ -679,6 +716,208 @@ fn audit_proposal_hard_ceiling_and_partial_claim_boundaries() {
     assert!(!fee_payer_is_junior(
         crate::domain::CharacterId::from_bytes(id(41)).expect("CharacterId")
     ));
+}
+
+/// P1 regression: the real owner's guarded write remains executable beside Bank. No
+/// replacement Guild table or runtime-wide UPDATE-denial trigger is installed by Bank.
+#[test]
+fn genuine_guild_writer_and_bank_coexist_under_owner_guards() -> TestResult {
+    let admin = configured_admin().ok_or("native GuildBank PG route required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "guild_bank_real_owner").await?;
+        let result = async {
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let a = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            fund(&h, &a).await?;
+            let identity = identity(50);
+            let message = GuildTextRequest::new(
+                GuildRequest {
+                    identity: GuildOperationIdentity {
+                        occurrence: identity.occurrence,
+                        transaction_id: identity.transaction_id,
+                        event_id: identity.guild_event_id,
+                        occurred_at_unix_ms: identity.occurred_at_unix_ms,
+                    },
+                    command: CommandRef::new(
+                        GameSessionId::decode(&id(fixture::SESSION)).map_err(debug)?,
+                        CommandId::new(50).map_err(debug)?,
+                    ),
+                    guild_id: crate::domain::guild::GuildId::from_bytes(*guild().as_bytes())
+                        .map_err(debug)?,
+                    operation: GuildCommand::SetMessage,
+                },
+                1,
+                "Owner and Bank share the genuine Guild schema",
+            )
+            .map_err(debug)?;
+            let outcome = h
+                .root
+                .commit_guild_text(&a, &h.node, fence()?, message)
+                .await
+                .map_err(debug)?;
+            assert!(matches!(outcome, GuildOutcome::Committed(r) if r.result == GuildResult::Ok));
+            let motd: String = sqlx::query_scalar("SELECT motd FROM game_guilds")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(motd, "Owner and Bank share the genuine Guild schema");
+            assert_eq!(h.count("game_guild_event_outbox").await?, 1);
+            let req = request(51, GuildBankCommand::Deposit, 37);
+            h.root
+                .guild_bank_command(&a, &h.node, fence()?, req)
+                .await
+                .map_err(debug)?;
+            h.root
+                .guild_bank_command(
+                    &a,
+                    &h.node,
+                    fence()?,
+                    request(52, GuildBankCommand::Withdraw, 37),
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(totals(&h).await?, (100, 0, 0));
+            // The original owner guard is still installed and rejects an unbound direct write.
+            let denied = h
+                .pool
+                .execute("UPDATE game_guilds SET motd='forged'")
+                .await
+                .expect_err("owner guard must remain active");
+            assert_eq!(
+                denied.as_database_error().and_then(|e| e.code()).as_deref(),
+                Some("23514")
+            );
+            drop(a);
+            drop(seal);
+            Ok(())
+        }
+        .await;
+        h.cleanup().await?;
+        result
+    })
+}
+
+/// Generated operation sequences drive the actual SQL writer, independently model balances,
+/// and check conservation plus replay/refusal non-mutation at every transition. No seeded gold.
+#[test]
+fn generated_funded_sequences_conserve_gold_with_refusal_replay_and_conflict() -> TestResult {
+    let admin = configured_admin().ok_or("native GuildBank PG route required")?;
+    runtime()?.block_on(async move {
+        for seed in [1_u64, 17, 0x91ab, u64::MAX] {
+            let h = Harness::create(admin.clone(), "guild_bank_property").await?;
+            let result: TestResult = async {
+                install(&h).await?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let a = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                fund(&h, &a).await?;
+                let mut model = (100_u64, 0_u64);
+                let mut steps = vec![
+                    (GuildBankCommand::Deposit, 0),
+                    (GuildBankCommand::Deposit, 101),
+                    (GuildBankCommand::Withdraw, 1),
+                    (GuildBankCommand::Deposit, 1),
+                    (GuildBankCommand::Withdraw, 1),
+                    (GuildBankCommand::Deposit, 100),
+                    (GuildBankCommand::Withdraw, 100),
+                    (GuildBankCommand::Deposit, BANK_MAX + 1),
+                    (GuildBankCommand::Deposit, BANK_MAX),
+                ];
+                let mut generated = seed;
+                for _ in 0..24 {
+                    generated = generated
+                        .wrapping_mul(6364136223846793005)
+                        .wrapping_add(1442695040888963407);
+                    let command = if generated & (1 << 32) == 0 {
+                        GuildBankCommand::Deposit
+                    } else {
+                        GuildBankCommand::Withdraw
+                    };
+                    steps.push((command, (generated >> 16) % 103));
+                }
+                let (mut committed, mut refused) = (0_u32, 0_u32);
+                for (index, (command, amount)) in steps.into_iter().enumerate() {
+                    let req = request(60 + u8::try_from(index)?, command, amount);
+                    let before = footprint(&h).await?;
+                    let balance = if command == GuildBankCommand::Deposit {
+                        model.0
+                    } else {
+                        model.1
+                    };
+                    let result = h
+                        .root
+                        .guild_bank_command(&a, &h.node, fence()?, req.clone())
+                        .await;
+                    if amount == 0 || amount > BANK_MAX {
+                        assert!(
+                            matches!(result, Err(GuildBankError::InvalidInput)),
+                            "seed={seed} step={index}"
+                        );
+                        refused += 1;
+                        assert_eq!(before, footprint(&h).await?);
+                    } else if amount > balance {
+                        assert!(
+                            matches!(result, Err(GuildBankError::InsufficientBalance)),
+                            "seed={seed} step={index}"
+                        );
+                        refused += 1;
+                        assert_eq!(before, footprint(&h).await?);
+                    } else {
+                        let receipt = result.map_err(debug)?;
+                        assert!(!receipt.replayed);
+                        if command == GuildBankCommand::Deposit {
+                            model.0 -= amount;
+                            model.1 += amount;
+                        } else {
+                            model.0 += amount;
+                            model.1 -= amount;
+                        }
+                        committed += 1;
+                        let after = footprint(&h).await?;
+                        let replay = h
+                            .root
+                            .guild_bank_command(&a, &h.node, fence()?, req.clone())
+                            .await
+                            .map_err(debug)?;
+                        assert!(replay.replayed);
+                        assert_eq!(receipt.transaction_id, replay.transaction_id);
+                        assert_eq!(after, footprint(&h).await?);
+                        let mut conflicting = req;
+                        conflicting.amount += 1;
+                        assert!(matches!(
+                            h.root
+                                .guild_bank_command(&a, &h.node, fence()?, conflicting)
+                                .await,
+                            Err(GuildBankError::ConflictingOccurrence)
+                        ));
+                        assert_eq!(after, footprint(&h).await?);
+                    }
+                    let actual = totals(&h).await?;
+                    assert_eq!(
+                        actual,
+                        (i64::try_from(model.0)?, i64::try_from(model.1)?, 0),
+                        "seed={seed} step={index}"
+                    );
+                    assert_eq!(actual.0 + actual.1 + actual.2, 100);
+                }
+                assert!(committed >= 4 && refused >= 5);
+                drop(a);
+                drop(seal);
+                Ok(())
+            }
+            .await;
+            h.cleanup().await?;
+            result?;
+        }
+        Ok(())
+    })
 }
 
 // Exact unmerged GUILDHALL owned BID_SOURCE_SCHEMA UTF8 SHA256 9fff79763a5218a304c953e7ebdc8e6449a1185dd35ac994228112838483dbbc

@@ -145,3 +145,67 @@ Historical failures remain explicit: attempt 1 failed only the external bridge's
 ### Mandatory CP/controller/production gates
 
 The accepted inseparable bundles remain open. GUILD1 must supply/admit its complete current guild/member/leadership owner, schema and real disband release/progress controller. The financial participant must be composed in that actual transaction, not exposed as an independent valuable grant. Production Bank readers, closed ledger enums/reference handling, audit codecs and balances above the soft ceiling require coordinated shared BANK1 updates; symbolic private rows are deliberately not compatible with unchanged live readers. Normative Bank/Guild (and Hall House) payloads, EventEnvelope/retention/resource admission, migration numbering/installation, module registration, current command/World-job routing and exact-head protected integration must land together at CP. None was edited, installed or qualified here. This packet is independent native component preparation, not architect approval, full GUILD-BANK acceptance or gameplay E2E.
+
+
+## 2026-10-16 owner-schema compatibility repair (uncommitted authoring candidate)
+
+Author: family D GuildBank worker, sole writer in `/workspace/oteryn-family/guild-bank`,
+existing PR #2139 at parent `e5979785342b1f0e3a282aa5324e5d65452ce4b2`.
+CP P1 is accepted and repaired in owned source: removed the substitute production
+`GUILD_PREREQUISITE_SCHEMA_PROPOSAL`, including its runtime UPDATE-denial triggers.
+Guild lifecycle tables and mutation guards belong to the genuine GUILD1 owner.
+Earlier references above describe historical preparation and do not prescribe installation.
+No migration, native Bank reader/kind, shared module registration or runtime wiring changed.
+
+Owned tests now consume the real GUILD1 table and guard constants directly, in a disclosed
+unmerged native validation overlay. The exact stable GUILD source is based on
+`92a5a965db23771d12697c0be9fee25f30d05f86`; candidate durability/guild.rs SHA256 is
+`57935341f8d2d19ef000c0d7c9294035533102698e980adf0078e38e9079f1f1`.
+Literal raw UTF8 table SQL SHA256:
+`5ae70c7540915ef2368cab887fcaf0a66b0123f71535bb82bc8e71f750cbb3a1`;
+raw guard SQL SHA256:
+`1c74f22edc18db2d54b39330038b2c61a5b2cb1d90aab71965c26d08a8dd4a2e`.
+Runtime assertions reject mismatching dependencies. These are candidate source bytes,
+not a claim of acceptance/installation on main. Future Hall test integration must consume
+these same genuine owner inputs; retaining the removed substitute for that caller is unsafe.
+
+Inherited tests remain present. Explicit fixture adaptations: install complete genuine
+Guild owner tables; use named full-column guild/rank/member/leadership initial snapshots;
+install the genuine owner guards for ordinary transfer, rollback, concurrency and escrow
+qualification; grant only fixture SELECT/row-lock privileges. The rank refusal is now an
+independent pre-guard rank3 snapshot and the state-before-membership case uses a separate
+DISBANDING/no-member snapshot. No installed guard is disabled, removed or weakened.
+The runtime role lock test now expects the genuine owner's unbound-mutation SQLSTATE23514,
+rather than the deleted substitute's blanket42501 denial.
+
+The inherited `disband_once_survives_member_cleanup_and_native_root_reopen` body is
+preserved except its explicitly named historical installation mode: complete real owner
+tables are seeded without installing lifecycle guards. Its privileged state/member changes
+remain historical financial-component fixture DATA. It does not execute or qualify the
+real Guild disband lifecycle. The absent terminal Guild/House closure controller remains a
+blocker; the test is neither ignored nor represented as integrated lifecycle coverage.
+
+Two added native PG bodies require an actual configured PG route: a genuine guarded Guild
+SetMessage writer followed by Bank deposit/withdraw with the same owner tables and active
+mutation guards; and four deterministic generated funded sequences (33 operations per seed),
+with independent balance modeling, zero/max/max+1/insufficient boundaries, unchanged refused
+footprints, exact replay and conflicting-occurrence rejection after every successful step.
+Funding remains actual MINT→TRANSFER→native bank_deposit; no nonzero bank balance seed.
+No Cargo dependency or manifest change. The earlier fixed example and other inherited
+negative/rollback/concurrency/recovery tests remain in the source.
+
+Owned Rust1.94 rustfmt and `git diff --check` passed. Governance validation passed
+(22 documents/9 lanes) and all 124 governance unit tests passed. No heavy/native check ran in the
+worker; lead owns the native Cargo/PG slot and independent review. The candidate is not yet
+runtime qualified and has no fresh native PASS claim. Actual current OnIsland/Junior source,
+shared closed Bank ledger/cause/readers, admitted event envelopes/publication, numbered SQL
+installation, real Hall release→Guild disband→Bank payout composition, module registration
+and exact-head protected qualification remain pending their owning source/CP slots.
+
+
+Native compile follow-up: the lead's genuine combined-unit compile rejected two raw-digest
+`LowerHex` formatting expressions with locked sha2's crypto-common Array type. Returned to
+AUTHORING and replaced only rendering with per-u8 lowercase two-digit hex formatting; raw
+SQL hash values and dependency source remain unchanged. This repairs an actual compiler
+failure, not an environmental failure. Rustfmt/diff checks rerun; native recompile remains
+with the lead. No native pass is claimed from the failed run or this formatting check.
