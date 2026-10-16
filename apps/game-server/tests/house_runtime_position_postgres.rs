@@ -439,7 +439,10 @@ async fn rejected(
 #[test]
 fn house_projection_orders_full_native_row_and_reloads() -> TestResult {
     let Some(admin) = configured_admin() else {
-        return Ok(());
+        return Err(
+            "House-position PG17.6 case was not executed: OTERYN_TEST_POSTGRES_ADMIN_URL is missing or not valid Unicode"
+                .into(),
+        );
     };
     runtime()?.block_on(async {
         let h=std::rc::Rc::new(Harness::create(admin,"house_pos_order",true).await?);
@@ -481,7 +484,10 @@ fn house_projection_orders_full_native_row_and_reloads() -> TestResult {
 #[test]
 fn house_projection_rejects_independently_changed_current_fences() -> TestResult {
     let Some(admin) = configured_admin() else {
-        return Ok(());
+        return Err(
+            "House-position PG17.6 case was not executed: OTERYN_TEST_POSTGRES_ADMIN_URL is missing or not valid Unicode"
+                .into(),
+        );
     };
     runtime()?.block_on(async {
         let h=Harness::create(admin,"house_pos_fences",true).await?;
@@ -536,7 +542,10 @@ fn house_projection_rejects_independently_changed_current_fences() -> TestResult
 #[test]
 fn house_projection_schema_rollback_and_same_cell_channel_clear() -> TestResult {
     let Some(admin) = configured_admin() else {
-        return Ok(());
+        return Err(
+            "House-position PG17.6 case was not executed: OTERYN_TEST_POSTGRES_ADMIN_URL is missing or not valid Unicode"
+                .into(),
+        );
     };
     runtime()?.block_on(async {
         let h=Harness::create(admin,"house_pos_clear",true).await?;
@@ -618,7 +627,10 @@ fn death(tag: u8) -> TestResult<CharacterDeathRequest<10>> {
 #[test]
 fn house_projection_old_null_row_pending_respawn_and_retired_node() -> TestResult {
     let Some(admin) = configured_admin() else {
-        return Ok(());
+        return Err(
+            "House-position PG17.6 case was not executed: OTERYN_TEST_POSTGRES_ADMIN_URL is missing or not valid Unicode"
+                .into(),
+        );
     };
     runtime()?.block_on(async {
         let h=Harness::create(admin,"house_pos_pending",false).await?;

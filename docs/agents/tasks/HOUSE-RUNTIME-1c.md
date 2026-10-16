@@ -475,3 +475,41 @@ card-only packet remains immutable under `design-phase/`. All original acceptanc
 boxes remain open; the module and explicit PostgreSQL target gate are not registered
 or enabled on this branch. No schema is installed, runtime gate opened, commit or
 worker push performed. Root alone owns any existing-draft publication after review.
+
+## 2026-10-16 owned-path re-evaluation and PG routing repair
+
+The owner directly confirmed exclusive authorship of the existing draft; no
+additional CP lease number is required. This pass uses
+`skeleton/house-runtime-1c` at `2d344f427eccbda584475c01917bad2eded5f271` and owns only
+`durability/character_position_house.rs`,
+`tests/house_runtime_position_postgres.rs` and this record. It does not allocate
+common outside writers, runtime callers, shared registration or a schema slot.
+
+The bounded source sweep found no new actual native port that can complete House
+fallback or guard rebind within these paths. The existing storage sibling already
+checks actual named session/connection/lease/scope, current House assignment,
+incarnation and canonical Character/account/runtime guard mirrors/history, and
+its own Channel capture clears both nullable House fields. The separate
+`world_house_instance` observation is not a physical presence/current assignment
+proof and cannot replace those checks. No synthetic fixture was promoted into a
+production authority source and no second loader/fallback/guard writer was added.
+
+The concrete independent repair is in all four existing PostgreSQL cases:
+missing or non-Unicode `OTERYN_TEST_POSTGRES_ADMIN_URL` now returns an error rather
+than reporting a successful test with no database execution. The existing
+PostgreSQL17.6 version and safe isolated test-database checks stay unchanged.
+The target's `cfg(any())` remains explicit: registration of this private durability
+sibling and consolidation into the native aggregate are still a CP slot. This
+repair adds no default CI cases and is not new runtime/storage qualification.
+
+Still required from their real owning paths: common single/batch/final/respawn
+outside-column clearing; real actor capture and placement plus same-transaction
+destination projection; native House guard rebind/publication; qualified retained
+removed-House entrance metadata; and the reviewed ADMIT0 §3.2 reverse-transfer
+contract. HOUSE-RUNTIME-1a/1b are dependencies, not installed authority on this
+source floor. All five original acceptance boxes remain open.
+
+No Cargo/rustc/heavy build or PostgreSQL execution is authorized here under D1011.
+Only formatter, governance and static scope/whitespace checks qualify this repair;
+the current source-bound handoff is `/workspace/house-family-handoff/runtime.json`.
+There is no commit, worker push, schema installation, runtime activation or merge.
