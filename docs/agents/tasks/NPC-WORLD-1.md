@@ -362,15 +362,38 @@ Strict all-target Clippy and full-package `--no-run` both failed with **exit 101
 `wp5_s3b_composition` integration crate roots. **Full-package runtime: BLOCKED_COMPILE**;
 the focused eight passes do not qualify the package or supersede that failure.
 
-The lead reopened owned authoring. The test-only harness is now loaded directly at file
-level with `#[cfg(test)]` and `#[path = "../../tests/support/bestiary_postgres_harness.rs"]`;
-the nested travel test module imports that local module through `super`. This references
-the same canonical repository harness without copying helpers, altering its source or
-changing the travel test body. No shared wiring or integration root is changed.
+The attempted local-harness successor was frozen at
+`1ac9e881799e2c6d77cb6c552bab3dae946dcab7`. It loaded the same canonical support file
+inside `npc_travel.rs` and imported it through `super`. Actual strict all-target Clippy
+failed with **exit 101 / `clippy::duplicate_mod`**: the same file was also registered in
+`src/lib.rs`, `tests/character_authority_postgres.rs` and `tests/durability_postgres.rs`.
+The lead stopped its own running native job with SIGTERM through pidfd after a fresh
+process-identity proof. Unfinished stages remain incomplete; no full-package runtime PASS
+is claimed. The local duplicate-module approach will not be published.
 
-This material successor is **PENDING a new freeze and fresh native qualification**. The
-repair author ran no Cargo/tests/PC job and made no commit or push. Prior 9f profile results,
-547 failures and older interruptions remain bound to their original source/mount profiles;
-no full-package PASS is claimed. CP admission/current-content binding producer, budgeted NPC
-scheduler, chat-owner egress and the other actor/travel/shared gates remain missing; all
-original acceptance boxes remain open.
+The lead reopened owned authoring and removed only that local module/import change.
+`durability/npc_travel.rs` is restored byte-for-byte to tested 9f source SHA256
+`fabdc7c83889a533f3f6048fe5204d2d1b52857b5663fba78a64bf3b713100d5`, using
+`crate::bestiary_postgres_harness`. The canonical support file and native test body were
+never changed. Relative to tested 9f, the resulting net delta is **this task record only**;
+the successor commit relative to its 1ac parent contains a Rust reversal plus documentation
+and must not be described as a docs-only commit. The earlier native8 passes remain bound
+to their exact 9f source/private mount, not relabeled as execution of a future head.
+
+**Required CP shared test-root slot:** add one ordinary crate-root registration of the
+existing `tests/support/bestiary_postgres_harness.rs` to each of
+`tests/native_admission_source_postgres.rs`,
+`tests/runtime_scope_assignment_postgres.rs` and `tests/wp5_s3b_composition.rs`, matching
+the existing shared subset-helper allowance. Reuse the existing single registrations in
+the library, Character Authority and Durability roots. Both independent targeted reviews
+confirmed there is no owned-only single-instance solution across these crate roots; the
+lead's refreshed CP state grants no shared slot. No shared root, suppression, skipped test
+or alternative harness is introduced here. The tested 9f all-target/full-package compile
+blocker therefore remains open pending that slot and fresh qualification.
+
+This owned reversal awaits the lead's freeze. The repair author ran no Cargo/tests/PC job
+and made no commit or push. Prior 9f profile results, 1ac diagnostics/controlled stop, 547
+failures and older interruptions remain retained under their original source/mount profiles.
+CP admission/current-content binding producer, budgeted NPC scheduler, chat-owner egress
+and the other actor/travel/shared gates remain missing; all original acceptance boxes remain
+open. No full-package, production activation or full NPC-WORLD delivery PASS is claimed.

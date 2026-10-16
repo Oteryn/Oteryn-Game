@@ -276,14 +276,10 @@ mod npc_travel_fixture_data {
 }
 
 #[cfg(test)]
-#[path = "../../tests/support/bestiary_postgres_harness.rs"]
-mod npc_travel_postgres_harness;
-
-#[cfg(test)]
 mod npc_travel_postgres {
     use super::npc_travel_fixture_data::TEST_SCHEMA;
-    use super::npc_travel_postgres_harness::{self as fixture, TestResult, debug, fence, id};
     use super::*;
+    use crate::bestiary_postgres_harness::{self as fixture, TestResult, debug, fence, id};
     use sqlx::Connection;
     fn occurrence(seed: u8) -> Result<TravelOccurrence, String> {
         TravelOccurrence::from_bytes(id(seed)).map_err(debug)
