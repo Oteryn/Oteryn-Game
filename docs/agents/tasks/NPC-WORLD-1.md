@@ -340,3 +340,37 @@ full-package run remains failed; no successor or full-package pass is claimed.
 CP admission/current-content binding producer, budgeted NPC scheduler and chat-owner egress
 are still missing. Actor/travel/shared integration gates and all original acceptance boxes
 remain open; no production activation or full NPC-WORLD delivery is claimed.
+
+
+## Frozen 9f private mount profiles and local harness repair (2026-10-16)
+
+The lead froze the fixture-placement repair at
+`9f2009dd9469733a85194ea6e8a9e31fd0f05179`. The first private profile registered only
+`gameplay_transport::npc_voice`: its travel listing contained **0 tests**, because
+`durability::npc_travel` was not registered. The zero-inventory guard correctly stopped
+qualification; that profile supplies no travel execution evidence.
+
+The second private profile added the ordinary `durability::npc_travel` module registration
+alongside voice. Its actual native run completed in 465.27 seconds: workspace fmt, ordinary
+library check, library `--no-run` and strict library Clippy passed. The exact seven native
+voice cases and the real PostgreSQL travel case passed: **8 passed / 0 failed / 0 ignored**,
+with PostgreSQL reporting **170006**. Cleanup completed cleanly.
+
+Strict all-target Clippy and full-package `--no-run` both failed with **exit 101 / E0432**:
+`npc_travel.rs` imported `crate::bestiary_postgres_harness`, which is absent from the
+`native_admission_source_postgres`, `runtime_scope_assignment_postgres` and
+`wp5_s3b_composition` integration crate roots. **Full-package runtime: BLOCKED_COMPILE**;
+the focused eight passes do not qualify the package or supersede that failure.
+
+The lead reopened owned authoring. The test-only harness is now loaded directly at file
+level with `#[cfg(test)]` and `#[path = "../../tests/support/bestiary_postgres_harness.rs"]`;
+the nested travel test module imports that local module through `super`. This references
+the same canonical repository harness without copying helpers, altering its source or
+changing the travel test body. No shared wiring or integration root is changed.
+
+This material successor is **PENDING a new freeze and fresh native qualification**. The
+repair author ran no Cargo/tests/PC job and made no commit or push. Prior 9f profile results,
+547 failures and older interruptions remain bound to their original source/mount profiles;
+no full-package PASS is claimed. CP admission/current-content binding producer, budgeted NPC
+scheduler, chat-owner egress and the other actor/travel/shared gates remain missing; all
+original acceptance boxes remain open.
