@@ -92,6 +92,28 @@ pub(crate) struct PartyXpActivity {
     stamp: Option<ActivityStamp>,
 }
 impl PartyXpActivity {
+    /// Copies retained event DATA without renewing, clearing or restoring the cell.
+    /// This observation grants no current authority or engagement qualification.
+    pub(crate) fn recorded_activity(
+        &self,
+    ) -> Option<(
+        WorldId,
+        ChannelId,
+        [u8; 16],
+        GameSessionId,
+        SemanticTimeMicros,
+    )> {
+        self.stamp.map(|stamp| {
+            (
+                stamp.world,
+                stamp.channel,
+                stamp.character,
+                stamp.session,
+                stamp.at,
+            )
+        })
+    }
+
     /// The actual event owner retains the cell, with the event's original semantic timestamp.
     /// On recovery an empty cell grants nothing; old sessions/scopes cannot rebind this cell.
     pub(crate) fn record(

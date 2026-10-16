@@ -513,3 +513,17 @@ caller composition:
 Real E atomic integration/producers/modifiers, shared activation and eventual main
 merge only AFTER #2201 remain open. This docs-only update changes no Rust or owner
 allocation and claims no additional execution beyond the exact composition above.
+
+## ROOT-D-NEW-CONCRETE-PORT — retained activity DATA getter
+
+On isolated #2172 base `a3b1ca4d1596bf7a1201b815b1cf343895acbf90`, implement
+E's exact request in [comment6221205479](https://github.com/Oteryn/Oteryn-Game/pull/2192#issuecomment-6221205479):
+`PartyXpActivity::recorded_activity(&self) -> Option<(WorldId, ChannelId, [u8;16], GameSessionId, SemanticTimeMicros)>`.
+It copies only the existing private stamp, preserving original microseconds and
+identity; it neither renews/clears activity nor restores state or grants authority.
+Existing identity/original-time/replay bodies gain exact tuple, empty-cell and
+non-mutating/non-extending assertions; the17-body inventory is unchanged.
+The separate827 E-binding source and its RED remain preserved outside this candidate.
+No E binding, shared source or current-authority constructor is added. Direct fmt,
+whitespace and cheap governance checks qualify source only; native execution remains
+with the lead. This getter does not qualify E's whole-kill writer or joint runtime.

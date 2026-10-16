@@ -508,6 +508,7 @@ fn party_xp_cell_cannot_rebind_world_channel_or_session_and_duplicates_refuse() 
         decide(&source(&members), &members, &[cell, cell], 2),
         Err(PartyXpError::InvalidRoster)
     );
+    assert_eq!(cell.recorded_activity(), before.recorded_activity());
 }
 
 #[test]
@@ -595,9 +596,21 @@ fn party_xp_level_ratio_and_distance_do_not_overflow_at_integer_limits() {
 
 #[test]
 fn party_xp_original_microsecond_kill_time_preserves_same_millisecond_activity() {
+    assert_eq!(PartyXpActivity::default().recorded_activity(), None);
     let members = [member(10, 100, 0, 0, 0)];
     let s = source(&members);
     let activity = active(&members, 1_999);
+    let before = activity[0];
+    let expected = Some((
+        WorldId::decode(&s.world).expect("world"),
+        channel(),
+        members[0].character,
+        members[0].session,
+        time(1_999),
+    ));
+    assert_eq!(activity[0].recorded_activity(), expected);
+    assert_eq!(activity[0].recorded_activity(), expected);
+    assert_eq!(activity[0], before);
     assert!(matches!(
         decide(&s, &members, &activity, 1_999),
         Ok(PartyXpDecision::Shares(_))
@@ -608,6 +621,7 @@ fn party_xp_original_microsecond_kill_time_preserves_same_millisecond_activity()
         decide(&s, &members, &activity, 1_000),
         Err(PartyXpError::ClockRegressed)
     );
+    assert_eq!(activity[0].recorded_activity(), expected);
 }
 
 #[test]
@@ -616,6 +630,7 @@ fn party_xp_original_event_replay_does_not_extend_activity_window() {
     let s = source(&members);
     let mut activity = active(&members, 9);
     let before = activity.clone();
+    let recorded = activity[0].recorded_activity();
     // An actual event owner replay must retain the original committed timestamp.
     activity[0]
         .record_members(
@@ -631,6 +646,7 @@ fn party_xp_original_event_replay_does_not_extend_activity_window() {
         )
         .expect("original-time event replay");
     assert_eq!(activity, before);
+    assert_eq!(activity[0].recorded_activity(), recorded);
     assert!(matches!(
         decide(&s, &members, &activity, 120_000_009),
         Ok(PartyXpDecision::Shares(_))
@@ -639,4 +655,6 @@ fn party_xp_original_event_replay_does_not_extend_activity_window() {
         decide(&s, &members, &activity, 120_000_010),
         SharingOff::Inactive,
     );
+    assert_eq!(activity[0].recorded_activity(), recorded);
+    assert_eq!(activity, before);
 }
