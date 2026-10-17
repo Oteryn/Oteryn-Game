@@ -242,3 +242,42 @@ Evidence: `/workspace/oteryn-prep/daily-1-evidence/index.md`,
 `bridge-only.diff`, `tests.log`, actual status/command JSON and final owned hash
 manifest. No commit, push, shared registration, migration installation,
 production activation, full DAILY-1 acceptance or architect approval occurred.
+
+## Fresh native Cargo qualification (2026-10-17)
+
+This entry records the fresh native run reported in
+[PR #2151](https://github.com/Oteryn/Oteryn-Game/pull/2151), bound to source head
+`e266247a2f6b447181d3b9442cd8dff9b048acc5`. The earlier bridge, metadata-only
+Clippy and setup/resource results above remain historical evidence.
+
+An isolated checkout on Molehill-PC / WSL Ubuntu-24.04 added only
+`pub mod daily_reward;` in `apps/game-server/src/domain/mod.rs` and
+`apps/game-server/src/durability/mod.rs` for validation. The three owned Rust
+files and every original test body and attribute were unchanged. These two
+registration lines remain outside this PR; this task-card append publishes
+the evidence for the component without registering or activating DAILY.
+
+- PASS: `cargo test --locked -p oteryn-game-server --lib daily_ --quiet -- --test-threads=1`.
+  The original Cargo cases returned 7 passed (3 domain and 4 PostgreSQL),
+  0 failed, 0 ignored and 3,179 filtered out, in 3.78 seconds.
+- The original `#[sqlx::test(migrations = "./migrations")]` cases used
+  Cargo/SQLx's native database lifecycle against PostgreSQL 17.6. This fresh
+  run retained the original bodies, attributes and migration lifecycle.
+- PASS: `cargo fmt --all -- --check`.
+- PASS: `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`
+  in the same isolated validation checkout.
+- Source hashes were checked before and after tests and Clippy. The run used
+  Rust/Cargo 1.94.0 without a `RUST_MIN_STACK` override.
+- The first preparation script stopped at an absent registration anchor
+  before editing source or running tests. That setup stop is retained
+  separately from behavioral test outcomes.
+
+Retained evidence is under
+`/root/oteryn-six-pr-20261017/evidence-daily/` on Molehill-PC: the two-line
+validation-only patch, source hashes, original Cargo output, formatting and
+Clippy results. The fresh results qualify the unchanged arithmetic and
+storage/locking component. Full-package behavioral tests, current-main
+integration, the actual claim writer and its current fences, valuable sinks,
+E2E qualification and architect acceptance remain incomplete. Production
+schema installation, shared registration and runtime activation remain
+integration work in the assigned CP slot; DAILY-1 remains a partial draft.
