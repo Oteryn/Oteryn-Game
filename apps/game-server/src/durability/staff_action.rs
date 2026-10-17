@@ -8,7 +8,7 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::staff::{
     audit::{self, Contract, ResultCode},
     signature::{
-        self, Disposition, Error, Outcome, SignedBytes, VerifiedReceipt, VerifiedRequest,
+        self, Disposition, Error, History, Outcome, SignedBytes, VerifiedReceipt, VerifiedRequest,
         VerifierTrust,
     },
 };
@@ -97,9 +97,17 @@ pub(crate) async fn lock_head(
 pub(crate) async fn begin_in_transaction(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
+    history: &History,
     request: VerifiedRequest,
 ) -> Result<Begin, StaffError> {
-    begin_with_clock(connection, trust, request, signature::synchronized_now_ms).await
+    begin_with_clock(
+        connection,
+        trust,
+        history,
+        request,
+        signature::synchronized_now_ms,
+    )
+    .await
 }
 #[cfg(test)]
 #[allow(
@@ -109,14 +117,16 @@ pub(crate) async fn begin_in_transaction(
 pub(crate) async fn fixture_begin_in_transaction(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
+    history: &History,
     request: VerifiedRequest,
     now: Result<u64, Error>,
 ) -> Result<Begin, StaffError> {
-    begin_with_clock(connection, trust, request, || now).await
+    begin_with_clock(connection, trust, history, request, || now).await
 }
 async fn begin_with_clock(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
+    history: &History,
     request: VerifiedRequest,
     clock: impl FnOnce() -> Result<u64, Error>,
 ) -> Result<Begin, StaffError> {
@@ -139,11 +149,7 @@ async fn begin_with_clock(
         return Err(StaffError::Conflict);
     }
     // Refuse a new request until the latest operator mutation is reconciled.
-    let missing:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_staff_operations o WHERE o.environment=$1 AND o.requires_receipt AND NOT EXISTS(SELECT 1 FROM game_staff_action_receipts r WHERE r.environment=o.environment AND r.operation_id=o.operation_id))")
-        .bind(trust.environment()).fetch_one(&mut *connection).await?;
-    if missing {
-        return Err(Error::Receipt.into());
-    }
+    receipt_fence_in_transaction(connection, history, trust.environment()).await?;
     let physical_transaction = physical_transaction(connection).await?;
     // Sample after every awaited prerequisite. Terminal replay never calls it.
     let now = clock();
@@ -165,10 +171,77 @@ async fn begin_with_clock(
 pub(crate) async fn fixture_begin_with_clock(
     connection: &mut PgConnection,
     trust: &VerifierTrust,
+    history: &History,
     request: VerifiedRequest,
     clock: impl FnOnce() -> Result<u64, Error>,
 ) -> Result<Begin, StaffError> {
-    begin_with_clock(connection, trust, request, clock).await
+    begin_with_clock(connection, trust, history, request, clock).await
+}
+
+/// D1412: the caller holds the locked head in this same transaction. Every
+/// mutation needs a receipt row, and the receipt of the latest mutation, the
+/// one that releases its pending fence, must pass the existing verifier under
+/// the reviewed activation in effect at that receipt's own sequence. Row
+/// existence never opens the fence; an unknown activation or any mismatch
+/// refuses and keeps it. Earlier receipts were checked when their own fence
+/// was released, so no request re-verifies the whole retained history.
+async fn receipt_fence_in_transaction(
+    connection: &mut PgConnection,
+    history: &History,
+    environment: &str,
+) -> Result<(), StaffError> {
+    let missing:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_staff_operations o WHERE o.environment=$1 AND o.requires_receipt AND NOT EXISTS(SELECT 1 FROM game_staff_action_receipts r WHERE r.environment=o.environment AND r.operation_id=o.operation_id))")
+        .bind(environment).fetch_one(&mut *connection).await?;
+    if missing {
+        return Err(Error::Receipt.into());
+    }
+    let row=sqlx::query("SELECT o.operation_id::text,o.request_sha256,o.outcome_sha256,o.outcome_bytes,o.principal,o.key_fingerprint,o.control_seq::text,r.receipt_bytes,r.principal,r.key_fingerprint,r.signature,r.control_seq::text,l.signed_bytes,l.previous_link_sha256,l.link_sha256,l.principal,l.key_fingerprint,l.signature FROM game_staff_operations o JOIN game_staff_action_receipts r ON r.environment=o.environment AND r.operation_id=o.operation_id LEFT JOIN game_staff_control_links l ON l.environment=r.environment AND l.control_seq=r.control_seq AND l.link_kind='RECEIPT' WHERE o.environment=$1 AND o.requires_receipt ORDER BY o.control_seq DESC LIMIT 1")
+        .bind(environment).fetch_optional(&mut *connection).await?;
+    let Some(row) = row else {
+        return Ok(());
+    };
+    let parse = |text: String| text.parse::<u64>().map_err(|_| Error::Invalid);
+    let operation_sequence = parse(row.try_get(6)?)?;
+    let receipt_sequence = parse(row.try_get(11)?)?;
+    let signed = SignedBytes {
+        bytes: row.try_get(7)?,
+        principal: row.try_get(8)?,
+        signature: row.try_get(10)?,
+    };
+    let fingerprint: String = row.try_get(9)?;
+    let link_bytes: Option<Vec<u8>> = row.try_get(12)?;
+    let link_previous: Option<String> = row.try_get(13)?;
+    if link_bytes.as_ref() != Some(&signed.bytes)
+        || row.try_get::<Option<String>, _>(14)? != Some(signature::sha256(&signed.bytes))
+        || row.try_get::<Option<String>, _>(15)?.as_ref() != Some(&signed.principal)
+        || row.try_get::<Option<String>, _>(16)?.as_ref() != Some(&fingerprint)
+        || row.try_get::<Option<String>, _>(17)?.as_ref() != Some(&signed.signature)
+        || receipt_sequence <= operation_sequence
+    {
+        return Err(Error::Receipt.into());
+    }
+    let receipt = history.receipt_at(signed, receipt_sequence)?;
+    let value = receipt.receipt();
+    let outcome: Outcome = oteryn_release_manifest::jcs::decode(
+        &row.try_get::<Vec<u8>, _>(3)?,
+        signature::MAX_OUTCOME_BYTES,
+    )
+    .map_err(|_| Error::Invalid)?;
+    let operation_id: String = row.try_get(0)?;
+    if value.environment != environment
+        || crate::node::uuid_bytes(&value.operation_id).is_none()
+        || crate::node::uuid_bytes(&value.operation_id) != crate::node::uuid_bytes(&operation_id)
+        || row.try_get::<String, _>(1)? != value.request_sha256
+        || row.try_get::<String, _>(2)? != value.outcome_sha256
+        || row.try_get::<String, _>(4)? != receipt.signed().principal
+        || row.try_get::<String, _>(5)? != receipt.fingerprint()
+        || receipt.fingerprint() != fingerprint
+        || outcome.disposition != value.disposition
+        || link_previous.as_deref() != Some(value.previous_link_sha256.as_str())
+    {
+        return Err(Error::Receipt.into());
+    }
+    Ok(())
 }
 
 /// Caller performs its own fenced domain change on this SAME connection before
@@ -377,6 +450,7 @@ impl DurabilityRoot {
     pub async fn audit_staff_read(
         &self,
         trust: Arc<VerifierTrust>,
+        history: Arc<History>,
         signed: SignedBytes,
     ) -> Result<StoredOutcome, StaffError> {
         let request = trust.verify_request(signed)?;
@@ -389,7 +463,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let result = async {
-                        match begin_in_transaction(&mut tx, &trust, request).await? {
+                        match begin_in_transaction(&mut tx, &trust, &history, request).await? {
                             Begin::Replay(outcome) => Ok(outcome),
                             Begin::Fresh(pending) => {
                                 let action_id = crate::node::operator_files::uuid_v7()
@@ -444,30 +518,40 @@ impl DurabilityRoot {
             })
             .await?
     }
-    pub async fn staff_prepare_head(&self, environment: String) -> Result<Head, StaffError> {
-        self.staff_head(environment, true).await
+    /// D1412: preparation opens only through the same verified receipt fence.
+    pub async fn staff_prepare_head(
+        &self,
+        environment: String,
+        history: Arc<History>,
+    ) -> Result<Head, StaffError> {
+        self.staff_head(environment, Some(history)).await
     }
     /// Receipt preparation must remain possible while a mutation lacks its
     /// receipt. This read returns no mutation or activation capability.
     pub async fn staff_receipt_head(&self, environment: String) -> Result<Head, StaffError> {
-        self.staff_head(environment, false).await
+        self.staff_head(environment, None).await
     }
     async fn staff_head(
         &self,
         environment: String,
-        require_receipts: bool,
+        receipt_fence: Option<Arc<History>>,
     ) -> Result<Head, StaffError> {
-        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let result=async {
-                let head=lock_head(&mut tx,&environment).await?;
-                let missing:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_staff_operations o WHERE o.environment=$1 AND o.requires_receipt AND NOT EXISTS(SELECT 1 FROM game_staff_action_receipts r WHERE r.environment=o.environment AND r.operation_id=o.operation_id))")
-                    .bind(&environment).fetch_one(&mut *tx).await?;
-                if require_receipts && missing {return Err(Error::Receipt.into());}
-                Ok(head)
-            }.await;
-            Ok(result)
-        })).await?
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = async {
+                        let head = lock_head(&mut tx, &environment).await?;
+                        if let Some(history) = &receipt_fence {
+                            receipt_fence_in_transaction(&mut tx, history, &environment).await?;
+                        }
+                        Ok(head)
+                    }
+                    .await;
+                    Ok(result)
+                })
+            })
+            .await?
     }
     /// Bounded streaming inspection. `through` is the initial locked head;
     /// later appends cannot change that immutable verification prefix.

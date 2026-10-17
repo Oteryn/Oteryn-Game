@@ -7,8 +7,8 @@ use crate::durability::staff_action::{self as owner, Begin, StaffError, StoredOu
 use crate::staff::{
     audit::{Contract, Reason, ResultCode},
     signature::{
-        self, Action, Decimal, Disposition, Error, Outcome, RECEIPT_NAMESPACE, REQUEST_NAMESPACE,
-        Receipt, VerifierTrust,
+        self, Action, Decimal, Disposition, Error, History, Outcome, RECEIPT_NAMESPACE,
+        REQUEST_NAMESPACE, Receipt, VerifierTrust,
     },
 };
 use crate::{durability, node, staff};
@@ -236,6 +236,7 @@ struct Fixture {
     pool: sqlx::PgPool,
     signer: Signer,
     trust: Arc<VerifierTrust>,
+    history: Arc<History>,
 }
 impl Fixture {
     async fn create(tag: &str) -> TestResult<Option<Self>> {
@@ -292,6 +293,15 @@ impl Fixture {
             .bind(checked.digest()).bind("0".repeat(64)).bind(trust.roster_digest()).bind(&activation.bytes).bind(&activation.principal).bind(checked.fingerprint()).bind(&activation.signature).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_staff_control_heads(environment,control_seq,link_sha256,activation_sha256) VALUES('alpha-test',1,$1,$1)").bind(trust.activation_digest()).execute(&mut *tx).await?;
         tx.commit().await?;
+        // D1412: the reviewed activation history pins the first roster at 1.
+        let history = History::from_reviewed(
+            vec![signature::Activation {
+                sequence: 1,
+                trust: signer.trust("alpha-test", trust.activation_digest()),
+            }],
+            &trust,
+        )
+        .map_err(debug)?;
         Ok(Some(Self {
             admin,
             name,
@@ -299,6 +309,7 @@ impl Fixture {
             pool,
             signer,
             trust: Arc::new(trust),
+            history: Arc::new(history),
         }))
     }
     fn signed(
@@ -326,12 +337,23 @@ impl Fixture {
         now: Result<u64, Error>,
         domain_marker: bool,
     ) -> Result<StoredOutcome, StaffError> {
-        let request = self.trust.verify_request(signed)?;
+        self.execute_with(&self.trust, &self.history, signed, now, domain_marker)
+            .await
+    }
+    async fn execute_with(
+        &self,
+        trust: &VerifierTrust,
+        history: &History,
+        signed: signature::SignedBytes,
+        now: Result<u64, Error>,
+        domain_marker: bool,
+    ) -> Result<StoredOutcome, StaffError> {
+        let request = trust.verify_request(signed)?;
         let mut tx = self.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
             .execute(&mut *tx)
             .await?;
-        match owner::fixture_begin_in_transaction(&mut tx, &self.trust, request, now).await? {
+        match owner::fixture_begin_in_transaction(&mut tx, trust, history, request, now).await? {
             Begin::Replay(outcome) => {
                 tx.rollback().await?;
                 Ok(outcome)
@@ -1154,6 +1176,7 @@ fn staff_pg_first_execution_samples_clock_after_actual_head_lock_wait() -> TestR
             .map_err(debug)?;
         let pool = f.pool.clone();
         let trust = Arc::clone(&f.trust);
+        let history = Arc::clone(&f.history);
         let now = Arc::new(AtomicU64::new(1_000_000));
         let calls = Arc::new(AtomicU64::new(0));
         let sample = Arc::clone(&now);
@@ -1167,11 +1190,12 @@ fn staff_pg_first_execution_samples_clock_after_actual_head_lock_wait() -> TestR
             sender
                 .send(pid)
                 .map_err(|_| StaffError::Rejected(Error::Invalid))?;
-            let result = owner::fixture_begin_with_clock(&mut tx, &trust, request, move || {
-                observed.fetch_add(1, Ordering::SeqCst);
-                Ok(sample.load(Ordering::SeqCst))
-            })
-            .await;
+            let result =
+                owner::fixture_begin_with_clock(&mut tx, &trust, &history, request, move || {
+                    observed.fetch_add(1, Ordering::SeqCst);
+                    Ok(sample.load(Ordering::SeqCst))
+                })
+                .await;
             tx.rollback().await?;
             result
         });
@@ -1420,7 +1444,7 @@ fn staff_pg_member_logins_cannot_commit_receipts_without_matching_links() -> Tes
                     let request = f.trust.verify_request(next).map_err(debug)?;
                     let mut probe = connection.begin().await?;
                     let bypass = owner::fixture_begin_in_transaction(
-                        &mut probe, &f.trust, request, Ok(1_000_000)
+                        &mut probe, &f.trust, &f.history, request, Ok(1_000_000)
                     ).await;
                     probe.rollback().await?;
                     if !matches!(bypass, Ok(Begin::Fresh(_))) {
@@ -1496,5 +1520,419 @@ fn staff_pg_member_logins_cannot_commit_receipts_without_matching_links() -> Tes
             "receipt link commit failures: {failures:?}"
         );
         Ok(())
+    })
+}
+
+#[test]
+fn staff_pg_forged_receipt_commit_cannot_release_fence_for_member_logins() -> TestResult {
+    #[derive(Clone, Copy)]
+    enum Forgery {
+        Signature,
+        Binding,
+    }
+
+    async fn head_row(pool: &sqlx::PgPool) -> TestResult<(String, String, String)> {
+        Ok(sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
+            .fetch_one(pool).await?)
+    }
+
+    async fn run_role(label: &str, group: &str, forgery: Forgery) -> TestResult<Vec<String>> {
+        let Some(f) = Fixture::create(label).await? else {
+            return Ok(Vec::new());
+        };
+        let mut admin = sqlx::PgConnection::connect(&f.admin).await?;
+        let mut created_roles = Vec::new();
+        let result: TestResult<Vec<String>> = async {
+            let nonce = f.name.rsplit('_').next().ok_or("fixture name")?;
+            let login = format!("oteryn_gm_2181_{label}_{nonce}");
+            let password = signature::sha256(&node::operator_files::random_bytes::<32>()?);
+            // Only generated ASCII fixture identifiers/passwords are interpolated.
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE ROLE {login} LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '{password}'"
+            )))
+            .execute(&mut admin)
+            .await?;
+            created_roles.push(login.clone());
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "GRANT {group} TO {login} WITH INHERIT TRUE"
+            )))
+            .execute(&mut admin)
+            .await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "GRANT CONNECT ON DATABASE {} TO {login}",
+                f.name
+            )))
+            .execute(&mut admin)
+            .await?;
+            let options = f
+                .url
+                .parse::<sqlx::postgres::PgConnectOptions>()?
+                .username(&login)
+                .password(&password);
+            let mut connection = sqlx::PgConnection::connect_with(&options).await?;
+            let identity: (String, String, bool, bool) = sqlx::query_as("SELECT current_user::text,session_user::text,pg_has_role(current_user,$1::name,'USAGE'),pg_has_role(current_user,'oteryn_test_admin','USAGE')")
+                .bind(group).fetch_one(&mut connection).await?;
+            if identity != (login.clone(), login, true, false) {
+                return Err(format!("invalid forged-receipt LOGIN fixture: {label}").into());
+            }
+
+            // A lawful committed mutation leaves the receipt fence pending.
+            let mutation = f.signed(2, 2, f.trust.activation_digest(), true);
+            let mutation_digest = signature::sha256(&mutation.bytes);
+            let stored = f
+                .execute(mutation.clone(), Ok(1_000_000), true)
+                .await
+                .map_err(debug)?;
+            let mut receipt = Receipt {
+                version: 1,
+                environment: f.trust.environment().into(),
+                roster_sha256: f.trust.roster_digest().into(),
+                operation_id: f
+                    .signer
+                    .request(2, 2, f.trust.activation_digest())
+                    .operation_id,
+                request_sha256: mutation_digest.clone(),
+                outcome_sha256: signature::sha256(&stored.bytes),
+                disposition: Disposition::Committed,
+                issued_at: Decimal(1_000_000),
+                control_seq: Decimal(3),
+                previous_link_sha256: mutation_digest.clone(),
+            };
+            let encode = |value: &Receipt| {
+                oteryn_release_manifest::jcs::encode(value, signature::MAX_REQUEST_BYTES)
+                    .map_err(debug)
+            };
+            let (forged, fingerprint, refusal) = match forgery {
+                Forgery::Signature => {
+                    // A genuine rostered signature over other receipt bytes is
+                    // attached to the exact bound receipt bytes.
+                    let mut other = receipt.clone();
+                    other.issued_at = Decimal(1_000_001);
+                    let donor = f.signer.sign(encode(&other)?, RECEIPT_NAMESPACE);
+                    let fingerprint = f
+                        .trust
+                        .verify_receipt(donor.clone())
+                        .map_err(debug)?
+                        .fingerprint()
+                        .to_owned();
+                    let forged = signature::SignedBytes {
+                        bytes: encode(&receipt)?,
+                        signature: donor.signature,
+                        principal: donor.principal,
+                    };
+                    if !matches!(
+                        f.trust.verify_receipt(forged.clone()),
+                        Err(Error::Signature)
+                    ) {
+                        return Err(format!("forged signature verified: {label}").into());
+                    }
+                    (forged, fingerprint, Error::Signature)
+                }
+                Forgery::Binding => {
+                    // A valid signature by the rostered key binds another outcome.
+                    receipt.outcome_sha256 = "e".repeat(64);
+                    let signed = f.signer.sign(encode(&receipt)?, RECEIPT_NAMESPACE);
+                    let fingerprint = f
+                        .trust
+                        .verify_receipt(signed.clone())
+                        .map_err(debug)?
+                        .fingerprint()
+                        .to_owned();
+                    (signed, fingerprint, Error::Receipt)
+                }
+            };
+            let forged_digest = signature::sha256(&forged.bytes);
+
+            // The actual LOGIN commits structurally complete forged evidence:
+            // RECEIPT link, receipt row and head advance in one transaction.
+            let mut tx = connection.begin().await?;
+            sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,link_sha256,previous_link_sha256,roster_sha256,link_kind,signed_bytes,principal,key_fingerprint,signature,created_xact_id) VALUES('alpha-test',3,$1,$2,$3,'RECEIPT',$4,$5,$6,$7,txid_current())")
+                .bind(&forged_digest).bind(&mutation_digest).bind(f.trust.roster_digest()).bind(&forged.bytes).bind(&forged.principal).bind(&fingerprint).bind(&forged.signature)
+                .execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_staff_action_receipts(environment,operation_id,receipt_bytes,principal,key_fingerprint,signature,control_seq,created_xact_id) VALUES('alpha-test',$1::text::uuid,$2,$3,$4,$5,3,txid_current())")
+                .bind(&receipt.operation_id).bind(&forged.bytes).bind(&forged.principal).bind(&fingerprint).bind(&forged.signature)
+                .execute(&mut *tx).await?;
+            let advanced = sqlx::query("UPDATE game_staff_control_heads SET control_seq=3,link_sha256=$1 WHERE environment='alpha-test' AND control_seq=2 AND link_sha256=$2")
+                .bind(&forged_digest).bind(&mutation_digest)
+                .execute(&mut *tx).await?;
+            if advanced.rows_affected() != 1 {
+                return Err(format!("forged head advance missed: {label}").into());
+            }
+            tx.commit()
+                .await
+                .map_err(|error| format!("forged receipt COMMIT refused before the fence: {label}: {error:?}"))?;
+
+            let before = f.counts().await?;
+            let head_before = head_row(&f.pool).await?;
+            if head_before.1 != forged_digest {
+                return Err(format!("forged head was not committed: {label}").into());
+            }
+            let mut failures = Vec::new();
+            let root = durability::DurabilityRoot::connect_test_runtime(&f.url)?;
+            if !root.maintain_ready_once().await? {
+                return Err(format!("fixture root not ready: {label}").into());
+            }
+            let next = f.signed(4, 4, &forged_digest, false);
+            for attempt in 0..2 {
+                match root
+                    .staff_prepare_head(f.trust.environment().into(), Arc::clone(&f.history))
+                    .await
+                {
+                    Ok(_) => failures.push(format!("{label}: preparation admitted ({attempt})")),
+                    Err(StaffError::Rejected(error)) if error == refusal => {}
+                    Err(error) => return Err(debug(error)),
+                }
+                let request = f.trust.verify_request(next.clone()).map_err(debug)?;
+                let mut probe = connection.begin().await?;
+                let begun = owner::fixture_begin_in_transaction(
+                    &mut probe,
+                    &f.trust,
+                    &f.history,
+                    request,
+                    Ok(1_000_000),
+                )
+                .await;
+                probe.rollback().await?;
+                match begun {
+                    Ok(Begin::Fresh(_)) => {
+                        failures.push(format!("{label}: next valid request admitted ({attempt})"))
+                    }
+                    Ok(Begin::Replay(_)) => return Err(format!("next request replayed: {label}").into()),
+                    Err(StaffError::Rejected(error)) if error == refusal => {}
+                    Err(error) => return Err(debug(error)),
+                }
+                // The identical retry of the fenced mutation keeps its stored
+                // outcome; refusals and retries leave the fence in place.
+                if f.execute(mutation.clone(), Err(Error::Clock), true)
+                    .await
+                    .map_err(debug)?
+                    != stored
+                {
+                    return Err(format!("identical mutation retry changed: {label}").into());
+                }
+                if f.counts().await? != before || head_row(&f.pool).await? != head_before {
+                    return Err(format!("fenced refusal changed retained state: {label}").into());
+                }
+            }
+            drop(root);
+            connection.close().await?;
+            Ok(failures)
+        }
+        .await;
+
+        // These are the only database/cluster roles owned by this invocation.
+        let database_cleanup = f.cleanup().await;
+        let mut role_cleanup = Ok(());
+        for role in created_roles.iter().rev() {
+            let removed = sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {role}")))
+                .execute(&mut admin)
+                .await;
+            if let Err(error) = removed {
+                role_cleanup = Err(error);
+            }
+        }
+        let admin_cleanup = admin.close().await;
+        database_cleanup?;
+        role_cleanup?;
+        admin_cleanup?;
+        result
+    }
+
+    runtime()?.block_on(async {
+        let mut failures = Vec::new();
+        for (label, group, forgery) in [
+            (
+                "runtime_forged_sig",
+                "oteryn_game_runtime",
+                Forgery::Signature,
+            ),
+            (
+                "control_forged_sig",
+                "oteryn_game_control",
+                Forgery::Signature,
+            ),
+            (
+                "runtime_forged_bind",
+                "oteryn_game_runtime",
+                Forgery::Binding,
+            ),
+            (
+                "control_forged_bind",
+                "oteryn_game_control",
+                Forgery::Binding,
+            ),
+        ] {
+            failures.extend(run_role(label, group, forgery).await?);
+        }
+        assert!(
+            failures.is_empty(),
+            "forged receipt fence failures: {failures:?}"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn staff_pg_valid_receipt_across_rotation_releases_fence_under_its_own_activation() -> TestResult {
+    runtime()?.block_on(async {
+        let Some(f) = Fixture::create("rotation_fence").await? else {
+            return Ok(());
+        };
+        let result: TestResult = async {
+            let mutation = f.signed(2, 2, f.trust.activation_digest(), true);
+            let mutation_digest = signature::sha256(&mutation.bytes);
+            let stored = f
+                .execute(mutation.clone(), Ok(1_000_000), true)
+                .await
+                .map_err(debug)?;
+            let receipt = Receipt {
+                version: 1,
+                environment: f.trust.environment().into(),
+                roster_sha256: f.trust.roster_digest().into(),
+                operation_id: f
+                    .signer
+                    .request(2, 2, f.trust.activation_digest())
+                    .operation_id,
+                request_sha256: mutation_digest.clone(),
+                outcome_sha256: signature::sha256(&stored.bytes),
+                disposition: Disposition::Committed,
+                issued_at: Decimal(1_000_000),
+                control_seq: Decimal(3),
+                previous_link_sha256: mutation_digest.clone(),
+            };
+            let verified = f
+                .trust
+                .verify_receipt(
+                    f.signer.sign(
+                        oteryn_release_manifest::jcs::encode(
+                            &receipt,
+                            signature::MAX_REQUEST_BYTES,
+                        )
+                        .map_err(debug)?,
+                        RECEIPT_NAMESPACE,
+                    ),
+                )
+                .map_err(debug)?;
+            let mut tx = f.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            owner::receipt_in_transaction(&mut tx, &f.trust, &verified)
+                .await
+                .map_err(debug)?;
+            tx.commit().await?;
+            let receipt_digest = signature::sha256(&verified.signed().bytes);
+
+            // Rotate to an independent roster B after roster A's receipt.
+            let replacement = Signer::new();
+            let activation = signed_activation(&replacement, "alpha-test", 4, &receipt_digest)?;
+            commit_activation(&f.pool, &activation).await?;
+            let current = replacement.trust("alpha-test", activation.digest());
+            if current.verify_receipt(verified.signed().clone()).is_ok() {
+                return Err("current roster unexpectedly verifies the roster-A receipt".into());
+            }
+            let history = Arc::new(
+                History::from_reviewed(
+                    vec![
+                        signature::Activation {
+                            sequence: 1,
+                            trust: f.signer.trust("alpha-test", f.trust.activation_digest()),
+                        },
+                        signature::Activation {
+                            sequence: 4,
+                            trust: replacement.trust("alpha-test", activation.digest()),
+                        },
+                    ],
+                    &current,
+                )
+                .map_err(debug)?,
+            );
+            let root = durability::DurabilityRoot::connect_test_runtime(&f.url)?;
+            if !root.maintain_ready_once().await? {
+                return Err("fixture root not ready".into());
+            }
+            let head = root
+                .staff_prepare_head("alpha-test".into(), Arc::clone(&history))
+                .await
+                .map_err(debug)?;
+            if head.sequence != 4 || head.digest != activation.digest() {
+                return Err("rotation preparation returned the wrong head".into());
+            }
+
+            // Trust is never taken from the current roster or a history that
+            // lacks the receipt's activation: both fail closed.
+            let current_only = Arc::new(
+                History::from_reviewed(
+                    vec![signature::Activation {
+                        sequence: 1,
+                        trust: replacement.trust("alpha-test", activation.digest()),
+                    }],
+                    &current,
+                )
+                .map_err(debug)?,
+            );
+            let missing = Arc::new(
+                History::from_reviewed(
+                    vec![signature::Activation {
+                        sequence: 4,
+                        trust: replacement.trust("alpha-test", activation.digest()),
+                    }],
+                    &current,
+                )
+                .map_err(debug)?,
+            );
+            let before = f.counts().await?;
+            if !matches!(
+                root.staff_prepare_head("alpha-test".into(), Arc::clone(&current_only))
+                    .await,
+                Err(StaffError::Rejected(Error::Signature))
+            ) {
+                return Err("current-roster history released the fence".into());
+            }
+            if !matches!(
+                root.staff_prepare_head("alpha-test".into(), Arc::clone(&missing))
+                    .await,
+                Err(StaffError::Rejected(Error::MissingMaterial))
+            ) {
+                return Err("history without the receipt's activation released the fence".into());
+            }
+            let request = replacement.request(5, 5, activation.digest());
+            let next =
+                replacement.sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+            if !matches!(
+                f.execute_with(&current, &missing, next.clone(), Ok(1_000_000), false)
+                    .await,
+                Err(StaffError::Rejected(Error::MissingMaterial))
+            ) || f.counts().await? != before
+            {
+                return Err("request admitted without the receipt's activation".into());
+            }
+
+            // The lawful roster-A receipt releases the fence under roster B.
+            let admitted = f
+                .execute_with(&current, &history, next.clone(), Ok(1_000_000), false)
+                .await
+                .map_err(debug)?;
+            let after = f.counts().await?;
+            // Identical retries return the stored outcomes and change nothing.
+            if after.4 != "5"
+                || f.execute_with(&current, &history, next, Err(Error::Clock), true)
+                    .await
+                    .map_err(debug)?
+                    != admitted
+                || f.execute(mutation, Err(Error::Clock), true)
+                    .await
+                    .map_err(debug)?
+                    != stored
+                || f.counts().await? != after
+            {
+                return Err("rotation admission or identical retries changed".into());
+            }
+            drop(root);
+            Ok(())
+        }
+        .await;
+        f.cleanup().await?;
+        result
     })
 }

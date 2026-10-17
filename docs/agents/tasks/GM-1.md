@@ -49,7 +49,130 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — D1393 distinct signed scope, REPORT_ONLY (2026-10-17)
+## Current checkpoint — D1412 verified receipt releases the fence, REPORT_ONLY (2026-10-17)
+
+[D1412](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6238311581)
+returns this lane to AUTHORING for
+[P2 4303796136](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4303796136)
+on parent `cf0bf62ad333df8091b6c536f5829d96a124856d`. The finding is accepted:
+the pending-receipt fence released on row existence alone, and migration 0116
+checks only structure, so a runtime or control LOGIN could commit a
+forged-signature receipt, its RECEIPT link and the head advance in one valid
+transaction and reopen staff control.
+
+### Owned paths for this delta
+
+- `apps/game-server/src/durability/staff_action.rs`
+- `apps/game-server/src/bin/oteryn-game-ops.rs`
+- `apps/game-server/tests/support/staff_audit_postgres_cases.rs`
+- `apps/game-server/src/node/{config,serve}.rs` (already owned as D1343d; the
+  trust input strictly requires the restart-only history to reach the server)
+- this card
+
+No SQL, migration, registry, Cargo or contract file changes.
+
+### Repair
+
+`receipt_fence_in_transaction` runs in `begin_with_clock`, and in the
+`staff_head` preparation path, after `lock_head` and in the same transaction.
+The existence check stays. The receipt of the latest `requires_receipt`
+mutation must also:
+
+- match its RECEIPT link byte for byte (bytes, digest, principal, fingerprint,
+  signature), at a sequence later than the mutation;
+- pass the existing verifier, `History::receipt_at`, which picks the reviewed
+  signed activation in effect at that receipt's own `control_seq`, never the
+  current roster;
+- bind the stored operation: environment, operation ID, request and outcome
+  digests, signer and fingerprint, disposition, and the link predecessor.
+
+Any miss refuses with the verifier error or `Receipt` and keeps the fence.
+Earlier receipts were checked when their own fence was released, so a request
+does not re-verify the whole history. `staff_receipt_head` (receipt
+publication) keeps its existing path; the fence there would be circular.
+
+Trust input: the reviewed activation history already used by
+`staff audit-verify` (a JSON `ActivationConfig` list ending at the current pin,
+checked by `History::load`). Server config becomes `[staff]
+activation_history_file` plus `[staff.trust]` (the former `[staff]` keys). The
+file is read once at boot under the same trusted-file rule as the roster.
+`staff prepare` takes `--activation-history`. Nothing is read from the
+database for trust. This config shape is an assumption reported to CP.
+
+### RED/GREEN
+
+New canonical case
+`staff_pg_forged_receipt_commit_cannot_release_fence_for_member_logins`, run
+for real member LOGIN roles of `oteryn_game_runtime` and `oteryn_game_control`.
+Each LOGIN commits, through plain SQL, a RECEIPT link, the receipt row and the
+head advance for a lawful pending mutation. The COMMIT must succeed. There are
+two forgeries:
+
+- a genuine rostered signature over other bytes attached to the bound bytes
+  (refusal `Signature`);
+- a validly signed receipt binding another outcome (refusal `Receipt`).
+
+Each one then makes two attempts at preparation and at the next valid request.
+The identical retry of the mutation must return its stored outcome, with
+counts and head unchanged.
+
+Control
+`staff_pg_valid_receipt_across_rotation_releases_fence_under_its_own_activation`
+covers a lawful roster-A receipt at 3 followed by rotation to an independent
+roster B at 4:
+
+- Preparation and the next request under B are admitted with history
+  `{1:A, 4:B}`.
+- Current-roster-only history is refused with `Signature`.
+- History lacking the receipt's activation is refused with `MissingMaterial`.
+- Identical retries return the stored outcomes unchanged.
+
+RED is the GREEN source with only the body of `receipt_fence_in_transaction`
+reverted to the existence check, with identical test bytes.
+
+### Validation (source-bound, 2026-10-17)
+
+Source: `cf0bf62a` plus the four code files above, patch
+`5f567292b2648923122997acb31a702e985ca98150a48eefdc2d3c67410cefcf`, GREEN
+`staff_action.rs` `fb7e3192548e27668a7d344de7fb3f49a71b1f416c2b74f40be1d1b0d70d691a`.
+
+The run took the outer lock (D1415 `flock -w 600`, Ubuntu/mole
+`heavy.lock`) once, and touched `apps/game-server/src/lib.rs` before every
+cargo run (D1420). Earlier runs without the touch were discarded. PG used the
+D1417 route: test binaries were built in Ubuntu/mole, copied out of the
+shared target, and run under Ubuntu-24.04 root through its existing
+`in-pg-netns.sh` and shared-pg.env (PostgreSQL 17.6). `PRE-ROUTING` skips: 0.
+
+| Check | Result |
+| --- | --- |
+| `cargo fmt --all --check` | pass |
+| strict Clippy `-p oteryn-game-server --all-targets -D warnings` | pass |
+| lib | 3259 passed, 0 failed (29 ignored, all pre-existing) |
+| lib `staff::` | 16 ok |
+| lib `node::config::tests::staff` | 1 ok |
+| lib `node::serve::tests::control_` | 2 ok |
+| canonical `durability_postgres staff_pg_` | 17 passed, 0 failed |
+| `staff_audit_postgres` staff cases | 17 ok (15 existing + 2 new) |
+| card: `validate_governance.py`; `tools/agents/tests`; `git diff --check` | pass; 124 OK; clean |
+
+The full `staff_audit_postgres` binary also runs 5 source-scanning lib tests
+(`character_revision_sequencer`, `item_mint_audit` ×3,
+`charm_desc_fence_gate_tests`). They failed only with `NotFound`, because the
+binary ran in a distro without the source tree; the same tests passed in the
+lib run.
+
+RED (fence body reverted to the existence check, test bytes identical,
+`staff_action.rs` `466e9397…`):
+
+- The forged case fails with all 16 admissions: preparation and the next valid
+  request, for the runtime and control LOGINs, for both forgeries, on both
+  attempts. Every forged COMMIT succeeded.
+- The rotation case fails with `current-roster history released the fence`.
+
+GREEN source restored to `fb7e3192…` and passes both. Runtime remains
+REPORT_ONLY.
+
+## Previous checkpoint — D1393 distinct signed scope, REPORT_ONLY (2026-10-17)
 
 [D1393](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235846045)
 returns this lane to AUTHORING for

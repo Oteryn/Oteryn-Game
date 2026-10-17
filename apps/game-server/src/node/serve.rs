@@ -1950,6 +1950,32 @@ async fn handle_control(stream: &mut UnixStream) -> Option<ControlInput> {
     parse_control_input(&request)
 }
 
+/// D1412: the current staff pin and its reviewed signed activation history.
+type StaffTrust = (
+    std::sync::Arc<crate::staff::signature::VerifierTrust>,
+    std::sync::Arc<crate::staff::signature::History>,
+);
+
+/// Restart-only: the history file is read once, by the same checked trusted-file
+/// rule as the roster, and must end at exactly the current pinned activation.
+fn load_staff_trust(
+    staff: &super::config::StaffConfig,
+) -> Result<StaffTrust, crate::staff::signature::Error> {
+    use crate::staff::signature::{ActivationConfig, Error, History, MAX_ROSTER_BYTES};
+    let trust = staff.trust.load()?;
+    let bytes = super::secure_file::read_checked(
+        &staff.activation_history_file,
+        FileClass::Trusted,
+        effective_uid(),
+        MAX_ROSTER_BYTES,
+    )
+    .map_err(|_| Error::Binding)?;
+    let configs: Vec<ActivationConfig> =
+        serde_json::from_slice(&bytes).map_err(|_| Error::Binding)?;
+    let history = History::load(configs, &trust)?;
+    Ok((std::sync::Arc::new(trust), std::sync::Arc::new(history)))
+}
+
 /// One request at a time, bounded size and deadline; only uid 0 is served.
 #[allow(clippy::too_many_arguments)]
 async fn control_loop(
@@ -1959,7 +1985,7 @@ async fn control_loop(
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
     intents: &ProducerDescriptor,
-    staff_trust: Option<&std::sync::Arc<crate::staff::signature::VerifierTrust>>,
+    staff_trust: Option<&StaffTrust>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -1981,10 +2007,14 @@ async fn control_loop(
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
             let input = handle_control(&mut stream).await;
             if let Some(ControlInput::Staff(message)) = input {
-                let answer = if let Some(trust) = staff_trust {
+                let answer = if let Some((trust, history)) = staff_trust {
                     match message {
                         crate::staff::signature::ControlMessage::Request(signed) => root
-                            .audit_staff_read(std::sync::Arc::clone(trust), signed)
+                            .audit_staff_read(
+                                std::sync::Arc::clone(trust),
+                                std::sync::Arc::clone(history),
+                                signed,
+                            )
                             .await
                             .ok()
                             .map(|outcome| outcome.bytes),
@@ -2468,10 +2498,9 @@ async fn boot_and_serve(
     let staff_trust = config
         .staff
         .as_ref()
-        .map(|staff| staff.load())
+        .map(load_staff_trust)
         .transpose()
-        .map_err(|_| BootError::Startup(StartupError::Invalid { key: "staff" }))?
-        .map(std::sync::Arc::new);
+        .map_err(|_| BootError::Startup(StartupError::Invalid { key: "staff" }))?;
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
         stopped_before_ready();

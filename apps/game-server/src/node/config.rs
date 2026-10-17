@@ -242,12 +242,23 @@ pub struct BootConfig {
     pub pass_deadline_ms: u64,
 }
 
+/// D1041/D1412 restart-only staff control trust: the current pin and the
+/// independently reviewed signed activation history (the same record
+/// `oteryn-game-ops staff audit-verify` reads), which names the roster in
+/// effect at each receipt's sequence. Neither is ever read from the database.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StaffConfig {
+    pub activation_history_file: PathBuf,
+    pub trust: crate::staff::signature::TrustConfig,
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
     /// D1041 restart-only reviewed independent staff trust; absent disables staff control.
-    pub staff: Option<crate::staff::signature::TrustConfig>,
+    pub staff: Option<StaffConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
     pub database: DatabaseConfig,
@@ -821,13 +832,18 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
                 .is_none()
         );
         let section = format!(
-            "\n[staff]\nenvironment = \"preprod\"\nallowed_signers_file = \"/etc/oteryn/staff/allowed_signers\"\nallowed_signers_sha256 = \"{}\"\nnewest_activation_sha256 = \"{}\"\n",
+            "\n[staff]\nactivation_history_file = \"/etc/oteryn/staff/activations.json\"\n[staff.trust]\nenvironment = \"preprod\"\nallowed_signers_file = \"/etc/oteryn/staff/allowed_signers\"\nallowed_signers_sha256 = \"{}\"\nnewest_activation_sha256 = \"{}\"\n",
             "1".repeat(64),
             "2".repeat(64)
         );
         let document = format!("{NODE}{section}");
         let config = NodeConfig::parse(document.as_bytes()).expect("staff config");
         let staff = config.staff.expect("restart-only staff trust");
+        assert_eq!(
+            staff.activation_history_file,
+            PathBuf::from("/etc/oteryn/staff/activations.json")
+        );
+        let staff = staff.trust;
         assert_eq!(staff.environment, "preprod");
         assert_eq!(staff.allowed_signers_sha256, "1".repeat(64));
         assert_eq!(staff.newest_activation_sha256, "2".repeat(64));
@@ -838,6 +854,18 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             NodeConfig::parse(
                 document
                     .replace("newest_activation_sha256", "unrecognized_activation")
+                    .as_bytes()
+            )
+            .is_err()
+        );
+        // D1412: the activation history is mandatory with staff trust.
+        assert!(
+            NodeConfig::parse(
+                document
+                    .replace(
+                        "activation_history_file = \"/etc/oteryn/staff/activations.json\"\n",
+                        ""
+                    )
                     .as_bytes()
             )
             .is_err()

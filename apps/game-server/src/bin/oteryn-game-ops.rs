@@ -1558,15 +1558,22 @@ async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
     let trust = config.load().map_err(staff_failure)?;
     match command.as_str() {
         "prepare" => {
+            let history_path = arguments.take("activation-history")?;
             let input = arguments.take("request")?;
             let output = arguments.take("output")?;
             arguments.finish()?;
             let mut request: signature::Request =
                 serde_json::from_slice(&staff_input(&input, signature::MAX_REQUEST_BYTES)?)
                     .map_err(staff_failure)?;
+            // D1412: the head is released only by a receipt verified under the
+            // reviewed activation in effect at its sequence, never row existence.
+            let configs: Vec<ActivationConfig> =
+                serde_json::from_slice(&staff_input(&history_path, 65_536)?)
+                    .map_err(staff_failure)?;
+            let history = History::load(configs, &trust).map_err(staff_failure)?;
             let head = operator
                 .root
-                .staff_prepare_head(trust.environment().into())
+                .staff_prepare_head(trust.environment().into(), std::sync::Arc::new(history))
                 .await
                 .map_err(staff_failure)?;
             if head.activation_digest != trust.activation_digest() {
