@@ -22,6 +22,10 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+// The native source carrier uses this test root's actual Foundation identities.
+#[allow(dead_code)]
+#[path = "../src/ability/player_lethal.rs"]
+mod player_lethal;
 // The runtime Achievement catalogue of the display read, with the narrow
 // `content` shim it names (as `character_authority_postgres` includes them).
 #[allow(dead_code, unused_imports)]
