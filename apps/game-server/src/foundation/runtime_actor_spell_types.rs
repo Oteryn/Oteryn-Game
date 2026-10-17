@@ -46,8 +46,12 @@ pub(crate) struct MonsterAiState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum OwnerCombatChange {
     PlayerConditions {
-        expected: Box<super::super::condition::ConditionStore<String>>,
-        next: Box<super::super::condition::ConditionStore<String>>,
+        expected: Box<
+            super::super::condition::ConditionStore<String, crate::player_lethal::LethalSource>,
+        >,
+        next: Box<
+            super::super::condition::ConditionStore<String, crate::player_lethal::LethalSource>,
+        >,
     },
     CompanionConditions(Box<CompanionConditionUpdate>),
     CompanionMaster(Box<super::runtime_actor_companion::PreparedCompanionAssignment>),
