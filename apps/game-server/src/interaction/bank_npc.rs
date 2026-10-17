@@ -38,6 +38,14 @@ pub(crate) enum BankNpcIntent {
     Transfer { amount: u64, name: CharacterName },
 }
 
+impl BankNpcIntent {
+    /// Deposit and withdraw move coin custody and need current backpack coin facts; balance
+    /// and transfer read only the Bank account and never resolve item custody.
+    pub(crate) const fn uses_coin_custody(&self) -> bool {
+        matches!(self, Self::Deposit(_) | Self::DepositAll | Self::Withdraw(_))
+    }
+}
+
 fn amount(value: &str, cap: u64) -> Result<u64, BankNpcError> {
     if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
         return Err(BankNpcError::InvalidInput);

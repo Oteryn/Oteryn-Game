@@ -730,7 +730,12 @@ pub(super) async fn npc_bank_talk(
     let Ok(parsed) = bank_npc::parse(&intent.text) else {
         return ordinary;
     };
-    let coins = bank_coin_definitions(admission, &runtime);
+    // Only deposit and withdraw move item custody; balance and transfer never read backpack facts.
+    let coins = if parsed.uses_coin_custody() {
+        bank_coin_definitions(admission, &runtime)
+    } else {
+        None
+    };
     drop(runtime);
     let coins = if let Some((gold, platinum, crystal)) = coins {
         let Some(native) = admission
@@ -857,13 +862,11 @@ pub(super) async fn resume_bank_talk(
     actor: ExactActorRef,
     command: super::connection::UseCommand,
 ) -> Option<NpcTalkOutcome> {
-    let (Some(fence), Ok(id)) = (
-        command.item_fence,
-        crate::foundation::CommandId::new(command.command_id),
-    ) else {
-        return None;
+    let (fence, reference) = match retained_bank_key(&command) {
+        Ok(Some(key)) => key,
+        Ok(None) => return None,
+        Err(held) => return Some(held),
     };
-    let reference = crate::foundation::CommandRef::new(command.game_session_id, id);
     match admission
         .root
         .resume_npc_bank(admission.character, admission.holder, fence, reference)
@@ -893,11 +896,43 @@ pub(super) async fn resume_bank_talk(
         }
         // An accepted original pending command cannot be abandoned or sequenced as a new
         // command because current ownership is temporarily unavailable or storage is unknown.
-        Err(_) => Some(NpcTalkOutcome {
-            unknown: true,
-            ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
-        }),
+        Err(_) => Some(held_bank_outcome()),
     }
+}
+
+/// The unknown outcome of an accepted original Bank command that cannot be classified yet: it
+/// is held, never sequenced as a refusal or as a new command.
+fn held_bank_outcome() -> NpcTalkOutcome {
+    NpcTalkOutcome {
+        unknown: true,
+        ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+    }
+}
+
+/// The current fence and original `CommandRef` under which a retained Bank command of
+/// `command` is looked up. `Ok(None)`: the CommandId is invalid, so no Bank work can have been
+/// retained for it. `Err`: the session has no current item fence (a resume whose post-commit
+/// session read failed), so retained work cannot be classified with current authority and
+/// the command stays unsequenced.
+fn retained_bank_key(
+    command: &super::connection::UseCommand,
+) -> Result<
+    Option<(
+        crate::durability::item_transfer::CurrentCharacterItemFence,
+        crate::foundation::CommandRef,
+    )>,
+    NpcTalkOutcome,
+> {
+    let Ok(id) = crate::foundation::CommandId::new(command.command_id) else {
+        return Ok(None);
+    };
+    let Some(fence) = command.item_fence else {
+        return Err(held_bank_outcome());
+    };
+    Ok(Some((
+        fence,
+        crate::foundation::CommandRef::new(command.game_session_id, id),
+    )))
 }
 
 fn bank_coin_definitions(
@@ -1080,6 +1115,64 @@ mod bank_context_tests {
     use super::*;
     use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
     use std::sync::Arc;
+    #[test]
+    fn a_retained_bank_lookup_without_a_current_fence_is_held_unsequenced() {
+        use crate::durability::item_transfer::CurrentCharacterItemFence;
+        use crate::foundation::{
+            ChannelId, CommandId, CommandRef, ConnectionGeneration, RuntimeScopeRefV1,
+            ScopeOwnershipGeneration, WorldId,
+        };
+        let uuid = |tag: u8| {
+            let mut bytes = [tag; 16];
+            bytes[6] = 0x70 | (tag & 0x0f);
+            bytes[8] = 0x80 | (tag & 0x3f);
+            bytes
+        };
+        let session = GameSessionId::decode(&uuid(0x21)).expect("session UUIDv7");
+        // A reconnect whose post-commit session read failed leaves no item fence: the resent
+        // original command cannot be classified, so it is held, never treated as complete.
+        let unfenced = super::super::connection::UseCommand {
+            game_session_id: session,
+            command_id: 7,
+            item_fence: None,
+        };
+        let held = retained_bank_key(&unfenced).expect_err("held without a current fence");
+        assert!(held.unknown);
+        assert!(!held.inventory_changed);
+        assert!(held.conversation.is_none() && held.window.is_none());
+        // CommandId 0 is never sequenced, so no Bank work can be retained for it.
+        assert!(matches!(
+            retained_bank_key(&super::super::connection::UseCommand {
+                command_id: 0,
+                ..unfenced
+            }),
+            Ok(None)
+        ));
+        let world = WorldId::decode(&uuid(0x22)).expect("World UUIDv7");
+        let channel = ChannelId::decode(&uuid(0x23)).expect("Channel UUIDv7");
+        let fence = CurrentCharacterItemFence {
+            character_id: crate::domain::CharacterId::from_bytes(uuid(0x24))
+                .expect("Character UUIDv7"),
+            game_session_id: session,
+            connection_generation: ConnectionGeneration::new(2).expect("generation"),
+            character_lease_generation: 3,
+            runtime_scope: RuntimeScopeRefV1::channel(world, channel),
+            scope_ownership_generation: ScopeOwnershipGeneration::new(4).expect("generation"),
+        };
+        let (current, reference) = retained_bank_key(&super::super::connection::UseCommand {
+            item_fence: Some(fence),
+            ..unfenced
+        })
+        .ok()
+        .flatten()
+        .expect("lookup key under the current fence");
+        assert_eq!(current, fence);
+        assert_eq!(
+            reference,
+            CommandRef::new(session, CommandId::new(7).expect("CommandId"))
+        );
+    }
+
     #[test]
     fn actual_chat_reengagement_and_npc_generation_retire_unsent_confirmation() {
         let (mut runtime, actor, session) =

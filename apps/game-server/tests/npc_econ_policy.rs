@@ -62,6 +62,25 @@ fn accepted_commands_and_each_native_cap_have_true_boundaries() {
 }
 
 #[test]
+fn only_deposit_and_withdraw_resolve_backpack_coin_custody() {
+    // Balance and transfer previews never read backpack facts, so an unresolvable backpack or
+    // stale coin revision cannot refuse them (they pass no `BankCoinFacts`).
+    for (text, custody) in [
+        ("balance", false),
+        ("transfer 5 gold to Al Dric", false),
+        ("deposit 5 gold", true),
+        ("deposit all", true),
+        ("withdraw 5 gold", true),
+    ] {
+        assert_eq!(
+            parse(text).expect("accepted command").uses_coin_custody(),
+            custody,
+            "{text}"
+        );
+    }
+}
+
+#[test]
 fn text_is_bounded_and_neither_substrings_nor_invalid_names_are_accepted() {
     let at_max = format!("{}balance", " ".repeat(248));
     assert_eq!(at_max.len(), 255);

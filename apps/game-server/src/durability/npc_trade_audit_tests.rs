@@ -411,6 +411,8 @@ fn trade_rows_equal_the_registry() {
             "DUR03-RL-06-NPC-TRADE-SELL-EFFECT-WORK-UNITS",
             SELL_RL06_EFFECT_WORK_UNITS_MAX,
         ),
+        // BANK-FEE-0 §4.3/§5: one bank value line on a BUY, none on a SELL.
+        ("DUR03-RL-03-NPC-TRADE-BUY", 1),
         ("DUR03-RL-07-NPC-TRADE-EVENTS", NPC_TRADE_RL07_EVENTS_MAX),
         (
             "DUR03-RL-07-NPC-TRADE-PAYLOAD-BYTES",
