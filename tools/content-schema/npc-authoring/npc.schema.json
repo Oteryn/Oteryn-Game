@@ -63,7 +63,8 @@
           "properties": {
             "walk_interval_ms": {"type": ["integer", "null"], "minimum": 0},
             "walk_radius": {"type": ["integer", "null"], "minimum": -1},
-            "floor_change": {"type": ["boolean", "null"]}
+            "floor_change": {"type": ["boolean", "null"]},
+            "base_speed": {"type": ["integer", "null"], "minimum": 0}
           }
         },
         "vitals": {
@@ -103,6 +104,7 @@
       "additionalProperties": false,
       "required": ["trade", "travel", "spells", "blessings", "promotion", "kick"],
       "properties": {
+        "bank": {"oneOf":[{"type":"null"},{"type":"object","additionalProperties":false,"required":["provenance","semantics_owner"],"properties":{"semantics_owner":{"const":"BANK0"},"provenance":{"type":"object","additionalProperties":false,"required":["repository","revision","path","sha256","kind","callback"],"properties":{"repository":{"type":"string"},"revision":{"type":"string","pattern":"^[0-9a-f]{40}$"},"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"kind":{"const":"REGISTERED_FINANCIAL_CALLBACK"},"callback":{"const":"CALLBACK_MESSAGE_DEFAULT"}}}}}]},
         "trade": {
           "oneOf": [
             {"type": "null"},

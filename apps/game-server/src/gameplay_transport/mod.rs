@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[path = "../interaction/bank_npc.rs"]
+mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
@@ -11,17 +13,27 @@ mod character_progression_binding;
 mod character_progression_binding_tests;
 pub(crate) mod charm;
 mod chat_intent;
+mod chat_relay;
+mod combat_lock_fact;
 mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod input_gate;
+#[allow(
+    dead_code,
+    reason = "ITEM-LOOK-1 read-only examine helper is native-tested; command 30 dispatch, rate limiting and capability 28 offer remain a separate integration gate"
+)]
+mod item_look;
 mod item_move;
 mod item_ref_admission;
 mod item_use;
 mod item_view;
 mod kill_reward;
 mod last_position;
+mod logout;
+#[cfg(test)]
+mod logout_tests;
 pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
@@ -102,7 +114,7 @@ use connection::{
     UseOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
-use kill_reward::{KillRelease, ReleaseEnd};
+use kill_reward::{KillRelease, KillReleaseMark, ReleaseEnd};
 use oteryn_foundation::CancellationToken;
 mod condition_snapshots;
 use std::future::{Future, poll_fn};
@@ -346,6 +358,17 @@ async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
                     let _ = authority.release_abandoned(lost.session).await;
                     break;
                 }
+                // LOGOUT-WIRE-1 (§1.6): a release committed without its acknowledgement retires
+                // the actor; an unreadable row keeps the fence and runs again behind the backoff.
+                ControlLossResult::Terminal => {
+                    while authority.reconcile_terminal(lost.session).await
+                        == GraceExpiryResult::Unknown
+                    {
+                        tokio::time::sleep(backoff).await;
+                        backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                    }
+                    break;
+                }
                 ControlLossResult::Unknown => {
                     // Retained uncertain owner work remains the same operation.
                     // The independently current session ends a superseded loop.
@@ -558,6 +581,13 @@ pub async fn serve_gameplay(
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
     }
+    // CHAT-2B: the World chat relay, when its key file is configured.
+    if let Some(relay) = chat_relay::configured(
+        *owners.world_id.as_bytes(),
+        owners.root.chat_relay_connect_options(),
+    ) {
+        authority.chat.install_relay(std::sync::Arc::new(relay));
+    }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
@@ -598,6 +628,13 @@ pub async fn serve_gameplay(
             None => std::future::pending().await,
         }
     });
+    // CHAT-2B: the relay listener; it parks once shutdown is requested.
+    let mut relay = pin!(async {
+        match authority.chat.relay() {
+            Some(relay) => relay.run(&authority.chat, shutdown).await,
+            None => std::future::pending().await,
+        }
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
     let mut flush_done = false;
@@ -607,6 +644,8 @@ pub async fn serve_gameplay(
         }
         // Never ends on its own; it parks once shutdown is requested.
         let _ = positions.as_mut().poll(context);
+        // Never ends: it parks once shutdown is requested.
+        let _ = relay.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -1129,6 +1168,9 @@ enum TerminalRelease {
     /// D449: a lost session whose otherwise valid resume lacked a selected capability, at the
     /// exact loss epoch the resume verified.
     CapabilityMismatch(ControlLossEpochRefV1),
+    /// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): the session's own `LOGOUT_INTENT`, on its
+    /// exact current transport, with or without a control-loss epoch.
+    Logout(AuthenticatedTransportRefV1),
 }
 
 impl TerminalRelease {
@@ -1136,10 +1178,10 @@ impl TerminalRelease {
     /// as grace expiry does: its own retry and grace expiry join that fence instead of waiting
     /// on it, a resume of the epoch that wins the race lifts it (`restore_control`), and once
     /// control is restored no mismatch attempt can fence the slot again. An abandoned resumed
-    /// session has no loss mark, so its release mints a transition id.
+    /// session has no loss mark, so its release mints a transition id; so does a logout.
     fn fence(self, runtime: &mut ChannelRuntimeV1) -> Result<TransitionFence, CarrierError> {
         match self {
-            Self::Abandoned(_) => runtime
+            Self::Abandoned(_) | Self::Logout(_) => runtime
                 .mint_transition_fence()
                 .map(TransitionFence::Transition),
             Self::CapabilityMismatch(epoch) => Ok(TransitionFence::GraceExpiry(epoch.get())),
@@ -1268,6 +1310,25 @@ impl FenceHolders {
         }
     }
 
+    /// LOGOUT-WIRE-1: every hold an unknown logout of `session` kept on its minted transition
+    /// token. Only a logout keeps a `Transition` hold; grace expiry and the D449 release keep
+    /// their epoch's.
+    fn take_transitions(&self, session: GameSessionId) -> Vec<FenceHold> {
+        let mut kept = self.kept();
+        let Some(holds) = kept.get_mut(&session) else {
+            return Vec::new();
+        };
+        let (taken, rest): (Vec<_>, Vec<_>) = std::mem::take(holds)
+            .into_iter()
+            .partition(|hold| matches!(hold.token, TransitionFence::Transition(_)));
+        if rest.is_empty() {
+            kept.remove(&session);
+        } else {
+            *holds = rest;
+        }
+        taken
+    }
+
     /// One hold an unknown grace expiry of `session` kept, if any.
     fn resume(&self, session: GameSessionId) -> Option<FenceHold> {
         let mut kept = self.kept();
@@ -1278,6 +1339,16 @@ impl FenceHolders {
         }
         hold
     }
+}
+
+/// One attempt of a terminal release.
+enum ReleaseAttempt {
+    /// A step before the durable transaction had no outcome; nothing was sent.
+    Retry,
+    /// The transaction's outcome, or its settle, is unknown: the fence and the kill mark stay.
+    Unknown,
+    /// The release settled.
+    Done(GraceExpiryResult),
 }
 
 /// Step (c) of a transition whose durable attempt did not end the hold.
@@ -1341,7 +1412,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
+        logout: Option<(AuthenticatedTransportRefV1, u64)>,
     ) -> actor_spell::FamiliarLogoutSave {
+        // LOGOUT-WIRE-1 (#2127 Codex P1 4278730847): an ACTIVE session's own logout ends the
+        // actor too; the familiar is saved on the exact transport before the terminal release.
+        if let Some((transport, attempt)) = logout {
+            return self
+                .save_familiar_logout(
+                    actor,
+                    session,
+                    actor_spell::FamiliarActorEnd::Logout(transport, attempt),
+                )
+                .await;
+        }
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let Ok((current, now)) = store.current_session_at(session).await else {
             return actor_spell::FamiliarLogoutSave::Unknown;
@@ -1358,7 +1441,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(epoch) = current.current_control_loss_epoch() else {
             return actor_spell::FamiliarLogoutSave::Unknown;
         };
-        self.save_familiar_logout(actor, session, epoch).await
+        self.save_familiar_logout(
+            actor,
+            session,
+            actor_spell::FamiliarActorEnd::GraceExpiry(epoch.get()),
+        )
+        .await
     }
 
     /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
@@ -2067,7 +2155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
             }
-            if self.save_familiar_at_actor_end(actor, session).await
+            if self.save_familiar_at_actor_end(actor, session, None).await
                 == actor_spell::FamiliarLogoutSave::Unknown
                 || self.save_spell_training(actor, session, true).await
                     == actor_spell::TrainingSave::Unknown
@@ -2318,7 +2406,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let account_id = canonical_uuid(&controller.account_id);
         // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
         while self.hold_while_in_fight(actor, session).await {}
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
@@ -2337,101 +2424,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut attempt = 0;
         while retries_release(attempt, abandoned) {
             attempt = attempt.saturating_add(1);
-            if !self
-                .settle_released_death(actor, session, &mut settled_death)
-                .await
-            {
-                tokio::time::sleep(next_backoff()).await;
-                continue;
-            }
-            match self.fence_transition(actor, &mut hold).await {
-                FenceStep::Fenced => {}
-                FenceStep::Wait => {
+            let step = self
+                .release_attempt(
+                    &admitted,
+                    &store,
+                    release,
+                    &mut hold,
+                    &mut settled_death,
+                    &mut kills,
+                )
+                .await;
+            match step {
+                ReleaseAttempt::Done(result) => return result,
+                ReleaseAttempt::Retry | ReleaseAttempt::Unknown => {
                     tokio::time::sleep(next_backoff()).await;
-                    continue;
                 }
-                FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
             }
-            if self.save_familiar_at_actor_end(actor, session).await
-                == actor_spell::FamiliarLogoutSave::Unknown
-            {
-                tokio::time::sleep(next_backoff()).await;
-                continue;
-            }
-            // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
-            // before the release can end the Character lease.
-            if self.save_monk_state(&admitted, actor).await == monk_save::MonkSave::Unknown {
-                tokio::time::sleep(next_backoff()).await;
-                continue;
-            }
-            if self.save_spell_training(actor, session, true).await
-                == actor_spell::TrainingSave::Unknown
-            {
-                tokio::time::sleep(next_backoff()).await;
-                continue;
-            }
-            // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
-            kills = match self.seal_kill_rewards(session).await {
-                KillRelease::Send(mark) => mark,
-                KillRelease::Deferred => {
-                    tokio::time::sleep(next_backoff()).await;
-                    continue;
-                }
-            };
-            // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
-            let releasing = self.final_position_store(&store, session, actor).await;
-            let outcome = match release {
-                TerminalRelease::Abandoned(transport) => {
-                    releasing
-                        .release_abandoned_session(session, &account_id, transport)
-                        .await
-                }
-                TerminalRelease::CapabilityMismatch(epoch) => {
-                    releasing
-                        .release_capability_mismatch(session, &account_id, epoch)
-                        .await
-                }
-            };
-            if ends_session(&outcome) {
-                // PREM-1b (D476): the session is over, whether abandoned or mismatched; its
-                // Premium pulls stop, as at grace expiry.
-                self.release_premium(controller.account_id, session);
-            }
-            let pause = match outcome {
-                Ok(
-                    ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
-                ) => match self.settle_unended(&store, actor, &mut hold).await {
-                    UnendedSettle::Lifted => {
-                        self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
-                        return GraceExpiryResult::NotApplicable;
-                    }
-                    UnendedSettle::Terminal => {
-                        self.settle_kill_release(kills, ReleaseEnd::Committed).await;
-                        let result = self
-                            .retire_reconciled(controller.account_id, session, actor)
-                            .await;
-                        self.forget_kill_release(kills).await;
-                        return result;
-                    }
-                    UnendedSettle::Unknown => {
-                        self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
-                        next_backoff()
-                    }
-                },
-                Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
-                    let result = self.retire(session, actor).await;
-                    self.forget_kill_release(kills).await;
-                    return result;
-                }
-                // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
-                // the durable row.
-                Err(_) => {
-                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
-                    next_backoff()
-                }
-            };
-            tokio::time::sleep(pause).await;
         }
         if matches!(release, TerminalRelease::CapabilityMismatch(_)) {
             // D449: an unproven mismatch release is reconciled from the durable row. TERMINAL
@@ -2463,6 +2471,131 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
         }
         GraceExpiryResult::Unknown
+    }
+
+    /// One attempt of a terminal release (`release_terminal`, `release_logout`): the death
+    /// settle, the fence, the actor-end saves, the §1.3 kill seal, the durable transaction and
+    /// its settle. `kills` keeps the attempt's kill mark for a later reconcile.
+    async fn release_attempt(
+        &self,
+        admitted: &AdmittedSession,
+        store: &FreshAdmissionStore,
+        release: TerminalRelease,
+        hold: &mut FenceHold,
+        settled_death: &mut Option<actor_spell::PlayerDeath>,
+        kills: &mut Option<KillReleaseMark>,
+    ) -> ReleaseAttempt {
+        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            return ReleaseAttempt::Done(GraceExpiryResult::NotApplicable);
+        };
+        let session = admitted.game_session_id;
+        let account_id = canonical_uuid(&controller.account_id);
+        if !self
+            .settle_released_death(actor, session, settled_death)
+            .await
+        {
+            return ReleaseAttempt::Retry;
+        }
+        match self.fence_transition(actor, hold).await {
+            FenceStep::Fenced => {}
+            FenceStep::Wait => return ReleaseAttempt::Retry,
+            FenceStep::Refused(_) => return ReleaseAttempt::Done(GraceExpiryResult::Unknown),
+        }
+        // A logout's fence is its own minted transition id: one per attempt.
+        let logout = match (release, hold.token) {
+            (TerminalRelease::Logout(transport), TransitionFence::Transition(attempt)) => {
+                Some((transport, attempt))
+            }
+            (TerminalRelease::Logout(_), TransitionFence::GraceExpiry(_)) => {
+                return ReleaseAttempt::Done(GraceExpiryResult::Unknown);
+            }
+            (TerminalRelease::Abandoned(_) | TerminalRelease::CapabilityMismatch(_), _) => None,
+        };
+        // SPELL-D8 §8.2 save point 1: the actor's monk values are durable, or fenced out,
+        // before the release can end the Character lease.
+        if self.save_monk_state(admitted, actor).await == monk_save::MonkSave::Unknown {
+            return ReleaseAttempt::Retry;
+        }
+        if self.save_spell_training(actor, session, true).await
+            == actor_spell::TrainingSave::Unknown
+        {
+            return ReleaseAttempt::Retry;
+        }
+        // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
+        *kills = match self.seal_kill_rewards(session).await {
+            KillRelease::Send(mark) => mark,
+            KillRelease::Deferred => return ReleaseAttempt::Retry,
+        };
+        let kills = *kills;
+        // The familiar's actor-end snapshot is the last save before the durable release, so no
+        // retryable step can follow a committed logout snapshot and leave the session running
+        // on it (#2127 Codex P1 4279636456).
+        if self
+            .save_familiar_at_actor_end(actor, session, logout)
+            .await
+            == actor_spell::FamiliarLogoutSave::Unknown
+        {
+            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+            return ReleaseAttempt::Retry;
+        }
+        // CHAR-POSITION-0 §3.2 "At logout": the release writes the fenced actor's cell.
+        let releasing = self.final_position_store(store, session, actor).await;
+        let outcome = match release {
+            TerminalRelease::Abandoned(transport) => {
+                releasing
+                    .release_abandoned_session(session, &account_id, transport)
+                    .await
+            }
+            TerminalRelease::CapabilityMismatch(epoch) => {
+                releasing
+                    .release_capability_mismatch(session, &account_id, epoch)
+                    .await
+            }
+            TerminalRelease::Logout(transport) => {
+                releasing
+                    .release_logout_session(session, &account_id, transport)
+                    .await
+            }
+        };
+        if ends_session(&outcome) {
+            // PREM-1b (D476): the session is over, whether abandoned, mismatched or logged out;
+            // its Premium pulls stop, as at grace expiry.
+            self.release_premium(controller.account_id, session);
+        }
+        match outcome {
+            Ok(ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. }) => {
+                match self.settle_unended(store, actor, hold).await {
+                    UnendedSettle::Lifted => {
+                        self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                        ReleaseAttempt::Done(GraceExpiryResult::NotApplicable)
+                    }
+                    UnendedSettle::Terminal => {
+                        self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                        let result = self
+                            .retire_reconciled(controller.account_id, session, actor)
+                            .await;
+                        self.forget_kill_release(kills).await;
+                        ReleaseAttempt::Done(result)
+                    }
+                    UnendedSettle::Unknown => {
+                        self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                        ReleaseAttempt::Unknown
+                    }
+                }
+            }
+            Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
+                self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                let result = self.retire(session, actor).await;
+                self.forget_kill_release(kills).await;
+                ReleaseAttempt::Done(result)
+            }
+            // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
+            // the durable row.
+            Err(_) => {
+                self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                ReleaseAttempt::Unknown
+            }
+        }
     }
 
     /// D449 (ARCH-BATCH-ITEM-EQUIP-PACKETS §1.13): a resume that passed every check but the
@@ -2892,11 +3025,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat.delivered(session);
     }
 
+    async fn chat_rooms_changed(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
+        self.chat.take_rooms_change(session)
+    }
+
     async fn npc_session_open(&self, session: GameSessionId) {
         // A client without chat still has a conversation state, held with the chat session.
         if !self.chat.knows(session) {
             self.chat_open(session).await;
         }
+        self.npc_conversations.cancel_bank(session);
         self.chat.set_npc_service(session);
     }
 
@@ -2911,22 +3052,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .follow(&self.chat, &runtime, session, shown)
     }
 
+    async fn resume_npc_bank(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<npc_command::NpcTalkOutcome> {
+        npc_command::resume_bank_talk(self, actor, command).await
+    }
+
     async fn npc_talk(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        let runtime = self.runtime.lock().await;
-        self.npc_conversations.talk_in(
-            &self.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-            self.owner_now(),
-            item_ref_admission::pinned_index(&runtime, self.active_generation),
-        )
+        npc_command::npc_bank_talk(self, actor, command, intent).await
     }
 
     async fn npc_trade(
@@ -3516,6 +3656,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             states.player_death(&runtime, actor, game_session_id)
         };
         if let Some(death) = death {
+            // #2199 Codex P1 4303261095 (FAMILIARS0 §7): the owner's death ends its live
+            // familiar (remaining 0) through the fenced lifecycle writer before the respawn; a
+            // failed write keeps the actor dead and the familiar present for the next tick.
+            if self
+                .end_familiars_at_owner_death(actor, game_session_id, death.occurrence)
+                .await
+                .is_err()
+            {
+                return None;
+            }
             return self
                 .respawn_after_death(actor, game_session_id, death)
                 .await;
@@ -3559,6 +3709,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let cleanup_access = self.refresh_spell_access(actor, game_session_id).await;
         let _ = self
             .drain_familiar_deaths(actor, game_session_id, &cleanup_access)
+            .await;
+        // #2199 Codex P2 4302041461: a familiar Login stored for lack of a free tile returns
+        // on this cadence once a tile frees.
+        let _ = self
+            .retry_waiting_familiar_return(actor, game_session_id, &cleanup_access)
             .await;
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
@@ -3732,6 +3887,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         };
         self.release_terminal(admitted, TerminalRelease::Abandoned(controller.transport))
             .await
+    }
+
+    async fn reconcile_terminal(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        self.reconcile_terminal_session(admitted).await
+    }
+
+    async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
+        self.logout_session(admitted).await
     }
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
@@ -4262,18 +4425,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         controller: ControllerBinding,
     ) -> ControlLossResult {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        // LOGOUT-WIRE-1 (§1.6): a session already TERMINAL ended in a release whose
+        // acknowledgement was lost; the lifecycle reconciles it (`reconcile_terminal`).
+        match store.current_session(game_session_id).await {
+            Ok(current) if current.session_state() == GameSessionState::Terminal => {
+                return ControlLossResult::Terminal;
+            }
+            Ok(_) => {}
+            Err(_) => return ControlLossResult::Unknown,
+        }
         if !self
             .reconcile_spells_before_control_loss(actor, game_session_id)
             .await
         {
             return ControlLossResult::Unknown;
         }
-        let store = FreshAdmissionStore::from_root(self.root.clone());
         // Loss is timed on the durable owner's clock, the same clock that
         // samples the final decision time.
         let Ok((session, now)) = store.current_session_at(game_session_id).await else {
             return ControlLossResult::Unknown;
         };
+        // A logout whose commit became visible during the spell reconciliation is the same
+        // lost-acknowledgement release.
+        if session.session_state() == GameSessionState::Terminal {
+            return ControlLossResult::Terminal;
+        }
         // Only this controller's still-ACTIVE, never-lost session: a replaced, released or
         // already reconnectable session is not this connection's to lose.
         if session.session_state() != GameSessionState::Active
@@ -4283,6 +4460,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return ControlLossResult::NotApplicable;
         }
+        // LOGOUT-WIRE-1 (§1.6): the client never received `ACCEPTED`, so an unknown logout of
+        // this still-ACTIVE session is an ordinary loss of its transport. The fence the logout
+        // kept is lifted and its kill marks are released before the loss is recorded.
+        self.lift_kept_logout(game_session_id, actor).await;
         // This controller may have resumed a lost session: its loss opens the next epoch
         // and retains the resumed one's history, read from the durable receipts. A resumed
         // session whose history cannot be proven is released instead (`ResumedHistory`).
@@ -4779,9 +4960,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let access = self
                 .refresh_and_apply_spell_access(actor, game_session_id)
                 .await;
-            let _ = self
+            // #2199: a familiar Login that did not complete restored neither the stored familiar
+            // nor its cooldowns, so the entry fails closed like the other post-position owners.
+            let initialized = self
                 .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
-                .await;
+                .await
+                .is_ok();
+            let outcome = familiar_login_first_entry(outcome, initialized);
+            if outcome == FirstEntryOutcome::RefusedByChannel {
+                return (outcome, None, None);
+            }
         }
         (outcome, item_fence, Some(decided))
     }
@@ -5029,6 +5217,20 @@ const fn writes_after_progression(positioned: bool, first_entry: FirstEntryOutco
 /// connection holds the actor input-ineligible.
 const fn respawned_first_entry(first_entry: FirstEntryOutcome, settled: bool) -> FirstEntryOutcome {
     if settled {
+        first_entry
+    } else {
+        FirstEntryOutcome::RefusedByChannel
+    }
+}
+
+/// #2199: a first entry whose familiar Login did not complete (an unknown or refused lifecycle
+/// write, with the stored familiar and its cooldowns unrestored) refuses its playable entry, so
+/// the connection holds the actor input-ineligible instead of playing without them.
+const fn familiar_login_first_entry(
+    first_entry: FirstEntryOutcome,
+    initialized: bool,
+) -> FirstEntryOutcome {
+    if initialized {
         first_entry
     } else {
         FirstEntryOutcome::RefusedByChannel
@@ -6758,6 +6960,19 @@ mod tests {
             assert_eq!(respawned_first_entry(entry, true), entry);
             assert_eq!(
                 respawned_first_entry(entry, false),
+                FirstEntryOutcome::RefusedByChannel
+            );
+        }
+    }
+
+    /// #2199: a familiar Login that did not complete refuses the playable first entry, so the
+    /// stored familiar and its cooldowns are never silently left unrestored.
+    #[test]
+    fn an_incomplete_familiar_login_refuses_the_playable_first_entry() {
+        for entry in [FirstEntryOutcome::Positioned, FirstEntryOutcome::Reconciled] {
+            assert_eq!(familiar_login_first_entry(entry, true), entry);
+            assert_eq!(
+                familiar_login_first_entry(entry, false),
                 FirstEntryOutcome::RefusedByChannel
             );
         }

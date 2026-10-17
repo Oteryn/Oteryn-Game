@@ -18,8 +18,9 @@ registry: no
 owner: "family E /root/dawnport (sole local author)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
+merge_authority: CP_ONLY
 owned_paths:
   - content/world/ Dawnport inputs (new family files only)
   - content/npcs/ Dawnport vocation NPC dialogue (new files)
@@ -47,7 +48,7 @@ CP and architect do the final review.
 
 ## Goal
 
-D1103: a new Character starts on Dawnport without a vocation; Thais is a native test only. The vocation-choice interaction preserves cumulative progress (SKILLS-0 §3.3). D1103 does not choose numeric caps or a stance-fit rule.
+D1103: Dawnport content and a native vocation choice without a vocation start; Thais is a native test only. D1410 (owner): the start stays in Thais until the owner checks the Newhaven map, and the target start island is Newhaven, not Dawnport. This task must not route new characters to Dawnport or make Dawnport part of the start flow. The vocation-choice interaction preserves cumulative progress (SKILLS-0 §3.3). D1103 does not choose numeric caps or a stance-fit rule.
 
 ## Dependencies (state on main@5742f30f3, 2026-10-15)
 
@@ -360,3 +361,12 @@ Rust formatting/patch-whitespace checks are preparation only; no full integratio
 or PASS inheritance is claimed. Existing actual-content/start-pin and A2 caller
 boundaries remain open. Root reviews this immutable source packet before deciding
 any existing-draft update; no rebase/merge/push or CI restart occurred here.
+
+## Bounded checkpoint (2026-10-17, MERGE_AUTHORITY: CP_ONLY)
+
+Main merged into the branch (one conflict in `npc_command.rs`: both the Bank and the
+vocation additions to `SessionNpc` and `NpcConversations` kept). Start-flow reconciliation
+per D1410: no Dawnport start routing is introduced; the vocation choice is reachable only
+from the NPC confirmation path. Still open and not claimed: admitted Dawnport content and
+pins, the A2 NPC caller (D1173), fresh-admission and departure acceptance. Draft; CP
+decides ready and merge.
