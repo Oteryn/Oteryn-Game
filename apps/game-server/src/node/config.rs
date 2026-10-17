@@ -130,6 +130,10 @@ pub struct PlatformConfig {
     /// character command consumer does not run. Endpoint, peer name and trust roots are
     /// those above.
     pub character_commands: Option<CharacterCommandsConfig>,
+    /// `OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §3. Absent, or `enabled = false`
+    /// (the default): the public-projection publisher does not run. Endpoint,
+    /// peer name and trust roots are those above.
+    pub public_projections: Option<PublicProjectionsConfig>,
 }
 
 /// The node host's own runtime-status identity (never the evidence one).
@@ -163,6 +167,23 @@ pub struct CharacterCommandsConfig {
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
     pub source_authority: String,
+}
+
+/// The Game host's own public-projection identity (never the evidence,
+/// runtime-status, projection or command one) and its own epoch fence
+/// `F_pub` (contract §5), never the `ListCharactersForAccount` fence.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PublicProjectionsConfig {
+    /// Off unless set: the section may be installed before Platform accepts.
+    #[serde(default)]
+    pub enabled: bool,
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+    /// Persisted high-water fence `F_pub`, outside the Game store and its
+    /// backups.
+    pub epoch_fence_file: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -256,6 +277,8 @@ pub struct OpsConfig {
     pub character: CharacterFenceConfig,
     /// `projection resync`: absent, the command refuses.
     pub projection: Option<ProjectionOpsConfig>,
+    /// `public-projection resync`: absent, the command refuses.
+    pub public_projection: Option<ProjectionOpsConfig>,
 }
 
 /// The operator-only projection resync (`oteryn-game-list-characters-for-account-v1`
@@ -544,6 +567,9 @@ impl NodeConfig {
                 return reject("platform.character_commands.source_authority");
             }
         }
+        if let Some(public) = &platform.public_projections {
+            check_public_projections(platform, public, &self.character, readiness)?;
+        }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
         }
@@ -605,6 +631,68 @@ fn check_world_bundle(bundle: &WorldBundleConfig) -> Result<(), ConfigError> {
     Ok(())
 }
 
+/// `[platform.public_projections]`: its own key pair, distinct from every
+/// other Platform identity on the host; an authority that is never a
+/// compiled purpose namespace or the evidence, readiness or intent one; and
+/// its own fence, never the account projection's.
+fn check_public_projections(
+    platform: &PlatformConfig,
+    public: &PublicProjectionsConfig,
+    character: &CharacterFenceConfig,
+    readiness: &ReadinessConfig,
+) -> Result<(), ConfigError> {
+    let mut taken = vec![&platform.client_certificate_file, &platform.client_key_file];
+    if let Some(status) = &platform.runtime_status {
+        taken.extend([&status.client_certificate_file, &status.client_key_file]);
+    }
+    if let Some(projection) = &platform.account_characters {
+        taken.extend([
+            &projection.client_certificate_file,
+            &projection.client_key_file,
+        ]);
+    }
+    if let Some(commands) = &platform.character_commands {
+        taken.extend([&commands.client_certificate_file, &commands.client_key_file]);
+    }
+    for (key, path) in [
+        (
+            "platform.public_projections.client_certificate_file",
+            &public.client_certificate_file,
+        ),
+        (
+            "platform.public_projections.client_key_file",
+            &public.client_key_file,
+        ),
+    ] {
+        if !absolute(path) || taken.contains(&path) {
+            return reject(key);
+        }
+    }
+    if public.client_certificate_file == public.client_key_file {
+        return reject("platform.public_projections.client_key_file");
+    }
+    let authority = public.source_authority.as_str();
+    if !token(authority, 128, b"/")
+        || authority == platform.source_authority
+        || authority == readiness.source_authority
+        || authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
+        || authority == crate::native_admission_source::account_characters::PURPOSE
+        || authority == crate::native_admission_source::character_commands::PURPOSE
+        || authority == crate::native_admission_source::public_projections::PURPOSE
+    {
+        return reject("platform.public_projections.source_authority");
+    }
+    if !outside(&public.epoch_fence_file, character)
+        || platform
+            .account_characters
+            .as_ref()
+            .is_some_and(|projection| projection.epoch_fence_file == public.epoch_fence_file)
+    {
+        return reject("platform.public_projections.epoch_fence_file");
+    }
+    Ok(())
+}
+
 impl OpsConfig {
     /// Parse and validate one operator configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
@@ -624,6 +712,18 @@ impl OpsConfig {
             }
             check_database(&projection.database).map_err(|_| ConfigError {
                 key: "projection.database",
+            })?;
+        }
+        if let Some(public) = &config.public_projection {
+            if !outside(&public.epoch_fence_file, &config.character)
+                || config.projection.as_ref().is_some_and(|projection| {
+                    projection.epoch_fence_file == public.epoch_fence_file
+                })
+            {
+                return reject("public_projection.epoch_fence_file");
+            }
+            check_database(&public.database).map_err(|_| ConfigError {
+                key: "public_projection.database",
             })?;
         }
         Ok(config)
@@ -844,6 +944,94 @@ epoch_fence_file = "/var/lib/oteryn/projection/epoch-fence"
             "endpoint = \"10.0.0.6:8443\"\nepoch_fence_file = ",
         );
         assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
+    }
+
+    const PUBLIC: &str = r#"
+[platform.public_projections]
+client_certificate_file = "/etc/oteryn/node/public-projection.crt"
+client_key_file = "/etc/oteryn/node/public-projection.key"
+source_authority = "oteryn:game:primary"
+epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
+
+[launch]"#;
+
+    #[test]
+    fn public_projections_section_is_off_by_default_separate_and_fenced() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
+        assert!(config.platform.public_projections.is_none());
+        let all = NODE
+            .replace("\n[launch]", STATUS)
+            .replace("\n[launch]", PROJECTION)
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", PUBLIC);
+        let public = NodeConfig::parse(all.as_bytes())
+            .expect("public projections")
+            .platform
+            .public_projections
+            .expect("section");
+        assert!(!public.enabled, "installed but off until enabled");
+        let enabled = all.replace(
+            "source_authority = \"oteryn:game:primary\"",
+            "enabled = true\nsource_authority = \"oteryn:game:primary\"",
+        );
+        assert!(
+            NodeConfig::parse(enabled.as_bytes())
+                .expect("enabled")
+                .platform
+                .public_projections
+                .expect("section")
+                .enabled
+        );
+        let alone = NODE.replace("\n[launch]", PUBLIC);
+        assert!(NodeConfig::parse(alone.as_bytes()).is_ok());
+        let certificate = "platform.public_projections.client_certificate_file";
+        let key = "platform.public_projections.client_key_file";
+        let authority = "platform.public_projections.source_authority";
+        let fence = "platform.public_projections.epoch_fence_file";
+        for (from, to, key) in [
+            ("public-projection.crt", "platform-client.crt", certificate),
+            ("public-projection.crt", "runtime-status.crt", certificate),
+            ("public-projection.crt", "projection.crt", certificate),
+            ("public-projection.crt", "commands.crt", certificate),
+            ("public-projection.key", "commands.key", key),
+            ("public-projection.key", "public-projection.crt", key),
+            (
+                "\"/etc/oteryn/node/public-projection.key\"",
+                "\"etc/public-projection.key\"",
+                key,
+            ),
+            (
+                "source_authority = \"oteryn:game:primary\"",
+                "source_authority = \"urn:oteryn:platform:game-auth\"",
+                authority,
+            ),
+            (
+                "source_authority = \"oteryn:game:primary\"",
+                "source_authority = \"OTERYN_GAME_PUBLIC_PROJECTIONS\"",
+                authority,
+            ),
+            (
+                "source_authority = \"oteryn:game:primary\"",
+                "source_authority = \"bad authority\"",
+                authority,
+            ),
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/projection/epoch-fence",
+                fence,
+            ),
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/character-fence/epoch-fence",
+                fence,
+            ),
+        ] {
+            let at = all.find("[platform.public_projections]").expect("section");
+            let changed = format!("{}{}", &all[..at], all[at..].replacen(from, to, 1));
+            assert_ne!(changed, all, "{from}");
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(key);
+            assert_eq!(error.key, key);
+        }
     }
 
     pub(crate) const WORLD_BUNDLE: &str = r#"
@@ -1192,6 +1380,44 @@ root_ca_file = "/etc/oteryn/ops/db-ca.pem"
             assert_eq!(
                 OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
                 Some(key)
+            );
+        }
+        let public = format!(
+            "{projection}{}",
+            r#"
+[public_projection]
+epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
+
+[public_projection.database]
+transport_ip = "127.0.0.1"
+port = 5432
+tls_server_name = "db.internal"
+database = "oteryn"
+username = "projection_owner"
+password_file = "/etc/oteryn/ops/projection-pg-password"
+root_ca_file = "/etc/oteryn/ops/db-ca.pem"
+"#
+        );
+        assert!(
+            OpsConfig::parse(public.as_bytes())
+                .expect("public projection")
+                .public_projection
+                .is_some()
+        );
+        for (from, to) in [
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/projection/epoch-fence",
+            ),
+            (
+                "/var/lib/oteryn/public-projection/epoch-fence",
+                "/var/lib/oteryn/character-fence/f",
+            ),
+        ] {
+            let changed = public.replace(from, to);
+            assert_eq!(
+                OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
+                Some("public_projection.epoch_fence_file")
             );
         }
         let root = ops.replace("service_uid = 990", "service_uid = 0");

@@ -4,7 +4,7 @@
 task_id: OTV2-20261012-char-position-1
 title: "CHAR-POSITION-1: durable logout position, written under the session fence and restored on admission"
 mode: IMPLEMENT
-status: validating
+status: completed
 status_note: "position is delivered by this PR; HP/mana is blocked on an owner decision"
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -13,7 +13,7 @@ issue: none
 pr: 2006
 head_sha: "the PR head; the control plane records the frozen SHA"
 created_at: 2026-10-12
-updated_at: 2026-10-12
+updated_at: 2026-10-17
 migration_lease: "0080"   # apps/game-server/migrations/0080_character_last_position.sql; other packets take 0081 or later
 decisions:
   - docs/architecture/reviews/OTERYN_GAME_CHAR_POSITION0_LOGOUT_POSITION_DECISION_2026-09-30.md
@@ -111,6 +111,11 @@ Candidate: this branch on `origin/main` (e128fd6), PostgreSQL 17.6.
   - unit tests in `gameplay_transport/last_position.rs` for the interval bound, sequence order,
     frame match, capture-based deadlines and tracking.
 
+Archive candidate (#2163, after the merge of #2006):
+
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+
 ## Review round 1 (Codex, head 559bc229)
 
 - P1 4245761767 (admission respawn, cell not captured): accepted and fixed; no consumption.
@@ -175,3 +180,11 @@ changed Rust files, `validate_governance.py`, the `tools/agents/tests` unit test
    entry start. Bundle worlds use the compiled house-tile facts.
 3. The `CHARPOS0-RL-01` boundary "a configured value above 300 s is rejected" does not apply: the
    interval is a constant, not configuration.
+
+## Archive closeout
+
+- canonical PR #2006 merged on 2026-10-12 (`git log --grep "(#2006)"`); the record stayed in
+  `tasks/active/` and failed the protected-main live-state check, so #2163 archives it
+  as a ported `main` governance fix
+- merge commit/result: squash merge of #2006
+- ownership release: released with the merge of #2006

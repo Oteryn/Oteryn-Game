@@ -26,6 +26,14 @@ NATIVE_MANIFEST = "content/spells.manifest.json"
 CUES_SOURCE = "tools/content-schema/native-gameplay/spell-cues.json"
 CUES_DESTINATION = "content/presentations/bindings/spell-cues.json"
 CUES_SHA256 = "3f3ca7f837e0865e04e75e42bff9317953dac0f09300439596847cdae4503362"
+# SPELL-PRESENT-0 §3: generated in place by build_presentation_bindings.py and
+# build_creature_races.py, checked by validate_presentation_bindings.py.
+PRESENTATION_BINDINGS = {
+    "content/presentations/bindings/client-ids.json": ("Presentation", "client_id_bindings"),
+    "content/presentations/bindings/hit-table.json": ("Presentation", "hit_presentation_table"),
+    "content/creatures/definitions/creature-races.json": ("Creature", "native_profile_overlay"),
+}
+PRESENTATION_VALIDATOR = "tools/content-schema/native-gameplay/test_presentation_bindings.py"
 PROVIDER_DESTINATIONS = {
     "catalog": CATALOG,
     "source_selection": SELECTION,
@@ -154,6 +162,8 @@ def baseline_outputs(root: Path = ROOT) -> dict[str, bytes]:
     if digest(cues) != CUES_SHA256:
         raise ValueError("CUE_REGISTRY_DIGEST_MISMATCH")
     result[CUES_DESTINATION] = cues
+    for path in PRESENTATION_BINDINGS:
+        result[path] = (root / path).read_bytes()
     for family, (section, path) in DEPENDENCIES.items():
         by_identity: dict[tuple[str, str], dict[str, Any]] = {}
         for entry in catalog["bundles"]:
@@ -232,6 +242,17 @@ def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) ->
         "representation": "source_cue_alias_bindings",
         "creates_canonical_identities": False, "runtime_activation": False,
     })
+    for path, (family, representation) in PRESENTATION_BINDINGS.items():
+        document = json.loads(data[path])
+        descriptor = {
+            "path": path, "sha256": digest(data[path]), "schema": document["schema"],
+            "schema_contract": {"kind": "source_validator", "path": PRESENTATION_VALIDATOR},
+            "representation": representation,
+            "creates_canonical_identities": False, "runtime_activation": False,
+        }
+        if "records" in document:
+            descriptor["record_count"] = len(document["records"])
+        result.setdefault(family, []).append(descriptor)
     return result
 
 

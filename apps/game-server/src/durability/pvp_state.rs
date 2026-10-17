@@ -69,10 +69,70 @@ pub enum PvpSkull {
     Black,
 }
 
+/// Microseconds since the Unix epoch on PostgreSQL's clock, not an owner timer axis.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PvpDatabaseTimeMicros(u64);
+
+impl PvpDatabaseTimeMicros {
+    /// The database value, for diagnostics and database-clock comparisons only.
+    #[must_use]
+    pub const fn get(self) -> u64 {
+        self.0
+    }
+}
+
+/// Lock deadlines and their observation time from the same fenced transaction/query.
+/// These values cannot be installed onto an owner's monotonic clock by casting units.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PvpReadmissionClock {
+    pub sampled_at: PvpDatabaseTimeMicros,
+    pub logout_until: Option<PvpDatabaseTimeMicros>,
+    pub pz_until: Option<PvpDatabaseTimeMicros>,
+    pub kill_until: Option<PvpDatabaseTimeMicros>,
+}
+
+impl PvpReadmissionClock {
+    /// Whether any stored lock still ran at the database observation boundary.
+    #[must_use]
+    pub fn has_running_lock(self) -> bool {
+        [self.logout_until, self.pz_until, self.kill_until]
+            .into_iter()
+            .flatten()
+            .any(|until| until > self.sampled_at)
+    }
+}
+
+/// A nonnegative duration measured by one PostgreSQL read, not a database epoch timestamp.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PvpRemainingMicros(u64);
+
+impl PvpRemainingMicros {
+    #[must_use]
+    pub const fn get(self) -> u64 {
+        self.0
+    }
+
+    #[cfg(test)]
+    pub(crate) const fn for_test(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+/// Completed same-query database durations for the synchronous D1180 owner restore.
+/// Zero means unset or elapsed, and must not create a runtime lock.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PvpReadmissionRemaining {
+    pub logout: PvpRemainingMicros,
+    pub pz: PvpRemainingMicros,
+    pub kill: PvpRemainingMicros,
+}
+
 /// The stored state at admission, every deadline as the time still remaining on the database
 /// clock (`None`: unset or elapsed).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StoredPvpState {
+    pub readmission_remaining: PvpReadmissionRemaining,
+    pub readmission_clock: PvpReadmissionClock,
     pub skull: PvpSkull,
     pub skull_remaining_ms: Option<u64>,
     pub kill_block_remaining_ms: Option<u64>,
@@ -214,7 +274,18 @@ async fn load_pvp_state(
 ) -> std::result::Result<Option<StoredPvpState>, DurabilityError> {
     // Milliseconds still to run on the database clock; NULL when unset or elapsed.
     let row = sqlx::query(
-        "SELECT skull, adventurer_forfeited, revision::text AS revision, \
+        "WITH c AS MATERIALIZED (SELECT clock_timestamp() AS now) \
+         SELECT skull, adventurer_forfeited, revision::text AS revision, \
+            (extract(epoch FROM c.now) * 1000000)::bigint AS sampled_at_us, \
+            GREATEST(COALESCE(extract(epoch FROM (logout_block_until - c.now)) * 1000000, 0), 0)::bigint AS logout_remaining_us, \
+            GREATEST(COALESCE(extract(epoch FROM (pz_block_until - c.now)) * 1000000, 0), 0)::bigint AS pz_remaining_us, \
+            GREATEST(COALESCE(extract(epoch FROM (kill_block_until - c.now)) * 1000000, 0), 0)::bigint AS kill_remaining_us, \
+            CASE WHEN logout_block_until > c.now THEN \
+                (extract(epoch FROM logout_block_until) * 1000000)::bigint END AS logout_until_us, \
+            CASE WHEN pz_block_until > c.now THEN \
+                (extract(epoch FROM pz_block_until) * 1000000)::bigint END AS pz_until_us, \
+            CASE WHEN kill_block_until > c.now THEN \
+                (extract(epoch FROM kill_block_until) * 1000000)::bigint END AS kill_until_us, \
             CASE WHEN skull_until > c.now THEN \
                 ceil(extract(epoch FROM (skull_until - c.now)) * 1000)::bigint END AS skull_ms, \
             CASE WHEN kill_block_until > c.now THEN \
@@ -225,7 +296,7 @@ async fn load_pvp_state(
                 ceil(extract(epoch FROM (pz_block_until - c.now)) * 1000)::bigint END AS pz_ms, \
             CASE WHEN white_skull_until > c.now THEN \
                 ceil(extract(epoch FROM (white_skull_until - c.now)) * 1000)::bigint END AS white_ms \
-           FROM (SELECT clock_timestamp() AS now) c, game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid",
+           FROM c, game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid",
     )
         .bind(character_id.as_bytes().as_slice())
         .fetch_optional(&mut **tx)
@@ -243,7 +314,33 @@ async fn load_pvp_state(
         (0..=2, _) => PvpSkull::None,
         _ => return Err(DurabilityError::InvalidStoredState),
     };
+    let database_time = |value: i64| {
+        u64::try_from(value)
+            .map(PvpDatabaseTimeMicros)
+            .map_err(|_| DurabilityError::InvalidStoredState)
+    };
+    let database_deadline = |column: &str| -> std::result::Result<_, DurabilityError> {
+        row.try_get::<Option<i64>, _>(column)?
+            .map(database_time)
+            .transpose()
+    };
+    let remaining = |column: &str| -> std::result::Result<_, DurabilityError> {
+        u64::try_from(row.try_get::<i64, _>(column)?)
+            .map(PvpRemainingMicros)
+            .map_err(|_| DurabilityError::InvalidStoredState)
+    };
     Ok(Some(StoredPvpState {
+        readmission_remaining: PvpReadmissionRemaining {
+            logout: remaining("logout_remaining_us")?,
+            pz: remaining("pz_remaining_us")?,
+            kill: remaining("kill_remaining_us")?,
+        },
+        readmission_clock: PvpReadmissionClock {
+            sampled_at: database_time(row.try_get("sampled_at_us")?)?,
+            logout_until: database_deadline("logout_until_us")?,
+            pz_until: database_deadline("pz_until_us")?,
+            kill_until: database_deadline("kill_until_us")?,
+        },
         skull,
         skull_remaining_ms,
         kill_block_remaining_ms: ms("kill_ms")?,
