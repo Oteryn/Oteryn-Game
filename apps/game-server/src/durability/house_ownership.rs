@@ -248,7 +248,7 @@ END $$;
 #[path = "../house/guildhall_release.rs"]
 mod guildhall_release;
 pub(super) use guildhall_release::{
-    GuildHallReleaseError, GuildHallReleaseOutcome, GuildHallReleasedProof, RecipientReservation,
+    GuildHallReleaseError, GuildHallReleaseOutcome, GuildHallReleasedProof,
     advance_guild_disband_release_in_transaction, assert_guild_disband_released_in_transaction,
     reserve_guild_disband_recipients_in_transaction,
 };
@@ -859,28 +859,42 @@ mod tests {
         install: bool,
         case: impl AsyncFnOnce(&mut PgConnection, &str) -> TestResult,
     ) -> TestResult {
-        let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").map_err(
-            |_| "House ownership PostgreSQL case was not executed: approved admin URL is required",
-        )?;
-        tokio::runtime::Builder::new_current_thread()
+        let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
+            return Ok(());
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
-            .build()?
-            .block_on(async move {
-                let database = Database::create(admin).await?;
-                let outcome = async {
-                    let mut connection = PgConnection::connect(&database.url).await?;
-                    sqlx::migrate!("./migrations").run(&mut connection).await?;
-                    if install {
-                        let mut tx = connection.begin().await?;
-                        tx.execute(ORDINARY_PROPERTY_SCHEMA_SQL).await?;
-                        tx.commit().await?;
-                    }
-                    case(&mut connection, &database.url).await
+            .build()?;
+        let database = runtime.block_on(Database::create(admin))?;
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            runtime.block_on(async {
+                let mut connection = PgConnection::connect(&database.url).await?;
+                sqlx::migrate!("./migrations").run(&mut connection).await?;
+                if install {
+                    let mut tx = connection.begin().await?;
+                    tx.execute(ORDINARY_PROPERTY_SCHEMA_SQL).await?;
+                    tx.commit().await?;
                 }
-                .await;
-                database.cleanup().await?;
-                outcome
+                case(&mut connection, &database.url).await
             })
+        }));
+        let cleanup = runtime.block_on(database.cleanup());
+        match outcome {
+            Ok(result) => {
+                cleanup?;
+                result?;
+                println!(
+                    "QUALIFIED PostgreSQL17.6: House ownership case and database cleanup completed"
+                );
+                Ok(())
+            }
+            Err(panic) => {
+                if let Err(error) = cleanup {
+                    eprintln!("House ownership cleanup failed after assertion panic: {error}");
+                }
+                std::panic::resume_unwind(panic)
+            }
+        }
     }
 
     struct Character {
@@ -1103,7 +1117,9 @@ mod tests {
                 acquire(&mut tx, &actor, house).await?;
                 tx.commit().await
             };
-            let (left, right) = tokio::join!(attempt(HOUSE), attempt(OTHER_HOUSE));
+            let (left, right) =
+                crate::item_transfer_postgres_cases::join_two(attempt(HOUSE), attempt(OTHER_HOUSE))
+                    .await;
             match (left, right) {
                 (Ok(()), loser) | (loser, Ok(())) => assert_eq!(sqlstate(loser)?, "23505"),
                 _ => return Err("expected exactly one committed property acquisition".into()),

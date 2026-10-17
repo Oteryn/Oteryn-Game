@@ -33,6 +33,62 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## 2026-10-17 native fixture routing and cleanup follow-up
+
+This owned follow-up starts from published checkpoint
+`5effcbb66072bf5ff4857dd2c25f6b6f6d607fc9`. It changes only the two owned native
+test runners and the Guild release test's disposition schema import to canonical
+`crate::house::move_out` from D1349. All six property and thirteen Guild release
+domain cases, assertions, SQL actions and expected refusals remain unchanged.
+
+The property runner retains its actual PostgreSQL17.6 Database outside the
+panic-catching boundary. The Guild release child runner retains the genuine
+D2136 `Harness`, calls unchanged private `super::install` and uses its existing
+`cleanup`. It stays below the real `guild::disband_terminal_tests` parent; no D
+helper visibility, fake context, replacement schema or authority constructor is
+introduced. Both runners attempt cleanup after setup/body errors and assertion
+panics, then resume assertion panics. The native Harness constructor itself
+remains owned by its existing fixture.
+
+[D1366](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234335395)
+NON-PG routing uses the existing native `configured_admin` helper. Missing routing
+returns without a PostgreSQL qualification marker. A QUALIFIED PostgreSQL17.6
+marker appears only after the routed case and its own database cleanup succeed.
+
+The first genuine source assembly failed compilation before PostgreSQL: the
+existing two-connection acquisition race used `tokio::join!`, but the tracked
+Cargo configuration does not enable that macro. Its adapter now calls the actual
+`item_transfer_postgres_cases::join_two` fixture helper, already mounted for the
+genuine D tests. Both connection futures still run concurrently; the SQL and every
+domain assertion are unchanged. The unused `RecipientReservation` reexport is
+removed; its actual private type and all participating function signatures remain.
+
+**Historical runner generation:** native formatting of both Rust sources PASS;
+compilation FAILED before PostgreSQL. **Current adapter follow-up:** native
+formatting and compilation PASS. The real source assembly ran on Molehill slot I,
+2026-10-17 at 14:45:47 UTC, after locked fetch, through the shared PostgreSQL17.6
+wrapper. Ordinary property cases **6/6 PASS**, with six own-database cleanup
+qualification markers (6.61 s). Guild release cases **9 PASS / 4 FAIL**, zero
+ignored (27.94 s). The combined run is **NOT_FULLY_QUALIFIED**.
+
+Three Guild cases report actual native SQLSTATE23514, `house removal lacks actual
+source shape`: `guild_house_bounded_101_retains_actual_fence_until_final_real_delivery`,
+`guild_house_disposition_preserves_prior_freed_bed_cause_and_time`, and
+`guild_house_real_inbox_release_rollback_then_commit_reload`. The fourth,
+`guild_house_runtime_exact_ports_without_direct_table_writes`, reports
+`Unavailable(Database(Database(None)))`; its underlying cause is not yet
+established. The native 0095 guard proves player Take/Move; a Guild disposition
+must supply its own genuine reservation/census/delivery proof. This checkpoint
+does not disable the native trigger, fabricate a player receipt or claim a
+successful Guild qualification. The failures are reported to CP #2131.
+
+The exact source assembly records real D2136, D2139, D2153, canonical C2141's
+formatted compile-repair sources and published BED2147@`87674e53`; these are actual
+production sources and native fixtures, with line-only mounts. The composition
+qualifies those stated source inputs, not an uncomposed published PR head. The
+pending canonical disposition migration and a separately accepted Guild removal
+proof remain necessary before all nineteen cases can pass.
+
 ## 2026-10-17 checkpoint — ACL/BED rollback regressions, NOT_FULLY_QUALIFIED
 
 This bounded packet follows CP's ordinary main merge at

@@ -1,7 +1,8 @@
 //! Native qualification leaf. Mount as a child of the genuine D2136
 //! `guild::disband_terminal_tests` in the private native snapshot, after mounting the
 //! exact D2136/D2139/D2153, C2137/C2141 and BED2147 production sources.
-//! `super::run/install/job` below are those real D fixtures, not replacement contexts.
+//! `super::install/job` and Harness below are the real D fixtures, not replacement contexts.
+//! The owned runner adds NON-PG routing and panic-safe cleanup around that unchanged setup.
 //! This file is deliberately unregistered until that exact-source composition exists.
 use super::*;
 use crate::durability::house_ownership::{
@@ -10,6 +11,40 @@ use crate::durability::house_ownership::{
     assert_guild_disband_released_in_transaction, reserve_guild_disband_recipients_in_transaction,
 };
 use sqlx::{Acquire, Postgres, Row, Transaction};
+
+// Keep this child runner private. All construction and installation still use
+// the genuine D fixtures; no authority, schema or production helper is replaced.
+fn run<F>(tag: &'static str, body: F) -> TestResult
+where
+    F: AsyncFnOnce(&Harness) -> TestResult,
+{
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    let runtime = runtime()?;
+    let harness = runtime.block_on(Harness::create(admin, tag))?;
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        runtime.block_on(async {
+            super::install(&harness).await?;
+            body(&harness).await
+        })
+    }));
+    let cleanup = runtime.block_on(harness.cleanup());
+    match outcome {
+        Ok(result) => {
+            cleanup?;
+            result?;
+            println!("QUALIFIED PostgreSQL17.6: {tag} and database cleanup completed");
+            Ok(())
+        }
+        Err(panic) => {
+            if let Err(error) = cleanup {
+                eprintln!("House Guild release cleanup failed after assertion panic: {error}");
+            }
+            std::panic::resume_unwind(panic)
+        }
+    }
+}
 
 const HOUSE: &str = "oteryn:content.house.thais_1";
 fn item(n: usize) -> [u8; 16] {
@@ -29,7 +64,7 @@ async fn setup(h: &Harness, count: usize) -> TestResult {
     for schema in [
         ORDINARY_PROPERTY_SCHEMA_SQL,
         crate::durability::bed_sleeper::PRIVATE_SLEEPER_SCHEMA_SQL,
-        crate::durability::house_move_out::PRIVATE_DISPOSITION_SCHEMA,
+        crate::house::move_out::PRIVATE_DISPOSITION_SCHEMA,
         GUILD_DISBAND_RELEASE_SCHEMA_SQL,
     ] {
         sqlx::raw_sql(schema).execute(&h.pool).await?;
