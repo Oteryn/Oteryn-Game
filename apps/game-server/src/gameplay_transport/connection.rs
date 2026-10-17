@@ -713,15 +713,27 @@ pub(crate) trait FreshAdmissionAuthority {
         }
     }
 
+    /// Reconcile only the original pending CommandRef at connection entry. Replacement wire
+    /// bytes cannot cancel accepted Bank work. This is not dispatch of a new client command.
+    fn resume_npc_bank(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> impl Future<Output = Option<NpcTalkOutcome>> {
+        async { None }
+    }
+
     /// NPC-CMD-1a: one `NPC_TALK_INTENT` (command 7) of the admitted actor.
     fn npc_talk(
         &self,
         _actor: ExactActorRef,
-        _session: GameSessionId,
+        _command: UseCommand,
         _intent: NpcTalkIntent,
     ) -> impl Future<Output = NpcTalkOutcome> {
         async {
             NpcTalkOutcome {
+                unknown: false,
+                inventory_changed: false,
                 disposition: NpcIntentDisposition::Rejected,
                 conversation: None,
                 window: None,
@@ -1858,6 +1870,14 @@ where
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
+    // NPC-ECON-1: only a connection that continues an earlier one of this GameSession can carry
+    // an accepted original Bank command. A fresh admission (generation 1 at CommandId 1, FND-02)
+    // is the session's first connection, so its first command never touches the Bank journal;
+    // a same-session resume (FND-04B §16: a strictly newer generation) or any other carried
+    // continuity reconciles it before replacement input.
+    let mut reconcile_original_bank = admitted.continuity.connection_generation
+        != ADMITTED_GENERATION
+        || admitted.continuity.next_command_id != 1;
     let mut frames = FrameReader::default();
     let mut liveness = Liveness::new(policy);
     let mut cadence = tokio::time::interval_at(
@@ -2461,7 +2481,7 @@ where
             /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
             Chat(ChatIntentResult),
             /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
-            Npc(NpcIntentDisposition, NpcUpdate),
+            Npc(NpcIntentDisposition, NpcUpdate, bool),
             /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
             /// 7 and 8 payloads.
             NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
@@ -2478,7 +2498,40 @@ where
         // OPS-SAVE-2: the permit is held while the command runs, not while its result is
         // written, so the shutdown snapshot waits for the effect only.
         let input_permit = authority.enter_input().await;
-        let mut dispatch = if input_permit.is_none()
+        if input_permit.is_none() && reconcile_original_bank {
+            // No current input grant: do not run money work, and do not falsely terminate an
+            // accepted original command whose retained Bank status has not been classified.
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        let retained_bank = if input_permit.is_some() && reconcile_original_bank {
+            let outcome = authority
+                .resume_npc_bank(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                )
+                .await;
+            if outcome.as_ref().is_some_and(|outcome| outcome.unknown) {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
+            reconcile_original_bank = false;
+            outcome
+        } else {
+            None
+        };
+        let mut dispatch = if let Some(outcome) = retained_bank {
+            Dispatch::Npc(
+                outcome.disposition,
+                NpcUpdate {
+                    conversation: outcome.conversation,
+                    window: outcome.window,
+                },
+                outcome.inventory_changed,
+            )
+        } else if input_permit.is_none()
             || !admitted
                 .continuity
                 .selected_capabilities
@@ -2805,14 +2858,26 @@ where
                 text: String::new(),
             });
             let outcome = authority
-                .npc_talk(actor, admitted.game_session_id, intent)
+                .npc_talk(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent,
+                )
                 .await;
+            if outcome.unknown {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
             Dispatch::Npc(
                 outcome.disposition,
                 NpcUpdate {
                     conversation: outcome.conversation,
                     window: outcome.window,
                 },
+                outcome.inventory_changed,
             )
         } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
             // NPC-TRADE-2: a malformed intent is REJECTED. A committed trade answers OK and the
@@ -2960,6 +3025,32 @@ where
         } else {
             Dispatch::Unregistered
         };
+        // Native deposit/withdraw custody changes use the same inventory refresh as a trade.
+        // Typed refusals and balance-only transfers do not manufacture an inventory mutation.
+        dispatch = match dispatch {
+            Dispatch::Npc(disposition, update, true) => {
+                let mut deltas = Vec::new();
+                if let Some(view) = item_view.as_mut() {
+                    let Some(inventory) = item_move::observe_inventory(
+                        authority,
+                        actor,
+                        admitted.game_session_id,
+                        view,
+                    )
+                    .await
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(delta) = view.inventory_committed(inventory) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    admitted.continuity.item_view = view.continuity();
+                    deltas.extend(delta);
+                }
+                Dispatch::NpcTrade(disposition, update, deltas)
+            }
+            other => other,
+        };
         drop(input_permit);
         let (Some(result_sequence), Some(following)) =
             (sequence.checked_add(1), next_command.checked_add(1))
@@ -3059,7 +3150,7 @@ where
                     payload,
                 )
             }
-            Dispatch::Npc(disposition, _) | Dispatch::NpcTrade(disposition, _, _) => (
+            Dispatch::Npc(disposition, _, _) | Dispatch::NpcTrade(disposition, _, _) => (
                 if *disposition == NpcIntentDisposition::Rejected {
                     CommandStatus::Rejected
                 } else {
@@ -3418,7 +3509,7 @@ where
                     }
                 }
             }
-            Dispatch::Npc(_, update) => {
+            Dispatch::Npc(_, update, _) => {
                 let Some(frames) = npc_update_frames(
                     generation,
                     &mut sequence,
@@ -4239,6 +4330,209 @@ mod tests {
         encode_protocol_error(error, generation).expect("error frame")
     }
 
+    /// Historical result fixture only: it supplies no NPC/current-fence or money authority.
+    /// Actual continuation admission/drain authority is qualified separately with native Root/PG.
+    struct RetainedBankOutcomeFixture {
+        commands: RefCell<Vec<UseCommand>>,
+        replacement_steps: RefCell<usize>,
+        unknown: bool,
+        closed_gate: bool,
+    }
+    impl FreshAdmissionAuthority for RetainedBankOutcomeFixture {
+        async fn enter_input(&self) -> Option<InputPermit<'_>> {
+            if self.closed_gate {
+                None
+            } else {
+                Some(InputPermit::ungated())
+            }
+        }
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+        async fn step(&self, _: ExactActorRef, _: StepDirection) -> StepOutcome {
+            *self.replacement_steps.borrow_mut() += 1;
+            StepOutcome::rejected()
+        }
+        async fn resume_npc_bank(
+            &self,
+            _: ExactActorRef,
+            command: UseCommand,
+        ) -> Option<NpcTalkOutcome> {
+            self.commands.borrow_mut().push(command);
+            Some(NpcTalkOutcome {
+                unknown: self.unknown,
+                inventory_changed: false,
+                disposition: NpcIntentDisposition::Ok,
+                conversation: None,
+                window: None,
+            })
+        }
+    }
+
+    #[test]
+    fn original_bank_command_precedes_replacement_text_npc_and_command_type()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            // All replacements keep the original sequenced CommandId. Neither decoding a new
+            // talk nor a different/unselected command may orphan its accepted original work.
+            for (kind, payload) in [
+                (COMMAND_TYPE_NPC_TALK_INTENT, b"no".as_slice()),
+                (
+                    COMMAND_TYPE_NPC_TALK_INTENT,
+                    b"different NPC bytes".as_slice(),
+                ),
+                (
+                    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                    b"replacement step".as_slice(),
+                ),
+                (999, b"".as_slice()),
+            ] {
+                let authority = RetainedBankOutcomeFixture {
+                    commands: RefCell::new(Vec::new()),
+                    replacement_steps: RefCell::new(0),
+                    unknown: false,
+                    closed_gate: false,
+                };
+                let mut command = Vec::new();
+                scalar(&mut command, 1, 1);
+                scalar(&mut command, 2, u64::from(kind));
+                bytes(&mut command, 4, payload);
+                let (end, frames) = drive_session(
+                    &authority,
+                    resumed_positioned()?,
+                    &[envelope(7, RESUMED_GENERATION, &command)],
+                )
+                .await?;
+                assert_eq!(*authority.replacement_steps.borrow(), 0);
+                assert_eq!(authority.commands.borrow().len(), 1);
+                assert_eq!(authority.commands.borrow()[0].command_id, 1);
+                assert_eq!(
+                    authority.commands.borrow()[0].game_session_id,
+                    GameSessionId::decode(&SESSION)?
+                );
+                let mut expected = baseline_at(RESUMED_GENERATION);
+                expected.push(encode_command_result(
+                    RESUMED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &encode_npc_intent_result(NpcIntentDisposition::Ok),
+                )?);
+                assert_eq!(frames, expected);
+                assert!(
+                    matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
+                );
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn unresolved_original_bank_work_never_sequences_a_replacement_command()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = RetainedBankOutcomeFixture {
+                commands: RefCell::new(Vec::new()),
+                replacement_steps: RefCell::new(0),
+                unknown: true,
+                closed_gate: false,
+            };
+            let (end, frames) = drive_session(
+                &authority,
+                resumed_positioned()?,
+                &[command(
+                    RESUMED_GENERATION,
+                    1,
+                    u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                    StepDirection::East,
+                )],
+            )
+            .await?;
+            assert_eq!(frames, baseline_at(RESUMED_GENERATION));
+            assert_eq!(*authority.replacement_steps.borrow(), 0);
+            assert!(
+                matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==1)
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn closed_input_gate_holds_unclassified_original_bank_command() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = RetainedBankOutcomeFixture {
+                commands: RefCell::new(Vec::new()),
+                replacement_steps: RefCell::new(0),
+                unknown: false,
+                closed_gate: true,
+            };
+            let (end, frames) = drive_session(
+                &authority,
+                resumed_positioned()?,
+                &[command(
+                    RESUMED_GENERATION,
+                    1,
+                    u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                    StepDirection::East,
+                )],
+            )
+            .await?;
+            assert_eq!(frames, baseline_at(RESUMED_GENERATION));
+            assert!(authority.commands.borrow().is_empty());
+            assert_eq!(*authority.replacement_steps.borrow(), 0);
+            assert!(
+                matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==1)
+            );
+            Ok(())
+        })
+    }
+
+    /// NPC-ECON-1: a fresh admission is the GameSession's first connection, so no original Bank
+    /// command can be retained. Its first command dispatches without a Bank journal lookup, even
+    /// when that lookup would be unknown (Bank storage unavailable), and a closed input gate
+    /// refuses it as usual instead of holding it.
+    #[test]
+    fn fresh_session_first_command_skips_retained_bank_lookup() -> Result<(), Box<dyn Error>> {
+        run(async {
+            for closed_gate in [false, true] {
+                let authority = RetainedBankOutcomeFixture {
+                    commands: RefCell::new(Vec::new()),
+                    replacement_steps: RefCell::new(0),
+                    unknown: true,
+                    closed_gate,
+                };
+                let (end, frames) = drive_session(
+                    &authority,
+                    positioned()?,
+                    &[command(
+                        ADMITTED_GENERATION,
+                        1,
+                        u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                        StepDirection::East,
+                    )],
+                )
+                .await?;
+                assert!(authority.commands.borrow().is_empty());
+                assert_eq!(
+                    *authority.replacement_steps.borrow(),
+                    usize::from(!closed_gate)
+                );
+                assert_eq!(frames.len(), baseline().len() + 1);
+                assert_eq!(frames[..baseline().len()], baseline()[..]);
+                assert!(
+                    matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
+                );
+            }
+            Ok(())
+        })
+    }
+
     /// A positioned actor on a one-row room: east of the start is walkable, every other
     /// direction is blocked.
     struct StepAuthority {
@@ -4416,8 +4710,12 @@ mod tests {
     }
 
     fn baseline() -> Vec<Vec<u8>> {
+        baseline_at(ADMITTED_GENERATION)
+    }
+
+    fn baseline_at(generation: u64) -> Vec<Vec<u8>> {
         encode_single_chunk_snapshot(
-            ADMITTED_GENERATION,
+            generation,
             1,
             0,
             &[
@@ -4458,6 +4756,17 @@ mod tests {
             continuity: SessionContinuity::FRESH,
             item_fence: None,
         })
+    }
+
+    /// The first successor generation of a same-session resume (FND-04B §16).
+    const RESUMED_GENERATION: u64 = ADMITTED_GENERATION + 1;
+
+    /// `positioned` resumed on the next connection generation before any result of its first
+    /// CommandId was delivered: the continuity an accepted original Bank command is retained in.
+    fn resumed_positioned() -> Result<AdmittedSession, Box<dyn Error>> {
+        let mut resumed = positioned()?;
+        resumed.continuity.connection_generation = RESUMED_GENERATION;
+        Ok(resumed)
     }
 
     fn split_frames(output: &[u8]) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {

@@ -3074,6 +3074,8 @@ mod item_fee_burn_postgres_cases;
 mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
 
 #[path = "support/mail_postgres_cases.rs"]
 mod mail_postgres_cases;
