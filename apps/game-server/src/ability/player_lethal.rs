@@ -350,7 +350,7 @@ pub(crate) enum PlayerDamageSourceContext {
         creature: ExactActorRef,
     },
     Condition {
-        kind: crate::ability::condition::ConditionType,
+        kind: crate::foundation::ConditionType,
         source: LethalSource,
     },
 }
