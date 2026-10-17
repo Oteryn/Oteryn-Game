@@ -431,7 +431,15 @@ fn execute_pulse(
             continue;
         }
         let receipt = v
-            .apply_attack_damage(r, target, session, amount, &id, now)
+            .apply_attack_damage(
+                r,
+                target,
+                session,
+                amount,
+                &id,
+                now,
+                crate::player_lethal::LethalSource::Creature(actor),
+            )
             .ok_or(AttackError::MissingVitals);
         committed.push((target, receipt))
     }

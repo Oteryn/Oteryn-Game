@@ -80,7 +80,7 @@ pub(crate) fn prepare_haste_owner_cast_with_caster(
     let recipient = |id,
                      base,
                      familiar,
-                     condition: Option<&crate::ability::condition::ConditionInstance<_>>|
+                     condition: Option<&crate::ability::condition::ConditionInstance<_, _>>|
      -> Result<SpeedRecipient, SpellCastDisposition> {
         let conditions = condition
             .map(|instance| -> Result<SpeedCondition, SpellCastDisposition> {
@@ -227,8 +227,8 @@ pub(crate) struct HasteApplied {
 /// independently read by the real summon owner in this same work item; None is
 /// not treated as zero. The caller owns admission and the spell's anchor payment.
 /// The existing store performs condition immunity, conflict and lifetime changes.
-pub(crate) fn apply_haste<S: Clone>(
-    store: &mut ConditionStore<S>,
+pub(crate) fn apply_haste<S: Clone, L: Clone>(
+    store: &mut ConditionStore<S, L>,
     spell: &CompiledNativeSpell,
     source: S,
     immunities: &[ConditionType],

@@ -535,7 +535,7 @@ impl ChannelSpellStates {
             let m = &self.source_secondary_memos[i];
             if m.occurrence == occurrence {
                 return (m.binding == binding && m.root == *facts.decision_root)
-                    .then_some(m.receipt);
+                    .then(|| m.receipt.clone());
             }
         }
         if !self.condition_player_current(runtime, target, session)
@@ -575,7 +575,14 @@ impl ChannelSpellStates {
         }
         if next.vitals().health > 0 {
             let label = format!("creature:{}", super::hex(&source.placement_identity()));
-            next = next.stage_source_player_conditions(label, definitions, immunities, facts)?;
+            let source = crate::player_lethal::LethalSource::current_actor(runtime, source)?;
+            next = next.stage_source_player_conditions(
+                label,
+                Some(source),
+                definitions,
+                immunities,
+                facts,
+            )?;
         }
         let changed = next != *before;
         let revision = if changed {
@@ -594,11 +601,29 @@ impl ChannelSpellStates {
         } else {
             None
         };
+        let lethal_source = crate::player_lethal::LethalSource::current_actor(runtime, source)?;
+        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(facts.now);
+        let ledger_stage = if let Some(damage) = primary {
+            Some(self.stage_damage_ledger(
+                runtime,
+                target,
+                session,
+                lethal_source,
+                damage.applied,
+                now,
+                death.is_some(),
+            )?)
+        } else {
+            None
+        };
+        let attribution = ledger_stage
+            .as_ref()
+            .and_then(|(_, attribution)| attribution.clone());
         let receipt = primary.map(|damage| PlayerDamageReceipt {
             applied: damage.applied,
             health_after: damage.health_after,
             vitals_revision: revision,
-            death: death.map(|d| {
+            death: death.zip(attribution).map(|(d, attribution)| {
                 PlayerLethalReceipt::from_native_commit(
                     runtime,
                     target,
@@ -606,23 +631,30 @@ impl ChannelSpellStates {
                     revision,
                     *d.occurrence.as_bytes(),
                     d.cell,
+                    attribution,
+                    crate::player_lethal::PlayerDamageSourceContext::SourceAttack,
                 )
             }),
         });
         if changed && !self.commit(runtime, target, session, next) {
             return None;
         }
+        if let Some((ledger, _)) = ledger_stage {
+            self.publish_damage_ledger(target, session, ledger);
+        }
         if let Some(death) = death {
             self.deaths.push((target, session, death));
         }
         if let (Some(magnitude), Some(receipt), Some(damage_text)) =
-            (magnitude, receipt, damage_text)
+            (magnitude, receipt.clone(), damage_text)
         {
-            let memo = NativeSourceMemo {
+            let memo = NativeDamageMemo {
                 actor: target,
                 session,
                 occurrence: damage_text,
                 magnitude,
+                source: lethal_source,
+                context: crate::player_lethal::PlayerDamageSourceContext::SourceAttack,
                 receipt,
             };
             if let Some(i) = damage_old {
@@ -637,7 +669,7 @@ impl ChannelSpellStates {
             occurrence: text,
             binding,
             root: facts.decision_root.clone(),
-            receipt,
+            receipt: receipt.clone(),
         };
         if let Some(i) = old {
             self.source_secondary_memos[i] = memo
@@ -698,7 +730,7 @@ mod native_composite_tests {
         ScopeRuntimeFence,
         RuntimeWorkStamp,
     ) {
-        let (mut r, a, g) = super::super::tests::runtime_with_player(tag);
+        let (mut r, a, g) = super::super::tests::runtime_with_capacity(tag, 3);
         r.initialize_first_entry_position(a).unwrap();
         let origin = r.read_actor_position(a).unwrap().position();
         let caster = r
@@ -763,6 +795,132 @@ mod native_composite_tests {
         .unwrap()]
     }
     #[test]
+    fn actual_application_captures_first_source_refresh_keeps_it_and_dead_caster_tick_emits_once() {
+        let (mut r, mut s, a, g, caster, fence, stamp) = ready(0x7b);
+        let position = r.read_actor_position(a).unwrap().position();
+        let refresher = r
+            .admit_source_pinned_lab_creature(
+                crate::foundation::MovementLocalPosition {
+                    x: position.x + 2,
+                    y: position.y,
+                    floor: position.floor,
+                },
+                "test:refresher",
+                20,
+            )
+            .unwrap();
+        let poison = |amount| {
+            crate::foundation::ConditionDefinition::new_damage_schedule(
+                "test.source.captured-poison",
+                1,
+                crate::foundation::DotElement::Poison,
+                crate::foundation::DamageSchedule::Fixed {
+                    delayed: true,
+                    segments: vec![crate::foundation::DamageSegment {
+                        count: 3,
+                        interval_ms: 1000,
+                        amount,
+                    }],
+                },
+            )
+            .unwrap()
+        };
+        let root = GameplayDecisionRoot::from_bytes([10; 32]);
+        assert!(s.apply_attack_conditions(
+            &mut r,
+            a,
+            g,
+            "capture:first",
+            caster,
+            &[poison(90)],
+            &facts(&root),
+            &[],
+            &fence,
+            stamp
+        ));
+        let captured = crate::player_lethal::LethalSource::Creature(caster);
+        assert_eq!(
+            s.get(&r, a, g).unwrap().owned_conditions().instances()[0]
+                .provenance()
+                .lethal_source,
+            Some(captured)
+        );
+        assert!(s.apply_attack_conditions(
+            &mut r,
+            a,
+            g,
+            "capture:refresh",
+            refresher,
+            &[poison(100)],
+            &facts(&root),
+            &[],
+            &fence,
+            stamp
+        ));
+        assert_eq!(
+            s.get(&r, a, g).unwrap().owned_conditions().instances()[0]
+                .provenance()
+                .lethal_source,
+            Some(captured)
+        );
+        let first = s
+            .tick_source_player_conditions(
+                &mut r,
+                a,
+                g,
+                DecisionOccurrenceId::from_bytes([12; 16]),
+                crate::ability::condition::TickFacts::default(),
+                SemanticTimeMicros::from_micros(1_000_000),
+            )
+            .unwrap();
+        assert_eq!(first.damage, 100);
+        assert!(first.lethal.is_none() && first.death.is_none());
+        r.commit_monster_lab_damage(caster, b"capture:caster-death", 20)
+            .unwrap();
+        assert!(!r.contains_live_creature(caster));
+        let tick = s
+            .tick_source_player_conditions(
+                &mut r,
+                a,
+                g,
+                DecisionOccurrenceId::from_bytes([13; 16]),
+                crate::ability::condition::TickFacts::default(),
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .unwrap();
+        assert_eq!(tick.damage, 85);
+        let lethal = tick.lethal.as_ref().unwrap();
+        assert_eq!(lethal.attribution().killer, captured);
+        assert_eq!(
+            lethal.source_context(),
+            crate::player_lethal::PlayerDamageSourceContext::Condition {
+                kind: crate::ability::condition::ConditionType::DamageOverTime(
+                    crate::ability::condition::DotElement::Poison
+                ),
+                source: captured
+            }
+        );
+        assert_eq!(
+            lethal.occurrence_bytes(),
+            *tick.death.unwrap().occurrence.as_bytes()
+        );
+        assert_eq!(s.deaths.len(), 1);
+        let observed = s.damage_ledgers.clone();
+        assert!(
+            s.tick_source_player_conditions(
+                &mut r,
+                a,
+                g,
+                DecisionOccurrenceId::from_bytes([13; 16]),
+                crate::ability::condition::TickFacts::default(),
+                SemanticTimeMicros::from_micros(2_000_000)
+            )
+            .is_none()
+        );
+        assert_eq!(s.deaths.len(), 1);
+        assert_eq!(s.damage_ledgers, observed);
+    }
+    #[test]
     fn composite_failed_native_mint_keeps_hp_and_slot_then_native_lethal_clears_it() {
         let (mut r, _initial_states, a, g, c, fence, stamp) = ready(0x7c);
         // Keep the actual native source/composite owner and stamp; make its
@@ -809,6 +967,7 @@ mod native_composite_tests {
         assert_eq!(r.actor_conditions(a, Some(g)).unwrap(), &before);
         assert_eq!(s.get(&r, a, g).cloned(), hp);
         assert!(s.source_secondary_memos.is_empty());
+        assert!(s.damage_ledgers.is_empty());
         s.mint_death = mint;
         let receipt = s
             .apply_composite_attack_damage(
@@ -826,8 +985,13 @@ mod native_composite_tests {
             )
             .unwrap();
         assert_eq!(receipt.health_after, 0);
-        assert!(receipt.death.is_some());
+        assert_eq!(
+            receipt.death.as_ref().unwrap().attribution().killer,
+            crate::player_lethal::LethalSource::Creature(c)
+        );
+        let ledger = s.damage_ledgers.clone();
         assert_eq!(s.deaths.len(), 1);
+        assert_eq!(s.damage_ledgers, ledger);
         let dead = s.get(&r, a, g).unwrap().vitals();
         assert_eq!((dead.health, dead.harmony, dead.serene), (0, 0, false));
         assert_eq!(
@@ -857,6 +1021,7 @@ mod native_composite_tests {
             Some(receipt)
         );
         assert_eq!(s.deaths.len(), 1);
+        assert_eq!(s.damage_ledgers, ledger);
     }
     #[test]
     fn secondary_only_has_no_hp_receipt_and_current_external_fence_blocks_reentry() {
@@ -901,7 +1066,8 @@ mod native_composite_tests {
                 g,
                 1,
                 "secondary:0",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
             )
             .is_none()
         );

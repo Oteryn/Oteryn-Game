@@ -18,15 +18,42 @@ registry: no
 owner: family_f_pvp
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/combat/pvp/death.rs
   - apps/game-server/src/combat/pvp/death_tests.rs
   - docs/agents/tasks/PVP-DEATH-1.md
+  - apps/game-server/src/ability/condition.rs
+  - apps/game-server/src/ability/condition_spell.rs
+  - apps/game-server/src/ability/condition_tests.rs
+  - apps/game-server/src/ability/creature_bite.rs
+  - apps/game-server/src/ability/player_lethal.rs
+  - apps/game-server/src/ai_monster_melee.rs
+  - apps/game-server/src/combat/pvp/mod.rs
+  - apps/game-server/src/creature_auto_attack.rs
+  - apps/game-server/src/creature_damage_composed.rs
+  - apps/game-server/src/creature_damage_composed_tests.rs
+  - apps/game-server/src/creature_damage_spell.rs
+  - apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs
+  - apps/game-server/src/foundation/channel_owner_creature_ai_tests.rs
+  - apps/game-server/src/foundation/channel_owner_creature_bite_tests.rs
+  - apps/game-server/src/gameplay_transport/actor_conditions.rs
+  - apps/game-server/src/gameplay_transport/actor_spell.rs
+  - apps/game-server/src/gameplay_transport/actor_spell_commit_tests.rs
+  - apps/game-server/src/gameplay_transport/appearance_atomic.rs
+  - apps/game-server/src/gameplay_transport/condition_snapshots.rs
+  - apps/game-server/src/gameplay_transport/ordinary_combat.rs
+  - apps/game-server/src/monster_combat_lane.rs
+  - apps/game-server/src/smelly_damage.rs
+  - apps/game-server/src/smelly_encounter_dispatch.rs
+  - apps/game-server/src/spell/actor_conditions.rs
+  - apps/game-server/src/spell/cast.rs
+  - apps/game-server/src/spell/companion_execution.rs
+  - apps/game-server/src/spell/periodic_execution.rs
+  - apps/game-server/src/spell/source_player_conditions.rs
 slot_only_paths:
   - apps/game-server/src/durability/character_death.rs (after merge #2193)
-  - apps/game-server/src/combat/pvp/mod.rs (composition)
 public_contracts: []
 depends_on:
   - "DEATH-1: MERGED"
@@ -39,7 +66,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-Current allocation: CP D1105 ([6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346),
+Historical initial allocation (expanded by D1244–D1258 below): CP D1105 ([6219643346](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6219643346),
 2026-10-16) authorizes #2205's own leaf now. Family F allocates only the two leaf files and
 this card to its sole writer. DEATH-ML-LOSS-1 #2193 remains the sole physical author of
 `durability/character_death.rs` until that PR merges. Shared receipt/binding/load/decode/reconcile
@@ -404,7 +431,8 @@ failed with RootUnavailable. That RED remains unresolved and retained in
 `evidence/pvp-death-assembly-validation-results.json` outside the checkout;
 there is no blind full retry or full PASS claim.
 
-D1128 permits `combat/pvp/lethal_attribution.rs`, but its actual source is missing:
+Historical D1128 gap, superseded by the reconstructed D1244–D1258 native ledger below:
+D1128 permits `combat/pvp/lethal_attribution.rs`, but its actual source was missing:
 the native PlayerLethalReceipt contains victim facts only, the common HP commit
 does not retain sourceCharacter/summonowner, and no qualified player damage/assist
 ledger observation is exposed. The exact source/API/blob request is CP2131
@@ -414,3 +442,59 @@ ledger, supplied-data authority or duplicate victim anchor was added.
 `character_death.rs` remains solely E's until #2193 merges. This coherent draft
 checkpoint is NOT_FULLY_QUALIFIED under D1122; all original integration/review
 gates remain open, without ready, merge, queue changes or review trigger.
+
+
+## Recovery reconstruction — 2026-10-17
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. This is a new candidate reconstructed from
+GitHub head `b46bec8e882d3b1fc5fe42894ad372b0583ba8fc` and retained historical
+source literals/diffs for D1244/D1244a/D1253/D1255/D1258/D1258a. The lost local
+`6f2281eb` object and complete final source manifest are not recovered; byte-for-byte
+identity with that old candidate is not claimed. Current source includes the sole
+player ledger, actual source-attack/composite/bite commits, historical first-instance
+condition carrier and same-commit lethal tick receipt, with explicit Unattributed
+when historical carrier is missing. The same existing owner, replay memo and native
+HP commit remain authoritative; no E character-death writer is changed.
+
+Source recovery is not test execution. All older PASS/RED and timing evidence stay
+bound to their original source and are not inherited. Native tests, PostgreSQL,
+strict all-targets Clippy and full-package checks are **NOT_RUN** for this candidate.
+Only scoped Rust1.94 formatting and diff whitespace checks are performed here.
+Publication remains a draft NFQ checkpoint; no ready/merge/runtime/full qualification
+or paid-review activation is claimed. Recovery artifacts outside this checkout
+record exact historical provenance and reconstruction limitations.
+
+D1244/D1244a/D1253/D1255/D1258 allocated the native ledger, real commit consumers,
+condition carrier and mechanical type/Clone forwarders now reconstructed here.
+D1160 authorizes only the `mod death;` mounting hunk in `combat/pvp/mod.rs`.
+The concrete recovery delta contains these 29 already allocated paths:
+
+- `apps/game-server/src/ability/condition.rs`
+- `apps/game-server/src/ability/condition_spell.rs`
+- `apps/game-server/src/ability/condition_tests.rs`
+- `apps/game-server/src/ability/creature_bite.rs`
+- `apps/game-server/src/ability/player_lethal.rs`
+- `apps/game-server/src/ai_monster_melee.rs`
+- `apps/game-server/src/combat/pvp/mod.rs`
+- `apps/game-server/src/creature_auto_attack.rs`
+- `apps/game-server/src/creature_damage_composed.rs`
+- `apps/game-server/src/creature_damage_composed_tests.rs`
+- `apps/game-server/src/creature_damage_spell.rs`
+- `apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs`
+- `apps/game-server/src/foundation/channel_owner_creature_ai_tests.rs`
+- `apps/game-server/src/foundation/channel_owner_creature_bite_tests.rs`
+- `apps/game-server/src/gameplay_transport/actor_conditions.rs`
+- `apps/game-server/src/gameplay_transport/actor_spell.rs`
+- `apps/game-server/src/gameplay_transport/actor_spell_commit_tests.rs`
+- `apps/game-server/src/gameplay_transport/appearance_atomic.rs`
+- `apps/game-server/src/gameplay_transport/condition_snapshots.rs`
+- `apps/game-server/src/gameplay_transport/ordinary_combat.rs`
+- `apps/game-server/src/monster_combat_lane.rs`
+- `apps/game-server/src/smelly_damage.rs`
+- `apps/game-server/src/smelly_encounter_dispatch.rs`
+- `apps/game-server/src/spell/actor_conditions.rs`
+- `apps/game-server/src/spell/cast.rs`
+- `apps/game-server/src/spell/companion_execution.rs`
+- `apps/game-server/src/spell/periodic_execution.rs`
+- `apps/game-server/src/spell/source_player_conditions.rs`
+- `docs/agents/tasks/PVP-DEATH-1.md`

@@ -245,8 +245,8 @@ fn condition_kind(
         _ => return reject(),
     })
 }
-fn modify_conditions<S: Clone>(
-    store: &mut crate::ability::condition::ConditionStore<S>,
+fn modify_conditions<S: Clone, L: Clone>(
+    store: &mut crate::ability::condition::ConditionStore<S, L>,
     effects: &[ResolvedEffect],
     source: Option<S>,
     immunities: &[crate::ability::condition::ConditionType],

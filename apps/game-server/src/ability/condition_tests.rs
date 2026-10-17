@@ -36,6 +36,7 @@ fn provenance(
         definition_key: def.key().to_owned(),
         definition_revision: def.revision(),
         lineage: None,
+        lethal_source: None,
     }
 }
 
@@ -1583,4 +1584,160 @@ fn non_ticking_expiry_preserves_overdue_dot_regeneration_and_tick_budget() {
         store.take_due(now + 1, TickFacts::default()),
         before.take_due(now + 1, TickFacts::default()),
     );
+}
+
+#[test]
+fn historical_carrier_is_first_instance_data_through_refresh_and_fresh_after_removal() {
+    let mut store = ConditionStore::<u32, u32>::default();
+    let root = root();
+    let facts = facts(0, &root);
+    let first = def(
+        "test.carrier",
+        ConditionValues::Invisible { duration_ms: 1000 },
+    );
+    let refreshed = def(
+        "test.carrier",
+        ConditionValues::Invisible { duration_ms: 2000 },
+    );
+    store
+        .apply_with_lethal_source(
+            &first,
+            Some(1),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+            Some(7),
+        )
+        .unwrap();
+    store
+        .apply_with_lethal_source(
+            &refreshed,
+            Some(2),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+            Some(9),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .get(ConflictKey::Invisible)
+            .unwrap()
+            .provenance()
+            .lethal_source,
+        Some(7)
+    );
+    assert!(store.remove_type(ConditionType::Invisible));
+    store
+        .apply_with_lethal_source(
+            &first,
+            Some(2),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+            Some(9),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .get(ConflictKey::Invisible)
+            .unwrap()
+            .provenance()
+            .lethal_source,
+        Some(9)
+    );
+    assert!(store.remove_type(ConditionType::Invisible));
+    store
+        .apply(&first, Some(3), ConditionSourceKind::Creature, &[], &facts)
+        .unwrap();
+    store
+        .apply_with_lethal_source(
+            &refreshed,
+            Some(4),
+            ConditionSourceKind::Creature,
+            &[],
+            &facts,
+            Some(7),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .get(ConflictKey::Invisible)
+            .unwrap()
+            .provenance()
+            .lethal_source,
+        None
+    );
+}
+
+#[test]
+fn expired_carrier_reapplication_starts_new_lineage_before_store_cleanup() {
+    let root = root();
+    let definition = def(
+        "test.expired-carrier",
+        ConditionValues::Invisible { duration_ms: 1000 },
+    );
+    for reapplied_at in [1_000_000, 1_000_001] {
+        for first_source in [None, Some(7)] {
+            let mut store = ConditionStore::<u32, u32>::default();
+            store
+                .apply_with_lethal_source(
+                    &definition,
+                    Some(1),
+                    ConditionSourceKind::Creature,
+                    &[],
+                    &facts(0, &root),
+                    first_source,
+                )
+                .unwrap();
+            // Deliberately do not expire/take_due: the stale physical instance still exists.
+            assert!(store.get(ConflictKey::Invisible).is_some());
+            store
+                .apply_with_lethal_source(
+                    &definition,
+                    Some(2),
+                    ConditionSourceKind::Creature,
+                    &[],
+                    &facts(reapplied_at, &root),
+                    Some(9),
+                )
+                .unwrap();
+            assert_eq!(
+                store
+                    .get(ConflictKey::Invisible)
+                    .unwrap()
+                    .provenance()
+                    .lethal_source,
+                Some(9)
+            );
+        }
+        let mut store = ConditionStore::<u32, u32>::default();
+        store
+            .apply_with_lethal_source(
+                &definition,
+                Some(1),
+                ConditionSourceKind::Creature,
+                &[],
+                &facts(0, &root),
+                Some(7),
+            )
+            .unwrap();
+        store
+            .apply(
+                &definition,
+                Some(2),
+                ConditionSourceKind::Creature,
+                &[],
+                &facts(reapplied_at, &root),
+            )
+            .unwrap();
+        assert_eq!(
+            store
+                .get(ConflictKey::Invisible)
+                .unwrap()
+                .provenance()
+                .lethal_source,
+            None
+        );
+    }
 }

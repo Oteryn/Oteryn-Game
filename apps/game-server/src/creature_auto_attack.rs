@@ -1037,6 +1037,7 @@ impl AutoAttackOwner {
                         magnitude,
                         &occurrence,
                         now,
+                        crate::player_lethal::LethalSource::Creature(facts.issuer),
                     )
                 } else {
                     let policy = condition_policy.ok_or(AttackError::MissingCombatFacts)?;
@@ -1340,7 +1341,7 @@ mod tests {
             )
             .expect("real owner hit");
         assert!((200..=300).contains(&hit.requested));
-        let damage = hit.damage.expect("actual damage receipt");
+        let damage = hit.damage.as_ref().expect("actual damage receipt");
         assert_eq!(damage.applied, 185);
         assert_eq!(damage.health_after, 0);
         assert!(damage.death.is_some());
@@ -1427,7 +1428,7 @@ mod tests {
             )
             .expect("next actual deadline");
         assert_eq!(hit.blocked, 1);
-        assert_eq!(hit.damage.expect("lethal").health_after, 0);
+        assert_eq!(hit.damage.as_ref().expect("lethal").health_after, 0);
         assert_eq!(
             owner.fixture_swing(
                 &mut runtime,
@@ -1502,6 +1503,7 @@ mod tests {
                 )
                 .expect("fresh swing")
                 .damage
+                .as_ref()
                 .expect("HP receipt")
                 .health_after,
             0
@@ -1954,6 +1956,7 @@ mod tests {
                 .as_ref()
                 .expect("native HP commit")
                 .damage
+                .as_ref()
                 .expect("actual HP receipt")
                 .health_after,
             0
@@ -2035,6 +2038,7 @@ mod tests {
                 1,
                 "independent-vitals-probe",
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(4_000_000),
+                crate::player_lethal::LethalSource::Creature(facts.issuer),
             )
             .expect("real vital store");
         assert_eq!(probe.health_after, 184);
@@ -2083,7 +2087,8 @@ mod tests {
                     facts.session,
                     1,
                     "zero-melee-probe",
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000),
+                    crate::player_lethal::LethalSource::Creature(facts.issuer)
                 )
                 .expect("real unchanged vital store")
                 .health_after,

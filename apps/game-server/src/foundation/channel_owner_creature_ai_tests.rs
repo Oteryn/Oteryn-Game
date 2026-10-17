@@ -28,6 +28,21 @@ struct Vitals {
 }
 
 impl CreatureBiteVitals for Vitals {
+    #[allow(clippy::too_many_arguments)]
+    fn apply_creature_melee_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        _creature: ExactActorRef,
+        _occurrence: &str,
+    ) -> Option<CreatureHit> {
+        // Explicit existing test vitals delegate, never a production source fallback.
+        self.apply_creature_damage(runtime, target, session, magnitude, now)
+    }
+
     fn apply_creature_damage(
         &mut self,
         _: &mut ChannelRuntimeV1,

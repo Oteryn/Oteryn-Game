@@ -219,8 +219,8 @@ fn changed_actual_player_predecessor_refuses_the_entire_prepared_transaction() {
 fn source_light_successor(
     f: &Fixture,
 ) -> (
-    crate::ability::condition::ConditionStore<String>,
-    crate::ability::condition::ConditionStore<String>,
+    crate::ability::condition::ConditionStore<String, crate::player_lethal::LethalSource>,
+    crate::ability::condition::ConditionStore<String, crate::player_lethal::LethalSource>,
 ) {
     use crate::ability::condition::{
         ApplicationFacts, ConditionDefinition, ConditionSourceKind, ConditionValues,

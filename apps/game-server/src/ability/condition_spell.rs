@@ -17,7 +17,7 @@ pub(crate) enum SpellSpeedError {
     Admission(ConditionRefusal),
 }
 
-impl<S: Clone> ConditionStore<S> {
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     /// Caster `ConditionSpeed` uses f32 multiplication and addition followed by
     /// truncation. The ordinary store uses decimal thousandths; the frozen content
     /// definition stays unchanged, while this admission fixes the source f32 delta.
@@ -245,12 +245,12 @@ mod tests {
     }
 }
 
-impl<S: Clone> ConditionStore<S> {
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     pub(crate) fn active_at(
         &self,
         key: super::ConflictKey,
         now: u64,
-    ) -> Option<&super::ConditionInstance<S>> {
+    ) -> Option<&super::ConditionInstance<S, L>> {
         self.get(key)
             .filter(|v| v.started_at <= now && v.ends_at.is_none_or(|end| now < end))
     }
@@ -398,13 +398,13 @@ impl<S: Clone> ConditionStore<S> {
     }
 }
 
-impl<S: Clone> ConditionStore<S> {
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     pub(crate) fn accepts_time(&self, now: u64) -> bool {
         now >= self.pass_at && self.instances.iter().all(|v| v.started_at <= now)
     }
 }
 
-impl<S: Clone> ConditionStore<S> {
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     /// Expire only non-ticking effects when tile legality is not yet qualified.
     /// Pending DOT/regeneration ticks remain owned and are never silently used up.
     /// Unlike the lifecycle owner's `expire_non_ticking`, this covers every spell-owned
@@ -456,7 +456,7 @@ impl SkillAdjustments {
 fn adjust(base: u32, delta: i32) -> Option<u32> {
     u32::try_from((i64::from(base) + i64::from(delta)).max(0)).ok()
 }
-impl<S: Clone> ConditionStore<S> {
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     pub(crate) fn invisible_at(&self, now: u64) -> bool {
         self.active_at(super::ConflictKey::Invisible, now).is_some()
     }

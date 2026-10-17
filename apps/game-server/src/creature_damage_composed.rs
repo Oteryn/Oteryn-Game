@@ -667,7 +667,15 @@ impl ComposedOwner {
                         Ok(BranchReceipt::Zero)
                     } else {
                         vitals
-                            .apply_attack_damage(r, target, session, amount, &occurrence, now)
+                            .apply_attack_damage(
+                                r,
+                                target,
+                                session,
+                                amount,
+                                &occurrence,
+                                now,
+                                crate::player_lethal::LethalSource::Creature(proposal.issuer),
+                            )
                             .map(BranchReceipt::PlayerDamage)
                             .ok_or(AttackError::MissingVitals)
                     }

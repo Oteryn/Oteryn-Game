@@ -3532,6 +3532,7 @@ mod tests {
                 1,
                 "composed-condition-install",
                 crate::foundation::owner_timer::OwnerClock::now(&clock),
+                crate::player_lethal::LethalSource::Creature(issuer),
             )
             .expect("monster_combat_lane.rs:tests:3321: qualified fixture operation must succeed");
         r.remove_test_actor(issuer)

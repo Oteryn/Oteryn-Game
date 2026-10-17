@@ -66,9 +66,15 @@ pub(crate) fn commit_smelly_unambiguous_damage(
             cast_sequence,
             hex(target.placement_identity())
         );
-        if let Some(receipt) =
-            vitals.apply_attack_damage(runtime, target, session, magnitude, &occurrence, now)
-        {
+        if let Some(receipt) = vitals.apply_attack_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            &occurrence,
+            now,
+            crate::player_lethal::LethalSource::Creature(caster),
+        ) {
             receipts.push(receipt);
         }
     }
@@ -177,6 +183,7 @@ mod tests {
                 20,
                 "other-attack:B",
                 clock.now(),
+                crate::player_lethal::LethalSource::Creature(caster),
             )
             .expect("smelly_damage.rs:tests:178: qualified fixture operation must succeed");
         assert_eq!(b.health_after, 1580);
@@ -221,6 +228,7 @@ mod tests {
                 1,
                 "read-through-native-hit:C",
                 clock.now(),
+                crate::player_lethal::LethalSource::Creature(caster),
             )
             .expect("smelly_damage.rs:tests:222: qualified fixture operation must succeed");
         assert_eq!(after.health_after, 1579);

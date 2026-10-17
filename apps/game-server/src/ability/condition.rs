@@ -10,7 +10,7 @@
 //! the families, conflict keys and policies. Every draw is one `oteryn_simulation_determinism`
 //! decision bound to the caller's `(GameplayDecisionRoot, DecisionOccurrenceId)`.
 
-type ConditionApplicationSource<'a, S> = dyn Fn(&ConditionProvenance<S>) -> bool + 'a;
+type ConditionApplicationSource<'a, S, L> = dyn Fn(&ConditionProvenance<S, L>) -> bool + 'a;
 
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -627,13 +627,15 @@ pub(crate) enum ConditionSourceKind {
 /// §3.2: provenance frozen at application. `S` is the owner's source actor identity; the owner
 /// looks it up again at each tick.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ConditionProvenance<S> {
+pub(crate) struct ConditionProvenance<S, L = ()> {
     pub(crate) source: Option<S>,
     pub(crate) source_kind: ConditionSourceKind,
     pub(crate) definition_key: String,
     pub(crate) definition_revision: u32,
     /// Historical application lineage, never refreshed from a tick command.
     pub(crate) lineage: Option<ConditionLineage>,
+    /// D1255: historical source captured at first application, never current authority.
+    pub(crate) lethal_source: Option<L>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ConditionLineage {
@@ -650,9 +652,9 @@ pub(crate) struct ConditionLineage {
 
 /// One live instance of a definition on one actor.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ConditionInstance<S> {
+pub(crate) struct ConditionInstance<S, L = ()> {
     definition: ConditionDefinition,
-    provenance: ConditionProvenance<S>,
+    provenance: ConditionProvenance<S, L>,
     sequence: u32,
     /// Semantic time (µs) at which a timed instance ends; `None` for damage over time, which ends
     /// when its total is used up.
@@ -675,12 +677,12 @@ pub(crate) struct ConditionInstance<S> {
     mana_shield_remaining: u32,
 }
 
-impl<S> ConditionInstance<S> {
+impl<S, L> ConditionInstance<S, L> {
     pub(crate) const fn definition(&self) -> &ConditionDefinition {
         &self.definition
     }
 
-    pub(crate) const fn provenance(&self) -> &ConditionProvenance<S> {
+    pub(crate) const fn provenance(&self) -> &ConditionProvenance<S, L> {
         &self.provenance
     }
 
@@ -783,11 +785,11 @@ pub(crate) struct Applied {
 /// A due tick, in the §3.4 order `(due, actor, sequence)`. It carries the instance's frozen
 /// provenance (§3.2), so the owner can build its Effect Plan even when this was the last tick.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ConditionTick<S> {
+pub(crate) struct ConditionTick<S, L = ()> {
     pub(crate) due: u64,
     pub(crate) sequence: u32,
     pub(crate) kind: TickKind,
-    pub(crate) provenance: ConditionProvenance<S>,
+    pub(crate) provenance: ConditionProvenance<S, L>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -842,9 +844,9 @@ struct CleanseImmunity {
 
 /// The per-actor store.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ConditionStore<S> {
+pub(crate) struct ConditionStore<S, L = ()> {
     /// Sorted by sequence.
-    instances: Vec<ConditionInstance<S>>,
+    instances: Vec<ConditionInstance<S, L>>,
     /// At most one immunity per closed conflict key; actor movement retains this same store.
     cleanse_immunities: Vec<CleanseImmunity>,
     next_sequence: u32,
@@ -856,7 +858,7 @@ pub(crate) struct ConditionStore<S> {
     pacified_applied_at: Option<u64>,
 }
 
-impl<S> Default for ConditionStore<S> {
+impl<S, L> Default for ConditionStore<S, L> {
     fn default() -> Self {
         Self {
             instances: Vec::new(),
@@ -869,7 +871,14 @@ impl<S> Default for ConditionStore<S> {
     }
 }
 
-impl<S: Clone> ConditionStore<S> {
+impl<S> ConditionStore<S> {
+    /// Source-neutral store; native typed stores use their equally empty Default.
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     /// The real application owner supplies historical field receipt lineage.
     /// Primitive lineage data is evidence only; it never grants tick authority.
     pub(crate) fn apply_with_lineage(
@@ -903,9 +912,32 @@ impl<S: Clone> ConditionStore<S> {
         *self = staged;
         Ok(applied)
     }
-    /// §6.2 fresh admission: no instances (food time is restored by COND-DUR-1).
-    pub(crate) fn new() -> Self {
-        Self::default()
+    /// D1255's native application port. A refresh keeps the first instance's source,
+    /// including a first application without a carrier; only a new instance captures it.
+    /// A timed instance at/past its end is a new lineage even before physical cleanup.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn apply_with_lethal_source(
+        &mut self,
+        definition: &ConditionDefinition,
+        source: Option<S>,
+        source_kind: ConditionSourceKind,
+        immunities: &[ConditionType],
+        facts: &ApplicationFacts<'_>,
+        lethal_source: Option<L>,
+    ) -> Result<Applied, ConditionRefusal> {
+        let had_live_instance = self
+            .get(definition.condition_type().conflict_key())
+            .is_some_and(|instance| instance.ends_at.is_none_or(|end| facts.now < end));
+        let applied = self.apply(definition, source, source_kind, immunities, facts)?;
+        if !had_live_instance
+            && let Some(instance) = self
+                .instances
+                .iter_mut()
+                .find(|instance| instance.sequence == applied.sequence)
+        {
+            instance.provenance.lethal_source = lethal_source;
+        }
+        Ok(applied)
     }
 
     /// Pure current-time view; expired status never remains effective before cleanup.
@@ -914,11 +946,11 @@ impl<S: Clone> ConditionStore<S> {
             .is_some_and(|instance| instance.ends_at.is_some_and(|end| now < end))
     }
 
-    pub(crate) fn instances(&self) -> &[ConditionInstance<S>] {
+    pub(crate) fn instances(&self) -> &[ConditionInstance<S, L>] {
         &self.instances
     }
 
-    pub(crate) fn get(&self, key: ConflictKey) -> Option<&ConditionInstance<S>> {
+    pub(crate) fn get(&self, key: ConflictKey) -> Option<&ConditionInstance<S, L>> {
         self.instances
             .iter()
             .find(|instance| instance.definition.condition_type().conflict_key() == key)
@@ -1092,6 +1124,9 @@ impl<S: Clone> ConditionStore<S> {
                 definition_key: definition.key.clone(),
                 definition_revision: definition.revision,
                 lineage: None,
+                lethal_source: existing
+                    .filter(|instance| instance.ends_at.is_none_or(|end| now < end))
+                    .and_then(|instance| instance.provenance.lethal_source.clone()),
             },
             sequence: self.next_sequence,
             ends_at: None,
@@ -1414,7 +1449,7 @@ impl<S: Clone> ConditionStore<S> {
     /// deals at most `COND0-RL-03` ticks per actor, across every pass at that `now`; the rest stay
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
-    pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
+    pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S, L>> {
         self.take_due_matching(now, facts, true, None)
     }
     /// Only a just-applied field's immediate tick; retained overdue conditions are untouched.
@@ -1423,12 +1458,12 @@ impl<S: Clone> ConditionStore<S> {
         now: u64,
         facts: TickFacts,
         source: &S,
-    ) -> Vec<ConditionTick<S>>
+    ) -> Vec<ConditionTick<S, L>>
     where
         S: PartialEq,
     {
         let matches =
-            |provenance: &ConditionProvenance<S>| provenance.source.as_ref() == Some(source);
+            |provenance: &ConditionProvenance<S, L>| provenance.source.as_ref() == Some(source);
         self.take_due_matching(now, facts, true, Some(&matches))
     }
     /// Independent qualified regeneration must not drain unknown combat ticks.
@@ -1436,7 +1471,7 @@ impl<S: Clone> ConditionStore<S> {
         &mut self,
         now: u64,
         facts: TickFacts,
-    ) -> Vec<ConditionTick<S>> {
+    ) -> Vec<ConditionTick<S, L>> {
         self.take_due_matching(now, facts, false, None)
     }
     fn take_due_matching(
@@ -1444,8 +1479,8 @@ impl<S: Clone> ConditionStore<S> {
         now: u64,
         facts: TickFacts,
         damage: bool,
-        application_source: Option<&ConditionApplicationSource<'_, S>>,
-    ) -> Vec<ConditionTick<S>> {
+        application_source: Option<&ConditionApplicationSource<'_, S, L>>,
+    ) -> Vec<ConditionTick<S, L>> {
         self.cleanse_immunities
             .retain(|immunity| immunity.until > now);
         if self.pass_at != now {
@@ -1693,7 +1728,7 @@ impl<S: Clone> ConditionStore<S> {
 
 /// §3.5 gates. Once the action is identified they run before every other cast and attack
 /// admission check (protection zone included), before cost and cooldown; a refusal spends nothing.
-impl<S: Clone> ConditionStore<S> {
+impl<S: Clone, L: Clone> ConditionStore<S, L> {
     /// §3.5: the same current-time view for a gate family.
     pub(crate) fn has_gate(&self, gate: ConditionGate, now: u64) -> bool {
         self.get(ConflictKey::Gate(gate))
@@ -1754,10 +1789,10 @@ fn sequence_duration(steps: &[DotSequenceStep]) -> Option<u32> {
 /// simulation tick. An actor's capped ticks do not hold back other actors' keys; they run in the
 /// actor's next simulation ticks, keeping their original `due`, so they sort ahead of anything
 /// newly due there.
-pub(crate) fn channel_tick_order<A: Ord + Copy, S>(
-    per_actor: impl IntoIterator<Item = (A, Vec<ConditionTick<S>>)>,
-) -> Vec<(A, ConditionTick<S>)> {
-    let mut all: Vec<(A, ConditionTick<S>)> = per_actor
+pub(crate) fn channel_tick_order<A: Ord + Copy, S, L>(
+    per_actor: impl IntoIterator<Item = (A, Vec<ConditionTick<S, L>>)>,
+) -> Vec<(A, ConditionTick<S, L>)> {
+    let mut all: Vec<(A, ConditionTick<S, L>)> = per_actor
         .into_iter()
         .flat_map(|(actor, ticks)| ticks.into_iter().map(move |tick| (actor, tick)))
         .collect();
