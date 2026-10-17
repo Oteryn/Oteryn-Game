@@ -991,6 +991,17 @@ pub(crate) fn familiar_waits_to_return(
     !lifecycle.open && lifecycle.familiar_remaining_ms > 0
 }
 
+/// #2199 Codex P1 4301955863: an open row another session or runtime wrote is a committed
+/// acquisition only Login crash classification (D1296) may reconcile. Until that reconciliation
+/// commits, its lifetime and the cooldown it restores at Login are unaccounted for here, so a
+/// Cast or level Advance must not adopt and overwrite it under the current writer.
+fn familiar_lifecycle_unreconciled(
+    lifecycle: &crate::durability::character_familiar::FamiliarLifecycleV2,
+    current_writer: &FamiliarLifecycleWriter,
+) -> bool {
+    lifecycle.open && !lifecycle.writer.same_lifecycle(current_writer)
+}
+
 /// Settle the lifecycle of a non-actor-end familiar write under the current writer.
 /// A committed acquisition (cast or return) opens the row with its scheduled lifetime and
 /// clears any clean-end marker; a familiar death ends it. Any other write (a Login with no
@@ -1039,6 +1050,25 @@ pub(crate) fn close_familiar_lifecycle_at_actor_end(
     lifecycle.writer = writer.clone();
     lifecycle.clean_end_game_session_id = Some(writer.game_session_id.clone());
     Ok(())
+}
+
+/// #2199 Codex P2 4301955868: D1126 converts an absent or legacy projection only for the NEXT
+/// write. When the event changes nothing but that manufactured v2 lifecycle, it is a no-op: the
+/// projection stays exactly as loaded, so `state_request` writes no row and no revision. A Cast
+/// always mutates (cooldown, and later its payment), so it keeps the converted state.
+fn keep_unconverted_projection_on_no_op(
+    before: &DurableFamiliarState,
+    after: &mut DurableFamiliarState,
+    event: &FamiliarEvent,
+) {
+    if *event == FamiliarEvent::Cast || before.lifecycle.is_some() {
+        return;
+    }
+    let mut unconverted = after.clone();
+    unconverted.lifecycle = None;
+    if unconverted == *before {
+        *after = before.clone();
+    }
 }
 
 #[allow(
@@ -1114,12 +1144,17 @@ fn prepare_familiar_parts(
         .lifecycle
         .as_mut()
         .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+    let unreconciled = event != FamiliarEvent::Login
+        && familiar_lifecycle_unreconciled(lifecycle, &current.lifecycle_writer);
     if event == FamiliarEvent::Login {
         prepare_familiar_login_lifecycle(lifecycle, &current.lifecycle_writer)?;
+    } else if unreconciled && event == FamiliarEvent::Advance {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
     }
     // FAMILIARS0 §4 check 4 / §5.2: a stored familiar waiting to return refuses the cast
-    // before any cost, so a stored and a new familiar never exist together.
-    if event == FamiliarEvent::Cast && familiar_waits_to_return(lifecycle) {
+    // before any cost, so a stored and a new familiar never exist together. An unreconciled
+    // foreign open lifecycle refuses it the same way, fail closed, until Login reconciles it.
+    if event == FamiliarEvent::Cast && (unreconciled || familiar_waits_to_return(lifecycle)) {
         return Err(CompanionExecutionError::Refused(
             p["failure_messages"]["summon_limit"]
                 .as_str()
@@ -1340,6 +1375,7 @@ fn prepare_familiar_parts(
     after
         .validate()
         .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+    keep_unconverted_projection_on_no_op(&current.state, &mut after, &event);
     Ok(FamiliarParts {
         event,
         owner_facts: current.clone(),
@@ -3231,6 +3267,113 @@ mod familiar_login_lifecycle_tests {
             settle_familiar_event_lifecycle(&mut own, &current, &FamiliarEvent::Login, None),
             Err(CompanionExecutionError::InvalidOwnerFacts)
         );
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4301955863: an open row from a prior session or runtime that Login has
+    /// not reconciled blocks Cast and Advance; this lifecycle's own open row (a same-runtime
+    /// reconnect at another connection generation) and any closed row do not.
+    #[test]
+    fn foreign_open_lifecycle_is_unreconciled_until_login() -> Result<(), CompanionExecutionError> {
+        let (old_writer, current) = writers();
+        assert!(familiar_lifecycle_unreconciled(
+            &lifecycle(&old_writer, 90_000, true, None),
+            &current
+        ));
+        let moved = FamiliarLifecycleWriter {
+            scope_ownership_generation: 5,
+            ..current.clone()
+        };
+        assert!(familiar_lifecycle_unreconciled(
+            &lifecycle(&moved, 90_000, true, None),
+            &current
+        ));
+        let reconnect = FamiliarLifecycleWriter {
+            connection_generation: 2,
+            ..current.clone()
+        };
+        assert!(!familiar_lifecycle_unreconciled(
+            &lifecycle(&reconnect, 90_000, true, None),
+            &current
+        ));
+        assert!(!familiar_lifecycle_unreconciled(
+            &lifecycle(&old_writer, 90_000, false, Some(&old_writer)),
+            &current
+        ));
+        assert!(!familiar_lifecycle_unreconciled(
+            &lifecycle(&old_writer, 0, false, None),
+            &current
+        ));
+        // The waiting-to-return check alone does not catch it; the unreconciled check
+        // refuses that cast before payment.
+        assert!(!familiar_waits_to_return(&lifecycle(
+            &old_writer,
+            90_000,
+            true,
+            None
+        )));
+        // Login is the reconciliation: afterwards the row is closed and no longer blocks.
+        let mut reconciled = lifecycle(&old_writer, 90_000, true, None);
+        prepare_familiar_login_lifecycle(&mut reconciled, &current)?;
+        assert!(!familiar_lifecycle_unreconciled(&reconciled, &current));
+        assert!(!familiar_waits_to_return(&reconciled));
+        Ok(())
+    }
+
+    /// #2199 Codex P2 4301955868: a Login or Advance that changes nothing but the D1126
+    /// conversion of an absent projection keeps it absent, so no row or revision is written.
+    #[test]
+    fn no_op_event_keeps_absent_projection_absent() -> Result<(), CompanionExecutionError> {
+        let (_, current) = writers();
+        let absent = DurableFamiliarState::default();
+        for event in [FamiliarEvent::Login, FamiliarEvent::Advance] {
+            let mut after = absent
+                .for_next_write(None, &current)
+                .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+            let converted = after
+                .lifecycle
+                .as_mut()
+                .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+            if event == FamiliarEvent::Login {
+                prepare_familiar_login_lifecycle(converted, &current)?;
+            }
+            settle_familiar_event_lifecycle(converted, &current, &event, None)?;
+            assert_ne!(after, absent);
+            let mut kept = after.clone();
+            keep_unconverted_projection_on_no_op(&absent, &mut kept, &event);
+            assert_eq!(kept, absent);
+            // A real mutation keeps the conversion, which every new write requires.
+            let mut changed = after.clone();
+            changed.selected_look = 7;
+            let expected = changed.clone();
+            keep_unconverted_projection_on_no_op(&absent, &mut changed, &event);
+            assert_eq!(changed, expected);
+            assert!(changed.lifecycle.is_some());
+        }
+        // A Cast always writes, and a stored v2 row is never reverted.
+        let mut cast = absent
+            .for_next_write(None, &current)
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let expected = cast.clone();
+        keep_unconverted_projection_on_no_op(&absent, &mut cast, &FamiliarEvent::Cast);
+        assert_eq!(cast, expected);
+        let (old_writer, _) = writers();
+        let stored = DurableFamiliarState {
+            lifecycle: Some(lifecycle(&old_writer, 0, false, None)),
+            ..DurableFamiliarState::default()
+        };
+        let mut next = stored.clone();
+        settle_familiar_event_lifecycle(
+            next.lifecycle
+                .as_mut()
+                .ok_or(CompanionExecutionError::InvalidOwnerFacts)?,
+            &current,
+            &FamiliarEvent::Login,
+            None,
+        )?;
+        let expected = next.clone();
+        keep_unconverted_projection_on_no_op(&stored, &mut next, &FamiliarEvent::Login);
+        assert_eq!(next, expected);
         Ok(())
     }
 

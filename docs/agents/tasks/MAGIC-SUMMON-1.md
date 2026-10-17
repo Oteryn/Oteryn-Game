@@ -538,3 +538,21 @@ This closes the hold above on GraceExpiry and non-spawn writes over an existing 
 marker. Regression tests: one pure marker-decision test, three pure lifecycle tests and one
 PostgreSQL grace clean-end test (gated by `configured_admin()`). Local Rust build, Clippy
 and tests are NOT_RUN on this head (disk); new-head GitHub CI must pass.
+
+### Round-four repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. The owner approved this round for Codex threads
+4301955863 (P1) and 4301955868 (P2):
+
+- A Cast or level Advance against an open lifecycle that another session or runtime wrote
+  (not `same_lifecycle`) is refused before any cost or write, fail closed, because only Login
+  crash classification (D1296) reconciles it. The Cast uses the source summon-limit refusal.
+  Without this, a failed first-entry init left the row and its cooldown unrestored, and a
+  cast replaced both. The transport still ignores that init error; the refusal makes that
+  safe, and the next Login reconciles the row.
+- D1126 conversion is for the next write only. A non-Cast event that changes nothing but
+  the manufactured v2 lifecycle of an absent or legacy projection keeps it as loaded, so a
+  no-op Login writes no row and no Character revision.
+
+Regression tests: two pure lifecycle tests next to the round-three tests. Local Rust build,
+Clippy and tests are NOT_RUN (no cargo); `rustfmt --check` passes. New-head GitHub CI must pass.
