@@ -99,7 +99,7 @@ how it resets, what limits it, which commands carry it; and what time it is in t
   target and a command 9 source; an overlay change is described by `TILE_SET`; the protection
   zone is never on the wire.
 - ITEM-MOVE-WIRE-1 §5: drop within 15 tiles, same floor, line of sight; pickup at Chebyshev 1;
-  `ITEMMOVE1-RL-01` 10 loose items per tile, `ITEMMOVE1-RL-02` 20,000 per channel; §9 defers Ground
+  `ITEMMOVE1-RL-01` 64 loose items per tile (amended from 10 on 2026-10-15), `ITEMMOVE1-RL-02` 20,000 per channel; §9 defers Ground
   to Ground and map items.
 - PARTY-PVP-0: `pvp_type` is a World ruleset field; every PvP rule, fields included, runs in the
   GAME-ABILITY-01 legality stage; the PZ block bars stepping onto a protection-zone tile.
@@ -682,7 +682,7 @@ quest doors, quest format §3.1) stays sealed.
 | `DUR03-RL-06-GROUND-MOVE` participants / work units | 1 / 3 (a tree: 1 / 502) |
 | `DUR03-RL-07-KEY` MINT and TRANSFER payload | the existing one-item caps plus one `key_number` (at most 4 bytes) |
 
-`QUESTGATE0-RL-03` (10), `RUNEUSE0-RL-05` (1), `RUNEUSE0-RL-06` (20,000), `ITEMMOVE1-RL-01` (10),
+`QUESTGATE0-RL-03` (10), `RUNEUSE0-RL-05` (1), `RUNEUSE0-RL-06` (20,000), `ITEMMOVE1-RL-01` (64, amended from 10 on 2026-10-15),
 `ITEMMOVE1-RL-02` (20,000) and `MAP01-CHANNEL-OVERLAY-BYTES` are unchanged and bind every act here.
 
 ## 13. Rejected options

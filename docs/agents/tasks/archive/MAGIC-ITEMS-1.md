@@ -4,7 +4,7 @@
 task_id: MAGIC-ITEMS-1
 title: "MAGIC-ITEMS-1: rune use and conjure; first slice RUNE-CONTENT-1 rune carrier audit"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
@@ -16,7 +16,7 @@ final_head_sha: null
 owner: claude-code-session-01Puou2Pm8SECtLFcjHYAuEC
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-14
-updated_at: 2026-10-14
+updated_at: 2026-10-17
 owned_paths:
   - tools/content-schema/spell-authoring/audit_rune_carriers.py
   - tools/content-schema/spell-authoring/test_audit_rune_carriers.py
@@ -130,3 +130,11 @@ prerequisites are all on `main`: **RUNE-CONTENT-1** (depends on ITEM-SEM-USE, me
 - `cargo +1.95.0 fmt --all --check`: pass; `cargo +1.95.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
 - No Rust or `content/` file changes, so the Rust test suites are not affected and were not re-run
 - `git diff --check`: clean
+
+## Archive closeout
+
+- canonical PR #2116 merged on 2026-10-14 (`git log --grep "(#2116)"`); the record stayed in
+  `tasks/active/` and failed the protected-main live-state check, so #2163 archives it
+  as a ported `main` governance fix
+- merge commit/result: squash merge of #2116
+- ownership release: released with the merge of #2116
