@@ -973,7 +973,7 @@ impl CreatureBiteVitals for ChannelSpellStates {
         target: ExactActorRef,
         target_session: GameSessionId,
         magnitude: u32,
-        now: SemanticTimeMicros,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
         creature: ExactActorRef,
         occurrence: &str,
     ) -> Option<CreatureHit> {
@@ -2397,7 +2397,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         source: crate::player_lethal::LethalSource,
         applied: u32,
-        now: SemanticTimeMicros,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
         lethal: bool,
     ) -> Option<(
         crate::player_lethal::PlayerDamageLedger,
@@ -2687,7 +2687,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         session: GameSessionId,
         magnitude: u32,
         occurrence: &str,
-        now: SemanticTimeMicros,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
         source: crate::player_lethal::LethalSource,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
         self.commit_source_player_damage(
@@ -2709,7 +2709,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         session: GameSessionId,
         magnitude: u32,
         occurrence: &str,
-        now: SemanticTimeMicros,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
         creature: ExactActorRef,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
         self.commit_source_player_damage(
@@ -2969,7 +2969,7 @@ mod source_native_vitals_tests {
                 g,
                 185,
                 "player:lethal",
-                SemanticTimeMicros::from_micros(0),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 source,
             )
             .expect("native lethal HP");
@@ -3045,7 +3045,7 @@ mod source_native_vitals_tests {
                 g,
                 185,
                 "companion:lethal",
-                SemanticTimeMicros::from_micros(0),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 source,
             )
             .expect("native lethal HP");
@@ -3079,7 +3079,7 @@ mod source_native_vitals_tests {
                 g,
                 3,
                 "ledger:first",
-                SemanticTimeMicros::from_micros(0),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 crate::player_lethal::LethalSource::Creature(c),
             )
             .expect("first hit");
@@ -3091,7 +3091,7 @@ mod source_native_vitals_tests {
                 g,
                 3,
                 "ledger:first",
-                SemanticTimeMicros::from_micros(0),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 crate::player_lethal::LethalSource::Creature(c)
             ),
             Some(first)
@@ -3104,7 +3104,7 @@ mod source_native_vitals_tests {
                 g,
                 1,
                 "ledger:heal",
-                SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
             )
             .is_some()
         );
@@ -3116,7 +3116,7 @@ mod source_native_vitals_tests {
                 g,
                 u32::MAX,
                 "ledger:final",
-                SemanticTimeMicros::from_micros(1),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1),
                 crate::player_lethal::LethalSource::Creature(second),
             )
             .expect("final hit");
@@ -3155,7 +3155,7 @@ mod source_native_vitals_tests {
                 g,
                 1,
                 "binding:one",
-                SemanticTimeMicros::from_micros(0),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 crate::player_lethal::LethalSource::Creature(c)
             )
             .is_some()
@@ -3169,7 +3169,7 @@ mod source_native_vitals_tests {
                 g,
                 1,
                 "binding:one",
-                SemanticTimeMicros::from_micros(0),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 crate::player_lethal::LethalSource::Creature(second)
             )
             .is_none()
@@ -3188,13 +3188,169 @@ mod source_native_vitals_tests {
                 g,
                 1,
                 "binding:foreign",
-                SemanticTimeMicros::from_micros(1),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1),
                 crate::player_lethal::LethalSource::Creature(foreign)
             )
             .is_none()
         );
         assert_eq!(s.get(&r, a, g).cloned(), before);
         assert_eq!(s.damage_ledgers, ledger);
+    }
+    #[test]
+    fn source_clock_regression_refuses_without_hp_ledger_or_replay_mutation() {
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        let (mut r, mut s, a, g, c) = ready(0x48);
+        let source = crate::player_lethal::LethalSource::Creature(c);
+        let first = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "clock:first",
+                OwnerTime::from_micros(10),
+                source,
+            )
+            .expect("fresh native hit");
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "clock:stale",
+                OwnerTime::from_micros(9),
+                source
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+        assert!(s.deaths.is_empty());
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "clock:first",
+                OwnerTime::from_micros(11),
+                source
+            ),
+            Some(first)
+        );
+        assert_eq!(s.damage_ledgers, ledger);
+    }
+    #[test]
+    fn source_replay_after_source_retirement_keeps_history_but_fresh_damage_refuses() {
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        let (mut r, mut s, a, g, c) = ready(0x49);
+        let source = crate::player_lethal::LethalSource::Creature(c);
+        let first = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "retired:first",
+                OwnerTime::from_micros(0),
+                source,
+            )
+            .expect("admitted source hit");
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        r.remove_test_actor(c)
+            .expect("source retired by actual owner");
+        assert!(crate::player_lethal::LethalSource::current_actor(&r, c).is_none());
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "retired:first",
+                OwnerTime::from_micros(1),
+                source
+            ),
+            Some(first)
+        );
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "retired:fresh",
+                OwnerTime::from_micros(1),
+                source
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+        assert!(s.deaths.is_empty());
+    }
+    #[test]
+    fn failed_lethal_mint_does_not_publish_staged_window_pruning() {
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        let (mut r, mut s, a, g, c) = ready(0x4a);
+        let final_source = r
+            .admit_test_creature(MovementLocalPosition {
+                x: 12,
+                y: 10,
+                floor: 7,
+            })
+            .expect("second admitted source");
+        let first_source = crate::player_lethal::LethalSource::Creature(c);
+        let final_source = crate::player_lethal::LethalSource::Creature(final_source);
+        s.apply_attack_damage(
+            &mut r,
+            a,
+            g,
+            20,
+            "prune:first",
+            OwnerTime::from_micros(0),
+            first_source,
+        )
+        .expect("initial actual HP contribution");
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        let mint = s.mint_death;
+        s.mint_death = || None;
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                200,
+                "prune:failed",
+                OwnerTime::from_micros(300_000_001),
+                final_source
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+        assert!(s.deaths.is_empty());
+        s.mint_death = mint;
+        let receipt = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                200,
+                "prune:committed",
+                OwnerTime::from_micros(1),
+                final_source,
+            )
+            .expect("fresh native lethal commit after refused staging");
+        assert_eq!(receipt.applied, 165);
+        let death = receipt.death.as_ref().expect("same-commit lethal receipt");
+        assert_eq!(death.attribution().killer, final_source);
+        assert_eq!(death.attribution().assists, vec![(first_source, 20)]);
+        assert_eq!(s.deaths.len(), 1);
     }
     #[test]
     fn source_lethal_receipt_reuses_native_death_and_respawn_clears_source_replay() {
