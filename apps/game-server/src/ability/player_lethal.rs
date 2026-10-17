@@ -237,10 +237,10 @@ impl PlayerDamageLedger {
         if self.last_applied != Some((killer, now)) {
             return Err(DamageLedgerError::MissingFinalHit);
         }
-        if !self
+        if self
             .entries
             .get(&killer)
-            .is_some_and(|entry| entry.last_at_us == now)
+            .is_none_or(|entry| entry.last_at_us != now)
         {
             return Err(DamageLedgerError::MissingFinalHit);
         }
@@ -370,6 +370,10 @@ pub(crate) struct PlayerLethalReceipt {
 impl PlayerLethalReceipt {
     /// Metadata from the SAME committed native DEATH-2 hit. No alternate mint/queue.
     /// Caller is the sole ChannelSpellStates bridge; this receipt is never authority.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "native commit identity, occurrence, position and source provenance remain explicit"
+    )]
     pub(crate) fn from_native_commit(
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
