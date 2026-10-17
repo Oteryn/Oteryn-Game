@@ -418,7 +418,9 @@ async fn compose_with(
     tuple: Type2EventTuple,
     abort: bool,
 ) -> TestResult<Composed> {
-    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause;
+    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause else {
+        return Err("these cases compose only the CharmUnassign fee source".into());
+    };
     let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
     assert_eq!(
         tx.tuple().tuple(),

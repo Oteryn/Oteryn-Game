@@ -33,6 +33,9 @@ owned_paths:
   - apps/game-server/src/premium/mod.rs (D1160 own-module registration lines only)
   - apps/game-server/src/interaction/mod.rs (D1160 own-module registration line only)
   - apps/game-server/tests/promotion_*.rs (new)
+  - apps/game-server/src/durability/mod.rs (D1160 single own-module `npc_purchase` registration only)
+  - apps/game-server/tests/support/item_fee_burn_postgres_cases.rs (D1164 CharmUnassign let-else hunk only)
+  - apps/game-server/tests/support/gold_fee_bank_postgres_cases.rs (D1164 CharmUnassign let-else hunk only)
 slot_only_paths:
   - apps/game-server/src/lib.rs (premium module registration after #2197)
   - migration number
@@ -496,3 +499,29 @@ replay/concurrency/fencing/XID/partial-callback-rollback qualification are
 **NOT_RUN**. All earlier private 25/25 and 26/26 (7/8 PG) results above are
 historical evidence only and do not qualify this rebuilt source. No ready,
 review trigger, merge, rebase or heavy/native execution is requested here.
+
+## 2026-10-17 — registration and D1164 E0005 hunks: NOT_FULLY_QUALIFIED
+
+`origin/main` (`cecbfda3`) is merged with a merge commit. Under D1160 the one
+own-module line `pub(crate) mod npc_purchase;` is added to `durability/mod.rs`
+(declaration-scoped `dead_code` allowance until the held caller exists). This
+clears the canonical E0432/E0433/E0223 errors on `durability::npc_purchase` in
+`premium/{promotion,blessing_purchase}.rs`. Under D1164 (#2131
+comment6225267177) the two `let FeeBurnCause::CharmUnassign { .. }` bindings in
+`tests/support/item_fee_burn_postgres_cases.rs` and
+`tests/support/gold_fee_bank_postgres_cases.rs` become `let … else` refusals
+that return a test error for any other cause. Nothing else in those files changes.
+
+Qualification on the merged tree, Rust 1.95.0 strict all-target Clippy for
+`oteryn-game-server` (`-D warnings`): **RED**, 12 lib errors, all in
+`interaction/npc_promotion.rs`. It still imports
+`character_revision_sequencer::NpcPurchaseWriteContext` (the rebuilt context now
+lives in `durability::npc_purchase`) and calls `RevisionSlot::finish_promotion_gate`
+/ `finish_blessing_gate`, `NpcPurchaseWriteContext::from_native_owner`,
+`read_retained_promotion` and `prepare_delivered_promotion_purchase`. None of these
+exist on main. They are the held semantic-pass/RevisionSlot integration in
+`character_revision_sequencer.rs` (final slot after #2197), so they are not
+authored here. Because the lib does not compile, the integration-test targets that
+hold the E0005 sites were not compiler-checked; only rustfmt passed. Canonical
+full-package, PG and runtime qualification remain **NOT_RUN**.
+

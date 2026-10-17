@@ -330,7 +330,9 @@ async fn compose(
     request: &FeeBurnRequest,
     with_change: bool,
 ) -> TestResult<Composed> {
-    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause;
+    let FeeBurnCause::CharmUnassign { occurrence, .. } = &request.cause else {
+        return Err("these cases compose only the CharmUnassign fee source".into());
+    };
     let mut tx = Type2Transaction::open(harness.runtime.begin().await?).await?;
     if with_change {
         sqlx::raw_sql(sqlx::AssertSqlSafe(character_change(
