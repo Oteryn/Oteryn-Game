@@ -340,13 +340,19 @@ pub enum OneItemOperationV1 {
     ItemUse(super::item_use_audit::OneItemUseV1),
     #[prost(message, tag = "11")]
     HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    // Private root proposal 14 avoids TRADE 12 and Forge 13; HOUSE 11 is unchanged.
+    #[prost(message, tag = "14")]
+    ImbuementExpiry(super::imbuement_expiry_audit::OneItemImbuementExpiryV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
+    #[prost(
+        oneof = "OneItemOperationV1",
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14"
+    )]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -1940,6 +1946,7 @@ pub(super) mod tests {
             [
                 "src/durability/character_inbox_reward_claim_mint.rs",
                 "src/durability/house_interior.rs",
+                "src/durability/imbuement_expiry.rs",
                 "src/durability/item_decay_retire.rs",
                 "src/durability/item_fee_burn.rs",
                 "src/durability/item_mint.rs",

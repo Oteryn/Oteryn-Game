@@ -45,6 +45,8 @@ pub(crate) mod ground_cell_limit;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;
+pub mod imbuement_expiry;
+pub mod imbuement_expiry_audit;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;

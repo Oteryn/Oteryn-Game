@@ -9,6 +9,14 @@ extern crate self as oteryn_game_server;
 #[cfg(test)]
 mod monster_lab;
 
+#[cfg(test)]
+#[path = "durability/imbuement_tests.rs"]
+mod imbuement_tests;
+
+#[cfg(test)]
+#[path = "durability/imbuement_expiry_audit_tests.rs"]
+mod imbuement_expiry_audit_tests;
+
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;

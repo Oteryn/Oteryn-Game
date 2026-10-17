@@ -111,6 +111,7 @@ message OneItemTransactionV1 {
     OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
     OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
+    OneItemImbuementExpiryV1 imbuement_expiry = 14; // private collision repair; TRADE owns 12
   }
 }
 
@@ -579,4 +580,30 @@ message OneItemUseV1 {
   bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
   OneItemUseFlaskV1 flask = 11;
   bool flask_missing = 12;
+}
+
+// ITEM-IMBUE-1 private continuation proposal: non-caller ImbueCause::Expire only.
+// One retained zero-time slot is removed; item and CharacterRevision stay unchanged.
+// No Apply/Clear/fee/timer or runtime admission follows from this field registration.
+message OneItemImbuementSlotV1 {
+  uint32 slot = 1; // 0..2
+  string imbuement_key = 2;
+  string content_revision = 3; // retained applying revision, not a timed write counter
+  string category = 4;
+  uint32 tier = 5; // 1 Basic, 2 Intricate, 3 Powerful
+  uint64 remaining_ms = 6; // exactly 0 for Expire
+  bytes applying_occurrence = 7;
+  bytes applying_transaction_id = 8;
+}
+message OneItemImbuementExpiryV1 {
+  OneItemStateV1 item = 1; // preserved live state
+  OneItemImbuementSlotV1 row_before = 2; // removed, complete original binding
+  bytes character_id = 3;
+  bytes world_id = 4;
+  bytes channel_id = 5;
+  uint64 scope_ownership_generation = 6;
+  bytes expiry_occurrence = 7;
+  uint64 character_revision = 8; // unchanged
+  uint64 equipment_revision = 9; // unchanged
+  uint32 equipment_slot = 10; // actual native equipped location
 }

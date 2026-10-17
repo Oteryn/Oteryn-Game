@@ -11,7 +11,8 @@ pub mod character_bootstrap_intent;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_recovery_fence.rs"]
 pub mod character_recovery_fence;
-pub use production_server::domain;
+#[path = "support/imbuement_domain.rs"]
+pub mod domain;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
@@ -2243,6 +2244,9 @@ mod item_use_postgres_cases;
 // cases with the focused standalone target through the same protected lane.
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
+
+#[path = "../src/durability/imbuement.rs"]
+mod imbuement_storage;
 
 // D3-4 corpse-container TRANSFER (D133 window, corpse never a source) shares
 // its cases with the focused standalone target through the same protected lane.

@@ -2143,3 +2143,68 @@ DDL/migration authority = NONE
 ```
 
 Architecture acceptance does **not** authorize item/value runtime implementation or production mutation. A later implementation task requires separate owner authority and section 50 evidence.
+
+
+### ITEM-IMBUE-1 retained-zero Expire continuation proposal (§§15,39.3)
+
+This private draft packet specializes the accepted IMBUE-FORGE-0 §§4.1,4.3,6. It proposes
+`ImbueCause::Expire` as a non-caller, one-slot `STATE_MUTATION`, encoded by the additive
+`OneItemTransactionV1.imbuement_expiry` operation (tag 14 proposed by the current root
+single writer after the collision correction below; HOUSE retains tag 11). It admits no BURN, MINT, fee, TRANSFORM, custody change
+or CharacterRevision successor. Existing operation arms and native type-2 tuples are unchanged.
+
+The request retains the complete application binding: item, slot, imbuement key, applying
+Content revision, category, tier, applying occurrence and applying TransactionId. Stored
+remaining time must already be zero. Supplied zero is DATA and does not prove elapsed time.
+The compositor obtains the actual native recovery, node, session generation, lease, World,
+Channel and scope generation fences in the physical Type2 transaction, uses the equipment
+owner's non-caller path (`command=None`), and locks/compares the real retained row. The current
+Content digest is an equipment-authority fence, never a rebind of the retained application
+revision or proof of an eligible timer interval.
+
+One immutable receipt binds `(character, expiry occurrence)`, the complete request digest,
+TransactionId and EventId. A real deletion trigger produces the witness from the deleted
+`OLD` row; runtime INSERT into that witness relation is not admitted. Receipt, witness, exact
+slot removal and one type-2 audit outbox event commit together. A deferred guard also proves
+the full native ItemInstance, current equipment location/revision and CharacterRevision stay
+unchanged. Bare deletion, a nonzero or rebound row, an old transaction's receipt, a missing
+witness or a missing/changed audit rejects. A savepoint makes an error atomic even if a
+compositor commits its surrounding transaction.
+
+Exact historical replay is read-only and returns the committed result without deriving new
+current authority from the receipt. Any changed request for the occurrence, reused event or
+transaction identity, or another expiry occurrence for the same application conflicts.
+Concurrent attempts serialize under the native Character root lock and recheck the receipt
+after acquiring that lock. The operation does not create a new revision binding.
+
+The named resource children in RESOURCE_LIMITS_REGISTRY.json propose one slot per physical
+transaction, three singular evidence children (receipt, witness, audit) and four mutation
+work units including deletion. There are no location, value, transform or container-expansion
+lines. Existing native equipment-read bounds and the §15 10-item/40-work ceilings remain;
+this child never raises an inherited bound. The payload/envelope ceilings remain 7,936/9,216
+bytes and the exact maximal Prost encoding is part of native qualification.
+
+The SQL is an **uninstalled proposal**, composed after the retained-row checkpoint schema
+only in the canonical native PG harness. No migration number, runtime grant, command route,
+Root entrypoint, Content catalogue admission, Apply/Clear fee producer or elapsed owner is
+installed. Production installation still needs the root's fresh shared migration binding and
+exact combined-tree review; initial harness rows remain privileged fixture DATA.
+
+
+#### ITEM-IMBUE-1 operation-tag collision correction (2026-10-17)
+
+The earlier private Expire proposal on #2144 `3258a330` used tag 12. Current TRADE
+#2132 `78823c03` has already published the D1158 `player_trade` operation at tag 12
+(`native_one_item_transaction.proto` blob `0f386e637edba3d1ac1033eee224c4a3480953db`).
+The root-directed Imbue successor therefore proposes tag 14. HOUSE 11, TRADE 12 and
+the separate Forge 13 proposal remain distinct. This is a private draft correction,
+not a declaration of a CP reservation. Fresh shared allocation and composed-tree
+checks still belong to the publication coordinator.
+
+Only the outer native oneof field key changes. Interpretation revision, all inner
+fields, both existing native event tuples, retention, resource maxima and the exact
+expiry transaction proof remain unchanged. No compatibility alias decodes the old
+private tag 12 as Imbue; foreign tags 7, 11, 12 and 13 fail the closed Expire decoder.
+Historical fixture/native receipts continue to identify their original tag-12
+source. This correction installs no migration or runtime writer and qualifies no
+existing stored audit history for reinterpretation.

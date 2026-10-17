@@ -12066,6 +12066,120 @@
         "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
       ],
       "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "IMBFORGE0-RL-EXPIRY-SLOTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Retained zero-time slots deleted by one physical Imbuement Expire transaction",
+      "unit": "slot rows",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate before retaining untrusted-size state or publishing any partial mutation. This private packet grants no runtime or schema admission.",
+      "client_visible": false,
+      "boundary_tests": [
+        "one stored zero slot succeeds",
+        "second distinct slot in the same physical transaction refuses and preserves the first result"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/imbuement_expiry.rs expire_imbuement_in_transaction",
+        "apps/game-server/src/durability/imbuement_expiry_schema_proposal.sql game_imbuement_expiry_receipts created_xact_id uniqueness"
+      ],
+      "notes": "Proposed ITEM-IMBUE-1 expiry child of §§4.3,6,15. One logical item participant, no item/custody/quantity/CharacterRevision mutation. The actual native equipment read retains its existing bounded owner snapshot."
+    },
+    {
+      "id": "IMBFORGE0-RL-EXPIRY-CHILD-ROWS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "New child evidence rows for one retained-slot expiry: one receipt, one trigger-owned deletion witness and one audit outbox row",
+      "unit": "rows",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate before retaining untrusted-size state or publishing any partial mutation. This private packet grants no runtime or schema admission.",
+      "client_visible": false,
+      "boundary_tests": [
+        "exactly one of each child commits with the deletion",
+        "missing receipt, forged witness or missing/failed audit rejects the transaction"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/imbuement_expiry_schema_proposal.sql game_assert_imbuement_expiry"
+      ],
+      "notes": "Proposed explicit child accounting: three insertions plus one slot deletion are four mutation work units, within the inherited §15 40-work ceiling. Each child is singular, keyed by the same TransactionId; no unbounded list or batch is accepted."
+    },
+    {
+      "id": "DUR03-RL-07-IMBUE-EXPIRY-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Type-2 Imbuement Expire audit events for one logical expiry transaction",
+      "unit": "events",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate before retaining untrusted-size state or publishing any partial mutation. This private packet grants no runtime or schema admission.",
+      "client_visible": false,
+      "boundary_tests": [
+        "one event with ordinal=count=1 succeeds",
+        "second event or missing event refuses"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/imbuement_expiry_audit.rs decode_imbuement_expiry_envelope",
+        "apps/game-server/src/durability/imbuement_expiry_schema_proposal.sql game_assert_imbuement_expiry"
+      ],
+      "notes": "Proposed expiry child; the same native type-2 activation fence and selected tuple apply. No new event type or retention identity."
+    },
+    {
+      "id": "DUR03-RL-07-IMBUE-EXPIRY-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Encoded native OneItemTransactionV1 ImbuementExpiry payload (private proposed operation tag 14)",
+      "unit": "bytes",
+      "hard_maximum": 7936,
+      "configurable_range": {
+        "minimum": 7936,
+        "maximum": 7936
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate before retaining untrusted-size state or publishing any partial mutation. This private packet grants no runtime or schema admission.",
+      "client_visible": false,
+      "boundary_tests": [
+        "maximal accepted keys/revisions/integers encode within the inherited ceiling",
+        "ceiling plus one byte rejects before decoding",
+        "513-byte content/category keys reject",
+        "foreign operation tags 7, 11, 12 and 13 reject as ImbuementExpiry, including the superseded private tag 12"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/imbuement_expiry_audit.rs decode_imbuement_expiry_payload"
+      ],
+      "notes": "Proposed named child retaining the existing DUR03-RL-07-PAYLOAD-BYTES maximum, never raising it. Exact maximal Prost measurement remains native qualification work."
+    },
+    {
+      "id": "DUR03-RL-07-IMBUE-EXPIRY-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "resource": "Encoded native ANL-01 envelope of one Imbuement Expire",
+      "unit": "bytes",
+      "hard_maximum": 9216,
+      "configurable_range": {
+        "minimum": 9216,
+        "maximum": 9216
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate before retaining untrusted-size state or publishing any partial mutation. This private packet grants no runtime or schema admission.",
+      "client_visible": false,
+      "boundary_tests": [
+        "maximal payload and 128-byte server build encode within the inherited ceiling",
+        "ceiling plus one byte rejects before decoding"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/imbuement_expiry_audit.rs decode_imbuement_expiry_envelope"
+      ],
+      "notes": "Proposed named child retaining the existing DUR03-RL-07-ENVELOPE-BYTES maximum and P90D retention. No external event/admission authority is conferred."
     }
   ]
 }

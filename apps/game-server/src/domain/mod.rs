@@ -9,6 +9,10 @@ pub mod cyclopedia;
 pub mod death;
 pub mod equipment;
 pub mod forge_dust;
+#[cfg(test)]
+pub(crate) mod imbuement;
+#[cfg(test)]
+pub(crate) mod imbuement_checkpoint;
 pub mod mail;
 pub mod premium;
 pub mod progression;
