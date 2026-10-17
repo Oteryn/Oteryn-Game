@@ -303,6 +303,15 @@ impl ChaseSearchBudget {
         }
     }
 
+    /// Creature counterpart of [`Self::refund_player`]: return the unused part of an earlier
+    /// [`Self::charge_creature`] in the same window once the search's real work is known.
+    #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
+    pub(crate) fn refund_creature(&mut self, now_us: u64, units: u32) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.creature_units_used = self.creature_units_used.saturating_sub(units);
+        }
+    }
+
     #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
     pub(crate) fn charge_creature(
         &mut self,
@@ -729,6 +738,18 @@ mod tests {
         // Admission still needs the worst case: a nearly full window refuses another search.
         assert!(budget.charge_player(0, WINDOW_UNITS - budget.player_units_used));
         assert!(!budget.charge_player(0, 1));
+    }
+
+    #[test]
+    fn refunded_creature_reservations_keep_only_actual_work_debited() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..128 {
+            assert!(budget.charge_creature(0, UNITS_PER_SEARCH, true));
+            budget.refund_creature(0, UNITS_PER_SEARCH - 4);
+        }
+        assert_eq!(budget.creature_units_used, 128 * 4);
+        budget.refund_creature(50_000, 4);
+        assert_eq!(budget.creature_units_used, 128 * 4, "other window ignored");
     }
 
     #[test]
