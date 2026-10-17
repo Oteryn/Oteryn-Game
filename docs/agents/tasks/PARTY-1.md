@@ -18,7 +18,7 @@ registry: yes
 owner: family worker /root/party_owner (sole author)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/world_party.rs
@@ -569,3 +569,34 @@ Strict native unit Clippy remains a separate lead qualification. Shared runtime/
 CHAT/cleanup and accepted whole-feature gates remain open; no readiness, complete
 PARTY-1 or production claim follows from these component results. This sequential
 docs-only update changes no Rust, tests, ownership or integration authorization.
+
+
+### CP takeover D1372 — PostgreSQL case relocation, 2026-10-17
+
+CP took this draft over in D1372 and merged `origin/main` into the branch (merge commit).
+
+**The retained all-target RED.** `tests/party_shared_xp_postgres.rs` was a second crate
+root that re-mounted every `src/` module through `#[path]`, disabled with
+`#![cfg(any())]`. Enabling it could not land: it had drifted from `src/lib.rs` (no
+`world_change` after #2178), it compiled every test-bearing `src/` module a second time
+(including the 13 World bodies the library already runs), which
+`tools/repository/check_duplicate_test_sources.py` rejects because its allowlist only
+shrinks, and the only other option, a `test = false` manifest entry, is a shared
+`Cargo.toml` hunk that would keep it out of CI anyway.
+
+**Fix within owned paths.** The 18 `shared_xp_cases` bodies are moved verbatim to
+`apps/game-server/src/party/shared_xp_postgres_tests.rs`, mounted under `cfg(test)` from
+`party/mod.rs`. The only change is the PRE-ROUTING / NONCANONICAL early return
+(repository harness convention) in place of a hard failure when
+`OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. The crate-copy wrapper is deleted. No
+assertion, fixture, fence, schema or grant changed. Mounting from `durability/` was
+tried and rejected: the allowlisted crate-copy targets `native_admission_source_postgres`
+and `runtime_scope_assignment_postgres` include `durability/` without the PostgreSQL
+harness and fail to compile.
+
+**Remaining shared hunk (NOT APPLIED).** `mod party;` in `apps/game-server/src/lib.rs`.
+Until CP applies it at this PR's slot turn, the `party` module, its 18 view tests and the
+18 relocated PostgreSQL bodies are not compiled. With that line applied locally the
+validation recorded in the PR status comment passed. The wire, CHAT-2 relay, runtime
+composition and family residue gates in *Remaining scope and concrete gates* are
+unchanged.
