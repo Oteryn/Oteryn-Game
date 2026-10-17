@@ -4,7 +4,9 @@
 // Shared cases: included by the CI-run character_authority_postgres target and the thin standalone
 // wrapper, both of which provide the path-loaded crate root and the Bestiary harness.
 
-use crate::bestiary_postgres_harness::{CHARACTER, Harness, TestResult, debug, id, runtime};
+use crate::bestiary_postgres_harness::{
+    CHARACTER, Harness, TestResult, configured_admin, debug, id, runtime,
+};
 use crate::domain::appearance::{
     AccountUnlocks, AppearanceContent, AppearanceRejection, Sex, UnlockFact, validate_selection,
 };
@@ -20,7 +22,11 @@ fn run<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
-    let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+    // Same gate as every other case in the shared PostgreSQL targets: the routed lane sets the
+    // admin URL; ordinary workspace runs without the service skip as PRE-ROUTING.
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
     runtime()?.block_on(async move {
         let h = Harness::create_appearance(admin, tag).await?;
         let outcome = body(&h).await;

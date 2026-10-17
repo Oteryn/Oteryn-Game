@@ -1,6 +1,6 @@
 #![allow(clippy::expect_used)]
-// D1112 APP-1 native authority target. Every case requires an explicitly routed
-// PostgreSQL 17.6 service and the installed migration 0093; absence is a failure.
+// D1112 APP-1 native authority target. Every case runs against the routed PostgreSQL 17.6
+// service and the installed migration 0093; without the service it skips as PRE-ROUTING.
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;

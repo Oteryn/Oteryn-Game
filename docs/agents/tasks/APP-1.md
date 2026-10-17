@@ -122,6 +122,9 @@ Historical `e32`, `8295`, `a392` and published `29ef` evidence remains immutable
 The previous 29ef **private overlay** 18-case PASS included registration and 0093 and therefore
 never qualified the published head. Its exact-head CI failed E0433 because registration was
 absent; D1112 repairs that source assembly. No old result is relabelled as new clean-head evidence.
+Merge-queue run 38996862976 failed 13 shared cases with `NotPresent` in integration-rest, which
+has no PostgreSQL; the cases now use the shared `configured_admin()` PRE-ROUTING skip like every
+other case in `character_authority_postgres`, and the routed PostgreSQL lane still executes them.
 
 ## Remaining owners
 
