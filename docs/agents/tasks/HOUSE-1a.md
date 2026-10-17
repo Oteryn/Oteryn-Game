@@ -8,7 +8,7 @@ status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-1a
-base_sha: 5742f30f3
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -33,7 +33,76 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
-## Trigger-order catalogue repair — local recovery candidate, NOT_FULLY_QUALIFIED
+## 2026-10-17 checkpoint — ACL/BED rollback regressions, NOT_FULLY_QUALIFIED
+
+This bounded packet follows CP's ordinary main merge at
+`79287646d31bad5bd72213ae535136f6ac0f15e6`. All four file preimages were read at
+that head and match the retained predecessor blobs. CP
+[D1345/D1349](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418)
+releases owned authoring and the single-successor publication route. Root remains
+the sole remote writer; the PR remains draft. The historical sections below retain
+older evidence and are not qualification of this packet.
+
+The source change adds these boundaries to the actual native tests:
+
+- `house_ownership_legacy_acl_revision_is_atomic_and_has_no_runtime_property_grant`
+  exercises the real legacy ACL receipt and deferred guard with the canonical
+  property fragment. Successful ACL changes advance the property ACL revision;
+  a missing same-transaction receipt rejects the commit and rolls both revisions
+  back. ACL deletion retains receipts and advances only the ACL revision. A literal
+  runtime-role direct property update must be denied.
+- `guild_house_missing_bed_revision_hook_rolls_back_the_participant` uses the real
+  D transaction, Inbox and BED schema. It disables only the BED revision trigger
+  in its own isolated test database, then verifies typed refusal and complete
+  participant rollback even when the enclosing caller commits. It does not change
+  the shared PostgreSQL service or another task's database.
+- The existing release/rollback/reload case now checks BED and ACL revisions before
+  and after the actual terminal release. The `OHG05` error describes both native
+  disposition and BED revision dependencies; its SQLSTATE, ABI and fail-closed
+  behavior are unchanged.
+
+The ordinary property inventory is six cases; the real Guildhall participant
+inventory is thirteen. None is ignored or replaced with a successful stub. The
+Guildhall leaf remains unmounted until its actual native dependency assembly exists.
+It must be a child of `durability::guild::disband_terminal_tests`, so its
+`super::run/install/job` are the owning D fixtures.
+
+| Retained source dependency | Exact source identity | Required source/schema |
+|---|---|---|
+| Native main, including #2163 | `f010472bcb6794a2cbc56dfaf755bd122c10225e` | Existing migration set, genuine recovery/node possession, Inbox and native harness |
+| #2136 | `e26f3480c08b14e5b97b2131afec0a2623b9d168` | Actual Guild domain/writer/audit/jobs; `GUILD_TABLES_PROPOSAL`, `GUILD_GUARDS_PROPOSAL` and terminal fixture |
+| #2139 | `65a834fe536cd04c53d59189a35af032328e8f67` | Guild bank writer/audit; `GUILD_BANK_SCHEMA_PROPOSAL`, `GUILDHALL_LEDGER_SCHEMA_PROPOSAL` |
+| #2153 | `4b435e05143f6ea66b90ecb2e2df26174c945d6d` | Guildhall writer/domain; `BID_SOURCE_SCHEMA`, `OPERATION_SCHEMA`, `HALL_GUARDS_SCHEMA` |
+| #2141 | `7abcd81b06c0caa27192d9129efe180398d000ec` | Actual disposition source and `PRIVATE_DISPOSITION_SCHEMA`; successor mount follows D1349 |
+| #2147 | `0782ef496a6bcfbefb5be7bf89d778d6b1981c06` | Actual `bed_sleeper`/`house_bed::sleeper`; `PRIVATE_SLEEPER_SCHEMA_SQL` and native BED revision trigger |
+
+These identities describe retained source inputs, not merged prerequisites or a
+completed combined run. D1349 preserves the #2141 → #2137 → #2167 → #2147 order.
+D1330's nullable spell-consumer repair is excluded from this PR.
+
+Qualification for this packet:
+
+- **PASS, bounded source review:** Root independently reviewed the three Rust
+  changes and found no material defect. This does not establish PostgreSQL behavior.
+- **PASS, whitespace:** `git diff --check` on the bounded packet.
+- **Formatting:** native Rustfmt reported focused formatting differences; the exact
+  returned hunks were applied. The final native formatting recheck is pending.
+- **NOT_RUN:** native compilation/Clippy and all nineteen PostgreSQL cases for this
+  packet, including the deferred `23514` rollback expectation and BED hook refusal.
+  No result from an older source generation is transferred to this one.
+
+D1329 applies to the next execution: `cargo fetch --locked` first, then the existing
+`in-pg-netns.sh` beside the shared PG17.6 env. Use only the harness's isolated own
+database and cleanup. Molehill execution follows D1342's free nonblocking slot,
+slot target, jobs=4 and memory gate; the VPS permits one cargo build at a time.
+No new PostgreSQL server/container is part of this packet.
+
+Auction opening/settlement and ongoing rent still need the genuine bank/Premium,
+canonical property and event owners; this regression packet does not activate
+those absent writers. Production schema/runtime grants, registered House events,
+canonical mounts and full native qualification remain open integration work.
+
+## Historical trigger-order catalogue repair — NOT_FULLY_QUALIFIED
 
 Actual227 on #2141 identified the generic DUR-03 BEFORE trigger refusing23514
 before the House NOWAIT anchor could refuse55P03. #2141 now authors only four
@@ -54,7 +123,7 @@ Independent source review passed after exact hash and owned-path checks. This
 successor is preserved as a local commit and verified external recovery bundle;
 publication is separate and no PC execution, ready, merge or rebase is implied.
 
-## Current checkpoint — real Guildhall release port, NOT_FULLY_QUALIFIED
+## Historical checkpoint — real Guildhall release port, NOT_FULLY_QUALIFIED
 
 The product-source candidate is local commit
 `50bc410809bdb0f909160134b487fa7ed76e0c8e`, with independent source-only PASS

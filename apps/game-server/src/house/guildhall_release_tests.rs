@@ -183,6 +183,9 @@ fn guild_house_real_inbox_release_rollback_then_commit_reload() -> TestResult {
         assert_eq!(h.count("game_item_house_interior_locations").await?, 2);
         assert_eq!(h.count("game_character_inbox_deliveries").await?, 0);
         assert_eq!(h.count("game_house_terminal_releases").await?, 0);
+        let before: (String, String) = sqlx::query_as("SELECT b.revision::text,p.acl_revision::text FROM game_house_bed_revisions b JOIN game_house_properties p USING(world_id,house_key) WHERE b.house_key=$1")
+            .bind(HOUSE).fetch_one(&h.pool).await?;
+        assert_eq!(before, ("1".into(), "0".into()));
         assert!(pass(h, 0, 93, true).await?.1);
         assert_eq!(h.count("game_item_house_interior_locations").await?, 0);
         assert_eq!(h.count("game_item_house_reclaim_provenance").await?, 0);
@@ -200,6 +203,11 @@ fn guild_house_real_inbox_release_rollback_then_commit_reload() -> TestResult {
         assert!(p.try_get::<bool, _>("empty")?);
         assert!(p.try_get::<bool, _>("receipt")?);
         assert_eq!(p.try_get::<String, _>("ownership_revision")?, "2");
+        let revisions: (String, String, String, String) = sqlx::query_as("SELECT b.revision::text,p.acl_revision::text,r.acl_revision_before::text,r.acl_revision_after::text FROM game_house_bed_revisions b JOIN game_house_properties p USING(world_id,house_key) JOIN game_house_terminal_releases r USING(world_id,house_key) WHERE b.house_key=$1")
+            .bind(HOUSE).fetch_one(&h.pool).await?;
+        // One sleeper is freed once. The ACL DELETE advances the property once,
+        // followed by the separate terminal ownership/ACL revision successor.
+        assert_eq!(revisions, ("2".into(), "2".into(), "1".into(), "2".into()));
         Ok(())
     })
 }
@@ -474,6 +482,59 @@ fn guild_house_missing_actual_native_hook_refuses_before_freeze() -> TestResult 
         assert_eq!(footprint(&mut tx).await?, before);
         tx.commit().await?;
         assert_eq!(h.count("game_house_guild_dispositions").await?, 0);
+        Ok(())
+    })
+}
+
+#[test]
+fn guild_house_missing_bed_revision_hook_rolls_back_the_participant() -> TestResult {
+    run("guild_house_bed_hook", async |h| {
+        setup(h, 1).await?;
+        sqlx::raw_sql(
+            "ALTER TABLE game_house_bed_sleepers DISABLE TRIGGER game_house_bed_revision",
+        )
+        .execute(&h.pool)
+        .await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let request = job()?;
+        let mut tx = h.pool.begin().await?;
+        occurrences(&mut tx, h, &h.root).await?;
+        let reserved = reserve_guild_disband_recipients_in_transaction(
+            &mut tx,
+            request.world_id,
+            request.guild_id,
+            id(92),
+            0,
+            id(93),
+        )
+        .await
+        .map_err(debug)?;
+        let context =
+            lock_guild_disband_transaction(&mut tx, &h.root, &authority, &h.node, &request)
+                .await
+                .map_err(debug)?
+                .ok_or("real disband context")?;
+        let before = footprint(&mut tx).await?;
+        assert!(matches!(
+            advance_guild_disband_release_in_transaction(&mut tx, &context, reserved).await,
+            Err(GuildHallReleaseError::MissingDependency(
+                "native House disposition or BED revision hook"
+            ))
+        ));
+        assert_eq!(footprint(&mut tx).await?, before);
+        tx.commit().await?;
+        let retained: (String, Option<i64>) = sqlx::query_as("SELECT r.revision::text,s.freed_at FROM game_house_bed_revisions r JOIN game_house_bed_sleepers s USING(world_id,house_key) WHERE r.house_key=$1")
+            .bind(HOUSE).fetch_one(&h.pool).await?;
+        assert_eq!(retained, ("1".into(), None));
+        assert_eq!(h.count("game_house_guild_dispositions").await?, 0);
+        assert_eq!(h.count("game_house_terminal_releases").await?, 0);
+        assert_eq!(h.count("game_character_inbox_deliveries").await?, 0);
+        assert_eq!(h.count("game_item_house_interior_locations").await?, 1);
         Ok(())
     })
 }

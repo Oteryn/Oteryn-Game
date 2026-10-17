@@ -1017,6 +1017,83 @@ mod tests {
     }
 
     #[test]
+    fn house_ownership_legacy_acl_revision_is_atomic_and_has_no_runtime_property_grant()
+    -> TestResult {
+        run(true, async |connection, _| {
+            let actor = seed_character(connection).await?;
+            let mut tx = connection.begin().await?;
+            acquire(&mut tx, &actor, HOUSE).await?;
+            tx.commit().await?;
+
+            for (before, allowed) in [(0_u64, true), (1, false)] {
+                let mut tx = connection.begin().await?;
+                tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+                let receipt: String = sqlx::query_scalar(
+                    "INSERT INTO game_house_acl_receipts(receipt_id,world_id,house_key,list_id,character_id,game_session_id,command_id,ownership_revision,revision_before,revision_after,allow_everyone,members) VALUES(game_character_uuid_v7(),$1::uuid,$2,-1,$3::uuid,game_character_uuid_v7(),1,1,$4::text::numeric,$5::text::numeric,$6,ARRAY[]::uuid[]) RETURNING receipt_id::text",
+                )
+                .bind(&actor.world)
+                .bind(HOUSE)
+                .bind(&actor.character)
+                .bind(before.to_string())
+                .bind((before + 1).to_string())
+                .bind(allowed)
+                .fetch_one(&mut *tx)
+                .await?;
+                if before == 0 {
+                    sqlx::query("INSERT INTO game_house_acl(world_id,house_key,list_id,revision,allow_everyone,members,last_receipt) VALUES($1::uuid,$2,-1,1,$3,ARRAY[]::uuid[],$4::uuid)")
+                        .bind(&actor.world).bind(HOUSE).bind(allowed).bind(&receipt).execute(&mut *tx).await?;
+                } else {
+                    sqlx::query("UPDATE game_house_acl SET revision=2,allow_everyone=$3,last_receipt=$4::uuid WHERE world_id=$1::uuid AND house_key=$2 AND list_id=-1")
+                        .bind(&actor.world).bind(HOUSE).bind(allowed).bind(&receipt).execute(&mut *tx).await?;
+                }
+                tx.execute("RESET ROLE").await?;
+                let observed: String = sqlx::query_scalar("SELECT acl_revision::text FROM game_house_properties WHERE world_id=$1::uuid AND house_key=$2")
+                    .bind(&actor.world).bind(HOUSE).fetch_one(&mut *tx).await?;
+                assert_eq!(observed, (before + 1).to_string());
+                tx.commit().await?;
+
+                // The real 0038 deferred receipt guard rejects a changed list without a
+                // new same-transaction receipt. Its earlier property revision update must
+                // roll back with that rejected ACL write.
+                let mut refused = connection.begin().await?;
+                refused
+                    .execute("SET LOCAL ROLE oteryn_game_runtime")
+                    .await?;
+                sqlx::query("UPDATE game_house_acl SET revision=revision+1,allow_everyone=NOT allow_everyone WHERE world_id=$1::uuid AND house_key=$2 AND list_id=-1")
+                    .bind(&actor.world).bind(HOUSE).execute(&mut *refused).await?;
+                assert_eq!(sqlstate(refused.commit().await)?, "23514");
+                let retained: (String, String, bool, i64) = sqlx::query_as("SELECT p.acl_revision::text,a.revision::text,a.allow_everyone,(SELECT count(*) FROM game_house_acl_receipts) FROM game_house_properties p JOIN game_house_acl a USING(world_id,house_key) WHERE p.world_id=$1::uuid AND p.house_key=$2")
+                    .bind(&actor.world).bind(HOUSE).fetch_one(&mut *connection).await?;
+                assert_eq!(
+                    retained,
+                    (
+                        (before + 1).to_string(),
+                        (before + 1).to_string(),
+                        allowed,
+                        (before + 1) as i64
+                    )
+                );
+            }
+
+            sqlx::query("DELETE FROM game_house_acl WHERE world_id=$1::uuid AND house_key=$2 AND list_id=-1")
+                .bind(&actor.world).bind(HOUSE).execute(&mut *connection).await?;
+            let retained: (String, String, String, i64, i64) = sqlx::query_as("SELECT acl_revision::text,revision::text,ownership_revision::text,(SELECT count(*) FROM game_house_acl),(SELECT count(*) FROM game_house_acl_receipts) FROM game_house_properties WHERE world_id=$1::uuid AND house_key=$2")
+                .bind(&actor.world).bind(HOUSE).fetch_one(&mut *connection).await?;
+            assert_eq!(retained, ("3".into(), "3".into(), "1".into(), 0, 2));
+
+            let mut refused = connection.begin().await?;
+            refused
+                .execute("SET LOCAL ROLE oteryn_game_runtime")
+                .await?;
+            let direct = sqlx::query("UPDATE game_house_properties SET acl_revision=acl_revision+1 WHERE world_id=$1::uuid AND house_key=$2")
+                .bind(&actor.world).bind(HOUSE).execute(&mut *refused).await;
+            assert_eq!(sqlstate(direct)?, "42501");
+            refused.rollback().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn house_ownership_concurrent_properties_compete_for_one_account_world_slot() -> TestResult {
         run(true, async |connection, url| {
             let actor = seed_character(connection).await?;

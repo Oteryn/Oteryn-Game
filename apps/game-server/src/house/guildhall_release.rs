@@ -36,7 +36,9 @@ impl From<sqlx::Error> for GuildHallReleaseError {
             Some("OHG02") => Self::NotCurrent,
             Some("OHG03") => Self::InvalidCustody,
             Some("OHG04") => Self::Occupied,
-            Some("OHG05") => Self::MissingDependency("native HOUSE-1b Guild fence ABI1"),
+            Some("OHG05") => {
+                Self::MissingDependency("native House disposition or BED revision hook")
+            }
             _ => Self::Database(error),
         }
     }
