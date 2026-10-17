@@ -487,3 +487,111 @@ open-draft collision check before publication. Its layout/tags and
 SNAPSHOT_EXPIRED registration remain to implement. ANALYSER consumes
 existing receipts under cap10 without inventing a hook or statistics owner.
 This checkpoint neither completes RANK-1 nor requests ready/merge.
+
+
+## Current-source and recovered native evidence — 2026-10-17
+
+This appendix preserves the historical record above and corrects its now-stale
+execution statements. Current source is
+`cfd881842c2593e2687aab22984761275ee1dc86`. It changes the pagination condition
+and associated tests after historical
+`b83207bcc055290f3f46feaeb40d53abb524e837`: a page greater than one with snapshot
+token zero is refused. The historical statement that the b832 Rust bytes are
+unchanged belongs to that earlier checkpoint.
+
+### Two original current-head pagination regressions
+
+The coordinator ran two original selected tests on PostgreSQL 17.6 through normal
+Cargo and the existing `character_authority_postgres` target:
+
+| Original selected case under `durability::highscore_snapshot::tests` | Observed result |
+|---|---|
+| `world_category_token_isolation_empty_world_and_query_boundaries` | PASS 1/1; 1.41 seconds, including the current page-2/token-0 refusal |
+| `filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap` | PASS 1/1; 3.67 seconds, including subsequent pages pinned to the captured snapshot token |
+
+Each run selected exactly one original case, with zero failures or ignored
+tests. `cargo fmt --all -- --check` also passed.
+
+The isolated exact-head checkout added only
+`pub(crate) mod highscore_snapshot;` to
+`apps/game-server/src/durability/mod.rs`, whose original Git blob was
+`dbae55905fa58f164b36f18d46c7661e218bdefa`. This was a **validation-only shared
+module registration**, not a published runtime integration change. The original
+production/test bodies, canonical fixture, Cargo configuration and migrations
+were unchanged. A fresh dedicated Cargo target directory kept the source graph
+coherent, and the coordinator verified source hashes and the one-line-only
+overlay before and after. No forwarding runner, copied rlib, test-body rewrite,
+schema overlay or stack-size override was used.
+
+```sh
+cargo test --locked -p oteryn-game-server --test character_authority_postgres durability::highscore_snapshot::tests::world_category_token_isolation_empty_world_and_query_boundaries --quiet -- --exact --test-threads=1
+cargo test --locked -p oteryn-game-server --test character_authority_postgres durability::highscore_snapshot::tests::filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap --quiet -- --exact --test-threads=1
+cargo fmt --all -- --check
+```
+
+The native fixture used `OTERYN_TEST_POSTGRES_ADMIN_URL` with its unchanged
+admin-URL guard on PostgreSQL 17.6. Current evidence is retained on Molehill-PC under
+`/root/oteryn-six-pr-20261017/evidence-rank/`.
+
+These results qualify the current pagination delta in that canonical Cargo
+context. They do not qualify every RANK case, current-head all-target Clippy,
+full package execution or runtime integration. The original public-outbox case
+requires `apps/game-server/migrations/0091_public_projections.sql`, absent at
+this exact head, and was outside the two-case selection. The inactive
+`tests/highscores_postgres.rs` target is not counted as an executed suite.
+
+### Historical attempt 5 is terminal
+
+The retained 26 selected native passes (15 PostgreSQL 17.6 and 11 ranking cases)
+belong to historical source
+`b83207bcc055290f3f46feaeb40d53abb524e837`. They are not transferred to the
+changed current source.
+
+Recovered CP D1155 attempt-5 evidence supersedes the earlier statement that no
+attempt 5 was created:
+
+| Historical attempt-5 stage | Observed result |
+|---|---|
+| Literal and assembled source prechecks | PASS, exit 0 |
+| Formatting and strict all-target Clippy | PASS, exit 0 |
+| Duplicate-source guard | PASS, exit 0; 56 harness units and 11 allowlisted targets |
+| Full package tests | Terminated with exit -15 under a resource Hold |
+| Terminal outcome and source postflight | FAILED; postflight `NOT_QUALIFIED` |
+
+The recorded Hold reason is `held peer owner PID absent`. The runner reaped
+both children and ended at **2026-10-16T22:17:48Z**. The log stops during a
+1,491-test group; no complete package PASS exists. The 26 selected results were
+retained earlier evidence, not a new selected-suite execution in attempt 5.
+
+Historical evidence remains under
+`/root/oteryn-codex-20261016/rank-2168-963c6ae8/evidence/attempt-5/`.
+
+| Evidence binding | SHA-256 |
+|---|---|
+| Runner manifest | `45279fbc91af649f2f9bdbae38726d65a515110764c94374679635057e20f909` |
+| Strict Clippy log | `03273410add1753ba27bc82677a6eb937b6eeb453a35613a436b9fbd325173d2` |
+| Interrupted full-package log | `edc9ef4ec0c3966b67368d99aaf205207ebcc73d504c1adba4836f9899102aa4` |
+
+Attempt 5 is terminal. The earlier prospective allowance must not be interpreted
+as permission to restart that historical runner or modify its guards or locks.
+Any future broad qualification needs its own current candidate and applicable
+resource/allocation gates.
+
+### Remaining integration boundary
+
+The one-line native validation overlay does not complete the CP D1155 shared
+slot. Migration 0097, projection-role credentials/grants and snapshot spawn
+remain allocated integration work. After #2198, the PostgreSQL bodies must use
+`tests/support/highscores_postgres_cases.rs` and the canonical
+`character_authority_postgres.rs` root; final integration must remove the
+inactive `cfg(any())` arrangement. Reset notifications come from #2167.
+
+The assigned order remains #2163 -> #2197 -> #2167 -> #2198 -> #2168 -> #2151 ->
+#2149. HS-WIRE-1 still needs concrete layout/tags, `SNAPSHOT_EXPIRED`
+registration and authenticated integration under capability 9 / command 14,
+with no state domain and the required live collision check. Analyser integration
+must consume the existing receipts under capability 10.
+
+Current-head all-target Clippy, full package tests and complete native
+runtime/E2E qualification remain open. This evidence correction leaves
+`NOT_FULLY_QUALIFIED` and CP-only integration/merge authority unchanged.
