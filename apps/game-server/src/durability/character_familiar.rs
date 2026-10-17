@@ -708,7 +708,7 @@ async fn apply_familiar_transaction(
     {
         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
     }
-    let projection = sqlx::query("SELECT state::text, committed_character_revision::text FROM game_character_familiar_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+    let projection = sqlx::query("SELECT s.state::text,s.committed_character_revision::text,(SELECT r.committed_at FROM game_character_familiar_receipts r WHERE r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision) AS checkpoint_committed_at_ms FROM game_character_familiar_state s WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF s")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let before = projection
         .as_ref()

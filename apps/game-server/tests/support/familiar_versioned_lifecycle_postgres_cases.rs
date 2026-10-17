@@ -128,3 +128,49 @@ fn familiar_v2_converts_linked_checkpoint_and_rejects_record_derived_writer() ->
         result
     })
 }
+#[test]
+fn familiar_v2_consecutive_writes_decode_locked_linked_checkpoint() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "familiar_v2_consecutive", true).await?;
+        let result: TestResult = async {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let seconds = h.root.read_familiar_unix_time(&authority).await.map_err(debug)?.seconds();
+            let writer = FamiliarLifecycleWriter::from_fence(&fence(1)?).map_err(debug)?;
+            let first_state = DurableFamiliarState { saved_expiry_unix: seconds + 60, last_logout_unix: 1, ..Default::default() }
+                .for_next_write(Some(seconds * 1000), &writer).map_err(debug)?;
+            let mut second_state = first_state.clone();
+            second_state.last_logout_unix = 2;
+            let request = |tag, before, after| -> TestResult<FamiliarStateRequest> { Ok(FamiliarStateRequest {
+                occurrence: FamiliarStateOccurrence::from_bytes(id(tag)).map_err(debug)?, before, after,
+                content_revision: "content-1".into(), policy_revision: "policy-1".into(), policy_digest: [1;32],
+            }) };
+            let first = request(130, DurableFamiliarState::default(), first_state.clone())?;
+            let committed = h.root.commit_character_familiar_state(&authority,&h.node,fence(1)?,first).await.map_err(debug)?;
+            let FamiliarStateOutcome::Committed(receipt) = committed else {
+                return Err(format!("first:{committed:?}").into());
+            };
+            assert_eq!(receipt.committed_character_revision().get(), 2);
+            // The second write locks the now-existing projection row and must decode its linked checkpoint.
+            let second = request(131, first_state, second_state.clone())?;
+            let committed = h.root.commit_character_familiar_state(&authority,&h.node,fence(2)?,second.clone()).await.map_err(debug)?;
+            let FamiliarStateOutcome::Committed(receipt) = committed else {
+                return Err(format!("second:{committed:?}").into());
+            };
+            assert_eq!(receipt.committed_character_revision().get(), 3);
+            let replay = h.root.commit_character_familiar_state(&authority,&h.node,fence(2)?,second).await.map_err(debug)?;
+            assert_eq!(replay, FamiliarStateOutcome::AlreadyCommitted(receipt));
+            let loaded = h.root.read_character_familiar_state(&authority,CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?).await.map_err(debug)?;
+            assert_eq!(loaded.state(), &second_state);
+            assert_eq!(loaded.committed_character_revision().map(|v| v.get()), Some(3));
+            let actual: i64 = sqlx::query_scalar("SELECT committed_at FROM game_character_familiar_receipts WHERE familiar_occurrence_id=encode($1,'hex')::uuid").bind(id(131).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(loaded.checkpoint_committed_at_ms(), Some(actual));
+            Ok(())
+        }.await;
+        h.cleanup().await?;
+        result
+    })
+}
