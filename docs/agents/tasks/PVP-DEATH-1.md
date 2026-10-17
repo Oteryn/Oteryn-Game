@@ -533,3 +533,60 @@ carrier, unknown-carrier, composite and bite cases remain required.
 Validation of this repair is pending on its complete immutable candidate. No Rust,
 PostgreSQL, full-package PASS or downstream PvP completion is inferred from the
 historical recovery evidence above.
+
+## D1258a mechanical test consumers — 2026-10-17
+
+The source at `1a7d2154edff4259a9ff87d4ccd338b04d193fdd` reached the standalone
+Foundation test roots after the library compile/Clippy repairs. Job
+[`117349378771`](https://github.com/Oteryn/Oteryn-Game/actions/jobs/117349378771)
+reported a missing `crate::player_lethal` module in the first three aggregate roots.
+The complete source sweep identified five active aggregates and 21 retained focused
+wrappers with the same missing native carrier mount.
+
+Under the existing
+[D1258a](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226901320)
+mechanical-consumer allocation, each root below mounts the real
+`ability/player_lethal.rs` beside its own real `foundation/mod.rs`. This keeps the
+native `LethalSource` and sealed actor references in that root's one type universe.
+The source's condition-kind path uses the identical existing Foundation reexport;
+no source semantics, alternative type, Ability facade, generic transaction layer,
+Cargo target setting or duplicate-source allowlist changes are introduced.
+
+Additional mechanical consumers (test module glue only):
+
+- `apps/game-server/tests/account_achievement_postgres.rs`
+- `apps/game-server/tests/bank_postgres.rs`
+- `apps/game-server/tests/bestiary_progress_postgres.rs`
+- `apps/game-server/tests/character_authority_postgres.rs`
+- `apps/game-server/tests/character_forge_dust_postgres.rs`
+- `apps/game-server/tests/character_proficiency_modification_postgres.rs`
+- `apps/game-server/tests/character_progression_postgres.rs`
+- `apps/game-server/tests/charm_state_postgres.rs`
+- `apps/game-server/tests/chest_use_postgres.rs`
+- `apps/game-server/tests/combat_bestiary_postgres.rs`
+- `apps/game-server/tests/combat_death_reward_postgres.rs`
+- `apps/game-server/tests/combat_pickup_postgres.rs`
+- `apps/game-server/tests/corpse_decay_postgres.rs`
+- `apps/game-server/tests/corpse_transfer_postgres.rs`
+- `apps/game-server/tests/durability_postgres.rs`
+- `apps/game-server/tests/item_fee_burn_postgres.rs`
+- `apps/game-server/tests/item_mint_postgres.rs`
+- `apps/game-server/tests/item_ref_production.rs`
+- `apps/game-server/tests/item_timed_state_postgres.rs`
+- `apps/game-server/tests/item_transfer_postgres.rs`
+- `apps/game-server/tests/item_use_postgres.rs`
+- `apps/game-server/tests/map_item_mint_postgres.rs`
+- `apps/game-server/tests/native_admission_source_postgres.rs`
+- `apps/game-server/tests/reward_claim_mint_postgres.rs`
+- `apps/game-server/tests/runtime_scope_assignment_postgres.rs`
+- `apps/game-server/tests/wp5_s3b_composition.rs`
+
+The active aggregates are `character_authority_postgres`, `durability_postgres`,
+`native_admission_source_postgres`, `runtime_scope_assignment_postgres` and
+`wp5_s3b_composition`; all other listed roots keep their existing `test = false`
+focused-wrapper status. This list records mechanical consumers under D1258a and
+does not extend the D1244 source ledger or the slot-only #2193 death-writer scope.
+
+Exact new-candidate Rust 1.95 formatting, strict all-target Clippy, native test
+execution and PostgreSQL 17.6 qualification for this glue remain **NOT_RUN** here.
+The earlier library progress is not a full-package or downstream PvP PASS.
