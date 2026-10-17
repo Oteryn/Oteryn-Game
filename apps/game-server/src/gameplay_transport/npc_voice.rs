@@ -1,8 +1,8 @@
 //! NPC-BEHAVIOUR0 §6: source-bound voice preparation in the current Channel owner.
 //!
 //! This consumes the existing typed catalogue; it does not admit new content or publish chat.
-//! NPC-CONTENT-2 must qualify the source lines before activation. The CP integration must run
-//! this only on the budgeted NPC think, select CHAT_V1 listeners in the same Channel and enqueue
+//! NPC-CONTENT-2 supplies the exact typed presence fields on NPC definitions. The CP integration
+//! must run this only on the budgeted NPC think, select CHAT_V1 listeners in the same Channel and enqueue
 //! through the chat owner. The native chat value carries the NPC's original text for both
 //! say and yell, exempt from the player's yell transformation and ingress spam control.
 //! There is no native source-catalogue-to-active-runtime-pin binding port here: matching the
@@ -21,7 +21,8 @@ use crate::ai_think::targeting::sees;
 use crate::ai_think::{CREATURE_THINK_INTERVAL_MILLIS, ThinkOccurrence};
 use crate::chat::{ChatPosition, ChatText, SpeechMode};
 use crate::content::{
-    NpcDataCatalogue, NpcServiceModel, ProjectV2Declaration, ProjectV2SpeechMode, ProjectV2Voices,
+    NpcDataCatalogue, NpcServiceModel, ProjectV2CandidateField, ProjectV2CandidateValue,
+    ProjectV2Declaration, ProjectV2SpeechMode, ProjectV2Voice, ProjectV2Voices,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, MovementPositionContext};
 use oteryn_protocol_oteryn::chat::{ChatLine, ChatSpeaker, ChatSpeechMode};
@@ -30,6 +31,27 @@ use oteryn_simulation_determinism::{GameplayDecisionRoot, deterministic_decision
 
 const PPM: u64 = 1_000_000;
 const PURPOSE: &str = "NPC_VOICE";
+const VOICE_INTERVAL: &str = "oteryn:source.npc.voice_interval_ms";
+const VOICE_CHANCE: &str = "oteryn:source.npc.voice_chance_percent";
+const VOICE_LINES: &str = "oteryn:source.npc.voice_lines";
+
+/// Exact JSON line shape emitted into NPC-CONTENT-2's typed Text field. Missing or
+/// unknown fields do not default to an admitted line or a speech mode.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PresenceVoice {
+    text: String,
+    yell: bool,
+}
+
+fn presence_field<'a>(
+    fields: &'a [ProjectV2CandidateField],
+    path: &str,
+) -> Option<&'a ProjectV2CandidateValue> {
+    let mut matches = fields.iter().filter(|field| field.field_path == path);
+    let value = &matches.next()?.value;
+    matches.next().is_none().then_some(value)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum VoiceError {
@@ -54,6 +76,41 @@ struct VoiceProfile {
 }
 
 impl VoiceProfile {
+    fn from_presence(name: &str, fields: &[ProjectV2CandidateField]) -> Option<Self> {
+        let ProjectV2CandidateValue::Integer(interval_ms) = presence_field(fields, VOICE_INTERVAL)?
+        else {
+            return None;
+        };
+        let ProjectV2CandidateValue::Integer(percent) = presence_field(fields, VOICE_CHANCE)?
+        else {
+            return None;
+        };
+        let ProjectV2CandidateValue::Text(lines) = presence_field(fields, VOICE_LINES)? else {
+            return None;
+        };
+        let interval_ms = u64::try_from(*interval_ms).ok()?;
+        let percent = u32::try_from(*percent).ok().filter(|value| *value <= 100)?;
+        // The native catalogue has already bounded the containing source Text. Decode this
+        // producer's JSON once at book construction, preserving its order and exact text.
+        let lines: Vec<PresenceVoice> = serde_json::from_str(lines).ok()?;
+        let source = ProjectV2Voices {
+            interval_ms,
+            chance_ppm: percent * 10_000,
+            entries: lines
+                .into_iter()
+                .map(|line| ProjectV2Voice {
+                    text: line.text,
+                    mode: if line.yell {
+                        ProjectV2SpeechMode::Yell
+                    } else {
+                        ProjectV2SpeechMode::Say
+                    },
+                })
+                .collect(),
+        };
+        Self::from_source(name, &source)
+    }
+
     fn from_source(name: &str, source: &ProjectV2Voices) -> Option<Self> {
         if source.interval_ms == 0 || u64::from(source.chance_ppm) > PPM {
             return None;
@@ -99,20 +156,14 @@ impl NpcVoiceBook {
             return Err(VoiceError::ContentSourceMismatch);
         }
         let mut profiles = BTreeMap::new();
-        // The model excludes held NPCs. Exact native references, including revision, select
-        // their Dialogue; a similarly named or unreferenced Dialogue cannot supply voices.
+        // The model excludes held NPCs. NPC-CONTENT-2's source-held or unsourced voices omit
+        // these fields. Never fall back to a linked Dialogue: that would bypass the hold.
         for (reference, npc) in model.npcs() {
-            let Some(ProjectV2Declaration::Dialogue {
-                voices: Some(source),
-                ..
-            }) = npc
-                .dialogue
-                .as_ref()
-                .and_then(|dialogue| catalogue.declaration(dialogue))
+            let Some(ProjectV2Declaration::Npc { fields, .. }) = catalogue.declaration(reference)
             else {
                 continue;
             };
-            if let Some(profile) = VoiceProfile::from_source(&npc.name, source) {
+            if let Some(profile) = VoiceProfile::from_presence(&npc.name, fields) {
                 profiles.insert(reference.key.clone(), profile);
             }
         }
@@ -375,7 +426,28 @@ mod tests {
         GameplayDecisionRoot::from_bytes([7; 32])
     }
 
+    fn presence_fields(interval: i64, percent: i64, lines: &str) -> Vec<ProjectV2CandidateField> {
+        vec![
+            ProjectV2CandidateField {
+                field_path: VOICE_CHANCE.into(),
+                value: ProjectV2CandidateValue::Integer(percent),
+            },
+            ProjectV2CandidateField {
+                field_path: VOICE_INTERVAL.into(),
+                value: ProjectV2CandidateValue::Integer(interval),
+            },
+            ProjectV2CandidateField {
+                field_path: VOICE_LINES.into(),
+                value: ProjectV2CandidateValue::Text(lines.into()),
+            },
+        ]
+    }
+
     fn catalogue(revision: &str, text: &str) -> NpcDataCatalogue {
+        catalogue_with_presence(revision, text, true)
+    }
+
+    fn catalogue_with_presence(revision: &str, text: &str, present: bool) -> NpcDataCatalogue {
         use crate::content::{
             CanonicalProjectDocuments, ProjectDraft, ProjectV2DefinitionRef, ProjectV2Draft,
             ProjectV2Family, ProjectV2Identity, ProjectV2State, npc_catalogue_preproduction_limits,
@@ -426,17 +498,33 @@ mod tests {
                             revision: "definition-r1".into(),
                         }),
                         services: vec![],
-                        fields: vec![],
+                        fields: if present {
+                            presence_fields(
+                                1_000,
+                                100,
+                                &serde_json::json!([{"text": text, "yell": false}]).to_string(),
+                            )
+                        } else {
+                            vec![]
+                        },
                     },
                     ProjectV2Declaration::Npc {
                         identity: identity("oteryn:npc.mute"),
                         presentation: None,
                         behavior: None,
-                        dialogue: None,
+                        // A linked Dialogue is not a substitute for absent source voice fields.
+                        dialogue: Some(ProjectV2DefinitionRef {
+                            family: ProjectV2Family::Dialogue,
+                            key: "oteryn:dialogue.alice".into(),
+                            revision: "definition-r1".into(),
+                        }),
                         services: vec![],
                         fields: vec![],
                     },
-                    dialogue("oteryn:dialogue.alice", text),
+                    dialogue(
+                        "oteryn:dialogue.alice",
+                        "Dialogue-only text is not an NPC voice",
+                    ),
                     dialogue("oteryn:dialogue.unreferenced", "Not an NPC's voice"),
                 ],
                 ..ProjectV2State::default()
@@ -453,7 +541,7 @@ mod tests {
     }
 
     #[test]
-    fn book_consumes_only_referenced_native_dialogue_and_rejects_mixed_source_models() {
+    fn book_consumes_exact_native_npc_presence_fields_and_rejects_mixed_source_models() {
         let a = catalogue("voice-r1", "Fresh fish!");
         let model = a.service_model_for_project().expect("native service model");
         let book = NpcVoiceBook::from_catalogue(&a, &model).expect("same source");
@@ -682,5 +770,95 @@ mod tests {
         assert_eq!(mode, ChatSpeechMode::Yell);
         assert_eq!(yelled, text);
         assert_eq!(line.line.text.as_str(), text);
+    }
+
+    #[test]
+    fn native_presence_projection_preserves_percent_cadence_line_order_and_yell() {
+        // NPC-CONTENT-2 emits Integer percent, Integer milliseconds and a Text JSON array
+        // of {text, yell}, with authored order and case retained.
+        let fields = presence_fields(
+            5_000,
+            17,
+            r#"[{"text":"Fresh fish!","yell":false},{"text":"Żółw mówi \"Hej\"!","yell":true}]"#,
+        );
+        let profile = VoiceProfile::from_presence("Alice", &fields).expect("native presence");
+        assert_eq!(profile.name, "Alice");
+        assert_eq!(profile.interval_ms, 5_000);
+        assert_eq!(profile.chance_ppm, 170_000);
+        assert_eq!(profile.lines.len(), 2);
+        assert_eq!(profile.lines[0].text.as_str(), "Fresh fish!");
+        assert_eq!(profile.lines[0].mode, ProjectV2SpeechMode::Say);
+        assert_eq!(profile.lines[1].text.as_str(), "Żółw mówi \"Hej\"!");
+        assert_eq!(profile.lines[1].mode, ProjectV2SpeechMode::Yell);
+    }
+
+    #[test]
+    fn presence_fields_fail_closed_on_missing_duplicate_mistyped_or_invalid_payloads() {
+        let fields = presence_fields(1_000, 100, r#"[{"text":"Fresh fish!","yell":false}]"#);
+        for missing in 0..fields.len() {
+            let mut changed = fields.clone();
+            changed.remove(missing);
+            assert!(VoiceProfile::from_presence("Alice", &changed).is_none());
+            let mut duplicated = fields.clone();
+            duplicated.push(fields[missing].clone());
+            assert!(VoiceProfile::from_presence("Alice", &duplicated).is_none());
+        }
+        for (index, value) in [
+            (0, ProjectV2CandidateValue::Integer(-1)),
+            (0, ProjectV2CandidateValue::Integer(101)),
+            (0, ProjectV2CandidateValue::Text("100".into())),
+            (1, ProjectV2CandidateValue::Integer(-1)),
+            (1, ProjectV2CandidateValue::Integer(0)),
+            (1, ProjectV2CandidateValue::Text("1000".into())),
+            (2, ProjectV2CandidateValue::Boolean(false)),
+        ] {
+            let mut changed = fields.clone();
+            changed[index].value = value;
+            assert!(VoiceProfile::from_presence("Alice", &changed).is_none());
+        }
+        for payload in [
+            "",
+            "[]",
+            "{}",
+            "[null]",
+            r#"[{"text":"Fresh fish!"}]"#,
+            r#"[{"text":"Fresh fish!","yell":"false"}]"#,
+            r#"[{"text":"Fresh fish!","yell":false,"unknown":0}]"#,
+            r#"[{"text":"Fresh fish!","text":"Duplicate","yell":false}]"#,
+            r#"[{"text":"|PLAYERNAME|","yell":false}]"#,
+            r#"[{"text":"{trade}","yell":true}]"#,
+        ] {
+            assert!(
+                VoiceProfile::from_presence("Alice", &presence_fields(1_000, 100, payload))
+                    .is_none()
+            );
+        }
+        let mixed = presence_fields(
+            1_000,
+            100,
+            r#"[{"text":"|PLAYERNAME|","yell":false},{"text":"Safe line","yell":true}]"#,
+        );
+        let profile = VoiceProfile::from_presence("Alice", &mixed).expect("one admitted line");
+        assert_eq!(profile.lines.len(), 1);
+        assert_eq!(profile.lines[0].text.as_str(), "Safe line");
+        assert_eq!(profile.lines[0].mode, ProjectV2SpeechMode::Yell);
+    }
+
+    #[test]
+    fn missing_presence_fields_never_fall_back_to_linked_or_unreferenced_dialogue() {
+        // Source-held and unsourced voices omit the presence fields. Both native NPCs
+        // still reference an admitted Dialogue with voice data; neither may borrow it.
+        let catalogue = catalogue_with_presence("voice-held-r1", "Never admitted", false);
+        let model = catalogue.service_model_for_project().expect("native model");
+        assert_eq!(model.npcs().len(), 2);
+        assert!(model.npcs().values().all(|npc| npc.dialogue.is_some()));
+        let book = NpcVoiceBook::from_catalogue(&catalogue, &model).expect("same source");
+        assert!(book.profiles.is_empty());
+        let (runtime, _, actor, _) = fixture(source(1_000, 1_000_000));
+        assert!(
+            NpcVoiceState::new(&runtime, actor, &book)
+                .expect("native owner")
+                .is_none()
+        );
     }
 }

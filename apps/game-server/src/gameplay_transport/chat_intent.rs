@@ -190,6 +190,21 @@ impl ChatRuntime {
             .map(|(session, _)| *session)
     }
 
+    /// Reads the actual customer queue while `consume` runs synchronously. `None` means
+    /// the owner lock is unavailable, including poison; it never means an empty queue.
+    /// Call under the existing runtime → spell → chat lock order, without awaiting or
+    /// re-entering ChatRuntime. This observation alone grants no walking authority.
+    pub(crate) fn with_npc_customer_state<R>(
+        &self,
+        npc: ExactActorRef,
+        consume: impl FnOnce(bool) -> R,
+    ) -> Option<R> {
+        let sessions = self.sessions.lock().ok()?;
+        Some(consume(
+            sessions.values().any(|entry| entry.engaged == Some(npc)),
+        ))
+    }
+
     /// The range check after a committed move or relocation of the customer `session`
     /// (NPC-BEHAVIOUR-0 §7, `NPC0-RL-07`): a conversation whose NPC is gone, on another floor or
     /// more than [`TALK_RANGE_TILES`] tiles away closes, and the NPC's walk-away line waits for

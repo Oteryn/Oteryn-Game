@@ -55,6 +55,8 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/gameplay_transport/npc_actor.rs`
 - `apps/game-server/src/gameplay_transport/npc_actor_tests.rs`
 - `apps/game-server/src/gameplay_transport/npc_voice.rs`
+- `apps/game-server/src/gameplay_transport/chat_intent.rs` (D1344a: only the synchronous with_npc_customer_state read)
+- `apps/game-server/src/gameplay_transport/mod.rs` (D1160: one ordinary npc_actor module registration line)
 - `apps/game-server/src/foundation/runtime_actor_carrier.rs` (D1340b: read_movement_position and commit_movement_position only)
 - `apps/game-server/src/foundation/npc_actor.rs` (D1340b: six native Movement regression cases only)
 - `apps/game-server/src/durability/npc_travel.rs`
@@ -612,3 +614,109 @@ source. No PC test was launched to duplicate the completed current-head CI job.
 The runtime and unpublished walking work are outside this two-file repair; the
 remaining source-pin, terrain/trigger, scheduler, chat and travel activation gates
 and the original acceptance boxes remain open.
+
+## NPC-CONTENT-2 voice consumer binding repair — AUTHORING (2026-10-17)
+
+Reopen AUTHORING from `75dc4edafbd7c4402cb1232641b5d47e3b4a5604` for the owned
+`gameplay_transport/npc_voice.rs` consumer and its native tests. The actual merged
+[NPC-CONTENT-2 producer #2129](https://github.com/Oteryn/Oteryn-Game/pull/2129)
+writes voice fields on each NPC definition: Integer `voice_interval_ms`, Integer
+`voice_chance_percent`, and Text `voice_lines` containing ordered JSON `{text,yell}`
+rows, all under `oteryn:source.npc.`. The old consumer read `Dialogue.voices`
+instead, so it did not consume that producer's data and could use dialogue data
+when source-held or unsourced voice fields were absent.
+
+The book now resolves each exact admitted NPC reference in the same native
+catalogue/model and consumes those three typed fields. Percent is converted
+exactly to ppm; line order, text and say/yell mode are retained. Missing,
+duplicate or mistyped fields, invalid cadence/chance, malformed JSON and missing
+or unknown line members refuse the profile. The existing native text/placeholder
+filter still rejects unusable lines. There is no Dialogue fallback, so absence
+retains the source hold. This adds no default voice, source regeneration, runtime
+activation, scheduler or egress path. The canonical project digest comparison
+remains distinct from the compiler NPC catalogue-files digest.
+
+The existing current-owner/actor/context checks, perceived-only interval, retry
+and deterministic NPC_VOICE draws, native chat value and player-yell exemption
+are byte-identical. Six prior native test bodies remain byte-identical; the
+catalogue fixture/test now exercises the real NPC-CONTENT-2 shape and deliberately
+different linked Dialogue text. Three added cases cover exact percent/cadence,
+Unicode/escaped text and line order/mode, malformed/absent/duplicate/held input,
+and absence refusing a linked or unrelated Dialogue fallback. Focused inventory
+is now ten ordinary `gameplay_transport::npc_voice::tests::` cases.
+
+The source producer is merged on main at `b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16`;
+this older task branch still needs normal main composition to acquire its actual
+presence fields. A matching data catalogue/model still does not establish active
+runtime membership. The real source→runtime binding producer, budgeted NPC think
+caller and CHAT_V1 recipient/egress owners remain open; this repair completes only
+the demonstrated producer/consumer projection mismatch.
+
+Status remains NOT_FULLY_QUALIFIED. Source/hash, rustfmt, preserved-scope and
+apply/whitespace checks precede the draft checkpoint. Successor compilation,
+strict Clippy, voice10/hold5/boot4/Movement13 and canonical travel PG execution are
+NOT_RUN at author handoff and require their own frozen head. Prior20 PostgreSQL
+and earlier voice evidence retain their original source bindings. No build, PC
+job or PostgreSQL action is performed by this authoring repair.
+
+## D1344a walking preparation and voice repair — source checkpoint (2026-10-17)
+
+This six-file source packet composes the preceding voice repair with the owned
+walking consumer and [CP D1344a](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233730553).
+The current-main and exact75 `chat_intent.rs` preimages were independently read;
+both are blob `74c8cf66b606eafd8dc2a95f64a9c83748bf281d`. The granted 15-line
+`with_npc_customer_state` hunk is patch
+`90d94f1cd0e10cc86fbb9fdb093cce31f6012e3b7b173100e5defa254dbd8e8f`.
+It holds the actual sessions mutex through a synchronous observation, returns
+None on poison, preserves runtime -> spell -> chat ordering and changes no queue
+state. The remainder of that shared file is byte-identical. D1160 supplies only
+the ordinary `mod npc_actor;` line; the rest of the module root is unchanged.
+
+The walking book resolves each admitted NPC's exact native Behavior reference,
+then reads NPC-CONTENT-2 Integer base_speed and Boolean floor_change fields.
+Missing, duplicated, held, mistyped, zero-speed or unsupported floor-change data
+does not produce a walking profile. The behavior owns the interval and radius.
+Each state retains the actual initial Movement position at revision1 as its fixed
+radius anchor. Later positions always come from the real native Movement owner.
+One perceived think adds1000ms; unperceived thinks pause elapsed ticks and an
+actual conversation resets them. Repeating a native occurrence cannot advance
+the clock or prepare another proposal. A poisoned conversation owner consumes
+neither the occurrence nor its interval.
+
+The due occurrence uses the real deterministic decision root with NPC_WANDER and
+bounded Fisher-Yates sampling. Its one cardinal ordering filters coordinate/radius
+exits and real native occupancy. A committed intervening Movement change makes
+the old proposal stale. Optional terrain preparation checks the full runtime
+artifact/frame/map identity, qualified collision and spell-tile observations,
+protection-zone boundary, floor changes, teleports and known raised tiles, and
+uses the genuine SPEED-1 duration. Absent terrain metadata refuses preparation;
+the current bundle's unknown height cannot be treated as a walkable flat tile.
+
+This is **non-committing preparation** as D1344a requires. It provides no movement
+permission or replacement position/terrain authority. The active NPC-source
+binding, complete current damaging-field and ON_ENTER/ON_LEAVE trigger reads,
+budgeted caller, pacing and publication still have to be installed under their
+real owners. D1159 allocates the pin leaf to this PR, activation after2173, and
+scheduler/egress/travel callers in A2 after2187. Merging NPC-CONTENT-2 supplies
+source fields but does not itself establish active runtime membership.
+
+The twelve new ordinary gameplay_transport::npc_actor::tests cases use the native
+catalogue/model, actual player/NPC slots, actual conversation queue and genuine
+Movement commits. They cover source/hold refusal, cadence/replay, perception and
+conversation changes, poison, immutable radius, coordinate edges, retired owner,
+deterministic ordering and absent/mismatched qualified terrain. Together with
+the voice repair this checkpoint adds15 ordinary cases (walking12 plus voice3);
+the six unchanged older voice bodies and all existing Movement/travel cases are
+retained. Source-only reviews by mail_market and root, exact hashes, repository
+Rust1.94 formatting and patch/whitespace checks pass. No compile or execution is
+claimed for this successor; strict Clippy, native test discovery/execution and
+PostgreSQL qualification remain NOT_RUN at source freeze. Any required PC run
+uses D1342 (the prescribed env, slot target and lock, >=12GiB before Cargo) and
+D1329 shared PostgreSQL after cargo fetch --locked. No private PG is started.
+
+The underlying reviewed source patches remain voice
+`b3f7d85a6fbc8677a7cc82f0aa7c904e8d4808fa14de37d504624341921276d8`
+and walking
+`ab062d125c3eeeda75aa8168508cd4a5d01f04f680b22a301829ef04315bb477`;
+this combined packet changes only their task-card record. The original acceptance
+boxes remain open and the PR stays NOT_FULLY_QUALIFIED.
