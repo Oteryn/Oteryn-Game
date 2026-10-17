@@ -452,3 +452,44 @@ and its new PG entry remains NOT_RUN before the checkpoint. Predecessor GitHub C
 at the old lib PG entry. Format/diff checks and independent review precede the D1122 single
 existing-draft push. No old job rerun/restart and no new runner. Remaining runtime admission,
 scheduler/chat/travel/fee/position/death callers still require their actual owners/CP slots.
+
+## Travel hold module discovery repair — AUTHORING (2026-10-17)
+
+The current owner reopened AUTHORING from draft
+`0faec1fea29f16fe457db58536fbe468cbfdb51a`. CP
+[D1160](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224912485)
+permits the minimal ordinary module registration for this owned component. This repair
+adds only `mod npc_travel;` beside the existing NPC registrations in
+`gameplay_transport/mod.rs`. The travel hold implementation and its five existing test
+bodies remain byte-identical to that source head.
+
+The missing registration left `gameplay_transport/npc_travel.rs`, including
+`npc_travel_tests.rs`, outside the native crate's module graph. The previous focused
+voice7 + PostgreSQL travel1 inventory therefore did not exercise the five hold cases.
+Ordinary registration makes those existing ambiguity/replay, invocation identity,
+current-owner/session/content/position, death-cancellation and invalid-input cases
+discoverable by Cargo; discovery and execution still require the successor run.
+
+### Recovered predecessor evidence and successor requirements
+
+The raw log of [Merge gate job 117205955228](https://github.com/Oteryn/Oteryn-Game/actions/runs/38969920168/job/117205955228)
+verifies checkout `0faec1fea29f16fe457db58536fbe468cbfdb51a`, successful strict
+changed-crate Clippy, native library **3,157 passed / 0 failed / 29 ignored**, and
+operations-binary **6 passed**. All seven native voice test names report `ok`.
+These results belong to that exact source and do not execute the missing hold module
+or the routed `character_authority_postgres` travel entry. No exact-head PostgreSQL
+execution for that moved entry was recovered by this review.
+
+This is a material module-graph change. **Status remains NOT_FULLY_QUALIFIED; the new
+candidate is not frozen and successor Cargo/Clippy/runtime checks are NOT_RUN.**
+After the lead freezes it, verify ordinary library compilation and strict all-target
+Clippy, then require a nonzero exact inventory of **5 hold + 7 voice** native library
+cases, all executed without ignored cases. Recover any existing same-head PG job
+before scheduling the canonical **1 travel PostgreSQL** case. The 12 library cases
+and one PG case are separate inventories; no lib job requires PostgreSQL for this
+travel entry. Format/diff checks and independent review precede the coherent draft
+checkpoint under [D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201).
+
+The remaining fee/cause producer, current content and eligibility, physical placement,
+admission/death/position owners, actor movement, budgeted scheduler and chat egress
+gates remain open. All original acceptance boxes remain open.

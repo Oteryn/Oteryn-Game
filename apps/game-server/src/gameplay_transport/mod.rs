@@ -34,6 +34,7 @@ mod monster_quest_death;
 mod npc_command;
 mod npc_talk;
 mod npc_trade_command;
+mod npc_travel;
 mod npc_voice;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
