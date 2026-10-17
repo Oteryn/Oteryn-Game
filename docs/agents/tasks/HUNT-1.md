@@ -279,3 +279,64 @@ PASS; fresh Cargo all-target Clippy and package/PG tests NOT_RUN. This
 checkpoint preserves the 11 existing test bodies and makes no fresh runtime
 PASS claim. D1160 module registration, writer/content/compiler/API and the
 rest of HUNT-1 remain unfinished; shared hunks follow the J order.
+
+
+## PREY-CONTENT-1 loot-budget compiler preparation (2026-10-17)
+
+This coherent source batch starts from draft #2149 at
+`4ce908e266db03dc767b016bc7bc6a93dd1991ec`. CP D1151 in
+[CP6224947337](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224947337)
+allocates the PREY-CONTENT-1 authoring and schema/compiler leaf to this PR.
+PREY0 §3, §6.1 and `PREY0-RL-16` are the accepted basis. The historical
+predecessor evidence above is preserved; this section records the new leaf only.
+
+The existing native loot producer now accepts a closed authored PREY provider
+containing the complete exact Creature pool and SHA-256 pins of the emitted
+Creature-profile and Loot-section bytes. Supplying the provider requires the
+progression/loot path and mandatory qualification before native payloads or the
+manifest are written. Unknown eligibility, absent canonical definitions, stale
+pins, incomplete pools and unsupported table shapes refuse. Eligibility in the
+native generation is checked against actual canonical Creature authoring; the
+source flags alone do not admit production PREY content.
+
+The compiler refuses a pool below 27 Creatures and any preyable final emitted
+table above seven entries. Repeated Item references and zero-chance entries still
+count; oversized tables cannot be silently omitted from the declared pool.
+Accepted PREY0 then bounds two rolls plus the improved-loot trigger to 29 RNG
+draws and 14 output entries, subject to the existing native Item, quantity and
+byte qualification. Ordinary native compilation without a PREY provider retains
+its existing payloads. The source-closure proof explicitly records
+`PREY0-RL-16_BUDGET_ONLY` and `runtime_activation: false`.
+
+### Source-bound validation of this leaf
+
+From `tools/content-schema/native-gameplay`:
+
+```bash
+python -m unittest test_prey_loot_budget test_full_spell_artifact.LootTablesTests.test_null_binding_is_explicit_and_a_missing_item_refuses
+```
+
+**20 passed, 0 failed**: 19 new synthetic-content regressions through the actual
+native producer and one existing producer regression. These cover the seven/eight
+entry boundary, complete-pool enforcement, exact source hashes and revisions,
+canonical/native eligibility disagreement, missing canonical authoring,
+duplicate identities, unknown entry/algorithm facts, the 27-Creature minimum and
+mandatory provider wiring. The canonical table-level-alternative regression first
+failed because the producer silently discarded that field; it now passes with
+the mandatory pre-projection shape check. Its ordinary-production comparison
+also preserves output without a PREY provider. An independent source reviewer
+reran the predecessor's 19 cases successfully. Python AST, provider JSON syntax
+and whitespace checks pass.
+These results do not replace the historical Rust evidence or claim fresh native
+Cargo, PostgreSQL or production-content qualification.
+
+### Remaining prerequisites
+
+`PREY-CONTENT-1` is only partially implemented. The authoring directory remains
+`READY_UNPOPULATED`; no production pool, level bands, grade/draw tables or random
+purpose/binding policy has been authored or admitted. This compiler qualification
+neither admits content nor activates Prey. CP/Reference review, the remaining
+content bundle, migration/persistence writers, LOOP-MONSTER caller integration,
+runtime bonuses, draw/checkpoint/expiry behavior and wire/registry/activation
+gates remain open. Shared integration follows the J order. HUNT-1 remains
+`NOT_FULLY_QUALIFIED` and draft; merge authority remains CP-only.
