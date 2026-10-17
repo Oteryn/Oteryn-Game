@@ -18,7 +18,7 @@ registry: yes
 owner: "/root/gm_compile_fix (sole allocated leaf writer; family lead /root / chat I)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/SEC-1.md
@@ -31,7 +31,7 @@ slot_only_paths: []
 public_contracts: []
 depends_on:
   - "CLOCK-1 residue: MERGED #2114"
-  - "ITEM-LOOK-1 and WEATHER-1: CP rechecks completion before allocating SEC-TRUST-1/SEC-REL-1"
+  - "ITEM-LOOK-1: MERGED #2182; WEATHER-1: draft/open #2202 at 4b8688fe; runtime wiring remains REPORT_ONLY"
   - "ADMIT0 ACCEPTED; ADMIT-CAP-1 implementation remains a SEC-CHAL-1/2 gate"
   - "SEC_CLIENT01 ACCEPTED (D1034); acceptance is not child implementation authority"
   - "SEC-TRUST-1 node floor/checkpoint seed: separately allocated; fail closed pending qualification"
@@ -48,7 +48,56 @@ Runtime wiring remains **REPORT_ONLY** until the owning prerequisite PRs merge.
 This allocation supersedes earlier record-only/source-allocation statements below
 only for these pure leaves. CP retains readiness, wiring allocation and merge authority.
 
-## Current leaf checkpoint — NOT_FULLY_QUALIFIED
+## Current continuation checkpoint — 2026-10-17, NOT_FULLY_QUALIFIED
+
+Reviewed source candidate: `3a039e095c28856a4bdb5cbed8c4237e90e60386`.
+The complete five-file SEC leaf diff was independently reviewed in this
+continuation, with no confirmed source defect. The source files are unchanged;
+only this owned task record is being refreshed through the family lead.
+This review does not qualify cryptography, current trust or runtime integration.
+
+### Exact-source validation evidence
+
+- The five downloaded source files match their independently retrieved Git blob
+  SHAs. An isolated harness includes their existing modules and all 17 tests.
+- Fresh execution on Molehill-PC / Ubuntu-24.04 used
+  `rustc 1.94.0 (4a4ef493e 2026-03-02)` and
+  `rustc +1.94.0 --edition 2024 --test -D warnings harness.rs`.
+  Enumeration found **17 tests, 0 benchmarks**; execution with
+  `--test-threads=1` passed **17/17, 0 failed, 0 ignored, 0 filtered**.
+  `rustfmt +1.94.0 --edition 2024 --check harness.rs`, including the referenced
+  leaf modules, passed. Root's process `8476` exited 0; the exact five GitHub
+  source blob hashes were verified before execution.
+  Harness, binary, `list.log` and `test.log` are retained at
+  `/root/oteryn-pr-i-20261017-b2bde334/sec/` on that test host.
+- Existing exact-head CI is now verified: [run 38973469765, job 117217584647](https://github.com/Oteryn/Oteryn-Game/actions/runs/38973469765/job/117217584647)
+  selected and compiled `oteryn-game-server`; strict changed-crate Clippy passed.
+  Library unit output is **3150 passed, 0 failed, 29 ignored**, plus **6 passed**
+  in the ops binary. `game-gate` passed on that source candidate.
+- Those Cargo logs contain none of the SEC policy tests: the new security module
+  is intentionally unregistered. Crate CI PASS therefore does not qualify the
+  isolated leaves or claim SEC runtime integration. The old crate NOT_RUN claim
+  is superseded only by the bounded CI evidence above.
+- `python3 tools/agents/validate_governance.py` passed (22 required policy
+  documents, 9 project lanes); the governance unittest suite passed **124 tests,
+  0 failures**. The owned-record `git diff --check` passed.
+
+### Prerequisite fresh-read
+
+| Prerequisite | Verified state and interface | Effect |
+| --- | --- | --- |
+| #2182 ITEM-LOOK-1 | Merged at `2026-10-17T06:29:02Z`; head `089f720792934f1f3943f658ad7aabaa92fa632c`, merge `b1e90b421692289db3aac78a915629251ba80481`. `interaction/look.rs::item_text` remains a content-description read. | This prerequisite is merged; it supplies no trust, build-admission or clock authority. |
+| #2202 WEATHER-1 | Draft/open at `4b8688fe03a39e1b25502c695fa34cfa1dd6ee38`. `world_clock.rs::now_utc_ms` still reads wall time once and advances from monotonic elapsed time. | Runtime wiring remains REPORT_ONLY. SEC still needs separate raw wall observations; clamped World time cannot detect backward wall-clock steps. |
+
+The [CP leaf allocation](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225481669)
+and [D1122 checkpoint conditions](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+remain the scope of this continuation. Closed signed schemas and bounds, trusted
+node seed/root lineage, durable trust/fetch/clock-latch provenance and the
+PROD-COMPAT admitted-build source remain unqualified owning-contract gaps.
+The draft is not ready for runtime wiring or merge. Earlier checkpoints below
+are retained as dated history, not current check or dependency status.
+
+## Historical leaf checkpoint — 2026-10-16, NOT_FULLY_QUALIFIED
 
 - `trust_policy` checks ordinary consecutive revision/predecessor/floor rules,
   checkpoint revision/time bounds, applied/checkpoint equality, raw-wall versus
@@ -94,7 +143,7 @@ packet below retains those concrete gaps; no new approval or runtime grant is im
 
 Server-side integrity checks per SEC_CLIENT01 (CLIENT_INTEGRITY, INPUT_TELEMETRY). Pacing stays in LOOP-WORLD-1; 9c/6c3 retirement is separate.
 
-## Current dependency decisions — 2026-10-16
+## Historical dependency decisions — 2026-10-16
 
 Authority: [CP D1029–D1034](https://github.com/Oteryn/Oteryn-Game/pull/2188#issuecomment-6216591759)
 and the later [owner telemetry override](https://github.com/Oteryn/Oteryn-Game/pull/2188#issuecomment-6216811726).
