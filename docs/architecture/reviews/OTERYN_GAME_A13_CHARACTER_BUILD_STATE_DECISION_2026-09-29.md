@@ -1,7 +1,7 @@
 # A13 Character build state (vocation and magic level)
 
 - Decision: `A13-CHARACTER-BUILD-STATE-V1`
-- Status: **CANDIDATE with owner decisions D150-D151 (§2)**. Acceptance requires exact-head
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original status: CANDIDATE with owner decisions D150-D151 (§2). Original gate: Acceptance requires exact-head
   validation, independent review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: #162 comment 5896414182 (`ARCHITECTURE_ESCALATION_REQUIRED`, SPELL-CASTER-FACTS) and

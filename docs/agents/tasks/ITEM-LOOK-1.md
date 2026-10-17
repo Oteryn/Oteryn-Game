@@ -431,3 +431,17 @@ current-actor visibility and admitted Creature name/profile production remain
 required. Earlier protocol255/strictClippy PASS is scoped to 8176aab1; current
 protocol execution is NOT_RUN until an available execution budget, not inferred
 from the constant or source review. No wire payload or selection-default change.
+
+### D1291/D1292 CI qualification route and main integration
+
+CP D1291 selects the existing changed-crate GitHub CI test/strict-Clippy lane
+instead of CLOUD. After publication of4c452f6f, the actual PR was dirty and had
+only merge-authority audit checks. CP D1292 explicitly assigns a merge of
+origin/main into this task branch, preserving both registry/module sides. Main
+efecd2209e71e209878ac543cd70966c6300e8dd is integrated without rebase; LOGOUT
+capability21 and LOOK capability28 coexist. The command30 reservation remains
+owned metadata; no command/rate/connection activation is added. HOUSE_QUERY28
+is reserved by D1268a and is not added by this family. Main's current registered
+commands do not consume30. One integration push; CI starts automatically.
+Current protocol test/strict-Clippy results remain NOT_RUN until actual CI
+records them; the previous255PASS remains scoped to8176aab1.
