@@ -2356,6 +2356,10 @@ mod character_stance_writer_postgres_cases;
 #[path = "support/character_last_position_postgres_cases.rs"]
 mod character_last_position_postgres_cases;
 
+// TUTORIAL-1 Newhaven tutorial progress (migration 0130), on the CHARM-2 harness included above.
+#[path = "support/tutorial_progress_postgres_cases.rs"]
+mod tutorial_progress_postgres_cases;
+
 // PVP-1 PvP state tables, deadline write-ahead and World job (migration 0081).
 #[path = "support/pvp_state_postgres_cases.rs"]
 mod pvp_state_postgres_cases;

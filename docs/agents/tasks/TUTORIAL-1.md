@@ -4,7 +4,7 @@
 task_id: TUTORIAL-1
 title: "TUTORIAL-1: tutorial island test epic (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: draft
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/tutorial-1
@@ -15,14 +15,24 @@ plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-1
 created_at: 2026-10-15
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 4 row TUTORIAL-1 (row 139); §5 Wave 5"
 class: "impl"
-needs_migration: no
+needs_migration: yes
+migration: "apps/game-server/migrations/0130_character_tutorial_progress.sql (number assigned by CP)"
+decision: "CP D1426 (#2186 comment 6241833560): Newhaven start island only; inert on StartThais; no spawn change (D1410)"
 needs_registry: no
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "content/ tutorial source inputs"
   - "apps/game-server/tests/tutorial_*.rs (new)"
+  - "apps/game-server/src/domain/tutorial.rs (new, CP D1426)"
+  - "apps/game-server/src/durability/character_tutorial.rs (new, CP D1426)"
+  - "apps/game-server/migrations/0130_character_tutorial_progress.sql (new, CP D1426)"
+  - "apps/game-server/tests/support/tutorial_progress_postgres_cases.rs (new, CP D1426)"
   - "docs/agents/tasks/TUTORIAL-1.md"
+registration_lines:
+  - "apps/game-server/src/domain/mod.rs: pub mod tutorial;"
+  - "apps/game-server/src/durability/mod.rs: pub mod character_tutorial;"
+  - "apps/game-server/tests/character_authority_postgres.rs: #[path] include of the tutorial PG cases"
 slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
@@ -69,19 +79,27 @@ To compile on the branch the builder may add only module registration lines in s
 
 ## Acceptance criteria
 
-- [ ] tutorial path completes end-to-end in a test; start stays Thais
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
-- [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
+Replaced by the CP D1426 scenario brief below (its assertions A1-A6). The start stays StartThais
+(D1410), so on the current World the tutorial is inert.
+
+- [x] A1: a StartThais Character never enters the tutorial (`tests/tutorial_newhaven.rs`).
+- [x] A2-A4: a Newhaven-start Character goes through the reference steps (`tests/tutorial_newhaven.rs`).
+- [x] A5: concurrent writers are serialized by a row lock and a compare-and-set version; the loser gets a typed `Conflict`, a replay is `Replayed` (`tutorial_progress_postgres_cases.rs`).
+- [x] A6: after a reconnect (new connection generation) and a node restart the tutorial resumes from the stored step; a stale connection, lease or session reads and writes nothing (`tutorial_progress_postgres_cases.rs`).
+- [ ] Runtime wiring (login, step-in, death, loot, NPC) stays a slot-only follow-up; nothing calls the writer yet.
 
 ## Validation commands
 
 ```sh
-python3 tools/content-migration/regenerate_content.py && git diff --exit-code
-cargo test -p oteryn-game-server --test 'tutorial_*'
 cargo fmt --all -- --check
-cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
+cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings
+cargo test --locked -p oteryn-game-server --test tutorial_newhaven
+# PostgreSQL 17.6 (OTERYN_TEST_POSTGRES_ADMIN_URL set):
+cargo test --locked -p oteryn-game-server --test character_authority_postgres tutorial_progress -- --test-threads=1
+cargo test --locked -p oteryn-game-server --test character_authority_postgres every_postgres_target_runs
 ```
+
+No content changes, so no regeneration or pins.
 
 ## Reference evidence pointers
 
@@ -132,3 +150,65 @@ wiring restrictions remain applicable.
 This amendment persists the allocation boundary only. It records no runtime
 test result, content activation or playable tutorial completion. The task remains
 a draft behind the stated prerequisites; CP retains integration/merge authority.
+
+
+## CP D1426 scenario brief — 2026-10-17
+
+[CP D1426](https://github.com/Oteryn/Oteryn-Game/pull/2186#issuecomment-6241833560) replaces the
+Thais-start reading of D1156: the tutorial applies **only** on the Newhaven start island, as in
+global. StartThais is a temporary test start where the tutorial never starts. There is no spawn
+change (D1410); the tutorial stays inert, gated on start island == Newhaven.
+
+### Sources
+
+- Island: `content/world/areas/islands/islands-00000-00059.json`, record
+  `oteryn:area.island.newhaven` (TibiaWiki page 109339 rev 1197143, frame
+  `global-target-2026-09-27`): island footprint x 32506-32634, y 32405-32522, floor 7; additional
+  component (the tutorial islet with the temple) x 32532-32539, y 32511-32518, floor 7.
+- Current start: `content/world/pins/oteryn.json` `entry_start` (32369, 32238, native floor -7),
+  i.e. StartThais, outside both areas.
+- Rules: `zimbadev/crystalserver` rev `9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d`,
+  `data-global/scripts/quests/newhaven/` (donor corpus
+  `tools/content-schema/quest-authoring/samples/donor-source/corpus.tar.gz`; git blob ids):
+  `on_login_newhaven.lua` b101507c, `movement_init_newhaven.lua` 9d4adb9b,
+  `movement_select_vocation.lua` 8366ff4e, `movement_update_tutorial_hunting.lua` 4c3cb41f,
+  `#ondroploot_the_corruptor.lua` a6984946, `on_death_newhaven.lua` 680ec85a; tracks and NPC
+  transitions in `content/quests/missions/quest-state.json` quest `newhaven_quest`
+  (`newhaven_citizen`, `newhaven_tutorial_hunting`, `newhaven_new_loot_the_corruptor`).
+  The stages of `oteryn:quest.newhaven_quest` are a chosen approximation and are not used.
+
+### Steps (each from the named script)
+
+| # | Trigger | Condition | Effect | Stored progress |
+|---|---|---|---|---|
+| 1 | Login | vocationless, no account access, not a citizen (no row or departed) | placed at islet temple (32534, 32513, 7) | step islet |
+| 2 | Step on islet hole (32533, 32513, 7) | always | pushed back to the previous cell, message "I should not climb down again but rather venture forth." | unchanged |
+| 3 | Step on islet forcefield (32538, 32514, 7) | always | moved to (32544, 32515, 7); tutorial hint 2 if vocationless | step island, hunting and Corruptor tracks armed |
+| 4 | Step on (32561, 32485, 7) or (32562, 32485, 7) | hunting track armed | tutorial hint 3 | hunting track cleared |
+| 5 | The Corruptor drops loot for the Character | Corruptor track armed | vocation loot added | Corruptor track cleared |
+| 6 | Death | a citizen, vocationless, no account access | placed at islet temple | step islet |
+| 7 | `a_seagull` / `anna` take the Character away | any row | none | step departed, both tracks cleared |
+
+A login of a citizen (step islet or island) resumes: no placement, progress unchanged.
+
+### Acceptance assertions
+
+- A1: a Character whose start is not on Newhaven (StartThais) gets the inert gate; no event writes
+  progress or has an effect, on any cell.
+- A2: a Newhaven-start vocationless Character is placed on the islet at login (step 1); a
+  gamemaster or a Character with a vocation is not.
+- A3: steps 2-5 have exactly the effects above, the hint and the loot once each.
+- A4: step 6 returns a vocationless citizen to the islet; step 7 clears every track.
+- A5: progress writes are serialized per Character (row lock + compare-and-set version); the
+  losing writer gets a typed conflict with the stored progress; a replay writes nothing.
+- A6: reconnect/recovery: progress is durable (migration 0130); after a reconnect in the same
+  GameSession and after a node restart the Character resumes from the persisted step; the stale
+  connection, lease and session are refused.
+
+### Out of scope (follow-ups, each needs its own source-backed task)
+
+Starter items (`lib/others/newhaven.lua`), map marks, the vocation loot items, the Dawnport branch
+of the death script, the level-8 door (`on_use_newhaven.lua`), and the runtime wiring of login,
+movement, death, loot and NPC events to the writer (slot-only paths). The forcefield teleport
+itself already exists (NEWHAVEN-TELEPORT-1). The death rule reads the current step, where the
+reference reads the citizen track at the last login.
