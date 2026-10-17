@@ -220,7 +220,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         };
         Ok(OwnerCombatBatch {
             effects: vec![saved.at_due(now)?],
-            now_us: Some(now),
+            now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get())),
             now_ms: now.get() / 1000,
             ..original.clone()
         })

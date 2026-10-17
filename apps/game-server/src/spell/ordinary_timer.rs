@@ -481,7 +481,9 @@ mod tests {
                         magnitude: 7,
                     },
                 }],
-                now_us: Some(at),
+                now_us: Some(
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(at.get()),
+                ),
                 now_ms: at.get() / 1000,
                 anchor: None,
                 deferred: None,
