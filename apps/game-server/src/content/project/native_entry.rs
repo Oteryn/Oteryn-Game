@@ -1474,17 +1474,39 @@ fn lower(
         return refuse("native entry requires exactly its room cells and placements");
     }
     let door_overlay = &overlay.doors[0];
-    let [area_declaration] = state.declarations.as_slice() else {
-        return refuse("native entry requires exactly one Area declaration");
-    };
-    let ProjectV2Declaration::Area {
-        identity: area_identity,
-        parent: None,
-        ..
-    } = area_declaration
-    else {
-        return refuse("native entry declaration must be one parentless Area");
-    };
+    // D1269: exactly one root Area, plus only the explicitly referenced Houses.
+    // Identity, physical cells, entry and doors still pass the existing House qualifier.
+    let mut referenced_houses = BTreeSet::new();
+    if let Some(houses) = &overlay.house_tiles {
+        for house in &houses.houses {
+            if house.house.family != ProjectV2Family::House
+                || !referenced_houses.insert((&house.house.key, &house.house.revision))
+            {
+                return refuse("native entry House reference duplicated or foreign");
+            }
+        }
+    }
+    let mut area_identity = None;
+    let mut declared_houses = BTreeSet::new();
+    for declaration in &state.declarations {
+        match declaration {
+            ProjectV2Declaration::Area {
+                identity,
+                parent: None,
+                ..
+            } if area_identity.is_none() => area_identity = Some(identity),
+            ProjectV2Declaration::House { identity, .. }
+                if referenced_houses.contains(&(&identity.key, &identity.revision))
+                    && declared_houses.insert((&identity.key, &identity.revision)) => {}
+            _ => return refuse("native entry requires one root Area and only referenced Houses"),
+        }
+    }
+    if declared_houses != referenced_houses {
+        return refuse("native entry House reference has no unique declaration");
+    }
+    let area_identity = area_identity.ok_or(ProjectError::InvalidProject(
+        "native entry requires exactly one root Area declaration",
+    ))?;
     // Cardinality was just checked above, but a checked lookup keeps this panic-free even if that
     // invariant is ever weakened elsewhere.
     let terrain_ref = &state
@@ -2591,5 +2613,156 @@ mod bundle_house_scope_tests {
             Err("House placement metadata unavailable")
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod referenced_house_declaration_tests {
+    use super::*;
+    type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+    fn parse(
+        change: impl FnOnce(&mut Vec<ProjectV2Declaration>, &mut NativeHouseTileDocument),
+    ) -> TestResult<NativeEntryProject> {
+        let world = crate::foundation::WorldId::decode(&[
+            1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ])?;
+        let base = native_entry_room_documents(world)?;
+        let parsed = ProjectSnapshot::new(
+            base.documents().clone(),
+            native_entry_first_slice_limits().project,
+        )?
+        .parse_native_entry()?;
+        let mut draft = parsed.project().migrate_to_v2();
+        let mut houses = NativeHouseTileDocument {
+            schema: "OTERYN_NATIVE_HOUSE_TILES/v1".into(),
+            houses: [
+                ("oteryn:content.house.overlay_a", "oteryn:cell/entry-east"),
+                ("oteryn:content.house.overlay_b", "oteryn:cell/entry-den"),
+            ]
+            .into_iter()
+            .map(|(key, cell)| NativeHousePlacement {
+                house: ProjectV2DefinitionRef {
+                    family: ProjectV2Family::House,
+                    key: key.into(),
+                    revision: "oteryn:rev/overlay-house-r1".into(),
+                },
+                cells: vec![cell.into()],
+                entry_cell: "oteryn:cell/entry-start".into(),
+                doors: BTreeMap::new(),
+            })
+            .collect(),
+        };
+        for house in &houses.houses {
+            draft.state.declarations.push(ProjectV2Declaration::House {
+                identity: ProjectV2Identity {
+                    key: house.house.key.clone(),
+                    revision: house.house.revision.clone(),
+                },
+                fields: Vec::new(),
+            });
+        }
+        change(&mut draft.state.declarations, &mut houses);
+        let raw: serde_json::Value = serde_json::from_slice(NATIVE_ENTRY_ROOM_SOURCE)?;
+        let mut overlay: NativeFirstEntryDocument = serde_json::from_value(
+            raw.get("native_first_entry")
+                .ok_or("actual overlay missing")?
+                .clone(),
+        )?;
+        overlay.house_tiles = Some(houses);
+        let canonical = CanonicalProjectDocuments::from_native_entry_draft(draft, overlay)?;
+        Ok(ProjectSnapshot::new(
+            canonical.documents().clone(),
+            native_entry_first_slice_limits().project,
+        )?
+        .parse_native_entry()?)
+    }
+    #[test]
+    fn root_area_and_two_referenced_houses_qualify_actual_movement_catalogue() -> TestResult {
+        let parsed = parse(|_, _| {})?;
+        let compiled = crate::content::compile_first_production(
+            parsed.source(),
+            crate::content::FirstProductionCompileTarget::OrdinaryRelease,
+        )?;
+        let movement = parsed.movement_cells(compiled.server_digest())?;
+        for (key, house) in [
+            ("oteryn:cell/entry-east", "oteryn:content.house.overlay_a"),
+            ("oteryn:cell/entry-den", "oteryn:content.house.overlay_b"),
+        ] {
+            let cell = parsed
+                .source()
+                .cells
+                .iter()
+                .find(|c| c.key.as_str() == key)
+                .ok_or("cell")?;
+            let placement = movement
+                .house_tiles()
+                .house_at(
+                    movement.scope(),
+                    crate::content::LogicalCell {
+                        x: cell.x,
+                        y: cell.y,
+                        z: i32::from(cell.z),
+                    },
+                )?
+                .ok_or("qualified House")?;
+            assert_eq!(placement.house().key, house);
+        }
+        assert!(movement.house_tiles().placement_digest().is_some());
+        Ok(())
+    }
+    #[test]
+    fn unreferenced_house_declaration_refuses() {
+        assert!(
+            parse(|_, houses| {
+                houses.houses.pop();
+            })
+            .is_err()
+        );
+    }
+    #[test]
+    fn foreign_declaration_kind_refuses() {
+        assert!(
+            parse(
+                |declarations, _| declarations.push(ProjectV2Declaration::WorldObject {
+                    identity: ProjectV2Identity {
+                        key: "oteryn:content.object.overlay".into(),
+                        revision: "oteryn:rev/overlay-r1".into()
+                    },
+                    presentation: None,
+                    fields: Vec::new(),
+                })
+            )
+            .is_err()
+        );
+    }
+    #[test]
+    fn missing_root_area_refuses() {
+        assert!(
+            parse(|declarations, _| declarations
+                .retain(|d| !matches!(d, ProjectV2Declaration::Area { .. })))
+            .is_err()
+        );
+    }
+    #[test]
+    fn second_root_area_refuses() {
+        assert!(
+            parse(
+                |declarations, _| declarations.push(ProjectV2Declaration::Area {
+                    identity: ProjectV2Identity {
+                        key: "oteryn:content.area.overlay".into(),
+                        revision: "oteryn:rev/overlay-r1".into()
+                    },
+                    parent: None,
+                    fields: Vec::new(),
+                })
+            )
+            .is_err()
+        );
+    }
+    #[test]
+    fn duplicate_house_reference_refuses() {
+        assert!(parse(|_, houses| houses.houses.push(houses.houses[0].clone())).is_err());
+        assert!(parse(|declarations, _| declarations.push(declarations[1].clone())).is_err());
     }
 }

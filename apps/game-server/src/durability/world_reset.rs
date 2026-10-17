@@ -80,6 +80,8 @@ fn uuid(value: String) -> Result<[u8; 16], DurabilityError> {
 /// The caller must retain the transaction and its locks through its next operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorldResetCensus {
+    /// World bound by the actual census query, never relabelled by its consumer.
+    pub world: WorldId,
     pub reset_epoch: u64,
     pub target_digest: [u8; 32],
     pub reset_revision: u64,
@@ -177,6 +179,7 @@ pub async fn census_retiring_world_reset(
         .map_err(|_| WorldResetError::InvalidStoredState)
     };
     Ok(Some(WorldResetCensus {
+        world,
         reset_epoch: epoch
             .parse()
             .map_err(|_| WorldResetError::InvalidStoredState)?,
@@ -328,6 +331,24 @@ fn reset_house_catalogue(
     Ok(catalogue)
 }
 
+/// Compare source-derived immutable identity with independently read database facts.
+/// A caller-selected Active/Target label alone never supplies the binding.
+fn bound_reset_house_catalogue(
+    catalogue: super::world_reset_port::QualifiedHouseResetCatalogue,
+    world: WorldId,
+    map_revision: &str,
+    server_artifact_digest: [u8; 32],
+) -> Result<ResetHouseCatalogue, WorldResetError> {
+    if catalogue.world != world
+        || catalogue.map_revision.is_empty()
+        || catalogue.map_revision != map_revision
+        || catalogue.server_artifact_digest != server_artifact_digest
+    {
+        return Err(WorldResetError::HouseSourceRefused);
+    }
+    reset_house_catalogue(catalogue.facts)
+}
+
 fn check_reset_house_membership(
     target: &ResetHouseCatalogue,
     house_key: &str,
@@ -358,7 +379,8 @@ fn check_reset_house_definition(
 }
 
 /// D1189/D1215/D1218 read-only House preflight in the caller's transaction.
-/// Run before RETIRING; repeat after locking the reset job in the final activation TX.
+/// D1272 final preflight: the RETIRING job must already be locked in this TX.
+/// Source identity is compared with actual active history and locked target facts.
 /// The three SHARE relation locks prevent concurrent custody/ownership/Instance inserts,
 /// updates and deletes until that TX ends. Success is not a retained authority token.
 /// The source implementation must bind both catalogues to this World and call C's
@@ -369,17 +391,28 @@ pub(crate) async fn preflight_world_reset_houses(
     source: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
 ) -> Result<(), WorldResetError> {
     use super::world_reset_port::CatalogueSide;
+    lock_admission_relations(tx).await?;
+    let target_record = read_locked_world_reset_target(tx, world).await?;
+    let active_record = read_active_world_revision(tx, world).await?;
     sqlx::query("LOCK TABLE game_item_house_interior_locations,game_house_ownership,game_world_house_instances IN SHARE MODE")
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
-    let active = reset_house_catalogue(
-        source
-            .reset_houses(world, CatalogueSide::Active)
-            .map_err(|_| WorldResetError::HouseSourceRefused)?,
+    let active_source = source
+        .reset_houses(world, CatalogueSide::Active)
+        .map_err(|_| WorldResetError::HouseSourceRefused)?;
+    let target_source = source
+        .reset_houses(world, CatalogueSide::Target)
+        .map_err(|_| WorldResetError::HouseSourceRefused)?;
+    let active = bound_reset_house_catalogue(
+        active_source,
+        world,
+        &active_record.map_revision,
+        active_record.digests.server,
     )?;
-    let target = reset_house_catalogue(
-        source
-            .reset_houses(world, CatalogueSide::Target)
-            .map_err(|_| WorldResetError::HouseSourceRefused)?,
+    let target = bound_reset_house_catalogue(
+        target_source,
+        world,
+        &target_record.map_revision,
+        target_record.digests.server,
     )?;
     {
         let query = sqlx::query("SELECT DISTINCT house_key,spatial_position FROM game_item_house_interior_locations WHERE world_id=encode($1,'hex')::uuid ORDER BY house_key,spatial_position")
@@ -609,6 +642,7 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
     let mut sql = RESET_EPOCH_SCHEMA.to_owned();
     sql.push_str(RESET_SCHEMA);
     sql.push_str(&candidate_reset_issuance_sql()?);
+    sql.push_str(RESET_ACTIVATION_SCHEMA);
     for (source, name, record) in [
         (
             include_str!("../../migrations/0015_corpse_decay_retire.sql"),
@@ -734,6 +768,8 @@ CREATE TABLE game_world_reset_jobs (
 );
 CREATE FUNCTION game_world_reset_job_initialized() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
+ IF NEW.phase IS DISTINCT FROM 'RETIRING' THEN
+  RAISE EXCEPTION 'World reset jobs must start RETIRING' USING ERRCODE='23514'; END IF;
  PERFORM 1 FROM game_world_reset_active_epochs a JOIN game_world_reset_epoch_history h USING(world_id,reset_epoch)
  WHERE a.world_id=NEW.world_id AND a.reset_epoch=NEW.reset_epoch AND h.map_revision=NEW.active_map_revision FOR SHARE OF a;
  IF NOT FOUND THEN
@@ -750,8 +786,15 @@ CREATE TABLE game_world_reset_scopes (
 );
 CREATE FUNCTION game_world_reset_job_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- IF TG_OP='UPDATE' AND NEW.revision=OLD.revision+1
+ IF TG_OP='UPDATE' AND OLD.phase='RETIRING' AND NEW.revision=OLD.revision+1
  AND (to_jsonb(NEW)-'revision')=(to_jsonb(OLD)-'revision') THEN RETURN NEW; END IF;
+ IF TG_OP='UPDATE' AND OLD.phase='RETIRING' AND NEW.phase='ACTIVATED' AND NEW.revision=OLD.revision+1
+ AND (to_jsonb(NEW)-'revision'-'phase')=(to_jsonb(OLD)-'revision'-'phase')
+ AND EXISTS(SELECT 1 FROM game_world_reset_active_epochs a JOIN game_world_reset_epoch_history h USING(world_id,reset_epoch)
+ WHERE a.world_id=NEW.world_id AND a.reset_epoch=NEW.reset_epoch+1
+ AND (h.map_revision,h.server_digest,h.client_digest,h.frame_digest,h.calendar_policy,h.calendar_revision,h.calendar_parity)
+ IS NOT DISTINCT FROM (NEW.target_map_revision,NEW.target_server_digest,NEW.target_client_digest,NEW.target_frame_digest,NEW.target_calendar_policy,NEW.target_calendar_revision,NEW.target_calendar_parity))
+ THEN RETURN NEW; END IF;
  RAISE EXCEPTION 'reset job binding is immutable; activation belongs to its inseparable owner' USING ERRCODE='23514';
 END $$;
 CREATE TRIGGER game_world_reset_job_change BEFORE UPDATE OR DELETE ON game_world_reset_jobs FOR EACH ROW EXECUTE FUNCTION game_world_reset_job_change();
@@ -845,6 +888,40 @@ mod reset_house_preflight_tests {
             spatial_position: vec![position],
             definition_digest: [digest; 32],
         }
+    }
+    #[test]
+    fn catalogue_identity_must_match_independent_world_map_and_artifact()
+    -> Result<(), WorldResetError> {
+        use super::super::world_reset_port::QualifiedHouseResetCatalogue;
+        let make_world = |last| {
+            WorldId::decode(&[
+                1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, last,
+            ])
+            .map_err(|_| WorldResetError::InvalidStoredState)
+        };
+        let world = make_world(1)?;
+        let source = || QualifiedHouseResetCatalogue {
+            world,
+            map_revision: "map-current".to_owned(),
+            server_artifact_digest: [7; 32],
+            facts: Vec::new(),
+        };
+        // Data binding only; explicit empty facts do not grant activation authority.
+        assert!(bound_reset_house_catalogue(source(), world, "map-current", [7; 32])?.is_empty());
+        for changed in 0..4 {
+            let mut catalogue = source();
+            match changed {
+                0 => catalogue.world = make_world(2)?,
+                1 => catalogue.map_revision = "map-other".to_owned(),
+                2 => catalogue.server_artifact_digest = [8; 32],
+                _ => catalogue.map_revision.clear(),
+            }
+            assert!(matches!(
+                bound_reset_house_catalogue(catalogue, world, "map-current", [7; 32]),
+                Err(WorldResetError::HouseSourceRefused)
+            ));
+        }
+        Ok(())
     }
     #[test]
     fn only_owned_or_instance_house_definition_changes_refuse() -> Result<(), WorldResetError> {
@@ -1301,3 +1378,210 @@ pub async fn read_locked_world_reset_target(
         calendar: stored_calendar(required_text(5)?, required_text(6)?, required_text(7)?)?,
     })
 }
+
+/// Frozen occurrence data, not authority. Retain this exact identity across unknown
+/// commit outcomes; never rediscover a later RETIRING job by World on retry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct WorldResetActivationIdentity {
+    world: WorldId,
+    epoch: u64,
+    revision: u64,
+    retirement_binding: [u8; 32],
+}
+impl WorldResetCensus {
+    pub(crate) fn activation_identity(&self) -> WorldResetActivationIdentity {
+        WorldResetActivationIdentity {
+            world: self.world,
+            epoch: self.reset_epoch,
+            revision: self.reset_revision,
+            retirement_binding: self.target_digest,
+        }
+    }
+}
+
+/// Caller-TX owner. Success is provisional until the caller commits this same TX.
+/// Any error requires rollback, including errors after the first SQL mutation.
+/// The source and witness must be genuine C/I implementations; this module creates neither.
+/// Historical exact replay is checked first and does not require today's drain/cohort.
+/// No publication or in-memory readiness transition may precede the commit receipt.
+pub(crate) async fn activate_world_reset_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    identity: &WorldResetActivationIdentity,
+    houses: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
+    drain: &(dyn super::world_reset_port::WorldDrainWitness + Sync),
+) -> Result<WorldResetEpochRecord, WorldResetError> {
+    let next = identity
+        .epoch
+        .checked_add(1)
+        .ok_or(WorldResetError::CapacityExceeded)?;
+    let next_revision = identity
+        .revision
+        .checked_add(1)
+        .ok_or(WorldResetError::CapacityExceeded)?;
+    lock_admission_relations(tx).await?;
+    // Lock the exact occurrence, never whichever job is currently RETIRING.
+    let replay: Option<bool> = sqlx::query_scalar(
+        "SELECT phase='ACTIVATED' AND revision=$3::text::numeric AND target_digest=$4 \
+         FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid \
+         AND reset_epoch=$2::text::numeric FOR UPDATE",
+    )
+    .bind(identity.world.as_bytes().as_slice())
+    .bind(identity.epoch.to_string())
+    .bind(next_revision.to_string())
+    .bind(identity.retirement_binding.as_slice())
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(DurabilityError::from)?;
+    if replay == Some(true) {
+        return read_world_reset_history(tx, identity.world, next)
+            .await?
+            .ok_or(WorldResetError::InvalidStoredState);
+    }
+    let census = census_retiring_world_reset(tx, node, identity.world)
+        .await?
+        .ok_or(WorldResetError::NotCurrent)?;
+    if census.activation_identity() != *identity
+        || census.ground_root_count != 0
+        || census.ground_corpse_entry_count != 0
+    {
+        return Err(WorldResetError::NotCurrent);
+    }
+    // All actual database locks are retained through both source checks and the writer.
+    let target = read_locked_world_reset_target(tx, identity.world).await?;
+    if target.reset_epoch != identity.epoch {
+        return Err(WorldResetError::NotCurrent);
+    }
+    check_world_drain_in_transaction(tx, node, identity.world, drain).await?;
+    preflight_world_reset_houses(tx, identity.world, houses).await?;
+    let fact = node.fact();
+    sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,$2::text::numeric,$3::text::numeric,$4,encode($5,'hex')::uuid,$6::text::numeric)")
+        .bind(identity.world.as_bytes().as_slice()).bind(identity.epoch.to_string())
+        .bind(identity.revision.to_string()).bind(identity.retirement_binding.as_slice())
+        .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+        .execute(&mut **tx).await.map_err(DurabilityError::from)?;
+    read_world_reset_history(tx, identity.world, next)
+        .await?
+        .ok_or(WorldResetError::InvalidStoredState)
+}
+
+impl DurabilityRoot {
+    /// Bounded owner commit. Borrow the genuine sources/proof through the ordinary
+    /// semantic pass; never publish an epoch before its transaction commits.
+    /// On CommitOutcomeUnknown the caller retains this exact identity and retries
+    /// this operation, whose historical replay precedes current-authority checks.
+    pub(crate) async fn commit_world_reset_activation(
+        &self,
+        node: &NodeIncarnationProof,
+        identity: &WorldResetActivationIdentity,
+        houses: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
+        drain: &(dyn super::world_reset_port::WorldDrainWitness + Sync),
+    ) -> Result<WorldResetEpochRecord, WorldResetError> {
+        let mut context = (node, identity, houses, drain);
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, |holder, deadline, context| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    let record = match activate_world_reset_in_transaction(
+                        &mut tx, context.0, context.1, context.2, context.3,
+                    )
+                    .await
+                    {
+                        Ok(record) => record,
+                        Err(error) => {
+                            tx.rollback().await?;
+                            return Ok(Err(error));
+                        }
+                    };
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(record))
+                })
+            })
+            .await
+            .map_err(WorldResetError::from)?
+    }
+}
+
+// Private successor: UNINSTALLED 0096 only, no migration/root mounting.
+const RESET_ACTIVATION_SCHEMA: &str = r#"
+CREATE FUNCTION game_world_reset_activate(w UUID,e NUMERIC,r NUMERIC,b BYTEA,n UUID,nr NUMERIC)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE j game_world_reset_jobs%ROWTYPE; a NUMERIC; v_channel RECORD;
+ v_history game_world_reset_epoch_history%ROWTYPE; v_current game_content_activations%ROWTYPE;
+ v_previous NUMERIC; v_sequence NUMERIC; v_instant TIMESTAMPTZ; v_month TEXT;
+BEGIN
+ -- SQL NULL must never turn a current-authority predicate into UNKNOWN/false IF.
+ -- Refuse malformed occurrence/node data before taking any mutation fence.
+ IF w IS NULL OR e IS NULL OR r IS NULL OR b IS NULL OR n IS NULL OR nr IS NULL
+ OR NOT game_node_is_uuid_v7(w) OR NOT game_node_is_uuid_v7(n) OR octet_length(b)<>32
+ OR e<0 OR e>=18446744073709551615 OR trunc(e)<>e
+ OR r<1 OR r>=18446744073709551615 OR trunc(r)<>r
+ OR nr<1 OR nr>18446744073709551615 OR trunc(nr)<>nr
+ THEN RAISE EXCEPTION 'World reset occurrence/node data refused' USING ERRCODE='OTR03'; END IF;
+ -- Independently acquire the exact native admission relation fence, in its lexical
+ -- order, even on direct runtime SQL invocation. These durable locks are not I/C proof.
+ LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_character_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_guard_history IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_lifecycle_receipts IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_runtime_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_signing_trust_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_control_loss_continuity IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_executor_custody IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_fresh_admission_receipts IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_reconnect_attempts IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_reconnect_pending_commands IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_recovery_grant_consumptions IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_session_replacements IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_session_use_ledgers IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_session_use_memberships IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_transport_ref_reservations IN EXCLUSIVE MODE;
+ SELECT * INTO j FROM game_world_reset_jobs WHERE world_id=w AND reset_epoch=e FOR UPDATE;
+ IF NOT FOUND OR j.revision<>r OR j.target_digest IS DISTINCT FROM b OR j.phase<>'RETIRING'
+ OR e>=18446744073709551615 OR r>=18446744073709551615 OR j.target_map_revision IS NULL
+ THEN RAISE EXCEPTION 'World reset occurrence/target stale or unqualified' USING ERRCODE='OTR03'; END IF;
+ LOCK TABLE game_runtime_scope_assignments IN SHARE MODE;
+ SELECT reset_epoch INTO a FROM game_world_reset_active_epochs WHERE world_id=w FOR UPDATE;
+ IF NOT FOUND OR a<>e OR NOT EXISTS(SELECT 1 FROM game_world_reset_epoch_history h
+ WHERE h.world_id=w AND h.reset_epoch=e AND h.map_revision=j.active_map_revision)
+ OR NOT game_node_lock_current_registration(n,nr)
+ THEN RAISE EXCEPTION 'World reset active epoch/incarnation refused' USING ERRCODE='OTR03'; END IF;
+ SELECT * INTO v_history FROM game_world_reset_epoch_history WHERE world_id=w AND reset_epoch=e;
+ IF NOT FOUND THEN RAISE EXCEPTION 'World reset predecessor history absent' USING ERRCODE='OTR03'; END IF;
+ LOCK TABLE game_item_ground_locations,game_item_corpse_container_entries IN SHARE MODE;
+ LOCK TABLE game_item_house_interior_locations,game_house_ownership,game_world_house_instances IN SHARE MODE;
+ -- Re-read durable prerequisites only after all cohort, admission, Ground and House fences.
+ IF NOT game_world_reset_cohort_current(w,e,n,nr)
+ OR EXISTS(SELECT 1 FROM game_item_ground_locations WHERE world_id=w)
+ OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries ce JOIN game_item_ground_locations g
+ ON g.item_instance_id=ce.parent_item_instance_id WHERE g.world_id=w)
+ THEN RAISE EXCEPTION 'World reset current durable prerequisites refused' USING ERRCODE='OTR03'; END IF;
+ FOR v_channel IN SELECT channel_id FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1 ORDER BY uuid_send(channel_id) LOOP
+  -- Native sequence is per Channel and is NOT the World epoch. Serialize with op4.
+  PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:content-activation:'||w::text||':'||v_channel.channel_id::text,0));
+  SELECT * INTO v_current FROM game_content_activations WHERE world_id=w AND channel_id=v_channel.channel_id ORDER BY activation_sequence DESC LIMIT 1;
+  IF NOT FOUND OR (v_current.server_artifact_digest,v_current.client_artifact_digest,v_current.frame_binding_digest)
+   IS DISTINCT FROM (v_history.server_digest,v_history.client_digest,v_history.frame_digest)
+  THEN RAISE EXCEPTION 'World reset current Channel activation disagrees with predecessor history' USING ERRCODE='OTR03'; END IF;
+  v_previous:=v_current.activation_sequence;
+  v_sequence:=v_previous+1;
+  IF v_sequence>18446744073709551615 THEN RAISE EXCEPTION 'Content issuance sequence exhausted' USING ERRCODE='OTR03'; END IF;
+  PERFORM game_content_record_activation_core(w,v_channel.channel_id,v_sequence,v_previous,j.target_server_digest,j.target_client_digest,j.target_frame_digest);
+ END LOOP;
+ v_instant:=clock_timestamp();
+ v_month:=game_world_reset_month_key(v_instant,j.target_calendar_policy,j.target_calendar_revision);
+ IF v_month IS NULL THEN RAISE EXCEPTION 'World reset calendar refused' USING ERRCODE='OTR03'; END IF;
+ INSERT INTO game_world_reset_epoch_history(world_id,reset_epoch,map_revision,server_digest,client_digest,frame_digest,calendar_policy,calendar_revision,calendar_parity,month_key,recorded_at,issued_by)
+ VALUES(w,e+1,j.target_map_revision,j.target_server_digest,j.target_client_digest,j.target_frame_digest,j.target_calendar_policy,j.target_calendar_revision,'PARITY_PENDING',v_month,v_instant,session_user);
+ UPDATE game_world_reset_active_epochs SET reset_epoch=e+1 WHERE world_id=w AND reset_epoch=e;
+ IF NOT FOUND THEN RAISE EXCEPTION 'World reset active CAS refused' USING ERRCODE='OTR03'; END IF;
+ UPDATE game_world_reset_jobs SET phase='ACTIVATED',revision=r+1 WHERE world_id=w AND reset_epoch=e AND phase='RETIRING' AND revision=r;
+ IF NOT FOUND THEN RAISE EXCEPTION 'World reset job CAS refused' USING ERRCODE='OTR03'; END IF;
+END $$;
+REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC) FROM PUBLIC,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC) TO oteryn_game_runtime;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+"#;

@@ -21,26 +21,44 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## Current authoring checkpoint — D1245/D1189a/D1257
+## Current authoring checkpoint — D1260/D1269/D1270/D1272
 
-The full-bundle House producer is OUT_OF_SCOPE under D1245; full-bundle
-movement now explicitly retains Unknown House metadata. The accepted native
-entry overlay owns the qualified placement digest. The encoder resides in
-native_house_tiles, with the actual death caller using its existing content export;
-there is no net map/boot change from the published 6b455ad8 checkpoint.
+D1269 preserves exactly one root Area and admits only unique Houses referenced
+by explicit house_tiles, retaining all existing House identity/cell/entry/door
+qualification. Six actual-canonical positive/negative cases are authored.
+D1270 moves the single physical placement encoder to content/spatial_position.rs;
+the canonical module remains private and the native shim mounts that same leaf.
+There is no net map/boot change from the published 6b455ad8 checkpoint. Full-bundle
+House production remains OUT_OF_SCOPE; full-bundle metadata is explicitly Unknown.
 
-D1257 adds explicit Control-only epoch0 initialization, immutable epoch history,
-an active pointer, independent target artifact facts and Berlin10 calendar/read
-ports. Calendar parity remains PARITY_PENDING. Final atomic activation is still
-pending; these uninstalled candidate schema/read ports do not prove activation.
+D1272 returns native-scope-derived World/map/server identity with House facts,
+compared with actual active history and locked target before mutation. The
+borrowed qualified-catalogue adapter refuses Unknown and does not grant current
+activation or transport-drain authority. Per-House placement-definition digests
+use the same D1245 codec independently of the other Houses.
 
-Native qualification at e50db673 plus exact Cyc f8a53069 compiled successfully:
-10 PASS / 2 FAIL. Both failures rejected non-production fixture identifiers.
-The test-only identifiers are repaired without changing validators; renewed
-execution is NOT_RUN. D1257 compilation and new PG execution are NOT_RUN.
-Earlier result packets remain exact to their recorded source, never upgraded to
-this candidate. The sections below preserve the implementation/evidence history;
-the current CP decisions supersede historical dependency statements.
+The uninstalled0096 candidate now contains the atomic caller-TX primitive and
+bounded Root commit owner: exact occurrence replay, native admission/cohort/node
+locks, complete drain/House recheck, native per-Channel issuance core/CAS, immutable
+N+1 history, active-pointer CAS and ACTIVATED in the same transaction. Success
+returns only after commit; unknown commit retains the exact occurrence identity.
+SQL NULL/malformed input refuses before locks; direct SQL independently takes the
+native durable fences. Retirement binding remains separate from target artifacts.
+Calendar is PG-clock Berlin10 with retained revision and PARITY_PENDING.
+
+Independent source reviews PASS after repaired SQL-name-resolution and NULL
+boundary findings. New execution is NOT_RUN. Historical exact e60b9b8f native
+packet compiled0 with10PASS/2House-qualifierFAIL; this qualifier is now repaired by
+D1269. Exact e60b9b8f native PostgreSQL17.6 packet compiled0 and all11 Reset cases
+PASS, including calendar/initializer/history and private-core42501 refusal. That
+packet does not qualify this newer schema/owner. Proofs/earlier RED are retained.
+
+Production I/#2187 sealed drain implementation/caller, final slot after C/#2163
+and B/#2197, migration installation, in-memory publication, positive composed
+activation/replay/concurrency/overflow/rollback, strict/full-package and final
+repository gates remain unqualified. No fake positive drain certificate, shared
+caller, schema mount or readiness transition is added. The sections below retain
+history; these CP decisions supersede earlier dependency descriptions.
 
 ## D1134/D1135/D1152 owned authoring checkpoint
 

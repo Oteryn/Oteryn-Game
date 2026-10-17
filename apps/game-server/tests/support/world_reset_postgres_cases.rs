@@ -606,3 +606,91 @@ async fn admit_initializer_replay(
     tx.commit().await?;
     Ok(())
 }
+
+// PRIVATE PROPOSAL, NOT_RUN. Real native fixture; no drain/House proof is fabricated.
+#[test]
+fn reset_activation_refuses_legacy_target_without_any_issuance_or_epoch_write() -> TestResult {
+    let admin = configured_admin().ok_or("routed PostgreSQL required")?;
+    runtime()?.block_on(async move {
+        let h=Harness::create(admin,"resetlegacyactivation").await?;
+        install(&h).await?;
+        admit(&h).await?;
+        let before: (i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_content_activations),(SELECT count(*) FROM game_world_reset_epoch_history)")
+            .fetch_one(&h.pool).await?;
+        let fact=h.node.fact();
+        let mut tx=h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        let rejected=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric)")
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
+            .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+            .execute(&mut *tx).await;
+        assert!(matches!(rejected,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("OTR03")));
+        tx.rollback().await?;
+        let after: (i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_content_activations),(SELECT count(*) FROM game_world_reset_epoch_history)")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(before,after);
+        let epoch: String=sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_active_epochs WHERE world_id=encode($1,'hex')::uuid")
+            .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(epoch,"0");
+        let phase: String=sqlx::query_scalar("SELECT phase FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+            .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(phase,"RETIRING");
+        h.cleanup().await
+    })
+}
+
+// Direct SQL must take the native admission fence before inspecting a legacy job.
+// A competing admission writer holds that fence; lock_timeout is the observed refusal,
+// not a scheduling sleep or a manufactured drain/current-authority certificate.
+#[test]
+fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activated() -> TestResult {
+    let admin = configured_admin().ok_or("routed PostgreSQL required")?;
+    runtime()?.block_on(async move {
+        let h=Harness::create(admin,"resetactivationfence").await?;
+        install(&h).await?;
+        admit(&h).await?;
+        let before: (i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_content_activations),(SELECT count(*) FROM game_world_reset_epoch_history),(SELECT count(*) FROM game_world_reset_jobs)")
+            .fetch_one(&h.pool).await?;
+        let mut admission=h.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE")
+            .execute(&mut *admission).await?;
+        let mut contender=h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *contender).await?;
+        sqlx::query("SET LOCAL lock_timeout='100ms'").execute(&mut *contender).await?;
+        let fact=h.node.fact();
+        let blocked=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric)")
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
+            .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+            .execute(&mut *contender).await;
+        assert!(matches!(blocked,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("55P03")));
+        contender.rollback().await?;
+        // A missing node or revision is invalid data, not SQL UNKNOWN authority.
+        // Refuse it before waiting on the held fence; the old missing guard timed out.
+        for missing_node in [true, false] {
+            let mut invalid = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *invalid).await?;
+            sqlx::query("SET LOCAL lock_timeout='100ms'").execute(&mut *invalid).await?;
+            let refused = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,$2::text::numeric,$3,encode($4,'hex')::uuid,$5::text::numeric)")
+                .bind(id(WORLD).as_slice())
+                .bind(if missing_node { Some("1".to_owned()) } else { None })
+                .bind([7_u8;32].as_slice())
+                .bind(if missing_node { None } else { Some(fact.node_id().as_bytes().as_slice()) })
+                .bind(fact.registration_revision().to_string())
+                .execute(&mut *invalid).await;
+            assert!(matches!(refused,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("OTR03")));
+            invalid.rollback().await?;
+        }
+        admission.rollback().await?;
+        let mut control=h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_control").execute(&mut *control).await?;
+        // The BEFORE INSERT rule must refuse the phase before PK/current-epoch checks.
+        let refused=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','ACTIVATED')")
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *control).await;
+        assert!(matches!(refused,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("23514")));
+        control.rollback().await?;
+        let after: (i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_content_activations),(SELECT count(*) FROM game_world_reset_epoch_history),(SELECT count(*) FROM game_world_reset_jobs)")
+            .fetch_one(&h.pool).await?;
+        assert_eq!(before,after);
+        h.cleanup().await
+    })
+}

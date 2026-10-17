@@ -26,12 +26,21 @@ pub(crate) enum CatalogueSide {
     Target,
 }
 
+/// D1272 immutable source identity, derived from the actual qualified native scope.
+/// Neither this catalogue nor its facts establish current activation authority.
+pub(crate) struct QualifiedHouseResetCatalogue {
+    pub(crate) world: WorldId,
+    pub(crate) map_revision: String,
+    pub(crate) server_artifact_digest: [u8; 32],
+    pub(crate) facts: Vec<HouseResetFact>,
+}
+
 pub(crate) trait WorldResetHouseSource {
     fn reset_houses(
         &self,
         world: WorldId,
         side: CatalogueSide,
-    ) -> Result<Vec<HouseResetFact>, WorldResetSourceRefused>;
+    ) -> Result<QualifiedHouseResetCatalogue, WorldResetSourceRefused>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

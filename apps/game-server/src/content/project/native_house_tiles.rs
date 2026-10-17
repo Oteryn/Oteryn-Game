@@ -9,31 +9,6 @@ use crate::content::{FirstProductionCell, LogicalCell};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
-/// D1241 canonical opaque placement bytes, extracted exactly from death_reward:
-/// signed x i32BE || signed y i32BE || floor i16BE. No frame conversion or clamp.
-pub(crate) fn encode_spatial_position(
-    position: crate::foundation::MovementLocalPosition,
-) -> Vec<u8> {
-    let mut spatial_position = Vec::with_capacity(10);
-    spatial_position.extend_from_slice(&position.x.to_be_bytes());
-    spatial_position.extend_from_slice(&position.y.to_be_bytes());
-    spatial_position.extend_from_slice(&position.floor.to_be_bytes());
-    spatial_position
-}
-
-/// Checked conversion into the actual movement carrier. x/y are already i32;
-/// LogicalCell z must fit the carrier's i16 floor. Source frame qualification
-/// remains the caller's responsibility; this changes neither floor sign nor origin.
-pub(crate) fn checked_movement_position(
-    cell: LogicalCell,
-) -> Option<crate::foundation::MovementLocalPosition> {
-    Some(crate::foundation::MovementLocalPosition {
-        x: cell.x,
-        y: cell.y,
-        floor: i16::try_from(cell.z).ok()?,
-    })
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NativeHouseTileDocument {
@@ -79,6 +54,41 @@ impl QualifiedHousePlacement {
         self.doors.get(&cell).copied()
     }
 }
+// Shared byte codec for whole-catalogue and single-House placement identity.
+// Single-House facts deliberately do not include another House's placement.
+fn qualified_house_placement_digest<'a>(
+    houses: impl IntoIterator<Item = &'a QualifiedHousePlacement>,
+) -> [u8; 32] {
+    let mut ordered: Vec<_> = houses.into_iter().collect();
+    ordered
+        .sort_by(|a, b| (&a.house.key, &a.house.revision).cmp(&(&b.house.key, &b.house.revision)));
+    let mut hash = Sha256::new();
+    hash.update(b"OTERYN_QUALIFIED_HOUSE_PLACEMENTS/v1\0");
+    hash.update((ordered.len() as u64).to_be_bytes());
+    let cell = |hash: &mut Sha256, position: LogicalCell| {
+        hash.update(position.x.to_be_bytes());
+        hash.update(position.y.to_be_bytes());
+        hash.update(position.z.to_be_bytes());
+    };
+    for placement in ordered {
+        for text in [&placement.house.key, &placement.house.revision] {
+            hash.update((text.len() as u64).to_be_bytes());
+            hash.update(text.as_bytes());
+        }
+        hash.update((placement.cells.len() as u64).to_be_bytes());
+        for position in &placement.cells {
+            cell(&mut hash, *position);
+        }
+        cell(&mut hash, placement.entry);
+        hash.update((placement.doors.len() as u64).to_be_bytes());
+        for (position, number) in &placement.doors {
+            cell(&mut hash, *position);
+            hash.update(number.to_be_bytes());
+        }
+    }
+    hash.finalize().into()
+}
+
 impl QualifiedHouseTiles {
     /// Explicit Unknown for this actual owner's scope; never inherit an entry catalogue.
     pub(super) fn unknown_for_scope(scope: EngineeringStaticCellScope) -> Self {
@@ -95,36 +105,9 @@ impl QualifiedHouseTiles {
     /// (x,y,z)i32BE cells, entry(x,y,z)i32BE, door-count u64BE + sorted
     /// (cell(x,y,z)i32BE,door-number u32BE). Counts/string lengths are u64BE.
     pub(crate) fn placement_digest(&self) -> Option<[u8; 32]> {
-        let houses = self.houses.as_ref()?;
-        let mut ordered: Vec<_> = houses.iter().collect();
-        ordered.sort_by(|a, b| {
-            (&a.house.key, &a.house.revision).cmp(&(&b.house.key, &b.house.revision))
-        });
-        let mut hash = Sha256::new();
-        hash.update(b"OTERYN_QUALIFIED_HOUSE_PLACEMENTS/v1\0");
-        hash.update((ordered.len() as u64).to_be_bytes());
-        let cell = |hash: &mut Sha256, position: LogicalCell| {
-            hash.update(position.x.to_be_bytes());
-            hash.update(position.y.to_be_bytes());
-            hash.update(position.z.to_be_bytes());
-        };
-        for placement in ordered {
-            for text in [&placement.house.key, &placement.house.revision] {
-                hash.update((text.len() as u64).to_be_bytes());
-                hash.update(text.as_bytes());
-            }
-            hash.update((placement.cells.len() as u64).to_be_bytes());
-            for position in &placement.cells {
-                cell(&mut hash, *position);
-            }
-            cell(&mut hash, placement.entry);
-            hash.update((placement.doors.len() as u64).to_be_bytes());
-            for (position, number) in &placement.doors {
-                cell(&mut hash, *position);
-                hash.update(number.to_be_bytes());
-            }
-        }
-        Some(hash.finalize().into())
+        Some(qualified_house_placement_digest(
+            self.houses.as_ref()?.iter(),
+        ))
     }
 
     pub(super) fn from_source_world(
@@ -224,6 +207,65 @@ impl QualifiedHouseTiles {
         Ok(houses.iter().find(|house| house.contains(cell)))
     }
 }
+/// Borrowed pair of actual qualified catalogues. It supplies source identity only;
+/// G compares it with active history/locked target under the final TX locks.
+/// This adapter grants neither current activation nor an in-memory drain proof.
+pub(crate) struct QualifiedHouseResetSources<'a> {
+    active: &'a QualifiedHouseTiles,
+    target: &'a QualifiedHouseTiles,
+}
+impl<'a> QualifiedHouseResetSources<'a> {
+    pub(crate) const fn new(
+        active: &'a QualifiedHouseTiles,
+        target: &'a QualifiedHouseTiles,
+    ) -> Self {
+        Self { active, target }
+    }
+}
+impl crate::durability::world_reset_port::WorldResetHouseSource for QualifiedHouseResetSources<'_> {
+    fn reset_houses(
+        &self,
+        world: crate::foundation::WorldId,
+        side: crate::durability::world_reset_port::CatalogueSide,
+    ) -> Result<
+        crate::durability::world_reset_port::QualifiedHouseResetCatalogue,
+        crate::durability::world_reset_port::WorldResetSourceRefused,
+    > {
+        use crate::durability::world_reset_port::{
+            CatalogueSide, HouseResetFact, QualifiedHouseResetCatalogue, WorldResetSourceRefused,
+        };
+        let source = match side {
+            CatalogueSide::Active => self.active,
+            CatalogueSide::Target => self.target,
+        };
+        if source.scope.world_id != world {
+            return Err(WorldResetSourceRefused);
+        }
+        let houses = source.houses.as_ref().ok_or(WorldResetSourceRefused)?;
+        let mut facts = Vec::new();
+        for house in houses {
+            // D1245 placement-definition semantics: key/revision, cells, entry, doors.
+            // No extra House property or whole-catalogue digest is inferred.
+            let definition_digest = qualified_house_placement_digest(std::iter::once(house));
+            for cell in &house.cells {
+                let position = crate::content::checked_movement_position(*cell)
+                    .ok_or(WorldResetSourceRefused)?;
+                facts.push(HouseResetFact {
+                    house_key: house.house.key.clone(),
+                    definition_digest,
+                    spatial_position: crate::content::encode_spatial_position(position),
+                });
+            }
+        }
+        Ok(QualifiedHouseResetCatalogue {
+            world: source.scope.world_id,
+            map_revision: source.scope.map_revision.as_str().to_owned(),
+            server_artifact_digest: source.scope.generation_digest,
+            facts,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
@@ -248,47 +290,6 @@ mod tests {
             ),
             Err("House placement metadata unavailable")
         );
-    }
-}
-
-#[cfg(test)]
-mod spatial_position_encoding_tests {
-    use super::{checked_movement_position, encode_spatial_position};
-    use crate::content::LogicalCell;
-
-    #[test]
-    fn canonical_placement_bytes_preserve_signed_axes_and_check_floor_narrowing()
-    -> Result<(), &'static str> {
-        let position = checked_movement_position(LogicalCell {
-            x: -2,
-            y: 0x01020304,
-            z: -7,
-        })
-        .ok_or("valid signed position")?;
-        assert_eq!(
-            encode_spatial_position(position),
-            [0xff, 0xff, 0xff, 0xfe, 1, 2, 3, 4, 0xff, 0xf9]
-        );
-        for z in [i32::from(i16::MIN), i32::from(i16::MAX)] {
-            let position = checked_movement_position(LogicalCell {
-                x: i32::MIN,
-                y: i32::MAX,
-                z,
-            })
-            .ok_or("floor boundary")?;
-            assert_eq!(position.x, i32::MIN);
-            assert_eq!(position.y, i32::MAX);
-            assert_eq!(i32::from(position.floor), z);
-        }
-        for z in [
-            i32::MIN,
-            i32::from(i16::MIN) - 1,
-            i32::from(i16::MAX) + 1,
-            i32::MAX,
-        ] {
-            assert!(checked_movement_position(LogicalCell { x: 0, y: 0, z }).is_none());
-        }
-        Ok(())
     }
 }
 
@@ -398,6 +399,64 @@ mod placement_digest_tests {
             scope,
             document.as_ref(),
         )?)
+    }
+    #[test]
+    fn reset_source_uses_qualified_scope_and_independent_house_digests() -> TestResult<()> {
+        use crate::durability::world_reset_port::{CatalogueSide, WorldResetHouseSource};
+        let active = qualify_overlay(Some(document()))?;
+        let mut changed = document();
+        changed.houses[1].house.revision = "oteryn:rev/overlay-house-r2".into();
+        let target = qualify_overlay(Some(changed))?;
+        let source = QualifiedHouseResetSources::new(&active, &target);
+        let a = source
+            .reset_houses(world()?, CatalogueSide::Active)
+            .map_err(|_| "active source refused")?;
+        let b = source
+            .reset_houses(world()?, CatalogueSide::Target)
+            .map_err(|_| "target source refused")?;
+        assert_eq!(a.world, active.scope.world_id);
+        assert_eq!(a.map_revision, active.scope.map_revision.as_str());
+        assert_eq!(a.server_artifact_digest, active.scope.generation_digest);
+        assert_eq!(b.world, target.scope.world_id);
+        assert_eq!(b.map_revision, target.scope.map_revision.as_str());
+        assert_eq!(b.server_artifact_digest, target.scope.generation_digest);
+        let digest = |facts: &[crate::durability::world_reset_port::HouseResetFact], key: &str| {
+            facts
+                .iter()
+                .find(|f| f.house_key == key)
+                .map(|f| f.definition_digest)
+        };
+        assert_eq!(
+            digest(&a.facts, "oteryn:content.house.overlay_a"),
+            digest(&b.facts, "oteryn:content.house.overlay_a")
+        );
+        assert_ne!(
+            digest(&a.facts, "oteryn:content.house.overlay_b"),
+            digest(&b.facts, "oteryn:content.house.overlay_b")
+        );
+        assert!(a.facts.iter().all(|f| f.spatial_position.len() == 10));
+        let unknown = qualify_overlay(None)?;
+        assert!(
+            QualifiedHouseResetSources::new(&unknown, &target)
+                .reset_houses(world()?, CatalogueSide::Active)
+                .is_err()
+        );
+        let empty = qualify_overlay(Some(NativeHouseTileDocument {
+            schema: "OTERYN_NATIVE_HOUSE_TILES/v1".into(),
+            houses: Vec::new(),
+        }))?;
+        assert!(
+            QualifiedHouseResetSources::new(&empty, &target)
+                .reset_houses(world()?, CatalogueSide::Active)
+                .map_err(|_| "explicit empty source refused")?
+                .facts
+                .is_empty()
+        );
+        let other = crate::foundation::WorldId::decode(&[
+            1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2,
+        ])?;
+        assert!(source.reset_houses(other, CatalogueSide::Target).is_err());
+        Ok(())
     }
     #[test]
     fn qualified_overlay_digest_is_order_independent_and_definition_sensitive() -> TestResult<()> {

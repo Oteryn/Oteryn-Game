@@ -33,3 +33,8 @@ pub use production::{
     Sha256HexDigest,
 };
 pub use reference_playable::*;
+
+// Same physical canonical encoder as production; the shim contains no adapter logic.
+#[path = "../../src/content/spatial_position.rs"]
+mod spatial_position;
+pub use spatial_position::encode_spatial_position;
