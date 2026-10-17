@@ -870,7 +870,7 @@ mod native_composite_tests {
                 g,
                 DecisionOccurrenceId::from_bytes([12; 16]),
                 crate::ability::condition::TickFacts::default(),
-                SemanticTimeMicros::from_micros(1_000_000),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
             )
             .unwrap();
         assert_eq!(first.damage, 100);
@@ -885,7 +885,7 @@ mod native_composite_tests {
                 g,
                 DecisionOccurrenceId::from_bytes([13; 16]),
                 crate::ability::condition::TickFacts::default(),
-                SemanticTimeMicros::from_micros(2_000_000),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
             )
             .unwrap();
         assert_eq!(tick.damage, 85);
@@ -913,7 +913,7 @@ mod native_composite_tests {
                 g,
                 DecisionOccurrenceId::from_bytes([13; 16]),
                 crate::ability::condition::TickFacts::default(),
-                SemanticTimeMicros::from_micros(2_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
             )
             .is_none()
         );
