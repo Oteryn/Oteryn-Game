@@ -109,7 +109,43 @@ message OneItemTransactionV1 {
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
     OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
     OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
+    OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
   }
+}
+
+// World-scoped House custody. No ChannelId is present; reclaim is immutable placement
+// provenance, not a current access grant. Each House endpoint is bounded by RL-07.
+message OneItemHouseLocationV1 {
+  bytes world_id = 1;
+  string house_key = 2; // <= 512 bytes
+  bytes spatial_position = 3; // 1..128 bytes, source-owner-qualified tile
+  uint64 stack_ordinal = 4;
+  uint64 scope_ownership_generation = 5;
+  bytes placement_transaction_id = 6;
+  bytes reclaim_subject = 7;
+  uint64 provenance_revision = 8;
+}
+message OneItemHouseCharacterLocationV1 {
+  bytes character_id = 1;
+  bytes parent_item_instance_id = 2; // inventory only
+  uint64 placement_ordinal = 3; // inventory only
+  uint32 equipment_slot = 4; // equipment only, 1..10; 9 is the B3 container slot
+}
+message OneItemHouseTransferV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2; // same live item/quantity/definition, never split or merge
+  oneof source {
+    OneItemHouseLocationV1 source_house = 3;
+    OneItemHouseCharacterLocationV1 source_character = 4;
+  }
+  oneof destination {
+    OneItemHouseLocationV1 destination_house = 5;
+    OneItemHouseCharacterLocationV1 destination_inventory = 6;
+  }
+  OneItemTransferCauseV1 cause = 7;
+  bytes character_id = 8;
+  uint64 connection_generation = 9;
+  uint64 character_lease_generation = 10;
 }
 
 // Typed identity is carried in full; no numeric key substitutes for it.
