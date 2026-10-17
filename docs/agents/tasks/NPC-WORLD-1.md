@@ -583,3 +583,32 @@ PG17.6 through in-pg-netns.sh and cargo fetch --locked before the namespace; no 
 server/container lifecycle is part of this work. Any successor run binds its actual
 new head and reviewed recipe hash. Predecessor evidence does not qualify this delta.
 
+## Exact20 CI checkpoint and PostgreSQL routing repair — AUTHORING (2026-10-17)
+
+Reopen AUTHORING from `20befdf90f5fa7d127a908101397e96b28d4c967` for this bounded
+test-entry and task-card repair. The unchanged native travel exercise passed in
+[canonical PostgreSQL job117386230841](https://github.com/Oteryn/Oteryn-Game/actions/runs/39029255995/job/117386230841)
+on that exact head with Rust1.95.0 and PostgreSQL17.6: its containing target reports
+**1498 passed / 0 failed / 0 ignored**, including the exact
+`npc_travel_native_postgres_replay_fences_rollback_and_reload` case. This is real
+PostgreSQL evidence for20, not a result from the proposed repair or a PC rerun.
+
+Two remaining CI failures have specific causes: integration-rest job117386230673
+reports1497 passed /1 failed because this entry returns an error when the PostgreSQL
+admin variable is absent; routing-contract job117386246129 identifies an extra blank
+line at the task card's EOF. Remove that blank line and use the existing canonical
+`configured_admin()` check in the routed entry. Its absent-configuration branch
+prints PRE-ROUTING / NONCANONICAL and returns without entering the PostgreSQL exercise.
+That ordinary routing outcome supplies no PostgreSQL qualification. A configured
+entry still calls the exact unchanged exercise, including native fixtures, version
+and URL checks, all replay/fence/rollback/reload assertions and cleanup. The native
+completion marker remains exclusively in that exercise after its assertions; the
+routing branch cannot emit it. No test is ignored and no native body is weakened.
+
+Status remains NOT_FULLY_QUALIFIED. This repair needs its own frozen successor and
+fresh routing/compile checks; successor native/PG execution is NOT_RUN at author
+handoff. The exact20 PostgreSQL result is retained under20 and does not qualify new
+source. No PC test was launched to duplicate the completed current-head CI job.
+The runtime and unpublished walking work are outside this two-file repair; the
+remaining source-pin, terrain/trigger, scheduler, chat and travel activation gates
+and the original acceptance boxes remain open.
