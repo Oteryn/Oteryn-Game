@@ -64,6 +64,7 @@ pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
 pub mod npc_trade;
 pub mod npc_trade_audit;
+pub(crate) mod player_trade;
 pub mod premium_activation_latch;
 pub mod premium_fence;
 pub mod public_projections;
