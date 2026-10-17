@@ -622,3 +622,19 @@ on that same old head passed its one selected real composition test against
 PostgreSQL 17.6 (`170006`); 1089 other tests were filtered out. That evidence does
 not execute the full death-transaction suite. Rust execution of this new fixture
 repair remains **NOT_RUN** until its complete successor candidate is qualified.
+
+## Main merge — 2026-10-17
+
+Main `ce7bccab973625d5d3d0d0c566426903229d2373` is merged with a merge commit (no
+textual conflicts). Main added three standalone Foundation roots that mount
+`foundation/mod.rs`; under the same D1258a mechanical-consumer allocation each now
+mounts the real `ability/player_lethal.rs` exactly like the 26 roots above:
+
+- `apps/game-server/tests/character_appearance_native_postgres.rs`
+- `apps/game-server/tests/character_appearance_postgres.rs`
+- `apps/game-server/tests/house_interior_postgres.rs`
+
+All three keep `test = false`; their cases still run through
+`character_authority_postgres`. No production source changes. The shared
+`character_death.rs` death-transaction integration stays blocked on #2193
+(DEATH-ML-LOSS-1), DEATH-3 and PVP-1b; status remains NOT_FULLY_QUALIFIED.
