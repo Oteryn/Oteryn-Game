@@ -271,9 +271,7 @@ class CoverageTest(unittest.TestCase):
                 records.write_text(json.dumps([record]))
                 claims = Path(directory) / "claims.json"
                 placement = {"achievement": {"key": SAMPLE["identity"]["key"]}}
-                claims.write_text(
-                    json.dumps({"claims": [{"placements": [placement]}]})
-                )
+                claims.write_text(json.dumps({"claims": [{"placements": [placement]}]}))
                 output = io.StringIO()
                 with contextlib.redirect_stdout(output):
                     result = v.main([str(records), "--chest-claims", str(claims)])
