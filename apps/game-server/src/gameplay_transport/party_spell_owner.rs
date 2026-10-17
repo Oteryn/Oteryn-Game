@@ -7,8 +7,8 @@ use crate::durability::{
     world_party,
 };
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementPositionSnapshot, PartyPresence,
-    PartySnapshot,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
+    MovementPositionSnapshot, PartyPresence, PartySnapshot,
 };
 use crate::spell::{
     cast::PlayerSpellState,
@@ -18,6 +18,20 @@ use crate::spell::{
     party::PartyWorld,
 };
 use sqlx::{Postgres, Transaction};
+
+/// Character/session association resolved by the native same-transaction journal read.
+/// This projection carries facts only; it grants no current owner or reward authority.
+#[allow(
+    dead_code,
+    reason = "consumed by party_xp.rs once the CP slot registers its module"
+)]
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct SourcePartyXpMember {
+    pub(crate) character: [u8; 16],
+    pub(crate) session: GameSessionId,
+    pub(crate) level: u32,
+    pub(crate) position: MovementLocalPosition,
+}
 
 #[derive(Debug)]
 pub(crate) struct SourcePartyWorld {
@@ -30,11 +44,65 @@ pub(crate) struct SourcePartyWorld {
         MovementPositionSnapshot,
         PlayerSpellState,
     )>,
+    // XP participants include dead colocated members; spell target selection remains unchanged.
+    #[allow(
+        dead_code,
+        reason = "consumed by party_xp.rs once the CP slot registers its module"
+    )]
+    xp_physical: Vec<(
+        [u8; 16],
+        ExactActorRef,
+        GameSessionId,
+        MovementPositionSnapshot,
+        PlayerSpellState,
+    )>,
     caster_facts: PartyMemberFacts,
     member_facts: Vec<PartyMemberFacts>,
     adjacent_masterless_monsters: u32,
 }
 impl SourcePartyWorld {
+    #[allow(
+        dead_code,
+        reason = "consumed by party_xp.rs once the CP slot registers its module"
+    )]
+    pub(crate) fn xp_members(&self) -> Vec<SourcePartyXpMember> {
+        self.xp_physical
+            .iter()
+            .map(
+                |(character, _, session, position, state)| SourcePartyXpMember {
+                    character: *character,
+                    session: *session,
+                    level: state.character_facts().level,
+                    position: position.position(),
+                },
+            )
+            .collect()
+    }
+    /// Retired runtimes and changed player/position predecessors refuse the whole XP plan.
+    /// Current SQL membership/toggle and actual PZ/activity ownership remain separate inputs.
+    #[allow(
+        dead_code,
+        reason = "consumed by party_xp.rs once the CP slot registers its module"
+    )]
+    pub(crate) fn validate_xp_physical(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+    ) -> Result<(), SpellItemError> {
+        runtime
+            .owner_fence()
+            .map_err(|_| SpellItemError::Rejected("party XP owner retired"))?;
+        for (_, actor, session, position, state) in &self.xp_physical {
+            if runtime.read_actor_position(*actor) != Ok(*position)
+                || states.get(runtime, *actor, *session) != Some(state)
+            {
+                return Err(SpellItemError::Rejected(
+                    "party XP physical predecessor changed",
+                ));
+            }
+        }
+        Ok(())
+    }
     pub(crate) fn caster_facts(&self) -> PartyMemberFacts {
         self.caster_facts
     }
@@ -222,6 +290,13 @@ async fn read_source_party_world(
         .read_actor_position(caster)
         .map_err(|_| SpellItemError::Rejected("party caster position"))?;
     let mut physical = vec![(caster, session, caster_position, caster_state.clone())];
+    let mut xp_physical = vec![(
+        source.character,
+        caster,
+        session,
+        caster_position,
+        caster_state.clone(),
+    )];
     let mut party = source.party_id.map(|_| Vec::new());
     // A local occurrence ordinal identifies equality inside this already-qualified group.
     // It is never a public PartyId nor an authorization token.
@@ -276,6 +351,7 @@ async fn read_source_party_world(
                     .ok_or(SpellItemError::Rejected(
                         "party member current vitals unavailable",
                     ))?;
+            xp_physical.push((character, actor, member_session, position, state.clone()));
             if state.vitals().health == 0 {
                 seen.insert(character);
                 continue;
@@ -325,6 +401,7 @@ async fn read_source_party_world(
         caster: creature(caster, caster_position),
         party,
         physical,
+        xp_physical,
         caster_facts,
         member_facts,
         adjacent_masterless_monsters: adjacent,
