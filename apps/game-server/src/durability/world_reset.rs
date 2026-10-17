@@ -378,6 +378,38 @@ fn check_reset_house_definition(
     }
 }
 
+/// House evidence handed to the SQL activation owner, which rechecks it against every
+/// locked durable House fact. Built only from the two bound native catalogues, never
+/// from the durable rows it is checked against.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct ResetHouseEvidence {
+    cell_keys: Vec<String>,
+    cell_positions: Vec<Vec<u8>>,
+    stable_keys: Vec<String>,
+}
+
+/// Every Target cell, plus the Houses whose Active and Target definitions agree: exactly
+/// the sets `check_reset_house_membership` and `check_reset_house_definition` accept.
+fn reset_house_evidence(
+    active: &ResetHouseCatalogue,
+    target: &ResetHouseCatalogue,
+) -> ResetHouseEvidence {
+    let mut evidence = ResetHouseEvidence::default();
+    for (house_key, (digest, positions)) in target {
+        for position in positions {
+            evidence.cell_keys.push(house_key.clone());
+            evidence.cell_positions.push(position.clone());
+        }
+        if active
+            .get(house_key)
+            .is_some_and(|(before, _)| before == digest)
+        {
+            evidence.stable_keys.push(house_key.clone());
+        }
+    }
+    evidence
+}
+
 /// D1189/D1215/D1218 read-only House preflight in the caller's transaction.
 /// D1272 final preflight: the RETIRING job must already be locked in this TX.
 /// Source identity is compared with actual active history and locked target facts.
@@ -389,7 +421,7 @@ pub(crate) async fn preflight_world_reset_houses(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     world: WorldId,
     source: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
-) -> Result<(), WorldResetError> {
+) -> Result<ResetHouseEvidence, WorldResetError> {
     use super::world_reset_port::CatalogueSide;
     lock_admission_relations(tx).await?;
     let target_record = read_locked_world_reset_target(tx, world).await?;
@@ -434,7 +466,7 @@ pub(crate) async fn preflight_world_reset_houses(
             check_reset_house_definition(&active, &target, &house_key)?;
         }
     }
-    Ok(())
+    Ok(reset_house_evidence(&active, &target))
 }
 
 impl DurabilityRoot {
@@ -975,6 +1007,51 @@ mod reset_house_preflight_tests {
         }
         assert!(reset_house_catalogue(vec![fact("a", 1, 1), fact("a", 2, 1)]).is_ok());
     }
+    #[test]
+    fn sql_house_evidence_is_exactly_what_the_rust_preflight_accepts() -> Result<(), WorldResetError>
+    {
+        let active = reset_house_catalogue(vec![
+            fact("same", 1, 1),
+            fact("changed", 2, 2),
+            fact("removed", 3, 3),
+        ])?;
+        let target = reset_house_catalogue(vec![
+            fact("same", 1, 1),
+            fact("same", 4, 1),
+            fact("changed", 2, 9),
+            fact("added", 5, 5),
+        ])?;
+        let evidence = reset_house_evidence(&active, &target);
+        let cells: Vec<(String, Vec<u8>)> = evidence
+            .cell_keys
+            .iter()
+            .cloned()
+            .zip(evidence.cell_positions.iter().cloned())
+            .collect();
+        for key in ["same", "changed", "removed", "added"] {
+            let key = format!("oteryn:content.house.{key}");
+            for position in 0..=6 {
+                assert_eq!(
+                    cells.contains(&(key.clone(), vec![position])),
+                    check_reset_house_membership(&target, &key, &[position]).is_ok()
+                );
+            }
+            assert_eq!(
+                evidence.stable_keys.contains(&key),
+                check_reset_house_definition(&active, &target, &key).is_ok()
+            );
+        }
+        assert_eq!(
+            evidence.stable_keys,
+            vec!["oteryn:content.house.same".to_owned()]
+        );
+        assert_eq!(cells.len(), 4);
+        assert_eq!(
+            reset_house_evidence(&active, &ResetHouseCatalogue::new()),
+            ResetHouseEvidence::default()
+        );
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -1059,6 +1136,80 @@ mod world_drain_binding_data_tests {
         changed[0] = channel(other_world, 4)?;
         assert!(world_drain_cohort_digest(world, node, &changed).is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod reset_activation_source_tests {
+    use super::RESET_ACTIVATION_SCHEMA;
+
+    // Codex P1 4300751311: the runtime-executable SQL owner must recheck the drain and
+    // House evidence itself, after the fences it reads them under, before any write.
+    #[test]
+    fn direct_runtime_activation_rechecks_drain_digest_and_house_evidence() {
+        let sql = RESET_ACTIVATION_SCHEMA;
+        let signature = "game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[])";
+        assert!(sql.contains(&format!(
+            "REVOKE ALL ON FUNCTION {signature} FROM PUBLIC,oteryn_game_control;"
+        )));
+        assert!(sql.contains(&format!(
+            "GRANT EXECUTE ON FUNCTION {signature} TO oteryn_game_runtime;"
+        )));
+        assert!(sql.contains("ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path"));
+        assert!(!sql.contains("BYTEA,UUID,NUMERIC) "));
+        let position = |needle: &str| sql.find(needle).unwrap_or(usize::MAX);
+        let evidence_data = position("'World reset drain/House evidence data refused'");
+        let first_fence = position("LOCK TABLE game_durability_admission_account_guards");
+        let assignment_lock = position("LOCK TABLE game_runtime_scope_assignments IN SHARE MODE");
+        let house_lock = position(
+            "LOCK TABLE game_item_house_interior_locations,game_house_ownership,game_world_house_instances IN SHARE MODE",
+        );
+        let drain = position("'World reset drain binding refused'");
+        let house = position("'World reset House evidence refused'");
+        let first_write = position("PERFORM game_content_record_activation_core(");
+        assert!(evidence_data < first_fence);
+        assert!(assignment_lock < drain && house_lock < drain);
+        assert!(drain < house && house < first_write && first_write < usize::MAX);
+        // The same D1233 domain, fields and Channel order as `world_drain_cohort_digest`.
+        let drain_sql = &sql[assignment_lock..drain];
+        for fragment in [
+            "convert_to('OTERYN_WORLD_RESET_DRAIN_BINDING','UTF8')||decode('0001','hex')",
+            "||uuid_send(w)||uuid_send(n)||game_world_reset_u64_be(nr)||game_world_reset_u64_be(count(*))",
+            "string_agg(uuid_send(channel_id)||game_world_reset_u64_be(ownership_generation),''::bytea\n ORDER BY uuid_send(channel_id))",
+            "holder_node_id IS DISTINCT FROM n OR holder_registration_revision IS DISTINCT FROM nr",
+        ] {
+            assert!(drain_sql.contains(fragment), "{fragment}");
+        }
+        let house_sql = &sql[drain..house];
+        assert!(house_sql.contains("EXCEPT SELECT k,p FROM unnest(hk,hp) AS c(k,p)"));
+        assert!(house_sql.contains("EXCEPT SELECT k FROM unnest(hs) AS s(k)"));
+        for table in [
+            "game_item_house_interior_locations",
+            "game_house_ownership",
+            "game_world_house_instances",
+        ] {
+            assert!(house_sql.contains(&format!("FROM {table} WHERE world_id=w")));
+        }
+        // NULL elements must refuse as data, never weaken a set predicate.
+        for array in ["hk", "hp", "hs"] {
+            assert!(sql.contains(&format!(
+                "EXISTS(SELECT 1 FROM unnest({array}) x WHERE x IS NULL)"
+            )));
+        }
+    }
+
+    #[test]
+    fn rust_owner_binds_the_borrowed_drain_digest_and_house_evidence() {
+        let source = include_str!("world_reset.rs");
+        let call = &source[source
+            .find("sqlx::query(\"SELECT game_world_reset_activate(")
+            .unwrap_or(0)..];
+        let call = &call[..call.find(".execute(").unwrap_or(0)];
+        assert!(call.contains("$7,$8,$9,$10)"));
+        assert!(call.contains(".bind(drain.drained().cohort_digest.as_slice())"));
+        assert!(call.contains(
+            ".bind(evidence.cell_keys).bind(evidence.cell_positions).bind(evidence.stable_keys)"
+        ));
     }
 }
 
@@ -1462,12 +1613,16 @@ pub(crate) async fn activate_world_reset_in_transaction(
         return Err(WorldResetError::NotCurrent);
     }
     check_world_drain_in_transaction(tx, node, identity.world, drain).await?;
-    preflight_world_reset_houses(tx, identity.world, houses).await?;
+    let evidence = preflight_world_reset_houses(tx, identity.world, houses).await?;
     let fact = node.fact();
-    sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,$2::text::numeric,$3::text::numeric,$4,encode($5,'hex')::uuid,$6::text::numeric)")
+    // The SQL owner rechecks the same drain digest and House evidence itself, so a direct
+    // runtime call that skipped the checks above cannot activate.
+    sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,$2::text::numeric,$3::text::numeric,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10)")
         .bind(identity.world.as_bytes().as_slice()).bind(identity.epoch.to_string())
         .bind(identity.revision.to_string()).bind(identity.retirement_binding.as_slice())
         .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+        .bind(drain.drained().cohort_digest.as_slice())
+        .bind(evidence.cell_keys).bind(evidence.cell_positions).bind(evidence.stable_keys)
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     read_world_reset_history(tx, identity.world, next)
         .await?
@@ -1513,8 +1668,17 @@ impl DurabilityRoot {
 }
 
 // Private successor: UNINSTALLED 0096 only, no migration/root mounting.
+// Direct runtime SQL is not trusted to have run the Rust owner's checks: the function
+// itself recomputes the D1233 drain cohort digest from the locked assignments and
+// requires catalogue-derived House evidence covering every locked durable House fact.
 const RESET_ACTIVATION_SCHEMA: &str = r#"
-CREATE FUNCTION game_world_reset_activate(w UUID,e NUMERIC,r NUMERIC,b BYTEA,n UUID,nr NUMERIC)
+CREATE FUNCTION game_world_reset_u64_be(v NUMERIC) RETURNS BYTEA LANGUAGE SQL IMMUTABLE STRICT AS $$
+ SELECT set_byte(x,0,get_byte(x,0)#128) FROM (SELECT int8send((v-9223372036854775808)::int8) AS x) s;
+$$;
+REVOKE ALL ON FUNCTION game_world_reset_u64_be(NUMERIC) FROM PUBLIC;
+ALTER FUNCTION game_world_reset_u64_be(NUMERIC) SET search_path=pg_catalog,pg_temp;
+CREATE FUNCTION game_world_reset_activate(w UUID,e NUMERIC,r NUMERIC,b BYTEA,n UUID,nr NUMERIC,
+ d BYTEA,hk TEXT[],hp BYTEA[],hs TEXT[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE j game_world_reset_jobs%ROWTYPE; a NUMERIC; v_channel RECORD;
  v_history game_world_reset_epoch_history%ROWTYPE; v_current game_content_activations%ROWTYPE;
@@ -1528,6 +1692,13 @@ BEGIN
  OR r<1 OR r>=18446744073709551615 OR trunc(r)<>r
  OR nr<1 OR nr>18446744073709551615 OR trunc(nr)<>nr
  THEN RAISE EXCEPTION 'World reset occurrence/node data refused' USING ERRCODE='OTR03'; END IF;
+ -- Drain digest and House evidence are bounded, one-dimensional and NULL-free data.
+ IF d IS NULL OR octet_length(d)<>32 OR hk IS NULL OR hp IS NULL OR hs IS NULL
+ OR coalesce(array_ndims(hk),1)<>1 OR coalesce(array_ndims(hp),1)<>1 OR coalesce(array_ndims(hs),1)<>1
+ OR cardinality(hk)<>cardinality(hp) OR cardinality(hk)>4194304 OR cardinality(hs)>1024
+ OR EXISTS(SELECT 1 FROM unnest(hk) x WHERE x IS NULL) OR EXISTS(SELECT 1 FROM unnest(hp) x WHERE x IS NULL)
+ OR EXISTS(SELECT 1 FROM unnest(hs) x WHERE x IS NULL)
+ THEN RAISE EXCEPTION 'World reset drain/House evidence data refused' USING ERRCODE='OTR03'; END IF;
  -- Independently acquire the exact native admission relation fence, in its lexical
  -- order, even on direct runtime SQL invocation. These durable locks are not I/C proof.
  LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE;
@@ -1567,6 +1738,25 @@ BEGIN
  OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries ce JOIN game_item_ground_locations g
  ON g.item_instance_id=ce.parent_item_instance_id WHERE g.world_id=w)
  THEN RAISE EXCEPTION 'World reset current durable prerequisites refused' USING ERRCODE='OTR03'; END IF;
+ -- D1233 drain binding, rechecked here under the SHARE assignment lock: every World Channel
+ -- is held by this exact incarnation and the borrowed proof's digest equals the digest of
+ -- the independently read cohort (domain, World, node, revision, count, sorted Channels).
+ IF EXISTS(SELECT 1 FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1
+ AND (state<>1 OR holder_node_id IS DISTINCT FROM n OR holder_registration_revision IS DISTINCT FROM nr))
+ OR d IS DISTINCT FROM (SELECT sha256(convert_to('OTERYN_WORLD_RESET_DRAIN_BINDING','UTF8')||decode('0001','hex')
+ ||uuid_send(w)||uuid_send(n)||game_world_reset_u64_be(nr)||game_world_reset_u64_be(count(*))
+ ||coalesce(string_agg(uuid_send(channel_id)||game_world_reset_u64_be(ownership_generation),''::bytea
+ ORDER BY uuid_send(channel_id)),''::bytea))
+ FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1)
+ THEN RAISE EXCEPTION 'World reset drain binding refused' USING ERRCODE='OTR03'; END IF;
+ -- House recheck under the SHARE House locks: every live interior cell is a target catalogue
+ -- cell and every owned/Instance House is one whose Active and Target definitions agree.
+ IF EXISTS(SELECT house_key,spatial_position FROM game_item_house_interior_locations WHERE world_id=w
+ EXCEPT SELECT k,p FROM unnest(hk,hp) AS c(k,p))
+ OR EXISTS(SELECT house_key FROM game_house_ownership WHERE world_id=w
+ UNION SELECT house_key FROM game_world_house_instances WHERE world_id=w
+ EXCEPT SELECT k FROM unnest(hs) AS s(k))
+ THEN RAISE EXCEPTION 'World reset House evidence refused' USING ERRCODE='OTR03'; END IF;
  FOR v_channel IN SELECT channel_id FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1 ORDER BY uuid_send(channel_id) LOOP
   -- Native sequence is per Channel and is NOT the World epoch. Serialize with op4.
   PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:content-activation:'||w::text||':'||v_channel.channel_id::text,0));
@@ -1589,9 +1779,9 @@ BEGIN
  UPDATE game_world_reset_jobs SET phase='ACTIVATED',revision=r+1 WHERE world_id=w AND reset_epoch=e AND phase='RETIRING' AND revision=r;
  IF NOT FOUND THEN RAISE EXCEPTION 'World reset job CAS refused' USING ERRCODE='OTR03'; END IF;
 END $$;
-REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC) FROM PUBLIC,oteryn_game_control;
-GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC) TO oteryn_game_runtime;
+REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_runtime;
 DO $$ BEGIN
- EXECUTE format('ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 "#;

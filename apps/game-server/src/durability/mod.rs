@@ -78,8 +78,10 @@ pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub(crate) mod world_house_instance;
-pub(crate) mod world_reset_port;
 pub(crate) mod world_party;
+// MAP-OVERLAY-1c: consumed by `world_reset.rs`, which CP registers at its slot.
+#[allow(dead_code)]
+pub(crate) mod world_reset_port;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};

@@ -180,8 +180,12 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
         check_uuid_v7(&reset.item_instance_id)?;
         if let Some(entry) = &value.ground_container_entry {
             check_uuid_v7(&entry.container_item_instance_id)?;
+            // A direct entry of a live Ground container at a
+            // GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX ordinal, as the
+            // reservation and receipt tables constrain it.
             if entry.container_item_instance_id == before.item_instance_id
-                || entry.placement_ordinal == 0
+                || !(1..=mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX)
+                    .contains(&entry.placement_ordinal)
             {
                 return Err(AuditError::InvalidInput);
             }
@@ -756,5 +760,60 @@ mod tests {
         value = valid;
         value.world_reset = None;
         assert!(check_decay_retire(&value).is_err());
+    }
+
+    #[test]
+    fn world_reset_entry_ordinal_is_bounded_by_the_container_ceiling() {
+        let mut value = corpse_step();
+        value.cause = None;
+        value.world_reset = Some(OneItemWorldResetV1 {
+            world_id: value.before.as_ref().unwrap().world_id.clone(),
+            reset_epoch: 0,
+            item_instance_id: value.before.as_ref().unwrap().item_instance_id.clone(),
+        });
+        let container_ground = value.ground.take();
+        let mut entry_at = |ordinal: u64| {
+            value.ground_container_entry = Some(OneItemGroundContainerEntryV1 {
+                container_item_instance_id: uuid(CORPSE + 1),
+                placement_ordinal: ordinal,
+                container_ground: container_ground.clone(),
+            });
+            value.clone()
+        };
+        for ordinal in [1, mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX] {
+            let accepted = entry_at(ordinal);
+            assert_eq!(
+                check_decay_retire(&accepted),
+                Ok(DecayRetireShape::WorldResetEntry)
+            );
+            let wire = OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(accepted.clone())),
+            }
+            .encode_to_vec();
+            assert_eq!(decode_decay_retire_payload(&wire).unwrap(), accepted);
+        }
+        for ordinal in [
+            0,
+            mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1,
+            u64::MAX,
+        ] {
+            let refused = entry_at(ordinal);
+            assert_eq!(check_decay_retire(&refused), Err(AuditError::InvalidInput));
+            let wire = OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(refused.clone())),
+            }
+            .encode_to_vec();
+            assert!(decode_decay_retire_payload(&wire).is_err());
+            assert!(
+                encode_decay_retire_event(
+                    identity(AT_DEADLINE),
+                    refused,
+                    mint::Type2EventTuple::V1
+                )
+                .is_err()
+            );
+        }
     }
 }

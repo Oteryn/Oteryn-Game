@@ -620,9 +620,10 @@ fn reset_activation_refuses_legacy_target_without_any_issuance_or_epoch_write() 
         let fact=h.node.fact();
         let mut tx=h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
-        let rejected=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric)")
+        let rejected=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
             .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
             .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+            .bind([0_u8;32].as_slice()).bind(Vec::<String>::new()).bind(Vec::<Vec<u8>>::new()).bind(Vec::<String>::new())
             .execute(&mut *tx).await;
         assert!(matches!(rejected,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("OTR03")));
         tx.rollback().await?;
@@ -658,9 +659,10 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *contender).await?;
         sqlx::query("SET LOCAL lock_timeout='100ms'").execute(&mut *contender).await?;
         let fact=h.node.fact();
-        let blocked=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric)")
+        let blocked=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
             .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
             .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+            .bind([0_u8;32].as_slice()).bind(Vec::<String>::new()).bind(Vec::<Vec<u8>>::new()).bind(Vec::<String>::new())
             .execute(&mut *contender).await;
         assert!(matches!(blocked,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("55P03")));
         contender.rollback().await?;
@@ -671,12 +673,13 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
             let mut invalid = h.pool.begin().await?;
             sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *invalid).await?;
             sqlx::query("SET LOCAL lock_timeout='100ms'").execute(&mut *invalid).await?;
-            let refused = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,$2::text::numeric,$3,encode($4,'hex')::uuid,$5::text::numeric)")
+            let refused = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,$2::text::numeric,$3,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,$8,$9)")
                 .bind(id(WORLD).as_slice())
                 .bind(if missing_node { Some("1".to_owned()) } else { None })
                 .bind([7_u8;32].as_slice())
                 .bind(if missing_node { None } else { Some(node_id.as_slice()) })
                 .bind(fact.registration_revision().to_string())
+                .bind([0_u8;32].as_slice()).bind(Vec::<String>::new()).bind(Vec::<Vec<u8>>::new()).bind(Vec::<String>::new())
                 .execute(&mut *invalid).await;
             assert!(matches!(refused,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("OTR03")));
             invalid.rollback().await?;
@@ -694,4 +697,108 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
         assert_eq!(before,after);
         h.cleanup().await
     })
+}
+
+// Codex P1 4300751311 regression, PRIVATE PROPOSAL, NOT_RUN. With every other durable
+// prerequisite current, direct runtime SQL that skips the Rust drain/House checks must
+// still refuse: the SQL owner recomputes the drain cohort digest and requires House
+// evidence. Each refusal changes exactly one input; the exact evidence activates.
+#[test]
+fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        use crate::durability::world_reset_port::{DrainedChannelBinding, world_drain_cohort_digest};
+        let h=Harness::create(admin,"resetactivationevidence").await?;
+        install(&h).await?;
+        admit_qualified(&h).await?;
+        replace(&h).await?;
+        // Predecessor Channel activation equal to the epoch-0 history digests.
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
+        let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
+        let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
+        let next = previous.unwrap_or(0).checked_add(1).ok_or("sequence exhausted")?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+            .bind(next.to_string()).bind(previous.map(|value|value.to_string()))
+            .bind([1_u8;32].as_slice()).bind([2_u8;32].as_slice()).bind([3_u8;32].as_slice())
+            .execute(&h.pool).await?;
+        let house_key = "oteryn:content.house.thais_1";
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+            .bind(id(WORLD).as_slice()).bind(house_key).bind(id(crate::item_transfer_postgres_cases::CHARACTER).as_slice()).bind(id(90).as_slice())
+            .execute(&h.pool).await?;
+        let generation: String = sqlx::query_scalar("SELECT ownership_generation::text FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1 AND channel_id=encode($2,'hex')::uuid")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
+        let fact = h.node.fact();
+        let drained = |generation: u64| -> TestResult<[u8;32]> {
+            world_drain_cohort_digest(world()?, fact, &[DrainedChannelBinding{scope: crate::foundation::RuntimeScopeRefV1::channel(world()?, channel()?), generation}])
+                .map_err(|e| debug(e).into())
+        };
+        let generation = generation.parse::<u64>()?;
+        let exact = drained(generation)?;
+        let mut flipped = exact;
+        flipped[31] ^= 1;
+        let activation_state = || async {
+            sqlx::query_as::<_,(i64,i64,String,String)>("SELECT (SELECT count(*) FROM game_content_activations),(SELECT count(*) FROM game_world_reset_epoch_history),(SELECT reset_epoch::text FROM game_world_reset_active_epochs WHERE world_id=encode($1,'hex')::uuid),(SELECT phase FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0)")
+                .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await
+        };
+        let before = activation_state().await?;
+        assert_eq!((before.2.as_str(), before.3.as_str()), ("0", "RETIRING"));
+        let stable = vec![house_key.to_owned()];
+        for (digest, stable_keys, activates) in [
+            (flipped, stable.clone(), false),
+            (drained(generation + 1)?, stable.clone(), false),
+            (exact, Vec::new(), false),
+            (exact, vec!["oteryn:content.house.other".to_owned()], false),
+            (exact, stable, true),
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+            let result = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
+                .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
+                .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+                .bind(digest.as_slice()).bind(Vec::<String>::new()).bind(Vec::<Vec<u8>>::new()).bind(stable_keys)
+                .execute(&mut *tx).await;
+            if activates {
+                result?;
+                let phase: String = sqlx::query_scalar("SELECT phase FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+                    .bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?;
+                assert_eq!(phase, "ACTIVATED");
+            } else {
+                assert!(matches!(result,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("OTR03")));
+            }
+            tx.rollback().await?;
+            assert_eq!(activation_state().await?, before);
+        }
+        h.cleanup().await
+    })
+}
+
+/// [`admit`] with a qualified target: the separate target facts final activation requires.
+async fn admit_qualified(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_control")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,'map-1',$2,$3,$4,$5,1)",
+    )
+    .bind(id(WORLD).as_slice())
+    .bind([1_u8; 32].as_slice())
+    .bind([2_u8; 32].as_slice())
+    .bind([3_u8; 32].as_slice())
+    .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision,target_calendar_parity,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','map-2',$3,$4,$5,$6,1,'PARITY_PENDING','RETIRING')")
+        .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
+        .bind([4_u8;32].as_slice()).bind([5_u8;32].as_slice()).bind([6_u8;32].as_slice())
+        .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str())
+        .execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_world_reset_scopes SELECT world_id,0,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
 }
