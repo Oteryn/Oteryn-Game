@@ -30,9 +30,17 @@ Cyclopedia module registration on this head. The pure donation value, errors,
 closed runtime port and six-group payload are public library APIs; the validated
 amount's tuple remains private. The existing boundary test now also checks the
 complete `NotWiredInRuntime` payload. No unchecked constructor, Default, serde,
-Bank debit or runtime activation is added. Fmt/diff checks PASS; this repaired
-source's native execution and exact-head CI are NOT_RUN. Earlier private-mount
-component results below retain their exact historical source and scope.
+Bank debit or runtime activation is added. Exact source
+`4fb32020a50daf960fb5ba5e1e5be93860138c08` compiled through the canonical
+library root with no private mounts or wrappers; its single native boundary and
+six-group refusal test PASS. The actual inventory contains 3255 tests and the
+Cyclopedia source occurs once in dep-info. ELF SHA256:
+`2f0dcfb9a79931f7c6dbb7e0fa88ce47e1cbb8eb4c67310137fa5e4fe1c0d8e2`.
+Evidence is retained outside the checkout in `evidence/2152-D1285-native/`.
+This publication adds only a task-documentation bridge to that tested source.
+Fmt/diff and exact-head governance PASS; final exact-head CI/CP review are pending.
+Earlier private-mount component results below retain their exact historical
+source and scope. Strict/all-target/full runtime qualification is NOT_RUN.
 
 ## Current accepted scope — D1242a / D1249a
 
