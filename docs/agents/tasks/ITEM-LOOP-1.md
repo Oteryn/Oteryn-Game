@@ -601,3 +601,96 @@ unchanged owner in-pg-netns.sh, then the isolated namespace's proxy to the
 existing shared PG17.6 at host 127.0.0.1:55432. No server or container was started
 for this checkpoint. Stack merge/top-up and independent current Content parity
 remain open family work; this receipt qualifies the stated concrete repairs.
+
+### Canonical PostgreSQL CI follow-up and native qualification (2026-10-17)
+
+**The bounded four-source repair is natively qualified: PASS.** Its source
+parent is `87e3d635b260046a6b5ea4d1c9c59e93b6a01021`. The actual formatted
+sources are bound by manifest
+`a03edb8bb17832d8fa80a5e39e1eb7f9775fc2d5db4ab8dcbadcb4992e16b5fe`
+and patch `945596d4ecdc8e02286f35f8b672f36427294ce1245d28cced65297d455525c9`.
+The final native summary is COMPLETE/PASS and supersedes that formatting-time
+manifest's historical PENDING qualification field for these exact four files.
+Publication and the resulting exact head's CI are recorded separately.
+
+The parent's canonical PostgreSQL CI run `39029967099`, job `117388276825`,
+failed with **1559 passed, 27 failed and zero ignored**. Its actual failure log
+identified three concrete repair groups:
+
+- Replacement declarations in draft-owned migration `0113` reset two prior
+  trigger functions to invoker execution. The runtime role received SQLSTATE
+  `42501` while the guards read the existing private HOUSE proof relation.
+  Restore `SECURITY DEFINER` only on `game_item_instance_change_proven` and
+  `game_equipment_slot_proven`. Trigger bodies, proof unions, search paths and
+  final table/function ACLs remain byte-identical.
+- Eight Chest cases reached the native pickup capacity hook with unknown
+  physical weights in their own Content catalogue. Supply six explicit
+  definition/revision-bound physical weights in that fixture catalogue,
+  including its three native entry definitions. Production entry Content
+  retains its unknown physical facts; there is no fallback weight.
+- The Corpse boundary and Reward achievement fixtures created a second real
+  Character root/session without its progression row. Seed that Character's
+  actual progression state with the same initial tuple already used by the
+  first Character. The native capacity owner still refuses a missing row as
+  `InvalidStoredState`; its authority checks and assertions are unchanged.
+
+This packet changes three Rust fixtures and two SQL declaration attributes;
+production Rust is unchanged. All 25 affected fixture cases remain registered:
+eight Chest, five Corpse and twelve Reward. Twenty-four complete case bodies
+are unchanged; the remaining entry-Chest case only selects the explicit test
+Content setup. Both component repairs passed independent source review. Native
+`cargo fmt --all` added only two line wrappings in the Chest file; all its
+non-whitespace bytes and the other three files match the reviewed inputs.
+The original CI failure is the regression evidence; the existing guards and
+tests remain active without a new target, suppression or allowlist change.
+
+The native runner
+`40f5b1e22f1294ebf7132d406ebc13675dba24812280c041175656b2feda0fad`
+completed under the existing core build lock with exact source checks before
+and after each qualification stage. It first ran `cargo fetch --locked`, then
+used D1329's owner namespace route to the existing shared PostgreSQL 17.6 at
+host 127.0.0.1:55432. The existing harness created and cleaned its own databases.
+No PostgreSQL server or container was started for this qualification.
+
+| Gate | Actual result | Complete log SHA256 |
+| --- | --- | --- |
+| Native formatting and exact four-path guard | PASS, exit 0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Governance on the qualified four-source tree | PASS, exit 0 | `ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f` |
+| Strict all-target Clippy, `-D warnings` | PASS, exit 0; 56 native harness artifacts | `3ef9c8c90107660b623fd4205e90b952c6eb6f81b39eb23c821ab06e7168adb8` |
+| Actual duplicate-source guard | PASS, exit 0; 56 native harness units | `db5b5f4338644ceb286e11783c17465770d3b88c1b71c9d8362e456c0414f2f2` |
+| Entire `character_authority_postgres` | 1586 passed, 0 failed, 0 ignored, 0 filtered; exit 0 | `ed00c270b6c8a8980a75f0a481f459db9071268a1105eabc75364631a4fd4337` |
+| Equipment in `item_ref_production` | 3 passed, 0 failed, 0 ignored; 1156 filtered; exit 0 | `527d928962599599e047a68c85836a8d6d7394ea874a99ffa416e51d03861d05` |
+| Derived capacity in `item_ref_production` | 6 passed, 0 failed, 0 ignored; 1153 filtered; exit 0 | `a0dfcba738f80e19ec3b347550698e3b611dc077712c0bcdf43f419dc1da3359` |
+
+The full canonical run took 835.71 seconds and emitted 132 actual
+`server_version_num=170006` markers. The affected-prefix observations were
+**Chest 8, Corpse 11 and Reward 12**. These are observed setup markers, not an
+exact count of the five owned Corpse cases or of distinct databases. The
+1586-test aggregate also includes pure cases. Both focused groups reached
+actual PostgreSQL setup: three Equipment markers and six Capacity markers.
+No skipped or NOT_RUN path supplied these results.
+
+The canonical command was `cargo +1.95.0 test --locked -p oteryn-game-server
+--test character_authority_postgres -- --nocapture --test-threads=2` through
+the owner namespace helper. The focused runs used `--test item_ref_production`
+with `equipment_move_postgres_cases::` and
+`item_transfer_postgres_cases::derived_capacity_`, respectively, plus
+`--nocapture --test-threads=1` through the same route.
+
+Immutable receipt bindings:
+
+- Final `pr2190-ci-summary-v1.json` SHA256:
+  `8a57640d496d249b2eafbb5d4bb911032119a5a35d4f82adbbdb04c937cf6071`.
+- Actual formatted-source receipt SHA256:
+  `39aa495c8d585607bfc14d650d5aa3bae3711fcc21ca9d2c301777649b4288a2`.
+- Exported native receipt bundle SHA256:
+  `5aa3beb33cdc574c57cd0232007d768f659a9af98b0c0e10c3760db6cee91f25`.
+
+The full normal package was not repeated for this bounded fixture/SQL-attribute
+repair. Earlier normal-package evidence retains its original source scope;
+this checkpoint does not claim a new full-package PASS. The documentation
+append itself receives a separate governance check before publication. The
+new exact head's required CI is still pending at this checkpoint and must be
+read back after publication. Stack merge/top-up, independent current Content
+parity, the remaining ITEM-LOOP child work and final integration gates remain
+open. The PR remains a draft.

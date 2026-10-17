@@ -18,7 +18,7 @@ ALTER TABLE game_character_equipment_receipts
            AND swap_backpack_ordinal>backpack_ordinal));
 
 CREATE OR REPLACE FUNCTION game_item_instance_change_proven() RETURNS trigger
-LANGUAGE plpgsql AS $$
+LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
     -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.transaction_id=NEW.last_transaction_id
@@ -118,7 +118,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION game_equipment_slot_proven() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION game_equipment_slot_proven() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
     -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
     IF TG_OP='DELETE' THEN

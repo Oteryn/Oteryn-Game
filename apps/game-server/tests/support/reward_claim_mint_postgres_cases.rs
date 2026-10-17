@@ -2212,7 +2212,7 @@ impl Harness {
 }
 
 /// Character 44 of the same account takes the account's presence on session
-/// 51; session 50 of Character 41 ends.
+/// 51 with its own progression state; session 50 of Character 41 ends.
 async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_roots VALUES \
@@ -2222,6 +2222,16 @@ async fn switch_to_second_character(pool: &sqlx::PgPool) -> TestResult {
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(ACCOUNT).as_slice())
     .bind(id(WORLD).as_slice())
+    .execute(pool)
+    .await?;
+    // Use the same native progression fixture as Character 41. The new incoming
+    // capacity check must read Character 44's own level, not a missing-row fallback.
+    sqlx::query(
+        "INSERT INTO game_character_progression_state VALUES \
+         (encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1',\
+          'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
     .execute(pool)
     .await?;
     sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3")
