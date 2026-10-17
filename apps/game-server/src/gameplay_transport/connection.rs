@@ -1870,7 +1870,14 @@ where
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
-    let mut reconcile_original_bank = true;
+    // NPC-ECON-1: only a connection that continues an earlier one of this GameSession can carry
+    // an accepted original Bank command. A fresh admission (generation 1 at CommandId 1, FND-02)
+    // is the session's first connection, so its first command never touches the Bank journal;
+    // a same-session resume (FND-04B §16: a strictly newer generation) or any other carried
+    // continuity reconciles it before replacement input.
+    let mut reconcile_original_bank = admitted.continuity.connection_generation
+        != ADMITTED_GENERATION
+        || admitted.continuity.next_command_id != 1;
     let mut frames = FrameReader::default();
     let mut liveness = Liveness::new(policy);
     let mut cadence = tokio::time::interval_at(
@@ -4396,8 +4403,12 @@ mod tests {
                 scalar(&mut command, 1, 1);
                 scalar(&mut command, 2, u64::from(kind));
                 bytes(&mut command, 4, payload);
-                let (end, frames) =
-                    drive_session(&authority, positioned()?, &[envelope(7, 1, &command)]).await?;
+                let (end, frames) = drive_session(
+                    &authority,
+                    resumed_positioned()?,
+                    &[envelope(7, RESUMED_GENERATION, &command)],
+                )
+                .await?;
                 assert_eq!(*authority.replacement_steps.borrow(), 0);
                 assert_eq!(authority.commands.borrow().len(), 1);
                 assert_eq!(authority.commands.borrow()[0].command_id, 1);
@@ -4405,9 +4416,9 @@ mod tests {
                     authority.commands.borrow()[0].game_session_id,
                     GameSessionId::decode(&SESSION)?
                 );
-                let mut expected = baseline();
+                let mut expected = baseline_at(RESUMED_GENERATION);
                 expected.push(encode_command_result(
-                    1,
+                    RESUMED_GENERATION,
                     1,
                     1,
                     CommandStatus::Accepted,
@@ -4434,16 +4445,16 @@ mod tests {
             };
             let (end, frames) = drive_session(
                 &authority,
-                positioned()?,
+                resumed_positioned()?,
                 &[command(
-                    1,
+                    RESUMED_GENERATION,
                     1,
                     u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
                     StepDirection::East,
                 )],
             )
             .await?;
-            assert_eq!(frames, baseline());
+            assert_eq!(frames, baseline_at(RESUMED_GENERATION));
             assert_eq!(*authority.replacement_steps.borrow(), 0);
             assert!(
                 matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==1)
@@ -4463,21 +4474,61 @@ mod tests {
             };
             let (end, frames) = drive_session(
                 &authority,
-                positioned()?,
+                resumed_positioned()?,
                 &[command(
-                    1,
+                    RESUMED_GENERATION,
                     1,
                     u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
                     StepDirection::East,
                 )],
             )
             .await?;
-            assert_eq!(frames, baseline());
+            assert_eq!(frames, baseline_at(RESUMED_GENERATION));
             assert!(authority.commands.borrow().is_empty());
             assert_eq!(*authority.replacement_steps.borrow(), 0);
             assert!(
                 matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==1)
             );
+            Ok(())
+        })
+    }
+
+    /// NPC-ECON-1: a fresh admission is the GameSession's first connection, so no original Bank
+    /// command can be retained. Its first command dispatches without a Bank journal lookup, even
+    /// when that lookup would be unknown (Bank storage unavailable), and a closed input gate
+    /// refuses it as usual instead of holding it.
+    #[test]
+    fn fresh_session_first_command_skips_retained_bank_lookup() -> Result<(), Box<dyn Error>> {
+        run(async {
+            for closed_gate in [false, true] {
+                let authority = RetainedBankOutcomeFixture {
+                    commands: RefCell::new(Vec::new()),
+                    replacement_steps: RefCell::new(0),
+                    unknown: true,
+                    closed_gate,
+                };
+                let (end, frames) = drive_session(
+                    &authority,
+                    positioned()?,
+                    &[command(
+                        ADMITTED_GENERATION,
+                        1,
+                        u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                        StepDirection::East,
+                    )],
+                )
+                .await?;
+                assert!(authority.commands.borrow().is_empty());
+                assert_eq!(
+                    *authority.replacement_steps.borrow(),
+                    usize::from(!closed_gate)
+                );
+                assert_eq!(frames.len(), baseline().len() + 1);
+                assert_eq!(frames[..baseline().len()], baseline()[..]);
+                assert!(
+                    matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
+                );
+            }
             Ok(())
         })
     }
@@ -4659,8 +4710,12 @@ mod tests {
     }
 
     fn baseline() -> Vec<Vec<u8>> {
+        baseline_at(ADMITTED_GENERATION)
+    }
+
+    fn baseline_at(generation: u64) -> Vec<Vec<u8>> {
         encode_single_chunk_snapshot(
-            ADMITTED_GENERATION,
+            generation,
             1,
             0,
             &[
@@ -4701,6 +4756,17 @@ mod tests {
             continuity: SessionContinuity::FRESH,
             item_fence: None,
         })
+    }
+
+    /// The first successor generation of a same-session resume (FND-04B §16).
+    const RESUMED_GENERATION: u64 = ADMITTED_GENERATION + 1;
+
+    /// `positioned` resumed on the next connection generation before any result of its first
+    /// CommandId was delivered: the continuity an accepted original Bank command is retained in.
+    fn resumed_positioned() -> Result<AdmittedSession, Box<dyn Error>> {
+        let mut resumed = positioned()?;
+        resumed.continuity.connection_generation = RESUMED_GENERATION;
+        Ok(resumed)
     }
 
     fn split_frames(output: &[u8]) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
