@@ -22,6 +22,11 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 | 2 | BUNDLE-GATES-1 | #2115 |
 | 1 | W2b training | #2109 |
 | 1 | CHAT-1b-2b | do potwierdzenia (W2h przeszedł na CHAT-2B) |
+| 1 | LOGOUT-WIRE-1 | #2127 (merged 2026-10-15) |
+| 2 | CHAT-2B | #2128 (zamknięty bez merge 2026-10-15) |
+| 2 | NPC-CONTENT-2 | #2129 (merged 2026-10-16) |
+| 2 | PRESENT-CONTENT-1 | #2130 (merged 2026-10-15) |
+| 2 | RANGED-CONTENT-1 PR1 | #2096 (merged 2026-10-15) |
 | 2 | ATTACK-2 | #2117 |
 | 2 | MAGIC-ITEMS-1 / RUNE-CONTENT-1 | #2116 |
 | 2 | MAGIC-ITEMS-1 RUNE-WIRE-1 | #2126 |
@@ -32,12 +37,7 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 ## W toku
 | Wave | Batch | PR | Worker (sesja) | Stan |
 |---|---|---|---|---|
-| 1 | LOGOUT-WIRE-1 | #2127 | W2f 01Y3ihfi | CI; merge main po #2126 |
 | 1 | LOOP-WORLD-1 marker flip | (nowy/istniejący) | W2c2 01VFYCsQ | start; amendmenty GAME-ITEM-01 §4 / DUR-03 §39.1 zaakceptowane |
-| 2 | CHAT-2B | #2128 | W2h 013fCsCy | runda 3 (wyjątek ownera): bez SET/0088, warunkowy pg_notify; nowy P1 → zamknięcie |
-| 2 | NPC-CONTENT-2 | #2129 | W3b 01VUmRdS | CI quest-authoring czerwone |
-| 2 | PRESENT-CONTENT-1 | #2130 | W2g 01Ex9Xhz | przed #2128; pin z main, CI w toku |
-| 2 | RANGED-CONTENT-1 PR1 | #2096 | W3c 01P6FZqT | konflikt z main, przejęty |
 | 3 | MAP-VIEWPORT-OPT-1 | (nowy) | W3a2 0181Dg1m | opcja B (20% rdzenia, liczymy tylko graczy w ruchu; rewalidacja botami → MAP-VIEWPORT-BUDGET-REVAL) |
 
 ## Do zrobienia
