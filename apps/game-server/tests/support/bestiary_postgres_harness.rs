@@ -160,6 +160,32 @@ pub(crate) struct Harness {
 }
 
 impl Harness {
+    /// APP-1 uses the unchanged native fixture and only the installed SQLx migration.
+    /// No private SQL include or additional schema execution is permitted here.
+    /// CP D1112 installs 0093 with its registered owner and recovery integration.
+    #[allow(
+        dead_code,
+        reason = "only the APP-1 native target needs migration 0093"
+    )]
+    pub(crate) async fn create_appearance(admin: String, tag: &str) -> TestResult<Self> {
+        // Resolve the real migration before constructing any recovery/admission authority.
+        // Database::create runs this same embedded migrator before opening the native root.
+        let expected_checksum = sqlx::migrate!("./migrations")
+            .iter()
+            .find(|migration| migration.version == 93)
+            .map(|migration| migration.checksum.to_vec())
+            .ok_or("APP-1 requires migration 0093 in the actual SQLx migrator")?;
+        let harness = Self::create(admin, tag, true).await?;
+        let installed: Option<(Vec<u8>, bool)> =
+            sqlx::query_as("SELECT checksum, success FROM _sqlx_migrations WHERE version = 93")
+                .fetch_optional(&harness.pool)
+                .await?;
+        if installed != Some((expected_checksum, true)) {
+            return Err("APP-1 requires installed SQLx migration 0093 with exact checksum".into());
+        }
+        Ok(harness)
+    }
+
     /// `initialized`: seed the typed progression row at revision one (level
     /// 50, 1000 experience) instead of leaving the Character bootstrap-only.
     pub(crate) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {

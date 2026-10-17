@@ -1,0 +1,137 @@
+{
+  "qualification": "UNADMITTED_SOURCE_GEOMETRY_ONLY",
+  "runtime_admission": false,
+  "candidate_file": "source-membership-candidate.jsonl",
+  "candidate_sha256": "b3488ba592d9e65e3c15ea7ff7752eb4b6596f0fa8d31afc45befc17ee4843f9",
+  "source_commit": "24fc332f256638e3b784bff1b3c85b18e2665a76",
+  "source_namespace": "cipsoft/map_area",
+  "source_format": [
+    {
+      "path": "tools/content-schema/world-authoring/client_map_reader.py",
+      "git_blob": "607d52a449499f69596fea6efd353ce7a3d89485",
+      "sha256": "85b1f510ef818139a9f3d96bbfd6f0178b0fdd0b97af6819995d3b9892061c07",
+      "bytes": 10355,
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/24fc332f256638e3b784bff1b3c85b18e2665a76/tools/content-schema/world-authoring/client_map_reader.py"
+    },
+    {
+      "path": "tools/content-schema/world-authoring/README.md",
+      "git_blob": "66726bb0dd2ab7bb15c01dd78385acca993eceee",
+      "sha256": "f79118c78739e787b79cf358e6f635239a85bf25ec281b4f6da4b62c8667afae",
+      "bytes": 46202,
+      "source_url": "https://github.com/Oteryn/Oteryn-Game/blob/24fc332f256638e3b784bff1b3c85b18e2665a76/tools/content-schema/world-authoring/README.md"
+    }
+  ],
+  "crosswalk": {
+    "sha256": "58a23a424b7f80ff0fb0620befa75e8ad12dcbf6913590dda72645407ff64e84",
+    "areas": 465,
+    "parent_edges": 441,
+    "maskless_referenced_children": 228,
+    "source422_parent_ids": [
+      2,
+      7,
+      14,
+      20,
+      24
+    ]
+  },
+  "extraction": {
+    "parser_sha256": "4200f98524abc170f7039f68f2596dca31b3e6f542d7a5e371a4976cdf656644",
+    "evidence_summary_sha256": "9c607df32421ab155908165de68e1095be4c175987ca334626f9ef2d65f7a72f",
+    "counts": {
+      "assets": 209,
+      "pixels": 5723063,
+      "memberships": 1901667,
+      "runs": 53224,
+      "compressed_bytes": 178133,
+      "bmp_bytes": 22917750
+    },
+    "representation": "source-pixel [row,begin,end-exclusive] runs; source anchor and pinned nonzero32-bit-pixel rule retained",
+    "membership_count_is_unique_world_tiles": false,
+    "historical_compressed_asset_decoded_false": "compressed_asset.decoded=false means the compressed file itself was not decoded in that prior crosswalk observation; current BMP/runs fields record actual source decoding.",
+    "qualification_checks": "209run bounds/order/count checks; exact unchanged pinned reader comparison for sources109,101,92",
+    "runtime_checks": "NOT_RUN"
+  },
+  "unresolved": [
+    "Canonical CYC MapAreaIds/parent choice; named NoDiscovery completeness PARITY_PENDING",
+    "Native World frame/served-tile intersection/reachability and overlap policy",
+    "Public-map compiler/bundle admission; actual POI pools and donation eligibility/runtime binding"
+  ],
+  "native_map_area_ids_emitted": false,
+  "canonical_parent_choices_emitted": false,
+  "discoverability_or_donation_flags_emitted": false,
+  "poi_pools_emitted": false,
+  "public_map_or_bundle_output": false,
+  "accepted_source_decisions": {
+    "qualification": "CP_QUALIFIED_REFERENCE_FACTS_ONLY_NOT_NATIVE_MAP_FLAGS",
+    "D1230": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153",
+      "twenty_region_names": "SUPERSEDED_BY_D1242",
+      "southern_darama_discovery": false,
+      "southern_darama_evidence_class": "PARITY_WIKI_W4",
+      "named_no_discovery": [
+        "Newhaven",
+        "Rookgaard",
+        "Isle of Destiny",
+        "Adventurers' Guild",
+        "Meluna",
+        "Temple of Light",
+        "Dawnport"
+      ],
+      "named_no_discovery_evidence_class": "PARITY_WIKI_W4",
+      "named_no_discovery_completeness": "PARITY_PENDING",
+      "aggregate_bonus_threshold_gp": 10000000,
+      "aggregate_threshold_evidence_class": "CIPSOFT_S3",
+      "complete_manifest_and_full_zip_sha256": "SUPERSEDED_BY_D1242"
+    },
+    "D1230a_b": {
+      "sources": [
+        "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226226005",
+        "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226229001"
+      ],
+      "evidence_class": "OWNER_GUI_THAIS",
+      "minimum_single_donation_gp": 1,
+      "maximum_single_donation_gp": 10000000,
+      "independent_of_aggregate_bonus_threshold": true
+    },
+    "D1230c": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226254589",
+      "evidence_class": "OWNER_GUI",
+      "vandura_quara_caves_discovery": true,
+      "W4_W5_conflict": "RESOLVED_GUI_CONFIRMS_W5"
+    },
+    "D1230d": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226282830",
+      "evidence_class": "OWNER_GUI_AND_W4",
+      "tibiadrome_all_five_locations_in_discovery_catalogue": false,
+      "raw_five_parent_edges_preserved_as_source_only": true
+    },
+    "D1242": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226466175",
+      "wiki_source": "https://www.tibiawiki.com.br/wiki/Measuring_Tibia_Quest",
+      "region_filter_file": "source-region-admission.json",
+      "region_filter_sha256": "e20531da199f674a666288995cb2554a66d21d488a595517ea794612e5319fbd",
+      "source_region_masks_admitted": 16,
+      "remaining_source_masks_unadmitted": 193,
+      "native_memberships_admitted": 0,
+      "owner_screenshot_zip_sha256": "b80ab50bb33ad57a7340afd3cb5e7a9ef2281d2ee291acf787c1189322bb0249",
+      "owner_screenshot_zip_bytes": 7590031,
+      "owner_screenshot_zip_entries": 35,
+      "zip_provenance": "CP_REPORTED_NOT_LOCALLY_ACCESSED_OR_VERIFIED; screenshots not redistributed",
+      "manifest_requirement": "NOT_REQUIRED_BY_CP_D1242"
+    },
+    "D1242a": {
+      "source": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226563247",
+      "scope": "ADMITTED_SOURCE_COMPONENTS_ONLY",
+      "runtime": "NotWiredInRuntime",
+      "parity_pending_groups": [
+        "POI count",
+        "found radius",
+        "speed bonus",
+        "complete donation eligibility/premium",
+        "draw order",
+        "factor composition/official33% qualification"
+      ],
+      "follow_up": "Separate owner GUI parity follow-up; no new PR now"
+    }
+  }
+}

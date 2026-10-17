@@ -61,6 +61,17 @@ client_certificate_file = "<BASE>/node/secrets/projection.crt"
 client_key_file = "<BASE>/node/secrets/projection.key"
 source_authority = "<PROJECTION_SOURCE_AUTHORITY>"
 epoch_fence_file = "<BASE>/projection/epoch-fence"
+# Character Authority command consumer (contract oteryn-game-character-authority-commands-v1). Off:
+# the consumer runs only when this table is present, so it stays commented until the §14 step 4
+# enablement (Oteryn/Oteryn-Platform docs/operations/CHARACTER_AUTHORITY_COMMANDS_ENABLEMENT.md):
+# Platform first enables the commands for this certificate's subject, then this table is uncommented
+# and the node restarted. The certificate is its own identity (CN=<CHARACTER_COMMANDS_IDENTITY>),
+# distinct from the evidence, runtime-status and projection ones above; the files are 0600, owner the
+# runner user. source_authority must equal Platform CHARACTER_AUTHORITY_COMMAND_SOURCE_AUTHORITY.
+# [platform.character_commands]
+# client_certificate_file = "<BASE>/node/secrets/character-commands.crt"
+# client_key_file = "<BASE>/node/secrets/character-commands.key"
+# source_authority = "oteryn:character-authority:primary"
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"

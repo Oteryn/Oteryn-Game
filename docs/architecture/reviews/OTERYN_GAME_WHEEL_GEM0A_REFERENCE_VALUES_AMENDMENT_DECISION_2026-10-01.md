@@ -1,7 +1,7 @@
 # WHEEL-GEM-0A Wheel and gem reference values
 
 - Decision: `WHEEL-GEM0A-REFERENCE-VALUES-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (content and
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15 (answer "3 tak" to the PROG-ADV-1 decision set), owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15` §6, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original status: CANDIDATE. Original gate: Acceptance needs exact-head validation, independent review (content and
   economy) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the architect rulings on #162 5933264015 (cap 225, Supreme Grade III 12.5M) and
