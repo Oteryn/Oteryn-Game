@@ -49,12 +49,15 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `apps/game-server/src/domain/prey.rs`
 - `apps/game-server/src/domain/task_board.rs`
 - `apps/game-server/src/durability/prey.rs`
+- `apps/game-server/src/durability/prey_audit.rs` (D1341c; native event codec)
+- `apps/game-server/src/durability/character_authority.rs` (D1336a/D1341c; only the PREY receipt UNION, inseparable from migration 0115)
 - `apps/game-server/src/durability/task_board.rs`
 - `apps/game-server/src/durability/prey_tests.rs`
 - `apps/game-server/src/gameplay_transport/prey.rs`
 - `apps/game-server/src/gameplay_transport/prey_tests.rs`
 - `crates/protocol-oteryn/src/prey.rs`
 - `crates/protocol-oteryn/src/prey_tests.rs`
+- `docs/contracts/game-events/v1/prey_wildcard.proto` (D1341c; new closed event payload)
 - `apps/game-server/tests/prey_postgres.rs`
 - `rulesets/progression/prey/ and rulesets/progression/task-board/ authoring inputs`
 - `docs/agents/tasks/HUNT-1.md` (this record: status and notes only)
@@ -356,3 +359,180 @@ content bundle, migration/persistence writers, LOOP-MONSTER caller integration,
 runtime bonuses, draw/checkpoint/expiry behavior and wire/registry/activation
 gates remain open. Shared integration follows the J order. HUNT-1 remains
 `NOT_FULLY_QUALIFIED` and draft; merge authority remains CP-only.
+
+
+## Pending DAILY wildcard sink authoring (2026-10-17)
+
+This source batch starts from HUNT draft #2149 at
+`c86ad8ab7943f4a0d1bc6697dec1de1cf6f7fd0b`. Its accepted basis is PREY0
+§4.1, §4.2 and §10, DAILY_REWARD0 §4.5, and CP
+[D1319](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232842478),
+[D1336](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233232470),
+[D1338](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233263821) and
+[D1341](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233469694),
+as [narrowed by CP](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233471923).
+The historical source and qualification evidence above is retained. The three
+owned-path additions record the explicit CP grants; they do not waive their
+inseparable integration conditions.
+
+### Implemented source scope
+
+`DurabilityRoot::deliver_pending_daily_wildcard` consumes an existing retained
+DAILY claim and `PREY_WILDCARD` line. The request carries the claim/line and
+planned delivery/event identities, never a caller-supplied quantity, Account,
+World or credit. A new delivery validates native current recovery, node,
+session, lease, scope and CharacterRevision evidence in its writing transaction,
+then locks the actual source and Account+World balance. Unknown, mismatched or
+terminal-without-receipt source state refuses instead of inventing eligibility
+or credit.
+
+The writer credits `min(quantity, 52 - balance)` and records the exact excess.
+Its receipt, positive ledger entry, balance/head, positive audit event, terminal
+DAILY line and one CharacterRevision advance commit together. A zero credit at
+the backed cap still terminalizes the line and writes one receipt/revision;
+it creates no balance-change entry or event. The accepted once key is the actual
+`(claim transaction, line)`. Replay reads the retained receipt, returns the
+winner's original delivery identities and result, and never reacquires gameplay
+authority or repeats a grant. The binding excludes the retry cursor and newly
+planned delivery/event identities.
+
+The migration has typed immutable receipts and ledger history, same-transaction
+entry/event/source proofs, exact balance head transitions, and closed privileges.
+Its progression guard extends the complete effective
+`0093_character_appearance.sql` body, retaining all prior arms, including Wheel
+and appearance. The native recovery-integrity hunk adds only the corresponding
+PREY receipt UNION. Both belong to the same migration integration.
+
+D1341 assigns `PREY_WILDCARD_CHANGED` **event type 6**, schema 1, and
+`0115_prey_daily_wildcard.sql`. The closed payload admits positive `DAILY_REWARD`
+only. D1338 binds the new `PREY_WILDCARD_LEDGER_RETENTION_V1`, policy revision 1,
+restricted player-linked class and **2,592,000 elapsed seconds** from the
+immutable trusted event timestamp. Only event/outbox envelope and payload
+expire; balances, ledger, unlock facts and once receipts do not. The outbox
+preserves original expiry, immutable content and one-way publication; bounded
+expiry and operator-only hold placement/release cannot rewrite the retention
+clock. Case authorization, audited access/export and runtime operator integration
+remain separate qualification work. `ECONOMY_LEDGER` is unchanged.
+
+### Qualification status and exact integration prerequisites
+
+New native source qualification is **NOT_RUN** at this authoring checkpoint.
+The five native PostgreSQL cases cover cap/excess/zero delivery and receipt
+replay/reopen; current fence and source refusals; rollback at the terminal write
+and deferred missing-event proof; two independent connections on the once key;
+and immutable history/outbox plus bounded expiry and hold-storage behavior.
+Four real prost codec tests cover the closed payload, supported envelope,
+maximum source values, byte overflow and stale/unknown metadata. The calculated
+ceilings are **191 payload bytes**, a conservative **500 envelope bytes**
+reserving the full uint32 event-identity width, and **64 events per expiry call**.
+D1341 keeps these resource rows CANDIDATE until those tests run natively; no
+calculation is relabeled as an executed Rust, PostgreSQL or runtime result.
+
+The review base is main `f010472bcb6794a2cbc56dfaf755bd122c10225e`.
+The current module file, both registries, authority source and existing Bestiary
+entry were freshly read there; their source blobs match the earlier pinned
+`cecbfda3` versions. Registry changes are additive only. Publication must still
+re-read then-current main and keep the numeric allocations and existing entries
+intact.
+
+Migration 0115 references the actual DAILY claim/line relations. Installing it,
+the authority UNION and shared mounts remains **HELD until the DAILY schema
+prerequisite is satisfied**. The explicit native qualification assembly consumes
+`daily_reward::DAILY_REWARD_SCHEMA_CANDIDATE` directly from the byte-exact real
+DAILY module, with its real domain/store/test files and two validation mounts.
+It reproduces no DAILY DDL or guards. Its pending claim/line rows are synthetic
+source data; it does not replace the claim writer, committed reset-month port,
+Inbox delivery or an installed DAILY migration. The HUNT schema itself must be
+installed by the actual embedded SQLx migrator with the exact 0115 checksum.
+
+The existing `--test bestiary_progress_postgres` root loads the real durability
+modules and their tests; its existing cases remain unchanged. No new wrapper,
+Cargo target or Cargo manifest delta is required. The normal two-line HUNT
+module registration makes the five cases available in that entry through the
+owned test module. Qualification uses the authorized shared PostgreSQL 17.6
+wrapper and is bound to the complete explicit source assembly.
+
+The native `RevisionSlot` adapter and sixth retry/replay-cursor case stay held
+under D1336b until #2151 merges, then reconcile with current main and #2193.
+They are separate integration material, not a disabled test or speculative
+alternate sequencer. This checkpoint adds no runtime caller or claimed current
+session lookup. LOOP integration remains with #2200; the DAILY owner controls
+claim production and source staging.
+
+HUNT-1 remains draft and `NOT_FULLY_QUALIFIED`. Production content/grade/draw
+admission, other earning/spend/unlock sources, slots, active bonuses,
+checkpoints/expiry, Task Board, wire/transport and runtime activation remain
+open. The source above is the bounded pending-DAILY sink; it does not complete
+PREY-1 or the HUNT family. Merge and ready authority remain with CP.
+
+## Independent source review and post-merge checkpoint (2026-10-17)
+
+CP [merged current main into HUNT](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233702121)
+without installing the held packet. The publication predecessor for this
+checkpoint is now `69c1a38144944a63db81332786cc4f3987e19244`, with parents
+`c86ad8ab7943f4a0d1bc6697dec1de1cf6f7fd0b` and
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`, and tree
+`5239d127c2a59577d3cb6ebf949c558d5c371e5f`. The earlier authoring predecessor
+above is retained as history. Fresh GitHub reads confirm that the published
+task card still has blob `911cf3bb13e9f1c6a053eb96c1d15bc4fb8507d3`; the three
+new owned Rust files and the new event proto remain absent. The five owned
+preimages therefore still match the reviewed source packet.
+
+An independent nonauthor review by `/root/ach_rank` returned **PASS: no concrete
+blocking source defect found in the bounded pending-DAILY sink**. It binds the
+original ten-file handoff, SHA-256
+`0e8986c9646b6806c28b9700917276d4f136ccaf8532886c911f650afff42840`,
+and complete patch, SHA-256
+`8d71e0d2e9a3cb30fbe4664c1b7df5bcd8c0ac96cd68de4bfbfcf8a5dd21c6ff`.
+All ten source hashes and their existing preimages were checked. Review covered
+the actual live-fence and retained-receipt paths, same-transaction
+receipt/entry/balance/event/terminal-line proofs, the complete effective 0093
+guard extension, closed native payload/envelope encoding and the original
+fixture linkage. The four owned Rust/proto source blobs and every held
+integration hunk remain identical to that reviewed packet. This new appendix
+preserves the entire previous candidate card as an exact byte prefix.
+
+This is source review, not executed native qualification. The five PostgreSQL
+cases and four prost cases remain **NOT_RUN** at this checkpoint; fmt, strict
+Clippy and full-package/runtime qualification are not claimed. The authored
+retention case checks early expiry refusal and hold storage/placement/release.
+It does not qualify actual expired deletion, an active hold on an expired event,
+or case-authorized operator access/export. The 191/500-byte and 64-event resource
+bounds remain CANDIDATE pending their required native qualification.
+
+This five-path authoring checkpoint leaves migration 0115, the inseparable
+authority UNION, shared module registration and both registry changes held.
+Installing them still requires the actual DAILY schema prerequisite and the
+current CP integration slot. The sequencer adapter and sixth case remain
+deferred until #2151 merges, then require current main/#2193 reconciliation.
+Fresh main and exact numeric allocation checks remain publication gates.
+The merge and this source-review PASS do not satisfy those gates or authorize
+runtime activation. HUNT-1 remains draft and `NOT_FULLY_QUALIFIED`; ready/merge
+authority remains CP-only.
+
+## Formatted owned source checkpoint (2026-10-17)
+
+The three owned Rust files were formatted on Molehill-PC using the repository's
+Rust 2024 formatter, scoped with `skip_children=true`. This includes removal of
+the previously recorded extra EOF blank line in `prey_tests.rs`. Root reviewed
+the complete formatting delta; its SHA256 is
+`393e786bd8f3909a9e3c9ce89c691146bca248332160d4d3c1ac7102b5a0c490`.
+The formatter changed layout only. The earlier frozen source hashes remain
+historical; the exact formatted inputs in this checkpoint are:
+
+| Path under `apps/game-server/src/durability/` | SHA256 |
+| --- | --- |
+| `prey.rs` | `d540a34b1a47142be1e5dedcf8c87c78dc211e9874d9914724ca77e72cb18030` |
+| `prey_audit.rs` | `86045b426c698e3a1544fa15df28b9426925f5204d82d25b0249b0cf9dce67ca` |
+| `prey_tests.rs` | `eef85282670033d2d39bba37ff6e2406b7e2d1df4aebaaf2fae03e4f3adecc9f` |
+
+The event proto remains byte-identical to the reviewed D1341 packet. This
+five-path source publication uses CP's `69c1a381` predecessor. Its complete
+authority/module/registry/Bestiary entry and current 0093 preimages were checked
+and preserved; migration 0115 is absent. All earlier text above is retained.
+
+Scoped source formatting is PASS. The five PostgreSQL and four prost cases,
+strict Clippy, workspace Cargo fmt and runtime qualification remain NOT_RUN for
+this combined pending-DAILY source packet. Publication does not install the
+held migration/authority/module/registry bundle or the sequencer/sixth case.
+The actual DAILY schema and CP integration conditions above remain required.
