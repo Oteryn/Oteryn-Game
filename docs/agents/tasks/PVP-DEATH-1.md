@@ -590,3 +590,35 @@ does not extend the D1244 source ledger or the slot-only #2193 death-writer scop
 Exact new-candidate Rust 1.95 formatting, strict all-target Clippy, native test
 execution and PostgreSQL 17.6 qualification for this glue remain **NOT_RUN** here.
 The earlier library progress is not a full-package or downstream PvP PASS.
+
+## Native-source fixture context repair — 2026-10-17
+
+At `1ffbc09ac197ce79984763f550bbd97c2775bbc5`, CI run
+[`39017776573`](https://github.com/Oteryn/Oteryn-Game/actions/runs/39017776573)
+passed Rust 1.95 formatting and strict all-target Clippy. The library unit step in
+job [`117353594140`](https://github.com/Oteryn/Oteryn-Game/actions/jobs/117353594140)
+then reported **3155 passed, 25 failed, 29 ignored**: 3180 non-ignored tests,
+3209 total. This is a failed unit qualification, not a full-package PASS.
+
+The failing native-source fixture families initialized positions with the separate
+synthetic movement-test context. The current-source lookup correctly requires the
+runtime's pinned position context for its whole positioned-actor census. The
+repair changes only test setup calls to the existing pinned player/creature
+admission helpers in `gameplay_transport/actor_spell.rs`, `creature_auto_attack.rs`,
+`source_callback_cast.rs`, `monster_combat_lane.rs`, `smelly_damage.rs` and
+`smelly_encounter_dispatch.rs` (all under `apps/game-server/src/`). Actual carrier
+admission, actor/session identity, current-source and census guards, explicit
+negative mutations, replay checks and HP/ledger assertions remain unchanged.
+
+The additional mechanical test consumer is
+`apps/game-server/src/source_callback_cast.rs`, the existing callback module of
+the owned `creature_damage_spell.rs`. This records the necessary native-source
+fixture correction under the continuing D1244/D1258a increment; it adds no
+production behavior, new runtime scope or Foundation mutation.
+
+The separate WP5 run
+[`39017776632`](https://github.com/Oteryn/Oteryn-Game/actions/runs/39017776632)
+on that same old head passed its one selected real composition test against
+PostgreSQL 17.6 (`170006`); 1089 other tests were filtered out. That evidence does
+not execute the full death-transaction suite. Rust execution of this new fixture
+repair remains **NOT_RUN** until its complete successor candidate is qualified.
