@@ -213,7 +213,7 @@ pub(crate) struct CreatureCombatFacts {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum BranchReceipt {
     Creature(OwnerDamageResult),
-    PlayerDamage(PlayerDamageReceipt),
+    PlayerDamage(Box<PlayerDamageReceipt>),
     PlayerHeal(PlayerHealReceipt),
     Zero,
 }
@@ -676,7 +676,7 @@ impl ComposedOwner {
                                 now,
                                 crate::player_lethal::LethalSource::Creature(proposal.issuer),
                             )
-                            .map(BranchReceipt::PlayerDamage)
+                            .map(|receipt| BranchReceipt::PlayerDamage(Box::new(receipt)))
                             .ok_or(AttackError::MissingVitals)
                     }
                 }
