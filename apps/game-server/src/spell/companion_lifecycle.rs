@@ -635,7 +635,6 @@ pub(crate) struct StagedFamiliarOperation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FamiliarTimerReceipt {
     pub(crate) creature: ExactActorRef,
-    pub(crate) removed: bool,
     pub(crate) message: Option<String>,
 }
 
@@ -717,28 +716,30 @@ fn stage_familiar_timer_parts(
         message,
     }))
 }
+/// #2199 Codex P2 4302737307: only a warning commits in the timer lane. An expiry ends the
+/// durable lifecycle, so the lane never removes the familiar: the owner cadence hands it to
+/// the fenced lifecycle writer (`FamiliarLifecycleOrigin::Expiry`), which closes the row
+/// before the physical despawn, as a familiar death does.
 pub(crate) fn commit_familiar_timer(
     runtime: &mut ChannelRuntimeV1,
     staged: StagedFamiliarOperation,
 ) -> Result<FamiliarTimerReceipt, CompanionExecutionError> {
+    if staged.event == FamiliarTimerEvent::Expiry {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
     runtime.player_control_facts(staged.owner, staged.session)?;
     runtime.assert_actor_spell_unreserved(staged.expected.actor)?;
     runtime.validate_companion_snapshot(&staged.expected)?;
-    let removed = staged.event == FamiliarTimerEvent::Expiry;
-    if removed {
-        runtime.despawn_companion(staged.owner, staged.session, &staged.expected)?;
-    }
     Ok(FamiliarTimerReceipt {
         creature: staged.expected.actor,
-        removed,
         message: staged.message,
     })
 }
 
 use super::native_companions::{FamiliarAction, FamiliarEvent, FamiliarFacts};
 use crate::durability::character_familiar::{
-    CommittedCharacterFamiliar, DurableFamiliarState, FamiliarStateOccurrence,
-    FamiliarStateRequest, FamiliarUnixTime,
+    CommittedCharacterFamiliar, DurableFamiliarState, FamiliarLifecycleWriter,
+    FamiliarStateOccurrence, FamiliarStateRequest, FamiliarUnixTime,
 };
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::foundation::PreparedCompanionSpawn;
@@ -758,6 +759,63 @@ pub(crate) struct FamiliarOwnerFacts {
     pub(crate) vip_reduction_minutes: i64,
     pub(crate) cooldown_rate: f32,
     pub(crate) state: DurableFamiliarState,
+    pub(crate) checkpoint_committed_at_ms: Option<i64>,
+    pub(crate) lifecycle_writer: FamiliarLifecycleWriter,
+    /// FAMILIARS0 §4 check 3 / §7, resolved from the owner's current session scope.
+    pub(crate) lever_boss_room: LeverBossRoomMembership,
+}
+
+/// #2199 Codex P1 4302326064: whether the owner is inside a boss room admitted by lever
+/// (FAMILIARS0 §4 check 3, BOSS-RAID-0 §6). BOSS-RAID-0 §6.1 makes such a room an activity
+/// instance (scope kind 2) while the lever room stays ordinary Channel map, so the current
+/// session's runtime scope is the authority: a Channel scope is outside, and the fenced
+/// familiar write re-proves that scope (`runtime_scope_kind = 1`) in its transaction. An
+/// instance scope may be a house or a boss room; without the BOSS-ROOM-1 owner it is
+/// unresolved and refuses, never guessed. `Inside` is the fact BOSS-ROOM-1 supplies.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LeverBossRoomMembership {
+    Outside,
+    Inside,
+    Unresolved,
+}
+impl LeverBossRoomMembership {
+    pub(crate) fn of_current_scope(scope: &crate::foundation::RuntimeScopeRefV1) -> Self {
+        match scope {
+            crate::foundation::RuntimeScopeRefV1::Channel { .. } => Self::Outside,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. } => Self::Unresolved,
+        }
+    }
+}
+
+/// CREATURE-AI-0 `RL-19`: player summons per character, a familiar included (FAMILIARS0 §4).
+pub(crate) const CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX: usize = 2;
+
+/// #2199 Codex P1 4302326065: a stored return replays the source Login recreation, whose
+/// planner skips the cast's owned-summon limit, so its admission checks the complete owned
+/// census against the aggregate cap itself. Over the cap the row keeps waiting.
+pub(crate) fn familiar_return_within_summon_cap(owned_summons: usize) -> bool {
+    owned_summons < CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX
+}
+
+/// FAMILIARS0 §7: a returning familiar, immediate (Login) or delayed (Return), first passes
+/// cast check 3. Inside a lever boss room the return is refused and the familiar ends: its
+/// stored time becomes 0 while the row stays closed and the cooldown is kept. An unresolved
+/// room refuses the event, so the row stays waiting. Returns whether the familiar ended.
+fn end_familiar_return_in_lever_boss_room(
+    lifecycle: &mut crate::durability::character_familiar::FamiliarLifecycleV2,
+    room: LeverBossRoomMembership,
+) -> Result<bool, CompanionExecutionError> {
+    if !familiar_waits_to_return(lifecycle) {
+        return Ok(false);
+    }
+    match room {
+        LeverBossRoomMembership::Outside => Ok(false),
+        LeverBossRoomMembership::Inside => {
+            lifecycle.familiar_remaining_ms = 0;
+            Ok(true)
+        }
+        LeverBossRoomMembership::Unresolved => Err(CompanionExecutionError::InvalidOwnerFacts),
+    }
 }
 #[derive(Debug, Clone)]
 pub(crate) struct PreparedFamiliar {
@@ -921,6 +979,10 @@ fn prepare_familiar_inner(
     unix: FamiliarUnixTime,
     death_actor: Option<ExactActorRef>,
 ) -> Result<PreparedFamiliar, CompanionExecutionError> {
+    // An expiry is a lifecycle event of the owner cadence only (`FamiliarLifecycleOrigin`).
+    if event == FamiliarEvent::Expiry {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
     let mut parts = prepare_familiar_parts(
         runtime,
         cells,
@@ -940,7 +1002,7 @@ fn prepare_familiar_inner(
         event: parts.event,
         owner_facts: parts.owner_facts,
         owned: parts.owned,
-        death: parts.death,
+        death: parts.removal,
         spawn: parts.spawn,
         actions: parts.actions,
         facts: parts.facts,
@@ -953,12 +1015,244 @@ struct FamiliarParts {
     event: FamiliarEvent,
     owner_facts: FamiliarOwnerFacts,
     owned: Vec<CompanionSnapshot>,
-    death: Option<CompanionSnapshot>,
+    /// The familiar this event removes: the dead one of a death, or the live one whose
+    /// lifetime expired. It is despawned only after the durable lifecycle write.
+    removal: Option<CompanionSnapshot>,
     spawn: Option<PreparedCompanionSpawn>,
     actions: Vec<FamiliarAction>,
     facts: FamiliarFacts,
     after: DurableFamiliarState,
+    ended_in_lever_boss_room: bool,
 }
+/// Normalize a stored lifecycle for Login after current owner facts were independently resolved.
+/// CP D1296 accepts a foreign still-open lifecycle as a crash: discard its remaining
+/// lifetime and close it, fail-closed against duplicating value. A same-lifecycle
+/// reconnect must retain its live physical/timer state instead of restoring storage.
+fn prepare_familiar_login_lifecycle(
+    lifecycle: &mut crate::durability::character_familiar::FamiliarLifecycleV2,
+    current_writer: &FamiliarLifecycleWriter,
+) -> Result<(), CompanionExecutionError> {
+    if lifecycle.clean_end_game_session_id.as_ref() == Some(&current_writer.game_session_id) {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    if lifecycle.open {
+        if lifecycle.writer.same_lifecycle(current_writer) {
+            return Err(CompanionExecutionError::InvalidOwnerFacts);
+        }
+        lifecycle.familiar_remaining_ms = 0;
+        lifecycle.open = false;
+    }
+    Ok(())
+}
+
+/// FAMILIARS0 §7: a clean row with stored time and no committed return acquisition is a
+/// familiar waiting to return (no free tile yet). An open row is a committed acquisition:
+/// its familiar is live or already ended in this runtime, and it never waits.
+pub(crate) fn familiar_waits_to_return(
+    lifecycle: &crate::durability::character_familiar::FamiliarLifecycleV2,
+) -> bool {
+    !lifecycle.open && lifecycle.familiar_remaining_ms > 0
+}
+
+/// #2199 Codex P2 4302041461: a Login that created no familiar because no tile was free (the
+/// source spawn-room refusal) leaves its stored familiar to a later runtime return.
+pub(crate) fn login_left_familiar_waiting(
+    creature: Option<ExactActorRef>,
+    operations: &[FamiliarAction],
+) -> bool {
+    creature.is_none()
+        && operations
+            .iter()
+            .any(|a| matches!(a, FamiliarAction::CreationRefusal { .. }))
+}
+
+/// #2199 Codex P2 4302041461: a runtime return restores only the row this session's Login
+/// already reconciled and left waiting: a clean row (after the D1126 conversion of the next
+/// write) with stored time, written by this lifecycle, at the epoch the return was issued for,
+/// before this session's clean end. An open, foreign or newer row is never adopted, so the
+/// stored familiar is created at most once with its fenced remaining lifetime.
+pub(crate) fn familiar_return_admissible(
+    state: &DurableFamiliarState,
+    checkpoint_committed_at_ms: Option<i64>,
+    current_writer: &FamiliarLifecycleWriter,
+    waiting_epoch: u64,
+) -> bool {
+    state.lifecycle_epoch == waiting_epoch
+        && state
+            .for_next_write(checkpoint_committed_at_ms, current_writer)
+            .ok()
+            .and_then(|next| next.lifecycle)
+            .is_some_and(|lifecycle| {
+                familiar_waits_to_return(&lifecycle)
+                    && lifecycle.writer.same_lifecycle(current_writer)
+                    && lifecycle.clean_end_game_session_id.as_ref()
+                        != Some(&current_writer.game_session_id)
+            })
+}
+
+/// Owner-turn precheck for a stored return: whether the owner's current cell has a free
+/// familiar tile now. It reserves and writes nothing; the prepared return proves it again.
+pub(crate) fn familiar_return_placement_available(
+    runtime: &ChannelRuntimeV1,
+    cells: &NativeEntryMovementCells,
+    spell: &CompiledNativeSpell,
+    owner: ExactActorRef,
+) -> bool {
+    let Some(extended) = parameters(spell, "familiar_summon")
+        .ok()
+        .and_then(|p| p["spawn"]["extended"].as_bool())
+    else {
+        return false;
+    };
+    let Ok(position) = runtime.read_actor_position(owner) else {
+        return false;
+    };
+    matches!(
+        placement(runtime, cells, position.position(), extended),
+        Ok(Some(_))
+    )
+}
+
+/// #2199 Codex P1 4301955863: an open row another session or runtime wrote is a committed
+/// acquisition only Login crash classification (D1296) may reconcile. Until that reconciliation
+/// commits, its lifetime and the cooldown it restores at Login are unaccounted for here, so a
+/// Cast or level Advance must not adopt and overwrite it under the current writer.
+fn familiar_lifecycle_unreconciled(
+    lifecycle: &crate::durability::character_familiar::FamiliarLifecycleV2,
+    current_writer: &FamiliarLifecycleWriter,
+) -> bool {
+    lifecycle.open && !lifecycle.writer.same_lifecycle(current_writer)
+}
+
+/// Settle the lifecycle of a non-actor-end familiar write under the current writer.
+/// A committed acquisition (cast or return) opens the row with its scheduled lifetime and
+/// clears any clean-end marker; a familiar death or its expiry ends it (#2199 Codex P2
+/// 4302737307: an expired familiar never leaves an open row with positive time). Any other write (a Login with no
+/// free tile, Advance) carries the clean row, its stored waiting time and a closed foreign
+/// session's clean-end marker unchanged. F-I11: after this session's own clean end it writes
+/// nothing more.
+fn settle_familiar_event_lifecycle(
+    lifecycle: &mut crate::durability::character_familiar::FamiliarLifecycleV2,
+    current_writer: &FamiliarLifecycleWriter,
+    event: &FamiliarEvent,
+    acquired_remaining_ms: Option<u64>,
+) -> Result<(), CompanionExecutionError> {
+    if lifecycle.clean_end_game_session_id.as_ref() == Some(&current_writer.game_session_id) {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    lifecycle.writer = current_writer.clone();
+    if let Some(remaining) = acquired_remaining_ms {
+        lifecycle.open = true;
+        lifecycle.clean_end_game_session_id = None;
+        lifecycle.familiar_remaining_ms = remaining;
+    } else if matches!(event, FamiliarEvent::FamiliarDeath | FamiliarEvent::Expiry) {
+        lifecycle.open = false;
+        lifecycle.familiar_remaining_ms = 0;
+    }
+    Ok(())
+}
+
+/// Close the lifecycle at a clean session end (logout, or the terminal release at the end of
+/// the in-fight deadline; FAMILIARS0 §5). A physically present familiar stores its actual
+/// timer remaining. With none present, a clean row still waiting to return keeps its stored
+/// time, while an open row whose familiar already ended in this runtime stores zero.
+pub(crate) fn close_familiar_lifecycle_at_actor_end(
+    lifecycle: &mut crate::durability::character_familiar::FamiliarLifecycleV2,
+    writer: &FamiliarLifecycleWriter,
+    physical_remaining_ms: Option<u64>,
+) -> Result<(), CompanionExecutionError> {
+    if lifecycle.clean_end_game_session_id.as_ref() == Some(&writer.game_session_id) {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    lifecycle.familiar_remaining_ms = match physical_remaining_ms {
+        Some(remaining) => remaining,
+        None if lifecycle.open => 0,
+        None => lifecycle.familiar_remaining_ms,
+    };
+    lifecycle.open = false;
+    lifecycle.writer = writer.clone();
+    lifecycle.clean_end_game_session_id = Some(writer.game_session_id.clone());
+    Ok(())
+}
+
+/// #2199 Codex P2 4301955868: D1126 converts an absent or legacy projection only for the NEXT
+/// write. When the event changes nothing but that manufactured v2 lifecycle, it is a no-op: the
+/// projection stays exactly as loaded, so `state_request` writes no row and no revision. A Cast
+/// always mutates (cooldown, and later its payment), so it keeps the converted state.
+fn keep_unconverted_projection_on_no_op(
+    before: &DurableFamiliarState,
+    after: &mut DurableFamiliarState,
+    event: &FamiliarEvent,
+) {
+    if *event == FamiliarEvent::Cast || before.lifecycle.is_some() {
+        return;
+    }
+    let mut unconverted = after.clone();
+    unconverted.lifecycle = None;
+    if unconverted == *before {
+        *after = before.clone();
+    }
+}
+
+/// #2199 Codex P2 4302542011 (FAMILIARS0 §5, §7): a stored familiar returns through the
+/// return checks only (the lever boss room, the aggregate summon cap and placement), never
+/// through the fresh-cast eligibility of §4 check 1. The source Login gate (Premium and its
+/// minimum level) still decides the vocation-look grants and removals, but a lapsed Premium
+/// or a lower level never drops a stored return: a clean row with positive time would then
+/// neither return nor admit a replacement cast. The return plan contributes only the
+/// creation (or its placement refusal, which keeps the row waiting); the looks stay the
+/// source Login's.
+fn plan_familiar_event_actions(
+    spell: &CompiledNativeSpell,
+    facts: &FamiliarFacts,
+    stored_return: bool,
+) -> Result<Vec<FamiliarAction>, CompanionExecutionError> {
+    let plan = |facts: &FamiliarFacts| -> Result<Vec<FamiliarAction>, CompanionExecutionError> {
+        match spell
+            .plan(
+                Facts::Companion(&CompanionFacts::Familiar(facts.clone())),
+                &mut |min, _| min,
+            )
+            .map_err(|e| CompanionExecutionError::Refused(e.0))?
+        {
+            Plan::Companion(plan) => match *plan {
+                super::native_companions::CompanionPlan::Familiar(actions) => Ok(actions),
+                _ => Err(CompanionExecutionError::UnqualifiedProfile),
+            },
+            _ => Err(CompanionExecutionError::UnqualifiedProfile),
+        }
+    };
+    let mut actions = plan(facts)?;
+    let creation_decided = actions.iter().any(|a| {
+        matches!(
+            a,
+            FamiliarAction::Create { .. } | FamiliarAction::CreationRefusal { .. }
+        )
+    });
+    if !stored_return || facts.event != FamiliarEvent::Login || creation_decided {
+        return Ok(actions);
+    }
+    let minimum_level = parameters(spell, "familiar_summon")?["login"]["minimum_level"]
+        .as_u64()
+        .and_then(|v| u32::try_from(v).ok())
+        .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+    let returning = FamiliarFacts {
+        premium: true,
+        level: facts.level.max(minimum_level),
+        ..facts.clone()
+    };
+    actions.extend(plan(&returning)?.into_iter().filter(|a| {
+        !matches!(
+            a,
+            FamiliarAction::RegisterAdvance
+                | FamiliarAction::SelectLook(_)
+                | FamiliarAction::GrantVocationLook(_)
+                | FamiliarAction::RemoveVocationLook(_)
+        )
+    }));
+    Ok(actions)
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the owner turn binds every independently resolved fact explicitly"
@@ -972,7 +1266,7 @@ fn prepare_familiar_parts(
     event: FamiliarEvent,
     current: &FamiliarOwnerFacts,
     unix: FamiliarUnixTime,
-    death_actor: Option<ExactActorRef>,
+    ended_actor: Option<ExactActorRef>,
 ) -> Result<FamiliarParts, CompanionExecutionError> {
     if !matches!(
         event,
@@ -980,6 +1274,7 @@ fn prepare_familiar_parts(
             | FamiliarEvent::Login
             | FamiliarEvent::Advance
             | FamiliarEvent::FamiliarDeath
+            | FamiliarEvent::Expiry
     ) || current.state.validate().is_err()
         || current.current_speed < 0
     {
@@ -999,10 +1294,16 @@ fn prepare_familiar_parts(
         .as_u64()
         .and_then(|v| u32::try_from(v).ok())
         .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
-    let death = if event == FamiliarEvent::FamiliarDeath {
-        let actor = death_actor.ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
-        let snapshot = runtime.companion_snapshot_including_dead(actor)?;
-        if snapshot.health != 0
+    let removal = if matches!(event, FamiliarEvent::FamiliarDeath | FamiliarEvent::Expiry) {
+        let actor = ended_actor.ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+        let dying = event == FamiliarEvent::FamiliarDeath;
+        // A death removes the health-zero slot; an expiry removes the live familiar.
+        let snapshot = if dying {
+            runtime.companion_snapshot_including_dead(actor)?
+        } else {
+            runtime.companion_snapshot(actor)?
+        };
+        if (snapshot.health == 0) != dying
             || snapshot.state.master
                 != Some(CompanionMaster {
                     actor: owner,
@@ -1016,11 +1317,48 @@ fn prepare_familiar_parts(
         }
         Some(snapshot)
     } else {
-        if death_actor.is_some() {
+        if ended_actor.is_some() {
             return Err(CompanionExecutionError::InvalidOwnerFacts);
         }
         None
     };
+    let mut after = current
+        .state
+        .for_next_write(
+            current.checkpoint_committed_at_ms,
+            &current.lifecycle_writer,
+        )
+        .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+    let lifecycle = after
+        .lifecycle
+        .as_mut()
+        .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+    let unreconciled = event != FamiliarEvent::Login
+        && familiar_lifecycle_unreconciled(lifecycle, &current.lifecycle_writer);
+    let mut ended_in_lever_boss_room = false;
+    if event == FamiliarEvent::Login {
+        prepare_familiar_login_lifecycle(lifecycle, &current.lifecycle_writer)?;
+        ended_in_lever_boss_room =
+            end_familiar_return_in_lever_boss_room(lifecycle, current.lever_boss_room)?;
+    } else if unreconciled && event == FamiliarEvent::Advance {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    // FAMILIARS0 §4 check 3: no cast inside a lever boss room or with an unresolved room,
+    // before any cost.
+    if event == FamiliarEvent::Cast && current.lever_boss_room != LeverBossRoomMembership::Outside {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    // FAMILIARS0 §4 check 4 / §5.2: a stored familiar waiting to return refuses the cast
+    // before any cost, so a stored and a new familiar never exist together. An unreconciled
+    // foreign open lifecycle refuses it the same way, fail closed, until Login reconciles it.
+    if event == FamiliarEvent::Cast && (unreconciled || familiar_waits_to_return(lifecycle)) {
+        return Err(CompanionExecutionError::Refused(
+            p["failure_messages"]["summon_limit"]
+                .as_str()
+                .ok_or(CompanionExecutionError::UnqualifiedProfile)?
+                .to_owned(),
+        ));
+    }
     let position = if matches!(event, FamiliarEvent::Cast | FamiliarEvent::Login) {
         placement(
             runtime,
@@ -1033,6 +1371,11 @@ fn prepare_familiar_parts(
     } else {
         None
     };
+    let return_ms = (event == FamiliarEvent::Login).then_some(lifecycle.familiar_remaining_ms);
+    let return_seconds = return_ms
+        .map(|ms| i64::try_from(ms.div_ceil(1000)))
+        .transpose()
+        .map_err(|_| CompanionExecutionError::ArithmeticBounds)?;
     let facts = FamiliarFacts {
         event: event.clone(),
         vocation: current.vocation.clone(),
@@ -1054,10 +1397,20 @@ fn prepare_familiar_parts(
         vip_reduction_minutes: current.vip_reduction_minutes,
         cooldown_rate: current.cooldown_rate,
         now_unix: unix.seconds(),
-        saved_expiry_unix: current.state.saved_expiry_unix,
-        last_logout_unix: current.state.last_logout_unix,
+        saved_expiry_unix: match return_seconds {
+            Some(seconds) => unix
+                .seconds()
+                .checked_add(seconds)
+                .ok_or(CompanionExecutionError::ArithmeticBounds)?,
+            None => current.state.saved_expiry_unix,
+        },
+        last_logout_unix: if return_seconds.is_some() {
+            unix.seconds()
+        } else {
+            current.state.last_logout_unix
+        },
         owner_present: true,
-        creature_present: death.is_some(),
+        creature_present: removal.is_some(),
         creature_name: name.to_owned(),
         matching_summon_ids: Vec::new(),
         dx: 0,
@@ -1065,20 +1418,40 @@ fn prepare_familiar_parts(
         dz: 0,
         owner_tile_is_teleport: false,
     };
-    let actions = match spell
-        .plan(
-            Facts::Companion(&CompanionFacts::Familiar(facts.clone())),
-            &mut |min, _| min,
-        )
-        .map_err(|e| CompanionExecutionError::Refused(e.0))?
-    {
-        Plan::Companion(plan) => match *plan {
-            super::native_companions::CompanionPlan::Familiar(actions) => actions,
-            _ => return Err(CompanionExecutionError::UnqualifiedProfile),
-        },
-        _ => return Err(CompanionExecutionError::UnqualifiedProfile),
-    };
-    let mut after = current.state.clone();
+    let mut actions =
+        plan_familiar_event_actions(spell, &facts, return_ms.is_some_and(|ms| ms > 0))?;
+    if let Some(ms) = return_ms {
+        let exact = i64::try_from(ms).map_err(|_| CompanionExecutionError::ArithmeticBounds)?;
+        let rounded = return_seconds
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?
+            .checked_mul(1000)
+            .ok_or(CompanionExecutionError::ArithmeticBounds)?;
+        let minimum = p["warning_dispatch"]["scheduler_minimum_ms"]
+            .as_u64()
+            .and_then(|v| u32::try_from(v).ok())
+            .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+        for action in &mut actions {
+            match action {
+                FamiliarAction::ScheduleExpiry { delay_ms } => {
+                    *delay_ms =
+                        u32::try_from(ms).map_err(|_| CompanionExecutionError::ArithmeticBounds)?
+                }
+                FamiliarAction::ScheduleWarning {
+                    raw_delay_ms,
+                    delay_ms,
+                    ..
+                } => {
+                    *raw_delay_ms = raw_delay_ms
+                        .checked_sub(rounded - exact)
+                        .ok_or(CompanionExecutionError::ArithmeticBounds)?;
+                    *delay_ms = u32::try_from((*raw_delay_ms).max(0))
+                        .map_err(|_| CompanionExecutionError::ArithmeticBounds)?
+                        .max(minimum);
+                }
+                _ => {}
+            }
+        }
+    }
     let mut look = None;
     let mut speed_delta = 0;
     let party = actions.contains(&FamiliarAction::RegisterPartyProtectionAllOwnedSummons);
@@ -1163,18 +1536,42 @@ fn prepare_familiar_parts(
             Err(index) => after.cooldowns.insert(index, snapshot),
         }
     }
+    let acquired_remaining_ms = if spawn.is_some() {
+        Some(u64::from(
+            actions
+                .iter()
+                .find_map(|a| match a {
+                    FamiliarAction::ScheduleExpiry { delay_ms } => Some(*delay_ms),
+                    _ => None,
+                })
+                .ok_or(CompanionExecutionError::UnqualifiedProfile)?,
+        ))
+    } else {
+        None
+    };
+    settle_familiar_event_lifecycle(
+        after
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?,
+        &current.lifecycle_writer,
+        &event,
+        acquired_remaining_ms,
+    )?;
     after
         .validate()
         .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+    keep_unconverted_projection_on_no_op(&current.state, &mut after, &event);
     Ok(FamiliarParts {
         event,
         owner_facts: current.clone(),
         owned,
-        death,
+        removal,
         spawn,
         actions,
         facts,
         after,
+        ended_in_lever_boss_room,
     })
 }
 
@@ -1833,6 +2230,30 @@ pub(crate) enum FamiliarLifecycleOrigin {
     Death {
         occurrence: crate::foundation::CreatureDeathOccurrenceRef,
     },
+    /// #2199 Codex P2 4302041461: the Channel owner's later return of the familiar this
+    /// session's Login stored because no tile was free. `waiting_epoch` is the stored row's
+    /// lifecycle epoch, so one waiting row has one occurrence and its committed return (a new
+    /// epoch, an open row) ends it.
+    Return {
+        session: GameSessionId,
+        waiting_epoch: u64,
+    },
+    /// #2199 Codex P2 4302737307: the due expiry of this live familiar at this lifecycle
+    /// epoch. The owner cadence issues it from the actual timer lane deadline; the fenced
+    /// lifecycle writer closes the row (remaining 0) before the familiar is despawned.
+    Expiry {
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
+    /// #2199 Codex P1 4303261095 (FAMILIARS0 §7: owner dies, removed, 0): the owner's death
+    /// `occurrence` ends this live familiar at this lifecycle epoch. The owner cadence issues
+    /// it before the respawn; the fenced lifecycle writer closes the row (remaining 0) before
+    /// the familiar is despawned, as an expiry does.
+    OwnerDeath {
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FamiliarLifecycleBinding {
@@ -1843,6 +2264,27 @@ pub(crate) struct FamiliarLifecycleBinding {
     stamp: crate::foundation::RuntimeWorkStamp,
     at: SemanticTimeMicros,
     origin: FamiliarLifecycleOrigin,
+}
+/// The live `creature` is `owner`'s familiar in `session` at `lifecycle_epoch`.
+fn live_owned_familiar(
+    runtime: &ChannelRuntimeV1,
+    owner: ExactActorRef,
+    session: GameSessionId,
+    creature: ExactActorRef,
+    lifecycle_epoch: u64,
+) -> Result<(), CompanionExecutionError> {
+    let live = runtime.companion_snapshot(creature)?;
+    if live.state.master
+        != Some(CompanionMaster {
+            actor: owner,
+            session,
+        })
+        || !live.state.policy.is_familiar
+        || live.state.lifecycle_epoch != lifecycle_epoch
+    {
+        return Err(CompanionExecutionError::SnapshotMismatch);
+    }
+    Ok(())
 }
 impl FamiliarLifecycleBinding {
     fn issue(
@@ -1965,6 +2407,105 @@ impl FamiliarLifecycleBinding {
             },
         )
     }
+    /// Invoked by the owner-cadence retry for a stored return of this session. The stored row
+    /// is re-proved against current owner facts in `prepare_lifecycle_familiar`.
+    pub(crate) fn from_waiting_return(
+        runtime: &ChannelRuntimeV1,
+        spell: CompiledNativeSpell,
+        owner: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        at: SemanticTimeMicros,
+        waiting_epoch: u64,
+    ) -> Result<Self, CompanionExecutionError> {
+        Self::issue(
+            runtime,
+            spell,
+            owner,
+            fence,
+            stamp,
+            at,
+            FamiliarLifecycleOrigin::Return {
+                session: fence.game_session_id,
+                waiting_epoch,
+            },
+        )
+    }
+    /// Invoked by the owner cadence for a lifecycle expiry the timer lane found due. The live
+    /// familiar must still be this session's familiar at that lifecycle epoch.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
+    pub(crate) fn from_due_expiry(
+        runtime: &ChannelRuntimeV1,
+        spell: CompiledNativeSpell,
+        owner: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        at: SemanticTimeMicros,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    ) -> Result<Self, CompanionExecutionError> {
+        live_owned_familiar(
+            runtime,
+            owner,
+            fence.game_session_id,
+            creature,
+            lifecycle_epoch,
+        )?;
+        Self::issue(
+            runtime,
+            spell,
+            owner,
+            fence,
+            stamp,
+            at,
+            FamiliarLifecycleOrigin::Expiry {
+                creature,
+                lifecycle_epoch,
+            },
+        )
+    }
+    /// #2199 Codex P1 4303261095: invoked by the owner cadence for the owner's settled death
+    /// `occurrence` (the caller re-proves it under the owner lock) before the respawn. The live
+    /// familiar must still be this session's familiar at that lifecycle epoch.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
+    pub(crate) fn from_owner_death(
+        runtime: &ChannelRuntimeV1,
+        spell: CompiledNativeSpell,
+        owner: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        at: SemanticTimeMicros,
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    ) -> Result<Self, CompanionExecutionError> {
+        live_owned_familiar(
+            runtime,
+            owner,
+            fence.game_session_id,
+            creature,
+            lifecycle_epoch,
+        )?;
+        Self::issue(
+            runtime,
+            spell,
+            owner,
+            fence,
+            stamp,
+            at,
+            FamiliarLifecycleOrigin::OwnerDeath {
+                occurrence,
+                creature,
+                lifecycle_epoch,
+            },
+        )
+    }
     pub(crate) fn spell(&self) -> &CompiledNativeSpell {
         &self.spell
     }
@@ -2065,7 +2606,7 @@ impl PreparedLifecycleFamiliar {
             .owned
             .iter()
             .map(|s| s.actor)
-            .chain(self.parts.death.iter().map(|s| s.actor))
+            .chain(self.parts.removal.iter().map(|s| s.actor))
     }
     pub(crate) fn reserve_physical(
         &mut self,
@@ -2075,8 +2616,8 @@ impl PreparedLifecycleFamiliar {
         for owned in &self.parts.owned {
             runtime.assert_actor_spell_unreserved(owned.actor)?;
         }
-        if let Some(dead) = &self.parts.death {
-            runtime.assert_actor_spell_unreserved(dead.actor)?;
+        if let Some(ended) = &self.parts.removal {
+            runtime.assert_actor_spell_unreserved(ended.actor)?;
         }
         if let Some(spawn) = self.parts.spawn.as_mut() {
             runtime.reserve_companion_spawn(spawn)?;
@@ -2131,8 +2672,8 @@ impl PreparedLifecycleFamiliar {
             &self.parts.owned,
         )?;
         runtime.player_control_facts(self.binding.owner(), self.binding.session())?;
-        if let Some(dead) = &self.parts.death {
-            runtime.validate_companion_snapshot(dead)?;
+        if let Some(ended) = &self.parts.removal {
+            runtime.validate_companion_snapshot(ended)?;
         }
         if let Some(spawn) = &self.parts.spawn {
             runtime.validate_companion_spawn(spawn)?;
@@ -2218,11 +2759,49 @@ pub(crate) fn prepare_lifecycle_familiar(
     {
         return Err(CompanionExecutionError::SnapshotMismatch);
     }
+    let returning = matches!(binding.origin(), FamiliarLifecycleOrigin::Return { .. });
+    if let FamiliarLifecycleOrigin::Return { waiting_epoch, .. } = binding.origin()
+        && !familiar_return_admissible(
+            &current.state,
+            current.checkpoint_committed_at_ms,
+            &current.lifecycle_writer,
+            *waiting_epoch,
+        )
+    {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    // A stored return replays the source Login recreation with the stored remaining
+    // lifetime; the cooldown was restored by that Login and is never restored again. The
+    // fresh-cast eligibility (Premium, level) never drops it (`plan_familiar_event_actions`).
     let (event, dead) = match binding.origin() {
-        FamiliarLifecycleOrigin::Login { .. } => (FamiliarEvent::Login, None),
+        FamiliarLifecycleOrigin::Login { .. } | FamiliarLifecycleOrigin::Return { .. } => {
+            (FamiliarEvent::Login, None)
+        }
         FamiliarLifecycleOrigin::Advance { .. } => (FamiliarEvent::Advance, None),
         FamiliarLifecycleOrigin::Death { occurrence } => {
             (FamiliarEvent::FamiliarDeath, Some(occurrence.actor()))
+        }
+        FamiliarLifecycleOrigin::Expiry {
+            creature,
+            lifecycle_epoch,
+        } => {
+            if *lifecycle_epoch != current.state.lifecycle_epoch {
+                return Err(CompanionExecutionError::SnapshotMismatch);
+            }
+            (FamiliarEvent::Expiry, Some(*creature))
+        }
+        // The owner's death removes its live familiar with remaining 0 (FAMILIARS0 §7), the
+        // same removal and closed row as an expiry; the source OwnerRemoval callback invokes
+        // no familiar death.
+        FamiliarLifecycleOrigin::OwnerDeath {
+            creature,
+            lifecycle_epoch,
+            ..
+        } => {
+            if *lifecycle_epoch != current.state.lifecycle_epoch {
+                return Err(CompanionExecutionError::SnapshotMismatch);
+            }
+            (FamiliarEvent::Expiry, Some(*creature))
         }
     };
     let mut parts = prepare_familiar_parts(
@@ -2236,6 +2815,20 @@ pub(crate) fn prepare_lifecycle_familiar(
         unix,
         dead,
     )?;
+    // A return writes only its creation, or its end inside a lever boss room: no free tile,
+    // or a full owned-summon census leaves the row waiting unwritten,
+    // and a familiar already present is never doubled.
+    if returning {
+        if parts.owned.iter().any(|s| s.state.policy.is_familiar) {
+            return Err(CompanionExecutionError::SnapshotMismatch);
+        }
+        if parts.spawn.is_some() && !familiar_return_within_summon_cap(parts.owned.len()) {
+            return Err(CompanionExecutionError::PlacementUnavailable);
+        }
+        if parts.spawn.is_none() && !parts.ended_in_lever_boss_room {
+            return Err(CompanionExecutionError::PlacementUnavailable);
+        }
+    }
     if let Some(spawn) = parts.spawn.as_mut() {
         spawn.bind_semantic_creation(binding.at().get())?;
     }
@@ -2278,8 +2871,10 @@ pub(crate) fn commit_lifecycle_familiar(
     // checked above. Source death callbacks complete before the ordinary physical
     // creature removal; leaving the health-zero slot would repeat the callback and
     // retain its master indefinitely. The lethal projection remains replayable.
-    if let Some(dead) = &prepared.parts.death {
-        runtime.despawn_companion(prepared.binding.owner(), prepared.binding.session(), dead)?;
+    // #2199 Codex P2 4302737307: an expiry likewise removes its live familiar only after
+    // the closed row (remaining 0) is durable; a failed write leaves it present.
+    if let Some(ended) = &prepared.parts.removal {
+        runtime.despawn_companion(prepared.binding.owner(), prepared.binding.session(), ended)?;
     }
     let creature = prepared
         .parts
@@ -2287,10 +2882,12 @@ pub(crate) fn commit_lifecycle_familiar(
         .map(|spawn| runtime.install_companion_spawn(spawn))
         .transpose()?;
     let mut operations = prepared.parts.actions;
+    // The removal above performed an expiry's RemoveCreature.
     operations.retain(|a| {
         !matches!(
             a,
             FamiliarAction::Create { .. }
+                | FamiliarAction::RemoveCreature
                 | FamiliarAction::ChangeSpeed(_)
                 | FamiliarAction::StoreExpiry(_)
                 | FamiliarAction::SelectLook(_)
@@ -2311,6 +2908,10 @@ pub(crate) fn commit_lifecycle_familiar(
 /// Snapshot the actual shared reference-ID condition at a genuine logout decision.
 /// Caller writes this via the fenced familiar writer before releasing control. No timer fires
 /// while offline and no periodic/logout-stances writer is introduced.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "actual owner snapshot and independently validated actor-end identity"
+)]
 pub(crate) fn familiar_logout_snapshot(
     current: &DurableFamiliarState,
     player: &super::cast::PlayerSpellState,
@@ -2318,6 +2919,9 @@ pub(crate) fn familiar_logout_snapshot(
     book: &super::SpellBook,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
     unix: FamiliarUnixTime,
+    checkpoint_committed_at_ms: Option<i64>,
+    writer: &FamiliarLifecycleWriter,
+    physical_remaining_ms: Option<u64>,
 ) -> Result<DurableFamiliarState, CompanionExecutionError> {
     parameters(profile, "familiar_summon")?;
     let mut references = std::collections::BTreeMap::new();
@@ -2346,7 +2950,16 @@ pub(crate) fn familiar_logout_snapshot(
     if references.is_empty() {
         return Err(CompanionExecutionError::UnqualifiedProfile);
     }
-    let mut next = current.clone();
+    let mut next = current
+        .for_next_write(checkpoint_committed_at_ms, writer)
+        .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+    close_familiar_lifecycle_at_actor_end(
+        next.lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?,
+        writer,
+        physical_remaining_ms,
+    )?;
     next.last_logout_unix = unix.seconds();
     next.cooldowns = references
         .into_iter()
@@ -2835,5 +3448,686 @@ mod direct_acquisition_owner_tests {
             Some(oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::CoolingDown)
         );
         assert_eq!(paid.next.vitals().mana, 250);
+    }
+}
+
+#[cfg(test)]
+mod familiar_login_lifecycle_tests {
+    use super::*;
+    use crate::durability::character_familiar::{FamiliarCooldownSnapshot, FamiliarLifecycleV2};
+
+    #[test]
+    fn foreign_open_login_discards_crash_remaining_and_preserves_writer_and_cooldown()
+    -> Result<(), CompanionExecutionError> {
+        let old_writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000001".into(),
+            connection_generation: 1,
+            world_id: "0199aabb-1234-7000-8000-000000000002".into(),
+            channel_id: "0199aabb-1234-7000-8000-000000000003".into(),
+            scope_ownership_generation: 4,
+        };
+        let current_writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000004".into(),
+            ..old_writer.clone()
+        };
+        let mut state = DurableFamiliarState {
+            lifecycle: Some(FamiliarLifecycleV2 {
+                version: 2,
+                familiar_remaining_ms: 90_000,
+                open: true,
+                writer: old_writer.clone(),
+                clean_end_game_session_id: None,
+            }),
+            cooldowns: vec![FamiliarCooldownSnapshot {
+                reference_spell_id: 197,
+                remaining_micros: 1_234,
+            }],
+            ..DurableFamiliarState::default()
+        };
+        let before = state.clone();
+        let lifecycle = state
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+        prepare_familiar_login_lifecycle(lifecycle, &current_writer)?;
+        assert_eq!(lifecycle.familiar_remaining_ms, 0);
+        assert!(!lifecycle.open);
+        assert_eq!(lifecycle.writer, old_writer);
+        assert_eq!(lifecycle.clean_end_game_session_id, None);
+        assert_eq!(state.cooldowns, before.cooldowns);
+        let mut expected = before;
+        expected
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?
+            .familiar_remaining_ms = 0;
+        expected
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?
+            .open = false;
+        assert_eq!(state, expected);
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4302326064: the owner's current session scope resolves lever boss room
+    /// membership. A Channel scope is outside (the fenced write re-proves the Channel scope);
+    /// an instance scope stays unresolved without the BOSS-ROOM-1 owner and is never guessed.
+    #[test]
+    fn lever_boss_room_membership_comes_from_the_current_scope()
+    -> Result<(), CompanionExecutionError> {
+        let uuid = |seed: u8| {
+            let mut bytes = [0_u8; 16];
+            bytes[0] = 1;
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = seed;
+            bytes
+        };
+        let world = crate::foundation::WorldId::decode(&uuid(1))
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let channel = crate::foundation::ChannelId::decode(&uuid(2))
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let channel_scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+        let instance_scope = crate::foundation::RuntimeScopeRefV1::instance(world, uuid(3))
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        assert_eq!(
+            LeverBossRoomMembership::of_current_scope(&channel_scope),
+            LeverBossRoomMembership::Outside
+        );
+        assert_eq!(
+            LeverBossRoomMembership::of_current_scope(&instance_scope),
+            LeverBossRoomMembership::Unresolved
+        );
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4302326064 (FAMILIARS0 §7): a waiting return inside a lever boss room
+    /// ends the stored familiar (time 0, row closed, writer and marker kept); outside it is
+    /// untouched, and an unresolved room refuses so the row stays waiting. A row that does not
+    /// wait is never changed by the room check.
+    #[test]
+    fn lever_boss_room_return_ends_the_stored_familiar() -> Result<(), CompanionExecutionError> {
+        let (old_writer, _) = writers();
+        let waiting = lifecycle(&old_writer, 120_000, false, Some(&old_writer));
+
+        let mut inside = waiting.clone();
+        assert!(end_familiar_return_in_lever_boss_room(
+            &mut inside,
+            LeverBossRoomMembership::Inside
+        )?);
+        let mut ended = waiting.clone();
+        ended.familiar_remaining_ms = 0;
+        assert_eq!(inside, ended);
+        assert!(!familiar_waits_to_return(&inside));
+
+        let mut outside = waiting.clone();
+        assert!(!end_familiar_return_in_lever_boss_room(
+            &mut outside,
+            LeverBossRoomMembership::Outside
+        )?);
+        assert_eq!(outside, waiting);
+
+        let mut unresolved = waiting.clone();
+        assert_eq!(
+            end_familiar_return_in_lever_boss_room(
+                &mut unresolved,
+                LeverBossRoomMembership::Unresolved
+            ),
+            Err(CompanionExecutionError::InvalidOwnerFacts)
+        );
+        assert_eq!(unresolved, waiting);
+
+        for not_waiting in [
+            lifecycle(&old_writer, 120_000, true, None),
+            lifecycle(&old_writer, 0, false, Some(&old_writer)),
+        ] {
+            for room in [
+                LeverBossRoomMembership::Outside,
+                LeverBossRoomMembership::Inside,
+                LeverBossRoomMembership::Unresolved,
+            ] {
+                let mut row = not_waiting.clone();
+                assert!(!end_familiar_return_in_lever_boss_room(&mut row, room)?);
+                assert_eq!(row, not_waiting);
+            }
+        }
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4302326065 (CREATURE-AI-0 RL-19): a stored return checks the complete
+    /// owned-summon census against the aggregate cap of two; at the cap it keeps waiting.
+    #[test]
+    fn familiar_return_respects_the_aggregate_summon_cap() {
+        assert!(familiar_return_within_summon_cap(0));
+        assert!(familiar_return_within_summon_cap(1));
+        assert!(!familiar_return_within_summon_cap(
+            CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX
+        ));
+        assert!(!familiar_return_within_summon_cap(3));
+    }
+
+    fn knight_familiar_profile() -> Result<CompiledNativeSpell, CompanionExecutionError> {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        ))
+        .map_err(|_| CompanionExecutionError::UnqualifiedProfile)?;
+        let row = document["profiles"]
+            .as_array()
+            .and_then(|rows| {
+                rows.iter().find(|r| {
+                    let behavior = &r["spell"]["execution"]["native_behavior"];
+                    behavior["key"] == "familiar_summon"
+                        && behavior["parameters"]["vocation"] == "knight"
+                        && behavior["parameters"]["login"]["lifetime_basis"] == "current_unix_time"
+                })
+            })
+            .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+        super::super::native::spell_from_bundle(
+            &serde_json::json!({"spell": row["spell"]}),
+            &row["dependencies"],
+        )
+        .map_err(|_| CompanionExecutionError::UnqualifiedProfile)
+    }
+
+    /// #2199 Codex P2 4302542011 (FAMILIARS0 §5, §7): a clean stored familiar returns at login
+    /// after Premium lapsed or the level dropped, because a return passes only the lever boss
+    /// room, the summon cap and placement. Without a free tile it reports the placement refusal
+    /// that keeps the row waiting for the in-session retry. The source Login look handling
+    /// (removing the vocation look without Premium) is kept, no cooldown is restarted, and a
+    /// login without stored time still follows the source Premium gate.
+    #[test]
+    fn stored_familiar_returns_at_login_without_fresh_cast_eligibility()
+    -> Result<(), CompanionExecutionError> {
+        let spell = knight_familiar_profile()?;
+        let p = parameters(&spell, "familiar_summon")?;
+        let look = p["default_look_type"]
+            .as_u64()
+            .and_then(|v| u32::try_from(v).ok())
+            .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+        let lapsed = FamiliarFacts {
+            event: FamiliarEvent::Login,
+            vocation: "knight".into(),
+            premium: false,
+            level: 250,
+            account_at_least_god: false,
+            owned_summons: 0,
+            spawn_room: true,
+            chosen_look: 0,
+            has_vocation_look: true,
+            owner_current_speed: 220,
+            familiar_base_speed: 200,
+            familiar_minutes: 30,
+            vip: false,
+            vip_reduction_minutes: 0,
+            cooldown_rate: 1.0,
+            now_unix: 10_000,
+            saved_expiry_unix: 10_090,
+            last_logout_unix: 10_000,
+            owner_present: true,
+            creature_present: false,
+            creature_name: p["creature_name"]
+                .as_str()
+                .ok_or(CompanionExecutionError::UnqualifiedProfile)?
+                .to_owned(),
+            matching_summon_ids: Vec::new(),
+            dx: 0,
+            dy: 0,
+            dz: 0,
+            owner_tile_is_teleport: false,
+        };
+        let creates = |actions: &[FamiliarAction]| {
+            actions
+                .iter()
+                .filter(|a| matches!(a, FamiliarAction::Create { .. }))
+                .count()
+        };
+
+        // The source Login alone drops the creation without Premium: the stuck row.
+        let source = plan_familiar_event_actions(&spell, &lapsed, false)?;
+        assert_eq!(creates(&source), 0);
+        assert!(source.contains(&FamiliarAction::RemoveVocationLook(look)));
+
+        // A stored return comes back with its stored lifetime and keeps the source looks.
+        let restored = plan_familiar_event_actions(&spell, &lapsed, true)?;
+        assert_eq!(creates(&restored), 1);
+        assert!(restored.iter().any(|a| matches!(
+            a,
+            FamiliarAction::Create { name, look: created, owned: true, .. }
+                if *name == lapsed.creature_name && *created == look
+        )));
+        assert!(restored.contains(&FamiliarAction::StoreExpiry(10_090)));
+        assert!(
+            restored
+                .iter()
+                .any(|a| matches!(a, FamiliarAction::ScheduleExpiry { .. }))
+        );
+        assert!(restored.contains(&FamiliarAction::RemoveVocationLook(look)));
+        assert!(!restored.iter().any(|a| matches!(
+            a,
+            FamiliarAction::SelectLook(_)
+                | FamiliarAction::GrantVocationLook(_)
+                | FamiliarAction::Cooldown { .. }
+        )));
+        assert_eq!(
+            restored
+                .iter()
+                .filter(|a| **a == FamiliarAction::RegisterAdvance)
+                .count(),
+            1
+        );
+
+        // Below the source login level the stored familiar returns the same way.
+        let low_level = FamiliarFacts {
+            premium: true,
+            level: 120,
+            ..lapsed.clone()
+        };
+        assert_eq!(
+            creates(&plan_familiar_event_actions(&spell, &low_level, false)?),
+            0
+        );
+        assert_eq!(
+            creates(&plan_familiar_event_actions(&spell, &low_level, true)?),
+            1
+        );
+
+        // No free tile: the placement refusal keeps the row waiting for the in-session retry.
+        let no_tile = FamiliarFacts {
+            spawn_room: false,
+            ..lapsed.clone()
+        };
+        let waiting = plan_familiar_event_actions(&spell, &no_tile, true)?;
+        assert_eq!(creates(&waiting), 0);
+        assert!(login_left_familiar_waiting(None, &waiting));
+
+        // An eligible owner's plan is exactly the source Login's.
+        let eligible = FamiliarFacts {
+            premium: true,
+            has_vocation_look: false,
+            ..lapsed.clone()
+        };
+        assert_eq!(
+            plan_familiar_event_actions(&spell, &eligible, true)?,
+            plan_familiar_event_actions(&spell, &eligible, false)?
+        );
+        Ok(())
+    }
+
+    fn writers() -> (FamiliarLifecycleWriter, FamiliarLifecycleWriter) {
+        let old_writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000001".into(),
+            connection_generation: 1,
+            world_id: "0199aabb-1234-7000-8000-000000000002".into(),
+            channel_id: "0199aabb-1234-7000-8000-000000000003".into(),
+            scope_ownership_generation: 4,
+        };
+        let current_writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000004".into(),
+            ..old_writer.clone()
+        };
+        (old_writer, current_writer)
+    }
+
+    fn lifecycle(
+        writer: &FamiliarLifecycleWriter,
+        remaining: u64,
+        open: bool,
+        marker: Option<&FamiliarLifecycleWriter>,
+    ) -> FamiliarLifecycleV2 {
+        FamiliarLifecycleV2 {
+            version: 2,
+            familiar_remaining_ms: remaining,
+            open,
+            writer: writer.clone(),
+            clean_end_game_session_id: marker.map(|w| w.game_session_id.clone()),
+        }
+    }
+
+    /// #2199 Codex P1 4301237612 / 4301237626: both actor ends (logout and the end of the
+    /// in-fight deadline) close the row with this session's clean-end marker, which the durable
+    /// clean-end proof accepts; with no physical familiar a waiting clean row keeps its stored
+    /// time and only an open row that already ended here stores zero.
+    #[test]
+    fn actor_end_close_marks_clean_end_and_keeps_waiting_time()
+    -> Result<(), CompanionExecutionError> {
+        use crate::durability::character_familiar::{
+            FamiliarCleanEndProof, clean_end_marker_requirement,
+        };
+        let (old_writer, current) = writers();
+        let transport = crate::foundation::AuthenticatedTransportRefV1::decode(&[9; 16])
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let cases = [
+            // a live familiar: its actual timer remaining wins
+            (
+                lifecycle(&current, 900_000, true, None),
+                Some(41_000),
+                41_000,
+            ),
+            // waiting to return (no free tile at login): stored time survives the end
+            (
+                lifecycle(&current, 90_000, false, Some(&old_writer)),
+                None,
+                90_000,
+            ),
+            // an acquisition whose familiar already ended in this runtime
+            (lifecycle(&current, 900_000, true, None), None, 0),
+        ];
+        for (before, physical, expected) in cases {
+            let mut after = before.clone();
+            close_familiar_lifecycle_at_actor_end(&mut after, &current, physical)?;
+            assert_eq!(after.familiar_remaining_ms, expected);
+            assert!(!after.open);
+            assert_eq!(after.writer, current);
+            assert_eq!(
+                after.clean_end_game_session_id.as_deref(),
+                Some(current.game_session_id.as_str())
+            );
+            for proof in [
+                FamiliarCleanEndProof::GraceExpiry(1),
+                FamiliarCleanEndProof::Logout(transport),
+            ] {
+                let required = clean_end_marker_requirement(
+                    before.clean_end_game_session_id.as_deref(),
+                    after.clean_end_game_session_id.as_deref(),
+                    &current.game_session_id,
+                    Some(proof),
+                );
+                assert!(matches!(required, Ok(Some(p)) if p == proof));
+            }
+            // F-I11: after its own clean end the session writes nothing more.
+            let mut again = after.clone();
+            assert_eq!(
+                close_familiar_lifecycle_at_actor_end(&mut again, &current, physical),
+                Err(CompanionExecutionError::InvalidOwnerFacts)
+            );
+            assert_eq!(again, after);
+        }
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4301237622: a Login that finds no free tile carries the previous
+    /// session's clean row (marker, stored waiting time) as the ordinary write accepts it, so
+    /// the cooldown and the delayed return are kept; this session's own marker is refused.
+    #[test]
+    fn no_room_login_carries_foreign_clean_row() -> Result<(), CompanionExecutionError> {
+        use crate::durability::character_familiar::clean_end_marker_requirement;
+        let (old_writer, current) = writers();
+        let before = lifecycle(&old_writer, 90_000, false, Some(&old_writer));
+        let mut after = before.clone();
+        prepare_familiar_login_lifecycle(&mut after, &current)?;
+        settle_familiar_event_lifecycle(&mut after, &current, &FamiliarEvent::Login, None)?;
+        assert_eq!(
+            after,
+            FamiliarLifecycleV2 {
+                writer: current.clone(),
+                ..before.clone()
+            }
+        );
+        assert!(familiar_waits_to_return(&after));
+        assert!(matches!(
+            clean_end_marker_requirement(
+                before.clean_end_game_session_id.as_deref(),
+                after.clean_end_game_session_id.as_deref(),
+                &current.game_session_id,
+                None,
+            ),
+            Ok(None)
+        ));
+        // The later delayed return (Advance) acquires: open, marker cleared, new lifetime.
+        let mut returned = after.clone();
+        settle_familiar_event_lifecycle(
+            &mut returned,
+            &current,
+            &FamiliarEvent::Advance,
+            Some(90_000),
+        )?;
+        assert!(returned.open);
+        assert_eq!(returned.clean_end_game_session_id, None);
+        assert!(matches!(
+            clean_end_marker_requirement(
+                after.clean_end_game_session_id.as_deref(),
+                None,
+                &current.game_session_id,
+                None,
+            ),
+            Ok(None)
+        ));
+        let mut own = lifecycle(&current, 90_000, false, Some(&current));
+        assert_eq!(
+            settle_familiar_event_lifecycle(&mut own, &current, &FamiliarEvent::Login, None),
+            Err(CompanionExecutionError::InvalidOwnerFacts)
+        );
+        Ok(())
+    }
+
+    /// #2199 Codex P2 4302737307: a due expiry closes the open row with no time left, as a
+    /// familiar death does, so an expired familiar never leaves an open row with positive
+    /// time. A write that ends nothing (Advance) keeps the open row and its time.
+    #[test]
+    fn familiar_expiry_closes_the_open_lifecycle_like_death() -> Result<(), CompanionExecutionError>
+    {
+        let (_, current) = writers();
+        for event in [FamiliarEvent::Expiry, FamiliarEvent::FamiliarDeath] {
+            let mut row = lifecycle(&current, 900_000, true, None);
+            settle_familiar_event_lifecycle(&mut row, &current, &event, None)?;
+            assert_eq!(row, lifecycle(&current, 0, false, None));
+        }
+        let mut row = lifecycle(&current, 900_000, true, None);
+        settle_familiar_event_lifecycle(&mut row, &current, &FamiliarEvent::Advance, None)?;
+        assert_eq!(row, lifecycle(&current, 900_000, true, None));
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4301955863: an open row from a prior session or runtime that Login has
+    /// not reconciled blocks Cast and Advance; this lifecycle's own open row (a same-runtime
+    /// reconnect at another connection generation) and any closed row do not.
+    #[test]
+    fn foreign_open_lifecycle_is_unreconciled_until_login() -> Result<(), CompanionExecutionError> {
+        let (old_writer, current) = writers();
+        assert!(familiar_lifecycle_unreconciled(
+            &lifecycle(&old_writer, 90_000, true, None),
+            &current
+        ));
+        let moved = FamiliarLifecycleWriter {
+            scope_ownership_generation: 5,
+            ..current.clone()
+        };
+        assert!(familiar_lifecycle_unreconciled(
+            &lifecycle(&moved, 90_000, true, None),
+            &current
+        ));
+        let reconnect = FamiliarLifecycleWriter {
+            connection_generation: 2,
+            ..current.clone()
+        };
+        assert!(!familiar_lifecycle_unreconciled(
+            &lifecycle(&reconnect, 90_000, true, None),
+            &current
+        ));
+        assert!(!familiar_lifecycle_unreconciled(
+            &lifecycle(&old_writer, 90_000, false, Some(&old_writer)),
+            &current
+        ));
+        assert!(!familiar_lifecycle_unreconciled(
+            &lifecycle(&old_writer, 0, false, None),
+            &current
+        ));
+        // The waiting-to-return check alone does not catch it; the unreconciled check
+        // refuses that cast before payment.
+        assert!(!familiar_waits_to_return(&lifecycle(
+            &old_writer,
+            90_000,
+            true,
+            None
+        )));
+        // Login is the reconciliation: afterwards the row is closed and no longer blocks.
+        let mut reconciled = lifecycle(&old_writer, 90_000, true, None);
+        prepare_familiar_login_lifecycle(&mut reconciled, &current)?;
+        assert!(!familiar_lifecycle_unreconciled(&reconciled, &current));
+        assert!(!familiar_waits_to_return(&reconciled));
+        Ok(())
+    }
+
+    /// #2199 Codex P2 4301955868: a Login or Advance that changes nothing but the D1126
+    /// conversion of an absent projection keeps it absent, so no row or revision is written.
+    #[test]
+    fn no_op_event_keeps_absent_projection_absent() -> Result<(), CompanionExecutionError> {
+        let (_, current) = writers();
+        let absent = DurableFamiliarState::default();
+        for event in [FamiliarEvent::Login, FamiliarEvent::Advance] {
+            let mut after = absent
+                .for_next_write(None, &current)
+                .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+            let converted = after
+                .lifecycle
+                .as_mut()
+                .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+            if event == FamiliarEvent::Login {
+                prepare_familiar_login_lifecycle(converted, &current)?;
+            }
+            settle_familiar_event_lifecycle(converted, &current, &event, None)?;
+            assert_ne!(after, absent);
+            let mut kept = after.clone();
+            keep_unconverted_projection_on_no_op(&absent, &mut kept, &event);
+            assert_eq!(kept, absent);
+            // A real mutation keeps the conversion, which every new write requires.
+            let mut changed = after.clone();
+            changed.selected_look = 7;
+            let expected = changed.clone();
+            keep_unconverted_projection_on_no_op(&absent, &mut changed, &event);
+            assert_eq!(changed, expected);
+            assert!(changed.lifecycle.is_some());
+        }
+        // A Cast always writes, and a stored v2 row is never reverted.
+        let mut cast = absent
+            .for_next_write(None, &current)
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let expected = cast.clone();
+        keep_unconverted_projection_on_no_op(&absent, &mut cast, &FamiliarEvent::Cast);
+        assert_eq!(cast, expected);
+        let (old_writer, _) = writers();
+        let stored = DurableFamiliarState {
+            lifecycle: Some(lifecycle(&old_writer, 0, false, None)),
+            ..DurableFamiliarState::default()
+        };
+        let mut next = stored.clone();
+        settle_familiar_event_lifecycle(
+            next.lifecycle
+                .as_mut()
+                .ok_or(CompanionExecutionError::InvalidOwnerFacts)?,
+            &current,
+            &FamiliarEvent::Login,
+            None,
+        )?;
+        let expected = next.clone();
+        keep_unconverted_projection_on_no_op(&stored, &mut next, &FamiliarEvent::Login);
+        assert_eq!(next, expected);
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4301237630 (FAMILIARS0 §4 check 4): a stored familiar waiting to return
+    /// refuses a cast; an open acquisition or a row with no stored time does not wait.
+    #[test]
+    fn waiting_stored_familiar_blocks_cast() {
+        let (old_writer, current) = writers();
+        assert!(familiar_waits_to_return(&lifecycle(
+            &current,
+            90_000,
+            false,
+            Some(&old_writer)
+        )));
+        assert!(familiar_waits_to_return(&lifecycle(
+            &current, 1, false, None
+        )));
+        assert!(!familiar_waits_to_return(&lifecycle(
+            &current, 90_000, true, None
+        )));
+        assert!(!familiar_waits_to_return(&lifecycle(
+            &current,
+            0,
+            false,
+            Some(&old_writer)
+        )));
+    }
+
+    /// #2199 Codex P2 4302041461: a runtime return admits only the row this session's Login
+    /// left waiting, at its epoch, so the stored familiar returns once and is never doubled
+    /// or adopted from another lifecycle.
+    #[test]
+    fn stored_return_admits_only_this_lifecycles_waiting_row() {
+        let (old_writer, current) = writers();
+        let row = |lifecycle: Option<FamiliarLifecycleV2>, epoch: u64| DurableFamiliarState {
+            lifecycle,
+            lifecycle_epoch: epoch,
+            ..DurableFamiliarState::default()
+        };
+        // Login left it waiting: clean, stored time, this writer, the previous session's marker.
+        let waiting = row(
+            Some(lifecycle(&current, 90_000, false, Some(&old_writer))),
+            3,
+        );
+        assert!(familiar_return_admissible(&waiting, None, &current, 3));
+        // A reconnect of the same lifecycle at another connection generation still returns it.
+        let reconnect = FamiliarLifecycleWriter {
+            connection_generation: 2,
+            ..current.clone()
+        };
+        assert!(familiar_return_admissible(&waiting, None, &reconnect, 3));
+        // A different epoch: the return already committed (or another row replaced it).
+        assert!(!familiar_return_admissible(&waiting, None, &current, 2));
+        assert!(!familiar_return_admissible(&waiting, None, &current, 4));
+        // The return committed: the row is open with its scheduled lifetime.
+        let open = row(Some(lifecycle(&current, 90_000, true, None)), 4);
+        assert!(!familiar_return_admissible(&open, None, &current, 4));
+        // No stored time, a row Login has not reconciled, or this session's own clean end.
+        let empty = row(Some(lifecycle(&current, 0, false, None)), 3);
+        assert!(!familiar_return_admissible(&empty, None, &current, 3));
+        let foreign = row(
+            Some(lifecycle(&old_writer, 90_000, false, Some(&old_writer))),
+            3,
+        );
+        assert!(!familiar_return_admissible(&foreign, None, &current, 3));
+        let ended = row(Some(lifecycle(&current, 90_000, false, Some(&current))), 3);
+        assert!(!familiar_return_admissible(&ended, None, &current, 3));
+        // A legacy row that Login kept unconverted returns through the same D1126 conversion
+        // as its next write; without its checkpoint it is unknown and refused.
+        let legacy = DurableFamiliarState {
+            saved_expiry_unix: 2_000,
+            lifecycle_epoch: 3,
+            ..DurableFamiliarState::default()
+        };
+        assert!(familiar_return_admissible(
+            &legacy,
+            Some(1_000_000),
+            &current,
+            3
+        ));
+        assert!(!familiar_return_admissible(&legacy, None, &current, 3));
+        assert!(!familiar_return_admissible(
+            &legacy,
+            Some(2_000_000),
+            &current,
+            3
+        ));
+    }
+
+    /// #2199 Codex P2 4302041461: only a Login stopped by the source spawn-room refusal leaves
+    /// a return waiting; a created familiar or a Login without that refusal does not.
+    #[test]
+    fn only_a_no_room_login_leaves_a_return_waiting() {
+        let refusal = FamiliarAction::CreationRefusal {
+            message: "no room".into(),
+            poff: true,
+        };
+        assert!(login_left_familiar_waiting(
+            None,
+            &[FamiliarAction::RegisterAdvance, refusal]
+        ));
+        assert!(!login_left_familiar_waiting(
+            None,
+            &[FamiliarAction::RegisterAdvance]
+        ));
+        assert!(!login_left_familiar_waiting(None, &[]));
     }
 }

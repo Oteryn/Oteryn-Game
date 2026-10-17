@@ -1,7 +1,7 @@
 # PLAYER-TRADE-0 Direct player trade
 
 - Decision: `PLAYER-TRADE0-DIRECT-TRADE-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol,
   persistence and security) and protected integration. It extends ITEM-MOVE-WIRE-0 (PR #1344) and
   ITEM-MOVE-WIRE-1 (PR #1354) and integrates after them.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)

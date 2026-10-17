@@ -4,7 +4,7 @@
 task_id: NODE-BOOT-DEADLINE-1
 title: "NODE-BOOT-DEADLINE-1: configurable boot pass deadline and bounded retries for the boot durability steps"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/beautiful-franklin-1tp8kj
@@ -15,7 +15,7 @@ final_head_sha: null
 owner: claude-code-session-01XYC239givrMonrYoBwwECV
 control_plane: claude-code-session-01XYC239givrMonrYoBwwECV
 created_at: 2026-10-12
-updated_at: 2026-10-12
+updated_at: 2026-10-17
 owned_paths:
   - apps/game-server/src/durability/db.rs
   - apps/game-server/src/node/serve.rs
@@ -90,4 +90,12 @@ Recorded in the PR checks of the frozen head.
 ## PR and closeout
 
 - changed-file review: within owned paths
-- merge commit/result: pending
+- merge commit/result: squash merge of #2016 (merged 2026-10-12)
+
+## Archive closeout
+
+- canonical PR #2016 merged on 2026-10-12 (`git log --grep "(#2016)"`); the record stayed in
+  `tasks/active/` and failed the protected-main live-state check, so #2163 archives it
+  as a ported `main` governance fix
+- merge commit/result: squash merge of #2016
+- ownership release: released with the merge of #2016
