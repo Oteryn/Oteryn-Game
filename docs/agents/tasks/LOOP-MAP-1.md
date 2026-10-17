@@ -101,6 +101,8 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/tests/cyclopedia_postgres.rs`
 - `docs/agents/evidence/LOOP-MAP-1-*.md`
 - `docs/agents/tasks/LOOP-MAP-1.md` (this record: status and notes only)
+- `apps/game-server/src/content/npc_catalogue.rs` (scan-budget +1 only; added per CP D1301 (merge-queue scan budget))
+- `apps/game-server/tests/content_world_project_repository.rs` (scan-budget +1 only; added per CP D1301 (merge-queue scan budget))
 
 D1285 registers `pub mod cyclopedia;` in `domain/mod.rs` on this head. This pure public API and its test belong to ordinary branch compilation; that registration does not wait for a slot commit. Other shared module registration remains subject to its own allocation.
 
