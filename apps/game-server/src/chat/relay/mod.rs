@@ -466,8 +466,9 @@ fn open(
 /// line's own freshness deadline (`sent_at + 30 s`), the last instant [`open`] still accepts it,
 /// and expiry does not depend on arrival order.
 ///
-/// The window is process memory and starts empty, so it is created once per listener, at the
-/// moment `LISTEN` is established, with [`ReplayWindow::resume`]. Its guarantees survive a restart
+/// The window is process memory and starts empty, so it is created once per process, at the
+/// moment `LISTEN` is first established, with [`ReplayWindow::resume`]; every later `LISTEN`
+/// re-established after a lost connection moves its floor with [`ReplayWindow::reconnected`]. Its guarantees survive a restart
 /// through one durable value per World, the relay lease, and through nothing else:
 ///
 /// - the window acts (opens or admits) only on a clock reading at most the lease the listener has
@@ -489,6 +490,10 @@ pub(crate) struct ReplayWindow {
     /// database clock stepped back cannot make an evicted `message_id` admissible again or revive
     /// a retired key.
     high_water: u64,
+    /// The newest database reading itself, never raised to a floor: the base of a reconnect
+    /// floor, which so excludes every instant the window's clock reached however the database
+    /// clock moved, yet does not compound over quick reconnects.
+    read_high: u64,
     /// The highest lease this listener has stored durably; `None` until the first one is.
     leased_until: Option<u64>,
     expiry_of: HashMap<[u8; ID_BYTES], u64>,
@@ -522,18 +527,46 @@ impl ReplayWindow {
         Self {
             floor,
             high_water: floor,
+            read_high: db_now_micros,
             leased_until: None,
             expiry_of: HashMap::new(),
             by_expiry: BTreeSet::new(),
         }
     }
 
+    /// The same window after its listener re-established `LISTEN` at database time
+    /// `db_now_micros`: lines sent while it was down are lost (CHAT-0 §5), so the floor and the
+    /// clock move past that reading as at a start. The floor follows the newest reading itself,
+    /// never the window's raised clock, so quick reconnects do not compound it; it never moves
+    /// back, and a database clock stepped back during the outage cannot bring it below an instant
+    /// another node may have stamped while this listener was down. The
+    /// de-duplication set and the stored lease are kept: a line admitted before the drop is still
+    /// refused, and the lease still bounds what the window acts on.
+    pub(crate) fn reconnected(&mut self, db_now_micros: u64) {
+        self.observe(db_now_micros);
+        self.floor = startup_floor(self.read_high).max(self.floor);
+        self.high_water = self.floor.max(self.high_water);
+    }
+
+    /// The window's clock at database reading `now_micros` (never behind a reading seen) when a
+    /// line stamped with it would be admitted: the reading has reached the floor and a stored
+    /// lease covers the clock; otherwise `None`. The listener stamps sends with this clock and
+    /// reports the relay ready only while it is `Some`, so a send is never accepted while its own
+    /// node would drop it, also after the database clock steps back.
+    pub(crate) fn admitting_clock(&mut self, now_micros: u64) -> Option<u64> {
+        let clock = self.observe(now_micros);
+        let admits =
+            now_micros >= self.floor && self.leased_until.is_some_and(|until| until >= clock);
+        admits.then_some(clock)
+    }
+
     /// A window with `floor` and a lease that never runs out, for the rules tests.
     #[cfg(test)]
-    fn starting_at(floor_micros: u64) -> Self {
+    pub(crate) fn starting_at(floor_micros: u64) -> Self {
         Self {
             floor: floor_micros,
             high_water: floor_micros,
+            read_high: floor_micros,
             leased_until: Some(u64::MAX),
             expiry_of: HashMap::new(),
             by_expiry: BTreeSet::new(),
@@ -591,6 +624,7 @@ impl ReplayWindow {
     }
 
     fn observe(&mut self, now_micros: u64) -> u64 {
+        self.read_high = now_micros.max(self.read_high);
         self.high_water = now_micros.max(self.high_water);
         self.high_water
     }

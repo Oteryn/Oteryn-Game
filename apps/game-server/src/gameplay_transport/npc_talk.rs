@@ -22,6 +22,9 @@ const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NpcTalkEntry {
     pub(crate) name: String,
+    bank: bool,
+    admitted_dialogue: bool,
+    dialogue_keywords: Vec<crate::content::ProjectV2DialogueKeyword>,
     greetings: Vec<String>,
     greeting_reply: String,
     farewell_reply: String,
@@ -32,6 +35,10 @@ pub(crate) struct NpcTalkEntry {
 }
 
 impl NpcTalkEntry {
+    pub(crate) fn bank(&self) -> bool {
+        self.bank
+    }
+
     /// The admitted offers the trade window projects.
     pub(crate) fn offers(&self) -> &[ProjectV2ServiceOffer] {
         &self.offers
@@ -46,12 +53,21 @@ impl NpcTalkEntry {
     pub(crate) fn new(name: &str, topic: Option<&str>) -> Self {
         Self {
             name: name.to_owned(),
+            bank: false,
+            admitted_dialogue: false,
+            dialogue_keywords: Vec::new(),
             greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
             greeting_reply: format!("Greetings, I am {name}."),
             farewell_reply: "Farewell.".to_owned(),
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_bank(mut self) -> Self {
+        self.bank = true;
+        self
     }
 
     #[cfg(test)]
@@ -79,23 +95,70 @@ impl NpcTalkBook {
             ..Self::default()
         };
         for (reference, npc) in model.npcs() {
-            let Some(replies) = &npc.generated_replies else {
-                continue;
-            };
-            let mut lines: Vec<&str> = Vec::new();
-            for (_, line) in &replies.services {
-                if !lines.contains(&line.text.as_str()) {
-                    lines.push(&line.text);
-                }
-            }
+            let bank = npc
+                .services
+                .iter()
+                .filter_map(|reference| model.services().get(reference))
+                .any(|service| service.bank);
+            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) =
+                if let Some(replies) = &npc.generated_replies {
+                    let mut lines: Vec<&str> = Vec::new();
+                    for (_, line) in &replies.services {
+                        if !lines.contains(&line.text.as_str()) {
+                            lines.push(&line.text);
+                        }
+                    }
+                    (
+                        replies.greeting.text.clone(),
+                        replies.farewell.text.clone(),
+                        (!lines.is_empty()).then(|| lines.join(" ")),
+                        Vec::new(),
+                    )
+                } else if bank {
+                    // Only the Bank Dialogue's explicitly supported, authored message shape is
+                    // consumed. Missing/multipart/stateful dialogue stays held, never generated.
+                    let Some(dialogue) = &npc.bank_dialogue else {
+                        continue;
+                    };
+                    if dialogue.greet.len() != 1
+                        || dialogue.farewell.len() != 1
+                        || dialogue.keywords.iter().any(|keyword| {
+                            keyword.reply.len() != 1
+                                || !keyword.children.is_empty()
+                                || keyword.fallback
+                                || keyword.only_unfocus
+                                || keyword.reset
+                                || keyword.ungreet
+                                || keyword.move_up.is_some()
+                                || !keyword.links.is_empty()
+                        })
+                    {
+                        continue;
+                    }
+                    (
+                        dialogue.greet[0].clone(),
+                        dialogue.farewell[0].clone(),
+                        None,
+                        dialogue.keywords.clone(),
+                    )
+                } else {
+                    continue;
+                };
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
+                    admitted_dialogue: npc.dialogue.is_some(),
+                    bank: npc
+                        .services
+                        .iter()
+                        .filter_map(|reference| model.services().get(reference))
+                        .any(|service| service.bank),
                     greetings: GREETINGS.iter().map(|word| (*word).to_owned()).collect(),
-                    greeting_reply: replies.greeting.text.clone(),
-                    farewell_reply: replies.farewell.text.clone(),
-                    topic_reply: (!lines.is_empty()).then(|| lines.join(" ")),
+                    greeting_reply,
+                    farewell_reply,
+                    topic_reply,
+                    dialogue_keywords,
                     offers: npc
                         .services
                         .iter()
@@ -186,7 +249,18 @@ pub(crate) fn talk<K: Copy + PartialEq>(
                 text: npc.entry.farewell_reply.clone(),
             });
         }
-        if says_any(&said, &TOPICS) {
+        if let Some(keyword) = npc
+            .entry
+            .dialogue_keywords
+            .iter()
+            .find(|keyword| contains_words(&said, &keyword.triggers))
+        {
+            return Some(NpcReply {
+                id: npc.id,
+                text: keyword.reply[0].clone(),
+            });
+        }
+        if says_any(&said, &TOPICS) && !npc.entry.admitted_dialogue {
             let line =
                 npc.entry.topic_reply.clone().unwrap_or_else(|| {
                     format!("{} has nothing to offer right now.", npc.entry.name)
@@ -314,5 +388,58 @@ mod tests {
         let mut engaged = None;
         let reply = talk(at(100), &say("hi"), &npcs, &mut engaged).expect("greeted");
         assert_eq!((reply.id, engaged), (2, Some(2)));
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod bank_dialogue_tests {
+    use super::*;
+    #[test]
+    fn admitted_bank_dialogue_never_generates_an_unmatched_topic_answer() {
+        let mut entry = NpcTalkEntry::new("Paulie", None);
+        entry.bank = true;
+        entry.admitted_dialogue = true;
+        entry.greeting_reply = "Welcome to the bank.".into();
+        entry.farewell_reply = "Farewell from the admitted Dialogue.".into();
+        let position = ChatPosition {
+            x: 1,
+            y: 1,
+            floor: 0,
+        };
+        let npcs = [TalkNpc {
+            id: 1_u8,
+            position,
+            entry: &entry,
+        }];
+        let mut engaged = None;
+        let greet = ChatText::parse("hi").expect("bounded text");
+        assert_eq!(
+            talk(position, &greet, &npcs, &mut engaged).map(|r| r.text),
+            Some("Welcome to the bank.".into())
+        );
+        for topic in ["job", "offer", "trade", "travel"] {
+            assert!(
+                talk(
+                    position,
+                    &ChatText::parse(topic).expect("text"),
+                    &npcs,
+                    &mut engaged
+                )
+                .is_none()
+            );
+            assert_eq!(engaged, Some(1));
+        }
+        let farewell = talk(
+            position,
+            &ChatText::parse("bye").expect("text"),
+            &npcs,
+            &mut engaged,
+        );
+        assert_eq!(
+            farewell.map(|r| r.text),
+            Some("Farewell from the admitted Dialogue.".into())
+        );
+        assert_eq!(engaged, None);
     }
 }

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_DATA_PIN/v1",
-  "project_revision": "item-sem-use-2-consumables-20261013-r1",
-  "project_sha256": "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3",
-  "catalogue_sha256": "fca5d81303d4689ef543db88ce9866700db676b669c3827757d7ab532dc5e079"
+  "project_revision": "npc-bank-1-20261015-r1",
+  "project_sha256": "3c82124d7271e2e1ec42dce8be29900322e19771515363f622155d98df044f17",
+  "catalogue_sha256": "adb6301ba4c08933ec6f5fd5d931996d937ce3f1ab1b372b038af57f8618bb59"
 }

@@ -1,7 +1,7 @@
 # DEATH-COMPLETE-0 player death module decision
 
 - Decision: `DEATH-COMPLETE0-PLAYER-DEATH-MODULE-V1`
-- Status: **CANDIDATE**. Acceptance requires exact-head validation, independent review and protected
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance requires exact-head validation, independent review and protected
   integration. The owner direction below is recorded; its decision number is assigned by the control plane.
 - Role: client-track architect, delegated by the control plane (#1622)
 - Lifts: the D1022 waiver of DEATH-3 (`OTERYN_GAME_REFERENCE_FIRST_PLAYER_DEATH_DECISION_2026-09-28.md`,
