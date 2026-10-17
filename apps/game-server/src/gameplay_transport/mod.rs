@@ -1617,14 +1617,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return DeathCommit::Unavailable;
         };
+        // CP D1425: the active generation's training formula prices the death's build loss.
+        let formula = self
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.training_formula())
+            .map(|formula| formula as &dyn crate::durability::character_build::BuildFormula);
         match self
             .root
-            .settle_player_death(
+            .settle_runtime_player_death(
                 &self.revision_sequencer,
                 self.character,
                 self.holder,
                 fence,
                 request,
+                formula,
             )
             .await
         {
