@@ -6,6 +6,10 @@
 //! they do not turn a receipt UUID or an administrator's fixture into acquisition authority.
 //! Guild release is a separate caller-TX participant below; activation awaits the explicit
 //! recipient deletion-pin lock-order amendment and the D caller composition.
+//! Activation also awaits the `house_spell_acl::house_access_for_character` consumer amendment:
+//! it still decodes `owner_character_id` as non-NULL, so a Guildhall or released anchor fails
+//! that lookup closed (decode error, no grant) until it reads the nullable owner and routes
+//! GUILD ownership.
 
 /// Install atomically at the CP slot, before admitting any acquisition writer. Existing legacy
 /// owners need explicit reconciliation: 0038 has no first-rent or paid-until facts to import.
@@ -169,6 +173,24 @@ CREATE FUNCTION game_house_anchor_retained() RETURNS trigger LANGUAGE plpgsql AS
 BEGIN RAISE EXCEPTION 'House ownership anchor cannot be deleted' USING ERRCODE='23514'; END $$;
 CREATE TRIGGER game_house_anchor_retained BEFORE DELETE ON game_house_ownership
  FOR EACH ROW EXECUTE FUNCTION game_house_anchor_retained();
+-- Bounded writer: every per-list ACL insert/update/delete advances only the property-global
+-- acl_revision, in the same transaction. Runtime keeps no property grant. ACL writers lock
+-- anchor, ACL, then property; a crossing release aborts by deadlock detection, never stale.
+CREATE FUNCTION game_house_acl_advance_property() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE w UUID; h TEXT;
+BEGIN
+ IF TG_OP='DELETE' THEN w:=OLD.world_id; h:=OLD.house_key; ELSE w:=NEW.world_id; h:=NEW.house_key; END IF;
+ UPDATE game_house_properties SET acl_revision=acl_revision+1 WHERE world_id=w AND house_key=h;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION 'House ACL requires its canonical property' USING ERRCODE='23514';
+ END IF;
+ IF TG_OP='UPDATE' AND (NEW.world_id,NEW.house_key) IS DISTINCT FROM (OLD.world_id,OLD.house_key) THEN
+  RAISE EXCEPTION 'House ACL identity is immutable' USING ERRCODE='23514';
+ END IF;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER game_house_acl_property_revision AFTER INSERT OR UPDATE OR DELETE ON game_house_acl
+ FOR EACH ROW EXECUTE FUNCTION game_house_acl_advance_property();
 
 CREATE FUNCTION game_house_property_consistent(p_world UUID,p_house TEXT) RETURNS VOID LANGUAGE plpgsql AS $$
 DECLARE p game_house_properties; a game_house_ownership;
@@ -213,7 +235,7 @@ REVOKE ALL ON game_house_properties,game_house_tiles,game_account_housing_slots 
 REVOKE INSERT,UPDATE ON game_house_ownership FROM oteryn_game_control;
 DO $$ DECLARE n TEXT; BEGIN
  FOREACH n IN ARRAY ARRAY['game_house_property_guard','game_house_owner_in_world',
-  'game_house_anchor_retained','game_house_property_commit_guard'] LOOP
+  'game_house_anchor_retained','game_house_property_commit_guard','game_house_acl_advance_property'] LOOP
   EXECUTE format('ALTER FUNCTION %I() SET search_path=%I,pg_temp',n,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %I() FROM PUBLIC',n);
  END LOOP;
@@ -628,7 +650,7 @@ CREATE FUNCTION game_house_guild_advance(rid UUID,op UUID,st NUMERIC,g UUID,w UU
 RETURNS TABLE(moved BIGINT,next_step NUMERIC,released BOOLEAN) LANGUAGE plpgsql SECURITY DEFINER AS $$
 #variable_conflict use_variable
 DECLARE r game_house_guild_recipient_reservations;p game_house_properties;o game_house_guild_dispositions;
- c game_house_guild_disposition_items;it UUID;subject UUID;ord NUMERIC;n BIGINT:=0;abi INTEGER;bed_revision NUMERIC;
+ c game_house_guild_disposition_items;it UUID;subject UUID;ord NUMERIC;n BIGINT:=0;abi INTEGER;bed_revision NUMERIC;freed BIGINT;
 BEGIN
  IF to_regprocedure('game_house_disposition_guild_fence_abi()') IS NULL THEN
   RAISE EXCEPTION 'common Guild fence ABI missing' USING ERRCODE='OHG05';END IF;
@@ -694,6 +716,10 @@ BEGIN
    RAISE EXCEPTION 'native BED revision missing' USING ERRCODE='OHG03';END IF;
   UPDATE game_house_bed_sleepers SET freed_at=floor(extract(epoch FROM clock_timestamp())*1000)::BIGINT,freed_cause='disposition'
    WHERE world_id=w AND house_key=r.house_key AND freed_at IS NULL;
+  -- The native BED per-row sleeper trigger advances the locked occupancy revision; prove it.
+  GET DIAGNOSTICS freed=ROW_COUNT;
+  IF freed>0 AND NOT EXISTS(SELECT 1 FROM game_house_bed_revisions WHERE world_id=w AND house_key=r.house_key AND revision>bed_revision) THEN
+   RAISE EXCEPTION 'native BED occupancy revision hook absent' USING ERRCODE='OHG05';END IF;
   UPDATE game_house_properties SET state='DISPOSITION',content_fence_operation=op,revision=revision+1 WHERE world_id=w AND house_key=r.house_key;
   UPDATE game_house_guild_dispositions SET state=2,frozen_count=(SELECT count(*) FROM game_house_guild_disposition_items WHERE operation_id=op),
    frozen_digest=(SELECT sha256(COALESCE(string_agg(uuid_send(item_instance_id),''::BYTEA ORDER BY item_instance_id),''::BYTEA)) FROM game_house_guild_disposition_items WHERE operation_id=op)
