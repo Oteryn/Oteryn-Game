@@ -42,7 +42,9 @@ bounded Root commit owner: exact occurrence replay, native admission/cohort/node
 locks, complete drain/House recheck, native per-Channel issuance core/CAS, immutable
 N+1 history, active-pointer CAS and ACTIVATED in the same transaction. Success
 returns only after commit; unknown commit retains the exact occurrence identity.
-SQL NULL/malformed input refuses before locks; direct SQL independently takes the
+NewEpoch and Historical are distinct immutable dispositions; historical replay
+never grants current controller authority or readiness. SQL NULL/malformed input
+refuses before locks; direct SQL independently takes the
 native durable fences. Retirement binding remains separate from target artifacts.
 Calendar is PG-clock Berlin10 with retained revision and PARITY_PENDING.
 

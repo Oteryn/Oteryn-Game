@@ -1399,6 +1399,14 @@ impl WorldResetCensus {
     }
 }
 
+/// Immutable transaction result, never current controller/activation authority.
+/// In particular Historical must not republish an old epoch or reopen readiness.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum WorldResetActivationDisposition {
+    NewEpoch(WorldResetEpochRecord),
+    Historical(WorldResetEpochRecord),
+}
+
 /// Caller-TX owner. Success is provisional until the caller commits this same TX.
 /// Any error requires rollback, including errors after the first SQL mutation.
 /// The source and witness must be genuine C/I implementations; this module creates neither.
@@ -1410,7 +1418,7 @@ pub(crate) async fn activate_world_reset_in_transaction(
     identity: &WorldResetActivationIdentity,
     houses: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
     drain: &(dyn super::world_reset_port::WorldDrainWitness + Sync),
-) -> Result<WorldResetEpochRecord, WorldResetError> {
+) -> Result<WorldResetActivationDisposition, WorldResetError> {
     let next = identity
         .epoch
         .checked_add(1)
@@ -1436,6 +1444,7 @@ pub(crate) async fn activate_world_reset_in_transaction(
     if replay == Some(true) {
         return read_world_reset_history(tx, identity.world, next)
             .await?
+            .map(WorldResetActivationDisposition::Historical)
             .ok_or(WorldResetError::InvalidStoredState);
     }
     let census = census_retiring_world_reset(tx, node, identity.world)
@@ -1462,6 +1471,7 @@ pub(crate) async fn activate_world_reset_in_transaction(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     read_world_reset_history(tx, identity.world, next)
         .await?
+        .map(WorldResetActivationDisposition::NewEpoch)
         .ok_or(WorldResetError::InvalidStoredState)
 }
 
@@ -1476,7 +1486,7 @@ impl DurabilityRoot {
         identity: &WorldResetActivationIdentity,
         houses: &(dyn super::world_reset_port::WorldResetHouseSource + Sync),
         drain: &(dyn super::world_reset_port::WorldDrainWitness + Sync),
-    ) -> Result<WorldResetEpochRecord, WorldResetError> {
+    ) -> Result<WorldResetActivationDisposition, WorldResetError> {
         let mut context = (node, identity, houses, drain);
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, |holder, deadline, context| {

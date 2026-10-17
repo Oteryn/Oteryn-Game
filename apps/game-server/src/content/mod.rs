@@ -36,7 +36,7 @@ pub(crate) mod charm_source_effect;
 pub(crate) mod charm_source_json;
 mod compiler;
 mod spatial_position;
-pub(crate) use spatial_position::{checked_movement_position, encode_spatial_position};
+pub(crate) use spatial_position::encode_spatial_position;
 pub(crate) mod creature_reward;
 mod cw2_b1_import;
 mod cw2_b4_import;
