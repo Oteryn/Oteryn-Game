@@ -335,3 +335,42 @@ one coherent checkpoint push after root review and passing owned fmt/diff checks
 it does not authorize ready/merge, a review trigger or CI restarts. Full applicable
 checks still precede a frozen review head. No full task completion, production
 clock provenance, process/server restart or canonical integration PASS is claimed.
+
+## 2026-10-17 — lost-source rebuild: NOT_FULLY_QUALIFIED
+
+CP [#2131 comment6230877600](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6230877600)
+records that the later private source has no recoverable copy. This increment is
+rebuilt from published head `41fffdfe9d1562f30b165f5fc1e93f54d15cbe05`; it is not
+that lost generation. The historical PASS statements above do not qualify this
+rebuilt source. No private migration0104 or earlier six-PG proof is recovered,
+installed or reused, and no new migration number is allocated.
+
+The bounded source increment adds a typed `CommittedOfflineMarker` acknowledgement
+for both fresh and replayed native receipts. The transaction-local outcome remains
+private; the acknowledgement is constructed only after successful semantic COMMIT.
+Its read-only receipt is historical completion, never current gameplay authority.
+The native reader additionally refuses zero/mismatched stored marker leases and
+non-successor committed revisions. Key replay still precedes fresh intent, clock,
+formula and mutation checks, with independent recovery validation retained.
+
+The native clock participant now checks its independently supplied Character,
+session, World and lease binding through one reusable validation boundary. An
+owned test covers eight independent identity/time/predecessor mutations and the
+absence of a predecessor. It does not implement or qualify a clock source.
+Exact DB-stamped lease/session microseconds and the actual immediate predecessor
+relation remain BLOCKED: no epoch-seconds multiplication, `lease-1`, maximum-lower
+lease or receipt-derived acquisition is substituted.
+
+D1222's lost real statue-selection producer cannot be reconstructed from a known
+native admission/content owner in this checkout. Its source/contract remains held;
+this checkpoint adds no guessed statue IDs, fabricated admission or shared logout
+caller. Native marker/schema/chain registration, positive-elapsed settlement,
+statue activation and exercise charges/tries/last-charge remain pending. No shared
+registration, migration, content or caller path is changed.
+
+Qualification: canonical native typecheck, Cargo tests, PG and runtime/full-feature
+acceptance are **NOT_RUN** for this increment. Only bounded owned-source formatting
+and diff checks are applicable to this source-publication checkpoint. The existing
+PR remains DRAFT / NOT_FULLY_QUALIFIED; no queue, ready, merge or full completion is
+claimed. Fresh exact-head independent review and required runtime qualification
+remain prerequisites for any later acceptance.

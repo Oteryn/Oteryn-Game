@@ -713,3 +713,63 @@ fn offline_percent_owner_is_not_invented_from_changed_raw_progress() {
         Err(PlanError::InvalidGrant)
     );
 }
+
+// Native clock participant checks only independently supplied facts. These cases
+// do not qualify a clock-source implementation or infer a predecessor relation.
+#[test]
+fn offline_native_clock_binding_refuses_each_independent_mutation() {
+    let f = fence();
+    let read = || OfflineLeaseClockRead {
+        character: f.character_id,
+        session: f.game_session_id,
+        world: f.runtime_scope.world_id(),
+        lease_generation: f.character_lease_generation,
+        times: lease(),
+    };
+    assert!(read().validate(&f, ACQUIRED).is_ok());
+    let mut cases = Vec::new();
+    let mut changed = read();
+    changed.character = CharacterId::from_bytes(id(60)).expect("other character");
+    cases.push(changed);
+    let mut changed = read();
+    changed.session = GameSessionId::decode(&id(61)).expect("other session");
+    cases.push(changed);
+    let mut changed = read();
+    changed.world = WorldId::decode(&id(62)).expect("other world");
+    cases.push(changed);
+    let mut changed = read();
+    changed.lease_generation += 1;
+    cases.push(changed);
+    let mut changed = read();
+    changed.times.acquired_at_us += 1;
+    cases.push(changed);
+    let mut changed = read();
+    changed.times.session_created_at_us += 1;
+    cases.push(changed);
+    let mut changed = read();
+    changed
+        .times
+        .predecessor
+        .as_mut()
+        .expect("predecessor")
+        .generation = 9;
+    cases.push(changed);
+    let mut changed = read();
+    changed
+        .times
+        .predecessor
+        .as_mut()
+        .expect("predecessor")
+        .session = f.game_session_id;
+    cases.push(changed);
+    for changed in cases {
+        assert!(matches!(
+            changed.validate(&f, ACQUIRED),
+            Err(OfflineMarkerError::InvalidTimeOrClockBinding)
+        ));
+    }
+    // Missing predecessor means no offline interval; it is not repaired with lease-1.
+    let mut absent = read();
+    absent.times.predecessor = None;
+    assert!(absent.validate(&f, ACQUIRED).is_ok());
+}

@@ -1156,7 +1156,7 @@ pub(crate) async fn load_offline_marker(
     if binding.len() != 33 || binding[0] != 2 || as_of_us < 0 || as_of_us / 1000 != committed_ms {
         return Err(DurabilityError::InvalidStoredState);
     }
-    Ok(Some(NativeOfflineMarkerReceipt {
+    let receipt = NativeOfflineMarkerReceipt {
         key,
         occurrence: BuildOccurrence::from_bytes(uuid_text(row.try_get("occurrence_text")?)?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -1185,7 +1185,17 @@ pub(crate) async fn load_offline_marker(
         after_build: DurableBuildState::stored(&row, "vocation_after", "_after")?,
         before_columns: decode_offline_columns(&row, "_before")?,
         after_columns: decode_offline_columns(&row, "_after")?,
-    }))
+    };
+    // A replay is historical completion, but malformed stored chain evidence is
+    // still refused. Neither this receipt nor its expected binding grants current authority.
+    if key.lease == 0
+        || numeric_u64(&row, "marker_lease_text")? != key.lease
+        || receipt.original_character_revision.get().checked_add(1)
+            != Some(receipt.committed_character_revision.get())
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(Some(receipt))
 }
 
 pub(crate) async fn lock_offline_build(

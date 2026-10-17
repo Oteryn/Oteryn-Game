@@ -644,6 +644,26 @@ mod native_marker_writer {
         pub(crate) times: ProposedLeaseTimes,
     }
 
+    impl OfflineLeaseClockRead {
+        /// Checks the independently read row binding; this never manufactures the
+        /// missing DB clock or the immediate-predecessor relation.
+        pub(crate) fn validate(
+            &self,
+            fence: &CurrentCharacterGameplayFence,
+            as_of_us: i64,
+        ) -> Result<(), OfflineMarkerError> {
+            if self.character != fence.character_id
+                || self.session != fence.game_session_id
+                || self.world != fence.runtime_scope.world_id()
+                || self.lease_generation != fence.character_lease_generation
+            {
+                return Err(OfflineMarkerError::InvalidTimeOrClockBinding);
+            }
+            times(fence, self.times, as_of_us)
+                .map_err(|_| OfflineMarkerError::InvalidTimeOrClockBinding)
+        }
+    }
+
     /// Math participant of the existing build transaction, never a storage or
     /// clock owner. Its input is qualified by the native marker writer below.
     /// Both values are retained by that writer's one before/after receipt.
@@ -899,8 +919,30 @@ mod native_marker_writer {
             Self::Backend(value.into())
         }
     }
+    /// Historical completion only, never current gameplay authority. Constructed
+    /// only after the semantic transaction reports successful COMMIT, including replay.
+    #[derive(Debug)]
+    pub(crate) struct CommittedOfflineMarker {
+        receipt: NativeOfflineMarkerReceipt,
+    }
+    impl CommittedOfflineMarker {
+        pub(crate) fn receipt(&self) -> &NativeOfflineMarkerReceipt {
+            &self.receipt
+        }
+    }
+
     #[derive(Debug)]
     pub(crate) enum OfflineMarkerOutcome {
+        Committed(CommittedOfflineMarker),
+        AlreadyCommitted(CommittedOfflineMarker),
+        SameLeaseReconnect,
+        WaitForRespawn,
+        WaitForActorRemoval,
+        Skipped,
+    }
+
+    // Transaction-local receipts must not escape as completion acknowledgements.
+    enum MarkerTransactionOutcome {
         Committed(NativeOfflineMarkerReceipt),
         AlreadyCommitted(NativeOfflineMarkerReceipt),
         SameLeaseReconnect,
@@ -934,7 +976,8 @@ mod native_marker_writer {
                 OfflineMarkerError::Progression(CharacterProgressionError::AuthorityRejected)
             })?;
             let node = node.clone();
-            self.try_issue_semantic_pass()?
+            let committed = self
+                .try_issue_semantic_pass()?
                 .run(move |holder, deadline| {
                     Box::pin(async move {
                         let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -960,7 +1003,23 @@ mod native_marker_writer {
                         Ok(outcome)
                     })
                 })
-                .await?
+                .await??;
+            Ok(match committed {
+                MarkerTransactionOutcome::Committed(receipt) => {
+                    OfflineMarkerOutcome::Committed(CommittedOfflineMarker { receipt })
+                }
+                MarkerTransactionOutcome::AlreadyCommitted(receipt) => {
+                    OfflineMarkerOutcome::AlreadyCommitted(CommittedOfflineMarker { receipt })
+                }
+                MarkerTransactionOutcome::SameLeaseReconnect => {
+                    OfflineMarkerOutcome::SameLeaseReconnect
+                }
+                MarkerTransactionOutcome::WaitForRespawn => OfflineMarkerOutcome::WaitForRespawn,
+                MarkerTransactionOutcome::WaitForActorRemoval => {
+                    OfflineMarkerOutcome::WaitForActorRemoval
+                }
+                MarkerTransactionOutcome::Skipped => OfflineMarkerOutcome::Skipped,
+            })
         }
     }
 
@@ -976,7 +1035,7 @@ mod native_marker_writer {
         formula: &dyn BuildFormula,
         training_facts: Option<&dyn OfflineTrainingFactsSource>,
         initialization: Option<&ProgressionInitializationRequest<N>>,
-    ) -> Result<OfflineMarkerOutcome, OfflineMarkerError> {
+    ) -> Result<MarkerTransactionOutcome, OfflineMarkerError> {
         // The complete typed key decides equality. Hashing is a serialization aid only.
         sqlx::query(
             "SELECT pg_advisory_xact_lock(hashtextextended(\
@@ -990,7 +1049,7 @@ mod native_marker_writer {
         // OFFLINE-0 key replay precedes raw intent/clock/formula/state checks. The
         // historical receipt is returned only; it never becomes current authority.
         if let Some(receipt) = load_offline_marker(tx, marker_key).await? {
-            return Ok(OfflineMarkerOutcome::AlreadyCommitted(receipt));
+            return Ok(MarkerTransactionOutcome::AlreadyCommitted(receipt));
         }
         // Share the native build occurrence lock with ordinary build writers. A
         // reused occurrence under another marker key is a typed refusal, not a
@@ -1010,7 +1069,7 @@ mod native_marker_writer {
                 admission: AdmissionKind::SameLeaseReconnect
             }
         ) {
-            return Ok(OfflineMarkerOutcome::SameLeaseReconnect);
+            return Ok(MarkerTransactionOutcome::SameLeaseReconnect);
         }
         if matches!(
             command,
@@ -1019,7 +1078,7 @@ mod native_marker_writer {
                 ..
             }
         ) {
-            return Ok(OfflineMarkerOutcome::Skipped);
+            return Ok(MarkerTransactionOutcome::Skipped);
         }
         if matches!(
             command,
@@ -1028,7 +1087,7 @@ mod native_marker_writer {
                 ..
             }
         ) {
-            return Ok(OfflineMarkerOutcome::WaitForActorRemoval);
+            return Ok(MarkerTransactionOutcome::WaitForActorRemoval);
         }
         // This native owner performs assert_gameplay_fence, locks the Character root,
         // then loads the real pending-respawn/build/progression rows in this TX.
@@ -1037,13 +1096,13 @@ mod native_marker_writer {
             .map_err(OfflineMarkerError::Progression)?;
         if locked.respawn_pending {
             return Ok(match marker_key.kind {
-                MarkerKind::Settlement => OfflineMarkerOutcome::WaitForRespawn,
-                MarkerKind::Logout => OfflineMarkerOutcome::Skipped,
+                MarkerKind::Settlement => MarkerTransactionOutcome::WaitForRespawn,
+                MarkerKind::Logout => MarkerTransactionOutcome::Skipped,
             });
         }
         if !locked.progression_present {
             if marker_key.kind == MarkerKind::Logout {
-                return Ok(OfflineMarkerOutcome::Skipped);
+                return Ok(MarkerTransactionOutcome::Skipped);
             }
             let init = initialization.ok_or(OfflineMarkerError::Progression(
                 CharacterProgressionError::MissingProgressionState,
@@ -1053,13 +1112,6 @@ mod native_marker_writer {
                 .map_err(OfflineMarkerError::Progression)?;
         }
         let clocks_read = clocks.read_locked(tx, &fence).await?;
-        if clocks_read.character != fence.character_id
-            || clocks_read.session != fence.game_session_id
-            || clocks_read.world != fence.runtime_scope.world_id()
-            || clocks_read.lease_generation != fence.character_lease_generation
-        {
-            return Err(OfflineMarkerError::InvalidTimeOrClockBinding);
-        }
         // Read the database clock ONCE after the native root lock. No runtime/client
         // clock, receipt-derived lease anchor or unchecked ms -> us conversion exists.
         let as_of_us: i64 = sqlx::query_scalar(
@@ -1067,8 +1119,7 @@ mod native_marker_writer {
         )
         .fetch_one(&mut **tx)
         .await?;
-        times(&fence, clocks_read.times, as_of_us)
-            .map_err(|_| OfflineMarkerError::InvalidTimeOrClockBinding)?;
+        clocks_read.validate(&fence, as_of_us)?;
         let latest =
             crate::durability::character_build::latest_offline_build_receipt(tx, &fence).await?;
         let settled = load_offline_marker(
@@ -1173,7 +1224,7 @@ mod native_marker_writer {
         )
         .await
         .map_err(OfflineMarkerError::Progression)?;
-        Ok(OfflineMarkerOutcome::Committed(receipt))
+        Ok(MarkerTransactionOutcome::Committed(receipt))
     }
     #[cfg(test)]
     mod training_participant_tests {
@@ -1340,7 +1391,7 @@ pub(crate) use native_marker_writer::training_source_sealed as offline_training_
     reason = "Pending CP source integration retains typed training rate ports."
 )]
 pub(crate) use native_marker_writer::{
-    OfflineLeaseClockRead, OfflineLeaseClockSource, OfflineMarkerCommand, OfflineMarkerError,
-    OfflineMarkerOutcome, OfflineTrainingFactsSource, OfflineTrainingRate,
+    CommittedOfflineMarker, OfflineLeaseClockRead, OfflineLeaseClockSource, OfflineMarkerCommand,
+    OfflineMarkerError, OfflineMarkerOutcome, OfflineTrainingFactsSource, OfflineTrainingRate,
     OfflineTrainingRateFacts,
 };
