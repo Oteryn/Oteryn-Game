@@ -14,8 +14,8 @@ pub(crate) const BIDDERS_MAX: usize = 256;
 pub(crate) const AUCTION_LENGTH_MS: i64 = 7 * 24 * 60 * 60 * 1_000;
 /// HOUSEOWN0-RL-04: each admitted bid in the final fifteen minutes extends the close.
 pub(crate) const ANTI_SNIPING_MS: i64 = 15 * 60 * 1_000;
-/// HOUSEOWN0-RL-13/-15: bank balance plus held escrow may not exceed this ceiling.
-pub(crate) const GOLD_CEILING: u64 = 9_000_000_000_000_000;
+/// D1375: retain the native Bank balance ceiling for all held-value headroom.
+pub(crate) const GOLD_CEILING: u64 = crate::durability::bank_audit::BANK_BALANCE_MAX;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum AuctionRefusal {
@@ -24,6 +24,7 @@ pub(crate) enum AuctionRefusal {
     AuctionClosed,
     TooLow,
     BalanceLimit,
+    InsufficientBalance,
     TimeOverflow,
 }
 
@@ -115,6 +116,244 @@ pub(crate) fn bid_amounts(
         reserve_gold: escrow_gold.saturating_sub(previous),
         release_gold: previous.saturating_sub(escrow_gold),
     })
+}
+
+/// The native Bank entry kinds allocated by D1375. The first rent uses the same
+/// kind as ongoing rent; its funding source remains the already-debited bid escrow.
+pub(crate) const HOUSE_BID_RESERVE: u16 = 7;
+pub(crate) const HOUSE_BID_RELEASE: u16 = 8;
+pub(crate) const HOUSE_PRICE: u16 = 9;
+pub(crate) const HOUSE_RENT: u16 = 10;
+
+/// One House-owned Bank ledger participant. A price or first-rent entry records
+/// the burn from escrow with an unchanged Bank balance. The House operation's
+/// deferred proof must bind that entry to the actual captured escrow decrease.
+/// Ongoing rent instead consumes the Bank balance and has no escrow participant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct HouseLedgerAmount {
+    pub kind: u16,
+    pub amount: u64,
+    pub balance_before: u64,
+    pub balance_after: u64,
+}
+
+/// Value arithmetic for one account's already captured bid row. These values are
+/// not permission to write a balance or change a bid. The native writer supplies
+/// the current row under the canonical lock order and the shared headroom check.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BidValuePlan {
+    pub escrow_before: u64,
+    pub escrow_after: u64,
+    pub balance_before: u64,
+    pub balance_after: u64,
+    pub price_burn: u64,
+    pub rent_burn: u64,
+    /// Actual nonzero ledger entries, in their required Bank-chain order.
+    pub entries: Vec<HouseLedgerAmount>,
+}
+
+impl BidValuePlan {
+    /// Each changed escrow is one value line and each nonzero ledger entry is
+    /// another. Zero-price/zero-rent cases still retain the House operation, but
+    /// manufacture neither a zero-amount Bank entry nor a zero-value audit line.
+    pub(crate) fn value_lines(&self) -> usize {
+        self.entries.len() + usize::from(self.escrow_before != self.escrow_after)
+    }
+
+    fn checked(self) -> Result<Self, AuctionRefusal> {
+        for amount in [
+            self.escrow_before,
+            self.escrow_after,
+            self.balance_before,
+            self.balance_after,
+            self.price_burn,
+            self.rent_burn,
+        ] {
+            if amount > GOLD_CEILING {
+                return Err(AuctionRefusal::BalanceLimit);
+            }
+        }
+        // The domain cap makes these sums representable, but keep the calculation
+        // widened so conservation never depends on a future cap's machine width.
+        let before = u128::from(self.balance_before) + u128::from(self.escrow_before);
+        let after = u128::from(self.balance_after)
+            + u128::from(self.escrow_after)
+            + u128::from(self.price_burn)
+            + u128::from(self.rent_burn);
+        if before != after {
+            return Err(AuctionRefusal::InvalidBids);
+        }
+        Ok(self)
+    }
+}
+
+/// Reserve, raise, lower or re-submit the same maximum against the actual locked
+/// account balance. A lowering pays back only the difference. The unchanged-first-
+/// rent rule is checked by the caller against the retained auction snapshot.
+pub(crate) fn plan_bid_value(
+    balance: u64,
+    previous_maximum: Option<u64>,
+    requested_maximum: u64,
+    current_price: u64,
+    first_rent: u64,
+) -> Result<BidValuePlan, AuctionRefusal> {
+    let amounts = bid_amounts(
+        previous_maximum,
+        requested_maximum,
+        current_price,
+        first_rent,
+    )?;
+    let escrow_before = previous_maximum
+        .map(|maximum| checked_gold_sum(maximum, first_rent))
+        .transpose()?
+        .unwrap_or(0);
+    let balance_after = if amounts.reserve_gold > 0 {
+        balance
+            .checked_sub(amounts.reserve_gold)
+            .ok_or(AuctionRefusal::InsufficientBalance)?
+    } else {
+        checked_gold_sum(balance, amounts.release_gold)?
+    };
+    let entry = if amounts.reserve_gold > 0 {
+        Some(HouseLedgerAmount {
+            kind: HOUSE_BID_RESERVE,
+            amount: amounts.reserve_gold,
+            balance_before: balance,
+            balance_after,
+        })
+    } else if amounts.release_gold > 0 {
+        Some(HouseLedgerAmount {
+            kind: HOUSE_BID_RELEASE,
+            amount: amounts.release_gold,
+            balance_before: balance,
+            balance_after,
+        })
+    } else {
+        None
+    };
+    BidValuePlan {
+        escrow_before,
+        escrow_after: amounts.escrow_gold,
+        balance_before: balance,
+        balance_after,
+        price_burn: 0,
+        rent_burn: 0,
+        entries: entry.into_iter().collect(),
+    }
+    .checked()
+}
+
+/// Settlement of the winning, currently eligible bid. `price` must be the proxy
+/// quote recomputed over the complete valid set under lock. This arithmetic does
+/// not accept or manufacture a Premium/eligibility/current-catalogue assertion.
+pub(crate) fn plan_winner_value(
+    balance: u64,
+    maximum: u64,
+    first_rent: u64,
+    price: u64,
+) -> Result<BidValuePlan, AuctionRefusal> {
+    let escrow_before = checked_gold_sum(maximum, first_rent)?;
+    if price > maximum {
+        return Err(AuctionRefusal::InvalidBids);
+    }
+    let returned = maximum - price;
+    let balance_after = checked_gold_sum(balance, returned)?;
+    let mut entries = Vec::with_capacity(3);
+    if returned > 0 {
+        entries.push(HouseLedgerAmount {
+            kind: HOUSE_BID_RELEASE,
+            amount: returned,
+            balance_before: balance,
+            balance_after,
+        });
+    }
+    for (kind, amount) in [(HOUSE_PRICE, price), (HOUSE_RENT, first_rent)] {
+        if amount > 0 {
+            entries.push(HouseLedgerAmount {
+                kind,
+                amount,
+                balance_before: balance_after,
+                balance_after,
+            });
+        }
+    }
+    BidValuePlan {
+        escrow_before,
+        escrow_after: 0,
+        balance_before: balance,
+        balance_after,
+        price_burn: price,
+        rent_burn: first_rent,
+        entries,
+    }
+    .checked()
+}
+
+/// Release one non-winning or excluded HELD bid. The maximum and first rent both
+/// return to the captured bidder account. No currently active Character, Premium
+/// state, new recipient or owner decision may redirect or refuse this return.
+pub(crate) fn plan_release_value(
+    balance: u64,
+    maximum: u64,
+    first_rent: u64,
+) -> Result<BidValuePlan, AuctionRefusal> {
+    let escrow_before = checked_gold_sum(maximum, first_rent)?;
+    let balance_after = checked_gold_sum(balance, escrow_before)?;
+    let entries = if escrow_before == 0 {
+        Vec::new()
+    } else {
+        vec![HouseLedgerAmount {
+            kind: HOUSE_BID_RELEASE,
+            amount: escrow_before,
+            balance_before: balance,
+            balance_after,
+        }]
+    };
+    BidValuePlan {
+        escrow_before,
+        escrow_after: 0,
+        balance_before: balance,
+        balance_after,
+        price_burn: 0,
+        rent_burn: 0,
+        entries,
+    }
+    .checked()
+}
+
+/// The same House rent ledger kind for later periods. Its actual native consumer
+/// belongs to HOUSE-1b and must retain the canonical house/period operation. This
+/// calculation takes no bid escrow and burns the charged amount from the balance.
+pub(crate) fn plan_ongoing_rent_value(
+    balance: u64,
+    rent: u64,
+) -> Result<BidValuePlan, AuctionRefusal> {
+    if balance > GOLD_CEILING || rent > GOLD_CEILING {
+        return Err(AuctionRefusal::BalanceLimit);
+    }
+    let balance_after = balance
+        .checked_sub(rent)
+        .ok_or(AuctionRefusal::InsufficientBalance)?;
+    let entries = if rent == 0 {
+        Vec::new()
+    } else {
+        vec![HouseLedgerAmount {
+            kind: HOUSE_RENT,
+            amount: rent,
+            balance_before: balance,
+            balance_after,
+        }]
+    };
+    BidValuePlan {
+        escrow_before: 0,
+        escrow_after: 0,
+        balance_before: balance,
+        balance_after,
+        price_burn: 0,
+        rent_burn: rent,
+        entries,
+    }
+    .checked()
 }
 
 /// SOCIAL-MAP §1.9: arithmetic for the future shared bank headroom guard. This accepts current

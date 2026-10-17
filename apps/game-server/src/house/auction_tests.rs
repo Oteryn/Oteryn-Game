@@ -241,3 +241,174 @@ fn unrepresentable_deadlines_refuse_without_wrapping() {
     );
     assert_eq!(admitted_bid_deadline(i64::MIN, i64::MAX), Ok(i64::MAX));
 }
+
+#[test]
+fn d1375_uses_the_native_bank_cap_without_a_separate_house_ceiling() {
+    assert_eq!(
+        GOLD_CEILING,
+        crate::durability::bank_audit::BANK_BALANCE_MAX
+    );
+    assert_eq!(GOLD_CEILING, 999_999_999_999);
+    assert_eq!(
+        bid_amounts(None, 9_000_000_000_000_000, 0, 0),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+    assert_eq!(
+        bid_amounts(None, GOLD_CEILING - 1, 0, 1)
+            .unwrap()
+            .escrow_gold,
+        GOLD_CEILING
+    );
+    assert_eq!(
+        bid_amounts(None, GOLD_CEILING, 0, 1),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+}
+
+#[test]
+fn native_ledger_plan_reserves_only_the_delta_and_returns_only_a_lowering() {
+    let first = plan_bid_value(1_000, None, 300, 0, 25).unwrap();
+    assert_eq!((first.balance_after, first.escrow_after), (675, 325));
+    assert_eq!(first.entries[0].kind, HOUSE_BID_RESERVE);
+    assert_eq!(first.entries[0].amount, 325);
+    assert_eq!(first.value_lines(), 2);
+
+    let raise = plan_bid_value(675, Some(300), 400, 301, 25).unwrap();
+    assert_eq!((raise.balance_after, raise.escrow_after), (575, 425));
+    assert_eq!(raise.entries[0].amount, 100);
+    let lower = plan_bid_value(575, Some(400), 301, 301, 25).unwrap();
+    assert_eq!((lower.balance_after, lower.escrow_after), (674, 326));
+    assert_eq!(lower.entries[0].kind, HOUSE_BID_RELEASE);
+    assert_eq!(lower.entries[0].amount, 99);
+    assert_eq!(
+        plan_bid_value(575, Some(400), 300, 301, 25),
+        Err(AuctionRefusal::TooLow)
+    );
+
+    let same = plan_bid_value(674, Some(301), 301, 301, 25).unwrap();
+    assert_eq!((same.balance_after, same.escrow_after), (674, 326));
+    assert!(same.entries.is_empty());
+    assert_eq!(same.value_lines(), 0);
+}
+
+#[test]
+fn winning_price_and_first_rent_burn_the_captured_escrow_without_a_second_debit() {
+    let plan = plan_winner_value(675, 300, 25, 201).unwrap();
+    assert_eq!((plan.escrow_before, plan.escrow_after), (325, 0));
+    assert_eq!((plan.balance_before, plan.balance_after), (675, 774));
+    assert_eq!((plan.price_burn, plan.rent_burn), (201, 25));
+    assert_eq!(
+        plan.entries,
+        vec![
+            HouseLedgerAmount {
+                kind: HOUSE_BID_RELEASE,
+                amount: 99,
+                balance_before: 675,
+                balance_after: 774,
+            },
+            HouseLedgerAmount {
+                kind: HOUSE_PRICE,
+                amount: 201,
+                balance_before: 774,
+                balance_after: 774,
+            },
+            HouseLedgerAmount {
+                kind: HOUSE_RENT,
+                amount: 25,
+                balance_before: 774,
+                balance_after: 774,
+            },
+        ]
+    );
+    assert_eq!(plan.value_lines(), 4);
+    assert_eq!(
+        plan_winner_value(675, 300, 25, 301),
+        Err(AuctionRefusal::InvalidBids)
+    );
+}
+
+#[test]
+fn excluded_bid_returns_the_snapshotted_rent_and_full_maximum_at_the_native_cap() {
+    let plan = plan_release_value(GOLD_CEILING - 325, 300, 25).unwrap();
+    assert_eq!(plan.balance_after, GOLD_CEILING);
+    assert_eq!(plan.escrow_after, 0);
+    assert_eq!((plan.price_burn, plan.rent_burn), (0, 0));
+    assert_eq!(plan.entries[0].kind, HOUSE_BID_RELEASE);
+    assert_eq!(plan.entries[0].amount, 325);
+    assert_eq!(plan.value_lines(), 2);
+    assert_eq!(
+        plan_release_value(GOLD_CEILING - 324, 300, 25),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+    // These are arithmetic refusal checks. The native shared headroom producer is
+    // responsible for preventing the second, impossible HELD state from arising.
+}
+
+#[test]
+fn zero_value_house_outcomes_manufacture_no_bank_entry_or_value_line() {
+    for plan in [
+        plan_bid_value(0, None, 0, 0, 0).unwrap(),
+        plan_winner_value(0, 0, 0, 0).unwrap(),
+        plan_release_value(0, 0, 0).unwrap(),
+        plan_ongoing_rent_value(0, 0).unwrap(),
+    ] {
+        assert!(plan.entries.is_empty());
+        assert_eq!(plan.value_lines(), 0);
+        assert_eq!(plan.balance_after, 0);
+        assert_eq!(plan.escrow_after, 0);
+    }
+    let single = plan_winner_value(0, 300, 25, 0).unwrap();
+    assert_eq!(single.balance_after, 300);
+    assert_eq!(single.price_burn, 0);
+    assert_eq!(single.rent_burn, 25);
+    assert_eq!(single.entries.len(), 2);
+    assert!(!single.entries.iter().any(|entry| entry.kind == HOUSE_PRICE));
+}
+
+#[test]
+fn later_rent_uses_the_same_kind_with_an_actual_balance_debit() {
+    let initial = plan_winner_value(0, 0, 25, 0).unwrap();
+    let later = plan_ongoing_rent_value(25, 25).unwrap();
+    assert_eq!(initial.entries[0].kind, HOUSE_RENT);
+    assert_eq!(later.entries[0].kind, HOUSE_RENT);
+    assert_eq!(initial.escrow_before, 25);
+    assert_eq!(later.escrow_before, 0);
+    assert_eq!(initial.entries[0].balance_before, 0);
+    assert_eq!(later.entries[0].balance_before, 25);
+    assert_eq!(initial.balance_after, 0);
+    assert_eq!(later.balance_after, 0);
+    assert_eq!(initial.value_lines(), 2);
+    assert_eq!(later.value_lines(), 1);
+    assert_eq!(
+        plan_ongoing_rent_value(24, 25),
+        Err(AuctionRefusal::InsufficientBalance)
+    );
+}
+
+#[test]
+fn every_value_plan_refuses_unfunded_or_out_of_range_inputs() {
+    assert_eq!(
+        plan_bid_value(324, None, 300, 0, 25),
+        Err(AuctionRefusal::InsufficientBalance)
+    );
+    assert_eq!(
+        plan_bid_value(GOLD_CEILING + 1, None, 0, 0, 0),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+    assert_eq!(
+        plan_winner_value(0, GOLD_CEILING, 1, 0),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+    assert_eq!(
+        plan_release_value(u64::MAX, 1, 0),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+    assert_eq!(
+        plan_ongoing_rent_value(u64::MAX, 0),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+    assert_eq!(
+        plan_ongoing_rent_value(0, u64::MAX),
+        Err(AuctionRefusal::BalanceLimit)
+    );
+}

@@ -33,6 +33,81 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## 2026-10-17 D1375 native-cap value plans
+
+This separate owned arithmetic checkpoint starts from
+`a896ec6199bc5cfa0ce8f270aee49b23e50b1569`. The published property/Guild fixture
+follow-up and its **6 property PASS, 9 Guild PASS / 4 Guild FAIL** evidence remain
+unchanged. No diagnostic probe is part of this checkpoint.
+
+The two arithmetic leaves have independent bounded source review PASS and
+**native formatting PASS**. Compilation and their **17 pure cases are NOT_RUN**
+for this candidate. No PostgreSQL or runtime qualification is claimed. The
+retained ten original pure test bodies remain byte-identical after formatting;
+seven new cases cover the native cap and the new value plans. The formatter only
+reflowed two assertions in the new native-cap case; it changed no original case
+body or production byte.
+
+The native stdin-format receipt has SHA-256
+`ccf21c1a17cc32fcec8bc47c38f48f5c6fa7a3a533b1143a93976d6855dffa5b`.
+The retained production leaf has SHA-256
+`719ee8d26f6e16e0625fe1baa5f34f224c5427a47d333130e1723aa96b963e37`
+and the formatted test leaf has SHA-256
+`59fa4129147e0b84c7c2507c60e0112f4daf82d03ab2ebe5c3fa8e002d49420a`.
+The format-only test patch has SHA-256
+`83e9337fc44ea191b0797def133beb29095877d6402971e3d829382bc50f6a4c`.
+The diagnostic worktree and its 24-source manifest were unchanged; this formatter
+run executed no Cargo or PostgreSQL command.
+
+### Account Bank and escrow arithmetic
+
+[D1375](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234889956)
+retains the existing native `bank_audit::BANK_BALANCE_MAX`, currently
+`999999999999`. The House code now uses that real constant instead of a separate
+House ceiling. It changes no Bank audit limit or SQL ceiling.
+
+| Pure plan | Exact value movement represented |
+| --- | --- |
+| `plan_bid_value` | Reserve only the increased `maximum + captured first rent`; return only a decrease. Repeated values produce no entry. |
+| `plan_release_value` | Return the full remaining maximum and snapshotted first rent to the captured Account, ending with zero escrow. |
+| `plan_winner_value` | Return `maximum - price`; burn the price and first rent from already debited escrow. Neither burn charges the Account balance again. |
+| `plan_ongoing_rent_value` | Debit the later rent from the actual Account balance, using the same rent ledger kind. |
+
+The value plans identify D1375 ledger kinds 7 (reserve), 8 (release), 9 (price
+burn), and 10 (rent burn), with before/after balance and escrow. Checked widened
+arithmetic proves conservation and rejects insufficient or out-of-range inputs.
+Zero amounts create neither a native ledger-entry plan nor a value line. A winner
+has at most three ledger entries plus one changed escrow line, so its eventual
+House event needs four value lines. The future House transaction must use its own
+event-8 resource accounting, not the Bank command's two-entry limit.
+
+### Actual integration remains gated
+
+These values do not create a Bank entry, commit an auction, assert current Premium,
+read a catalogue, or confer ownership. The native acquisition owner must consume the
+real locked auction and current eligibility, then apply the plan in its owning
+transaction. In particular, a local conservation result does not prove the global
+credit headroom of `Bank balance + Market held + private House held + Guildhall
+Account held + incoming`.
+
+The Bank helper/call-site slot remains dependent on actual #2134 integration under
+D1375. The full qualified catalogue producer remains assigned to the bundle lane
+after #2167 under
+[D1383](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235281112).
+No VACANT ownership anchor, caller boolean or direct unqualified content read is
+substituted for that producer. Migration 0119, its event-8/native ledger closure,
+the real Premium batch consumer, acquisition/first rent, and #2141's later rent
+consumer remain distinct implementation and qualification work. This packet does
+not include the held shared Bank proposal or uninstalled SQL journal proposal.
+
+The native qualification recipe mounts only the actual auction leaf under the
+native library for a declared source assembly and retains the native `AccountId`
+and Bank cap. On exact parent `a896ec61`, `house/mod.rs` is absent and the library
+has no House root, so the temporary test registration must be disclosed rather
+than claiming that the uncomposed published PR already lists seventeen cases.
+Module publication and any heavy native run require their actual allocated window.
+
+
 ## 2026-10-17 native fixture routing and cleanup follow-up
 
 This owned follow-up starts from published checkpoint
