@@ -36,6 +36,55 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## 2026-10-17 D1384 move-out handoff — inert source checkpoint
+
+This **card-only** checkpoint extends #2145
+`6886b30617b34067a21aa9ec8db0c57a97bd4d4c`. It preserves the complete frozen
+two-leaf D1384 source proposal, pinned preimages, patch and independent review
+in the [reproducible appendix](#reproducible-d1384-source-checkpoint) below.
+No Rust, protocol export, gameplay mount, dispatch, capability or registry is
+changed by this checkpoint. All original card content is retained as history;
+its named producer refs and earlier AUTHORING labels belong to those records.
+
+The proposed native adapter verifies the real actor, original CommandRef session
+and World against the complete unchanged native fence. It forwards the exact
+absolute Unix-millisecond date as `HouseMoveOutCommand::Notice` or a fieldless
+`Cancel` to actual `DurabilityRoot::apply_house_move_out_command`, passing the
+real retained authority, node and HouseId. The native receipt and error are
+returned unchanged. It does not mint an operation ID, supply an ownership
+revision, sample a clock, create SQL or turn an Instance into a Channel.
+
+[D1384](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235281112)
+assigns clock/date validation, operation/revision resolution and immutable
+original-command replay to #2141. Its source-reviewed actual five-file owner
+candidate is `d3ddcd782f4f288d4b9e0b85a25e7b4de37da27c76c79ca4f0b4d4c0395988a4`,
+based on #2141 `c65dd10af69ce6d2263175a35736fbe531f01a01`.
+[D1403](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237071382)
+now confirms the complete canonical 0121 disposition producer before its guard,
+with `MIGRATOR` as the only installer. That allocation is not native execution
+or an actual merge. The WIRE Rust adapter remains HELD until #2141 actually
+merges; then it must be rebound to the current branch and native-qualified.
+
+| Qualification | Exact scope and result |
+|---|---|
+| New move-out source review | **PASS**: handler `2510f019c2e151d9e955bcfe26d185378b820a902bdb567a49f121fdaed9c41e`, tests `d9b8002d159e76539ba1eb62dd73191d2ddbc4840ed538fbac1faca82a1638df`; full independent report is preserved below. |
+| New proposal inventory | **19 conversion cases**, comprising the unchanged prior14 plus five new move-out cases. This count describes the embedded proposed source, not a discovered run of the checked-in adapter. |
+| New native formatting/compile/execution | **NOT_RUN**. Source review does not qualify native owner execution or dispatch. |
+| Existing exact-head protocol | **21/21 PASS** reported by root at published `6886b306...`; this card-only successor is not a new test run. |
+| Prior real source assembly | Protocol21, adapter14 and actual nullable ACL owner9 **PASS** at main `f010472b...` plus their exact owned sources and mounts. It does not qualify the five new D1384 cases. |
+
+The checked-in native adapter remains the previously published ACL component.
+It requires actual #2140 composition and its ordered shared mount. The proposed
+move-out mapping and #2141's 22PG+1pure candidate remain separate native
+qualification inputs. [D1399b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236882742)
+orders the current MAIL and then HUNT heavy windows; further House runs require
+their own coordinated window and the actual D1397/D1397a shared lock. This card
+does not start a native job.
+
+Other action writers, query/privacy projection, Guild wire identities, active
+capabilities and client House UI remain incomplete. No embedded code is
+activated by preserving it here. The PR stays draft / **NOT_FULLY_QUALIFIED**.
+
 ## 2026-10-17 D1350/D1354 native ACL packet — AUTHORING
 
 Predecessor after CP's ordinary main merge:
@@ -389,3 +438,323 @@ Added actual codec decode boundary1048/1049 and cursor512/513 cases, duplicate-e
 rejection and native empty/absent normalization cases; all authored NOT_RUN. Official fmt and
 diffcheck are cheap source checks only; no current-generation compile/native/PG PASS claimed.
 D1261 permits one coherent checkpoint successor after Root review; this work does not publish.
+
+## Reproducible D1384 source checkpoint
+
+This complete UTF-8 source checkpoint is retained as data inside the owned task card. Its exact length is 17946 bytes and SHA-256 is `60e1a95a82d71e4cf4ea45f3ae6a51d808be04ea5bf4163aed62f2dd98cb9d5a`. The source inventory, complete patch and analysis/review can be recovered from it; the recovery instructions do not authorize applying a held runtime change.
+
+<!-- card-artifact:wire2145-d1384-source-checkpoint.md -->
+`````markdown
+# HOUSE-WIRE-1 — D1384 source checkpoint
+
+State: **reviewed inert source; new native formatting, compilation and 19-case execution NOT_RUN**. The exact published predecessor is `6886b30617b34067a21aa9ec8db0c57a97bd4d4c`. This document preserves two frozen owned leaves while their native owner dependency and the allocated publication order remain open.
+
+## Prepared behavior
+
+The native move-out adapter preserves the actor identity, original CommandRef, complete current item fence and exact World-qualified HouseId. It forwards an absolute Unix-millisecond date as `HouseMoveOutCommand::Notice { due_at_unix_ms }`, or a fieldless `Cancel`, to the actual `DurabilityRoot::apply_house_move_out_command` owner. It does not mint operation IDs, supply an ownership revision, sample a clock, reinterpret the date, start SQL or manufacture current authority. The native receipt and error are returned unchanged. Instance scope remains intact so that the owner handles current-scope admission and historical replay.
+
+The existing fourteen conversion cases remain present. Five additional cases cover exact date/command/House propagation, fieldless cancellation, each request/fence mismatch, refusal of other actions and preservation of Instance scope. Inventory: **19 conversion cases**. The independent source review is embedded below and is **SOURCE REVIEW PASS** for the exact two result hashes. It does not claim execution.
+
+## Actual dependency and activation order
+
+[D1384](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235281112) assigns the real operation/revision/clock/replay port to #2141 and the consumer mapping to #2145. The reviewed #2141 candidate uses `HouseMoveOutCommand`, `HouseMoveOutCommandReceipt` and `HouseMoveOutError` in `house::move_out`, with the actual Root method named above. Its five-file native payload has SHA-256 `d3ddcd782f4f288d4b9e0b85a25e7b4de37da27c76c79ca4f0b4d4c0395988a4` and is based on #2141 `c65dd10af69ce6d2263175a35736fbe531f01a01`. That candidate is a source dependency, not a merged owner or a test PASS. [D1403](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237071382) now confirms the full canonical 0121 producer relocation and single MIGRATOR installer. Actual owner publication/merge and native qualification remain separate requirements.
+
+Publication of these Rust leaves follows the **actual #2141 merge**, then a fresh #2145 baseline/readback and native formatting/qualification. The existing ACL adapter still depends on the actual #2140 nullable-owner sources. Gameplay module mounting/dispatch, other action writers, query/privacy projection, Guild identities, capabilities and client UI remain separately ordered. This checkpoint adds none of those integration points.
+
+## Previously completed qualification
+
+Root reported protocol **21/21 PASS on the exact published #2145 head**. The earlier combined source assembly at main `f010472bcb6794a2cbc56dfaf755bd122c10225e` executed protocol 21, adapter 14 and actual ACL owner 9 cases successfully on Molehill. Those results apply to their recorded sources. They do not execute the five newly recorded move-out cases, qualify #2141's new PG owner, or establish an end-to-end dispatched House request.
+
+## Recovery and integrity
+
+This is inert source evidence preserved verbatim in the existing owned task card. Only that card is proposed for the draft; the embedded Rust changes and dependency sources are not applied or registered. No new repository evidence path or owned_paths expansion is used. Runtime permission, dependency order and qualification gates still apply.
+
+Recover each artifact from the matching section below. Preserve its exact UTF-8 bytes and verify the listed byte length and SHA-256. Reconstruct an isolated review tree from each file's pinned base ref and Git blob in `source-inventory.json`, then check and apply the patch there. Never apply a historical patch to an unspecified current checkout. The checkpoint preparation independently applied the recorded patch to those exact preimages and compared every resulting file byte for byte with the frozen source. That integrity check is not Rust compilation or PostgreSQL qualification.
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `source-inventory.json` | 1005 | `bbf63529c517780fe15bf778a61930b21cada7bc752f0c0b71041dc53db98242` |
+| `wire2145-d1384.patch` | 9326 | `4e103fc14d48e3a18bd3c87b285b611fca90173a56646de06c817fc1b58f038f` |
+| `independent-source-review.md` | 2731 | `3a490e92ea002fcb8d6c1990aa4cd282dc817b66a6affd06221411a784ce1e1d` |
+
+## Embedded artifacts
+
+### source-inventory.json
+
+<!-- checkpoint-artifact:source-inventory.json -->
+````json
+{
+  "predecessor": "6886b30617b34067a21aa9ec8db0c57a97bd4d4c",
+  "files": [
+    {
+      "path": "apps/game-server/src/gameplay_transport/house_intent.rs",
+      "base_ref": "6886b30617b34067a21aa9ec8db0c57a97bd4d4c",
+      "base_git_blob": "6de13c8a7e054944e942ff894d42ba8f98a03652",
+      "base_sha256": "7f4dabec44fe7b9c49bbbd394df48548270e8d20df8a52fa912dcea5e4805843",
+      "result_sha256": "2510f019c2e151d9e955bcfe26d185378b820a902bdb567a49f121fdaed9c41e",
+      "result_bytes": 13278
+    },
+    {
+      "path": "apps/game-server/src/gameplay_transport/house_intent_tests.rs",
+      "base_ref": "6886b30617b34067a21aa9ec8db0c57a97bd4d4c",
+      "base_git_blob": "4669cac1c475782db9db6dc985d78d8544874084",
+      "base_sha256": "ef925aa7fcf68835705936d2e7019fec22b3009737ada8d5f1ae6b0c53148603",
+      "result_sha256": "d9b8002d159e76539ba1eb62dd73191d2ddbc4840ed538fbac1faca82a1638df",
+      "result_bytes": 19358
+    }
+  ],
+  "expected_conversion_cases": 19,
+  "native_new_candidate": "NOT_RUN"
+}
+````
+
+### wire2145-d1384.patch
+
+<!-- checkpoint-artifact:wire2145-d1384.patch -->
+````diff
+--- a/apps/game-server/src/gameplay_transport/house_intent.rs
++++ b/apps/game-server/src/gameplay_transport/house_intent.rs
+@@ -1,4 +1,4 @@
+-//! HOUSE_INTENT preparation and native character-ACL writer adapter. No dispatch is installed.
++//! HOUSE_INTENT preparation and native ACL/move-out writer adapters. No dispatch is installed.
+ //!
+ //! Every body supplies an explicit World-qualified target. Its World must equal the current
+ //! actor World; native HouseId validates the key. The request selects no owner/session/lease. Inputs are
+@@ -12,6 +12,9 @@
+ use crate::durability::item_transfer::CurrentCharacterItemFence;
+ use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+ use crate::foundation::{CharacterId, CommandRef, WorldId};
++use crate::house::move_out::{
++    HouseMoveOutCommand, HouseMoveOutCommandReceipt, HouseMoveOutError,
++};
+ use oteryn_protocol_oteryn::house::{
+     HouseAclRole, HouseAction, HouseWireError, decode_house_intent,
+ };
+@@ -230,6 +233,80 @@
+         .map_err(HouseAclHandlerError::Writer)
+ }
+ 
++/// Immutable command/fence binding failures, not current ownership or date decisions.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub(crate) enum HouseMoveOutRequestError {
++    ActorMismatch,
++    SessionMismatch,
++    WorldMismatch,
++    NotMoveOutAction,
++}
++
++#[derive(Debug)]
++#[allow(
++    dead_code,
++    reason = "native adapter outcomes are consumed by the later CP ingress slot"
++)]
++pub(crate) enum HouseMoveOutHandlerError {
++    Request(HouseMoveOutRequestError),
++    Writer(HouseMoveOutError),
++}
++
++/// Preserve the exact absolute date or fieldless cancellation for the native owner.
++/// Only that owner resolves/mints the operation, reads the ownership revision and
++/// samples its database clock. Historical replay retains the original date/result.
++fn native_move_out_request(
++    prepared: &PreparedHouseIntent,
++    fence: &CurrentCharacterItemFence,
++) -> Result<HouseMoveOutCommand, HouseMoveOutRequestError> {
++    if prepared.actor.as_bytes() != fence.character_id.as_bytes() {
++        return Err(HouseMoveOutRequestError::ActorMismatch);
++    }
++    if prepared.command.game_session_id() != fence.game_session_id {
++        return Err(HouseMoveOutRequestError::SessionMismatch);
++    }
++    if prepared.world != fence.runtime_scope.world_id() {
++        return Err(HouseMoveOutRequestError::WorldMismatch);
++    }
++    match &prepared.action {
++        PreparedHouseAction::MoveOut { date_unix_ms } => Ok(HouseMoveOutCommand::Notice {
++            due_at_unix_ms: *date_unix_ms,
++        }),
++        PreparedHouseAction::CancelMoveOut => Ok(HouseMoveOutCommand::Cancel),
++        _ => Err(HouseMoveOutRequestError::NotMoveOutAction),
++    }
++}
++
++/// Execute the selected command through HOUSE-1b's actual same-transaction owner.
++/// The complete native fence and original CommandRef/HouseId pass unchanged; an
++/// Instance remains an Instance. The owner decides current admission and historical
++/// replay, and returns the real receipt or error. This adapter performs no preliminary
++/// notice lookup, date rounding, operation minting, independent commit or success ACK.
++#[allow(
++    dead_code,
++    reason = "native move-out adapter awaits #2141 and the CP-owned HOUSE_V1 ingress slot"
++)]
++pub(crate) async fn handle_house_move_out_intent(
++    root: &DurabilityRoot,
++    authority: &ReconciledCharacterAuthority<'_, '_>,
++    node: &NodeIncarnationProof,
++    fence: CurrentCharacterItemFence,
++    prepared: &PreparedHouseIntent,
++) -> Result<HouseMoveOutCommandReceipt, HouseMoveOutHandlerError> {
++    let request =
++        native_move_out_request(prepared, &fence).map_err(HouseMoveOutHandlerError::Request)?;
++    root.apply_house_move_out_command(
++        authority,
++        node,
++        fence,
++        prepared.command,
++        prepared.house.clone(),
++        request,
++    )
++    .await
++    .map_err(HouseMoveOutHandlerError::Writer)
++}
++
+ /// Inactive request data only. ProductionKey is the native FirstProductionArea.key type;
+ /// its city prefix comes from the House catalogue contract. This does not prove that a
+ /// town exists in the active bundle, or authorize a catalogue/owner/ACL read.
+--- a/apps/game-server/src/gameplay_transport/house_intent_tests.rs
++++ b/apps/game-server/src/gameplay_transport/house_intent_tests.rs
+@@ -442,3 +442,115 @@
+         Err(HouseAclRequestError::WorldMismatch)
+     ));
+ }
++
++#[test]
++fn native_move_out_adapter_preserves_absolute_milliseconds_and_original_target() {
++    // These are request values, not assertions that the native DB clock admits them.
++    for date_unix_ms in [1, 2_592_000_001, 1_792_000_000_123, i64::MAX] {
++        for house_key in ["oteryn:content.house.thais_1", "oteryn:content.house.thais_2"] {
++            let mut value = request(HouseAction::MoveOut { date_unix_ms });
++            value.house.house_key = house_key.into();
++            for command_id in [1, u64::MAX] {
++                let correlation = CommandRef::new(
++                    command(2).game_session_id(),
++                    CommandId::new(command_id).unwrap(),
++                );
++                let prepared = prepare_house_intent(
++                    &encode_house_intent(&value).unwrap(),
++                    correlation,
++                    actor(),
++                    world(3),
++                )
++                .unwrap();
++                let native = native_move_out_request(&prepared, &acl_fence()).unwrap();
++                assert!(matches!(
++                    native,
++                    HouseMoveOutCommand::Notice { due_at_unix_ms } if due_at_unix_ms == date_unix_ms
++                ));
++                assert_eq!(prepared.command(), correlation);
++                assert_eq!(prepared.actor(), actor());
++                assert_eq!(prepared.house(), &HouseId::new(world(3), house_key).unwrap());
++            }
++        }
++    }
++}
++
++#[test]
++fn native_move_out_adapter_leaves_cancellation_operation_with_the_owner() {
++    let prepared = prepare(&request(HouseAction::CancelMoveOut), world(3)).unwrap();
++    assert!(matches!(
++        native_move_out_request(&prepared, &acl_fence()).unwrap(),
++        HouseMoveOutCommand::Cancel
++    ));
++    assert_eq!(prepared.command(), command(2));
++    assert_eq!(
++        prepared.house(),
++        &HouseId::new(world(3), "oteryn:content.house.thais_1").unwrap()
++    );
++    // The native Cancel type has no caller operation, revision or date to retarget on retry.
++}
++
++#[test]
++fn native_move_out_adapter_refuses_each_mismatched_binding_for_both_commands() {
++    for action in [HouseAction::MoveOut { date_unix_ms: 1 }, HouseAction::CancelMoveOut] {
++        let prepared = prepare(&request(action), world(3)).unwrap();
++        let mut different_actor = acl_fence();
++        different_actor.character_id = crate::domain::CharacterId::from_bytes(uuid(8)).unwrap();
++        let mut different_session = acl_fence();
++        different_session.game_session_id = command(9).game_session_id();
++        let mut different_world = acl_fence();
++        if let RuntimeScopeRefV1::Channel { world_id, .. } = &mut different_world.runtime_scope {
++            *world_id = world(9);
++        }
++        for (fence, expected) in [
++            (different_actor, HouseMoveOutRequestError::ActorMismatch),
++            (different_session, HouseMoveOutRequestError::SessionMismatch),
++            (different_world, HouseMoveOutRequestError::WorldMismatch),
++        ] {
++            assert!(matches!(native_move_out_request(&prepared, &fence), Err(actual) if actual == expected));
++        }
++    }
++}
++
++#[test]
++fn native_move_out_adapter_never_routes_another_action_to_the_notice_owner() {
++    for action in [
++        HouseAction::Bid { max_gold: 1 },
++        HouseAction::AclSet {
++            role: HouseAclRole::Guest,
++            character_ids: vec![],
++            expected_revision: 1,
++        },
++        HouseAction::DoorSet {
++            position: ActorPosition { x: 10, y: 24, floor: -7 },
++            character_ids: vec![],
++            expected_revision: 1,
++        },
++        HouseAction::Kick { character_id: actor() },
++        HouseAction::Leave,
++    ] {
++        let prepared = prepare(&request(action), world(3)).unwrap();
++        assert!(matches!(
++            native_move_out_request(&prepared, &acl_fence()),
++            Err(HouseMoveOutRequestError::NotMoveOutAction)
++        ));
++    }
++}
++
++#[test]
++fn native_move_out_adapter_preserves_instance_scope_for_owner_replay_and_admission() {
++    for action in [HouseAction::MoveOut { date_unix_ms: 1 }, HouseAction::CancelMoveOut] {
++        let prepared = prepare(&request(action), world(3)).unwrap();
++        let mut fence = acl_fence();
++        fence.runtime_scope = RuntimeScopeRefV1::instance(world(3), uuid(7)).unwrap();
++        let unchanged = fence;
++        assert!(native_move_out_request(&prepared, &fence).is_ok());
++        assert_eq!(fence, unchanged);
++        fence.runtime_scope = RuntimeScopeRefV1::instance(world(9), uuid(7)).unwrap();
++        assert!(matches!(
++            native_move_out_request(&prepared, &fence),
++            Err(HouseMoveOutRequestError::WorldMismatch)
++        ));
++    }
++    // Conversion preserves scope semantics; it grants no current owner or replay outcome.
++}
+````
+
+### independent-source-review.md
+
+<!-- checkpoint-artifact:independent-source-review.md -->
+````markdown
+# Independent source review — D1384 WIRE adapter
+
+**Result: SOURCE REVIEW PASS for the bounded two-file change.** Native formatting, compilation and execution were not run by this reviewer. Publication/activation remains gated on the actual #2141 producer and CP ingress allocation.
+
+Reviewed exact sources from `agent-2145-2147-2148/wire2145-moveout/candidate/`:
+
+| File | SHA256 |
+| --- | --- |
+| `apps/game-server/src/gameplay_transport/house_intent.rs` | `2510f019c2e151d9e955bcfe26d185378b820a902bdb567a49f121fdaed9c41e` |
+| `apps/game-server/src/gameplay_transport/house_intent_tests.rs` | `d9b8002d159e76539ba1eb62dd73191d2ddbc4840ed538fbac1faca82a1638df` |
+
+The comparison uses the actual newly authored #2141 API in frozen payload `d3ddcd782f4f288d4b9e0b85a25e7b4de37da27c76c79ca4f0b4d4c0395988a4`, including the native Root transaction envelope and same-transaction owner. No interface stub or replacement authority is used in this review.
+
+`native_move_out_request` preserves the exact signed millisecond value as `HouseMoveOutCommand::Notice { due_at_unix_ms }` and maps cancellation to the fieldless `Cancel`. It neither samples a clock nor rounds, retargets or manufactures an operation/revision. The exact actor byte identity, original CommandRef session and World agree with the complete retained fence before dispatch. The World comparison does not convert Instance or House scope to Channel; native admission and historical replay remain decisions of the actual owner.
+
+`handle_house_move_out_intent` forwards the genuine Root, retained recovery authority, Node proof, untouched fence, original CommandRef and validated HouseId to `apply_house_move_out_command`. Its only error transformation labels the native error as `Writer`; it returns the actual receipt unchanged. There is no independent SQL, commit, preliminary owner/notice lookup, callback, authorization flag or success ACK.
+
+The five added conversion cases cover exact milliseconds/house/command identity, fieldless cancellation, independently mismatched actor/session/World for both commands, refusal to route other House actions, and preservation of Instance scope. The prior fourteen case bodies remain unchanged. These are conversion checks; they do not claim that a syntactically valid absolute date or preserved Instance is admitted by the native writer. The actual #2141 PG suite separately owns current authority, deadline bounds, pending-notice resolution and durable replay qualification.
+
+No material defect found in this bounded adapter. The code uses the exact producer names and typed signatures that were independently reviewed; its five new tests and the older fourteen still require the native source assembly before qualification.
+````
+
+`````
