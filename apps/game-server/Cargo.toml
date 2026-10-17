@@ -73,6 +73,14 @@ name = "bestiary_progress_postgres"
 test = false
 
 [[test]]
+name = "character_appearance_native_postgres"
+test = false
+
+[[test]]
+name = "character_appearance_postgres"
+test = false
+
+[[test]]
 name = "character_death_receipts_postgres"
 test = false
 
@@ -142,6 +150,10 @@ test = false
 
 [[test]]
 name = "item_ref_production"
+test = false
+
+[[test]]
+name = "item_timed_postgres"
 test = false
 
 [[test]]
