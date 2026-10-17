@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::panic)] // Test assertions only.
 use super::*;
-use crate::foundation::{CommandId, GameSessionId};
+use crate::foundation::{CommandId, GameSessionId, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::house::{HouseIntent, HouseTarget, encode_house_intent};
 fn uuid(seed: u8) -> [u8; 16] {
     let mut bytes = [seed; 16];
@@ -288,4 +288,157 @@ fn query_empty_and_absent_cursor_normalize_only_to_first_page_without_changing_b
         assert_eq!(prepared.world(), world(3));
         assert_eq!(prepared.catalogue_town().as_str(), request.catalogue_town);
     }
+}
+
+fn acl_fence() -> CurrentCharacterItemFence {
+    use crate::foundation::{ChannelId, ConnectionGeneration, ScopeOwnershipGeneration};
+    CurrentCharacterItemFence {
+        character_id: crate::domain::CharacterId::from_bytes(*actor().as_bytes()).unwrap(),
+        game_session_id: command(2).game_session_id(),
+        connection_generation: ConnectionGeneration::new(3).unwrap(),
+        character_lease_generation: 9,
+        runtime_scope: RuntimeScopeRefV1::Channel {
+            world_id: world(3),
+            channel_id: ChannelId::decode(&uuid(4)).unwrap(),
+        },
+        scope_ownership_generation: ScopeOwnershipGeneration::new(11).unwrap(),
+    }
+}
+
+#[test]
+fn native_acl_adapter_preserves_remote_house_revision_subjects_and_command() {
+    for (role, list) in [
+        (HouseAclRole::Subowner, rules::List::Subowners),
+        (HouseAclRole::Guest, rules::List::Guests),
+    ] {
+        for revision in [0, u64::MAX] {
+            let ids = vec![CharacterId::decode(&uuid(8)).unwrap(), actor()];
+            let prepared = prepare(
+                &request(HouseAction::AclSet {
+                    role,
+                    character_ids: ids.clone(),
+                    expected_revision: revision,
+                }),
+                world(3),
+            )
+            .unwrap();
+            let native = native_acl_request(&prepared, &acl_fence()).unwrap();
+            assert_eq!(&native.house, prepared.house());
+            assert_eq!(native.command, command(2));
+            assert_eq!(native.list, list);
+            assert_eq!(native.expected_revision, revision);
+            assert_eq!(
+                native.entries,
+                ids.iter()
+                    .map(|id| {
+                        rules::Entry::Character(
+                            crate::domain::CharacterId::from_bytes(*id.as_bytes()).unwrap(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            );
+        }
+    }
+}
+
+#[test]
+fn native_acl_adapter_uses_native_door_coordinates_and_empty_list_clear() {
+    for (x, y, floor) in [(0, 0, 0), (u16::MAX, u16::MAX, -15), (10, 24, -7)] {
+        let prepared = prepare(
+            &request(HouseAction::DoorSet {
+                position: ActorPosition {
+                    x: i32::from(x),
+                    y: i32::from(y),
+                    floor,
+                },
+                character_ids: vec![],
+                expected_revision: 4,
+            }),
+            world(3),
+        )
+        .unwrap();
+        let native = native_acl_request(&prepared, &acl_fence()).unwrap();
+        assert_eq!(
+            native.list,
+            rules::List::Door(crate::map::overlay::TilePos {
+                x,
+                y,
+                floor: i8::try_from(floor).unwrap(),
+            })
+        );
+        assert!(native.entries.is_empty());
+        assert_eq!(native.expected_revision, 4);
+    }
+}
+
+#[test]
+fn native_acl_adapter_refuses_each_mismatched_binding_before_writer_dispatch() {
+    let prepared = prepare(
+        &request(HouseAction::AclSet {
+            role: HouseAclRole::Guest,
+            character_ids: vec![],
+            expected_revision: 1,
+        }),
+        world(3),
+    )
+    .unwrap();
+    let mut different_actor = acl_fence();
+    different_actor.character_id = crate::domain::CharacterId::from_bytes(uuid(8)).unwrap();
+    let mut different_session = acl_fence();
+    different_session.game_session_id = command(9).game_session_id();
+    let mut different_world = acl_fence();
+    if let RuntimeScopeRefV1::Channel { world_id, .. } = &mut different_world.runtime_scope {
+        *world_id = world(9);
+    }
+    for (fence, expected) in [
+        (different_actor, HouseAclRequestError::ActorMismatch),
+        (different_session, HouseAclRequestError::SessionMismatch),
+        (different_world, HouseAclRequestError::WorldMismatch),
+    ] {
+        assert!(matches!(native_acl_request(&prepared, &fence), Err(actual) if actual == expected));
+    }
+}
+
+#[test]
+fn native_acl_adapter_never_routes_another_house_action_to_acl_writer() {
+    for action in [
+        HouseAction::Bid { max_gold: 1 },
+        HouseAction::MoveOut { date_unix_ms: 1 },
+        HouseAction::CancelMoveOut,
+        HouseAction::Kick {
+            character_id: actor(),
+        },
+        HouseAction::Leave,
+    ] {
+        let prepared = prepare(&request(action), world(3)).unwrap();
+        assert!(matches!(
+            native_acl_request(&prepared, &acl_fence()),
+            Err(HouseAclRequestError::NotAclAction)
+        ));
+    }
+}
+
+#[test]
+fn native_acl_adapter_preserves_instance_scope_for_the_owning_writer() {
+    let prepared = prepare(
+        &request(HouseAction::AclSet {
+            role: HouseAclRole::Guest,
+            character_ids: vec![],
+            expected_revision: 1,
+        }),
+        world(3),
+    )
+    .unwrap();
+    let mut fence = acl_fence();
+    fence.runtime_scope = RuntimeScopeRefV1::instance(world(3), uuid(7)).unwrap();
+    let unchanged = fence;
+    let native = native_acl_request(&prepared, &fence).unwrap();
+    assert_eq!(fence, unchanged);
+    assert_eq!(native.house.world_id(), fence.runtime_scope.world_id());
+    // This is request conversion only: no receipt, scope admission or writer success.
+    fence.runtime_scope = RuntimeScopeRefV1::instance(world(9), uuid(7)).unwrap();
+    assert!(matches!(
+        native_acl_request(&prepared, &fence),
+        Err(HouseAclRequestError::WorldMismatch)
+    ));
 }

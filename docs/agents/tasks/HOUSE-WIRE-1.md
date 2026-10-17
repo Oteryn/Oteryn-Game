@@ -1,14 +1,14 @@
-# HOUSE-WIRE-1 — HOUSE_V1 capability, house list, bids, move-out (skeleton task record)
+# HOUSE-WIRE-1 — House codecs and native ACL request adapter
 
 ```yaml
 task_id: HOUSE-WIRE-1
-title: "HOUSE-WIRE-1: HOUSE_V1 capability, house list, bids, move-out (skeleton)"
+title: "HOUSE-WIRE-1: House codecs and native ACL request adapter"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-wire-1
-base_sha: 5742f30f3
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -36,7 +36,68 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
-## D1170 target-binding successor — AUTHORING, NOT_FULLY_QUALIFIED
+## 2026-10-17 D1350/D1354 native ACL packet — AUTHORING
+
+Predecessor after CP's ordinary main merge:
+`afd7272eaeecaec443932977b56ec02d090fd2c5`. The single writer and owned-packet
+authoring release are [D1345/D1350](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418).
+The minimum module allocations are [D1354](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098).
+
+The owned native handler now maps character subowner, guest and door ACL requests
+to the actual `DurabilityRoot::replace_house_acl` owner. It accepts that owner's
+real retained `ReconciledCharacterAuthority`, `NodeIncarnationProof` and complete
+`CurrentCharacterItemFence`. It checks the request actor, command session and
+World against the unchanged fence, preserves the explicit House target, native
+door coordinate conversion, subjects and expected revision, and returns the
+owner's receipt or error without creating a transaction, success ACK or authority.
+The writer retains currentness, scope admission, authorization and replay decisions;
+an Instance is never changed to a Channel by the adapter.
+
+Five added conversion tests cover both character list kinds and revision bounds,
+native door boundaries and empty-list clearing, each mismatched binding, non-ACL
+action refusal, and unchanged Instance scope. The existing nine preparation tests
+and twenty-one protocol tests remain present. These tests do not by themselves
+qualify a current authority grant or execute the PostgreSQL ACL transaction.
+
+The packet adds only D1354's `pub mod house;` line to the protocol crate. It leaves
+the gameplay module, dispatch, capabilities and registries to their ordered slots.
+
+| Remaining composition | Exact owner and order |
+|---|---|
+| Native ACL owner and door placement | #2140 at `20b751c889936cb311ca61d0374512e83e374470`; native composition and its real door helper follow #2167 (D1348/D1350). |
+| Gameplay module registration | One `house_intent` line after #2197, before #2198 and A2 #2187; compile and dispatch follow #2140 (D1354). |
+| Guild ACL wire identities | #2153 at `4b435e05143f6ea66b90ecb2e2df26174c945d6d`; no invented Guild request tags. |
+| Bids, move-out date mapping, kick/leave and query projection | Their actual mutation/read owners remain required. `AclView` observations do not supply a full privacy-filtered House query response. |
+| Capability, response projection and client | A2 and the native privacy projection; House panel after #1942 at `fdc20be476e6d38913d254209ccfa710743d6c59`. |
+
+Validation of this packet: the coordinator's Molehill slot B run starting
+2026-10-17 13:20:10 UTC passed all twenty-one codec cases, all fourteen native
+preparation/conversion cases and all nine actual ACL owner cases (four pure and
+five PostgreSQL), with no failed or ignored cases. The protocol build took 4.96s;
+the game-server build took 2m03s; the actual ACL cases took 10.12s. Focused native
+formatting passed and the source manifest stayed unchanged across the run.
+
+This evidence is explicitly a SOURCE ASSEMBLY: main
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`, the four actual WIRE files, the three
+actual #2140 ACL files with their reviewed nullable-owner correction, and only
+the required module lines. D1342's native environment/slot target and D1329's
+shared PostgreSQL wrapper were used; `cargo fetch --locked` passed before the
+offline run. The tested adapter SHA-256 is
+`7f4dabec44fe7b9c49bbbd394df48548270e8d20df8a52fa912dcea5e4805843` and its
+test SHA-256 is
+`ef925aa7fcf68835705936d2e7019fec22b3009737ada8d5f1ae6b0c53148603`.
+
+The fourteen adapter cases are conversion tests. The nine separate native ACL
+cases exercise the actual writer; they are not a dispatched end-to-end House
+request. The published #2145 branch exports the codec only: it does not include
+the gameplay mount or copy the unmerged #2140 dependency. Published-head adapter
+qualification, package Clippy, native dispatch/privacy/client composition and
+complete feature qualification remain open. The PR remains draft.
+
+## D1170 target-binding source checkpoint — historical qualification
+
+This section records the earlier source checkpoint; the current allocation and
+implementation are stated above.
 
 CP D1170 assigns leaf constants HOUSE_V1=27, HOUSE_INTENT=27, HOUSE_QUERY=28,
 domain23. No registry, offered capability, shared exports or dispatch is activated.

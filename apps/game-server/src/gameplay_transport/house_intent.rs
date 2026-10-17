@@ -1,11 +1,16 @@
-//! Inactive HOUSE_INTENT preparation boundary. No dispatch or writer is installed.
+//! HOUSE_INTENT preparation and native character-ACL writer adapter. No dispatch is installed.
 //!
 //! Every body supplies an explicit World-qualified target. Its World must equal the current
 //! actor World; native HouseId validates the key. The request selects no owner/session/lease. Inputs are
 //! data, not evidence of current admission. CP's handler must resolve actual current session/
 //! actor/house/property/ACL under owning native locks before calling any mutation writer.
 
+use crate::durability::DurabilityRoot;
+use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::durability::house_acl::{AclError, AclReceipt, AclSet, rules};
 use crate::durability::house_scope_handoff::HouseId;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{CharacterId, CommandRef, WorldId};
 use oteryn_protocol_oteryn::house::{
     HouseAclRole, HouseAction, HouseWireError, decode_house_intent,
@@ -119,6 +124,110 @@ pub fn prepare_house_intent(
         house,
         action,
     })
+}
+
+/// Immutable envelope/fence binding failures, not current ACL or session decisions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum HouseAclRequestError {
+    ActorMismatch,
+    SessionMismatch,
+    WorldMismatch,
+    NotAclAction,
+    InvalidDoor,
+    InvalidCharacterIdentity,
+}
+
+#[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "native adapter outcomes are consumed by the later CP ingress slot"
+)]
+pub(crate) enum HouseAclHandlerError {
+    Request(HouseAclRequestError),
+    Writer(AclError),
+}
+
+/// Convert request values to the single native ACL owner's input without assigning a role,
+/// resolving a house from the actor's position, or changing the requested revision.
+/// The supplied fence is only expected binding; the writer independently checks its liveness.
+fn native_acl_request(
+    prepared: &PreparedHouseIntent,
+    fence: &CurrentCharacterItemFence,
+) -> Result<AclSet, HouseAclRequestError> {
+    if prepared.actor.as_bytes() != fence.character_id.as_bytes() {
+        return Err(HouseAclRequestError::ActorMismatch);
+    }
+    if prepared.command.game_session_id() != fence.game_session_id {
+        return Err(HouseAclRequestError::SessionMismatch);
+    }
+    // Use the native scope's World without converting a House/Instance to Channel.
+    // Fresh-scope admission and historical replay remain decisions of the native writer.
+    if prepared.world != fence.runtime_scope.world_id() {
+        return Err(HouseAclRequestError::WorldMismatch);
+    }
+    let (list, character_ids, expected_revision) = match &prepared.action {
+        PreparedHouseAction::AclSet {
+            role,
+            character_ids,
+            expected_revision,
+        } => (
+            match role {
+                HouseAclRole::Subowner => rules::List::Subowners,
+                HouseAclRole::Guest => rules::List::Guests,
+            },
+            character_ids,
+            *expected_revision,
+        ),
+        PreparedHouseAction::DoorSet {
+            position,
+            character_ids,
+            expected_revision,
+        } => (
+            rules::List::Door(
+                super::world_map::tile_pos(*position).ok_or(HouseAclRequestError::InvalidDoor)?,
+            ),
+            character_ids,
+            *expected_revision,
+        ),
+        _ => return Err(HouseAclRequestError::NotAclAction),
+    };
+    let entries = character_ids
+        .iter()
+        .map(|id| {
+            crate::domain::CharacterId::from_bytes(*id.as_bytes())
+                .map(rules::Entry::Character)
+                .map_err(|_| HouseAclRequestError::InvalidCharacterIdentity)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(AclSet {
+        house: prepared.house.clone(),
+        command: prepared.command,
+        list,
+        expected_revision,
+        entries,
+    })
+}
+
+/// Execute only ACL/door replacement through HOUSE-ACL-1's real fenced transaction owner.
+/// The ingress owner must first gate HOUSE_V1 and supply its retained command/fence. This
+/// adapter creates no success ACK, session authority, role cache, transaction, or SQL writer.
+/// It preserves the owner's committed/replayed receipt and every typed or unknown outcome.
+/// Guild entries and House-scope composition await their assigned native/wire owners.
+#[allow(
+    dead_code,
+    reason = "native ACL adapter awaits the CP-owned HOUSE_V1 ingress slot"
+)]
+pub(crate) async fn handle_house_acl_intent(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    prepared: &PreparedHouseIntent,
+) -> Result<AclReceipt, HouseAclHandlerError> {
+    let request = native_acl_request(prepared, &fence).map_err(HouseAclHandlerError::Request)?;
+    root.replace_house_acl(authority, node, fence, request)
+        .await
+        .map_err(HouseAclHandlerError::Writer)
 }
 
 /// Inactive request data only. ProductionKey is the native FirstProductionArea.key type;
