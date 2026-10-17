@@ -48,7 +48,69 @@ Runtime wiring remains **REPORT_ONLY** until the owning prerequisite PRs merge.
 This allocation supersedes earlier record-only/source-allocation statements below
 only for these pure leaves. CP retains readiness, wiring allocation and merge authority.
 
-## Current continuation checkpoint — 2026-10-17, NOT_FULLY_QUALIFIED
+## Current published-head checkpoint — 2026-10-17, NOT_FULLY_QUALIFIED
+
+Evidence head: `dc8da517bf2e8962d7dd73f05115e5f7a7d2df97`, the published
+doc-only successor of `3a039e095c28856a4bdb5cbed8c4237e90e60386`.
+The five SEC policy source files remain unchanged. This continuation records
+newly completed CI, the concrete next-contract request and CP's D1326 no-grant
+decision; it adds no runtime implementation or child allocation.
+
+### Newly completed exact-head CI
+
+Both Rust job logs were read directly. Each checks out and verifies the exact
+`dc8da517bf2e8962d7dd73f05115e5f7a7d2df97` head, then selects only
+`oteryn-game-server` (`mode=changed packages=1/31`). Both execute Rust 1.95.0
+strict Clippy with `--locked --all-targets -- -D warnings` and the selected
+crate's unit tests successfully. The observed counts are independent new output,
+not an attribution of the earlier source candidate's PASS:
+
+| Exact-head run / Rust job | Library unit result | Operations binary result | Aggregate |
+| --- | --- | --- | --- |
+| [39021803181 / 117365160027](https://github.com/Oteryn/Oteryn-Game/actions/runs/39021803181/job/117365160027) | 3150 passed, 0 failed, 29 ignored, 0 filtered | 6 passed, 0 failed, 0 ignored, 0 filtered | Merge gate and `game-gate` PASS |
+| [39022072461 / 117365930745](https://github.com/Oteryn/Oteryn-Game/actions/runs/39022072461/job/117365930745) | 3150 passed, 0 failed, 29 ignored, 0 filtered | 6 passed, 0 failed, 0 ignored, 0 filtered | Merge gate and `game-gate` PASS |
+
+The import-proficiencies, migrate and main binary test harnesses each report
+zero tests in both jobs; they are not counted as exercised cases. Neither job
+contains the SEC policy tests: the new security module remains unregistered.
+These Cargo results do not qualify the leaves, cryptography or SEC runtime.
+The separately recorded Rust 1.94.0 standalone **17/17** evidence below remains
+bound to the unchanged five source blobs; no leaf rerun or new native build was
+performed for this record update.
+
+### CP request, D1326 decision and remaining owning boundaries
+
+The lead posted and verified the [FAMILY-I request, SEC section](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232808829)
+at `2026-10-17T10:27:27Z`. CP replied at `2026-10-17T10:31:07Z` with
+[D1326](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232842478):
+**no grant for SEC-TRUST-1 or SEC-REL-1**. CP will name the owners after reviewing
+#2188 and #2202; runtime stays **REPORT_ONLY**. The request is answered, and its
+following contract requirements remain unallocated:
+
+- **SEC-TRUST-1 / D1031:** name the contract owner, exact accepted contract SHA
+  and implementation paths for the complete trusted key state at the embedded
+  floor, checkpoint seed, genesis/root-lineage transition and non-restored
+  freshness input. A DB below the floor remains fail-closed; default revision 0,
+  an ordinary record at the floor and clamped World time are not bootstrap.
+- **SEC-REL-1 / RELEASE-MANIFEST-3:** assign one owner to close the signed schemas
+  and key-id rules, full-state versus delta representation, decoder byte/count
+  limits and final artifact/corpus inventory. JCS, uint64 decimal strings and
+  detached Ed25519 are already settled; no replacement encoding is requested.
+- **Allocation timing:** the request asked whether contract preparation could
+  proceed before #2202 merges; D1326 gives no grant. Runtime/config/store/transport
+  wiring and PROD-COMPAT/SEC-CHAL remain outside the request. Current durable
+  trust/fetch/clock-latch provenance still requires its owning contract; the
+  policy predicates supply none of it.
+
+The fresh read still finds #2202 draft/open at
+`4b8688fe03a39e1b25502c695fa34cfa1dd6ee38`, with no newer comments or reviews
+on #2188 or #2202 since the SEC publication. No new source defect or child
+allocation follows from the completed checks. D1326 leaves the draft
+**NOT_FULLY_QUALIFIED**, with runtime wiring **REPORT_ONLY**, while CP reviews
+the two PRs before naming the next owners.
+Earlier source checks and prerequisite observations are retained below as history.
+
+## Historical continuation checkpoint — 2026-10-17, NOT_FULLY_QUALIFIED
 
 Reviewed source candidate: `3a039e095c28856a4bdb5cbed8c4237e90e60386`.
 The complete five-file SEC leaf diff was independently reviewed in this
