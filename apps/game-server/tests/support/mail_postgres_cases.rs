@@ -5,6 +5,24 @@
 use crate::Database;
 use crate::bestiary_postgres_harness::{TestResult, configured_admin, runtime};
 
+/// Prove that this database ran the exact standing migration through the real
+/// native migrator. No private schema copy can satisfy this checksum match.
+async fn require_mail_migration(pool: &sqlx::PgPool) -> TestResult {
+    let expected_checksum = sqlx::migrate!("./migrations")
+        .iter()
+        .find(|migration| migration.version == 101)
+        .map(|migration| migration.checksum.to_vec())
+        .ok_or("MAIL requires standing migration 0101 in the actual SQLx migrator")?;
+    let installed: Option<(Vec<u8>, bool)> =
+        sqlx::query_as("SELECT checksum, success FROM _sqlx_migrations WHERE version = 101")
+            .fetch_optional(pool)
+            .await?;
+    if installed != Some((expected_checksum, true)) {
+        return Err("MAIL requires installed migration 0101 with its exact checksum".into());
+    }
+    Ok(())
+}
+
 fn run(tag: &'static str, case: impl AsyncFnOnce(sqlx::PgPool) -> TestResult) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
@@ -13,13 +31,19 @@ fn run(tag: &'static str, case: impl AsyncFnOnce(sqlx::PgPool) -> TestResult) ->
         let database = Database::create(admin, tag).await?;
         let result = async {
             let pool = sqlx::PgPool::connect(&database.url).await?;
-            let result = case(pool.clone()).await;
+            let result = async {
+                require_mail_migration(&pool).await?;
+                case(pool.clone()).await
+            }
+            .await;
             pool.close().await;
             result
         }
         .await;
         database.cleanup().await?;
-        result
+        result?;
+        eprintln!("native MAIL recipient/text migration0101 PASS: {tag}");
+        Ok(())
     })
 }
 
@@ -73,3 +97,6 @@ fn text_storage_rollback_loses_neither_atomicity_nor_command_retry() -> TestResu
 
 #[path = "character_inbox_reward_claim_postgres_cases.rs"]
 mod reward_claim_inbox;
+
+#[path = "character_inbox_reward_claim_mint_postgres_cases.rs"]
+mod reward_claim_inbox_mint;

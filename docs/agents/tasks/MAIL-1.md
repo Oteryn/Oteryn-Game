@@ -60,6 +60,49 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - content authoring inputs for parcel/letter/label/stamped definitions and mailbox bindings (source files only, not regenerated outputs)
 - `docs/agents/tasks/MAIL-1.md` (this record: status and notes only)
 
+### Explicit D1152/D1318/D1356 ownership amendment
+
+The [D1356 allocation](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098)
+supersedes the historical slot-only restriction below for the exact hunks in
+this checkpoint. It assigns the complete existing migration **0101**, not a new
+migration number; production activation remains after #2197. Owned additions:
+
+- `apps/game-server/migrations/0101_mail.sql` — existing TEXT schema plus the
+  complete D1318 sink and fresh reward-mint/receipt/audit guards and grants.
+- `apps/game-server/src/durability/character_inbox.rs` and
+  `character_inbox_reward_claim.rs` — actual native seam and bridge exports.
+- `apps/game-server/src/durability/character_inbox_reward_claim.sql` — remove
+  the former private SQL copy after moving its full body into migration 0101.
+- `apps/game-server/src/durability/character_inbox_reward_claim_mint.rs` and
+  `character_inbox_reward_claim_mint_tests.rs` — native bridge and source tests.
+- `apps/game-server/tests/support/mail_postgres_cases.rs`,
+  `character_inbox_reward_claim_postgres_cases.rs` and
+  `character_inbox_reward_claim_mint_postgres_cases.rs` — existing canonical
+  mount, exact installed migration checksum, and twenty meaningful PG cases.
+
+The same D1356 commit includes only these **eight granted shared file scopes**:
+
+- `apps/game-server/src/durability/reward_claim_mint_audit.rs` — optional Inbox
+  field 5 and its native encode/decode dispatch within existing operation tag 4.
+- `apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs` and
+  `reward_claim_inbox_mint_audit_tests.rs` — that field's native codec and tests.
+- `apps/game-server/src/durability/reward_claim_mint.rs` — only `inbox: None`
+  at existing CHEST struct construction sites; no legacy behavior change.
+- `apps/game-server/src/durability/item_mint_audit.rs` — only the real Inbox
+  outbox writer leaf in the existing insert-site inventory; retain TRADE's line
+  when the second PR integrates main.
+- `docs/contracts/game-events/v1/native_one_item_transaction.proto` — optional
+  field 5 and two messages; outer operation tags and tuple numbers unchanged.
+- `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` — one additive tag-4
+  Inbox note, without broad registry edits.
+- `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` — eight Inbox rows explicitly
+  **CANDIDATE** until actual native prost/JSON measurements are recorded.
+
+The already-owned `item_text.rs` hunk only relocates its exact storage DDL into
+0101 and removes private fixture schema execution. All prior TEXT table, key,
+check and index semantics are preserved. Other shared wiring, source generation
+and publication remain with the coordinator/CP.
+
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
@@ -663,3 +706,130 @@ Inbox sink/composition cases. Without routed PostgreSQL, the same filter is
 only noncanonical regression execution. Status remains **NOT_FULLY_QUALIFIED**;
 the actual fresh-mint receipt/audit bridge, protected activation and source-owner
 composition remain unfinished work, with no ready or merge claim.
+
+## D1356 — installed reward-mint/Inbox composition checkpoint (2026-10-17)
+
+**Status: NOT_FULLY_QUALIFIED. This successor's Cargo, strict Clippy, native
+PostgreSQL and actual prost/JSON size measurements are NOT_RUN at author handoff.**
+The exact base is MAIL `dcac535eb5141ebd8bee6159e9af100459314dad`, tree
+`f623359e4290b44afbb1c26ac6a2c3587a547488`, with parents
+`00c4767bd3a5c8793e0678f5a6209f9fecb0b865` and protected main
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`. All retained preimages were fetched
+at this exact base and Git-blob verified. The historical local proposal remains
+frozen separately; this checkpoint implements the subsequently granted
+[D1356 composition](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098).
+
+### Actual writer and standing migration
+
+`DurabilityRoot::prepare_reward_claim_inbox_mint` validates real recovery,
+admission and the session/node/Character fence, then durably freezes the source
+plan, resolved mint facts, native EventId/time and full unsigned CommandRef.
+The opaque candidate binds original source hash, complete mint-spec hash and
+full output plan. CHEST and Inbox take the same advisory CommandRef lock and
+cannot reserve one another's command.
+
+`commit_reward_claim_inbox_mint` first reconciles an exact immutable replay.
+Otherwise it durably charges the three-attempt work budget, enters the real
+fenced D1318 transaction, creates fresh ItemInstances and optional keys, obtains
+permanent Inbox ordinals, writes the immutable receipt and registered
+`reward_claim_mint` audit, and invokes the source owner's claim/line callback
+with that same transaction. Refusal or incomplete proof rolls all value back;
+the charged work survives. Committed replay performs no mint, source callback or
+new charge. Callers reconcile the prepared candidate's fully bound plan.
+
+Standing `apps/game-server/migrations/0101_mail.sql` now contains the complete
+existing TEXT schema, D1318 narrow sink, fresh-mint reservation/receipt/lines,
+all proof functions, shared guard amendments and grants. The three original
+mint/size/KEY guard bodies are preserved below their new Inbox proof arms.
+Two keyed outputs remove only the old unique minted-transaction index from
+`game_item_keys`; its item primary key, immutability and exact same-transaction
+receipt/quantity-one proof remain. Private reservation/receipt/line tables
+have no runtime read/write grants; pinned definer helpers expose the narrow
+operations and boolean proof required by native triggers.
+
+There is no remaining private runtime SQL schema copy. All twenty canonical
+MAIL cases require the actual SQLx migrator's **0101 checksum**, including the
+six existing recipient/text exercises. Their assertions are preserved. The
+TEXT schema literal moves unchanged from its owned Rust leaf into the migration;
+the historical recipient/text identity fixture still seeds its own input and
+is not fresh-mint qualification.
+
+### Meaningful native inventory
+
+The six new bridge cases test twenty actual outputs (including two distinct
+keys), native audit decoding, exact physical transaction stamps and full-u64
+replay; source-refusal/caught-refusal rollback and retry; real fence refusals;
+persistent three-attempt work; runtime/private grants and bidirectional
+CHEST/Inbox exclusion; and independently omitted actual receipt or audit.
+
+The eight prior sink cases now run against that same complete installed schema:
+
+- Real public mint + source + full-plan commit and bound-plan replay once.
+- Source refusal after actual value/proof writes, zero value footprint, and a
+  retry that retains ordinals while charging the next work unit.
+- Real prepare/charge/begin with one omitted delivery, then a separate full
+  bridge attempt that catches an unplanned delivery after all planned writes.
+- A genuinely committed native Ground MINT supplies the old-mint and existing
+  Ground refusal inputs. The wrong-World probe explicitly targets the narrow
+  SQL **Character-root World** guard while the real Root fence stays current;
+  it makes no claim about the later item-World branch. Each refusal preserves
+  the entire preexisting footprint.
+- Independent session, connection, lease, scope, node and Root authority faults,
+  with a valid source-entry control and no callback on the rejected paths.
+- A privileged test-only PostgreSQL recovery-generation fault against the
+  externally held real seal, without disabling any trigger, blocks delivery
+  and reconciliation before source entry.
+- Real partial-plan finish and a complete native receipt with omitted outbox,
+  each reaching its specific SQLSTATE/message. The missing-audit test forces
+  only its named receipt constraint so another guard cannot mask the fault.
+- Actual narrow EXECUTE grants and private journal/reservation/receipt/line
+  access refusals under the runtime role.
+
+The fresh-value cases use the actual Root holder under `oteryn_game_runtime`
+before preparation, work charge and value writes. Only source claim/line tables
+and the explicitly named Combat-death input for the native Ground refusal
+fixture are test-owned. No fake item/audit seed, replica bypass, duplicate
+harness or weakening of value guards remains in these fourteen Inbox cases.
+Every configured case emits its completion marker only after its body and
+database cleanup succeed. Missing admin routing emits PRE-ROUTING /
+NONCANONICAL and cannot emit such a marker or qualify PostgreSQL behavior.
+
+### Codec, caps and qualification boundary
+
+The native codec adds optional Inbox field 5 inside existing tag 4, preserving
+legacy CHEST fields/bytes and all outer operation and type-2 tuple numbers. Its
+eight resource rows remain **CANDIDATE**: 20 fresh outputs/placements/participants,
+41 bridge effect units, one event, 32,768 payload bytes, 34,816 envelope bytes
+and a 65,536-byte frozen JSON spec. The source owner accounts for its additional
+claim/line effects. This is a source output bound, not an Inbox capacity rule.
+
+Three source tests cover complete binding, independent input refusals and
+maximum JSON escaping. Four audit tests cover tuple round trips, independent
+malformed fields, exact envelope identity and finite bounds. Their maximum
+cases print the actual native prost payload/envelope and canonical JSON sizes;
+**no measured size or executed result is claimed here**.
+
+The coordinator qualifies the exact published successor with the repo-pinned
+toolchain and current authorized runner/resource route. Core command vectors:
+
+```bash
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --lib character_inbox::reward_claim::mint::tests:: -- --nocapture
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --lib reward_claim_mint_audit:: -- --nocapture
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --list
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --test-threads=1 --nocapture
+```
+
+The configured canonical inventory is **20 PG cases: 6 recipient/text + 8
+adapted sink/refusal + 6 fresh-mint bridge**. Rustfmt 1.94 parsing/check, exact
+preimage matching and patch/whitespace checks are source preparation gates only.
+The earlier exact `00c4767b` strict CI (3,164 passed, 29 preexisting ignored,
+6 ops passed) and canonical PG (1,510 passed, including its old 14 MAIL cases)
+remain predecessor evidence; they do not qualify this bridge or migration.
+
+Production activation remains after #2197 under D1152/D1318/D1356. The complete
+MAIL value writer is now concrete; actual DAILY/source claim acquisition and
+resolved Content caller integration must still use its real same-transaction
+callback. No source-specific caller authority, successful production activation,
+MAIL transport, parcel, posting or system-letter completion is inferred. CP
+retains ready/merge authority and the second shared-audit PR integrates current
+main before its slot commit.

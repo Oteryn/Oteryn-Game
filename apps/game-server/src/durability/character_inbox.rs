@@ -4,8 +4,8 @@
 //! Under CP D1152/D1318 MAIL owns the same-transaction reward Inbox boundary;
 //! see [`RewardClaimInboxTransaction`]. The source owner composes its claim,
 //! mint, binding and existing `reward_claim_mint` audit within that native Root
-//! transaction. The post-#2197 migration/audit integration remains a CP slot;
-//! the candidate SQL is never installed by runtime code.
+//! transaction. Migration 0101 installs the complete sink/mint receipt and audit
+//! guards; production caller activation remains after #2197 under CP D1356.
 //!
 //! The underlying `game_character_inbox_deliver` function remains unavailable
 //! to runtime. Callers use their own narrow SECURITY DEFINER seam and audit the
@@ -24,9 +24,9 @@ use sqlx::postgres::PgConnection;
 mod reward_claim;
 
 pub use reward_claim::{
-    REWARD_CLAIM_INBOX_ITEMS_MAX, REWARD_CLAIM_INBOX_SCHEMA_CANDIDATE, RewardClaimInboxError,
-    RewardClaimInboxOutcome, RewardClaimInboxPlan, RewardClaimInboxPosition,
-    RewardClaimInboxTransaction,
+    REWARD_CLAIM_INBOX_ITEMS_MAX, RewardClaimInboxError, RewardClaimInboxMintCandidate,
+    RewardClaimInboxMintOutput, RewardClaimInboxMintRequest, RewardClaimInboxOutcome,
+    RewardClaimInboxPlan, RewardClaimInboxPosition, RewardClaimInboxTransaction,
 };
 
 /// The SQLSTATEs `game_character_inbox_deliver` and the Inbox guards raise (migration 0076).

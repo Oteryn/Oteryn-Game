@@ -13,9 +13,9 @@
 //! plan, callback nor caller-supplied boolean is authority. The borrowed context
 //! cannot be constructed outside this module or retained beyond the native pass.
 //!
-//! The post-#2197 migration slot supplies the narrow privileged lookup/delivery
-//! functions. It must also integrate the existing mint owner's Inbox destination,
-//! receipt and audit guards. Migration 0076 alone deliberately cannot execute
+//! Migration 0101 supplies the narrow privileged lookup/delivery functions and
+//! the actual fresh-mint Inbox receipt/audit guards. Production activation stays
+//! after #2197 under CP D1356. Migration 0076 alone deliberately cannot execute
 //! this path. The existing CHEST backpack commit must never be followed by a
 //! separate Inbox commit and described as an atomic reward delivery.
 
@@ -37,15 +37,14 @@ use sqlx::{Postgres, Row, Transaction};
 use std::future::Future;
 use std::pin::Pin;
 
+#[path = "character_inbox_reward_claim_mint.rs"]
+mod mint;
+pub use mint::{
+    RewardClaimInboxMintCandidate, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
+};
+
 /// DAILY-REWARD-0 §4.1: the source's output bound, not an Inbox capacity limit.
 pub const REWARD_CLAIM_INBOX_ITEMS_MAX: usize = 20;
-
-/// Reviewable migration material for the CP slot, never installed by runtime
-/// code. Tests install this exact material only in their private migrated DB.
-/// The existing reward-mint receipt/audit destination integration remains a
-/// prerequisite; this material does not replace or relax those shared guards.
-pub const REWARD_CLAIM_INBOX_SCHEMA_CANDIDATE: &str =
-    include_str!("character_inbox_reward_claim.sql");
 
 /// A frozen source intent, never a native authority capability. The source owner
 /// must retain this exact plan across retries and bind its own claim receipt to
@@ -112,6 +111,10 @@ pub struct RewardClaimInboxPosition {
 #[derive(Debug)]
 pub enum RewardClaimInboxError {
     InvalidPlan,
+    CapacityExceeded,
+    /// The source owner refused its claim or item binding in the borrowed
+    /// transaction. Fresh mint, Inbox placement and audit must all roll back.
+    SourceRefused,
     AuthorityRejected,
     /// An item already has a different delivery binding, or only a proper
     /// subset of this supposedly atomic plan has committed.
@@ -141,6 +144,10 @@ impl std::fmt::Display for RewardClaimInboxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidPlan => f.write_str("invalid reward Inbox output plan"),
+            Self::CapacityExceeded => {
+                f.write_str("reward Inbox registered work or size bound exceeded")
+            }
+            Self::SourceRefused => f.write_str("reward Inbox source refused its claim or binding"),
             Self::AuthorityRejected => f.write_str("reward Inbox authority rejected"),
             Self::ConflictingDelivery => f.write_str("reward Inbox delivery binding conflicts"),
             Self::IncompleteDelivery => f.write_str("reward Inbox output plan is incomplete"),
@@ -172,6 +179,8 @@ pub struct RewardClaimInboxTransaction<'connection> {
     binding: [u8; 32],
     physical_xact_id: String,
     backend_pid: i32,
+    connection_generation: u64,
+    character_lease_generation: u64,
     positions: Vec<Option<RewardClaimInboxPosition>>,
     refused: bool,
 }
@@ -358,6 +367,8 @@ impl DurabilityRoot {
                         binding,
                         physical_xact_id: row.try_get("xact_id")?,
                         backend_pid: row.try_get("backend_pid")?,
+                        connection_generation: fence.connection_generation.get(),
+                        character_lease_generation: fence.character_lease_generation,
                         positions,
                         refused: false,
                     };

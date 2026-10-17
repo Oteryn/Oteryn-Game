@@ -1,354 +1,309 @@
 //! Native MAIL Inbox seam qualification, PostgreSQL 17.6 only.
 //!
-//! The real native Root, recovery proof, node registration/assignment, admission
-//! guards and Character fence come from the existing canonical harness. The
-//! source item/audit fixture below deliberately stands in for the unintegrated
-//! reward-mint Inbox destination bridge: it disables item-seeding triggers only
-//! inside the test-owned seed function. Every Inbox function/constraint and the
-//! transaction runner execute normally, including runtime-role grants. These
-//! cases qualify the Inbox sink and composition, not production DAILY/CHEST mint.
+//! Every case requires the exact installed SQLx migration 0101. Fresh positives
+//! use the real native reward mint/receipt/audit bridge under the runtime role.
+//! Only source-owned claim/line records are a disclosed fixture. Refusals use
+//! actual native begin/finish or a genuinely committed Ground MINT; no value
+//! seed, private schema copy, fake audit bytes or disabled guard is used.
 
+use super::reward_claim_inbox_mint::{
+    IncompleteProof, SourceMode, SourceOwner, footprint, incomplete_proof, plan as source_plan,
+    request, reservation, return_connection, run, source_write,
+};
 use crate::bestiary_postgres_harness as harness;
 use crate::durability::DurabilityRoot;
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_inbox::{
-    CharacterInboxDeliveryError, REWARD_CLAIM_INBOX_SCHEMA_CANDIDATE, RewardClaimInboxError,
-    RewardClaimInboxOutcome, RewardClaimInboxPlan, RewardClaimInboxPosition,
-    RewardClaimInboxTransaction,
+    CharacterInboxDeliveryError, RewardClaimInboxError, RewardClaimInboxMintCandidate,
+    RewardClaimInboxOutcome, RewardClaimInboxPlan, RewardClaimInboxTransaction,
+};
+use crate::durability::item_mint::{
+    CommittedItemMint, GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest,
+    TypedDefinitionRef,
 };
 use crate::foundation::{
-    ChannelId, CommandId, CommandRef, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
-    ScopeOwnershipGeneration, WorldId,
+    ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+    WorldId,
 };
-use harness::{CHANNEL, CHARACTER, Harness, SESSION, TestResult, WORLD, debug, id, item_fence};
+use harness::{CHANNEL, Harness, TestResult, WORLD, debug, id, item_fence};
 use sqlx::{Executor, Row};
 
-fn plan(command_id: u64) -> TestResult<RewardClaimInboxPlan> {
-    Ok(RewardClaimInboxPlan {
-        command: CommandRef::new(
-            GameSessionId::decode(&id(SESSION)).map_err(debug)?,
-            CommandId::new(command_id).map_err(debug)?,
-        ),
-        character_id: crate::domain::CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?,
-        world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-        channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
-        transaction_id: id(70),
-        source_binding: [5; 32],
-        item_instance_ids: vec![id(71), id(72)],
-    })
+fn plan(command: u64) -> TestResult<RewardClaimInboxPlan> {
+    source_plan(command, 2)
 }
 
-fn run(tag: &'static str, case: impl AsyncFnOnce(&Harness) -> TestResult) -> TestResult {
-    // Match the canonical target's PRE-ROUTING / NONCANONICAL path. Only a
-    // configured PostgreSQL 17.6 run that executes the body qualifies this seam.
-    let Some(admin) = harness::configured_admin() else {
-        return Ok(());
-    };
-    harness::runtime()?.block_on(async move {
-        let harness = Harness::create(admin, tag, true).await?;
-        let result = async {
-            install_source_fixture(&harness).await?;
-            case(&harness).await
-        }
-        .await;
-        harness.cleanup().await?;
-        result
-    })
+fn assert_sql_refusal(error: &sqlx::Error, code: &str, message: &str) {
+    let database = error.as_database_error();
+    assert_eq!(database.and_then(|e| e.code()).as_deref(), Some(code));
+    assert_eq!(database.map(|e| e.message()), Some(message));
 }
 
-async fn install_source_fixture(harness: &Harness) -> TestResult {
-    sqlx::raw_sql(REWARD_CLAIM_INBOX_SCHEMA_CANDIDATE)
-        .execute(&harness.pool)
-        .await?;
-    sqlx::raw_sql(r#"
-      CREATE TABLE test_reward_inbox_source_writes (
-        transaction_id UUID PRIMARY KEY, source_binding BYTEA NOT NULL,
-        created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id()
-      );
-      GRANT SELECT,INSERT ON test_reward_inbox_source_writes TO oteryn_game_runtime;
-      CREATE FUNCTION test_reward_inbox_seed_item(p_item UUID, p_world UUID, p_transaction UUID)
-      RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER
-      SET search_path=pg_catalog,public,pg_temp SET session_replication_role=replica AS $$
-      BEGIN
-        INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,
-          definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id)
-        VALUES(p_item,p_world,'Item','fixture:inbox.reward','fixture-r1',1,1,p_transaction);
-      END $$;
-      CREATE FUNCTION test_reward_inbox_add_ground(p_item UUID, p_world UUID)
-      RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER
-      SET search_path=pg_catalog,public,pg_temp SET session_replication_role=replica AS $$
-      BEGIN
-        INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,
-          runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,
-          content_revision,native_room_placement_context)
-        VALUES(p_item,p_world,game_character_uuid_v7(),1,decode('01','hex'),decode('01','hex'),
-          'm1','c1',decode('01','hex'));
-      END $$;
-      REVOKE ALL ON FUNCTION test_reward_inbox_seed_item(UUID,UUID,UUID),
-        test_reward_inbox_add_ground(UUID,UUID) FROM PUBLIC;
-      GRANT EXECUTE ON FUNCTION test_reward_inbox_seed_item(UUID,UUID,UUID),
-        test_reward_inbox_add_ground(UUID,UUID) TO oteryn_game_runtime;
-    "#).execute(&harness.pool).await?;
-    Ok(())
+/// Only the deliberate lower-seam faults use this helper. Public preparation
+/// has already frozen the real reservation; its actual runtime-only charge is
+/// durable independently of the value transaction, exactly as in the bridge.
+async fn charge_native_attempt(
+    h: &Harness,
+    candidate: &RewardClaimInboxMintCandidate,
+) -> TestResult<(Vec<u8>, Vec<u8>, i16)> {
+    let (binding, intent, before) = reservation(h).await?;
+    let plan = candidate.plan();
+    let mut connection = h.root.try_acquire_ready().map_err(debug)?;
+    let used: i16 = sqlx::query_scalar("SELECT work_units_used FROM game_reward_claim_inbox_mint_charge(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4)")
+        .bind(plan.command.game_session_id().as_bytes().as_slice())
+        .bind(plan.command.command_id().get().to_string())
+        .bind(plan.transaction_id.as_slice()).bind(&binding)
+        .fetch_one(&mut *connection).await?;
+    return_connection(connection).await?;
+    assert_eq!(used, before + 1);
+    Ok((binding, intent, used))
 }
 
-#[derive(Clone, Copy)]
-enum FixtureFault {
-    None,
-    WrongWorld,
-    OldMint,
-    Ground,
-    MissingAudit,
-}
-
-async fn stage_source(
+async fn begin_native_mint(
     context: &mut RewardClaimInboxTransaction<'_>,
-    fault: FixtureFault,
+    binding: &[u8],
 ) -> Result<(), RewardClaimInboxError> {
     let plan = context.plan().clone();
-    let tuple = context.selected_type2_tuple();
-    assert_eq!(context.typed_cause(), "reward_claim_mint");
-    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
-        .execute(&mut **context.transaction())
-        .await?;
-    let role: String = sqlx::query_scalar("SELECT current_user")
-        .fetch_one(&mut **context.transaction())
-        .await?;
-    assert_eq!(role, "oteryn_game_runtime");
-    sqlx::query("INSERT INTO test_reward_inbox_source_writes(transaction_id,source_binding) VALUES(encode($1,'hex')::uuid,$2)")
-        .bind(plan.transaction_id.as_slice()).bind(plan.source_binding.as_slice())
+    sqlx::query("SELECT game_reward_claim_inbox_mint_begin(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4)")
+        .bind(plan.command.game_session_id().as_bytes().as_slice())
+        .bind(plan.command.command_id().get().to_string())
+        .bind(plan.transaction_id.as_slice()).bind(binding)
         .execute(&mut **context.transaction()).await?;
-    for (index, item) in plan.item_instance_ids.iter().enumerate() {
-        let is_last = index + 1 == plan.item_instance_ids.len();
-        let world = if is_last && matches!(fault, FixtureFault::WrongWorld) {
-            id(80)
-        } else {
-            *plan.world_id.as_bytes()
-        };
-        let transaction = if is_last && matches!(fault, FixtureFault::OldMint) {
-            id(81)
-        } else {
-            plan.transaction_id
-        };
-        sqlx::query("SELECT test_reward_inbox_seed_item(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid)")
-            .bind(item.as_slice()).bind(world.as_slice()).bind(transaction.as_slice())
-            .execute(&mut **context.transaction()).await?;
-        if is_last && matches!(fault, FixtureFault::Ground) {
-            sqlx::query("SELECT test_reward_inbox_add_ground(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
-                .bind(item.as_slice()).bind(world.as_slice())
-                .execute(&mut **context.transaction()).await?;
-        }
-    }
-    if !matches!(fault, FixtureFault::MissingAudit) {
-        // Test-owned upstream witness only: this payload intentionally does not
-        // claim to be a production reward-claim audit. The native Inbox trigger
-        // checks its real transaction stamp; the shared mint/audit adapter has
-        // separate qualification and is not bypassed in production by this test.
-        let envelope = b"TEST-ONLY-INBOX-SOURCE-WITNESS";
-        sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state,published_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,1700000000000,1707776000000,$6,sha256($6),1,NULL)")
-            .bind(id(90).as_slice()).bind(plan.transaction_id.as_slice())
-            .bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id())
-            .bind(plan.item_instance_ids[0].as_slice()).bind(envelope.as_slice())
-            .execute(&mut **context.transaction()).await?;
-    }
     Ok(())
 }
 
-async fn deliver_all(
-    context: &mut RewardClaimInboxTransaction<'_>,
-) -> Result<Vec<RewardClaimInboxPosition>, RewardClaimInboxError> {
-    let items = context.plan().item_instance_ids.clone();
-    let mut positions = Vec::with_capacity(items.len());
-    for item in items {
-        let first = context.deliver(item).await?;
-        assert_eq!(
-            context.deliver(item).await?,
-            first,
-            "same-TX retry must retain its ordinal"
-        );
-        positions.push(first);
+/// This is the existing canonical native Ground MINT vector, using a disclosed
+/// test-only Combat death cause. All real MINT/receipt/outbox/location guards
+/// execute, and the actual committed transaction identity is retained.
+async fn mint_ground(
+    h: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+) -> TestResult<CommittedItemMint> {
+    let definition = |family: &str, key: &str| TypedDefinitionRef {
+        family: family.into(),
+        production_key: key.into(),
+        revision_ref: "r1".into(),
+    };
+    let request = ItemMintRequest {
+        cause: ItemMintCause::for_test(
+            WorldId::decode(&id(WORLD)).map_err(debug)?,
+            ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            ScopeOwnershipGeneration::new(1).map_err(debug)?,
+            1,
+            1,
+            definition("LootTable", "fixture:loot.b3"),
+            "fixture:purpose.drop".into(),
+            0,
+        ),
+        item: definition("Item", "fixture:inbox.ground-refusal"),
+        quantity: 1,
+        ground: GroundPlacement {
+            spatial_position: vec![1, 2, 3],
+            corpse_ref: id(3).to_vec(),
+            map_revision: "map-1".into(),
+            content_revision: "content-1".into(),
+            native_room_placement_context: id(6).to_vec(),
+        },
+        content_revision: "content-1".into(),
+        ruleset_revision: "ruleset-1".into(),
+        sim_revision: "sim-1".into(),
+    };
+    let mut candidate = h
+        .root
+        .freeze_item_mint(authority, &h.node, request)
+        .await
+        .map_err(debug)?;
+    match h
+        .root
+        .commit_item_mint(
+            &candidate.fresh_death_lane_permit().await,
+            authority,
+            &h.node,
+            &mut candidate,
+        )
+        .await
+        .map_err(debug)?
+    {
+        ItemMintOutcome::Committed(result) => Ok(result),
+        other => Err(format!("expected native Ground MINT, got {other:?}").into()),
     }
-    Ok(positions)
-}
-
-async fn footprint(harness: &Harness) -> TestResult<Vec<i64>> {
-    let mut counts = Vec::new();
-    for table in [
-        "test_reward_inbox_source_writes",
-        "game_item_instances",
-        "game_item_audit_outbox",
-        "game_character_inbox_deliveries",
-        "game_item_character_inbox_locations",
-        "game_character_inbox_counters",
-    ] {
-        counts.push(harness.count(table).await?);
-    }
-    Ok(counts)
 }
 
 #[test]
-fn native_inbox_sink_commits_fixture_source_and_full_plan_once() -> TestResult {
-    run("mail_inbox_once", async |harness| {
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
+fn native_inbox_sink_commits_real_mint_source_and_full_plan_once() -> TestResult {
+    run("mail_inbox_once", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
         let plan = plan(u64::MAX)?;
-        let mut calls = 0_usize;
-        let first = harness
+        let request = request(2);
+        let mut source = SourceOwner::new(&plan, &request);
+        let mut candidate = h
             .root
-            .with_reward_claim_inbox_transaction(
+            .prepare_reward_claim_inbox_mint(&authority, &h.node, item_fence()?, &plan, request)
+            .await
+            .map_err(debug)?;
+        let first = h
+            .root
+            .commit_reward_claim_inbox_mint(
                 &authority,
-                &harness.node,
+                &h.node,
                 item_fence()?,
-                &plan,
-                &mut calls,
-                |context, calls| {
-                    Box::pin(async move {
-                        *calls += 1;
-                        stage_source(context, FixtureFault::None).await?;
-                        deliver_all(context).await
-                    })
-                },
+                &mut candidate,
+                &mut source,
+                |context, source| Box::pin(source_write(context, source)),
             )
             .await
             .map_err(debug)?;
-        let RewardClaimInboxOutcome::Committed { source, positions } = first else {
-            return Err("expected a native sink commit".into());
+        let RewardClaimInboxOutcome::Committed {
+            source: written,
+            positions,
+        } = first
+        else {
+            return Err("expected an actual native mint + sink commit".into());
         };
-        assert_eq!(source, positions);
+        assert_eq!(
+            written, positions,
+            "same-TX delivery retries retain ordinals"
+        );
         assert_eq!(
             positions.iter().map(|p| p.ordinal).collect::<Vec<_>>(),
             [1, 2]
         );
-        assert_eq!(calls, 1);
-        assert_eq!(footprint(harness).await?, [1, 2, 1, 2, 2, 1]);
-        assert_eq!(harness.root_revision().await?, "1");
-        let same_transaction: bool = sqlx::query_scalar("SELECT bool_and(d.created_xact_id=s.created_xact_id AND d.created_xact_id=a.created_xact_id) FROM game_character_inbox_deliveries d CROSS JOIN test_reward_inbox_source_writes s CROSS JOIN game_item_audit_outbox a")
-            .fetch_one(&harness.pool).await?;
+        assert_eq!(source.calls, 1);
+        assert_eq!(footprint(h).await?, [2, 0, 1, 1, 2, 2, 2, 1, 1, 2]);
+        assert_eq!(h.root_revision().await?, "1");
+        assert_eq!(reservation(h).await?.2, 1);
+        let same_transaction: bool = sqlx::query_scalar("SELECT bool_and(d.created_xact_id=s.created_xact_id AND d.created_xact_id=a.created_xact_id AND d.created_xact_id=r.created_xact_id AND d.created_xact_id=l.created_xact_id) FROM game_character_inbox_deliveries d CROSS JOIN test_inbox_mint_claims s CROSS JOIN game_item_audit_outbox a CROSS JOIN game_reward_claim_inbox_mint_receipts r CROSS JOIN game_reward_claim_inbox_mint_lines l")
+            .fetch_one(&h.pool).await?;
         assert!(same_transaction);
-
         let mut stale = item_fence()?;
         stale.connection_generation = ConnectionGeneration::new(99).map_err(debug)?;
-        let replay = harness
+        let replay = h
             .root
-            .with_reward_claim_inbox_transaction(
+            .commit_reward_claim_inbox_mint(
                 &authority,
-                &harness.node,
+                &h.node,
                 stale,
-                &plan,
-                &mut calls,
-                |_, calls| {
-                    Box::pin(async move {
-                        *calls += 1;
-                        Ok(())
-                    })
-                },
+                &mut candidate,
+                &mut source,
+                |context, source| Box::pin(source_write(context, source)),
             )
             .await
             .map_err(debug)?;
         assert!(
             matches!(replay, RewardClaimInboxOutcome::AlreadyCommitted(ref p) if *p == positions)
         );
-        assert_eq!(calls, 1, "replay must not invoke the source");
+        assert_eq!(source.calls, 1);
         assert_eq!(
-            harness
-                .root
-                .reconcile_reward_claim_inbox(&authority, &plan)
+            reservation(h).await?.2,
+            1,
+            "committed replay consumes no work"
+        );
+        // Preparation binds the mint intent into this plan. The original
+        // source plan deliberately cannot impersonate that terminal binding.
+        assert_eq!(
+            h.root
+                .reconcile_reward_claim_inbox(&authority, candidate.plan())
                 .await
                 .map_err(debug)?,
             Some(positions)
         );
-
-        let mut changed = plan.clone();
+        let mut changed = candidate.plan().clone();
         changed.item_instance_ids = vec![id(73), id(74)];
         assert!(matches!(
-            harness
-                .root
+            h.root
                 .with_reward_claim_inbox_transaction(
                     &authority,
-                    &harness.node,
+                    &h.node,
                     item_fence()?,
                     &changed,
-                    &mut calls,
-                    |_, calls| Box::pin(async move {
-                        *calls += 1;
-                        Ok(())
-                    }),
+                    &mut source,
+                    |context, source| Box::pin(source_write(context, source)),
                 )
                 .await,
             Err(RewardClaimInboxError::ConflictingDelivery)
         ));
-        let mut changed = plan.clone();
+        let mut changed = candidate.plan().clone();
         changed.source_binding[0] ^= 1;
         assert!(matches!(
-            harness
-                .root
+            h.root
                 .reconcile_reward_claim_inbox(&authority, &changed)
                 .await,
             Err(RewardClaimInboxError::ConflictingDelivery)
         ));
-        assert_eq!(calls, 1);
-        assert_eq!(footprint(harness).await?, [1, 2, 1, 2, 2, 1]);
+        assert!(matches!(
+            h.root.reconcile_reward_claim_inbox(&authority, &plan).await,
+            Err(RewardClaimInboxError::ConflictingDelivery)
+        ));
+        assert_eq!(source.calls, 1);
+        assert_eq!(footprint(h).await?, [2, 0, 1, 1, 2, 2, 2, 1, 1, 2]);
         Ok(())
     })
 }
 
 #[test]
 fn native_inbox_source_refusal_rolls_back_and_retry_reuses_ordinals() -> TestResult {
-    run("mail_inbox_rollback", async |harness| {
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
+    run("mail_inbox_rollback", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
         let plan = plan(1)?;
-        let mut calls = 0_usize;
-        let rejected = harness
+        let request = request(2);
+        let mut source = SourceOwner::new(&plan, &request);
+        source.mode = SourceMode::Refuse;
+        let mut candidate = h
             .root
-            .with_reward_claim_inbox_transaction(
+            .prepare_reward_claim_inbox_mint(&authority, &h.node, item_fence()?, &plan, request)
+            .await
+            .map_err(debug)?;
+        let rejected = h
+            .root
+            .commit_reward_claim_inbox_mint(
                 &authority,
-                &harness.node,
+                &h.node,
                 item_fence()?,
-                &plan,
-                &mut calls,
-                |context, calls| {
-                    Box::pin(async move {
-                        *calls += 1;
-                        stage_source(context, FixtureFault::None).await?;
-                        deliver_all(context).await?;
-                        Err::<(), _>(RewardClaimInboxError::InvalidPlan)
-                    })
-                },
+                &mut candidate,
+                &mut source,
+                |context, source| Box::pin(source_write(context, source)),
             )
             .await;
-        assert!(matches!(rejected, Err(RewardClaimInboxError::InvalidPlan)));
-        assert_eq!(footprint(harness).await?, [0, 0, 0, 0, 0, 0]);
+        assert!(matches!(
+            rejected,
+            Err(RewardClaimInboxError::SourceRefused)
+        ));
         assert_eq!(
-            harness
-                .root
-                .reconcile_reward_claim_inbox(&authority, &plan)
+            source.calls, 1,
+            "complete native mint must reach the refusing source"
+        );
+        assert_eq!(footprint(h).await?, [0; 10]);
+        assert_eq!(
+            h.count("game_reward_claim_inbox_mint_reservations").await?,
+            1
+        );
+        assert_eq!(reservation(h).await?.2, 1);
+        assert_eq!(
+            h.root
+                .reconcile_reward_claim_inbox(&authority, candidate.plan())
                 .await
                 .map_err(debug)?,
             None
         );
-        let retry = harness
+        source.mode = SourceMode::Accept;
+        let retry = h
             .root
-            .with_reward_claim_inbox_transaction(
+            .commit_reward_claim_inbox_mint(
                 &authority,
-                &harness.node,
+                &h.node,
                 item_fence()?,
-                &plan,
-                &mut calls,
-                |context, calls| {
-                    Box::pin(async move {
-                        *calls += 1;
-                        stage_source(context, FixtureFault::None).await?;
-                        deliver_all(context).await
-                    })
-                },
+                &mut candidate,
+                &mut source,
+                |context, source| Box::pin(source_write(context, source)),
             )
             .await
             .map_err(debug)?;
@@ -356,109 +311,177 @@ fn native_inbox_source_refusal_rolls_back_and_retry_reuses_ordinals() -> TestRes
             matches!(retry, RewardClaimInboxOutcome::Committed {ref positions, ..}
             if positions.iter().map(|p|p.ordinal).collect::<Vec<_>>() == [1,2])
         );
-        assert_eq!(calls, 2);
-        assert_eq!(footprint(harness).await?, [1, 2, 1, 2, 2, 1]);
+        assert_eq!(source.calls, 2);
+        assert_eq!(reservation(h).await?.2, 2);
+        assert_eq!(footprint(h).await?, [2, 0, 1, 1, 2, 2, 2, 1, 1, 2]);
         Ok(())
     })
 }
 
 #[test]
 fn native_inbox_omission_and_caught_refusal_cannot_commit() -> TestResult {
-    run("mail_inbox_incomplete", async |harness| {
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
+    run("mail_inbox_incomplete", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
         let plan = plan(1)?;
-        for caught_refusal in [false, true] {
-            let mut mode = caught_refusal;
-            let result = harness
-                .root
-                .with_reward_claim_inbox_transaction(
-                    &authority,
-                    &harness.node,
-                    item_fence()?,
-                    &plan,
-                    &mut mode,
-                    |context, caught| {
-                        Box::pin(async move {
-                            stage_source(context, FixtureFault::None).await?;
-                            if *caught {
-                                deliver_all(context).await?;
-                                assert!(context.deliver(id(79)).await.is_err());
-                            } else {
-                                let first = context.plan().item_instance_ids[0];
-                                context.deliver(first).await?;
-                            }
-                            Ok(())
-                        })
-                    },
-                )
-                .await;
-            assert!(matches!(
-                result,
-                Err(RewardClaimInboxError::IncompleteDelivery)
-            ));
-            assert_eq!(footprint(harness).await?, [0, 0, 0, 0, 0, 0]);
-        }
+        let request = request(2);
+        let mut source = SourceOwner::new(&plan, &request);
+        let mut candidate = h
+            .root
+            .prepare_reward_claim_inbox_mint(&authority, &h.node, item_fence()?, &plan, request)
+            .await
+            .map_err(debug)?;
+        let (binding, _, used) = charge_native_attempt(h, &candidate).await?;
+        assert_eq!(used, 1);
+        let mut omission = (binding, false);
+        let result = h
+            .root
+            .with_reward_claim_inbox_transaction(
+                &authority,
+                &h.node,
+                item_fence()?,
+                candidate.plan(),
+                &mut omission,
+                |context, omitted| {
+                    Box::pin(async move {
+                        begin_native_mint(context, &omitted.0).await?;
+                        let first = context.plan().item_instance_ids[0];
+                        context.deliver(first).await?;
+                        omitted.1 = true;
+                        Ok(())
+                    })
+                },
+            )
+            .await;
+        assert!(
+            omission.1,
+            "real begin and first delivery must precede omission refusal"
+        );
+        assert!(matches!(
+            result,
+            Err(RewardClaimInboxError::IncompleteDelivery)
+        ));
+        assert_eq!(footprint(h).await?, [0; 10]);
+        assert_eq!(reservation(h).await?.2, 1);
+        // Public bridge delivers the COMPLETE plan and writes receipt + audit
+        // before the source. Catching an unplanned delivery must still poison
+        // that otherwise-complete transaction independently of omission.
+        source.mode = SourceMode::CatchRefusal;
+        let result = h
+            .root
+            .commit_reward_claim_inbox_mint(
+                &authority,
+                &h.node,
+                item_fence()?,
+                &mut candidate,
+                &mut source,
+                |context, source| Box::pin(source_write(context, source)),
+            )
+            .await;
+        assert_eq!(source.calls, 1);
+        assert!(matches!(
+            result,
+            Err(RewardClaimInboxError::IncompleteDelivery)
+        ));
+        assert_eq!(footprint(h).await?, [0; 10]);
+        assert_eq!(reservation(h).await?.2, 2);
         Ok(())
     })
 }
 
 #[test]
-fn native_inbox_refuses_world_old_mint_and_other_location_atomically() -> TestResult {
-    run("mail_inbox_refusals", async |harness| {
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
+fn native_inbox_refuses_wrong_root_world_old_mint_and_real_ground_atomically() -> TestResult {
+    run("mail_inbox_refusals", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let plan = plan(1)?;
-        for mut fault in [
-            FixtureFault::WrongWorld,
-            FixtureFault::OldMint,
-            FixtureFault::Ground,
-        ] {
-            let result = harness
+        let minted = mint_ground(h, &authority).await?;
+        let before = footprint(h).await?;
+        assert_eq!(before, [1, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(h.count("game_item_mint_receipts").await?, 1);
+        assert_eq!(h.count("game_item_ground_locations").await?, 1);
+        let mut plan = source_plan(1, 1)?;
+        plan.item_instance_ids = vec![minted.item_instance_id];
+        plan.transaction_id = minted.transaction_id;
+        let mut reached_world = false;
+        let result = h.root.with_reward_claim_inbox_transaction(
+            &authority, &h.node, item_fence()?, &plan, &mut reached_world,
+            |context, reached| Box::pin(async move {
+                let plan = context.plan().clone();
+                // Deliberately misbind the narrow SQL World argument while the
+                // actual native Root fence remains current. This qualifies the
+                // Character-root World check, not the later item-World branch.
+                let error = sqlx::query("SELECT * FROM game_character_inbox_reward_claim_mint_deliver(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,$7::text::numeric,1::smallint)")
+                    .bind(plan.item_instance_ids[0].as_slice())
+                    .bind(plan.character_id.as_bytes().as_slice()).bind(id(80).as_slice())
+                    .bind(plan.transaction_id.as_slice()).bind(plan.source_binding.as_slice())
+                    .bind(plan.command.game_session_id().as_bytes().as_slice())
+                    .bind(plan.command.command_id().get().to_string())
+                    .fetch_all(&mut **context.transaction()).await
+                    .err().ok_or(RewardClaimInboxError::InvalidPlan)?;
+                assert_sql_refusal(&error, "OTI02", "reward Inbox Character World mismatch");
+                *reached = true;
+                Err::<(), _>(error.into())
+            }),
+        ).await;
+        assert!(reached_world);
+        assert!(matches!(
+            result,
+            Err(RewardClaimInboxError::Delivery(
+                CharacterInboxDeliveryError::WorldMismatch
+            ))
+        ));
+        assert_eq!(footprint(h).await?, before);
+        for old_transaction in [true, false] {
+            let mut attempted = plan.clone();
+            if old_transaction {
+                attempted.transaction_id = id(81);
+            }
+            let mut reached = false;
+            let result = h
                 .root
                 .with_reward_claim_inbox_transaction(
                     &authority,
-                    &harness.node,
+                    &h.node,
                     item_fence()?,
-                    &plan,
-                    &mut fault,
-                    |context, fault| {
+                    &attempted,
+                    &mut reached,
+                    |context, reached| {
                         Box::pin(async move {
-                            stage_source(context, *fault).await?;
-                            deliver_all(context).await
+                            *reached = true;
+                            let item = context.plan().item_instance_ids[0];
+                            context.deliver(item).await
                         })
                     },
                 )
                 .await;
-            match fault {
-                FixtureFault::WrongWorld => assert!(matches!(
-                    result,
-                    Err(RewardClaimInboxError::Delivery(
-                        CharacterInboxDeliveryError::WorldMismatch
-                    ))
-                )),
-                FixtureFault::OldMint => {
-                    assert!(matches!(result, Err(RewardClaimInboxError::MintNotProven)))
-                }
-                FixtureFault::Ground => assert!(matches!(
+            assert!(reached);
+            if old_transaction {
+                assert!(matches!(result, Err(RewardClaimInboxError::MintNotProven)));
+            } else {
+                assert!(matches!(
                     result,
                     Err(RewardClaimInboxError::Delivery(
                         CharacterInboxDeliveryError::ItemInAnotherLocation
                     ))
-                )),
-                _ => unreachable!(),
+                ));
             }
-            assert_eq!(footprint(harness).await?, [0, 0, 0, 0, 0, 0]);
-            assert_eq!(harness.root_revision().await?, "1");
+            assert_eq!(footprint(h).await?, before);
+            assert_eq!(h.count("game_item_ground_locations").await?, 1);
+            assert_eq!(h.count("game_item_mint_receipts").await?, 1);
+            assert_eq!(h.root_revision().await?, "1");
         }
+        assert_eq!(
+            h.count("game_reward_claim_inbox_mint_reservations").await?,
+            0
+        );
         Ok(())
     })
 }
@@ -539,7 +562,11 @@ fn native_inbox_fence_rejects_foreign_session_scope_node_and_root() -> TestResul
                 Err(RewardClaimInboxError::AuthorityRejected)
             ));
         }
-        let foreign_node = harness::register(&harness.root, 2).await?;
+        // Registration is a real control operation on an independent native Root;
+        // the value Root stays under oteryn_game_runtime throughout this case.
+        let control_root = DurabilityRoot::connect_test_runtime(&harness.database.url)?;
+        assert!(control_root.maintain_ready_once().await?);
+        let foreign_node = harness::register(&control_root, 2).await?;
         assert!(matches!(
             harness
                 .root
@@ -575,7 +602,7 @@ fn native_inbox_fence_rejects_foreign_session_scope_node_and_root() -> TestResul
             Err(RewardClaimInboxError::AuthorityRejected)
         ));
         assert_eq!(calls, 1);
-        assert_eq!(footprint(harness).await?, [0, 0, 0, 0, 0, 0]);
+        assert_eq!(footprint(harness).await?, [0; 10]);
         Ok(())
     })
 }
@@ -591,10 +618,13 @@ fn native_inbox_stale_recovery_blocks_delivery_and_reconciliation() -> TestResul
             .map_err(debug)?;
         let plan = plan(1)?;
         let mut tx = harness.pool.begin().await?;
-        tx.execute("SET LOCAL session_replication_role=replica")
-            .await?;
-        sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id,recovery_generation,recovery_event_id,predecessor_generation,predecessor_digest,issued_at,issuer_identity,reconciled_at) VALUES('character-primary',2,encode($1,'hex')::uuid,1,decode(repeat('ab',32),'hex'),200,'game-ops',200)")
-            .bind(id(12).as_slice()).execute(&mut *tx).await?;
+        // Privileged test-only recovery fault: PostgreSQL advances while the
+        // real external generation-one seal remains held. This is not a value
+        // fixture, a production recovery publisher, or a disabled trigger.
+        let predecessor = crate::character_recovery_fence::recovery_record_digest(seal.record())
+            .map_err(debug)?;
+        sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id,recovery_generation,recovery_event_id,predecessor_generation,predecessor_digest,issued_at,issuer_identity,reconciled_at) VALUES('character-primary',2,encode($1,'hex')::uuid,1,$2,200,'game-ops',200)")
+            .bind(id(12).as_slice()).bind(predecessor.as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
         let mut calls = 0_usize;
         assert!(matches!(
@@ -622,65 +652,137 @@ fn native_inbox_stale_recovery_blocks_delivery_and_reconciliation() -> TestResul
             Err(RewardClaimInboxError::Unavailable(_))
         ));
         assert_eq!(calls, 0);
-        assert_eq!(footprint(harness).await?, [0, 0, 0, 0, 0, 0]);
+        assert_eq!(footprint(harness).await?, [0; 10]);
         Ok(())
     })
 }
 
 #[test]
 fn native_inbox_sql_guard_refuses_partial_plan_and_missing_same_tx_audit() -> TestResult {
-    run("mail_inbox_guards", async |harness| {
-        let seal = harness.recovery.seal_current().map_err(debug)?;
-        let authority = harness
+    run("mail_inbox_guards", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
             .root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let plan = plan(1)?;
-        for mut partial in [true, false] {
-            let result = harness.root.with_reward_claim_inbox_transaction(
-                &authority, &harness.node, item_fence()?, &plan, &mut partial,
-                |context, partial| Box::pin(async move {
-                    stage_source(context, if *partial { FixtureFault::None } else { FixtureFault::MissingAudit }).await?;
-                    let first = context.plan().item_instance_ids[0];
-                    context.deliver(first).await?;
-                    if !*partial { deliver_all(context).await?; }
-                    let checked = sqlx::query("SET CONSTRAINTS ALL IMMEDIATE")
-                        .execute(&mut **context.transaction()).await;
-                    assert!(matches!(checked, Err(ref e) if e.as_database_error().and_then(|e| e.code()).as_deref() == Some("23514")));
-                    Err::<(),_>(RewardClaimInboxError::IncompleteDelivery)
-                }),
-            ).await;
-            assert!(matches!(
-                result,
-                Err(RewardClaimInboxError::IncompleteDelivery)
-            ));
-            assert_eq!(footprint(harness).await?, [0, 0, 0, 0, 0, 0]);
-        }
+        let source = plan(1)?;
+        let request = request(2);
+        let candidate = h
+            .root
+            .prepare_reward_claim_inbox_mint(
+                &authority,
+                &h.node,
+                item_fence()?,
+                &source,
+                request.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        let (binding, _, used) = charge_native_attempt(h, &candidate).await?;
+        assert_eq!(used, 1);
+        let mut partial = (binding, false);
+        let result = h.root.with_reward_claim_inbox_transaction(
+            &authority, &h.node, item_fence()?, candidate.plan(), &mut partial,
+            |context, partial| Box::pin(async move {
+                begin_native_mint(context, &partial.0).await?;
+                let plan = context.plan().clone();
+                context.deliver(plan.item_instance_ids[0]).await?;
+                // Deliberately ask the real finisher to complete only one of
+                // two actual deliveries. This must fail its specific missing-
+                // delivery check before any deferred receipt/audit guard.
+                let error = sqlx::query("SELECT game_reward_claim_inbox_mint_finish(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,$4,1,1,$5)")
+                    .bind(plan.command.game_session_id().as_bytes().as_slice())
+                    .bind(plan.command.command_id().get().to_string())
+                    .bind(plan.transaction_id.as_slice()).bind(&partial.0)
+                    .bind([0_u8; 32].as_slice())
+                    .execute(&mut **context.transaction()).await
+                    .err().ok_or(RewardClaimInboxError::InvalidPlan)?;
+                assert_sql_refusal(&error, "23514", "Inbox mint completion lacks its exact same-transaction delivery");
+                partial.1 = true;
+                Err::<(), _>(error.into())
+            }),
+        ).await;
+        assert!(partial.1, "the exact finisher refusal must execute");
+        assert!(result.is_err());
+        assert_eq!(footprint(h).await?, [0; 10]);
+        let (binding, intent, used) = charge_native_attempt(h, &candidate).await?;
+        assert_eq!(used, 2);
+        let mut missing_audit = (
+            IncompleteProof {
+                binding,
+                intent,
+                source_binding: source.source_binding,
+                event: *candidate.event_id(),
+                occurred: candidate.occurred_at_unix_ms(),
+                request,
+                omit_receipt: false,
+                reached_end: false,
+            },
+            false,
+        );
+        let result = h.root.with_reward_claim_inbox_transaction(
+            &authority, &h.node, item_fence()?, candidate.plan(), &mut missing_audit,
+            |context, owner| Box::pin(async move {
+                incomplete_proof(context, &mut owner.0).await?;
+                // The entire real plan, placements, immutable receipt and
+                // native encoded audit hash exist. Only the outbox is omitted.
+                // Ask for this one proof guard so another deferred constraint
+                // cannot mask the intended missing-audit refusal.
+                // Runtime cannot read the private receipt table. Successful
+                // native finish above is its receipt witness; outbox SELECT is
+                // an existing runtime grant and confirms only that half is absent.
+                let outbox: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_audit_outbox")
+                    .fetch_one(&mut **context.transaction()).await?;
+                assert_eq!(outbox, 0);
+                let error = sqlx::query("SET CONSTRAINTS game_reward_claim_inbox_receipt_proven IMMEDIATE")
+                    .execute(&mut **context.transaction()).await
+                    .err().ok_or(RewardClaimInboxError::InvalidPlan)?;
+                assert_sql_refusal(&error, "23514", "fresh reward Inbox mint, full plan, immutable receipt and native audit must commit together");
+                owner.1 = true;
+                Err::<(), _>(error.into())
+            }),
+        ).await;
+        assert!(missing_audit.0.reached_end);
+        assert!(
+            missing_audit.1,
+            "the exact missing-audit receipt guard must execute"
+        );
+        assert!(result.is_err());
+        assert_eq!(footprint(h).await?, [0; 10]);
+        assert_eq!(reservation(h).await?.2, 2);
         Ok(())
     })
 }
 
 #[test]
 fn native_inbox_runtime_executes_only_the_narrow_seam() -> TestResult {
-    run("mail_inbox_grants", async |harness| {
-        let row = sqlx::query("SELECT has_function_privilege('oteryn_game_runtime','game_character_inbox_reward_claim_mint_deliver(uuid,uuid,uuid,uuid,bytea,uuid,numeric,smallint)','EXECUTE') AS seam, has_function_privilege('oteryn_game_runtime','game_character_inbox_deliver(uuid,uuid,uuid,text,text)','EXECUTE') AS generic, has_table_privilege('oteryn_game_runtime','game_character_inbox_deliveries','INSERT,UPDATE,DELETE,SELECT') AS journal")
-            .fetch_one(&harness.pool).await?;
+    run("mail_inbox_grants", async |h| {
+        let row = sqlx::query("SELECT has_function_privilege('oteryn_game_runtime','game_character_inbox_reward_claim_mint_deliver(uuid,uuid,uuid,uuid,bytea,uuid,numeric,smallint)','EXECUTE') AS seam, has_function_privilege('oteryn_game_runtime','game_character_inbox_reward_claim_mint_lookup(uuid,uuid,uuid,bytea,uuid,numeric,smallint)','EXECUTE') AS lookup, has_function_privilege('oteryn_game_runtime','game_character_inbox_deliver(uuid,uuid,uuid,text,text)','EXECUTE') AS generic, has_table_privilege('oteryn_game_runtime','game_character_inbox_deliveries','INSERT,UPDATE,DELETE,SELECT') AS journal")
+            .fetch_one(&h.pool).await?;
         assert!(row.try_get::<bool, _>("seam")?);
+        assert!(row.try_get::<bool, _>("lookup")?);
         assert!(!row.try_get::<bool, _>("generic")?);
         assert!(!row.try_get::<bool, _>("journal")?);
         for statement in [
             "SELECT * FROM game_character_inbox_deliver(game_character_uuid_v7(),game_character_uuid_v7(),game_character_uuid_v7(),'REWARD_CLAIM_MINT','anything')",
             "SELECT * FROM game_character_inbox_deliveries",
+            "SELECT * FROM game_reward_claim_inbox_mint_reservations",
+            "SELECT * FROM game_reward_claim_inbox_mint_receipts",
+            "SELECT * FROM game_reward_claim_inbox_mint_lines",
+            "DELETE FROM game_reward_claim_inbox_mint_reservations",
+            "DELETE FROM game_reward_claim_inbox_mint_receipts",
+            "DELETE FROM game_reward_claim_inbox_mint_lines",
             "DELETE FROM game_item_character_inbox_locations",
         ] {
-            let mut tx = harness.pool.begin().await?;
+            let mut tx = h.pool.begin().await?;
             tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
             let result = sqlx::query(sqlx::AssertSqlSafe(statement.to_owned()))
                 .execute(&mut *tx)
                 .await;
             assert!(
-                matches!(result, Err(ref e) if e.as_database_error().and_then(|e|e.code()).as_deref() == Some("42501")),
+                matches!(result, Err(ref e)
+                if e.as_database_error().and_then(|e|e.code()).as_deref() == Some("42501")),
                 "{statement}"
             );
             tx.rollback().await?;

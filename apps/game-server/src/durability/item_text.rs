@@ -1,7 +1,7 @@
 //! MAIL-TEXT-1: native letter/label rewrites in the direct main backpack.
 //!
-//! This is a bounded producer, awaiting content admission, the numbered migration,
-//! module registration and transport composition. It admits neither write-once
+//! This is a bounded producer with storage in migration 0101, awaiting content
+//! admission, module registration and transport composition. It admits neither write-once
 //! definitions nor other custody locations. The compositor must also refuse an
 //! item offered in player trade (WRITE-0 §5.1); no native trade reservation port
 //! exists in this base. Do not activate this writer before that integration.
@@ -22,42 +22,7 @@ use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
-/// Slot input only: never run by the production writer or by module loading.
-/// MAIL-0 §4/WRITE-0 §5 name the first two tables. The private receipt also
-/// supplies a rolling rate window, serialized by the actual Character root.
-/// The migration owner must assign grants/retirement cleanup in the slot.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "MAIL-1 CP migration slot consumes this proposal; runtime must not execute schema DDL"
-    )
-)]
-pub(crate) const ITEM_TEXT_SCHEMA_PROPOSAL: &str = r#"
-CREATE TABLE game_item_text_revisions (
- item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances ON DELETE RESTRICT,
- last_revision NUMERIC(20,0) NOT NULL CHECK(last_revision BETWEEN 1 AND 18446744073709551615)
-);
-CREATE TABLE game_item_texts (
- item_instance_id UUID PRIMARY KEY REFERENCES game_item_text_revisions ON DELETE RESTRICT,
- text TEXT NOT NULL CHECK(octet_length(text) BETWEEN 1 AND 7996),
- writer_character_id UUID REFERENCES game_character_roots ON DELETE RESTRICT,
- written_at TIMESTAMPTZ NOT NULL,
- text_revision NUMERIC(20,0) NOT NULL CHECK(text_revision BETWEEN 1 AND 18446744073709551615)
-);
-CREATE TABLE game_item_text_write_receipts (
- game_session_id UUID NOT NULL,
- command_id NUMERIC(20,0) NOT NULL CHECK(command_id BETWEEN 1 AND 18446744073709551615),
- character_id UUID NOT NULL REFERENCES game_character_roots ON DELETE RESTRICT,
- request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),
- text_revision NUMERIC(20,0) NOT NULL CHECK(text_revision BETWEEN 0 AND 18446744073709551615),
- changed BOOLEAN NOT NULL,
- written_at TIMESTAMPTZ NOT NULL,
- PRIMARY KEY(game_session_id,command_id)
-);
-CREATE INDEX game_item_text_write_rate ON game_item_text_write_receipts(character_id,written_at DESC)
- WHERE changed;
-"#;
+// Storage is installed once by the standing MAIL migration 0101.
 
 /// Text is intentionally absent from Debug and from receipts.
 pub(crate) struct ItemTextWriteRequest {
@@ -470,9 +435,6 @@ pub(crate) mod tests {
             .fetch_one(&mut *connection)
             .await?;
         assert_eq!(version, "170006", "native PostgreSQL 17.6 required");
-        sqlx::raw_sql(ITEM_TEXT_SCHEMA_PROPOSAL)
-            .execute(&mut *connection)
-            .await?;
         let mut tx = connection.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
