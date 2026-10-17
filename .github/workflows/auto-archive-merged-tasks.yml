@@ -30,7 +30,7 @@ jobs:
       contents: write
       pull-requests: write
     env:
-      BRANCH: automation/archive-merged-tasks
+      BRANCH_PREFIX: automation/archive-merged-tasks-
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
     steps:
@@ -130,16 +130,19 @@ jobs:
           listing="$(cat "$RUNNER_TEMP/archive-list.md")"
           git config user.name 'github-actions[bot]'
           git config user.email '41898333+github-actions[bot]@users.noreply.github.com'
-          git switch -c "$BRANCH"
-          git add -A docs/agents/tasks
-          git commit -q -m 'docs(tasks): archive task packets whose PR merged' -m "$listing"
-          # The branch is rebuilt from the latest protected main on every run.
-          git push --force origin "HEAD:refs/heads/$BRANCH"
-          existing="$(gh pr list --repo "$REPOSITORY" --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          # Never rewrite a published branch: while an archive pull request is
+          # open, leave it alone; otherwise publish a fresh branch per run.
+          existing="$(gh pr list --repo "$REPOSITORY" --base main --state open --json number,headRefName \
+            --jq "[.[] | select(.headRefName | startswith(\"$BRANCH_PREFIX\"))][0].number // empty")"
           if [[ -n "$existing" ]]; then
-            echo "Updated archive pull request #$existing." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Archive pull request #$existing is still open; not publishing another." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          branch="$BRANCH_PREFIX$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          git switch -c "$branch"
+          git add -A docs/agents/tasks
+          git commit -q -m 'docs(tasks): archive task packets whose PR merged' -m "$listing"
+          git push origin "HEAD:refs/heads/$branch"
           cat > "$RUNNER_TEMP/pr-body.md" <<EOF
           ## Summary
 
@@ -155,10 +158,10 @@ jobs:
 
           The workflow ran \`python tools/agents/validate_governance.py\` and \`python -m unittest discover -s tools/agents/tests\` on this commit; both passed.
 
-          The workflow token pushed this branch, so PR checks do not start on their own. Close and reopen this PR, or push to it, to run the merge gate. The branch is rebuilt from main on every push to main.
+          The workflow token pushed this branch, so PR checks do not start on their own. Close and reopen this PR, or push to it, to run the merge gate. Later runs publish no new archive branch while this PR is open.
           EOF
-          if ! gh pr create --repo "$REPOSITORY" --base main --head "$BRANCH" \
+          if ! gh pr create --repo "$REPOSITORY" --base main --head "$branch" \
               --title 'docs(tasks): archive task packets whose PR merged' \
               --body-file "$RUNNER_TEMP/pr-body.md"; then
-            echo "::warning title=Auto-archive::could not open a pull request; open one from branch $BRANCH"
+            echo "::warning title=Auto-archive::could not open a pull request; open one from branch $branch"
           fi
