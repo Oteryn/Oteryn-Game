@@ -801,10 +801,10 @@ mod tests {
                     floor: 7,
                 }
             };
-            r.initialize_movement_test_position(p, at)
+            r.initialize_pinned_test_position(p, at)
                 .expect("qualified fixture");
             let actor = r
-                .admit_monster_lab_creature(
+                .admit_source_pinned_lab_creature(
                     MovementLocalPosition {
                         x: 100,
                         y: 100,
@@ -1004,7 +1004,7 @@ mod tests {
             .expect("qualified fixture");
         for case in w.cases.values() {
             let (mut r, p, session) = runtime_with_player(0x79);
-            r.initialize_movement_test_position(
+            r.initialize_pinned_test_position(
                 p,
                 MovementLocalPosition {
                     x: 100,
@@ -1014,7 +1014,7 @@ mod tests {
             )
             .expect("qualified fixture");
             let actor = r
-                .admit_monster_lab_creature(
+                .admit_source_pinned_lab_creature(
                     MovementLocalPosition {
                         x: 100,
                         y: 100,
