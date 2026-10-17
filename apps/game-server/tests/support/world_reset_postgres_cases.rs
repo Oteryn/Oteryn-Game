@@ -7,7 +7,7 @@ use crate::durability::runtime_scope_assignment::{
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::world_reset::{
-    WorldResetError, WorldResetRetirement, candidate_schema_sql, census_retiring_world_reset,
+    WorldResetError, WorldResetRetirement, census_retiring_world_reset,
 };
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use crate::item_transfer_postgres_cases::{
@@ -26,12 +26,44 @@ fn world() -> TestResult<WorldId> {
 fn channel() -> TestResult<ChannelId> {
     ChannelId::decode(&id(CHANNEL)).map_err(|e| debug(e).into())
 }
+/// D1416: migration 0096 installs the reset schema; fixtures never run DDL themselves.
 async fn install(h: &Harness) -> TestResult {
-    let mut tx = h.pool.begin().await?;
-    sqlx::raw_sql(sqlx::AssertSqlSafe(candidate_schema_sql()?.to_owned()))
-        .execute(&mut *tx)
+    let jobs: bool = sqlx::query_scalar("SELECT to_regclass('game_world_reset_jobs') IS NOT NULL")
+        .fetch_one(&h.pool)
         .await?;
-    tx.commit().await?;
+    assert!(jobs, "migration 0096 must install the reset tables");
+    let guards: Vec<String> = sqlx::query_scalar(
+        "SELECT proname::text FROM pg_proc WHERE pronamespace = current_schema()::regnamespace \
+           AND prosrc LIKE '%game_world_reset_item_proven(%.item_instance_id)%' ORDER BY 1",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        guards,
+        [
+            "game_item_corpse_entry_removal_proven",
+            "game_item_decay_retire_consistency_guard",
+            "game_item_ground_removal_proven",
+            "game_item_instance_change_proven",
+        ]
+    );
+
+    // The replaced guards keep main's security attribute (0015 header, 0095 ALTER).
+    let definers: Vec<(String, bool)> = sqlx::query_as(
+        "SELECT proname::text, prosecdef FROM pg_proc WHERE pronamespace = current_schema()::regnamespace \
+           AND prosrc LIKE '%game_world_reset_item_proven(%.item_instance_id)%' ORDER BY 1",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    assert_eq!(
+        definers,
+        [
+            ("game_item_corpse_entry_removal_proven".to_owned(), false),
+            ("game_item_decay_retire_consistency_guard".to_owned(), true),
+            ("game_item_ground_removal_proven".to_owned(), false),
+            ("game_item_instance_change_proven".to_owned(), true),
+        ]
+    );
     Ok(())
 }
 async fn admit(h: &Harness) -> TestResult {
@@ -801,4 +833,306 @@ async fn admit_qualified(h: &Harness) -> TestResult {
     sqlx::query("INSERT INTO game_world_reset_scopes SELECT world_id,0,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
+}
+
+// HOUSE-RUNTIME-1a (#2163) real House custody: the reset census is Channel Ground only, so
+// an owner-committed HouseInterior placement and its provenance survive a full Channel pass.
+mod house_custody {
+    use crate::durability::house_interior::{
+        HouseCharacterSource, HouseItemAction, HouseItemOutcome, HouseItemRequest,
+    };
+    use crate::durability::house_scope_handoff::{
+        HouseCommitOutcome, HouseEntryCommit, HouseEntryRequest, HouseHandoffDirection, HouseId,
+        HousePrepareOutcome, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome,
+        HouseScopeAssignmentRequest,
+    };
+    use crate::durability::item_transfer::{
+        CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass, ItemTransferOutcome,
+    };
+    use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
+    use crate::foundation::{CharacterId, CommandId, CommandRef, GameSessionId, WorldId};
+    use crate::house_test_fixture;
+    use crate::item_transfer_postgres_cases::{self as native, Harness, TestResult, debug, id};
+    use sqlx::{Connection, PgConnection};
+
+    pub(super) const HOUSE: &str = "oteryn:content.house.thais_1";
+
+    fn house() -> TestResult<HouseId> {
+        Ok(
+            HouseId::new(WorldId::decode(&id(native::WORLD)).map_err(debug)?, HOUSE)
+                .ok_or("house")?,
+        )
+    }
+    fn house_fence() -> TestResult<CurrentCharacterItemFence> {
+        Ok(CurrentCharacterItemFence {
+            game_session_id: GameSessionId::decode(&id(61)).map_err(debug)?,
+            character_lease_generation: 2,
+            runtime_scope: house()?.runtime_scope()?,
+            ..native::fence()?
+        })
+    }
+
+    /// Native inventory funding through the item-transfer owner; returns (backpack, item).
+    pub(super) async fn funded(h: &Harness) -> TestResult<([u8; 16], [u8; 16])> {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = h.mint(&a, native::BACKPACK, 1).await?;
+        let to_slot = native::to_slot(native::command(1)?, backpack, native::backpack_facts());
+        assert!(matches!(
+            h.transfer(&a, native::fence()?, to_slot)
+                .await
+                .map_err(debug)?,
+            ItemTransferOutcome::Committed(_)
+        ));
+        let item = h.mint(&a, "fixture:house.item", 1).await?;
+        let facts = ItemDefinitionFacts {
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "fixture:house.item".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            stack: ItemStackClass::NonStackable,
+            container_capacity: None,
+            container_slot_equip_pattern: false,
+        };
+        let to_backpack = native::to_backpack(native::command(2)?, item, facts);
+        assert!(matches!(
+            h.transfer(&a, native::fence()?, to_backpack)
+                .await
+                .map_err(debug)?,
+            ItemTransferOutcome::Committed(_)
+        ));
+        Ok((backpack, item))
+    }
+
+    /// Independent §10 House test DATA plus the native House assignment and entry handoff.
+    pub(super) async fn seed(h: &Harness) -> TestResult {
+        let mut c = PgConnection::connect(&h.database.url).await?;
+        house_test_fixture::install(&mut c).await?;
+        let world = id(native::WORLD);
+        sqlx::query("INSERT INTO test_house_properties VALUES(encode($1,'hex')::uuid,$2,1,false)")
+            .bind(world.as_slice())
+            .bind(HOUSE)
+            .execute(&mut c)
+            .await?;
+        sqlx::query("INSERT INTO test_house_grants VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,'OWNER',NULL)").bind(world.as_slice()).bind(HOUSE).bind(id(native::CHARACTER).as_slice()).execute(&mut c).await?;
+        sqlx::query("INSERT INTO test_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3)")
+            .bind(world.as_slice())
+            .bind(HOUSE)
+            .bind(vec![1u8, 2, 3])
+            .execute(&mut c)
+            .await?;
+        sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES(encode($1,'hex')::uuid,1,true,1,1)")
+            .bind(id(native::CHARACTER).as_slice())
+            .execute(&mut c)
+            .await?;
+        sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL)").bind(id(native::SESSION).as_slice()).bind(id(native::CHARACTER).as_slice()).execute(&mut c).await?;
+        sqlx::query("INSERT INTO game_control_house_scope_grants SELECT session_user,encode($1,'hex')::uuid,$2,op FROM unnest(ARRAY[1,2,3]::SMALLINT[]) op").bind(world.as_slice()).bind(HOUSE).execute(&mut c).await?;
+        let assigned = h
+            .root
+            .assign_house_scope(HouseScopeAssignmentRequest {
+                operation_key: OperationKey::from_bytes([8; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                actor_role: "oteryn_test_admin".into(),
+                command: HouseScopeAssignmentCommand::Assign {
+                    house: house()?,
+                    target: h.node.fact(),
+                },
+            })
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            assigned,
+            HouseScopeAssignmentOutcome::Committed(_)
+        ));
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let f = native::fence()?;
+        let entry = HouseEntryRequest {
+            direction: HouseHandoffDirection::Entry,
+            handoff_id: id(60),
+            character_id: CharacterId::decode(f.character_id.as_bytes()).map_err(debug)?,
+            source_game_session_id: f.game_session_id,
+            source_connection_generation: 1,
+            source_character_lease_generation: 1,
+            source_scope: f.runtime_scope,
+            source_scope_ownership_generation: 1,
+            house: house()?,
+            house_scope_ownership_generation: 1,
+            acl_revision: 1,
+            guild_revisions: None,
+            reserved_tile: vec![1, 2, 3],
+            prepared_at: 100,
+        };
+        let prepared = h
+            .root
+            .prepare_house_entry(&a, &h.node, entry)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(prepared, HousePrepareOutcome::Prepared(_)));
+        let commit = HouseEntryCommit {
+            handoff_id: id(60),
+            destination_game_session_id: house_fence()?.game_session_id,
+            committed_at: 200,
+        };
+        let committed = h
+            .root
+            .commit_house_entry(&a, &h.node, commit)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(committed, HouseCommitOutcome::Committed(_)));
+        Ok(())
+    }
+
+    /// Owner-committed Place of the inventory item onto the House tile.
+    pub(super) async fn place(h: &Harness, backpack: [u8; 16], item: [u8; 16]) -> TestResult {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let a = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let request = HouseItemRequest {
+            command: CommandRef::new(
+                house_fence()?.game_session_id,
+                CommandId::new(100).map_err(debug)?,
+            ),
+            house: house()?,
+            item_instance_id: item,
+            action: HouseItemAction::Place {
+                source: HouseCharacterSource::Inventory {
+                    parent: backpack,
+                    ordinal: 1,
+                },
+                position: vec![1, 2, 3],
+            },
+            expected_acl_revision: 1,
+            expected_guild_revisions: None,
+            backpack: None,
+            content_revision: "content-1".into(),
+            ruleset_revision: "ruleset-1".into(),
+            sim_revision: "sim-1".into(),
+        };
+        let frozen = h
+            .root
+            .freeze_house_item(&a, &h.node, house_fence()?, request)
+            .await
+            .map_err(debug)?;
+        let outcome = h
+            .root
+            .commit_house_item(&a, &h.node, house_fence()?, &frozen)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, HouseItemOutcome::Committed(_)));
+        Ok(())
+    }
+}
+
+/// Exact HouseInterior custody snapshot: location, item state and every provenance row.
+async fn house_snapshot(h: &Harness, item: [u8; 16]) -> TestResult<Vec<String>> {
+    let mut rows: Vec<String> = sqlx::query_scalar(
+        "SELECT row_to_json(l)::text FROM game_item_house_interior_locations l ORDER BY 1",
+    )
+    .fetch_all(&h.pool)
+    .await?;
+    for table in [
+        "game_item_house_reclaim_provenance",
+        "game_item_house_placement_transactions",
+        "game_item_house_shape_proofs",
+    ] {
+        let sql = format!("SELECT row_to_json(t)::text FROM {table} t ORDER BY 1");
+        rows.extend(
+            sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql))
+                .fetch_all(&h.pool)
+                .await?,
+        );
+    }
+    rows.push(format!("{:?}", h.item_state(item).await?));
+    Ok(rows)
+}
+
+#[test]
+fn reset_native_channel_pass_leaves_real_house_interior_custody_untouched() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Err("routed PostgreSQL required".into());
+    };
+    runtime()?.block_on(async move {
+        // The accepted House fixture only installs into an `it_house_interior_*` database.
+        let h = Harness::create(admin, "house_interior_reset").await?;
+        install(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let ground = h.mint(&authority, "fixture:b3.stone", 2).await?;
+        drop(authority);
+        let (backpack, item) = house_custody::funded(&h).await?;
+        house_custody::seed(&h).await?;
+        house_custody::place(&h, backpack, item).await?;
+        assert_eq!(h.count("game_item_house_interior_locations").await?, 1);
+        let house_before = house_snapshot(&h, item).await?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        admit(&h).await?;
+        replace(&h).await?;
+        let permit = SpellLanePermit::of_fresh_lane(world()?, channel()?).await;
+        // The House entry's destination session is still attached: no reset may start.
+        assert!(matches!(
+            h.root
+                .freeze_next_world_reset_item(&permit, &authority, &h.node, world()?, channel()?)
+                .await,
+            Err(WorldResetError::NotCurrent)
+        ));
+        // Drain it like `replace` drains the Channel session, after all player writes.
+        let drained = sqlx::query(
+            "UPDATE game_durability_reconnect_sessions SET session_state=3 \
+              WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN(1,2)",
+        )
+        .bind(id(61).as_slice())
+        .execute(&h.pool)
+        .await?
+        .rows_affected();
+        assert_eq!(drained, 1);
+        let WorldResetPass::Retired(receipt) = pass(&h, &permit, &authority).await? else {
+            return Err("Ground retirement required".into());
+        };
+        assert_eq!(receipt.item_instance_id, ground);
+        assert_eq!(h.item_state(ground).await?, (0, 2));
+        assert!(matches!(
+            pass(&h, &permit, &authority).await?,
+            WorldResetPass::ChannelEmpty
+        ));
+        assert_eq!(house_snapshot(&h, item).await?, house_before);
+        assert_eq!(
+            h.root
+                .read_world_reset_retirement(&authority, item)
+                .await
+                .map_err(debug)?,
+            None
+        );
+        let receipts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_decay_retire_receipts WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(item.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(receipts, 0);
+        drop(authority);
+        drop(seal);
+        drop(permit);
+        h.cleanup().await
+    })
 }

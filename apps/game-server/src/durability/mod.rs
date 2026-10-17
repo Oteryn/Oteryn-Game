@@ -88,8 +88,17 @@ pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
-// MAP-OVERLAY-1c: consumed by `world_reset.rs`, which CP registers at its slot.
-#[allow(dead_code)]
+// MAP-OVERLAY-1c (D1416): schema installed by migration 0096; the production caller
+// (admission close/drain, all-Channel census, boot resume) is a follow-up packet.
+#[allow(
+    dead_code,
+    reason = "reset orchestration is a follow-up packet (D1416)"
+)]
+pub(crate) mod world_reset;
+#[allow(
+    dead_code,
+    reason = "reset orchestration is a follow-up packet (D1416)"
+)]
 pub(crate) mod world_reset_port;
 
 pub use admission_journal::AdmissionReconnectJournal;

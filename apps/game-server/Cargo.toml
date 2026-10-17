@@ -182,3 +182,7 @@ workspace = true
 [[test]]
 name = "house_interior_postgres"
 test = false
+
+[[test]]
+name = "world_reset_postgres"
+test = false

@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// Checked conversion into the actual movement carrier. x/y are already i32;
 /// LogicalCell z must fit the carrier's i16 floor. Source frame qualification
 /// remains the caller's responsibility; this changes neither floor sign nor origin.
-#[allow(dead_code, reason = "reset consumer registers at its CP slot")]
+#[allow(dead_code, reason = "reset caller: D1416 follow-up packet")]
 pub(crate) fn checked_movement_position(
     cell: LogicalCell,
 ) -> Option<crate::foundation::MovementLocalPosition> {
@@ -70,7 +70,7 @@ impl QualifiedHousePlacement {
 }
 // Shared byte codec for whole-catalogue and single-House placement identity.
 // Single-House facts deliberately do not include another House's placement.
-#[allow(dead_code, reason = "reset consumer registers at its CP slot")]
+#[allow(dead_code, reason = "reset caller: D1416 follow-up packet")]
 fn qualified_house_placement_digest<'a>(
     houses: impl IntoIterator<Item = &'a QualifiedHousePlacement>,
 ) -> [u8; 32] {
@@ -119,7 +119,7 @@ impl QualifiedHouseTiles {
     /// Each house: length-prefixed UTF8 key/revision, cell-count u64BE + sorted
     /// (x,y,z)i32BE cells, entry(x,y,z)i32BE, door-count u64BE + sorted
     /// (cell(x,y,z)i32BE,door-number u32BE). Counts/string lengths are u64BE.
-    #[allow(dead_code, reason = "reset consumer registers at its CP slot")]
+    #[allow(dead_code, reason = "reset caller: D1416 follow-up packet")]
     pub(crate) fn placement_digest(&self) -> Option<[u8; 32]> {
         Some(qualified_house_placement_digest(
             self.houses.as_ref()?.iter(),
@@ -226,13 +226,13 @@ impl QualifiedHouseTiles {
 /// Borrowed pair of actual qualified catalogues. It supplies source identity only;
 /// G compares it with active history/locked target under the final TX locks.
 /// This adapter grants neither current activation nor an in-memory drain proof.
-#[allow(dead_code, reason = "reset consumer registers at its CP slot")]
+#[allow(dead_code, reason = "reset caller: D1416 follow-up packet")]
 pub(crate) struct QualifiedHouseResetSources<'a> {
     active: &'a QualifiedHouseTiles,
     target: &'a QualifiedHouseTiles,
 }
 impl<'a> QualifiedHouseResetSources<'a> {
-    #[allow(dead_code, reason = "reset consumer registers at its CP slot")]
+    #[allow(dead_code, reason = "reset caller: D1416 follow-up packet")]
     pub(crate) const fn new(
         active: &'a QualifiedHouseTiles,
         target: &'a QualifiedHouseTiles,

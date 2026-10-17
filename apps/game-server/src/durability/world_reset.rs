@@ -1,6 +1,6 @@
 //! MAP-OVERLAY-1c bounded retirement of one real Ground item during an admitted reset.
 //!
-//! The private schema below is an UNINSTALLED candidate. Only the control role may publish
+//! The private schema below is installed by migration 0096 (D1416). Only the control role may publish
 //! a reset/cohort; callers supply neither an epoch nor a current-generation claim. This is
 //! step 3, not admission closure, assignment orchestration or content activation.
 use super::character_authority::{
@@ -667,34 +667,41 @@ impl DurabilityRoot {
     }
 }
 
-/// UNINSTALLED candidate DDL. Kept here until CP leases a migration and integrates the
-/// control-owned reset publisher. It extends exact native guard bodies, never disables a
-/// trigger or replaces their existing positive/refusal clauses. Fixtures install this same SQL.
+/// Source of migration 0096 (D1416); `migration_0096_is_exactly_the_schema_source` pins the
+/// installed bytes to this output. It extends exact native guard bodies, never disables a
+/// trigger or replaces their existing positive/refusal clauses. The control-owned reset
+/// publisher and orchestration remain a follow-up packet.
 pub fn candidate_schema_sql() -> Result<String, &'static str> {
     let mut sql = RESET_EPOCH_SCHEMA.to_owned();
     sql.push_str(RESET_SCHEMA);
     sql.push_str(&candidate_reset_issuance_sql()?);
     sql.push_str(RESET_ACTIVATION_SCHEMA);
-    for (source, name, record) in [
+    // CREATE OR REPLACE resets SECURITY DEFINER and SET; `definer` restores the live
+    // attribute (0015 header; 0095 ALTERs the change guard), never widening the others.
+    for (source, name, record, definer) in [
         (
             include_str!("../../migrations/0015_corpse_decay_retire.sql"),
             "game_item_decay_retire_consistency_guard",
             "NEW",
+            true,
         ),
         (
-            include_str!("../../migrations/0083_item_use.sql"),
+            include_str!("../../migrations/0095_house_interior_shapes.sql"),
             "game_item_instance_change_proven",
             "NEW",
+            true,
         ),
         (
             include_str!("../../migrations/0050_spell_item_temporal_chain.sql"),
             "game_item_ground_removal_proven",
             "OLD",
+            false,
         ),
         (
             include_str!("../../migrations/0042_spell_inventory_consumption.sql"),
             "game_item_corpse_entry_removal_proven",
             "OLD",
+            false,
         ),
     ] {
         let marker = format!("FUNCTION {name}() RETURNS trigger");
@@ -714,12 +721,15 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
         sql.push_str("\nCREATE OR REPLACE ");
         sql.push_str(&body.replacen("\nBEGIN\n", &extension, 1));
         sql.push_str(&format!("\nDO $$ BEGIN EXECUTE format('ALTER FUNCTION {name}() SET search_path = pg_catalog, %I, pg_temp',current_schema()); END $$;\n"));
+        if definer {
+            sql.push_str(&format!("ALTER FUNCTION {name}() SECURITY DEFINER;\n"));
+        }
     }
     Ok(sql)
 }
 
-/// D1189a/0096 uninstalled candidate: one native issuance body, two separately
-/// authorized entry points. The reset entry point is not installed here yet.
+/// D1189a/0096: one native issuance body, two separately authorized entry points.
+/// The reset entry point has no production caller yet (follow-up packet).
 /// Preserve the native replay/CAS/INSERT bytes and the public op4 check exactly.
 fn candidate_reset_issuance_sql() -> Result<String, &'static str> {
     const SOURCE: &str = include_str!("../../migrations/0008_native_entry_content_activation.sql");
@@ -909,6 +919,41 @@ DO $$ DECLARE f TEXT; BEGIN
  END LOOP;
 END $$;
 "#;
+
+#[cfg(test)]
+mod migration_0096_tests {
+    // D1416: migration 0096 installs exactly this source; regenerate the file from
+    // `candidate_schema_sql()` whenever a native guard body or the schema changes.
+    #[test]
+    fn migration_0096_is_exactly_the_schema_source() -> Result<(), &'static str> {
+        let installed = include_str!("../../migrations/0096_world_reset.sql");
+        assert_eq!(installed, super::candidate_schema_sql()?);
+        Ok(())
+    }
+
+    #[test]
+    fn migration_0096_extends_the_latest_native_item_change_guard() {
+        let installed = include_str!("../../migrations/0096_world_reset.sql");
+        assert!(installed.contains("-- 0095: exact owner-produced House shape evidence"));
+        assert_eq!(
+            installed
+                .matches("game_world_reset_item_proven(NEW.item_instance_id)")
+                .count(),
+            2
+        );
+        assert_eq!(
+            installed
+                .matches("game_world_reset_item_proven(OLD.item_instance_id)")
+                .count(),
+            2
+        );
+        // CREATE OR REPLACE drops 0095's SECURITY DEFINER; the slot restores it.
+        assert!(
+            installed
+                .contains("ALTER FUNCTION game_item_instance_change_proven() SECURITY DEFINER;\n")
+        );
+    }
+}
 
 #[cfg(test)]
 mod reset_house_preflight_tests {
@@ -1421,7 +1466,7 @@ impl DurabilityRoot {
 }
 
 const RESET_EPOCH_SCHEMA: &str = r#"
--- D1257/0096 UNINSTALLED candidate. Explicit Control initialization only.
+-- D1257/0096. Explicit Control initialization only.
 CREATE FUNCTION game_world_reset_month_key(p_instant TIMESTAMPTZ,p_policy TEXT,p_revision NUMERIC)
 RETURNS TEXT LANGUAGE SQL IMMUTABLE STRICT AS $$
  SELECT CASE WHEN isfinite(p_instant) AND p_policy='TIBIA_SERVER_SAVE_BERLIN_10'
@@ -1667,7 +1712,7 @@ impl DurabilityRoot {
     }
 }
 
-// Private successor: UNINSTALLED 0096 only, no migration/root mounting.
+// Private successor installed by 0096; no production root mounting yet.
 // Direct runtime SQL is not trusted to have run the Rust owner's checks: the function
 // itself recomputes the D1233 drain cohort digest from the locked assignments and
 // requires catalogue-derived House evidence covering every locked durable House fact.

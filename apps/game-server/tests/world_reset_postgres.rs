@@ -1,6 +1,5 @@
-#![cfg(any())] // CP slot: enable together with native world_reset registration.
 #![allow(clippy::expect_used)]
-// Native standalone wrapper; aggregate registration remains a CP slot.
+// Native standalone wrapper; the aggregate registers the same cases (D1416).
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
@@ -19,6 +18,9 @@ mod durability;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
+#[allow(dead_code)] // the reset House case uses only `install`
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;
 #[path = "support/item_transfer_postgres_cases.rs"]
 mod item_transfer_postgres_cases;
 #[allow(dead_code, unused_imports)]

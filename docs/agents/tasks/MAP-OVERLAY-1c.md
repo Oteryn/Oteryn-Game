@@ -152,7 +152,7 @@ Third of MAP-OVERLAY-1a -> 1b -> 1c; releases MAP-CUTOVER-1c.
 | Dependency | State |
 |---|---|
 | MAP-OVERLAY-1b | MERGED (#1809) |
-| HOUSE-RUNTIME-1a | MERGED (#2163, cecbfda3); real HouseInterior positive case waits for the CP slot that enables `world_reset_postgres` |
+| HOUSE-RUNTIME-1a | MERGED (#2163, cecbfda3); real HouseInterior untouched case registered with `world_reset_postgres` in the D1416 slot |
 
 Rows marked BLOCKING must merge (or be accepted/decided) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -859,3 +859,29 @@ PG instant/calendar; no synthetic current-state authority is used. All new
 compile/PG/calendar/initializer/runtime checks are NOT_RUN and
 NOT_FULLY_QUALIFIED. Earlier isolated qualification freezes are preserved and
 do not qualify this later source delta. No new Cargo dependency or runner.
+
+### D1416 slot commit — 2026-10-17
+
+CP D1416 granted the schema slot on #2167. This commit merges main, registers
+`durability::world_reset`, installs the reset schema as migration
+`0096_world_reset.sql` (free on main and in every open PR head) and enables the
+`world_reset_postgres` target (Cargo `test = false`, cases also in the
+`character_authority_postgres` aggregate). The migration is the exact output of
+`candidate_schema_sql()`; a unit test pins the bytes. The native item-change
+guard source moved from 0083 to 0095, so the reset early-return extends the
+current House-shape guard body instead of reverting it. PG fixtures now verify
+the migrated schema instead of running DDL. A real HouseInterior case places an
+owner-committed House item and shows a full Channel pass retires Ground only,
+leaving location, provenance, shape proof and item state byte-identical;
+the pass is refused while the House destination session is still attached.
+
+Moved to a follow-up packet (D1416 (2)): the production reset orchestration —
+admission close and drain, the all-Channel census, boot resume and the
+MAP01-RESET-RETIRE-MS limit row — plus the proto/registry/content slot-only
+rows. Later migrations that redefine any of the four reset-extended guards
+(`game_item_decay_retire_consistency_guard`, `game_item_instance_change_proven`,
+`game_item_ground_removal_proven`, `game_item_corpse_entry_removal_proven`)
+must keep the `game_world_reset_item_proven` early-return.
+`CREATE OR REPLACE` resets `SECURITY DEFINER`, so 0096 re-applies it to the
+two guards that hold it on main (0015 header, 0095 `ALTER`); the PG fixture
+pins `prosecdef` for all four.
