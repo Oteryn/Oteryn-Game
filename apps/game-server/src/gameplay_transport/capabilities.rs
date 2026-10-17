@@ -169,6 +169,8 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
 
 /// `ITEM_LOOK_V1`, registry capability 28.
 const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
+/// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
+const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
 
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
@@ -259,9 +261,14 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
     ),
-    // ITEM-LOOK-1: capability 28 `ITEM_LOOK_V1` owns no command type or domain and is not offered
-    // yet; the registry keeps it, so the table lists it (no protocol constant exists yet).
-    (CAPABILITY_ITEM_LOOK_V1, &[], &[]),
+    // ITEM-LOOK-1: capability 28 `ITEM_LOOK_V1` gates command type 30 `ITEM_LOOK_INTENT` (CP
+    // D1268, D1292) and owns no domain. It is not offered and command 30 has no handler yet, so a
+    // session never selects 28 and command 30 is never dispatched.
+    (
+        CAPABILITY_ITEM_LOOK_V1,
+        &[COMMAND_TYPE_ITEM_LOOK_INTENT],
+        &[],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

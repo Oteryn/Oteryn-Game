@@ -425,10 +425,34 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(entry["name"], "ITEM_LOOK_V1");
     assert_eq!(entry["offered"], false);
     assert_eq!(entry["requires"], serde_json::json!([]));
-    assert_eq!(entry["command_types"], serde_json::json!([]));
+    assert_eq!(entry["command_types"], serde_json::json!([30]));
     assert_eq!(entry["state_domains"], serde_json::json!([]));
     assert_eq!(
         registry["allocation_ranges"]["capability_id"]["next_unallocated"],
         29
+    );
+    // CP D1268/D1292: command 30 is registered once, gated by 28, with the codec's byte bounds.
+    let commands: Vec<_> = registry["command_types"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|command| command["id"] == 30)
+        .collect();
+    assert_eq!(commands.len(), 1);
+    let command = commands[0];
+    assert_eq!(command["name"], "ITEM_LOOK_INTENT");
+    assert_eq!(command["capability"], 28);
+    assert_eq!(
+        command["max_payload_bytes"].as_u64(),
+        Some(MAX_ITEM_LOOK_TARGET_BYTES as u64)
+    );
+    let longest = encode_item_look_result_for(
+        &ItemLookResult::Text("a".repeat(MAX_ITEM_LOOK_TEXT_BYTES)),
+        EXTENDED,
+    )
+    .unwrap();
+    assert_eq!(
+        command["max_result_payload_bytes"].as_u64(),
+        Some(longest.len() as u64)
     );
 }

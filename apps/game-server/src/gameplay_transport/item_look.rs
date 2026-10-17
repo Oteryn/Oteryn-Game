@@ -10,10 +10,8 @@ use super::item_view::{SessionItemView, ViewItem};
 use crate::content::{ActiveGeneration, native_gameplay::QualifiedItemPolicy};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::ChannelRuntimeV1;
+use crate::interaction::look as text;
 use oteryn_protocol_oteryn::item_view::ItemHandle;
-
-#[path = "../interaction/look.rs"]
-mod text;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ItemLookOutcome {

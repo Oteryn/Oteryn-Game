@@ -251,10 +251,10 @@
       "owner_decision": "CP D1240 comment6226466175 (#2182 payload and capability allocation); D1240a comment6226563247 (sole-writer registry/list/closure and next ledger29)",
       "owner": "ITEM-LOOK-1; runtime visibleActor/profile/name producer remains pending",
       "requires": [],
-      "command_types": [],
+      "command_types": [30],
       "state_domains": [],
       "offered": false,
-      "offer_gate": "Not offered: command assignment and runtime dispatch/negotiation composition are not installed. Only a session selecting capability28 may send Creature field2 EntityRef (identity16B,generationu64,max31B) or receive extended refusals3 NotVisible/4 NotReachable/5 RateLimited. Without28 Creature is malformed and server extended refusals map to existing2 NotAvailable; legacy resultdecode rejects3–5. Item field1 remains unchanged; text field1 is nonempty UTF-8 at most512B. Generation0 means unknown and requires NotVisible before runtime binding. D1240 assigns no additional capability dependency; requires stays empty."
+      "offer_gate": "Not offered: command type 30 ITEM_LOOK_INTENT is registered (CP D1268, D1292) and gated on this capability, but no command handler, rate limiter or runtime negotiation composition is installed, so the server never selects 28 and never dispatches 30. Only a session selecting capability28 may send Creature field2 EntityRef (identity16B,generationu64,max31B) or receive extended refusals3 NotVisible/4 NotReachable/5 RateLimited. Without28 Creature is malformed and server extended refusals map to existing2 NotAvailable; legacy resultdecode rejects3–5. Item field1 remains unchanged; text field1 is nonempty UTF-8 at most512B. Generation0 means unknown and requires NotVisible before runtime binding. D1240 assigns no additional capability dependency; requires stays empty."
     }
   ],
   "command_types": [
@@ -413,6 +413,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutResultV1",
       "max_payload_bytes": 0,
       "max_result_payload_bytes": 6
+    },
+    {
+      "id": 30,
+      "name": "ITEM_LOOK_INTENT",
+      "owner_decision": "CP D1268 (#2131 comment6227075059; HOUSE_QUERY correction D1268a comment6227265767) reserves command type 30 for ITEM_LOOK_V1; CP D1292 (#2182) confirms ledger slot 30 is free and assigns this registry hunk to ITEM-LOOK-1; payload layout accepted by CP D1240 comment6226466175",
+      "capability": 28,
+      "payload_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookIntent (CP D1240 layout; no .proto is published yet): exactly one of field 1 Item = the unchanged ItemTargetV1 nonzero varint ItemHandle, or, only with capability 28 selected, field 2 Creature = EntityRef (field 1 identity, exactly 16 bytes; field 2 generation u64, omitted means 0 = unknown)",
+      "result_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookResult (CP D1240 layout; no .proto is published yet): exactly one of field 1 nonempty UTF-8 text of at most 512 bytes, or one empty refusal marker: 2 NOT_AVAILABLE, and only with capability 28 selected 3 NOT_VISIBLE, 4 NOT_REACHABLE, 5 RATE_LIMITED; a refusal carries no target facts",
+      "max_payload_bytes": 31,
+      "max_result_payload_bytes": 515
     }
   ],
   "state_domains": [

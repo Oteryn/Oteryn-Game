@@ -18,7 +18,7 @@ registry: yes
 owner: unassigned (builder)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/item_look.rs (new)
@@ -26,6 +26,7 @@ owned_paths:
   - apps/game-server/src/interaction/look.rs (new)
   - crates/protocol-oteryn/src/item_look.rs (new codec)
   - crates/protocol-oteryn/src/item_look_tests.rs (new)
+  - docs/agents/tasks/ITEM-LOOK-1.md (this task record)
 slot_only_paths:
   - connection.rs dispatch
   - mod.rs
@@ -66,6 +67,7 @@ All dependencies merged; the task may start.
 - apps/game-server/src/interaction/look.rs (new)
 - crates/protocol-oteryn/src/item_look.rs (new codec)
 - crates/protocol-oteryn/src/item_look_tests.rs (new)
+- docs/agents/tasks/ITEM-LOOK-1.md (this task record)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -75,6 +77,10 @@ All dependencies merged; the task may start.
 - crates/protocol-oteryn/src/lib.rs
 - PROTOCOL_OTERYN_V1_REGISTRY.json
 - RESOURCE_LIMITS_REGISTRY.json (look rate row)
+- CP D1292 accepts the slot-only hunks already on this branch (`capabilities.rs`,
+  `crates/protocol-oteryn/src/lib.rs`, `PROTOCOL_OTERYN_V1_REGISTRY.json`, and the module
+  mounts in `gameplay_transport/mod.rs` and `interaction/mod.rs`) as this task's merge-queue
+  turn; `connection.rs` dispatch and `RESOURCE_LIMITS_REGISTRY.json` remain untouched.
 - Always slot-only, whether or not listed: regenerate_content.py outputs, `content/project.json`, `content/manifest.json`, `content/content.lock.json`, `content/interactions/index.json`, `content/world/pins/*`, Rust pins, `docs/contracts/*REGISTRY*.json`, migration numbers, wiring in `gameplay_transport/connection.rs`, `gameplay_transport/mod.rs`, `capabilities.rs`, `crates/protocol-oteryn/src/lib.rs`.
 
 ## Wiring points (verified on main@5742f30f3)
@@ -120,11 +126,11 @@ Reference look text format (Tibia 'You see ...'), item description promotion mod
 ## Context checkpoint
 
 ```yaml
-last_progress: local P2 retirement refusal repaired and regression verified RED then GREEN; integration pending
+last_progress: CP final-review repair (2026-10-17) mounts the look modules and registers command 30 gated by capability 28
 status: authoring
 branch: skeleton/item-look-1
-blocker: accepted LOOK semantics and CP integration slot are pending
-next_action: lead verifies and archives local repair; accepted semantics and CP slot precede integration/publication
+blocker: command 30 handler, look rate row and runtime Creature/name binding are not implemented; CI result on the repair head pending
+next_action: CP reads exact-head CI and Codex review of the repair head
 ```
 
 ## Local preparation packet (proposed, 2026-10-15)
@@ -445,3 +451,29 @@ is reserved by D1268a and is not added by this family. Main's current registered
 commands do not consume30. One integration push; CI starts automatically.
 Current protocol test/strict-Clippy results remain NOT_RUN until actual CI
 records them; the previous255PASS remains scoped to8176aab1.
+
+### CP final-review repair (2026-10-17)
+
+CP final review on d6a72169 found three gaps, fixed in one push:
+
+1. The server look sources were never compiled. `gameplay_transport/mod.rs` now mounts
+   `mod item_look;` under a reasoned `dead_code` allow (the helper has no caller until
+   command 30 dispatch), and `interaction/mod.rs` mounts `pub(crate) mod look;`.
+   `item_look.rs` now imports `crate::interaction::look` instead of including the same file a
+   second time with `#[path]` (which `clippy::duplicate_mod` rejects). Its tests stay in
+   `item_look_tests.rs`, included by `item_look.rs` as `mod tests` (the `capabilities.rs`
+   pattern), so `mod.rs` does not mount that file a second time.
+2. Command 30 is now in `PROTOCOL_OTERYN_V1_REGISTRY.json` as `ITEM_LOOK_INTENT`, gated by
+   capability 28 like the other capability-owned, not-offered commands (NPC 7/8 under 3):
+   capability 28 lists `command_types: [30]` and `capabilities.rs` `GATED` lists
+   `(28, [30], [])`. Bounds are the codec's: 31 request bytes and 515 result bytes (512 text
+   bytes plus field framing). No `.proto` is published yet, so both schema fields name the
+   codec types and describe the D1240 layout. `allocation_ranges` is unchanged. The owned
+   protocol test now pins the command entry and its bounds against the codec.
+3. This record is listed in its own owned paths, and the D1292 slot-only acceptance is noted
+   above.
+
+Still not implemented: a command 30 handler in `connection.rs`, the look rate row, a
+capability 28 offer and runtime Creature/name binding. Command 30 cannot be dispatched,
+because no session can select 28. No local cargo build or test ran (disk-limited worker);
+changed-file rustfmt passed, and exact-head CI is the qualification.
