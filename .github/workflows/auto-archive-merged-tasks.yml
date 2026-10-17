@@ -132,7 +132,7 @@ jobs:
           git config user.email '41898333+github-actions[bot]@users.noreply.github.com'
           # Never rewrite a published branch: while an archive pull request is
           # open, leave it alone; otherwise publish a fresh branch per run.
-          existing="$(gh pr list --repo "$REPOSITORY" --base main --state open --json number,headRefName \
+          existing="$(gh pr list --repo "$REPOSITORY" --base main --state open --limit 1000 --json number,headRefName \
             --jq "[.[] | select(.headRefName | startswith(\"$BRANCH_PREFIX\"))][0].number // empty")"
           if [[ -n "$existing" ]]; then
             echo "Archive pull request #$existing is still open; not publishing another." | tee -a "$GITHUB_STEP_SUMMARY"
