@@ -964,6 +964,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &fence,
                     )
                     .ok()?,
+                lever_boss_room:
+                    crate::spell::companion_lifecycle::LeverBossRoomMembership::of_current_scope(
+                        &fence.runtime_scope,
+                    ),
             };
             let Ok(mut familiar) = prepare_familiar(
                 &runtime,
@@ -1782,6 +1786,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &fence,
                     )
                     .map_err(|_| ())?,
+                // #2199 Codex P1 4302326064: the current session scope resolves lever boss
+                // room membership before the Login or delayed Return is prepared.
+                lever_boss_room:
+                    crate::spell::companion_lifecycle::LeverBossRoomMembership::of_current_scope(
+                        &fence.runtime_scope,
+                    ),
             };
             let stamp = runtime.issue_owner_work().map_err(|_| ())?;
             let at = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());

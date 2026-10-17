@@ -760,6 +760,61 @@ pub(crate) struct FamiliarOwnerFacts {
     pub(crate) state: DurableFamiliarState,
     pub(crate) checkpoint_committed_at_ms: Option<i64>,
     pub(crate) lifecycle_writer: FamiliarLifecycleWriter,
+    /// FAMILIARS0 §4 check 3 / §7, resolved from the owner's current session scope.
+    pub(crate) lever_boss_room: LeverBossRoomMembership,
+}
+
+/// #2199 Codex P1 4302326064: whether the owner is inside a boss room admitted by lever
+/// (FAMILIARS0 §4 check 3, BOSS-RAID-0 §6). BOSS-RAID-0 §6.1 makes such a room an activity
+/// instance (scope kind 2) while the lever room stays ordinary Channel map, so the current
+/// session's runtime scope is the authority: a Channel scope is outside, and the fenced
+/// familiar write re-proves that scope (`runtime_scope_kind = 1`) in its transaction. An
+/// instance scope may be a house or a boss room; without the BOSS-ROOM-1 owner it is
+/// unresolved and refuses, never guessed. `Inside` is the fact BOSS-ROOM-1 supplies.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LeverBossRoomMembership {
+    Outside,
+    Inside,
+    Unresolved,
+}
+impl LeverBossRoomMembership {
+    pub(crate) fn of_current_scope(scope: &crate::foundation::RuntimeScopeRefV1) -> Self {
+        match scope {
+            crate::foundation::RuntimeScopeRefV1::Channel { .. } => Self::Outside,
+            crate::foundation::RuntimeScopeRefV1::Instance { .. } => Self::Unresolved,
+        }
+    }
+}
+
+/// CREATURE-AI-0 `RL-19`: player summons per character, a familiar included (FAMILIARS0 §4).
+pub(crate) const CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX: usize = 2;
+
+/// #2199 Codex P1 4302326065: a stored return replays the source Login recreation, whose
+/// planner skips the cast's owned-summon limit, so its admission checks the complete owned
+/// census against the aggregate cap itself. Over the cap the row keeps waiting.
+pub(crate) fn familiar_return_within_summon_cap(owned_summons: usize) -> bool {
+    owned_summons < CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX
+}
+
+/// FAMILIARS0 §7: a returning familiar, immediate (Login) or delayed (Return), first passes
+/// cast check 3. Inside a lever boss room the return is refused and the familiar ends: its
+/// stored time becomes 0 while the row stays closed and the cooldown is kept. An unresolved
+/// room refuses the event, so the row stays waiting. Returns whether the familiar ended.
+fn end_familiar_return_in_lever_boss_room(
+    lifecycle: &mut crate::durability::character_familiar::FamiliarLifecycleV2,
+    room: LeverBossRoomMembership,
+) -> Result<bool, CompanionExecutionError> {
+    if !familiar_waits_to_return(lifecycle) {
+        return Ok(false);
+    }
+    match room {
+        LeverBossRoomMembership::Outside => Ok(false),
+        LeverBossRoomMembership::Inside => {
+            lifecycle.familiar_remaining_ms = 0;
+            Ok(true)
+        }
+        LeverBossRoomMembership::Unresolved => Err(CompanionExecutionError::InvalidOwnerFacts),
+    }
 }
 #[derive(Debug, Clone)]
 pub(crate) struct PreparedFamiliar {
@@ -960,6 +1015,7 @@ struct FamiliarParts {
     actions: Vec<FamiliarAction>,
     facts: FamiliarFacts,
     after: DurableFamiliarState,
+    ended_in_lever_boss_room: bool,
 }
 /// Normalize a stored lifecycle for Login after current owner facts were independently resolved.
 /// CP D1296 accepts a foreign still-open lifecycle as a crash: discard its remaining
@@ -1205,9 +1261,17 @@ fn prepare_familiar_parts(
         .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
     let unreconciled = event != FamiliarEvent::Login
         && familiar_lifecycle_unreconciled(lifecycle, &current.lifecycle_writer);
+    let mut ended_in_lever_boss_room = false;
     if event == FamiliarEvent::Login {
         prepare_familiar_login_lifecycle(lifecycle, &current.lifecycle_writer)?;
+        ended_in_lever_boss_room =
+            end_familiar_return_in_lever_boss_room(lifecycle, current.lever_boss_room)?;
     } else if unreconciled && event == FamiliarEvent::Advance {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    // FAMILIARS0 §4 check 3: no cast inside a lever boss room or with an unresolved room,
+    // before any cost.
+    if event == FamiliarEvent::Cast && current.lever_boss_room != LeverBossRoomMembership::Outside {
         return Err(CompanionExecutionError::InvalidOwnerFacts);
     }
     // FAMILIARS0 §4 check 4 / §5.2: a stored familiar waiting to return refuses the cast
@@ -1444,6 +1508,7 @@ fn prepare_familiar_parts(
         actions,
         facts,
         after,
+        ended_in_lever_boss_room,
     })
 }
 
@@ -2552,13 +2617,17 @@ pub(crate) fn prepare_lifecycle_familiar(
         unix,
         dead,
     )?;
-    // A return writes only its creation: no free tile (or no current benefit) leaves the row
-    // waiting unwritten, and a familiar already present is never doubled.
+    // A return writes only its creation, or its end inside a lever boss room: no free tile,
+    // a full owned-summon census (or no current benefit) leaves the row waiting unwritten,
+    // and a familiar already present is never doubled.
     if returning {
         if parts.owned.iter().any(|s| s.state.policy.is_familiar) {
             return Err(CompanionExecutionError::SnapshotMismatch);
         }
-        if parts.spawn.is_none() {
+        if parts.spawn.is_some() && !familiar_return_within_summon_cap(parts.owned.len()) {
+            return Err(CompanionExecutionError::PlacementUnavailable);
+        }
+        if parts.spawn.is_none() && !parts.ended_in_lever_boss_room {
             return Err(CompanionExecutionError::PlacementUnavailable);
         }
     }
@@ -3237,6 +3306,103 @@ mod familiar_login_lifecycle_tests {
             .open = false;
         assert_eq!(state, expected);
         Ok(())
+    }
+
+    /// #2199 Codex P1 4302326064: the owner's current session scope resolves lever boss room
+    /// membership. A Channel scope is outside (the fenced write re-proves the Channel scope);
+    /// an instance scope stays unresolved without the BOSS-ROOM-1 owner and is never guessed.
+    #[test]
+    fn lever_boss_room_membership_comes_from_the_current_scope()
+    -> Result<(), CompanionExecutionError> {
+        let uuid = |seed: u8| {
+            let mut bytes = [0_u8; 16];
+            bytes[0] = 1;
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = seed;
+            bytes
+        };
+        let world = crate::foundation::WorldId::decode(&uuid(1))
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let channel = crate::foundation::ChannelId::decode(&uuid(2))
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        let channel_scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+        let instance_scope = crate::foundation::RuntimeScopeRefV1::instance(world, uuid(3))
+            .map_err(|_| CompanionExecutionError::InvalidOwnerFacts)?;
+        assert_eq!(
+            LeverBossRoomMembership::of_current_scope(&channel_scope),
+            LeverBossRoomMembership::Outside
+        );
+        assert_eq!(
+            LeverBossRoomMembership::of_current_scope(&instance_scope),
+            LeverBossRoomMembership::Unresolved
+        );
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4302326064 (FAMILIARS0 §7): a waiting return inside a lever boss room
+    /// ends the stored familiar (time 0, row closed, writer and marker kept); outside it is
+    /// untouched, and an unresolved room refuses so the row stays waiting. A row that does not
+    /// wait is never changed by the room check.
+    #[test]
+    fn lever_boss_room_return_ends_the_stored_familiar() -> Result<(), CompanionExecutionError> {
+        let (old_writer, _) = writers();
+        let waiting = lifecycle(&old_writer, 120_000, false, Some(&old_writer));
+
+        let mut inside = waiting.clone();
+        assert!(end_familiar_return_in_lever_boss_room(
+            &mut inside,
+            LeverBossRoomMembership::Inside
+        )?);
+        let mut ended = waiting.clone();
+        ended.familiar_remaining_ms = 0;
+        assert_eq!(inside, ended);
+        assert!(!familiar_waits_to_return(&inside));
+
+        let mut outside = waiting.clone();
+        assert!(!end_familiar_return_in_lever_boss_room(
+            &mut outside,
+            LeverBossRoomMembership::Outside
+        )?);
+        assert_eq!(outside, waiting);
+
+        let mut unresolved = waiting.clone();
+        assert_eq!(
+            end_familiar_return_in_lever_boss_room(
+                &mut unresolved,
+                LeverBossRoomMembership::Unresolved
+            ),
+            Err(CompanionExecutionError::InvalidOwnerFacts)
+        );
+        assert_eq!(unresolved, waiting);
+
+        for not_waiting in [
+            lifecycle(&old_writer, 120_000, true, None),
+            lifecycle(&old_writer, 0, false, Some(&old_writer)),
+        ] {
+            for room in [
+                LeverBossRoomMembership::Outside,
+                LeverBossRoomMembership::Inside,
+                LeverBossRoomMembership::Unresolved,
+            ] {
+                let mut row = not_waiting.clone();
+                assert!(!end_familiar_return_in_lever_boss_room(&mut row, room)?);
+                assert_eq!(row, not_waiting);
+            }
+        }
+        Ok(())
+    }
+
+    /// #2199 Codex P1 4302326065 (CREATURE-AI-0 RL-19): a stored return checks the complete
+    /// owned-summon census against the aggregate cap of two; at the cap it keeps waiting.
+    #[test]
+    fn familiar_return_respects_the_aggregate_summon_cap() {
+        assert!(familiar_return_within_summon_cap(0));
+        assert!(familiar_return_within_summon_cap(1));
+        assert!(!familiar_return_within_summon_cap(
+            CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX
+        ));
+        assert!(!familiar_return_within_summon_cap(3));
     }
 
     fn writers() -> (FamiliarLifecycleWriter, FamiliarLifecycleWriter) {

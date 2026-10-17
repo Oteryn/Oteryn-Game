@@ -585,3 +585,32 @@ Regression tests: `stored_return_admits_only_this_lifecycles_waiting_row` and
 build of this tree, `cargo clippy -p oteryn-game-server --all-targets -- -D warnings` passes; the
 game-server lib tests ran to about 2,600 of 3,281 with no failure before the build host went
 offline, so the rest are NOT_RUN locally. `rustfmt --check` passes. New-head GitHub CI must pass.
+
+### Round-six repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. The owner approved this round for Codex threads
+4302326064 (P1) and 4302326065 (P1).
+
+- FAMILIARS0 §4 check 3 / §7: a return, immediate (Login) or delayed (Return), now resolves
+  lever boss room membership before it spawns. No BOSS-ROOM-1 owner exists yet, so membership
+  comes from the owner's current session scope (`LeverBossRoomMembership::of_current_scope`).
+  BOSS-RAID-0 §6.1 makes a boss room an activity instance while the lever room stays Channel
+  map, so a Channel scope is outside (the fenced familiar TX re-proves `runtime_scope_kind = 1`)
+  and an instance scope is unresolved and refuses (the row keeps waiting). Inside a resolved
+  lever boss room, the waiting familiar ends in the same fenced write: remaining 0, row closed,
+  cooldown kept, no spawn; the stored return then ends because the row no longer waits. The
+  Cast now refuses unless the room is resolved outside. The `Inside` value stays unreachable
+  until BOSS-ROOM-1 supplies the fact.
+- CREATURE-AI-0 RL-19: the stored return replays the source Login recreation, whose planner
+  skips the cast's owned-summon limit. It now checks the complete owned census against the
+  aggregate cap of two summons, both in the owner-cadence precheck and when it prepares (the
+  census is re-validated at commit). At the cap the row keeps waiting and retries.
+
+Regression tests: `lever_boss_room_membership_comes_from_the_current_scope`,
+`lever_boss_room_return_ends_the_stored_familiar` and
+`familiar_return_respects_the_aggregate_summon_cap` (lifecycle). Local
+toolchain 1.95.0: `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
+passes; `cargo test --locked -p oteryn-game-server --lib --bins` passes (lib 3,255 passed,
+29 ignored, 0 failed; bins 7 passed), built without debuginfo to fit the disk. `rustfmt --check`
+passes. PostgreSQL integration targets are NOT_RUN locally (no database). New-head GitHub CI
+must pass.

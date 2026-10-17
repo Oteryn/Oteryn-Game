@@ -640,7 +640,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<bool, ()> {
         use crate::spell::companion_lifecycle::{
             FamiliarLifecycleOrigin, familiar_return_admissible,
-            familiar_return_placement_available,
+            familiar_return_placement_available, familiar_return_within_summon_cap,
         };
         let now = self.owner_now().get();
         {
@@ -669,7 +669,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Execution::NativeProfile(profile) = &spell.execution else {
                     return Ok(false);
                 };
+                // #2199 Codex P1 4302326065: a full owned-summon census keeps it waiting.
                 if states.has_pending_familiar(actor, session)
+                    || !runtime
+                        .owned_companions(actor, session)
+                        .is_ok_and(|owned| familiar_return_within_summon_cap(owned.len()))
                     || !familiar_return_placement_available(
                         &runtime,
                         self.movement_cells,

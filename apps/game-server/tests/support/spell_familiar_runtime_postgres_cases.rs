@@ -197,6 +197,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
                     1,
                 )?)
                 .map_err(debug)?,
+            lever_boss_room: crate::spell::companion_lifecycle::LeverBossRoomMembership::Outside,
         };
         let prepared = prepare_familiar_hook(
             &physical,
