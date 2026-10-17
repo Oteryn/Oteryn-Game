@@ -553,7 +553,7 @@ async fn prepare_item_grant(
             .map_err(|_| SpellCastDisposition::Rejected)?;
     let mut batch=OwnerCombatBatch{caster:actor,attacker:crate::foundation::CharacterId::decode(&b.character)
         .map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,
-        command,occurrence:occurrence.into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
+        command,occurrence:occurrence.into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
         binding:serde_json::to_vec(&json!({"intent":source_intent(&intent),"spell":format!("{spell:?}"),
             "outputs":outputs.iter().map(|i|json!({"key":i.key,"revision":i.revision})).collect::<Vec<_>>(),
             "item_operations":format!("{operations:?}"),"before":format!("{before:?}"),
