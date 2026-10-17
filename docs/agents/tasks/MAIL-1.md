@@ -833,3 +833,39 @@ callback. No source-specific caller authority, successful production activation,
 MAIL transport, parcel, posting or system-letter completion is inferred. CP
 retains ready/merge authority and the second shared-audit PR integrates current
 main before its slot commit.
+
+## Migration0101 PL/pgSQL parse repair (2026-10-17)
+
+This bounded successor is based on exact MAIL
+`9579944b48fb24fe36163a7befa4592ed8a68d1e`, tree
+`74ea66dfc5d755166614434e50906d68650b019c`. It changes only two SQL condition
+lines and appends this task evidence; all Rust, prior test bodies, value guards,
+grants, caps and callback/activation boundaries remain unchanged.
+
+The [CP excerpt](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234971256)
+for [job117409572690](https://github.com/Oteryn/Oteryn-Game/actions/runs/39037287703/job/117409572690)
+reports **1,143 passed / 135 failed** and the repeated root error
+`ExecuteMigration(...,101)`, PostgreSQL `42601`, `syntax error at end of input`,
+`Original(20084)`. Those 135 failures share the migration parse error; this
+is not successful execution of the 20 MAIL bodies.
+
+The verified published SQL blob `b5df21651e71ba7d0493d8e05413a20680b06304`
+is complete: **60,007 bytes / 60,006 characters**. Position20084 is line366,
+column84, immediately before the inner `THEN` of an unparenthesized SQL CASE
+inside a PL/pgSQL IF condition. The same pattern occurs on line391. It is not
+the physical end of the migration or the final REVOKE/GRANT block.
+
+The [PostgreSQL17.6 grammar](https://github.com/postgres/postgres/blob/REL_17_6/src/pl/plpgsql/src/pl_gram.y)
+reads an IF expression until `THEN` at parenthesis depth zero. Consequently it
+ends this expression at the CASE's inner `THEN`, and the SQL parser receives
+an incomplete CASE. Both CASE expressions are now parenthesized. This changes
+only the PL/pgSQL delimiter grouping; the 128/512-byte definition bounds and
+all positive/refusal conditions remain the same. Removing exactly those four
+parentheses reproduces the complete published SQL byte for byte.
+
+**Candidate SQL parse, Cargo, Clippy and native PostgreSQL: NOT_RUN at author
+handoff.** Exact preimage, two-line/four-character delta and patch/whitespace
+checks pass. The coordinator qualifies the complete migration through the
+actual native migration path before making any runtime claim. Resource rows
+remain CANDIDATE and production activation remains after #2197. The separate
+owned TEXT ACL/retirement proposal is not included in this repair.

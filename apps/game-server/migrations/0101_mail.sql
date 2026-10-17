@@ -363,7 +363,7 @@ BEGIN
     FOREACH field IN ARRAY ARRAY['family','key','revision'] LOOP
         text_value := spec->'claim'->>field;
         IF jsonb_typeof(spec->'claim'->field) IS DISTINCT FROM 'string'
-           OR octet_length(text_value) NOT BETWEEN 1 AND CASE WHEN field = 'family' THEN 128 ELSE 512 END
+           OR octet_length(text_value) NOT BETWEEN 1 AND (CASE WHEN field = 'family' THEN 128 ELSE 512 END)
            OR text_value ~ '[[:cntrl:]]' THEN
             RAISE EXCEPTION 'invalid Inbox reward claim definition' USING ERRCODE = '23514';
         END IF;
@@ -388,7 +388,7 @@ BEGIN
         FOREACH field IN ARRAY ARRAY['family','key','revision'] LOOP
             text_value := output->>field;
             IF jsonb_typeof(output->field) IS DISTINCT FROM 'string'
-               OR octet_length(text_value) NOT BETWEEN 1 AND CASE WHEN field = 'family' THEN 128 ELSE 512 END
+               OR octet_length(text_value) NOT BETWEEN 1 AND (CASE WHEN field = 'family' THEN 128 ELSE 512 END)
                OR text_value ~ '[[:cntrl:]]' THEN
                 RAISE EXCEPTION 'invalid Inbox item definition' USING ERRCODE = '23514';
             END IF;
