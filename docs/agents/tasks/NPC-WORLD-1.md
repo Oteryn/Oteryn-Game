@@ -767,3 +767,29 @@ NOT_RUN and require results from its own head; no predecessor result is carried
 forward. The active NPC-source membership, complete terrain/trigger producers
 and actual budgeted caller still require their accepted integration under
 D1314/D1344a. The PR remains draft and NOT_FULLY_QUALIFIED.
+
+## Native entry terrain fixture repair after exact-head CI (2026-10-17)
+
+On `b0cfab87cf7a1e12b83916839c318f81e8b1afaa`, the
+[strict Rust and unit job](https://github.com/Oteryn/Oteryn-Game/actions/runs/39034984138/job/117403907839)
+compiled and ran the library cases: 3272 passed, one failed and 29 were ignored.
+The sole failure was
+`npc_actor::tests::a_qualified_collision_cell_without_terrain_metadata_is_never_a_step_approval`.
+The canonical PostgreSQL and integration jobs for that head succeeded; their
+results remain evidence for that predecessor only.
+
+The accepted native entry source explicitly contains spell tiles, including the
+walkable east cell used by this test. Its qualified tile has no source step facts:
+`QualifiedSpellTiles::qualify` preserves `source_step: None`. The lookup therefore
+correctly succeeds, and the walking consumer correctly omits the unknown-step
+candidate. This repair asserts that actual contract: the tile exists, its step
+facts are absent, the prepared terrain candidate list is empty, and the original
+Movement position remains unchanged. It changes no production terrain admission,
+source metadata, fixture content, test registration or other test body.
+
+Exact Git preimages, repository Rust1.94 formatting and isolated patch/whitespace
+checks pass at source freeze. Successor Cargo, strict Clippy, unit and native
+PostgreSQL execution are NOT_RUN and require results for the published successor.
+The D1357 native NPC source producer is a separate work item; D1358 complete
+height/trigger admission remains deferred. The PR stays draft and
+NOT_FULLY_QUALIFIED.

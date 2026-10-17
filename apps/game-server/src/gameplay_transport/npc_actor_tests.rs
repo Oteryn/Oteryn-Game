@@ -607,12 +607,16 @@ fn a_qualified_collision_cell_without_terrain_metadata_is_never_a_step_approval(
         cells
             .spell_tiles()
             .lookup(cells.scope(), cell(east))
-            .is_err()
+            .expect("entry source explicitly contains the tile")
+            .source_step()
+            .is_none()
     );
-    assert!(matches!(
-        prepared.terrain_candidates(&mut runtime, &room),
-        Err(WalkError::TerrainUnavailable)
-    ));
+    assert!(
+        prepared
+            .terrain_candidates(&mut runtime, &room)
+            .expect("the anchor exists; candidates without step facts are omitted")
+            .is_empty()
+    );
     assert_eq!(
         runtime
             .borrow_movement_position()
