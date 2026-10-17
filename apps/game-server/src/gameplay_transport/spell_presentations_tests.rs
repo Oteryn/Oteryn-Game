@@ -90,6 +90,7 @@ pub(crate) fn prepared(
         },
         binding: sequence.to_be_bytes().to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 100,
         effects,
         deferred: None,
@@ -296,6 +297,7 @@ fn ordinary_passive_cue_batch(actor: ExactActorRef, session: GameSessionId) -> O
         },
         binding: b"{}".to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 100,
         deferred: None,
         effects: vec![OwnerCombatEffect {

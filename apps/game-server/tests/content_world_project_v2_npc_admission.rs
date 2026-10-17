@@ -376,6 +376,7 @@ fn draft() -> ProjectV2Draft {
                     }],
                 },
                 ProjectV2Declaration::Service {
+                    bank: false,
                     identity: identity(TRADE),
                     offers: offers(),
                     recipes: vec![],
@@ -383,6 +384,7 @@ fn draft() -> ProjectV2Draft {
                     fields: vec![],
                 },
                 ProjectV2Declaration::Service {
+                    bank: false,
                     identity: identity(TRAVEL),
                     offers: vec![],
                     recipes: vec![],

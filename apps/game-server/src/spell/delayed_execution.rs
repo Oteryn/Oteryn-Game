@@ -468,6 +468,17 @@ pub(crate) struct SpellTimerOwner {
     // retry must never reroll damage or manufacture a newer admission sequence.
     prepared_due: Option<(SpellTimerOccurrence, OwnerCombatBatch)>,
     revision: u64,
+    // #2199 Codex P2 4302041461: actors whose Login stored a familiar for lack of a free tile,
+    // each with the earliest owner time of its next return attempt. Data only: every attempt
+    // re-proves the stored row, current owner and placement, and an entry creates nothing.
+    familiar_returns: Vec<FamiliarReturnWait>,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FamiliarReturnWait {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    spell_index: std::num::NonZeroU32,
+    not_before_us: u64,
 }
 #[derive(Debug)]
 pub(crate) struct FireReceipt {
@@ -485,6 +496,76 @@ pub(crate) struct FireReport {
 }
 
 impl SpellTimerOwner {
+    /// D1218: read the one actual Expiry event for this full familiar lifecycle.
+    /// Warnings and another actor/session/creature/epoch never supply its deadline.
+    /// Zero or multiple matches are unknown; neither callback nor lane state is changed.
+    pub(crate) fn familiar_expiry_due(
+        &self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    ) -> Option<SemanticTimeMicros> {
+        use super::companion_lifecycle::FamiliarTimerEvent;
+        let cast = self.payloads.iter().filter_map(|pending| {
+            let TimerPayload::Familiar(saved) = &pending.payload else {
+                return None;
+            };
+            (saved.binding.caster == owner
+                && saved.binding.command.game_session_id() == session
+                && saved.creature == creature
+                && saved.lifecycle_epoch == lifecycle_epoch
+                && saved.event == FamiliarTimerEvent::Expiry)
+                .then_some(pending.due)
+        });
+        let returned = self.lifecycle_payloads.iter().filter_map(|pending| {
+            let saved = &pending.saved;
+            (saved.binding.owner() == owner
+                && saved.binding.session() == session
+                && saved.creature == creature
+                && saved.lifecycle_epoch == lifecycle_epoch
+                && saved.event == FamiliarTimerEvent::Expiry)
+                .then_some(pending.due)
+        });
+        let mut matches = cast.chain(returned);
+        let due = matches.next()?;
+        matches.next().is_none().then_some(due)
+    }
+    /// #2199 Codex P2 4302737307: the familiar expiries of this owner that are due at `now`,
+    /// as (creature, lifecycle epoch). The timer lane hands a current expiry here instead of
+    /// despawning it; the owner cadence ends each one through the fenced lifecycle writer,
+    /// and the lane drops the payload once the familiar is gone. Data only: the writer
+    /// re-proves the live familiar, its owner and its epoch.
+    pub(crate) fn due_familiar_expiries(
+        &self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Vec<(ExactActorRef, u64)> {
+        use super::companion_lifecycle::FamiliarTimerEvent;
+        let cast = self.payloads.iter().filter_map(|pending| {
+            let TimerPayload::Familiar(saved) = &pending.payload else {
+                return None;
+            };
+            (saved.binding.caster == owner
+                && saved.binding.command.game_session_id() == session
+                && saved.event == FamiliarTimerEvent::Expiry
+                && pending.due <= now)
+                .then_some((saved.creature, saved.lifecycle_epoch))
+        });
+        let returned = self.lifecycle_payloads.iter().filter_map(|pending| {
+            let saved = &pending.saved;
+            (saved.binding.owner() == owner
+                && saved.binding.session() == session
+                && saved.event == FamiliarTimerEvent::Expiry
+                && pending.due <= now)
+                .then_some((saved.creature, saved.lifecycle_epoch))
+        });
+        let mut due: Vec<_> = cast.chain(returned).collect();
+        due.sort_unstable_by_key(|(creature, epoch)| (creature.placement_identity(), *epoch));
+        due.dedup();
+        due
+    }
     /// Actual lane metadata only; reading a deadline grants no callback authority.
     pub(crate) fn next_due_time(&self) -> Option<SemanticTimeMicros> {
         self.payloads
@@ -743,7 +824,61 @@ impl SpellTimerOwner {
             ready: VecDeque::new(),
             prepared_due: None,
             revision: 0,
+            familiar_returns: Vec::new(),
         })
+    }
+    /// Record (or move) the next return attempt of a stored familiar. False when the entry
+    /// cannot be stored; the stored row is then returned at the next Login, never lost.
+    pub(crate) fn schedule_familiar_return(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        spell_index: std::num::NonZeroU32,
+        not_before_us: u64,
+    ) -> bool {
+        if let Some(wait) = self
+            .familiar_returns
+            .iter_mut()
+            .find(|w| w.actor == actor && w.session == session)
+        {
+            wait.spell_index = spell_index;
+            wait.not_before_us = not_before_us;
+            return true;
+        }
+        if self.familiar_returns.try_reserve(1).is_err() {
+            return false;
+        }
+        self.familiar_returns.push(FamiliarReturnWait {
+            actor,
+            session,
+            spell_index,
+            not_before_us,
+        });
+        true
+    }
+    /// The familiar spell of this exact actor/session's stored return when it is due at
+    /// `now_us`; None when no return waits or its next attempt is later.
+    pub(crate) fn familiar_return_due(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+    ) -> Option<std::num::NonZeroU32> {
+        self.familiar_returns
+            .iter()
+            .find(|w| w.actor == actor && w.session == session && w.not_before_us <= now_us)
+            .map(|w| w.spell_index)
+    }
+    pub(crate) fn clear_familiar_return(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.familiar_returns
+            .retain(|w| w.actor != actor || w.session != session);
+    }
+    /// Every actor/session with a stored return, so ended sessions can be pruned.
+    pub(crate) fn familiar_return_actors(&self) -> Vec<(ExactActorRef, GameSessionId)> {
+        self.familiar_returns
+            .iter()
+            .map(|w| (w.actor, w.session))
+            .collect()
     }
     fn current(&self, fence: &ScopeRuntimeFence, stamp: RuntimeWorkStamp) -> bool {
         fence.is_current_for_scope(self.lane.scope(), self.lane.generation())
@@ -1147,6 +1282,16 @@ impl SpellTimerOwner {
                         runtime,
                         &pending.saved,
                     ) {
+                        // #2199 Codex P2 4302737307: a current expiry is handed to the owner
+                        // cadence (`due_familiar_expiries`), whose fenced lifecycle write
+                        // closes the row before the despawn. Its payload stays until then.
+                        Ok(Some(_))
+                            if pending.saved.event
+                                == super::companion_lifecycle::FamiliarTimerEvent::Expiry =>
+                        {
+                            self.ready.pop_front();
+                            continue;
+                        }
                         Ok(Some(staged)) => staged,
                         Ok(None) => {
                             self.ready.pop_front();
@@ -1187,6 +1332,14 @@ impl SpellTimerOwner {
             if let TimerPayload::Familiar(saved) = &pending.payload {
                 let staged = match super::companion_lifecycle::stage_familiar_timer(runtime, saved)
                 {
+                    // #2199 Codex P2 4302737307: as for a lifecycle expiry above.
+                    Ok(Some(_))
+                        if saved.event
+                            == super::companion_lifecycle::FamiliarTimerEvent::Expiry =>
+                    {
+                        self.ready.pop_front();
+                        continue;
+                    }
                     Ok(Some(staged)) => staged,
                     Ok(None) => {
                         self.ready.pop_front();

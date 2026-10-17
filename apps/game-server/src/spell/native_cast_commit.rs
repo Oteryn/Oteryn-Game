@@ -115,6 +115,7 @@ pub(crate) fn finalize_paid_combat_cast(
         return rejected();
     };
     if lowered.batch.anchor.as_ref() != Some(&paid.anchor)
+        || lowered.batch.now_us != Some(now)
         || lowered.batch.now_ms != now.get() / 1000
         || !paid.next.paid_successor_of(before, &paid.anchor)
     {
