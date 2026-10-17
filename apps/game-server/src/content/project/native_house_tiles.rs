@@ -313,8 +313,8 @@ mod placement_digest_tests {
                 NativeHousePlacement {
                     house: ProjectV2DefinitionRef {
                         family: ProjectV2Family::House,
-                        key: "oteryn:content.house.fixture_a".into(),
-                        revision: "oteryn:rev/fixture-house-r1".into(),
+                        key: "oteryn:content.house.overlay_a".into(),
+                        revision: "oteryn:rev/overlay-house-r1".into(),
                     },
                     cells: vec![
                         "oteryn:cell/entry-east".into(),
@@ -326,8 +326,8 @@ mod placement_digest_tests {
                 NativeHousePlacement {
                     house: ProjectV2DefinitionRef {
                         family: ProjectV2Family::House,
-                        key: "oteryn:content.house.fixture_b".into(),
-                        revision: "oteryn:rev/fixture-house-r1".into(),
+                        key: "oteryn:content.house.overlay_b".into(),
+                        revision: "oteryn:rev/overlay-house-r1".into(),
                     },
                     cells: vec![
                         "oteryn:cell/entry-den".into(),
@@ -415,7 +415,7 @@ mod placement_digest_tests {
             Some(original)
         );
         let mut revised = source.clone();
-        revised.houses[0].house.revision = "oteryn:rev/fixture-house-r2".into();
+        revised.houses[0].house.revision = "oteryn:rev/overlay-house-r2".into();
         assert_ne!(
             qualify_overlay(Some(revised))?.placement_digest(),
             Some(original)
@@ -427,7 +427,7 @@ mod placement_digest_tests {
             Some(original)
         );
         let mut changed_key = source.clone();
-        changed_key.houses[0].house.key = "oteryn:content.house.fixture_c".into();
+        changed_key.houses[0].house.key = "oteryn:content.house.overlay_c".into();
         assert_ne!(
             qualify_overlay(Some(changed_key))?.placement_digest(),
             Some(original)

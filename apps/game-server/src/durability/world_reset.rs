@@ -23,6 +23,9 @@ use sqlx::Row;
 #[derive(Debug)]
 pub enum WorldResetError {
     NotCurrent,
+    NotInitialized,
+    InvalidInitialization,
+    UnqualifiedTarget,
     ConflictingCause,
     CapacityExceeded,
     InvalidStoredState,
@@ -105,15 +108,27 @@ pub async fn census_retiring_world_reset(
 ) -> Result<Option<WorldResetCensus>, WorldResetError> {
     lock_admission_relations(tx).await?;
     let job = sqlx::query(
-        "SELECT reset_epoch::text,target_digest,revision::text FROM game_world_reset_jobs \
+        "SELECT reset_epoch::text,target_digest,revision::text,active_map_revision FROM game_world_reset_jobs \
          WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE",
     )
     .bind(world.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await
     .map_err(DurabilityError::from)?;
-    let Some(job) = job else { return Ok(None) };
+    let Some(job) = job else {
+        read_active_world_revision(tx, world).await?;
+        return Ok(None);
+    };
+    let active = read_active_world_revision(tx, world).await?;
     let epoch: String = job.try_get(0).map_err(DurabilityError::from)?;
+    if epoch
+        .parse::<u64>()
+        .map_err(|_| WorldResetError::InvalidStoredState)?
+        != active.epoch
+        || job.try_get::<String, _>(3).map_err(DurabilityError::from)? != active.map_revision
+    {
+        return Err(WorldResetError::NotCurrent);
+    }
     sqlx::query("LOCK TABLE game_runtime_scope_assignments IN SHARE MODE")
         .execute(&mut **tx)
         .await
@@ -591,7 +606,8 @@ impl DurabilityRoot {
 /// control-owned reset publisher. It extends exact native guard bodies, never disables a
 /// trigger or replaces their existing positive/refusal clauses. Fixtures install this same SQL.
 pub fn candidate_schema_sql() -> Result<String, &'static str> {
-    let mut sql = RESET_SCHEMA.to_owned();
+    let mut sql = RESET_EPOCH_SCHEMA.to_owned();
+    sql.push_str(RESET_SCHEMA);
     sql.push_str(&candidate_reset_issuance_sql()?);
     for (source, name, record) in [
         (
@@ -701,10 +717,30 @@ CREATE TABLE game_world_reset_jobs (
  world_id UUID NOT NULL, reset_epoch NUMERIC(20,0) NOT NULL CHECK(reset_epoch BETWEEN 0 AND 18446744073709551614),
  target_digest BYTEA NOT NULL CHECK(octet_length(target_digest)=32),
  active_map_revision TEXT NOT NULL CHECK(octet_length(active_map_revision) BETWEEN 1 AND 512),
+ -- Separate target facts, never aliases of target_digest or active_map_revision.
+ -- All NULL is a legacy retirement-only job; final activation must refuse it.
+ target_map_revision TEXT CHECK(octet_length(target_map_revision) BETWEEN 1 AND 512),
+ target_server_digest BYTEA CHECK(octet_length(target_server_digest)=32),
+ target_client_digest BYTEA CHECK(octet_length(target_client_digest)=32),
+ target_frame_digest BYTEA CHECK(octet_length(target_frame_digest)=32),
+ target_calendar_policy TEXT CHECK(target_calendar_policy='TIBIA_SERVER_SAVE_BERLIN_10'),
+ target_calendar_revision NUMERIC(20,0) CHECK(target_calendar_revision BETWEEN 1 AND 18446744073709551615),
+ target_calendar_parity TEXT CHECK(target_calendar_parity='PARITY_PENDING'),
+ CHECK ((target_map_revision IS NULL AND target_server_digest IS NULL AND target_client_digest IS NULL AND target_frame_digest IS NULL AND target_calendar_policy IS NULL AND target_calendar_revision IS NULL AND target_calendar_parity IS NULL)
+ OR (target_map_revision IS NOT NULL AND target_server_digest IS NOT NULL AND target_client_digest IS NOT NULL AND target_frame_digest IS NOT NULL AND target_calendar_policy IS NOT NULL AND target_calendar_revision IS NOT NULL AND target_calendar_parity IS NOT NULL)),
  phase TEXT NOT NULL CHECK(phase IN('RETIRING','ACTIVATED')),
  revision NUMERIC(20,0) NOT NULL DEFAULT 1 CHECK(revision BETWEEN 1 AND 18446744073709551615),
  PRIMARY KEY(world_id,reset_epoch)
 );
+CREATE FUNCTION game_world_reset_job_initialized() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ PERFORM 1 FROM game_world_reset_active_epochs a JOIN game_world_reset_epoch_history h USING(world_id,reset_epoch)
+ WHERE a.world_id=NEW.world_id AND a.reset_epoch=NEW.reset_epoch AND h.map_revision=NEW.active_map_revision FOR SHARE OF a;
+ IF NOT FOUND THEN
+ RAISE EXCEPTION 'World reset epoch not initialized/current' USING ERRCODE='OTR02'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_world_reset_job_initialized BEFORE INSERT ON game_world_reset_jobs FOR EACH ROW EXECUTE FUNCTION game_world_reset_job_initialized();
 CREATE UNIQUE INDEX game_world_reset_one_retiring ON game_world_reset_jobs(world_id) WHERE phase='RETIRING';
 CREATE TABLE game_world_reset_scopes (
  world_id UUID NOT NULL, reset_epoch NUMERIC(20,0) NOT NULL, channel_id UUID NOT NULL,
@@ -791,7 +827,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 DO $$ DECLARE f TEXT; BEGIN
- FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)'] LOOP
+ FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);
@@ -986,4 +1022,282 @@ mod reset_issuance_core_source_tests {
         );
         Ok(())
     }
+}
+
+/// D1257 explicit policy identity; every calendar result remains PARITY_PENDING.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResetCalendarPolicy {
+    TibiaServerSaveBerlin10,
+}
+impl ResetCalendarPolicy {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::TibiaServerSaveBerlin10 => "TIBIA_SERVER_SAVE_BERLIN_10",
+        }
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ResetCalendar {
+    pub policy: ResetCalendarPolicy,
+    pub revision: u64,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WorldResetArtifactDigests {
+    pub server: [u8; 32],
+    pub client: [u8; 32],
+    pub frame: [u8; 32],
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldResetEpochRecord {
+    pub epoch: u64,
+    pub map_revision: String,
+    pub digests: WorldResetArtifactDigests,
+    pub calendar: ResetCalendar,
+    pub month_key: String,
+    pub recorded_at_utc_ms: i64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResetMonthObservation {
+    pub month_key: String,
+    pub calendar: ResetCalendar,
+    pub observed_at_utc_ms: i64,
+}
+fn stored_calendar(
+    policy: String,
+    revision: String,
+    parity: String,
+) -> Result<ResetCalendar, WorldResetError> {
+    let revision = revision
+        .parse::<u64>()
+        .map_err(|_| WorldResetError::InvalidStoredState)?;
+    if policy != ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str()
+        || revision == 0
+        || parity != "PARITY_PENDING"
+    {
+        return Err(WorldResetError::InvalidStoredState);
+    }
+    Ok(ResetCalendar {
+        policy: ResetCalendarPolicy::TibiaServerSaveBerlin10,
+        revision,
+    })
+}
+fn decode_epoch(row: sqlx::postgres::PgRow) -> Result<WorldResetEpochRecord, WorldResetError> {
+    let bad = || WorldResetError::InvalidStoredState;
+    Ok(WorldResetEpochRecord {
+        epoch: row
+            .try_get::<String, _>(0)
+            .map_err(DurabilityError::from)?
+            .parse()
+            .map_err(|_| bad())?,
+        map_revision: row.try_get(1).map_err(DurabilityError::from)?,
+        digests: WorldResetArtifactDigests {
+            server: row
+                .try_get::<Vec<u8>, _>(2)
+                .map_err(DurabilityError::from)?
+                .try_into()
+                .map_err(|_| bad())?,
+            client: row
+                .try_get::<Vec<u8>, _>(3)
+                .map_err(DurabilityError::from)?
+                .try_into()
+                .map_err(|_| bad())?,
+            frame: row
+                .try_get::<Vec<u8>, _>(4)
+                .map_err(DurabilityError::from)?
+                .try_into()
+                .map_err(|_| bad())?,
+        },
+        calendar: stored_calendar(
+            row.try_get(5).map_err(DurabilityError::from)?,
+            row.try_get(6).map_err(DurabilityError::from)?,
+            row.try_get(7).map_err(DurabilityError::from)?,
+        )?,
+        month_key: row.try_get(8).map_err(DurabilityError::from)?,
+        recorded_at_utc_ms: row.try_get(9).map_err(DurabilityError::from)?,
+    })
+}
+
+/// Actual immutable history; absence never synthesizes epoch0 or a calendar.
+pub async fn read_world_reset_history(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: WorldId,
+    epoch: u64,
+) -> Result<Option<WorldResetEpochRecord>, WorldResetError> {
+    let row=sqlx::query("SELECT reset_epoch::text,map_revision,server_digest,client_digest,frame_digest,calendar_policy,calendar_revision::text,calendar_parity,month_key,floor(extract(epoch FROM recorded_at)*1000)::bigint FROM game_world_reset_epoch_history WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric")
+        .bind(world.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
+    match row {
+        Some(row) => Ok(Some(decode_epoch(row)?)),
+        None => {
+            read_active_world_revision(tx, world).await?;
+            Ok(None)
+        }
+    }
+}
+/// The Control-initialized active pointer. Missing means NotInitialized (DAILY
+/// must expose Unknown), never an implicit zero. This read grants no current
+/// authority: reset consumers retain their native admission/job locks separately.
+pub async fn read_active_world_revision(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: WorldId,
+) -> Result<WorldResetEpochRecord, WorldResetError> {
+    let row=sqlx::query("SELECT h.reset_epoch::text,h.map_revision,h.server_digest,h.client_digest,h.frame_digest,h.calendar_policy,h.calendar_revision::text,h.calendar_parity,h.month_key,floor(extract(epoch FROM h.recorded_at)*1000)::bigint FROM game_world_reset_active_epochs a JOIN game_world_reset_epoch_history h USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?.ok_or(WorldResetError::NotInitialized)?;
+    decode_epoch(row)
+}
+/// Read PG's clock exactly once, with the actual stored active calendar in the
+/// caller's locked TX. No process clock or request-supplied instant/calendar.
+pub async fn read_reset_month_key_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: WorldId,
+) -> Result<ResetMonthObservation, WorldResetError> {
+    let row=sqlx::query("WITH instant AS MATERIALIZED(SELECT clock_timestamp() AS value) SELECT game_world_reset_month_key(i.value,h.calendar_policy,h.calendar_revision),h.calendar_policy,h.calendar_revision::text,h.calendar_parity,floor(extract(epoch FROM i.value)*1000)::bigint FROM game_world_reset_active_epochs a JOIN game_world_reset_epoch_history h USING(world_id,reset_epoch) CROSS JOIN instant i WHERE a.world_id=encode($1,'hex')::uuid")
+        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?.ok_or(WorldResetError::NotInitialized)?;
+    Ok(ResetMonthObservation {
+        month_key: row.try_get(0).map_err(DurabilityError::from)?,
+        calendar: stored_calendar(
+            row.try_get(1).map_err(DurabilityError::from)?,
+            row.try_get(2).map_err(DurabilityError::from)?,
+            row.try_get(3).map_err(DurabilityError::from)?,
+        )?,
+        observed_at_utc_ms: row.try_get(4).map_err(DurabilityError::from)?,
+    })
+}
+impl DurabilityRoot {
+    /// Explicit Control operation, matching native descriptor issuance's semantic
+    /// transaction and definitive-conflict result. Runtime EXECUTE is not granted.
+    pub async fn initialize_world_reset_epoch(
+        &self,
+        world: WorldId,
+        map_revision: &str,
+        digests: WorldResetArtifactDigests,
+        calendar: ResetCalendar,
+    ) -> Result<bool, WorldResetError> {
+        if map_revision.is_empty() || map_revision.len() > 512 || calendar.revision == 0 {
+            return Err(WorldResetError::InvalidInitialization);
+        }
+        let map_revision = map_revision.to_owned();
+        self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
+            let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
+            let initialized=sqlx::query("SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7::text::numeric)")
+                .bind(world.as_bytes().as_slice()).bind(map_revision).bind(digests.server.as_slice()).bind(digests.client.as_slice()).bind(digests.frame.as_slice())
+                .bind(calendar.policy.as_str()).bind(calendar.revision.to_string()).execute(&mut *tx).await;
+            match initialized {
+                Ok(_) => {},
+                Err(sqlx::Error::Database(error)) if matches!(error.code().as_deref(),Some("OTR01"|"42501"))=>return Ok(false),
+                Err(error)=>return Err(error.into()),
+            }
+            super::db::commit_semantic_transaction(tx,deadline).await?;
+            Ok(true)
+        })).await.map_err(WorldResetError::from)
+    }
+}
+
+const RESET_EPOCH_SCHEMA: &str = r#"
+-- D1257/0096 UNINSTALLED candidate. Explicit Control initialization only.
+CREATE FUNCTION game_world_reset_month_key(p_instant TIMESTAMPTZ,p_policy TEXT,p_revision NUMERIC)
+RETURNS TEXT LANGUAGE SQL IMMUTABLE STRICT AS $$
+ SELECT CASE WHEN isfinite(p_instant) AND p_policy='TIBIA_SERVER_SAVE_BERLIN_10'
+ AND p_revision BETWEEN 1 AND 18446744073709551615 AND trunc(p_revision)=p_revision
+ THEN to_char((p_instant AT TIME ZONE 'Europe/Berlin')-INTERVAL '10 hours','YYYY-MM') ELSE NULL END;
+$$;
+CREATE TABLE game_world_reset_epoch_history (
+ world_id UUID NOT NULL CHECK(game_node_is_uuid_v7(world_id)),
+ reset_epoch NUMERIC(20,0) NOT NULL CHECK(reset_epoch BETWEEN 0 AND 18446744073709551615),
+ map_revision TEXT NOT NULL CHECK(octet_length(map_revision) BETWEEN 1 AND 512),
+ server_digest BYTEA NOT NULL CHECK(octet_length(server_digest)=32),
+ client_digest BYTEA NOT NULL CHECK(octet_length(client_digest)=32),
+ frame_digest BYTEA NOT NULL CHECK(octet_length(frame_digest)=32),
+ calendar_policy TEXT NOT NULL CHECK(calendar_policy='TIBIA_SERVER_SAVE_BERLIN_10'),
+ calendar_revision NUMERIC(20,0) NOT NULL CHECK(calendar_revision BETWEEN 1 AND 18446744073709551615),
+ calendar_parity TEXT NOT NULL CHECK(calendar_parity='PARITY_PENDING'),
+ month_key TEXT NOT NULL CHECK(month_key ~ '^[0-9]{4}-[0-9]{2}$'),
+ recorded_at TIMESTAMPTZ NOT NULL CHECK(isfinite(recorded_at)),
+ issued_by TEXT NOT NULL,
+ PRIMARY KEY(world_id,reset_epoch)
+);
+CREATE TABLE game_world_reset_active_epochs (
+ world_id UUID PRIMARY KEY, reset_epoch NUMERIC(20,0) NOT NULL,
+ FOREIGN KEY(world_id,reset_epoch) REFERENCES game_world_reset_epoch_history(world_id,reset_epoch)
+);
+CREATE TRIGGER game_world_reset_history_immutable BEFORE UPDATE OR DELETE ON game_world_reset_epoch_history FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_world_reset_history_no_truncate BEFORE TRUNCATE ON game_world_reset_epoch_history FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+CREATE TRIGGER game_world_reset_active_no_delete BEFORE DELETE ON game_world_reset_active_epochs FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_world_reset_active_no_truncate BEFORE TRUNCATE ON game_world_reset_active_epochs FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+REVOKE ALL ON game_world_reset_epoch_history,game_world_reset_active_epochs FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT ON game_world_reset_epoch_history,game_world_reset_active_epochs TO oteryn_game_runtime,oteryn_game_control;
+CREATE FUNCTION game_world_reset_initialize_epoch(p_world UUID,p_map TEXT,p_server BYTEA,p_client BYTEA,p_frame BYTEA,p_policy TEXT,p_revision NUMERIC)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_existing game_world_reset_epoch_history%ROWTYPE; v_instant TIMESTAMPTZ; v_month TEXT;
+BEGIN
+ PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:world-reset:'||p_world::text,0));
+ SELECT * INTO v_existing FROM game_world_reset_epoch_history WHERE world_id=p_world AND reset_epoch=0;
+ IF FOUND THEN
+  IF (v_existing.map_revision,v_existing.server_digest,v_existing.client_digest,v_existing.frame_digest,v_existing.calendar_policy,v_existing.calendar_revision)
+   IS NOT DISTINCT FROM (p_map,p_server,p_client,p_frame,p_policy,p_revision)
+   AND EXISTS(SELECT 1 FROM game_world_reset_active_epochs WHERE world_id=p_world) THEN RETURN; END IF;
+  RAISE EXCEPTION 'World reset initialization conflicts' USING ERRCODE='OTR01';
+ END IF;
+ IF EXISTS(SELECT 1 FROM game_world_reset_epoch_history WHERE world_id=p_world) THEN
+  RAISE EXCEPTION 'World reset initialization is not fresh' USING ERRCODE='OTR01'; END IF;
+ v_instant:=clock_timestamp();
+ v_month:=game_world_reset_month_key(v_instant,p_policy,p_revision);
+ IF p_world IS NULL OR NOT game_node_is_uuid_v7(p_world) OR p_server IS NULL OR p_client IS NULL OR p_frame IS NULL OR p_map IS NULL OR octet_length(p_map) NOT BETWEEN 1 AND 512 OR octet_length(p_server)<>32 OR octet_length(p_client)<>32 OR octet_length(p_frame)<>32 OR v_month IS NULL THEN
+  RAISE EXCEPTION 'Invalid World reset initialization' USING ERRCODE='OTR01'; END IF;
+ INSERT INTO game_world_reset_epoch_history(world_id,reset_epoch,map_revision,server_digest,client_digest,frame_digest,calendar_policy,calendar_revision,calendar_parity,month_key,recorded_at,issued_by)
+ VALUES(p_world,0,p_map,p_server,p_client,p_frame,p_policy,p_revision,'PARITY_PENDING',v_month,v_instant,session_user);
+ INSERT INTO game_world_reset_active_epochs(world_id,reset_epoch) VALUES(p_world,0);
+END $$;
+REVOKE ALL ON FUNCTION game_world_reset_initialize_epoch(UUID,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC) FROM PUBLIC,oteryn_game_runtime;
+GRANT EXECUTE ON FUNCTION game_world_reset_initialize_epoch(UUID,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC) TO oteryn_game_control;
+REVOKE ALL ON FUNCTION game_world_reset_month_key(TIMESTAMPTZ,TEXT,NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_world_reset_month_key(TIMESTAMPTZ,TEXT,NUMERIC) TO oteryn_game_runtime,oteryn_game_control;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_world_reset_initialize_epoch(uuid,text,bytea,bytea,bytea,text,numeric) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ EXECUTE format('ALTER FUNCTION game_world_reset_month_key(timestamptz,text,numeric) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+"#;
+
+/// Activation target facts read independently from the immutable locked job.
+/// `target_digest` and the predecessor's `active_map_revision` are not these fields.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldResetTarget {
+    pub world: WorldId,
+    pub reset_epoch: u64,
+    pub map_revision: String,
+    pub digests: WorldResetArtifactDigests,
+    pub calendar: ResetCalendar,
+}
+pub async fn read_locked_world_reset_target(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: WorldId,
+) -> Result<WorldResetTarget, WorldResetError> {
+    let row=sqlx::query("SELECT reset_epoch::text,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision::text,target_calendar_parity FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE")
+        .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?.ok_or(WorldResetError::NotCurrent)?;
+    let required_text = |index| {
+        row.try_get::<Option<String>, _>(index)
+            .map_err(DurabilityError::from)?
+            .ok_or(WorldResetError::UnqualifiedTarget)
+    };
+    let required_digest = |index| {
+        row.try_get::<Option<Vec<u8>>, _>(index)
+            .map_err(DurabilityError::from)?
+            .ok_or(WorldResetError::UnqualifiedTarget)?
+            .try_into()
+            .map_err(|_| WorldResetError::InvalidStoredState)
+    };
+    Ok(WorldResetTarget {
+        world,
+        reset_epoch: row
+            .try_get::<String, _>(0)
+            .map_err(DurabilityError::from)?
+            .parse()
+            .map_err(|_| WorldResetError::InvalidStoredState)?,
+        map_revision: required_text(1)?,
+        digests: WorldResetArtifactDigests {
+            server: required_digest(2)?,
+            client: required_digest(3)?,
+            frame: required_digest(4)?,
+        },
+        calendar: stored_calendar(required_text(5)?, required_text(6)?, required_text(7)?)?,
+    })
 }

@@ -2500,7 +2500,7 @@ mod bundle_house_scope_tests {
         draft.state.declarations.push(ProjectV2Declaration::House {
             identity: ProjectV2Identity {
                 key: "oteryn:content.house.bundle_regression".into(),
-                revision: "oteryn:rev/fixture-house-r1".into(),
+                revision: "oteryn:rev/overlay-house-r1".into(),
             },
             fields: Vec::new(),
         });
@@ -2516,7 +2516,7 @@ mod bundle_house_scope_tests {
                 house: ProjectV2DefinitionRef {
                     family: ProjectV2Family::House,
                     key: "oteryn:content.house.bundle_regression".into(),
-                    revision: "oteryn:rev/fixture-house-r1".into(),
+                    revision: "oteryn:rev/overlay-house-r1".into(),
                 },
                 cells: vec!["oteryn:cell/entry-east".into()],
                 entry_cell: "oteryn:cell/entry-start".into(),

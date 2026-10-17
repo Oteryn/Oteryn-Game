@@ -21,6 +21,27 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+## Current authoring checkpoint — D1245/D1189a/D1257
+
+The full-bundle House producer is OUT_OF_SCOPE under D1245; full-bundle
+movement now explicitly retains Unknown House metadata. The accepted native
+entry overlay owns the qualified placement digest. The encoder resides in
+native_house_tiles, with the actual death caller using its existing content export;
+there is no net map/boot change from the published 6b455ad8 checkpoint.
+
+D1257 adds explicit Control-only epoch0 initialization, immutable epoch history,
+an active pointer, independent target artifact facts and Berlin10 calendar/read
+ports. Calendar parity remains PARITY_PENDING. Final atomic activation is still
+pending; these uninstalled candidate schema/read ports do not prove activation.
+
+Native qualification at e50db673 plus exact Cyc f8a53069 compiled successfully:
+10 PASS / 2 FAIL. Both failures rejected non-production fixture identifiers.
+The test-only identifiers are repaired without changing validators; renewed
+execution is NOT_RUN. D1257 compilation and new PG execution are NOT_RUN.
+Earlier result packets remain exact to their recorded source, never upgraded to
+this candidate. The sections below preserve the implementation/evidence history;
+the current CP decisions supersede historical dependency statements.
+
 ## D1134/D1135/D1152 owned authoring checkpoint
 
 [CP D1134/D1135](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930839)
@@ -766,3 +787,40 @@ issuance and independently verifies runtime cannot execute core even for that
 valid exact replay (42501), with schema/function existence checked first. New
 source compile/pure case and PG case are NOT_RUN until their recorded execution;
 no role/SQL authority result is inferred from source strings.
+
+
+## D1257 explicit epoch initialization and PG calendar — source checkpoint
+
+The UNINSTALLED0096 candidate now owns immutable World epoch-history plus an
+active pointer. Epoch0 is written only by the explicit Control initializer,
+modeled on native descriptor issuance's owner-only SECURITY DEFINER/ACL and
+semantic transaction pattern. Identical World/map/three-digest/calendar facts
+replay without changing history; map/digest/calendar conflicts refuse. No SQL
+bootstrap seeds or runtime EXECUTE grant are introduced. Fixture admit uses the
+same Control operation. New job publication refuses an uninitialized/current-
+revision mismatch, and census checks actual active history instead of assuming0.
+
+ResetCalendar explicitly carries TIBIA_SERVER_SAVE_BERLIN_10 and a positive
+revision; history retains that policy/revision and PARITY_PENDING. Pure PG
+calculation uses (instant AT TIME ZONE 'Europe/Berlin') minus10hours then YYYY-MM,
+with upstream PostgreSQL timezone/DST behavior. Initial history and the current-
+month reader obtain clock_timestamp() in their own actual TX, never process time
+or a request instant. Missing active state is NotInitialized, for DAILY to map
+to Unknown; no absent-state epoch/month default is supplied. Active/history and
+locked-target readers return actual stored facts only, not current authority.
+
+Locked jobs have separately nullable target map/server/client/frame/calendar
+columns, with all-or-none shape; existing target_digest/active_map_revision stay
+separate predecessor/legacy facts. A legacy retirement-only job may still retire
+but the target reader returns UnqualifiedTarget, so it cannot supply activation
+facts. No final ACTIVATED writer, epoch successor/history atomic composition,
+reset-specific issuance wrapper or migration install is claimed in this tranche.
+
+Two authored PG cases cover09:59/10:00 Berlin month starts with winter/summer
+UTC offsets, spring/fall DST transitions, unsupported calendar, no initialization,
+Control bootstrap/idempotent exact replay and per-fact conflicts, immutable
+history and runtime42501. The month reader's observation is recomputed from its
+PG instant/calendar; no synthetic current-state authority is used. All new
+compile/PG/calendar/initializer/runtime checks are NOT_RUN and
+NOT_FULLY_QUALIFIED. Earlier isolated qualification freezes are preserved and
+do not qualify this later source delta. No new Cargo dependency or runner.

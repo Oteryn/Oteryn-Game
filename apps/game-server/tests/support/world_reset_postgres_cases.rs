@@ -39,6 +39,17 @@ async fn admit(h: &Harness) -> TestResult {
     sqlx::query("SET LOCAL ROLE oteryn_game_control")
         .execute(&mut *tx)
         .await?;
+    // Explicit Control bootstrap via the same operation; never seed epoch0 rows directly.
+    sqlx::query(
+        "SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,'map-1',$2,$3,$4,$5,1)",
+    )
+    .bind(id(WORLD).as_slice())
+    .bind([1_u8; 32].as_slice())
+    .bind([2_u8; 32].as_slice())
+    .bind([3_u8; 32].as_slice())
+    .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str())
+    .execute(&mut *tx)
+    .await?;
     sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')").bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_world_reset_scopes SELECT world_id,0,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
@@ -474,4 +485,124 @@ fn reset_issuance_core_is_private_and_control_wrapper_still_records() -> TestRes
         tx.rollback().await?;
         h.cleanup().await
     })
+}
+
+#[test]
+fn reset_calendar_uses_berlin_server_save_month_and_upstream_dst() -> TestResult {
+    let admin = configured_admin().ok_or("routed PostgreSQL required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "resetcalendar").await?;
+        install(&h).await?;
+        for (instant, expected) in [
+            ("2026-03-01 08:59:59+00", "2026-02"),
+            ("2026-03-01 09:00:00+00", "2026-03"),
+            ("2026-03-29 00:59:59+00", "2026-03"),
+            ("2026-03-29 01:00:00+00", "2026-03"),
+            ("2026-04-01 07:59:59+00", "2026-03"),
+            ("2026-04-01 08:00:00+00", "2026-04"),
+            ("2026-10-25 00:59:59+00", "2026-10"),
+            ("2026-10-25 01:00:00+00", "2026-10"),
+            ("2026-11-01 08:59:59+00", "2026-10"),
+            ("2026-11-01 09:00:00+00", "2026-11"),
+        ] {
+            let month: String = sqlx::query_scalar(
+                "SELECT game_world_reset_month_key($1::text::timestamptz,$2,1)",
+            )
+            .bind(instant)
+            .bind(
+                crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10
+                    .as_str(),
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(month, expected);
+        }
+        let unsupported: Option<String> =
+            sqlx::query_scalar("SELECT game_world_reset_month_key(clock_timestamp(),'UNKNOWN',1)")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(unsupported, None);
+        h.cleanup().await
+    })
+}
+
+#[test]
+fn reset_epoch_requires_explicit_control_initialization_and_preserves_exact_history() -> TestResult
+{
+    use crate::durability::world_reset::{
+        read_active_world_revision, read_locked_world_reset_target,
+        read_reset_month_key_in_transaction, read_world_reset_history,
+    };
+    let admin = configured_admin().ok_or("routed PostgreSQL required")?;
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "resetinitialize").await?;
+        install(&h).await?;
+        let mut tx=h.pool.begin().await?;
+        assert!(matches!(read_active_world_revision(&mut tx,world()?).await,Err(WorldResetError::NotInitialized)));
+        assert!(matches!(read_world_reset_history(&mut tx,world()?,0).await,Err(WorldResetError::NotInitialized)));
+        assert!(matches!(read_reset_month_key_in_transaction(&mut tx,world()?).await,Err(WorldResetError::NotInitialized)));
+        tx.rollback().await?;
+        let mut tx=h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_control").execute(&mut *tx).await?;
+        let missing=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')")
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *tx).await;
+        assert!(matches!(missing,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("OTR02")));
+        tx.rollback().await?;
+        // Existing native fixture entrypoint uses the real Control initializer, no SQL seed.
+        admit(&h).await?;
+        let mut tx=h.pool.begin().await?;
+        let original=read_active_world_revision(&mut tx,world()?).await.map_err(debug)?;
+        assert_eq!(original.epoch,0);
+        assert_eq!(original.map_revision,"map-1");
+        assert_eq!(original.calendar.revision,1);
+        assert_eq!(read_world_reset_history(&mut tx,world()?,0).await.map_err(debug)?,Some(original.clone()));
+        assert!(matches!(read_locked_world_reset_target(&mut tx,world()?).await,Err(WorldResetError::UnqualifiedTarget)));
+        let observed=read_reset_month_key_in_transaction(&mut tx,world()?).await.map_err(debug)?;
+        assert_eq!(observed.calendar,original.calendar);
+        let recomputed: String=sqlx::query_scalar("SELECT game_world_reset_month_key(to_timestamp($1::text::double precision/1000),$2,$3::text::numeric)")
+            .bind(observed.observed_at_utc_ms.to_string()).bind(observed.calendar.policy.as_str()).bind(observed.calendar.revision.to_string()).fetch_one(&mut *tx).await?;
+        assert_eq!(observed.month_key,recomputed);
+        tx.rollback().await?;
+        admit_initializer_replay(&h,"map-1",1,[1,2,3]).await?;
+        let mut tx=h.pool.begin().await?;
+        assert_eq!(read_active_world_revision(&mut tx,world()?).await.map_err(debug)?,original);
+        tx.rollback().await?;
+        for (map,revision) in [("other-map",1),("map-1",2)] {
+            let conflict=admit_initializer_replay(&h,map,revision,[1,2,3]).await;
+            assert!(matches!(conflict,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("OTR01")));
+        }
+        for digests in [[9,2,3],[1,9,3],[1,2,9]] {
+            let conflict=admit_initializer_replay(&h,"map-1",1,digests).await;
+            assert!(matches!(conflict,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("OTR01")));
+        }
+        let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_world_reset_epoch_history").fetch_one(&h.pool).await?;
+        assert_eq!(count,1);
+        let rewritten=sqlx::query("UPDATE game_world_reset_epoch_history SET map_revision='tampered' WHERE world_id=encode($1,'hex')::uuid")
+            .bind(id(WORLD).as_slice()).execute(&h.pool).await;
+        assert!(matches!(rewritten,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("23514")));
+        let mut tx=h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        let denied=sqlx::query("SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,'map-1',$2,$3,$4,$5,1)")
+            .bind(id(WORLD).as_slice()).bind([1_u8;32].as_slice()).bind([2_u8;32].as_slice()).bind([3_u8;32].as_slice())
+            .bind(original.calendar.policy.as_str()).execute(&mut *tx).await;
+        assert!(matches!(denied,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("42501")));
+        tx.rollback().await?;
+        h.cleanup().await
+    })
+}
+async fn admit_initializer_replay(
+    h: &Harness,
+    map: &str,
+    revision: u64,
+    digests: [u8; 3],
+) -> Result<(), sqlx::Error> {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_control")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,$2,$3,$4,$5,$6,$7::text::numeric)")
+        .bind(id(WORLD).as_slice()).bind(map).bind([digests[0];32].as_slice()).bind([digests[1];32].as_slice()).bind([digests[2];32].as_slice())
+        .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str()).bind(revision.to_string()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
 }
