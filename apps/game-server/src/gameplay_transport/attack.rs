@@ -40,10 +40,10 @@ use crate::combat::charm_effects::{
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
-    ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    UNITS_PER_SEARCH, armor_reduction_bounds, chase_search_order, player_fist_formula,
-    player_melee_formula,
+    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CHASE_WINDOW_MICROS,
+    CREATURE_COST, ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts,
+    TargetRefusal, UNITS_PER_SEARCH, armor_reduction_bounds, chase_search_order,
+    player_fist_formula, player_melee_formula,
 };
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{
