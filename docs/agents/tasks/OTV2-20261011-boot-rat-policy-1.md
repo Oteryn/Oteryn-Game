@@ -21,12 +21,8 @@ created_at: 2026-10-15
 updated_at: 2026-10-15
 execution_policy: continuous_progress
 owned_paths:
-  - apps/game-server/src/content/project/native_entry.rs # D1138: source carrier now
-  - apps/game-server/src/ai/behaviour_profile.rs
-  - apps/game-server/src/ai/spawn.rs
-  - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
-  - apps/game-server/src/gameplay_transport/qualification_wild_spawn.rs
-  - apps/game-server/tests/boot_rat_policy*.rs (new)
+  - apps/game-server/src/content/project/native_entry.rs # D1138: source carrier checkpoint
+  - docs/agents/tasks/OTV2-20261011-boot-rat-policy-1.md
 slot_only_paths:
   - content/world/pins/*, goldens and qualified digests if any entry-room fact changes (one author, one commit)
   - mod.rs (only if the boot spawn source composition moves)
@@ -62,11 +58,12 @@ All dependencies merged; the task may start.
 
 ## Owned paths (builder edits freely)
 
-- `apps/game-server/src/ai/behaviour_profile.rs`
-- `apps/game-server/src/ai/spawn.rs`
-- `apps/game-server/src/gameplay_transport/monster_ai_cycle.rs`
-- `apps/game-server/src/gameplay_transport/qualification_wild_spawn.rs`
-- apps/game-server/tests/boot_rat_policy*.rs (new)
+- `apps/game-server/src/content/project/native_entry.rs`
+- `docs/agents/tasks/OTV2-20261011-boot-rat-policy-1.md` (this record)
+
+Widened to exactly this checkpoint's file set (D1138). Later slices (`native_gameplay.rs` after #2173,
+`node/serve.rs` after #2187, `ai/spawn.rs`, `monster_ai_cycle.rs`, boot rat tests) are not owned here
+and need a further widening in their own turn.
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
