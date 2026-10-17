@@ -7,19 +7,20 @@ mode: IMPLEMENT
 status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/chat-2
+branch: claude/chat-2b
 issue: 2074
 governing_issue: 1622
-pr: 2128
-base_sha: ed2b1180
+pr: null
+supersedes_pr: 2128
+base_sha: bdca6d71
 head_sha: null
 final_head_sha: null
 owner: claude-code-session-013fCsCyaQjFiyBr4JFPBfrF
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-17
 owned_paths:
-  - apps/game-server/migrations/0088_chat_relay_leases.sql
+  - apps/game-server/migrations/0122_chat_relay_leases.sql
   - apps/game-server/src/chat/relay/mod.rs
   - apps/game-server/src/chat/spam.rs
   - apps/game-server/src/chat/tests.rs
@@ -47,17 +48,25 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   `pg_notify` in autocommit. Each listener opens a line through its `ReplayWindow` and hands it
   to `ChatRuntime::deliver`. Delivery is at most once.
 - **Lease.** The listener keeps the per-World relay lease in the new table
-  `game_chat_relay_leases` (migration 0088, leased to CHAT-2B by the control plane). It is
+  `game_chat_relay_leases` (migration 0122; #2128 used 0088, which main has since taken). It is
   stored as `GREATEST`, and a trigger refuses to lower it. On restart the stored lease is read
   back into `ReplayWindow::resume`.
 - **Readiness.** The relay is ready only when all of these hold:
   - it is listening;
   - it has a database clock reading;
   - `pg_notification_queue_usage()` is at most 0.5;
-  - its connections find `log_parameter_max_length = 0` and
-    `log_parameter_max_length_on_error = 0` at connect, and the listener sees both at 0 every
-    tick. The relay sets neither (its role needs no parameter privilege): the operator provisions
-    both, for example per role and database.
+  - every relay connection pinned logging off when it connected (CP decision D1400): one
+    simple query of session `SET`s, `log_parameter_max_length = 0`,
+    `log_parameter_max_length_on_error = 0`, `log_statement = 'none'` and
+    `log_min_duration_statement = -1`, read back before the connection carries anything. A
+    session value outranks the configuration file, so a later reload cannot reopen logging for
+    a relay session. The listener reads the pinned values every tick, and each `pg_notify`
+    statement notifies only while they hold, as a backstop.
+
+  The relay's login role needs `GRANT SET ON PARAMETER` on the four settings, granted by a
+  superuser; migration 0122 carries the provisioning note. If any `SET` is refused, the relay
+  refuses to start: it closes its pool, reports `chat_relay_disabled reason=log_pin_refused`
+  once, is never ready and does not retry. There is no fallback to operator-provisioned settings.
 
   A relay that is not ready answers `CHAT_UNAVAILABLE`.
 - **Rooms.** World, English, Help and Advertising. Opening and closing a room is answered before
@@ -102,17 +111,20 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
 
 ## Validation
 
+Restart head (D1400), in a cloud container against PostgreSQL 17.6 (`postgres:17.6-bookworm`,
+`OTERYN_TEST_POSTGRES_ADMIN_URL`):
+
 - `cargo fmt --all --check`: pass
-- `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass
-- `cargo test -p oteryn-game-server --lib -- chat migration schema` against local PostgreSQL 17
-  (`OTERYN_TEST_POSTGRES_ADMIN_URL`): pass (round 8 repair: `--lib -- chat npc capabilit` against PostgreSQL 17, 228 passed), 145 passed, including the two-node relay exchange,
-  the lease row and the not-ready-when-logging tests
-- `cargo test -p oteryn-game-server` (whole package) against local PostgreSQL 17.11: 3061 passed,
-  33 failed; every failure is the harness assertion `canonical target is PostgreSQL 17.6`, so
-  exact-head CI qualifies the whole package
-- `cargo run --locked -p oteryn-architecture-check -- workspace .`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib -- chat_relay`: 10 passed, run 5 times
+- `cargo test --locked -p oteryn-game-server --lib -- chat migration schema capabilit`: 219 passed
 - `python tools/agents/validate_governance.py`: pass
-- `python -m unittest discover -s tools/agents/tests`: OK
+- `python -m unittest discover -s tools/agents/tests`: OK (124 tests)
+- The whole package and the `tests/*_postgres.rs` targets are left to exact-head CI.
+
+#2128 (head 1536bfbf), for the record: fmt and clippy passed; `--lib -- chat migration schema`
+passed against PostgreSQL 17 (145, round 8 `--lib -- chat npc capabilit` 228); the whole package
+against 17.11 failed only on the `canonical target is PostgreSQL 17.6` harness assertion.
 
 ## Self-review
 
@@ -155,8 +167,18 @@ CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
   not have. Fixed (owner-approved round 3): the relay sets nothing and reads only; the ready path
   is tested as a least-privilege `oteryn_game_runtime` member whose settings an operator
   provisioned (`ALTER ROLE … IN DATABASE … SET`).
+- round 9 (P1 4280714487): the payload was bound to the checking statement, so a reload that
+  enabled parameter logging after the readiness check could log it even when the `WHERE` refused
+  the notify. #2128 closed under the max-rounds rule (comment 6187830778). CP decision D1400
+  (#2131 comment 6236981609) restarts the work as one PR on current main and decides the fix:
+  pin per session with `SET`, backed by `GRANT SET ON PARAMETER`, failing closed. Fixed as
+  described under Readiness. Tests: `every_new_relay_connection_pins_logging_off` (two pool
+  connections and the listener, each with the pinned values in session scope, over role
+  defaults that would log everything; the relay then becomes ready) and
+  `a_relay_role_without_the_set_grant_fails_closed` (no grant, and each grant missing one of the
+  four: refused, never ready, `CHAT_UNAVAILABLE`, pool closed, nothing notified).
 
 ## PR and closeout
 
-- Refs #2074 (CHAT-2C follows).
-- merge commit/result: squash merge of #2128
+- Refs #2074 (CHAT-2C follows). Restart of #2128 (closed unmerged) per CP decision D1400.
+- merge commit/result: squash merge of the CHAT-2B restart PR

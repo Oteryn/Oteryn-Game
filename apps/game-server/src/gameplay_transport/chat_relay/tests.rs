@@ -86,6 +86,29 @@ fn configuration_errors_name_a_reason_only() {
     }
 }
 
+/// The four logging settings the relay pins (CP decision D1400) and the values it pins.
+const PINNED: [(&str, &str); 4] = [
+    ("log_parameter_max_length", "0"),
+    ("log_parameter_max_length_on_error", "0"),
+    ("log_statement", "'none'"),
+    ("log_min_duration_statement", "-1"),
+];
+
+#[test]
+fn the_pin_sets_every_logging_setting_in_session_scope_and_the_backstop_reads_each_back() {
+    let statements: Vec<&str> = PIN_LOGGING_OFF.split(';').map(str::trim).collect();
+    assert_eq!(statements.len(), PINNED.len());
+    for ((setting, value), statement) in PINNED.iter().zip(&statements) {
+        assert_eq!(*statement, format!("SET SESSION {setting} = {value}"));
+        let read_back = format!(
+            "current_setting('{setting}') = '{}'",
+            value.trim_matches('\'')
+        );
+        assert!(logging_pinned_off!().contains(&read_back), "{read_back}");
+    }
+    assert!(!PIN_LOGGING_OFF.contains('$'), "the pin binds no parameter");
+}
+
 #[test]
 fn a_relay_that_never_listened_refuses_to_send() {
     let runtime = tokio::runtime::Builder::new_current_thread()
@@ -168,14 +191,31 @@ impl IsolatedDatabase {
                 self.database_name
             ))))
             .await?;
+        // The relay role's parameter grants are cluster-wide: revoke them before dropping it.
+        let role = format!("{}_relay", self.database_name);
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(parameter_acl_change(
+                &format!(
+                    "IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') THEN \
+                     EXECUTE 'DROP OWNED BY {role}'; END IF;"
+                ),
+            ))))
+            .await?;
         admin
             .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                "DROP ROLE IF EXISTS {}_relay",
-                self.database_name
+                "DROP ROLE IF EXISTS {role}"
             ))))
             .await?;
         Ok(())
     }
+}
+
+/// One block that changes parameter privileges. Every test's relay role is granted the same
+/// parameters, and PostgreSQL updates one cluster-wide catalog row per parameter, so concurrent
+/// tests take one advisory lock for the change instead of failing with "tuple concurrently
+/// updated".
+fn parameter_acl_change(body: &str) -> String {
+    format!("DO $$ BEGIN PERFORM pg_advisory_xact_lock(7312200122); {body} END $$")
 }
 
 fn run_postgres_test<F>(future: F) -> TestResult
@@ -192,11 +232,11 @@ where
 }
 
 /// A migrated database and the URL the relay connects with, as a least-privilege member of
-/// `oteryn_game_runtime` with no privilege on any parameter. `quiet` provisions both bind-parameter
-/// logging settings at 0 for that role in this database, as an operator would.
+/// `oteryn_game_runtime`. The role is granted `SET` on each parameter in `grants` only, as the
+/// provisioning note of migration 0122 has a superuser do.
 async fn relay_database(
     test_name: &str,
-    quiet: bool,
+    grants: &[&str],
 ) -> Result<(IsolatedDatabase, String), Box<dyn Error>> {
     let database = IsolatedDatabase::create(test_name).await?;
     let url = database.database_url()?;
@@ -219,27 +259,40 @@ async fn relay_database(
             .execute(sqlx::query(sqlx::AssertSqlSafe(statement)))
             .await?;
     }
-    if quiet {
-        provision_logging(&database, 0, 0).await?;
-    }
+    let granted: String = grants
+        .iter()
+        .map(|parameter| format!("EXECUTE 'GRANT SET ON PARAMETER {parameter} TO {role}'; "))
+        .collect();
+    admin
+        .execute(sqlx::query(sqlx::AssertSqlSafe(parameter_acl_change(
+            &granted,
+        ))))
+        .await?;
     let host = url.split_once('@').ok_or("invalid database URL")?.1;
     let url = format!("postgresql://{role}:relay@{host}");
     Ok((database, url))
 }
 
-/// Sets both bind-parameter logging settings for the relay role in `database`, as the test admin.
-/// They apply to sessions that start afterwards.
-async fn provision_logging(
-    database: &IsolatedDatabase,
-    max_length: u32,
-    on_error: u32,
-) -> TestResult {
+/// Every parameter the relay pins: the grant of a correctly provisioned relay role.
+fn all_pinned() -> Vec<&'static str> {
+    PINNED.iter().map(|(setting, _)| *setting).collect()
+}
+
+/// Logging defaults for the relay role in `database` that would log everything, bind parameters
+/// included, unless the session pins them off.
+const LOG_EVERYTHING: [(&str, &str); 4] = [
+    ("log_parameter_max_length", "-1"),
+    ("log_parameter_max_length_on_error", "-1"),
+    ("log_statement", "'all'"),
+    ("log_min_duration_statement", "0"),
+];
+
+/// Sets logging settings for the relay role in `database`, as the test admin. They apply to
+/// sessions that start afterwards.
+async fn provision_logging(database: &IsolatedDatabase, settings: &[(&str, &str)]) -> TestResult {
     let mut admin = PgConnection::connect(&database.admin_url).await?;
     let name = &database.database_name;
-    for (setting, value) in [
-        ("log_parameter_max_length", max_length),
-        ("log_parameter_max_length_on_error", on_error),
-    ] {
+    for (setting, value) in settings {
         admin
             .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
                 "ALTER ROLE {name}_relay IN DATABASE {name} SET {setting} = {value}"
@@ -285,7 +338,7 @@ fn character(marker: u8) -> [u8; 16] {
 #[test]
 fn two_nodes_of_a_world_exchange_room_and_private_lines() -> TestResult {
     run_postgres_test(async {
-        let (database, url) = relay_database("chat_relay_exchange", true).await?;
+        let (database, url) = relay_database("chat_relay_exchange", &all_pinned()).await?;
         let (aela, bryn) = (session_of(0x71), session_of(0x72));
         let first = node(&url, aela, "Aela", character(0x31));
         let second = node(&url, bryn, "Bryn", character(0x32));
@@ -381,7 +434,7 @@ fn two_nodes_of_a_world_exchange_room_and_private_lines() -> TestResult {
 #[test]
 fn a_listening_relay_stores_its_world_lease() -> TestResult {
     run_postgres_test(async {
-        let (database, url) = relay_database("chat_relay_lease", true).await?;
+        let (database, url) = relay_database("chat_relay_lease", &all_pinned()).await?;
         let chat = node(&url, session_of(0x71), "Aela", character(0x31));
         let shutdown = CancellationToken::new();
         let check = async {
@@ -424,32 +477,148 @@ fn a_listening_relay_stores_its_world_lease() -> TestResult {
     })
 }
 
+/// Without `GRANT SET ON PARAMETER` on every pinned setting that needs it the relay refuses to
+/// start: it never becomes ready, answers `CHAT_UNAVAILABLE`, stops retrying and notifies nothing.
 #[test]
-fn a_database_that_may_log_bind_parameters_leaves_the_relay_not_ready() -> TestResult {
+fn a_relay_role_without_the_set_grant_fails_closed() -> TestResult {
     run_postgres_test(async {
-        let (database, url) = relay_database("chat_relay_logged", false).await?;
+        let mut cases: Vec<(&str, Vec<&str>)> = vec![("chat_relay_no_grant", Vec::new())];
+        // `log_parameter_max_length_on_error` is user-settable: any role may pin it. The other
+        // three need the grant, so a grant missing any one of them is refused.
+        for missing in [
+            "log_parameter_max_length",
+            "log_statement",
+            "log_min_duration_statement",
+        ] {
+            let granted = all_pinned()
+                .into_iter()
+                .filter(|setting| *setting != missing)
+                .collect();
+            cases.push(("chat_relay_partial_grant", granted));
+        }
+        for (test_name, granted) in cases {
+            let (database, url) = relay_database(test_name, &granted).await?;
+            let channel = channel_name(&uuid_text(&WORLD)).expect("channel");
+            // Listening needs no parameter privilege: this listener sees anything the relay sends.
+            let mut observer = PgListener::connect(&url).await?;
+            observer.listen(&channel).await?;
+            let chat = node(&url, session_of(0x71), "Aela", character(0x31));
+            let shutdown = CancellationToken::new();
+            let check = async {
+                assert!(
+                    wait_for(10, || relay_of(&chat).pin_refused()).await,
+                    "a refused SET marks the relay refused ({granted:?})"
+                );
+                assert!(!wait_for(1, || relay_of(&chat).is_ready()).await);
+                relay_of(&chat).force_ready(1);
+                assert!(
+                    !relay_of(&chat).is_ready(),
+                    "a refused relay is never ready"
+                );
+                assert_eq!(
+                    chat.pre_gate(
+                        session_of(0x71),
+                        &ChatIntent::Room {
+                            room: ChatRoom::Help,
+                            text: "x".to_owned(),
+                        },
+                        BASE,
+                    )
+                    .map(|done| done.disposition),
+                    Some(ChatDisposition::ChatUnavailable)
+                );
+                assert_eq!(
+                    relay_of(&chat)
+                        .send(
+                            RelayDestination::Room {
+                                room: ChatRoom::Help,
+                            },
+                            CharacterName::parse("Aela").expect("name"),
+                            ChatText::parse("hello").expect("text"),
+                        )
+                        .await,
+                    Err(ChatDisposition::ChatUnavailable)
+                );
+                assert!(
+                    wait_for(5, || relay_of(&chat).pool.is_closed()).await,
+                    "a refused relay closes its pool and stops retrying"
+                );
+            };
+            let finished = first_of(
+                Box::pin(check),
+                Box::pin(relay_of(&chat).run(&chat, &shutdown)),
+            )
+            .await;
+            let heard = tokio::time::timeout(Duration::from_millis(300), observer.recv()).await;
+            assert!(heard.is_err(), "nothing was notified");
+            shutdown.cancel();
+            drop((chat, observer));
+            database.cleanup().await?;
+            finished.ok_or("the relay check did not finish")?;
+        }
+        Ok(())
+    })
+}
+
+/// Every connection the relay opens pins logging off in session scope, whatever the role's own
+/// defaults say: the pool's connections and the listener's each run the pin when they connect.
+#[test]
+fn every_new_relay_connection_pins_logging_off() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = relay_database("chat_relay_pin", &all_pinned()).await?;
+        provision_logging(&database, &LOG_EVERYTHING).await?;
+        // A session without the pin inherits the defaults that would log the payload.
+        let mut plain = PgConnection::connect(&url).await?;
+        assert!(!logs_nothing(&mut plain).await?);
+        drop(plain);
+
         let chat = node(&url, session_of(0x71), "Aela", character(0x31));
+        let relay = relay_of(&chat);
+        // The pinned values, each set in this session rather than taken from a default.
+        let query = concat!(
+            "SELECT pg_backend_pid(), ",
+            logging_pinned_off!(),
+            " AND (SELECT bool_and(source = 'session') FROM pg_settings WHERE name IN \
+             ('log_parameter_max_length', 'log_parameter_max_length_on_error', \
+              'log_statement', 'log_min_duration_statement'))"
+        );
+        let mut first_connection = relay.pool.acquire().await?;
+        let mut second_connection = relay.pool.acquire().await?;
+        let mut listener = PgListener::connect_with(&relay.pool).await?;
+        let mut backends = Vec::new();
+        for (pid, pinned) in [
+            sqlx::query_as::<_, (i32, bool)>(query)
+                .fetch_one(&mut *first_connection)
+                .await?,
+            sqlx::query_as::<_, (i32, bool)>(query)
+                .fetch_one(&mut *second_connection)
+                .await?,
+            sqlx::query_as::<_, (i32, bool)>(query)
+                .fetch_one(&mut listener)
+                .await?,
+        ] {
+            assert!(pinned, "connection {pid} holds the pin in session scope");
+            backends.push(pid);
+        }
+        backends.sort_unstable();
+        backends.dedup();
+        assert_eq!(backends.len(), 3, "three separate connections, each pinned");
+        assert!(!relay.pin_refused());
+        drop((first_connection, second_connection, listener));
+
+        // A relay whose role would log everything still becomes ready: the listener's own session
+        // is pinned, so every tick finds the pinned values. A window with no startup floor: the
+        // rules of the floor are tested in `chat::relay`.
         let shutdown = CancellationToken::new();
         let check = async {
-            assert!(!wait_for(3, || relay_of(&chat).is_ready()).await);
-            assert_eq!(
-                chat.pre_gate(
-                    session_of(0x71),
-                    &ChatIntent::Room {
-                        room: ChatRoom::Help,
-                        text: "x".to_owned(),
-                    },
-                    BASE,
-                )
-                .map(|done| done.disposition),
-                Some(ChatDisposition::ChatUnavailable)
+            assert!(
+                wait_for(10, || relay.is_ready()).await,
+                "the pinned relay listens"
             );
+            assert!(!relay.pin_refused());
         };
-        let finished = first_of(
-            Box::pin(check),
-            Box::pin(relay_of(&chat).run(&chat, &shutdown)),
-        )
-        .await;
+        let listen = relay.run_from(Some(ReplayWindow::starting_at(0)), &chat, &shutdown);
+        let finished = first_of(Box::pin(check), Box::pin(listen)).await;
         shutdown.cancel();
         drop(chat);
         database.cleanup().await?;
@@ -461,12 +630,23 @@ fn a_database_that_may_log_bind_parameters_leaves_the_relay_not_ready() -> TestR
 #[test]
 fn a_send_on_a_session_that_may_log_bind_parameters_sends_nothing() -> TestResult {
     run_postgres_test(async {
-        let (database, url) = relay_database("chat_relay_notify_gate", true).await?;
+        let (database, url) = relay_database("chat_relay_notify_gate", &all_pinned()).await?;
         let channel = channel_name(&uuid_text(&WORLD)).expect("channel");
         let mut listener = PgListener::connect(&url).await?;
         listener.listen(&channel).await?;
-        for (max_length, on_error, payload) in [(64, 0, "logged"), (0, 64, "logged on error")] {
-            provision_logging(&database, max_length, on_error).await?;
+        let quiet = [
+            ("log_parameter_max_length", "0"),
+            ("log_parameter_max_length_on_error", "0"),
+            ("log_statement", "'none'"),
+            ("log_min_duration_statement", "-1"),
+        ];
+        for (index, payload) in ["logged", "logged on error", "statement", "duration"]
+            .into_iter()
+            .enumerate()
+        {
+            let mut settings = quiet;
+            settings[index].1 = LOG_EVERYTHING[index].1;
+            provision_logging(&database, &settings).await?;
             let mut sender = PgConnection::connect(&url).await?;
             assert!(!notify_quietly(&mut sender, &channel, payload).await?);
             assert_eq!(
@@ -475,7 +655,7 @@ fn a_send_on_a_session_that_may_log_bind_parameters_sends_nothing() -> TestResul
                 "no row means CHAT_UNAVAILABLE"
             );
         }
-        provision_logging(&database, 0, 0).await?;
+        provision_logging(&database, &quiet).await?;
         let mut sender = PgConnection::connect(&url).await?;
         assert!(notify_quietly(&mut sender, &channel, "quiet").await?);
         let received = tokio::time::timeout(Duration::from_secs(5), listener.recv()).await??;

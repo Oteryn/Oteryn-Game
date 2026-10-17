@@ -8,25 +8,30 @@
 //!
 //! The relay runs on a small pool of its own, outside the WP3 durability root (the root is one
 //! physical connection on its own runtime and carries durability work only). The pool takes the
-//! root's verified endpoint and credentials and sets nothing: the database must already have
-//! `log_parameter_max_length = 0` and `log_parameter_max_length_on_error = 0` for the relay's
-//! sessions, so no sealed line reaches a server log. The relay reads both settings at connect and
-//! on every listener tick and is not ready (it answers `CHAT_UNAVAILABLE`) while either is not 0;
-//! each send reads them again in its own `pg_notify` statement, so a configuration reload cannot
-//! slip between check and send. A node that is not listening, or whose notification queue is over
-//! half full, refuses room and private lines the same way.
+//! root's verified endpoint and credentials. So that no sealed line reaches a server log, every
+//! connection the pool opens pins statement and bind-parameter logging off with session `SET`s
+//! ([`PIN_LOGGING_OFF`], CP decision D1400) before it carries anything. A session value outranks
+//! the configuration file, so a later configuration reload cannot turn that logging back on for a
+//! relay session. The relay's role needs `GRANT SET ON PARAMETER` on the settings that are not
+//! user-settable (the provisioning note is in migration 0122). If any `SET` is refused, the relay refuses to start:
+//! it is never ready, answers `CHAT_UNAVAILABLE`, and reports `chat_relay_disabled
+//! reason=log_pin_refused` once. There is no fallback to operator-provisioned settings.
+//! As a backstop the relay also reads the pinned values on every listener tick and in each
+//! `pg_notify` statement. A node that is not listening, or whose notification queue is over half
+//! full, refuses room and private lines the same way.
 //!
 //! Nothing here logs or stores chat text, sender or recipient (FND-02 §20): failures are counted
 //! and reported as numbers only.
 
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use oteryn_foundation::CancellationToken;
 use oteryn_protocol_oteryn::chat::ChatDisposition;
+use sqlx::Executor as _;
 use sqlx::Row as _;
 use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
 
@@ -136,48 +141,82 @@ pub(crate) fn configured(world: [u8; 16], options: Option<PgConnectOptions>) -> 
     }
 }
 
-/// The pool of the relay: each connection must find that the server logs no bind parameter.
-fn relay_pool(options: PgConnectOptions) -> PgPool {
+/// Pins statement and bind-parameter logging off for the rest of the session (CP decision
+/// D1400). Sent as one simple query with no bind parameter, before the connection carries
+/// anything. Each `SET` but the user-settable `log_parameter_max_length_on_error` needs
+/// `GRANT SET ON PARAMETER` for the session's role.
+const PIN_LOGGING_OFF: &str = "SET SESSION log_parameter_max_length = 0; \
+     SET SESSION log_parameter_max_length_on_error = 0; \
+     SET SESSION log_statement = 'none'; \
+     SET SESSION log_min_duration_statement = -1";
+
+/// True while the session holds the values [`PIN_LOGGING_OFF`] pins. Reading needs no privilege.
+/// A macro so that the statements using it stay `&'static str`.
+macro_rules! logging_pinned_off {
+    () => {
+        "current_setting('log_parameter_max_length') = '0' \
+         AND current_setting('log_parameter_max_length_on_error') = '0' \
+         AND current_setting('log_statement') = 'none' \
+         AND current_setting('log_min_duration_statement') = '-1'"
+    };
+}
+
+/// The pool of the relay: every connection it opens pins logging off first, and a refused pin
+/// marks the relay `refused` for good.
+fn relay_pool(options: PgConnectOptions, refused: Arc<AtomicBool>) -> PgPool {
     PgPoolOptions::new()
         .max_connections(POOL_CONNECTIONS)
         .min_connections(0)
         .acquire_timeout(ACQUIRE_TIMEOUT)
-        .after_connect(|connection, _meta| {
+        .after_connect(move |connection, _meta| {
+            let refused = Arc::clone(&refused);
             Box::pin(async move {
-                if !logs_no_parameters(connection).await? {
-                    return Err(sqlx::Error::Configuration(
-                        "chat relay connection may log bind parameters".into(),
-                    ));
+                match pin_logging_off(connection).await {
+                    Ok(true) => Ok(()),
+                    // The server refused a `SET`, or the session does not hold what was pinned:
+                    // the relay refuses to start. Only a fixed reason leaves this function, never
+                    // the server's error text.
+                    Ok(false) | Err(sqlx::Error::Database(_)) => {
+                        refused.store(true, Ordering::Release);
+                        Err(sqlx::Error::Configuration(
+                            "chat relay connection refused the logging pin".into(),
+                        ))
+                    }
+                    Err(_) => Err(sqlx::Error::Configuration(
+                        "chat relay connection lost while pinning logging".into(),
+                    )),
                 }
-                Ok(())
             })
         })
         .connect_lazy_with(options)
 }
 
-/// Whether `connection` logs no bind parameter now. Reading a setting needs no privilege.
-async fn logs_no_parameters(connection: &mut sqlx::PgConnection) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar(
-        "SELECT current_setting('log_parameter_max_length') = '0' \
-         AND current_setting('log_parameter_max_length_on_error') = '0'",
-    )
-    .fetch_one(connection)
-    .await
+/// Pins logging off on `connection` and reads back that the session holds the pinned values.
+/// `Err(Database)` when the server refused a `SET`.
+async fn pin_logging_off(connection: &mut sqlx::PgConnection) -> Result<bool, sqlx::Error> {
+    connection.execute(sqlx::raw_sql(PIN_LOGGING_OFF)).await?;
+    logs_nothing(connection).await
 }
 
-/// Sends `sealed` on `channel` only if the session logs no bind parameter, checked in the same
-/// statement: a configuration reload takes effect between statements, never within one. `false`
-/// when the check refused the line.
+/// Whether `connection` holds the values [`PIN_LOGGING_OFF`] pins.
+async fn logs_nothing(connection: &mut sqlx::PgConnection) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(concat!("SELECT ", logging_pinned_off!()))
+        .fetch_one(connection)
+        .await
+}
+
+/// Sends `sealed` on `channel`. Every relay session pinned logging off when it connected, so
+/// binding `sealed` cannot reach a server log; as a backstop the statement also notifies only
+/// while the session still holds the pinned values. `false` when the backstop refused the line.
 async fn notify_quietly<'c>(
     executor: impl sqlx::PgExecutor<'c>,
     channel: &str,
     sealed: &str,
 ) -> Result<bool, sqlx::Error> {
-    let sent = sqlx::query(
-        "SELECT pg_notify($1, $2) \
-         WHERE current_setting('log_parameter_max_length') = '0' \
-         AND current_setting('log_parameter_max_length_on_error') = '0'",
-    )
+    let sent = sqlx::query(concat!(
+        "SELECT pg_notify($1, $2) WHERE ",
+        logging_pinned_off!()
+    ))
     .bind(channel)
     .bind(sealed)
     .fetch_optional(executor)
@@ -185,8 +224,8 @@ async fn notify_quietly<'c>(
     Ok(sent.is_some())
 }
 
-/// The answer to one send: only a notified line (one row) is sent. No row (the session may log
-/// bind parameters), an error or a timeout is `ChatUnavailable`.
+/// The answer to one send: only a notified line (one row) is sent. No row (the session does not
+/// hold the logging pin), an error or a timeout is `ChatUnavailable`.
 fn sent_or_unavailable<E>(
     notified: Result<Result<bool, sqlx::Error>, E>,
 ) -> Result<(), ChatDisposition> {
@@ -218,6 +257,8 @@ pub(crate) struct ChatRelay {
     clock: Mutex<Option<(u64, Instant)>>,
     /// Lines refused by the listener since the last report.
     dropped: AtomicU64,
+    /// Set for good once a connection refused the logging pin: the relay never starts.
+    refused: Arc<AtomicBool>,
 }
 
 impl ChatRelay {
@@ -227,13 +268,15 @@ impl ChatRelay {
         options: PgConnectOptions,
     ) -> Result<Self, RelayConfigError> {
         let channel = channel_name(&uuid_text(&world)).map_err(|_| RelayConfigError::World)?;
+        let refused = Arc::new(AtomicBool::new(false));
         Ok(Self {
             ring,
             channel,
             world,
-            pool: relay_pool(options),
+            pool: relay_pool(options, Arc::clone(&refused)),
             clock: Mutex::new(None),
             dropped: AtomicU64::new(0),
+            refused,
         })
     }
 
@@ -242,8 +285,17 @@ impl ChatRelay {
         self.db_now().is_some()
     }
 
-    /// The clock a send stamps now, extrapolated from the last reading; `None` when not ready.
+    /// Whether a connection refused the logging pin, so the relay refuses to start.
+    fn pin_refused(&self) -> bool {
+        self.refused.load(Ordering::Acquire)
+    }
+
+    /// The clock a send stamps now, extrapolated from the last reading; `None` when not ready or
+    /// when the relay refused to start.
     fn db_now(&self) -> Option<u64> {
+        if self.pin_refused() {
+            return None;
+        }
         let (reading, at) = (*self.clock.lock().ok()?)?;
         let elapsed = u64::try_from(at.elapsed().as_micros()).ok()?;
         Some(reading.saturating_add(elapsed))
@@ -287,7 +339,9 @@ impl ChatRelay {
 
     /// Listens until `shutdown`, reconnecting after a lost connection; then parks. One replay
     /// window lives across reconnects, so a reconnect cannot admit a line twice, and each
-    /// reconnect moves its floor, so a line sent while the listener was down stays lost.
+    /// reconnect moves its floor, so a line sent while the listener was down stays lost. A
+    /// connection that refused the logging pin stops the relay for good: it closes its pool,
+    /// reports once and parks without retrying.
     pub(crate) async fn run(&self, chat: &ChatRuntime, shutdown: &CancellationToken) {
         self.run_from(None, chat, shutdown).await;
     }
@@ -309,6 +363,11 @@ impl ChatRelay {
             .await;
             reconnect = true;
             self.not_ready();
+            if self.pin_refused() {
+                self.pool.close().await;
+                operator_event("chat_relay_disabled reason=log_pin_refused");
+                break;
+            }
             if listened.is_none()
                 || first(tokio::time::sleep(RECONNECT_BACKOFF), shutdown.cancelled())
                     .await
@@ -368,12 +427,16 @@ impl ChatRelay {
         window: &mut Option<ReplayWindow>,
         reconnect: bool,
     ) -> Result<(), Lost> {
-        let row = sqlx::query(
+        // A pool connection that refused the logging pin stops the listener too.
+        if self.pin_refused() {
+            return Err(Lost);
+        }
+        let row = sqlx::query(concat!(
             "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000000)::bigint AS now, \
-             pg_notification_queue_usage() AS usage, \
-             current_setting('log_parameter_max_length') = '0' \
-             AND current_setting('log_parameter_max_length_on_error') = '0' AS quiet",
-        )
+             pg_notification_queue_usage() AS usage, ",
+            logging_pinned_off!(),
+            " AS quiet"
+        ))
         .fetch_one(&mut *listener)
         .await?;
         let now = u64::try_from(row.try_get::<i64, _>("now")?).map_err(|_| Lost)?;
@@ -411,7 +474,7 @@ impl ChatRelay {
         // Sends are stamped with the window's clock, and the relay is not ready until the window
         // admits what it stamps: after a start, a reconnect or a database clock stepped back a
         // send would otherwise return OK and be dropped here.
-        // A connection that could log bind parameters makes the node not ready on this tick.
+        // A listener session that no longer holds the logging pin makes the node not ready.
         let clock = window
             .admitting_clock(now)
             .filter(|_| quiet && usage <= QUEUE_USAGE_MAX);

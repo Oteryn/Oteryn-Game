@@ -13,6 +13,18 @@
 --
 -- No chat text, sender, recipient or key material is stored here (FND-02 §20).
 --
+-- Provisioning, outside this migration (CP decision D1400): the relay pins statement and
+-- bind-parameter logging off with session `SET`s on every connection it opens, and refuses to
+-- start when any of them fails. A superuser grants the login role the relay connects as (the
+-- node's runtime role, a member of `oteryn_game_runtime`) the right to set them, once per cluster:
+--
+--   GRANT SET ON PARAMETER log_parameter_max_length, log_parameter_max_length_on_error,
+--       log_statement, log_min_duration_statement TO <runtime login role>;
+--
+-- `log_parameter_max_length_on_error` is user-settable and needs no grant; the other three do.
+-- The migration role need not be a superuser, so this migration does not grant it. Without the
+-- grant the relay stays disabled (`chat_relay_disabled reason=log_pin_refused`).
+--
 -- Rollback: applied migrations are immutable, so rollback is a new migration that drops the
 -- table, its triggers and its function. Only the chat relay reads the table.
 
