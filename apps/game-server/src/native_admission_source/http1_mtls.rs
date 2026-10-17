@@ -116,11 +116,23 @@ const fn request_envelope_max(operation: Operation) -> usize {
         Operation::PublishAccountCharactersV1 => {
             super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
         }
+        // `PUBPROJ-HS-REQUEST-BYTES` and `PUBPROJ-ONLINE-REQUEST-BYTES`.
+        Operation::PublishWorldHighscoresV1 => {
+            super::public_projections::HIGHSCORES_BYTES + REQUEST_HEAD_BYTES
+        }
+        Operation::PublishWorldOnlineV1 => {
+            super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
+        }
         _ => REQUEST_ENVELOPE_BYTES,
     }
 }
 const _: () = assert!(
     super::account_characters::WATERMARK_BYTES + REQUEST_HEAD_BYTES <= REQUEST_ENVELOPE_BYTES
+);
+const _: () = assert!(
+    super::public_projections::PROFILE_BYTES + REQUEST_HEAD_BYTES <= REQUEST_ENVELOPE_BYTES
+        && super::public_projections::WATERMARK_BYTES + REQUEST_HEAD_BYTES
+            <= REQUEST_ENVELOPE_BYTES
 );
 fn request_head(operation: Operation, host_header: &str, body_len: usize) -> String {
     format!(
@@ -181,9 +193,15 @@ async fn exchange_status(
             .await
         } else if matches!(
             operation,
-            Operation::PublishAccountCharactersV1 | Operation::PublishProjectionWatermarkV1
+            Operation::PublishAccountCharactersV1
+                | Operation::PublishProjectionWatermarkV1
+                | Operation::PublishWorldHighscoresV1
+                | Operation::PublishCharacterProfileV1
+                | Operation::PublishWorldOnlineV1
+                | Operation::PublishPublicProjectionWatermarkV1
         ) {
-            // §3: every projection response, success or empty failure, fits 256 bytes.
+            // §3 (LCFA and public projections): every projection response, success
+            // or empty failure, fits 256 bytes.
             read_response_bounded(
                 &mut tls,
                 require_ok,
@@ -516,7 +534,7 @@ mod tests {
 #[cfg(test)]
 mod envelope_tests {
     use super::*;
-    const OPERATIONS: [Operation; 14] = [
+    const OPERATIONS: [Operation; 18] = [
         Operation::ReadAccountSecurityV1,
         Operation::ReadFreshSigningTrustV1,
         Operation::ReadRecoveryAccountSecurityV2,
@@ -531,9 +549,19 @@ mod envelope_tests {
         Operation::ListPendingCharacterCommandsV1,
         Operation::ReadCharacterCommandIntentV1,
         Operation::PublishCharacterCommandReceiptV1,
+        Operation::PublishWorldHighscoresV1,
+        Operation::PublishCharacterProfileV1,
+        Operation::PublishWorldOnlineV1,
+        Operation::PublishPublicProjectionWatermarkV1,
+    ];
+    /// The operations whose snapshot bound exceeds the shared envelope.
+    const WIDENED: [Operation; 3] = [
+        Operation::PublishAccountCharactersV1,
+        Operation::PublishWorldHighscoresV1,
+        Operation::PublishWorldOnlineV1,
     ];
     #[test]
-    fn every_maximum_body_fits_its_envelope_and_only_the_snapshot_widens_it() {
+    fn every_maximum_body_fits_its_envelope_and_only_the_snapshots_widen_it() {
         let host = "h".repeat(253);
         for operation in OPERATIONS {
             let head = request_head(operation, &host, usize::MAX).len();
@@ -542,13 +570,26 @@ mod envelope_tests {
                 head + operation.request_bytes_max() <= request_envelope_max(operation),
                 "{operation:?}"
             );
-            if operation != Operation::PublishAccountCharactersV1 {
+            if WIDENED.contains(&operation) {
+                assert_eq!(
+                    request_envelope_max(operation),
+                    operation.request_bytes_max() + REQUEST_HEAD_BYTES
+                );
+            } else {
                 assert_eq!(request_envelope_max(operation), REQUEST_ENVELOPE_BYTES);
             }
         }
         assert_eq!(
             request_envelope_max(Operation::PublishAccountCharactersV1),
             super::super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishWorldHighscoresV1),
+            262_144 + REQUEST_HEAD_BYTES
+        );
+        assert_eq!(
+            request_envelope_max(Operation::PublishWorldOnlineV1),
+            524_288 + REQUEST_HEAD_BYTES
         );
     }
 }
