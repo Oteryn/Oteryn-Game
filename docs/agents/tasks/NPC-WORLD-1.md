@@ -55,6 +55,8 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/gameplay_transport/npc_actor.rs`
 - `apps/game-server/src/gameplay_transport/npc_actor_tests.rs`
 - `apps/game-server/src/gameplay_transport/npc_voice.rs`
+- `apps/game-server/src/foundation/runtime_actor_carrier.rs` (D1340b: read_movement_position and commit_movement_position only)
+- `apps/game-server/src/foundation/npc_actor.rs` (D1340b: six native Movement regression cases only)
 - `apps/game-server/src/durability/npc_travel.rs`
 - `apps/game-server/tests/npc_world_postgres.rs`
 - `docs/agents/evidence/NPC-WORLD-1-*.md`
@@ -533,3 +535,51 @@ native results retain their original exact source bindings. The lead coordinates
 new explicitly reviewed native/PG recipe required by CP; no historical runner, PG mapping
 or old-head test result qualifies this successor. All original acceptance boxes remain
 open; no production NPC runtime activation or completed NPC-WORLD delivery is claimed.
+
+## D1340b — native NPC Movement position owner — AUTHORING (2026-10-17)
+
+Return to AUTHORING from `6db40946466ec56379261419177ca010ecba9373` under
+[CP D1340b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233358050).
+The two shared files and exact hunks are now included in owned_paths above. The
+independently reviewed source patch is SHA256
+`3891447cc0529f9e3ee7351dd46ef37a30bb27ec4de60e355a236979d972dc87`.
+
+The existing ChannelActorCarrier Movement read and cardinal-commit methods now
+accept an NpcOccupied slot. They use the actual current namespace continuity,
+complete ActorRef and native position snapshot, check context and revision, accept
+one cardinal step on the same floor, and update position and facing in that same
+slot. NPC visibility and occupancy observe the existing native slot immediately.
+General relocation, spell, combat, removal, player/creature Movement, placement
+and ActiveGeneration remain byte-identical. No second position store or authority
+proof is added. NPC-BEHAVIOUR-0 §4.4 requires this Movement owner port; scheduler,
+terrain/occupancy eligibility, SPEED timing and the walking caller still need their
+concrete consumers before NPC walking is complete.
+
+Six new native regressions cover all cardinal directions and visibility/occupancy,
+invalid steps, changed and replayed snapshots, stale/foreign/retired owners,
+revision exhaustion and the still-closed combat/removal/general-relocation paths.
+They use real native NPC placement; only the exhaustion case injects an otherwise
+unreachable slot revision. The seven existing NPC cases are unchanged. After the
+new freeze, the exact focused module inventory is thirteen ordinary cases:
+
+```bash
+cargo +1.95.0 test --locked -p oteryn-game-server --lib foundation::runtime_actor_carrier::npc_actor::tests:: -- --list
+cargo +1.95.0 test --locked -p oteryn-game-server --lib foundation::runtime_actor_carrier::npc_actor::tests::
+```
+
+Also qualify the existing channel_actor_position_tests group, strict all-target
+Clippy and the original boot4 + hold5 + voice7 library groups. The canonical travel
+PG case remains separate. Source review, actual rustfmt and unchanged-scope/apply/
+whitespace checks PASS; new-head compile/Clippy/native/PG execution are NOT_RUN at
+author handoff. Status remains NOT_FULLY_QUALIFIED and all acceptance boxes stay open.
+
+Predecessor6db ordinary CI passed (3162 library cases,0failed,29ignored;ops6), with
+all boot4/hold5/voice7 cases explicitly successful; evidence is
+[#2157 comment6233193289](https://github.com/Oteryn/Oteryn-Game/pull/2157#issuecomment-6233193289).
+Its D1335 PC attempt stopped before Cargo or PG because the held peer lock had no
+JSON state; [attempt evidence6233336481](https://github.com/Oteryn/Oteryn-Game/pull/2157#issuecomment-6233336481).
+D1340a replaces that peer-JSON observation route. D1329 requires the existing shared
+PG17.6 through in-pg-netns.sh and cargo fetch --locked before the namespace; no PG
+server/container lifecycle is part of this work. Any successor run binds its actual
+new head and reviewed recipe hash. Predecessor evidence does not qualify this delta.
+
