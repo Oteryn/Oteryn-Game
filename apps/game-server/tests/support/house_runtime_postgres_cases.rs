@@ -121,9 +121,10 @@ fn house_runtime_closed_boundary_preserves_native_source_and_journal() -> TestRe
     qualify_closed_house_runtime_boundaries()
 }
 
-// The original configured-PG body, including strict URL validation, every SQL
-// assertion and cleanup, remains byte-identical below. A present invalid value
-// still reaches this body and refuses; the focused target always requires it.
+// Preserve strict URL validation, the existing case and every SQL assertion.
+// Hold the actual admin connection outside the unwind boundary so cleanup runs
+// after either a returned case error or an assertion panic. This successor is
+// separate from the D1421 body-preserving organization patch.
 fn qualify_closed_house_runtime_boundaries() -> TestResult {
     let Ok(admin_url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Err(
@@ -136,41 +137,71 @@ fn qualify_closed_house_runtime_boundaries() -> TestResult {
     {
         return Err("unsafe PostgreSQL test admin URL".into());
     }
-    tokio::runtime::Builder::new_current_thread()
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(async move {
-            let suffix = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)?
-                .as_nanos();
-            let name = format!("house_runtime_closed_{suffix}");
-            let mut admin = PgConnection::connect(&admin_url).await?;
-            admin
-                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "CREATE DATABASE {name}"
-                ))))
+        .build()?;
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let name = format!("house_runtime_closed_{suffix}");
+    let mut admin = runtime.block_on(async {
+        let mut admin = PgConnection::connect(&admin_url).await?;
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE DATABASE {name}"
+            ))))
+            .await?;
+        Ok::<PgConnection, Box<dyn std::error::Error>>(admin)
+    })?;
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> TestResult {
+        runtime.block_on(async {
+            let prefix = admin_url.strip_suffix("/postgres").ok_or("database URL")?;
+            let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&mut connection)
                 .await?;
-            let outcome: TestResult = async {
-                let prefix = admin_url.strip_suffix("/postgres").ok_or("database URL")?;
-                let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
-                let version: String = sqlx::query_scalar("SHOW server_version_num")
-                    .fetch_one(&mut connection)
-                    .await?;
-                assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
-                sqlx::migrate!("./migrations").run(&mut connection).await?;
-                closed_boundary_case(&mut connection).await?;
-                connection.close().await?;
-                Ok(())
-            }
-            .await;
-            admin
-                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "DROP DATABASE {name} WITH (FORCE)"
-                ))))
-                .await?;
-            admin.close().await?;
-            outcome?;
-            println!("QUALIFIED PostgreSQL17.6: closed House runtime boundaries preserve native source session and handoff journal");
+            assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
+            sqlx::migrate!("./migrations").run(&mut connection).await?;
+            closed_boundary_case(&mut connection).await?;
+            connection.close().await?;
             Ok(())
         })
+    }));
+    let cleanup: TestResult = runtime.block_on(async {
+        let dropped = admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DROP DATABASE {name} WITH (FORCE)"
+            ))))
+            .await;
+        // Closing is attempted even if DROP returned an error.
+        let closed = admin.close().await;
+        dropped?;
+        closed?;
+        Ok(())
+    });
+    match outcome {
+        Ok(Ok(())) => {
+            cleanup?;
+            println!(
+                "QUALIFIED PostgreSQL17.6: closed House runtime boundaries preserve native source session and handoff journal"
+            );
+            Ok(())
+        }
+        Ok(Err(error)) => {
+            if let Err(cleanup_error) = cleanup {
+                eprintln!(
+                    "House runtime cleanup failed after a case error for {name}: {cleanup_error}"
+                );
+            }
+            Err(error)
+        }
+        Err(panic) => {
+            if let Err(cleanup_error) = cleanup {
+                eprintln!(
+                    "House runtime cleanup failed after a case panic for {name}: {cleanup_error}"
+                );
+            }
+            std::panic::resume_unwind(panic)
+        }
+    }
 }
