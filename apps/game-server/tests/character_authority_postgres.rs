@@ -3074,6 +3074,11 @@ mod item_fee_burn_postgres_cases;
 mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
+
+#[path = "support/mail_postgres_cases.rs"]
+mod mail_postgres_cases;
 
 // NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
 #[path = "support/npc_trade_postgres_cases.rs"]
@@ -3402,10 +3407,14 @@ mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 
+#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
+mod familiar_versioned_lifecycle_postgres_cases;
 #[path = "support/house_interior_postgres_cases.rs"]
 mod house_interior_postgres_cases;
 #[path = "support/house_test_fixture.rs"]
 mod house_test_fixture;
+#[path = "support/pvp_readmission_postgres_cases.rs"]
+mod pvp_readmission_postgres_cases;
 
 // D1112 APP-1 installed storage and native authority cases share their cases with the focused
 // standalone targets through the same protected lane, on the Bestiary harness included above.
