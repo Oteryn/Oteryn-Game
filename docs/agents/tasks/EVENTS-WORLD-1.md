@@ -55,6 +55,17 @@ ADR/BOSS status lines now record the D1136 amendments; source-only W1 selection
 scope and pending separate LAYER/ACT mechanics remain unchanged. The PR body must
 name the final published repair head, replacing the stale 95bcebd7 reference.
 
+### Exact-head CI receipt (2124c58d)
+
+Exact head `2124c58d2b3895d301a4b7b219610eb4043c0bb9`: check run
+`Merge gate / Rust changed-crate Clippy and unit tests` (id 117302016245,
+https://github.com/Oteryn/Oteryn-Game/actions/runs/39000354207/job/117302016245)
+concluded success. The six published-mount selection-source cases (the earlier five
+plus `partial_binding_gap_set_refuses`) run in that job; this supersedes the five-case
+PASS recorded above at older heads. No local run is claimed. If the Rust is unchanged,
+the PR's next head is doc/data-only relative to 2124c58d (this task record and the
+fury_gates selection-source provenance pin).
+
 ## Goal
 
 World changes, Fury Gates, Nightmare Isles and hazard events.
@@ -77,6 +88,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `docs/architecture/ADR-0021-world-map-runtime-loading.md` — D1136/D1287 amendments and status.
 - `docs/architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` — D1136/D1287 amendments and status.
 - `docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md` — D1287 W15 source locator correction.
+- `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` — EVENTS-WORLD-1 row brief reference only.
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -111,7 +123,7 @@ LAYER/ACT mechanics and are NOT_APPLICABLE here.
 - [x] Retain Fury Gates/Nightmare Isles source facts and provenance without fake W1 bindings.
 - [x] Compile validated inputs into typed WorldChangeSelection.
 - [x] Refuse unavailable W1 bindings with WorldChangeBindingsUnavailable.
-- [ ] Five actual native component cases (four original plus refusal) pass through the published mount on this repaired head; exact-head CI pending.
+- [x] Six native component cases (including `partial_binding_gap_set_refuses`) pass through the published mount; exact-head CI success at 2124c58d (see receipt).
 - [ ] Required final exact-head repository gates and CP lifecycle before leaving draft.
 
 ## Validation commands
