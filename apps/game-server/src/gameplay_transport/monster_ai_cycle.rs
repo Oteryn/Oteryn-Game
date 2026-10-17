@@ -21,6 +21,7 @@ use crate::content::{
     LogicalCell, ProjectV2AuthoringProfileData, ProjectV2BehaviorAuthoring, ProjectV2DefinitionRef,
 };
 use crate::durability::spell_item_transaction as item_tx;
+use crate::foundation::owner_timer::OwnerClock as _;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     CarrierError, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
@@ -30,14 +31,23 @@ use crate::monster_summon::{NativeSummonOwner, SummonLocationPolicy};
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// The Channel's respawn clock and wake: this owner's `clock_origin`, the one origin of the
+    /// session-driven pass and of the World wake loop installed by `serve_gameplay`.
+    pub(in crate::gameplay_transport) fn respawn_wake(
+        &self,
+    ) -> crate::monster_owner_cycle::MonotonicRespawnWake {
+        crate::monster_owner_cycle::MonotonicRespawnWake::from_origin(self.clock_origin)
+    }
+
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
         let now = self.owner_now();
-        // SPAWN-1a remains independent of the Item lane and of playable content gates.
+        // SPAWN-1a remains independent of the Item lane and of playable content gates. It reads
+        // the Channel's one respawn clock, the same origin the World wake loop runs on.
         {
             let mut runtime = self.runtime.lock().await;
-            drive_owner_spawns(&mut runtime, now.get());
+            drive_owner_spawns(&mut runtime, self.respawn_wake().now().get());
         }
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
@@ -3607,6 +3617,133 @@ mod tests {
         // Admission runs 4,200 ms after the warning (CREATURE-AI-0 §6.3).
         drive_owner_spawns(&mut runtime, due + 4_200_000);
         assert!(runtime.spawn_point_creatures()[0].2.is_some());
+    }
+
+    #[allow(clippy::expect_used)]
+    fn killed_rat_runtime() -> (ChannelRuntimeV1, u64) {
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let source = room.spawn_source().expect("D116 spawn source");
+        assert_eq!(
+            runtime.realize_activation_spawns(vec![source.activation_facts()]),
+            Ok(2)
+        );
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        drive_owner_spawns(&mut runtime, 0);
+        let due = runtime.pending_respawn(point).expect("pending").due_micros;
+        (runtime, due)
+    }
+
+    #[allow(clippy::expect_used)]
+    fn block_on_test<F: std::future::Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("test runtime")
+            .block_on(future)
+    }
+
+    /// LOOP-MONSTER-1: the job `serve_gameplay` installs reads the wake built from the owner's
+    /// `clock_origin` ([`ComposedFreshAdmission::respawn_wake`]), the same origin the session
+    /// path (`drain_monster_melee`) reads. With the origin already past the respawn deadline the
+    /// installed job admits the replacement within real milliseconds (a private origin would need
+    /// ~34 s). The session-path pass on that origin afterwards finds nothing left to advance (no
+    /// double advance), and shutdown stops the job.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn the_installed_respawn_job_shares_the_session_origin_and_stops_on_shutdown() {
+        use crate::foundation::owner_timer::OwnerClock as _;
+        use crate::monster_owner_cycle::{
+            MonotonicRespawnWake, RespawnDriveEnd, run_world_respawns,
+        };
+        use std::future::Future as _;
+        use std::task::Poll;
+        let (runtime, due) = killed_rat_runtime();
+        let origin = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_micros(
+                due + 4_200_000 + 1_000_000,
+            ))
+            .expect("a monotonic clock older than the respawn");
+        // Exactly what `ComposedFreshAdmission::respawn_wake` builds from `clock_origin`.
+        let wake = MonotonicRespawnWake::from_origin(origin);
+        let runtime = tokio::sync::Mutex::new(runtime);
+        let shutdown = oteryn_foundation::CancellationToken::new();
+        let end = block_on_test(async {
+            let mut driver = std::pin::pin!(run_world_respawns(&runtime, &wake, &shutdown));
+            let mut observer = std::pin::pin!(async {
+                let mut admitted = None;
+                for _ in 0..500 {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    let creatures = runtime.lock().await.spawn_point_creatures()[0].2;
+                    if creatures.is_some() {
+                        admitted = creatures;
+                        break;
+                    }
+                }
+                assert!(admitted.is_some(), "the installed job admitted the respawn");
+                // The session path, on the same origin, advances nothing further.
+                let mut guard = runtime.lock().await;
+                drive_owner_spawns(&mut guard, wake.now().get());
+                assert_eq!(guard.spawn_point_creatures()[0].2, admitted);
+                drop(guard);
+                shutdown.cancel();
+            });
+            let (mut end, mut observed) = (None, false);
+            std::future::poll_fn(|context| {
+                if end.is_none()
+                    && let Poll::Ready(result) = driver.as_mut().poll(context)
+                {
+                    end = Some(result);
+                }
+                if !observed && observer.as_mut().poll(context).is_ready() {
+                    observed = true;
+                }
+                if observed && end.is_some() {
+                    Poll::Ready(())
+                } else {
+                    Poll::Pending
+                }
+            })
+            .await;
+            end
+        });
+        assert_eq!(end, Some(RespawnDriveEnd::Shutdown));
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn the_installed_respawn_job_ends_when_the_channel_owner_is_retired() {
+        use crate::monster_owner_cycle::{
+            MonotonicRespawnWake, RespawnDriveEnd, run_world_respawns,
+        };
+        let (mut runtime, _due) = killed_rat_runtime();
+        runtime.retire_owner_cycle();
+        let runtime = tokio::sync::Mutex::new(runtime);
+        let wake = MonotonicRespawnWake::from_origin(std::time::Instant::now());
+        let shutdown = oteryn_foundation::CancellationToken::new();
+        assert_eq!(
+            block_on_test(run_world_respawns(&runtime, &wake, &shutdown)),
+            RespawnDriveEnd::StaleOwner
+        );
     }
 
     /// End to end through the activation path: the bundle's spawn family is realized by

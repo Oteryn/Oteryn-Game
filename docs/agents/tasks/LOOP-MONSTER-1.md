@@ -121,11 +121,11 @@ CREATURE_AI0 §; BUNDLE-MONSTER-AI-1 record. Plan: `docs/architecture/reviews/OT
 ## Context checkpoint
 
 ```yaml
-last_progress: session-free World respawn wake loop (MonsterRespawnJob::drive, MonotonicRespawnWake) with deterministic owner-window schedule and tests; main merged
+last_progress: World respawn wake loop installed in serve_gameplay (slot-only hunk, D1423) on the session path's clock origin under the Channel owner fence; tests added
 status: OPEN
 branch: skeleton/loop-monster-1
-blocker: production install of the World wake loop (shared Channel clock origin and fence) after #2187; CP final integration and MQ
-next_action: CP allocates the install hunk (serve_gameplay slot-only mod.rs or node/serve per D1239) after #2187
+blocker: CP final integration and MQ
+next_action: CP final integration, one Codex round on the final head, MQ
 ```
 
 ## Historical bounded owner-schedule preparation — 2026-10-15
@@ -623,9 +623,12 @@ loop for respawn, which needs no session:
   its due window with a deterministic wake sequence, a retired owner, shutdown
   before any pass, an exhausted clock, and the monotonic wake.
 
-Still open: installing `drive` in production. The World loop must share the
-Channel owner's clock origin (`ComposedFreshAdmission.clock_origin`, created in
-`serve_gameplay`) and an independent current `ScopeRuntimeFence`. Without them
-the session-driven `drive_owner_spawns` and the World job would advance the same
-runtime on two time lines. That hunk is in slot-only `gameplay_transport/mod.rs`
-or `node/serve` (D1239, after #2187), outside this record's owned paths.
+Installed (CP D1423 slot-only hunk, `serve_gameplay`): `run_world_respawns` starts
+`MonsterRespawnJob::new_owned(..).drive_owned(..)` on `MonotonicRespawnWake::from_origin(
+ComposedFreshAdmission.clock_origin)` (`respawn_wake()`), the same origin the session-driven
+`drain_monster_melee` pass now reads for `drive_owner_spawns`. The Channel runtime's own
+current-owner fence (`ChannelRuntimeV1::owner_fence`) is checked under the runtime lock on
+every pass; a retired or replaced owner ends the job. The job is polled with the other seam
+cadences and ends on shutdown. Tests in `monster_ai_cycle.rs`: the installed job admits a
+respawn on an origin already past its deadline, the session pass on that origin then advances
+nothing, shutdown ends it, and a retired owner ends it.

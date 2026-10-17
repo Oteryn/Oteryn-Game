@@ -152,19 +152,34 @@ impl MonsterRespawnJob {
             generation: binding.scope_generation(),
             last_observed_micros: None,
         };
-        job.check_current(runtime, current)?;
+        job.check_current(runtime, Some(current))?;
+        Ok(job)
+    }
+
+    /// The production install: the Channel runtime's own current-owner fence
+    /// (`ChannelRuntimeV1::owner_fence`) is the authority, consulted under the runtime
+    /// lock on every pass. The fence cannot be lent out across that lock, so no
+    /// separate fence is supplied; a retired or replaced owner ends the job.
+    pub(crate) fn new_owned(runtime: &ChannelRuntimeV1) -> Result<Self, RespawnJobError> {
+        let binding = runtime.binding();
+        let job = Self {
+            scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            generation: binding.scope_generation(),
+            last_observed_micros: None,
+        };
+        job.check_current(runtime, None)?;
         Ok(job)
     }
 
     fn check_current(
         &self,
         runtime: &ChannelRuntimeV1,
-        current: &ScopeRuntimeFence,
+        current: Option<&ScopeRuntimeFence>,
     ) -> Result<(), RespawnJobError> {
         let binding = runtime.binding();
         if self.scope != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
             || self.generation != binding.scope_generation()
-            || !current.is_current_for_scope(self.scope, self.generation)
+            || current.is_some_and(|fence| !fence.is_current_for_scope(self.scope, self.generation))
             || runtime.owner_fence().is_err()
         {
             return Err(RespawnJobError::StaleOwner);
@@ -179,6 +194,15 @@ impl MonsterRespawnJob {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         current: &ScopeRuntimeFence,
+        clock: &impl OwnerClock,
+    ) -> Result<RespawnJobReport, RespawnJobError> {
+        self.run_with(runtime, Some(current), clock)
+    }
+
+    fn run_with(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        current: Option<&ScopeRuntimeFence>,
         clock: &impl OwnerClock,
     ) -> Result<RespawnJobReport, RespawnJobError> {
         self.check_current(runtime, current)?;
@@ -221,9 +245,30 @@ impl MonsterRespawnJob {
     /// occurrences pending and is retried at the next window. A stale scope, a replaced
     /// generation or a retired runtime ends the loop; it never revives the owner.
     pub(crate) async fn drive(
-        mut self,
+        self,
         runtime: &tokio::sync::Mutex<ChannelRuntimeV1>,
         current: &ScopeRuntimeFence,
+        wake: &impl RespawnWake,
+        shutdown: &oteryn_foundation::CancellationToken,
+    ) -> RespawnDriveEnd {
+        self.drive_with(runtime, Some(current), wake, shutdown)
+            .await
+    }
+
+    /// [`Self::drive`] under the runtime's own current-owner fence ([`Self::new_owned`]).
+    pub(crate) async fn drive_owned(
+        self,
+        runtime: &tokio::sync::Mutex<ChannelRuntimeV1>,
+        wake: &impl RespawnWake,
+        shutdown: &oteryn_foundation::CancellationToken,
+    ) -> RespawnDriveEnd {
+        self.drive_with(runtime, None, wake, shutdown).await
+    }
+
+    async fn drive_with(
+        mut self,
+        runtime: &tokio::sync::Mutex<ChannelRuntimeV1>,
+        current: Option<&ScopeRuntimeFence>,
         wake: &impl RespawnWake,
         shutdown: &oteryn_foundation::CancellationToken,
     ) -> RespawnDriveEnd {
@@ -233,7 +278,7 @@ impl MonsterRespawnJob {
             }
             let pass = {
                 let mut runtime = runtime.lock().await;
-                self.run(&mut runtime, current, wake)
+                self.run_with(&mut runtime, current, wake)
             };
             let next = match pass {
                 Ok(report) => report.next_wake,
@@ -259,6 +304,25 @@ impl MonsterRespawnJob {
                 return RespawnDriveEnd::Shutdown;
             }
         }
+    }
+}
+
+/// The World install point for one Channel: starts the session-free respawn wake loop
+/// under the runtime's own current-owner fence, on `wake`'s clock. `serve_gameplay`
+/// passes the wake built from the same `clock_origin` the session-driven pass reads, so
+/// both paths advance one timeline. Ends on shutdown, a retired owner or an exhausted clock.
+pub(crate) async fn run_world_respawns(
+    runtime: &tokio::sync::Mutex<ChannelRuntimeV1>,
+    wake: &impl RespawnWake,
+    shutdown: &oteryn_foundation::CancellationToken,
+) -> RespawnDriveEnd {
+    let job = {
+        let runtime = runtime.lock().await;
+        MonsterRespawnJob::new_owned(&runtime)
+    };
+    match job {
+        Ok(job) => job.drive_owned(runtime, wake, shutdown).await,
+        Err(_) => RespawnDriveEnd::StaleOwner,
     }
 }
 
