@@ -14,7 +14,7 @@ issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 owner: "chat I / root lead; gm_record prepared the record-only correction"
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 6 row GM-1 (row 136); App. 7 GM-1; §5 Wave 5"
 class: "hard (child graph)"
@@ -44,7 +44,76 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
-## Current checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
+## Current checkpoint — activation-anchor repair, NOT_FULLY_QUALIFIED (2026-10-17)
+
+This checkpoint supersedes the validation statements below for the repaired
+signature verifier. Existing draft #2181 remains draft. The source repair is
+based on public head `921d7d1c51230595e0a3aa664fea97bee97a464d`; native execution
+uses recovered private assembly `715041517515314e4e10c63a405281cd37e72d14`
+with the same signature source. Held Cargo, node, migration and event-contract
+inputs in that private assembly remain separate from the public source tree.
+
+The final remote read found an independently published fast-forward successor,
+`6b9941a1608a2b8b87e38d95927c53d445bec761`, which merged main into this task
+branch. The local candidate was synchronized to that existing branch head before
+freeze; this continuation created no merge commit. Its `signature.rs`, this
+record's predecessor, all staff modules, the staff durability/PG sources and
+release-manifest crate are byte-identical to the reviewed predecessor. Both
+real cursor consumers are unchanged, and the complete two-file repair passes
+an isolated-index apply check at the new head. This is source compatibility
+evidence only: the native runs below remain bound to private `71504151`, and
+do not qualify the independently updated branch or current main.
+
+- **P1 accepted and repaired:** `HistoryCursor::push` previously allowed a
+  correctly signed receipt to replace an independently recorded activation at
+  either the initial anchor or roster rotation. The common guard now requires
+  activation sequence, link kind and the independently pinned activation digest
+  to agree before dispatching to receipt or request verification. The remaining
+  request guard checks the signed action against the link kind.
+- **RED proven:** the new
+  `receipts_cannot_replace_recorded_activation_anchors` regression, using real
+  OpenSSH signatures, failed on the original production implementation with
+  `receipts replaced independently recorded activations at sequences [1, 2]`.
+  Its genuine activation controls and ordinary receipts after each activation
+  passed. Cargo returned 101: 1 failed, 0 passed, 3265 filtered out. Test-only
+  signature source SHA-256:
+  `abc140c7ff28e53753c576f9d643daecf99053101751b5fd2bdc388f84e0c982`.
+- **GREEN proven:** native Rust 1.94.0
+  `cargo test --offline --locked -p oteryn-game-server --lib staff:: --quiet`
+  passed all 12 staff tests, with 0 failures, 0 ignored and 3254 filtered out.
+  The formatted repaired source had the same SHA-256 before and after execution:
+  `833065648b8b37de987277c4177307f394630e370a352674669c329dbeedd6fe`.
+- **Independent review PASS:** the separate SEC agent reviewed the production
+  guard and regression against the public head, then verified the final
+  formatted source SHA-256 above. The `audit-verify` and
+  `historical-reconcile` consumers propagate cursor failures; both consume the
+  repaired common guard. No additional production bypass was confirmed in the
+  sibling sweep.
+- **PostgreSQL PASS:** native
+  `cargo test --offline --locked -p oteryn-game-server --test staff_audit_postgres
+  staff_pg_ --quiet -- --test-threads=1` executed all 11 staff families:
+  11 passed, 0 failed, 0 ignored, 1135 filtered out (9.07 s). Execution held the
+  PostgreSQL qualification lock and used the dedicated container's network
+  namespace with the unchanged loopback-5432 guard and PostgreSQL 17.6
+  (`server_version_num = 170006`). The repaired source hash remained unchanged.
+- **Strict Clippy PASS:** native
+  `cargo clippy --offline --locked -p oteryn-game-server -p oteryn-release-manifest
+  --all-targets --quiet -- -D warnings` passed on the same private assembly;
+  the repaired source hash remained unchanged.
+- Whole-workspace `cargo +1.94.0 fmt --all --check`, `git diff --check`, governance
+  validation (22 policy documents, 9 project lanes), and the agent unit suite
+  (124 tests, 0 failures) PASS. The lead owns the final candidate freeze and
+  existing-draft publication.
+
+**Cross-domain finding, deferred to the shared-slot owner:** the private Cargo
+proposal declares the standalone `staff_audit_postgres` target with
+`test = false`; the authored staff PostgreSQL cases have no aggregate
+registration in that proposal. This integration finding is reported to the
+lead. The explicit target run above qualifies those cases; default test
+discovery requires its own shared-slot resolution before CI coverage can be
+claimed.
+
+## Historical checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
 
 This checkpoint supersedes earlier validation and shared-registration statements
 below. Existing draft #2181 remains draft. [D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)

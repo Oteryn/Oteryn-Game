@@ -366,7 +366,11 @@ impl HistoryCursor<'_> {
             self.active += 1;
         }
         let activation = &self.history.activations[self.active];
-        if link.roster != activation.trust.roster_digest() {
+        let is_activation = activation.sequence == link.sequence;
+        if link.roster != activation.trust.roster_digest()
+            || (link.kind == LinkKind::Activation) != is_activation
+            || (is_activation && link.digest != activation.trust.activation_digest())
+        {
             return Err(Error::Binding);
         }
         let verified = if link.kind == LinkKind::Receipt {
@@ -387,10 +391,7 @@ impl HistoryCursor<'_> {
                 return Err(Error::Binding);
             }
             let activation_kind = matches!(value.request.action, Action::RosterActivate { .. });
-            if activation_kind != (link.kind == LinkKind::Activation)
-                || activation_kind != (activation.sequence == link.sequence)
-                || (activation_kind && link.digest != activation.trust.activation_digest())
-            {
+            if activation_kind != (link.kind == LinkKind::Activation) {
                 return Err(Error::Binding);
             }
             VerifiedLink::Request(value)
@@ -1095,6 +1096,129 @@ pub(crate) mod tests {
             history
                 .verify(&[initial, unrecorded.clone()], 2, &unrecorded.digest)
                 .is_err()
+        );
+    }
+    #[test]
+    fn receipts_cannot_replace_recorded_activation_anchors() {
+        let old = Signer::new();
+        let new = Signer::new();
+        let (old_trust, first) = old.activation();
+        let checked = old_trust
+            .verify_request(first.clone())
+            .expect("first activation");
+        let initial = ChainLink {
+            sequence: 1,
+            previous: "0".repeat(64),
+            digest: sha256(&first.bytes),
+            roster: old_trust.roster_digest().into(),
+            fingerprint: checked.fingerprint().into(),
+            signed: first,
+            kind: LinkKind::Activation,
+        };
+        let mut next = new.request(3, 2, &initial.digest);
+        next.reason = Reason::Roster;
+        next.action = Action::RosterActivate {
+            roster_sha256: sha256(&new.roster),
+        };
+        let activated = new.sign(
+            next.canonical_bytes().expect("next activation"),
+            REQUEST_NAMESPACE,
+        );
+        let current = new.trust("alpha-test", &sha256(&activated.bytes));
+        let checked = current
+            .verify_request(activated.clone())
+            .expect("next activation");
+        let activation = ChainLink {
+            sequence: 2,
+            previous: initial.digest.clone(),
+            digest: sha256(&activated.bytes),
+            roster: current.roster_digest().into(),
+            fingerprint: checked.fingerprint().into(),
+            signed: activated,
+            kind: LinkKind::Activation,
+        };
+        let mut accepted_sequences = Vec::new();
+        for (signer, trust, previous, sequence, prefix) in [
+            (&old, &old_trust, "0".repeat(64), 1, vec![]),
+            (
+                &new,
+                &current,
+                initial.digest.clone(),
+                2,
+                vec![initial.clone()],
+            ),
+        ] {
+            let mut activations = Vec::new();
+            if sequence == 2 {
+                activations.push(Activation {
+                    sequence: 1,
+                    trust: old.trust("alpha-test", old_trust.activation_digest()),
+                });
+            }
+            activations.push(Activation {
+                sequence,
+                trust: signer.trust("alpha-test", trust.activation_digest()),
+            });
+            let history = History::from_reviewed(activations, trust).expect("reviewed history");
+            let genuine = if sequence == 1 {
+                initial.clone()
+            } else {
+                activation.clone()
+            };
+            let mut valid = prefix.clone();
+            valid.push(genuine.clone());
+            assert!(history.verify(&valid, sequence, &genuine.digest).is_ok());
+            let make_receipt = |receipt_sequence, previous: String| {
+                let receipt = Receipt {
+                    version: 1,
+                    environment: trust.environment().into(),
+                    roster_sha256: trust.roster_digest().into(),
+                    operation_id: "00000000-0000-7000-8000-000000000004".into(),
+                    request_sha256: "a".repeat(64),
+                    outcome_sha256: "b".repeat(64),
+                    disposition: Disposition::Committed,
+                    issued_at: Decimal(1_000_000),
+                    control_seq: Decimal(receipt_sequence),
+                    previous_link_sha256: previous.clone(),
+                };
+                let signed = signer.sign(
+                    jcs::encode(&receipt, MAX_REQUEST_BYTES).expect("receipt JCS"),
+                    RECEIPT_NAMESPACE,
+                );
+                let checked = trust
+                    .verify_receipt(signed.clone())
+                    .expect("valid receipt signature");
+                ChainLink {
+                    sequence: receipt_sequence,
+                    previous,
+                    digest: sha256(&signed.bytes),
+                    roster: trust.roster_digest().into(),
+                    fingerprint: checked.fingerprint().into(),
+                    signed,
+                    kind: LinkKind::Receipt,
+                }
+            };
+            let ordinary = make_receipt(sequence + 1, genuine.digest.clone());
+            let mut with_receipt = valid;
+            with_receipt.push(ordinary.clone());
+            assert!(
+                history
+                    .verify(&with_receipt, sequence + 1, &ordinary.digest)
+                    .is_ok()
+            );
+            let substituted = make_receipt(sequence, previous);
+            let mut chain = prefix;
+            chain.push(substituted.clone());
+            if history
+                .verify(&chain, sequence, &substituted.digest)
+                .is_ok()
+            {
+                accepted_sequences.push(sequence);
+            }
+        }
+        assert!(
+            accepted_sequences.is_empty(),
+            "receipts replaced independently recorded activations at sequences {accepted_sequences:?}"
         );
     }
     #[test]
