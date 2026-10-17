@@ -1,13 +1,13 @@
 //! D1230a/b GUI-qualified single Cyclopedia donation amount, in gold units.
 //! This pure value does not debit gold or authorize a donation/map-area operation.
-//! The separate aggregate bonus threshold is10,000,000gp (CIPSOFT S3), not this cap.
+//! The separate aggregate bonus threshold is 10,000,000 gp (CIPSOFT S3), not this cap.
 
-pub(crate) const MIN_DONATION_GP: i64 = 1;
-pub(crate) const MAX_SINGLE_DONATION_GP: i64 = 10_000_000;
+pub const MIN_DONATION_GP: i64 = 1;
+pub const MAX_SINGLE_DONATION_GP: i64 = 10_000_000;
 
 /// D1242a: each unresolved group blocks the entire runtime feature.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum CyclopediaParityPending {
+pub enum CyclopediaParityPending {
     PoiCount,
     FoundRadius,
     SpeedBonus,
@@ -16,14 +16,15 @@ pub(crate) enum CyclopediaParityPending {
     FactorCompositionAndOfficialRandomChance,
 }
 
+/// Closed-runtime refusal listing every unresolved parity group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct NotWiredInRuntime {
-    pub(crate) parity_pending: [CyclopediaParityPending; 6],
+pub struct NotWiredInRuntime {
+    pub parity_pending: [CyclopediaParityPending; 6],
 }
 
 /// Closed runtime port until separately qualified parity and integration exist.
 /// Source-region admission and a valid amount cannot open this boundary.
-pub(crate) const fn require_cyclopedia_runtime() -> Result<(), NotWiredInRuntime> {
+pub const fn require_cyclopedia_runtime() -> Result<(), NotWiredInRuntime> {
     Err(NotWiredInRuntime {
         parity_pending: [
             CyclopediaParityPending::PoiCount,
@@ -37,14 +38,14 @@ pub(crate) const fn require_cyclopedia_runtime() -> Result<(), NotWiredInRuntime
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct DonationAmountOutOfRange;
+pub struct DonationAmountOutOfRange;
 
 /// Validated single payment. No Default or unchecked/deserializing constructor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct DonationAmount(u32);
+pub struct DonationAmount(u32);
 
 impl DonationAmount {
-    pub(crate) fn new(gold: i64) -> Result<Self, DonationAmountOutOfRange> {
+    pub fn new(gold: i64) -> Result<Self, DonationAmountOutOfRange> {
         if !(MIN_DONATION_GP..=MAX_SINGLE_DONATION_GP).contains(&gold) {
             return Err(DonationAmountOutOfRange);
         }
@@ -53,7 +54,7 @@ impl DonationAmount {
             .map_err(|_| DonationAmountOutOfRange)
     }
 
-    pub(crate) const fn get(self) -> u32 {
+    pub const fn get(self) -> u32 {
         self.0
     }
 }
@@ -67,6 +68,19 @@ mod tests {
         for invalid in [i64::MIN, -1, 0, 10_000_001, i64::MAX] {
             assert_eq!(DonationAmount::new(invalid), Err(DonationAmountOutOfRange));
         }
+        assert_eq!(
+            require_cyclopedia_runtime(),
+            Err(NotWiredInRuntime {
+                parity_pending: [
+                    CyclopediaParityPending::PoiCount,
+                    CyclopediaParityPending::FoundRadius,
+                    CyclopediaParityPending::SpeedBonus,
+                    CyclopediaParityPending::DonationEligibilityAndPremium,
+                    CyclopediaParityPending::DrawOrder,
+                    CyclopediaParityPending::FactorCompositionAndOfficialRandomChance,
+                ],
+            })
+        );
         assert_eq!(DonationAmount::new(1).map(DonationAmount::get), Ok(1));
         assert_eq!(
             DonationAmount::new(10_000_000).map(DonationAmount::get),

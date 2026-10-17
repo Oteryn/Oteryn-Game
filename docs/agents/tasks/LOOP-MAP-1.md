@@ -23,6 +23,17 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+## D1285 review repair — source only
+
+CP review at `cb368356bf6ffc6293491fe7fd40660cbbaa63b6` requires the
+Cyclopedia module registration on this head. The pure donation value, errors,
+closed runtime port and six-group payload are public library APIs; the validated
+amount's tuple remains private. The existing boundary test now also checks the
+complete `NotWiredInRuntime` payload. No unchecked constructor, Default, serde,
+Bank debit or runtime activation is added. Fmt/diff checks PASS; this repaired
+source's native execution and exact-head CI are NOT_RUN. Earlier private-mount
+component results below retain their exact historical source and scope.
+
 ## Current accepted scope — D1242a / D1249a
 
 This draft contains source-only regional admission (16 admitted, 193 unadmitted),
@@ -83,7 +94,7 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `docs/agents/evidence/LOOP-MAP-1-*.md`
 - `docs/agents/tasks/LOOP-MAP-1.md` (this record: status and notes only)
 
-To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
+D1285 registers `pub mod cyclopedia;` in `domain/mod.rs` on this head. This pure public API and its test belong to ordinary branch compilation; that registration does not wait for a slot commit. Other shared module registration remains subject to its own allocation.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -98,7 +109,7 @@ To compile on the branch the builder may add only the module registration lines 
 - apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
 - apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
 - crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
-- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+- Other allocated apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs registration; D1285 Cyclopedia registration is already owned on this head
 
 ## Wiring points (verified on origin/main 5742f30f3)
 

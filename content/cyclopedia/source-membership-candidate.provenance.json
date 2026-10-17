@@ -47,7 +47,7 @@
     },
     "representation": "source-pixel [row,begin,end-exclusive] runs; source anchor and pinned nonzero32-bit-pixel rule retained",
     "membership_count_is_unique_world_tiles": false,
-    "historical_compressed_asset_decoded_false": "Copied prior crosswalk observation only; current BMP/runs fields record actual source decoding.",
+    "historical_compressed_asset_decoded_false": "compressed_asset.decoded=false means the compressed file itself was not decoded in that prior crosswalk observation; current BMP/runs fields record actual source decoding.",
     "qualification_checks": "209run bounds/order/count checks; exact unchanged pinned reader comparison for sources109,101,92",
     "runtime_checks": "NOT_RUN"
   },
