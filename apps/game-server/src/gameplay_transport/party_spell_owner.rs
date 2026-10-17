@@ -21,6 +21,10 @@ use sqlx::{Postgres, Transaction};
 
 /// Character/session association resolved by the native same-transaction journal read.
 /// This projection carries facts only; it grants no current owner or reward authority.
+#[allow(
+    dead_code,
+    reason = "consumed by party_xp.rs once the CP slot registers its module"
+)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct SourcePartyXpMember {
     pub(crate) character: [u8; 16],
@@ -41,6 +45,10 @@ pub(crate) struct SourcePartyWorld {
         PlayerSpellState,
     )>,
     // XP participants include dead colocated members; spell target selection remains unchanged.
+    #[allow(
+        dead_code,
+        reason = "consumed by party_xp.rs once the CP slot registers its module"
+    )]
     xp_physical: Vec<(
         [u8; 16],
         ExactActorRef,
@@ -53,6 +61,10 @@ pub(crate) struct SourcePartyWorld {
     adjacent_masterless_monsters: u32,
 }
 impl SourcePartyWorld {
+    #[allow(
+        dead_code,
+        reason = "consumed by party_xp.rs once the CP slot registers its module"
+    )]
     pub(crate) fn xp_members(&self) -> Vec<SourcePartyXpMember> {
         self.xp_physical
             .iter()
@@ -68,6 +80,10 @@ impl SourcePartyWorld {
     }
     /// Retired runtimes and changed player/position predecessors refuse the whole XP plan.
     /// Current SQL membership/toggle and actual PZ/activity ownership remain separate inputs.
+    #[allow(
+        dead_code,
+        reason = "consumed by party_xp.rs once the CP slot registers its module"
+    )]
     pub(crate) fn validate_xp_physical(
         &self,
         runtime: &ChannelRuntimeV1,

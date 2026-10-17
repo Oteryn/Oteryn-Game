@@ -576,3 +576,15 @@ Cargo. The old 827c binding RED caused by the absent E port remains historical a
 does not describe this now-concrete dependency. No PostgreSQL, full E-D/World path,
 atomic whole-kill settlement, gameplay completion, commit/push, readiness, merge,
 production action or paid-review PASS is claimed by this increment.
+
+## Exact-head Clippy repair (2026-10-17)
+
+CI Clippy at `06b5c6dc` was RED only on `dead_code` (`-D warnings`) for the
+`party_spell_owner.rs` XP projection (`SourcePartyXpMember`, `xp_physical`,
+`xp_members`, `validate_xp_physical`). Their sole consumer, `party_xp.rs`, is
+not compiled until the CP slot registers `mod party_xp;` after #2201 merges.
+Those four items now carry an item-scoped `#[allow(dead_code, reason = ...)]`
+naming that pending registration; no module registration, visibility, logic,
+test or #2201 source is changed, and main is not merged ahead of #2201. The
+merge-gate and game-gate REDs were aggregates of this one failure. Remove the
+allowances in the slot commit that registers `party_xp`.
