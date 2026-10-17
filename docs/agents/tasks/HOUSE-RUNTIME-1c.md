@@ -14,7 +14,7 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md
 base_branch: main
-base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 branch: skeleton/house-runtime-1c
 needs_migration: true
 needs_registry: false
@@ -22,7 +22,138 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## 2026-10-16 D1122 checkpoint — NOT_FULLY_QUALIFIED
+## 2026-10-17 integrated storage checkpoint — NOT_FULLY_QUALIFIED
+
+CP merged main `f010472bcb6794a2cbc56dfaf755bd122c10225e` into this draft by an ordinary
+merge. The verified predecessor is `2a3af11041a8285d4572e935feff04bcb90d8725`; its only
+delta from that main is the existing House writer, focused test source and this card.
+The checkpoint composes the existing native House storage component with the real
+Channel writers and canonical migration/test registration. Full House runtime acceptance
+still depends on #2165 and the admitted placement/exit owners described below.
+
+### Concrete implementation in this checkpoint
+
+- `0108_character_position_house.sql` adds `house_world_id UUID NULL` and `house_key TEXT
+  NULL` to the existing `game_character_last_positions` row. A single CHECK enforces
+  joint nullability, same World and the existing native House-key grammar. Old rows remain
+  null. The schema fragment is removed from `character_position_house.rs`.
+- The existing native House writer/reader retains its recovery/session/connection/lease,
+  exact House assignment/incarnation and canonical guard-history checks. The stored
+  discriminator is historical position data; it does not grant House admission or placement.
+- `character_last_position::upsert_last_position` clears **both** House columns in the
+  same winning INSERT/UPDATE as cell, pins and vitals. Its strict `(lease, sequence)`
+  comparison and pending-respawn veto are unchanged. Equal/lower keys, invalid or stale
+  fences and transaction rollback preserve the entire previous row.
+- Actual native single and batch periodic writers already call that common upsert.
+  `consume_pending_respawn_placed` and `place_and_consume_pending_respawn_placed` also
+  call it inside the transaction that consumes the pending respawn. Their behavior is
+  composed through the common helper; no separate respawn writer or actor-death hook is added.
+- `durability/mod.rs` mounts the House component. The focused PG file becomes a thin
+  wrapper marked `test=false` in Cargo; its eight native cases are mounted once under
+  `tests/durability_postgres.rs` through `support/house_runtime_position_postgres_cases.rs`.
+  The old `cfg(any())` disabled target is removed. Missing PG configuration fails explicitly.
+- The original four House cases now require SQLx migration 0108's exact installed checksum,
+  rather than installing an ad hoc schema string. Four additional cases invoke the actual
+  native single, batch, admission-respawn and in-session-respawn APIs. They check same-cell
+  clearing, complete changed captures, equal/lower/newer-lease ordering, stale/invalid
+  inputs, pending veto, deferred COMMIT rollback and replay without a second mutation.
+- All eight cases create their harness outside an unwind catcher, then clean up their own
+  database on error or assertion panic before preserving the result/panic. Qualification
+  output is emitted only after case success and successful owned-database cleanup.
+
+### Current native validation disposition
+
+The candidate was assembled from exact main plus these owned deltas on Molehill-PC at
+`/root/oteryn-house-bed-20261017/position-2166`, under build slot C. `cargo fetch --locked`
+completed successfully before the shared-PG wrapper. Native rustfmt output was applied
+without semantic changes. Attempt 1 at 12:46:16 UTC stopped because the source checkout
+was missing required tracked inputs; it is not a source compiler or test failure. After
+restoring the complete tracked checkout, attempt 2 started at 12:49:09 UTC on 2026-10-17;
+its locked fetch and compilation passed. The canonical filter executed exactly eight
+PostgreSQL 17.6 cases: the four original cases passed and all four new caller cases failed
+with SQLSTATE 23514 from the existing monotonic last-position guard. No case was skipped
+or ignored, and the wrappers completed owned-database cleanup before returning errors.
+
+The common cause was the new historical-pair fixture changing the row at the same key,
+before the intended caller assertions. The focused repair leaves every production guard
+unchanged: the fixture now advances `write_sequence` and returns the actual stored key;
+equal/lower/winning and respawn/replay test keys are derived from it. The repaired source
+was formatted with native Rust 1.94, and attempt 3 started at 12:54:08 UTC in slot C
+after another successful locked fetch. Attempt 3 compiled in 34.56 seconds and passed
+all eight native PostgreSQL 17.6 cases in 3.13 seconds: zero failed, zero ignored, and
+eight qualification markers emitted after successful owned-database removal. Source
+hashes before and after the run were unchanged. Attempt 2 remains a test-fixture RED,
+not evidence of a production-writer defect.
+
+The exact qualifying command, executed through D1329 `in-pg-netns.sh`, was:
+
+```bash
+cargo test --locked -p oteryn-game-server --test durability_postgres house_runtime_position_postgres_cases:: -- --nocapture
+```
+
+The staged main-based source assembly has support-file SHA-256
+`92c9b5f791cc94243cc9ed1520b135469df04c2ce06d0b686b95638754e8d226`;
+the D1342 build environment SHA-256 is
+`afc2f04924c412b5965a1c4f6a2b30dfcd9e80ac0a185af737d070ebedbefd82`.
+This is a selected-target source-assembly PASS. Publication must still read back the
+new exact head and all nine changed files and bind that identity to the unchanged
+qualifying source hashes; the publication receipt records that verification.
+
+| Check | Current checkpoint disposition |
+|---|---|
+| Changed Rust formatting | PASS; focused fixture repair formatted by native Rust 1.94. |
+| Canonical compiler/link and selected eight PG cases | Attempt 3 source assembly PASS: 8 passed, 0 failed/ignored, 8 post-cleanup markers; unchanged before/after hashes. Exact published-head readback/requalification remains required. |
+| Native current-authority guard fixtures | Explicit synthetic independent current data for the four storage cases; they do not qualify successful sealed House claim rebind or physical placement. |
+| Real in-session respawn callback | A placement-acknowledgement fixture, with the actual native durable API and transaction. It does not qualify a runtime controller. |
+| House logout/resume/fallback, final House terminal capture, ADMIT, actual placement and runtime lifetime | NOT_RUN / incomplete. |
+
+The source manifest records every staged file hash and exact main/PR predecessors.
+Historical selected compiler/PG results later in this card keep their original source
+scope and are not substituted for this eight-case integrated candidate.
+
+### CP scope, registry and publication order
+
+[D1347](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418)
+reconfirms reserved migration **0108** and grants the common same-row writer, owned House
+component, native cases and own module lines. The migrations directory is the only
+migration registry. [D1353](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098)
+grants the support leaf, thin wrapper, own Cargo `[[test]]` entry and line-local canonical
+aggregate include. No separate registry row or new migration number is required.
+
+[D1361](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234053855)
+permits the **complete compiling checkpoint now**, including that aggregate line. The
+order **#2181 → #2166 → #2187** governs merge/activation, not the draft push. After #2181
+merges, merge current main ordinarily and resolve only the owned aggregate include.
+The root is the single writer; D1345/D1359 require one successor of a freshly read head,
+complete explicit file set, fast-forward ref update, immediate ref/file readback and
+requalification. Ready and merge remain CP actions.
+
+### Remaining runtime work and next worker boundary
+
+The two-column storage and common Channel clearing do not provide the native House
+actor's dirty capture/sequence owner, logout/final House write, login placement, removed
+House entrance metadata, access-loss fallback or reverse-handoff destination transaction.
+Those actual owner integrations remain required. A final House capture must be written
+inside the real terminal/handoff transaction while its authority is held; a write after
+release or actor removal cannot replace it. Shared respawn/terminal owner changes retain
+their recorded CP order; this checkpoint changes only the common storage helper.
+
+#2165 now owns the missing additive House scope-transition authority variant, sealed
+claim predicate, same-TX current predecessor-history validation and persisted successor
+under [D1362](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234053855).
+Its shared admission/lifecycle hunks and ADMIT installation follow #2187. Native placement
+and reservation consumption must precede bind/generation advance. The position component
+must consume those genuine current owners and never turn a saved House row, a load snapshot
+or the synthetic test guard installer into permission.
+
+D1329 requires shared PostgreSQL 17.6 only, locked fetch before `in-pg-netns.sh`, and owned
+database cleanup; no server/container lifecycle is part of these tests. All original
+runtime acceptance items remain open until their actual producers and native integration
+evidence exist. The older D1122 and code-archive sections below are historical records;
+their unallocated-migration/unmounted-writer descriptions are superseded by this checkpoint.
+
+
+## Historical 2026-10-16 D1122 checkpoint — superseded disposition
 
 The product storage component remains byte-identical to the existing draft head
 `2d344f427eccbda584475c01917bad2eded5f271`. Source successor

@@ -3,8 +3,8 @@
 //! The optional House belongs to the existing 0080/0084 row, with its cell, vitals and order
 //! key. It is historical projection data, not an entry/exit or physical-placement permission.
 //! Capture, admission placement and atomic reverse-handoff callers remain separate owners.
-//! The uninstalled schema proposal must ship with ALL native position writers changed to set
-//! the House fields; the old Channel upsert otherwise retains an existing House discriminator.
+//! Migration 0108 installs the same-row binding. All native Channel writers clear
+//! its two columns through their common position upsert in the same transaction.
 
 use super::admission_authority_guards::AdmissionGuardStore;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -44,17 +44,6 @@ pub struct StoredHousePosition {
     pub position: StoredLastPosition,
     pub house: Option<HouseId>,
 }
-
-/// Private implementing proposal, applied ONLY in isolated qualification databases.
-/// No migration installer, grants or runtime activation are provided here.
-pub const PROPOSED_SCHEMA: &str = "\
-ALTER TABLE game_character_last_positions \
- ADD COLUMN house_world_id UUID NULL, \
- ADD COLUMN house_key TEXT NULL, \
- ADD CONSTRAINT game_character_last_positions_house CHECK (\
-  (house_world_id IS NULL AND house_key IS NULL) OR \
-  (house_world_id IS NOT NULL AND house_key IS NOT NULL \
-   AND house_world_id=world_id AND game_house_scope_key_valid(house_key)));";
 
 /// SYNTHETIC INDEPENDENT GUARD DATA for isolated PostgreSQL STORAGE fixtures only.
 /// The sealed lifecycle/publication predicate is NOT admitted by this helper. Installing a claimed projection here
