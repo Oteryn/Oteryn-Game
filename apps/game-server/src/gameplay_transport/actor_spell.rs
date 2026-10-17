@@ -2049,9 +2049,11 @@ pub(crate) mod tests {
         let (mut runtime, actor, session) = runtime_with_player(tag);
         let at = |x, y| MovementLocalPosition { x, y, floor: 7 };
         runtime
-            .initialize_movement_test_position(actor, at(10, 10))
+            .initialize_pinned_test_position(actor, at(10, 10))
             .expect("player position");
-        let creature = runtime.admit_test_creature(at(11, 10)).expect("creature");
+        let creature = runtime
+            .admit_pinned_test_creature(at(11, 10))
+            .expect("creature");
         let mut states = ChannelSpellStates::default();
         states
             .initialize(&runtime, actor, session, facts, monk, now(0))
@@ -2882,7 +2884,7 @@ mod source_native_vitals_tests {
         let (mut runtime, actor, session) = runtime_with_capacity(tag, 4);
         assert!(
             runtime
-                .initialize_movement_test_position(
+                .initialize_pinned_test_position(
                     actor,
                     MovementLocalPosition {
                         x: 10,
@@ -2914,7 +2916,7 @@ mod source_native_vitals_tests {
                 .is_some()
         );
         let creature = runtime
-            .admit_test_creature(MovementLocalPosition {
+            .admit_pinned_test_creature(MovementLocalPosition {
                 x: 11,
                 y: 10,
                 floor: 7,
@@ -2929,7 +2931,7 @@ mod source_native_vitals_tests {
         let session = GameSessionId::decode(&raw).expect("source session");
         let reservation = r.reserve_fresh_session(session).expect("source admission");
         let actor = r.commit_fresh_session(reservation).expect("source slot");
-        r.initialize_movement_test_position(
+        r.initialize_pinned_test_position(
             actor,
             MovementLocalPosition {
                 x: 12,
@@ -3066,7 +3068,7 @@ mod source_native_vitals_tests {
     fn lethal_attribution_uses_actual_applied_hp_and_does_not_count_heal_or_replay() {
         let (mut r, mut s, a, g, c) = ready(0x44);
         let second = r
-            .admit_test_creature(MovementLocalPosition {
+            .admit_pinned_test_creature(MovementLocalPosition {
                 x: 12,
                 y: 10,
                 floor: 7,
@@ -3142,7 +3144,7 @@ mod source_native_vitals_tests {
     fn source_replay_substitution_and_cross_runtime_source_refuse_without_hp_or_ledger_write() {
         let (mut r, mut s, a, g, c) = ready(0x45);
         let second = r
-            .admit_test_creature(MovementLocalPosition {
+            .admit_pinned_test_creature(MovementLocalPosition {
                 x: 12,
                 y: 10,
                 floor: 7,
@@ -3297,7 +3299,7 @@ mod source_native_vitals_tests {
         use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
         let (mut r, mut s, a, g, c) = ready(0x4a);
         let final_source = r
-            .admit_test_creature(MovementLocalPosition {
+            .admit_pinned_test_creature(MovementLocalPosition {
                 x: 12,
                 y: 10,
                 floor: 7,
