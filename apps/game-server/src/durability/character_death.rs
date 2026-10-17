@@ -856,6 +856,36 @@ impl DurabilityRoot {
         .await
     }
 
+    /// CP D1425 (#2193 Codex P1 4303282822): the runtime owner's death settlement. With the
+    /// active generation's training formula for the request's content revision it settles
+    /// through [`Self::settle_player_death_with_training_and_build`], so a trained Character's
+    /// death applies its build-family loss instead of being refused. Without a formula, or with
+    /// one for another content revision, it keeps the legacy [`Self::settle_player_death`]:
+    /// an untrained Character still dies as before and a trained one is still refused, never
+    /// settled without its loss. The owner has no prepared training checkpoint here.
+    pub async fn settle_runtime_player_death<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: Option<&dyn BuildFormula>,
+    ) -> Result<CommittedCharacterDeath> {
+        match formula {
+            Some(formula) if formula.content_revision() == request.context.content => {
+                self.settle_player_death_with_training_and_build(
+                    sequencer, authority, node, fence, request, None, formula,
+                )
+                .await
+            }
+            _ => {
+                self.settle_player_death(sequencer, authority, node, fence, request)
+                    .await
+            }
+        }
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "the existing death/checkpoint inputs and optional build-aware formula"
@@ -2574,6 +2604,92 @@ mod death_build_postgres {
                 Err(CharacterProgressionError::InvalidInput)
             ));
             assert_eq!(snapshot(h).await?, before);
+            Ok(())
+        })
+    }
+
+    /// CP D1425 (#2193 Codex P1 4303282822): the runtime owner's settlement of a trained
+    /// Character with the current formula applies its build loss instead of being refused, a
+    /// retry replays the receipt, and the death's pending respawn is then consumed under the
+    /// next fence. No formula, or one for another content revision, keeps the legacy refusal
+    /// and writes nothing.
+    #[test]
+    fn native_runtime_death_of_trained_character_settles_loss_and_respawns() -> TestResult {
+        run("death_build_runtime", async |h| {
+            let trained = train(h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let sequencer = CharacterRevisionSequencer::new();
+            let untouched = snapshot(h).await?;
+            let stale = Table([17; 32], "stale-content");
+            for formula in [None, Some(&stale as &dyn BuildFormula)] {
+                assert!(matches!(
+                    h.root
+                        .settle_runtime_player_death(
+                            &sequencer,
+                            &authority,
+                            &h.node,
+                            fence(2)?,
+                            request(95)?,
+                            formula,
+                        )
+                        .await,
+                    Err(CharacterProgressionError::InvalidInput)
+                ));
+                assert_eq!(snapshot(h).await?, untouched);
+            }
+            let death = request(96)?;
+            let committed = h
+                .root
+                .settle_runtime_player_death(
+                    &sequencer,
+                    &authority,
+                    &h.node,
+                    fence(2)?,
+                    death.clone(),
+                    Some(&TABLE),
+                )
+                .await
+                .map_err(debug)?;
+            let build = committed
+                .build_loss
+                .as_ref()
+                .ok_or("missing build payload")?;
+            assert_eq!(build.before, trained);
+            assert_eq!(build.after, DurableBuildState::default());
+            assert_eq!(build.formula_digest, TABLE.digest());
+            assert_eq!(h.root_revision().await?, "3");
+            assert_eq!(h.count("game_character_death_receipts").await?, 1);
+            assert_eq!(h.count("game_character_pending_respawns").await?, 1);
+            assert_eq!(
+                h.root
+                    .settle_runtime_player_death(
+                        &sequencer,
+                        &authority,
+                        &h.node,
+                        fence(3)?,
+                        death.clone(),
+                        Some(&TABLE),
+                    )
+                    .await
+                    .map_err(debug)?,
+                committed
+            );
+            let respawned = h
+                .root
+                .consume_pending_respawn(&authority, &h.node, fence(3)?, Some(death.occurrence))
+                .await
+                .map_err(debug)?
+                .ok_or("missing pending respawn")?;
+            assert_eq!(respawned.occurrence, death.occurrence);
+            assert_eq!(respawned.respawn_position, death.respawn_position);
+            assert_eq!(h.count("game_character_pending_respawns").await?, 0);
+            assert_eq!(h.count("game_character_death_receipts").await?, 1);
+            assert_eq!(h.root_revision().await?, "3");
             Ok(())
         })
     }

@@ -105,11 +105,12 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: "CP D1372 takeover: main ce7bccab merged into the branch; owned writer/domain/sequencer complete; merge conditions recorded below"
+last_progress: "CP D1425: main f094e032 merged; mod.rs::commit_death settles through the build-aware path (condition 1, Codex P1 4303282822)"
 status: waiting
 branch: skeleton/death-ml-loss-1
-blocker: "LOOP-PROGRESS-1 not merged; actor build rebase after death and pre-death training drain are unowned (training_save.rs, spell/mana_training.rs); mod.rs caller is slot-only"
-next_action: "CP allocates the training-owner rebase hunk and the mod.rs slot; then apply the recorded mod.rs proposal in this PR's final commit"
+merge_authority: CP_ONLY
+blocker: "conditions 2 (actor build re-base after death) and 3 (drain before death) need unowned spell/cast.rs or spell/mana_training.rs; LOOP-PROGRESS-1 not merged"
+next_action: "CP allocates the spell-state re-base hunk (condition 2), then the pre-death drain in commit_death (condition 3)"
 ```
 
 ## Local choreography preparation (2026-10-15, draft #2193)
@@ -384,3 +385,55 @@ merge-queue PostgreSQL 17.6 lane runs that target with a database URL. A new
 Acceptance criterion 1 is met at the writer level only (PostgreSQL cases). It
 stays open until conditions 1-3 are integrated. Status stays `waiting`. This
 record is not archived, and no ready, queue or merge action is taken.
+
+## CP D1425 bounded checkpoint (2026-10-17)
+
+MERGE_AUTHORITY: CP_ONLY. CP D1425 (#2131) granted one slot-only hunk in
+`gameplay_transport/mod.rs` at the `commit_death` call site. The CP worker
+merged protected main `f094e0320289975a220852ff60ca7baf6d234ff4` with a merge
+commit (no conflicts, no rebase or force).
+
+**Condition 1: done.** `commit_death` now calls the new owned
+`DurabilityRoot::settle_runtime_player_death` with the active generation's
+`native_gameplay().training_formula()`. When that formula's content revision
+equals the request's progression content, the death settles through
+`settle_player_death_with_training_and_build` (training `None`) and applies the
+build loss. With no formula, or one for another content revision, it keeps the
+legacy `settle_player_death`, which still refuses a trained death and never
+settles it without its loss. This addresses Codex P1 thread
+`PRRT_kwDOT8SzxM6thk84`. The D1105 test and every other test are unchanged.
+
+New PostgreSQL case
+`native_runtime_death_of_trained_character_settles_loss_and_respawns`
+(inline `death_build_postgres`): it trains the Character, then shows the legacy
+refusal with no formula or a stale one (writes nothing). It then settles through
+the runtime entry with the current formula (build lowered to the seed, receipt
+and pending respawn written), replays on retry, and consumes the pending respawn
+under the next fence. It drives the durable entry `commit_death` calls, not the
+composed Channel owner. A composed owner test (`respawn_after_death`) needs
+unowned paths: a new gameplay_transport PostgreSQL fixture, its mount, and the
+`bundle_gates_tests.rs` construction counts.
+
+**Condition 2: blocked (unowned).** `PlayerSpellState` keeps `training`,
+`training_checkpoint`, `training_payment`, `facts` and `owned_skills` as
+`pub(super)` in `spell/cast.rs`. `respawned()` re-bases none of them. A new
+spell-module method must reset `LiveManaTraining` and the magic-level fact from
+`CommittedCharacterDeath::build_loss.after` and retire any pre-death checkpoint.
+Until it lands, a trained actor's next training save after a lowering death
+returns `Unknown` (`BuildStateMismatch`). Its death no longer blocks, but that
+actor's later training saves and actor-end release retry.
+
+**Condition 3: not applied.** A forced `save_spell_training(.., true)` before
+the settle fits in `mod.rs`, but `settle_death` has no actor, and without
+condition 2 a second death would hit the stale baseline and never settle. It
+stays with the LOOP-PROGRESS-1 single-slot drain.
+
+Validation on this head (Molehill-PC, shared PostgreSQL 17.6 via
+`in-pg-netns.sh`): `cargo fmt --all --check` and strict all-target package
+Clippy pass. Package lib tests without a PostgreSQL URL: 3399 passed, 0 failed,
+29 ignored. `cargo test --lib death` with the URL: 128 passed, 0 failed,
+3 ignored, including all six `death_build_postgres` cases.
+Governance validation and its 124 unit tests pass.
+
+Status stays `waiting`. The record is not archived. No ready, queue or merge
+action is taken; CP alone decides merge.
