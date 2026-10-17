@@ -1,14 +1,14 @@
-# BED-REGEN-1 — bed vitals and food settlement (skeleton task record)
+# BED-REGEN-1 — native settlement integration and producer gates
 
 ```yaml
 task_id: BED-REGEN-1
-title: "BED-REGEN-1: bed vitals and food settlement (skeleton)"
+title: "BED-REGEN-1: native settlement integration and producer gates"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/bed-regen-1
-base_sha: 5742f30f3
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -27,6 +27,47 @@ slot_only_paths:
   - "none expected (no migration, no registry)"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## 2026-10-17 D1355 producer disposition — NOT_IMPLEMENTED
+
+Predecessor after CP's ordinary main merge:
+`361181051c9b7aba8e8764debc13914e0ba2c6e9`. The owned authoring release is
+[D1345](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418).
+This PR still contains no `regen.rs` or `regen_tests.rs`; this update records the
+concrete native integration boundary and CP's producer allocation. It does not
+claim an implemented or tested regeneration feature.
+
+Fresh producer readback:
+
+| Producer | Observed head | Required result |
+|---|---|---|
+| BED #2147 | `b1375be27cf817df99c2e8d7781b6df88523f79b` | Same-TX eligible sleeper consumption bound to the previous lease and actual latest Logout marker; raw stored rows alone are insufficient. |
+| OFFLINE #2174 | `b5576758e5309dffdd8993bd9956e3c798e985ad` | The actual `native_marker_writer::apply_marker` transaction, retained build/fence authority, locked clocks, replay and marker owner. |
+| Durable vitals #2196 | `6fbd70254f323d29a9bad15db74ea0adb9d55a92` | Actual food, HP/mana and soul before-values/participant in that same physical transaction. The existing pure soul policy does not provide durable soul. |
+| Active House placement #2167 | `061c16a6f4ac5f337c56f1189421fa3ecb0cd127` | Full active-bundle House producer and its currentness binding for #2147's real bed resolver. |
+
+[D1355](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098)
+assigns durable soul to #2196 and explicitly amends #2167 to provide the full
+active-bundle producer; scoped-overlay qualification alone is insufficient.
+It grants #2147 the BED caller hook inside #2174's `apply_marker` after the
+existing plan and fence locks and before `write_offline_marker`, only after
+#2174 and #2196 merge. #2148 consumes this actual BED settlement path after
+#2147 and #2196; it adds no parallel transaction, authority callback or calculator.
+
+At the native call, BED0's accepted arithmetic uses durable timestamps and state:
+eligible sleep is capped by the owner's offline duration and any first freed
+timestamp; food-backed HP/mana points are `floor(min(food_s, sleep_s) / 30)`, food
+is debited by `30 * points` even at capped vitals, and soul gains
+`floor(sleep_s / 900)` up to its actual maximum. BED's Unix milliseconds and
+OFFLINE's microseconds require checked conversion and one defined flooring step.
+The latest Logout and immediate predecessor are actual owner facts, never lease
+generation minus one. Until the complete durable food/vitals/soul gate exists,
+BED0 permits neither a partial vitals/soul award nor a food debit.
+
+Native implementation, native compile/test discovery, PostgreSQL execution and
+restart qualification remain NOT_RUN/NOT_IMPLEMENTED. The acceptance checklist
+stays open. All older allocation and readback sections below are historical and
+must not be read as the current producer heads or a continuing authoring hold.
 
 ## Goal
 
