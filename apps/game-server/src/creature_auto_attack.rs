@@ -1228,7 +1228,7 @@ mod tests {
     ) {
         let (mut runtime, target, session) = runtime_with_player(0x71);
         runtime
-            .initialize_movement_test_position(
+            .initialize_pinned_test_position(
                 target,
                 MovementLocalPosition {
                     x: 100,
@@ -1247,7 +1247,7 @@ mod tests {
             })
             .expect("native source health");
         let issuer = runtime
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: if far { 110 } else { 101 },
                     y: 100,
@@ -1696,7 +1696,7 @@ mod tests {
             .expect("reserve");
         let persistent = runtime.commit_fresh_session(reservation).expect("commit");
         runtime
-            .initialize_movement_test_position(
+            .initialize_pinned_test_position(
                 persistent,
                 MovementLocalPosition {
                     x: 100,
@@ -1720,7 +1720,7 @@ mod tests {
         )
         .expect("native melee");
         let issuer = runtime
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: 101,
                     y: 100,
@@ -1779,7 +1779,7 @@ mod tests {
                 .commit_fresh_session(reservation)
                 .expect("turnover commit");
             runtime
-                .initialize_movement_test_position(
+                .initialize_pinned_test_position(
                     target,
                     MovementLocalPosition {
                         x: 100,
