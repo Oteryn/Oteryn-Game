@@ -677,17 +677,16 @@ mod tests {
         }
     }
 
-    fn chase_fixture() -> Result<
-        (
-            ChannelRuntimeV1,
-            crate::foundation::ScopeRuntimeFence,
-            ExactActorRef,
-            ExactActorRef,
-            EngineeringStaticCellScope,
-            EngineeringStaticCellIndex,
-        ),
-        Box<dyn Error>,
-    > {
+    type ChaseFixture = (
+        ChannelRuntimeV1,
+        crate::foundation::ScopeRuntimeFence,
+        ExactActorRef,
+        ExactActorRef,
+        EngineeringStaticCellScope,
+        EngineeringStaticCellIndex,
+    );
+
+    fn chase_fixture() -> Result<ChaseFixture, Box<dyn Error>> {
         let world = WorldId::decode(&{
             let mut id = [0; 16];
             id[6] = 0x70;
