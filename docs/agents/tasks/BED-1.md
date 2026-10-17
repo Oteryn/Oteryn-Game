@@ -4,11 +4,11 @@
 task_id: BED-1
 title: "BED-1: house beds: sleeper, bed USE, owner wake, settlement"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: BOUNDED_CHECKPOINT
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/bed-1
-base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
+base_sha: f094e0320289975a220852ff60ca7baf6d234ff4
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -24,12 +24,52 @@ owned_paths:
   - "apps/game-server/src/durability/bed_sleeper.rs (new)"
   - "apps/game-server/src/house_bed/*_tests.rs"
   - "docs/agents/tasks/BED-1.md"
+  - "apps/game-server/src/lib.rs (one line: pub mod house_bed)"
 slot_only_paths:
   - "apps/game-server/migrations/00NN_bed_sleepers.sql"
   - "apps/game-server/src/gameplay_transport/item_use.rs / connection.rs (bed USE arm)"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (if Reg confirmed)"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## 2026-10-17 CP bounded checkpoint — mounted storage leaf
+
+MERGE_AUTHORITY: CP_ONLY. This checkpoint makes #2147 a mergeable storage leaf.
+It does not finish BED-1.
+
+- Merged main `f094e032` (merge commit, no rebase).
+- Mounted the leaf: `apps/game-server/src/house_bed/mod.rs` (new) and
+  `pub mod house_bed;` in `lib.rs`. `house_bed/mod.rs` path-mounts
+  `durability/bed_sleeper.rs` as `house_bed::bed_sleeper`, so the standalone
+  `durability/mod.rs` path loads in `tests/` do not compile it (same pattern
+  as `creature_source_items`). CI now compiles, lints and runs the 13 cases.
+- PostgreSQL cases follow the repository harness convention: without
+  `OTERYN_TEST_POSTGRES_ADMIN_URL` each case prints `PRE-ROUTING / NONCANONICAL`
+  and returns, as `bestiary_postgres_harness::configured_admin` does. The PR
+  unit lane has no PostgreSQL; the merge-group lanes set the URL.
+- The schema is still the private `PRIVATE_SLEEPER_SCHEMA_SQL`, applied only by
+  the test fixture. No migration, grant, registry, wiring or runtime caller is
+  added. No migration number is used.
+
+Validation (Molehill-PC, shared target, `cargo fetch --locked`, D1420 touch,
+D1329 `in-pg-netns.sh` against shared PostgreSQL 17.6):
+- `cargo fetch --locked`: pass. `cargo fmt --all --check`: pass.
+- `cargo clippy -j 5 --locked -p oteryn-game-server --all-targets -- -D warnings`:
+  pass. A first run with `pub mod bed_sleeper;` in `durability/mod.rs` failed
+  E0432 in five `tests/` crates that path-load `durability/mod.rs`; the mount
+  moved to `house_bed/mod.rs`.
+- `cargo test -p oteryn-game-server --lib house_bed::` without the admin URL:
+  13 passed, 0 failed (12 PostgreSQL cases report PRE-ROUTING).
+- `in-pg-netns.sh cargo test -p oteryn-game-server --lib house_bed:: --
+  --test-threads=4`: 13 passed, 0 failed (12 on PostgreSQL 17.6, one pure).
+- `python3 tools/agents/validate_governance.py`: passed; `tools/agents/tests`
+  unittest: 124 OK.
+
+Still open (later BED-1 PRs, slot-only): installed migration, sleep USE through
+the fenced logout path, logout marker, owner-wake and bed-removed writers,
+admission settlement, head/foot resolver, ACL/Premium/reach checks,
+restart and race tests. Blockers: #2174 (OFFLINE marker), #2196, #2167,
+HOUSE-RUNTIME-1a/1b/1c, HOUSE-VIEW-1.
 
 ## 2026-10-17 raw BedKey occupancy — source checkpoint, native held
 

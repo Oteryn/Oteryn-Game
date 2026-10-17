@@ -1,6 +1,6 @@
 //! Real private-schema tests. No marker, access grant or gameplay sleep is simulated.
 use super::*;
-use crate::durability::bed_sleeper::{
+use crate::house_bed::bed_sleeper::{
     PRIVATE_SLEEPER_SCHEMA_SQL, SleeperReadError, read_bed_occupancy, read_sleeper,
     read_sleeper_for_update,
 };
@@ -24,9 +24,11 @@ fn debug(error: impl std::fmt::Debug) -> Box<dyn std::error::Error> {
 }
 
 fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) -> TestResult {
-    let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").map_err(|_| {
-        "PostgreSQL sleeper case requires OTERYN_TEST_POSTGRES_ADMIN_URL; case was not executed"
-    })?;
+    // Repository harness convention: without the admin URL the case reports
+    // PRE-ROUTING / NONCANONICAL and returns; CI's PostgreSQL lanes set it.
+    let Some(url) = crate::bestiary_postgres_harness::configured_admin() else {
+        return Ok(());
+    };
     if !url.starts_with("postgresql://oteryn_test_admin:")
         || !url.ends_with("@127.0.0.1:5432/postgres")
         || tag.is_empty()
@@ -124,6 +126,9 @@ async fn insert(
     reason = "exercise panic cleanup with a real disposable PostgreSQL database"
 )]
 fn private_case_database_is_removed_after_error_and_assertion_panic() -> TestResult {
+    let Some(url) = crate::bestiary_postgres_harness::configured_admin() else {
+        return Ok(());
+    };
     for should_panic in [false, true] {
         let database = std::cell::RefCell::new(None);
         let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -158,7 +163,6 @@ fn private_case_database_is_removed_after_error_and_assertion_panic() -> TestRes
             .enable_all()
             .build()?;
         let exists = runtime.block_on(async {
-            let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
             let mut admin = PgConnection::connect(&url).await?;
             let exists: bool =
                 sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)")
