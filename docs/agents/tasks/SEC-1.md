@@ -4,7 +4,7 @@
 task_id: SEC-1
 title: "SEC-1: server-side client integrity and anti-bot checks (skeleton)"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: BOUNDED_CHECKPOINT
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/sec-1
@@ -19,6 +19,7 @@ owner: "/root/gm_compile_fix (sole allocated leaf writer; family lead /root / ch
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-17
+merge_authority: CP_ONLY
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/SEC-1.md
@@ -48,7 +49,28 @@ Runtime wiring remains **REPORT_ONLY** until the owning prerequisite PRs merge.
 This allocation supersedes earlier record-only/source-allocation statements below
 only for these pure leaves. CP retains readiness, wiring allocation and merge authority.
 
-## Current published-head checkpoint — 2026-10-17, NOT_FULLY_QUALIFIED
+## Bounded checkpoint — 2026-10-17 (CP takeover, D1379)
+
+**MERGE_AUTHORITY: CP_ONLY**
+
+This PR is offered for merge as a bounded checkpoint of the five pure, unregistered
+SEC-TRUST-1/SEC-REL-1 policy leaves plus this record. It ends no child task and
+changes no runtime behaviour: the `security` module is not declared in `lib.rs`,
+so nothing in the server can call it. Runtime wiring stays **REPORT_ONLY**; the
+D1326 no-grant decision and the open boundaries listed below are unchanged.
+
+- Branch merged with `main` (merge commit, no rebase); no conflicts.
+- Validation on the merged tree (Molehill-PC, shared cache): `cargo fmt --all --check`,
+  `rustfmt --edition 2024 --check` on the five leaves, and
+  `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings` pass.
+  With a temporary, uncommitted `#[cfg(test)] mod security;` in `lib.rs`, strict
+  Clippy passes and `cargo test -p oteryn-game-server --lib security::` passes 17/17.
+- PostgreSQL cases: not applicable (no durable state, SQL or migration).
+- Not in scope (separate CP allocation needed): module registration, cryptographic
+  verification, trust store/fetch/clock latch, signed artifact schema, admission,
+  challenge, telemetry and the SEC children.
+
+## Historical published-head checkpoint — 2026-10-17, NOT_FULLY_QUALIFIED
 
 Evidence head: `dc8da517bf2e8962d7dd73f05115e5f7a7d2df97`, the published
 doc-only successor of `3a039e095c28856a4bdb5cbed8c4237e90e60386`.
