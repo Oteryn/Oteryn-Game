@@ -441,7 +441,21 @@ D1261 permits one coherent checkpoint successor after Root review; this work doe
 
 ## Reproducible D1384 source checkpoint
 
-This complete UTF-8 source checkpoint is retained as data inside the owned task card. Its exact length is 17946 bytes and SHA-256 is `60e1a95a82d71e4cf4ea45f3ae6a51d808be04ea5bf4163aed62f2dd98cb9d5a`. The source inventory, complete patch and analysis/review can be recovered from it; the recovery instructions do not authorize applying a held runtime change.
+This complete UTF-8 source checkpoint is retained in the reversible text encoding described below inside the owned task card. Its exact length is 17946 bytes and SHA-256 is `60e1a95a82d71e4cf4ea45f3ae6a51d808be04ea5bf4163aed62f2dd98cb9d5a`. The source inventory, complete patch and analysis/review can be recovered from it; the recovery instructions do not authorize applying a held runtime change.
+
+### Reversible archive encoding
+
+The archived Markdown below uses one reversible escape to keep unified-diff context lines compatible with the repository whitespace gate. A standalone line `\x20` represents exactly one ASCII space followed by a newline. Decode those lines before checking the original archive or patch hashes, or recovering the held source. Every other archive byte, including the final newline, is unchanged. This encoding grants no permission to apply the archived runtime changes.
+
+For a UTF-8 string `card` containing this task card, the original artifact can be recovered with:
+
+```python
+archive = card.split("`````markdown\n", 1)[1].split("`````", 1)[0]
+archive = "".join(
+    " \n" if line == "\\x20\n" else line
+    for line in archive.splitlines(keepends=True)
+)
+```
 
 <!-- card-artifact:wire2145-d1384-source-checkpoint.md -->
 `````markdown
@@ -533,7 +547,7 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 @@ -230,6 +233,80 @@
          .map_err(HouseAclHandlerError::Writer)
  }
- 
+\x20
 +/// Immutable command/fence binding failures, not current ownership or date decisions.
 +#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 +pub(crate) enum HouseMoveOutRequestError {
