@@ -8,6 +8,10 @@ pub mod currency;
 pub mod death;
 pub mod equipment;
 pub mod forge_dust;
+#[cfg(test)]
+pub(crate) mod imbuement;
+#[cfg(test)]
+pub(crate) mod imbuement_checkpoint;
 pub mod premium;
 pub mod progression;
 pub mod timed_item;

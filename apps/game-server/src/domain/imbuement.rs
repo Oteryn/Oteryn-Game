@@ -88,8 +88,8 @@ impl SlotRecord {
             || !reference_present(&binding.key)
             || !reference_present(&binding.content_revision)
             || !reference_present(&binding.category)
-            || super::validate_uuid_v7(&binding.applying_occurrence).is_err()
-            || super::validate_uuid_v7(&binding.transaction_id).is_err()
+            || ItemInstanceId::from_bytes(binding.applying_occurrence).is_err()
+            || ItemInstanceId::from_bytes(binding.transaction_id).is_err()
         {
             return Err(StateError::InvalidBinding);
         }
@@ -136,6 +136,7 @@ pub(crate) fn check_target_slot(
     for row in rows {
         let binding = row.binding();
         if binding.item != item
+            || binding.slot >= slots
             || !occupied.insert(binding.slot)
             || !categories.insert(binding.category.as_str())
         {

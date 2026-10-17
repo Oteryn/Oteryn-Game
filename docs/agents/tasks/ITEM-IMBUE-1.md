@@ -523,3 +523,137 @@ overlay stage is the qualification route; the old recipe's22-count binding needs
 an explicitly updated23-case input, with no runner changed in this authoring.
 D1122 permits the disclosed checkpoint on the existing draft. Shared fee/audit
 and native elapsed source remain gated by2197→2155. No ready/merge.
+
+### Retained-slot snapshot repair (2026-10-17, authoring)
+
+Fresh-read input is draft #2144 at
+`4d0da90807c4a886008f738db221bc2aedfc7933`. The structural target-slot helper
+checked each retained row against the global three-slot ceiling when constructed,
+but did not compare it with the item's supplied declared slot count. Consequently,
+a one-slot item with a retained slot-1 or slot-2 row could pass a request for free
+slot 0 and a different category. A zero-time retained row had the same gap.
+
+The helper now refuses the complete snapshot with `InvalidSnapshot` whenever any
+retained row's index is outside the supplied declared slot count. This only
+rejects a structurally inconsistent apply input; it does not delete, rebind or
+reinterpret retained rows. D1163's all-tier eligibility, unresolved Content/quest
+requirements, Premium subchecks and checkpoint storage are unchanged.
+
+One new original native regression covers every out-of-range retained index for
+declared counts 0, 1 and 2, at zero, one and maximum remaining milliseconds. Valid
+highest retained indices for two- and three-slot items continue to allow another
+free slot. There are now 24 authored cases (14 pure and 10 PostgreSQL).
+The RED input combines the unchanged input production files with the new test;
+the GREEN input adds only the one-predicate domain repair. Native RED/GREEN,
+Rustfmt, strict Clippy, full package and PostgreSQL 17.6 execution are pending.
+Historical results above do not qualify this increment. Whitespace checking of
+both local patches produced no diagnostics. Independent nonauthor source review
+found no blocking issue in the executable delta: domain SHA256
+`cdbfde1af5d048d850deb9ad2e87c6227800c203d199a6160e0a308c5bc63a97`,
+test SHA256 `fbde3926f956d9c20b1c0af619e49dc5d0f9fe03384e3132c2719d33510cf40b`.
+This source review is not native execution or final published-head review.
+
+The dependency observation is refreshed without treating a merged PR as runtime
+coverage: #2155 merged as `6db7da23607849d0cb72d82897600fc05e1c99f9`, but its
+timed-repair planner and native coverage do not provide Imbue elapsed provenance.
+#2197 was still an open draft at `6be32b062b741df8070d49d4e2c79dc197271ffe` on
+this inspection. The current shared fee API remains `CharmUnassign`-only and
+requires CharacterRevision composition; it cannot serve the accepted item-only
+Imbue fee/audit transaction unchanged. Those concrete owner integrations, schema,
+registration, effects and wire work remain open, as do all family acceptance
+criteria. No production authority, source admission or runtime activation is added.
+
+### Permanent native test registration (2026-10-17, authoring)
+
+This continuation keeps the retained-slot repair above and makes its tests part
+of the normal repository targets. The current user instruction to complete this
+draft and the lead's explicit single-writer allocation authorize the bounded
+test-root changes. D1160 permits own registrations; the lead also allocated the
+one existing PostgreSQL domain reexport replacement needed to preserve actual
+native types while adding the uninstalled Imbuement modules. This is a test
+composition change, with no production module or schema installation.
+
+The unchanged pure `CheckpointBatch` planner is extracted from the SQL source
+into `domain/imbuement_checkpoint.rs`. `domain/mod.rs` registers that module and
+the raw Imbuement model only under `cfg(test)`. `lib.rs` mounts the 14 pure cases
+from `durability/imbuement_tests.rs`; it does not mount the PostgreSQL fixtures
+or SQL owner. Every original assertion remains. The existing structural case
+additionally checks both occurrence fields for nil and the accepted/rejected
+UUID version and variant boundaries, retaining the 14-case count.
+
+`SlotRecord::new` now calls the actual public native
+`ItemInstanceId::from_bytes` constructor for UUID structural validity. The
+native constructor delegates directly to the same unchanged
+`validate_uuid_v7` function and then wraps the bytes; checking its error result
+therefore preserves the former validity predicate. This does not grant item
+custody or derive any current authority. The retained-slot fix remains the
+separate `binding.slot >= slots` snapshot rejection.
+
+The existing `character_authority_postgres` target registers the exact private
+storage source and its 10 original PostgreSQL cases. Its domain namespace
+reexports all original `production_server::domain` public items, retaining the
+same native type identities, and adds only the two owned Imbuement modules.
+The target retains its existing real Item TRANSFER and Bestiary harnesses,
+foundation, equipment and recovery owners. No stand-in methods or authority
+types are introduced. All SQL, locking, revalidation and savepoint bodies stay
+unchanged. Five raw-row fixture functions are shared without changing their
+bodies or values; they remain DATA, never elapsed or current-fence evidence.
+
+The canonical target is also selected by the ordinary integration shard without
+a database. Its Imbuement wrapper therefore follows the existing native
+`configured_admin` contract: an absent route emits PRE-ROUTING/NONCANONICAL plus
+`IMBUE-STORAGE-PG NOT_RUN`, and does not execute database work. This is not a
+PostgreSQL PASS. The dedicated canonical job supplies the route; each actual
+case still uses the real harness and asserts server version `170006`. An
+invalid configured route or PostgreSQL version continues to fail. No test is
+marked ignored and no feature or workflow gate is added.
+
+The shared raw model has a narrow test-only `dead_code` expectation in the
+PostgreSQL namespace because its structural/access helpers execute in the
+library. Existing fixture `expect_used` context is retained. No repository
+allowlist, duplicate-source guard or production lint changes. The pure and
+PostgreSQL test-bearing files each have one intended harness; shared model,
+planner and fixture files contain no tests.
+
+This assembled source supersedes the earlier unregistered candidate for new
+qualification. Native slot RED/GREEN, all 14 pure cases, all 10 PostgreSQL 17.6
+cases, normal package, fmt, strict all-target Clippy, Cargo dep-info duplicate
+guard and exact-head CI are pending. Source/body/hash checks do not establish
+runtime PASS. Elapsed provenance, audited fee/apply/clear/expiry, Content,
+runtime activation and full family acceptance remain outside this checkpoint.
+
+### D1329 native registration and slot repair qualification (2026-10-17)
+
+This receipt supersedes the pending native status in the authoring checkpoint
+above. The exact 10 non-card source files were qualified on Molehill-PC with
+Rust 1.95.0. Workspace formatting, governance and all 124 governance cases,
+strict all-target Clippy, and the actual Cargo dep-info duplicate-source guard
+passed. The guard observed 55 test-harness units and the existing 11 exceptions;
+no exception was added. A manual Debug implementation reads the two preserved
+error payloads in the newly compiled private PG owner; enum variants, conversion,
+SQL, locks, fences and savepoint behavior are unchanged.
+
+The retained-slot regression was executed with only its slot predicate removed:
+one intended failure, exit 101. Restoring the exact GREEN model then passed all
+14 pure cases and all 10 existing native PostgreSQL cases, with ten observed
+server_version_num=170006 markers. No case was ignored, skipped or counted as PG
+coverage from the absent-URL route. The runner verified all 11 frozen files and
+restored the exact complete candidate after RED.
+
+| Receipt | Result | SHA-256 of complete log |
+| --- | --- | --- |
+| Slot RED | Intended regression reproduced | `3e08530c4eb17bba86246ba0c909d837e29f78d14b08e09a606a6b4a8896105d` |
+| Pure GREEN | 14 passed, 0 failed, 0 ignored | `0e61ce653259918f4518dec68bed838a27c418c87138be662920ce9688c39ae2` |
+| Native PG GREEN | 10 passed, 0 failed, 0 ignored | `4606757611d368297271a202ce24828ce0ccf599ddd71de19303307ae654a411` |
+| Actual duplicate-source guard | PASS, 55 harness units | `466c2037f51ba756d6b9e0f50a3b3d475bb97def0476b5ad19a99d8ef670b58e` |
+
+D1329 execution used locked dependency fetch before the unchanged owner
+in-pg-netns.sh helper, then its isolated namespace forwarding to the existing
+shared PostgreSQL 17.6 on host 127.0.0.1:55432. This checkpoint started no database
+server or container. Full normal-package execution is still running at this
+publication checkpoint; the new commit's CI is not yet qualified.
+
+The separate native Expire implementation remains a reviewed continuation with
+its own unexecuted source packet. Its results are not included above. Apply,
+Clear, genuine elapsed provenance, Content and runtime admission and the final
+composed migration binding remain distinct completion dependencies.
