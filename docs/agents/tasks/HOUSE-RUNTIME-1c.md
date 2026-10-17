@@ -544,3 +544,113 @@ No Cargo/rustc/heavy build or PostgreSQL execution is authorized here under D101
 Only formatter, governance and static scope/whitespace checks qualify this repair;
 the current source-bound handoff is `/workspace/house-family-handoff/runtime.json`.
 There is no commit, worker push, schema installation, runtime activation or merge.
+
+## 2026-10-17 source proposal recovery archive — NOT_APPLIED
+
+At the owner's request, the previously external source proposal is preserved
+below inside this task record, rather than only in a local handoff or PR comment.
+The `patch_lines` array joins to the original UTF-8 patch bytes and SHA256.
+The original base and historical source-only review are retained for recovery;
+they do not qualify the current branch or authorize applying shared hunks.
+Recheck the actual successor source and obtain the required CP shared slot,
+migration allocation and independent review before implementation.
+**Shared proposal NOT_APPLIED; native execution NOT_RUN; runtime acceptance
+and all existing integration gates remain unchanged.** This appendix changes
+only this owned task record and introduces no executable implementation.
+
+Previous reviewable handoff: https://github.com/Oteryn/Oteryn-Game/pull/2166#issuecomment-6230752861.
+
+```json
+{
+  "archive_version": 1,
+  "owning_pr": 2166,
+  "status": "SOURCE_PROPOSAL_NOT_APPLIED_NOT_RUNTIME_QUALIFIED",
+  "original_source_sha": "1ea22dd82bcee468dc06b82011a42191483c2237",
+  "patch_sha256": "9e4ea3c3ff0fb00b7d62c226c9cc6067b6c866aa7881afafef558488628b0b0e",
+  "patch_lines": [
+    "--- a/apps/game-server/src/durability/character_last_position.rs\n",
+    "+++ b/apps/game-server/src/durability/character_last_position.rs\n",
+    "@@ -345,9 +345,9 @@\n",
+    "         \"INSERT INTO game_character_last_positions AS p \\\n",
+    "             (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest, \\\n",
+    "              map_revision_digest, server_artifact_digest, character_lease_generation, \\\n",
+    "-             write_sequence, health, mana) \\\n",
+    "+             write_sequence, health, mana, house_world_id, house_key) \\\n",
+    "          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, $7, $8, \\\n",
+    "-                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12) \\\n",
+    "+                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12, NULL, NULL) \\\n",
+    "          ON CONFLICT (character_id) DO UPDATE SET \\\n",
+    "              world_id = EXCLUDED.world_id, tile_x = EXCLUDED.tile_x, \\\n",
+    "              tile_y = EXCLUDED.tile_y, tile_floor = EXCLUDED.tile_floor, \\\n",
+    "@@ -356,7 +356,8 @@\n",
+    "              server_artifact_digest = EXCLUDED.server_artifact_digest, \\\n",
+    "              character_lease_generation = EXCLUDED.character_lease_generation, \\\n",
+    "              write_sequence = EXCLUDED.write_sequence, \\\n",
+    "-             health = EXCLUDED.health, mana = EXCLUDED.mana \\\n",
+    "+             health = EXCLUDED.health, mana = EXCLUDED.mana, \\\n",
+    "+             house_world_id = NULL, house_key = NULL \\\n",
+    "          WHERE (p.character_lease_generation, p.write_sequence) \\\n",
+    "              < (EXCLUDED.character_lease_generation, EXCLUDED.write_sequence)\",\n",
+    "     )\n"
+  ],
+  "historical_source_manifest": {
+    "status": "DEFERRED_EXACT_HUNKS_PROPOSAL_NOT_APPLIED",
+    "pr": 2166,
+    "source_sha": "1ea22dd82bcee468dc06b82011a42191483c2237",
+    "cp": "D1168/6225337534",
+    "shared_order": "after2163->2197->A2; do not merge/rebase/apply shared paths now",
+    "source_preimage_sha256": {
+      "apps/game-server/src/durability/character_last_position.rs": "5fdf2ef1bb0c88b028a6292b6733547911e813119efcb03e38737b4b33439056",
+      "apps/game-server/src/foundation/runtime_actor_death.rs": "cb9d6566a783694741cf28f99fa2cc9fba0dbdbee3f2a496d5cd44d15f7f0937",
+      "apps/game-server/src/durability/character_death.rs": "ec04c1cf62f3c756f295e4ccc9ba7c29c926c1c2b478334dd5e1fb20f02a0ae3",
+      "apps/game-server/src/durability/fresh_admission.rs": "7c23a211c825016a79c7d48bee5233a4bdbe257c956491a268836bcfe8c08a7d",
+      "apps/game-server/src/gameplay_transport/mod.rs": "062f34bbb6dee8a0db205333f9a1e8f83f9d9f1279f671410df6723a3629fc4e",
+      "apps/game-server/src/durability/character_position_house.rs": "62c8555b411796a67f40be3e25b74f6ecdbd4900f40bbbf1b5811932d9bd6fce"
+    },
+    "proposed_after_sha256": "b8e4ad7b2c3842cd8acbeff33747d61e850a7ce1b913845387fe0d8a7d177882",
+    "patch_sha256": "9e4ea3c3ff0fb00b7d62c226c9cc6067b6c866aa7881afafef558488628b0b0e",
+    "scope": "Only original shared upsert column/value/SET list: both House columns NULL in same INSERT or strictly-key-winning conflict UPDATE as original cell/vitals, no other SQL statement/parameter/fence/API changes",
+    "equal_or_lower_order": "Original conflict WHERE unchanged; therefore no cell/vitals/House binding changes",
+    "single_and_batch": "Original write_character_last_position and write_periodic used by batch already validate true Channel+sameWorld then call this upsert; no extra caller edits needed",
+    "terminal": "Existing write_final_position only forwards sameWorld Channel writes to same upsert inside releaseTX; actual terminal caller hunk remains after2187 perD1168",
+    "respawn": "No foundation/runtime_actor_death.rs hunk: it mutates only in-memory Channel carrier and owns no durable row/TX/orderkey. Existing consume_pending_respawn_placed and place_and_consume_pending_respawn_placed validate Channel/sameWorld and call this exact upsert in the pendingrespawn-consumption TX. They inherit atomic House clear; no added UPDATE or fake foundation DB authority.",
+    "native_respawn_evidence": [
+      "foundation/runtime_actor_death.rs:31 and62 local placement only",
+      "durability/character_death.rs:433,485 validate_placed; upsert at577,667 after pending deletion",
+      "durability/character_death.rs:803 validate_placed restricts Channel matchingWorld",
+      "gameplay_transport/mod.rs:1458,1654 existing true caller paths"
+    ],
+    "prerequisites": [
+      "Actual numberedHousecolumns migration/pairedcheck from native character_position_house DDL must be installed first; number requestedCP6225859967, no new number allocated here",
+      "Runtime migration0080 table INSERT/UPDATE grant already covers columns; preserve actual successor permissions checks",
+      "Recheck exact shared preimage after prescribed owners; no blind patch application"
+    ],
+    "qualification": "SOURCE_PROPOSAL_ONLY_NOT_NATIVE_PASS",
+    "required_actual_pg_cases": [
+      "winning higherSequence clears bothHousecolumns with cell/vitals",
+      "equalSequence andlowerSequence change nofield",
+      "newhigherLease wins despite lowerSequence andclearsHouse",
+      "staleSession/World/assignment refuses entirewrite",
+      "pendingRespawn preserves entireoldrow",
+      "single/batch andbothrespawnconsumption paths nativeTX",
+      "rollback preserves oldHouse/cell/vitals; nosecondUPDATE race"
+    ],
+    "checkout_changes": false,
+    "pc_calls": false,
+    "new_cp_request": false,
+    "local_checks": {
+      "git_apply_check_exact_preimage": "PASS, no application",
+      "official1_94_rustfmt_edition2024_skip_children_proposed_source": "PASS",
+      "native_pg_execution": "NOT_RUN"
+    }
+  },
+  "historical_source_review": {
+    "reviewer": "Root independent Medium",
+    "verdict": "PASS_SOURCE_PROPOSAL_ONLY_DEFERRED",
+    "patch_sha256": "9e4ea3c3ff0fb00b7d62c226c9cc6067b6c866aa7881afafef558488628b0b0e",
+    "checks": "Only shared upsert INSERT column/value + conflictSET add bothHouseNULL; all binds/session/World/lease/sequence predicates unchanged; keystrictgreater means equal/lower untouched; oldHouse writer ownupsert unaffected; originalpendingrespawnconsumptionTX routes here; no foundationDBauthority invented",
+    "required_before_apply": "Actualmigrationnumber/columninstallation+sharedCPorder2163->2197->A2 and exactnewpreimage/review; nativePG NOT_RUN",
+    "shared_files_applied": false
+  }
+}
+```
