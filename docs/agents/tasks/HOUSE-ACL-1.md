@@ -199,3 +199,157 @@ composition; shared spell/GUI/door/runtime revalidation and notification source;
 HouseEvent/audit envelope and definer-only runtime grants/immutable mutation guards. The private
 outbox is candidate evidence only. Existing0038 legacy per-list/wildcard spell behavior is not
 silently changed. No migration numbering, shared registration/wiring, registry or content changes.
+
+## 2026-10-17 source proposal recovery archive — NOT_APPLIED
+
+At the owner's request, the previously external source proposal is preserved
+below inside this task record, rather than only in a local handoff or PR comment.
+The `patch_lines` array joins to the original UTF-8 patch bytes and SHA256.
+The original base and historical source-only review are retained for recovery;
+they do not qualify the current branch or authorize applying shared hunks.
+Recheck the actual successor source and obtain the required CP shared slot,
+migration allocation and independent review before implementation.
+**Shared proposal NOT_APPLIED; native execution NOT_RUN; runtime acceptance
+and all existing integration gates remain unchanged.** This appendix changes
+only this owned task record and introduces no executable implementation.
+
+Previous reviewable handoff: https://github.com/Oteryn/Oteryn-Game/pull/2140#issuecomment-6230752734.
+
+```json
+{
+  "archive_version": 1,
+  "owning_pr": 2140,
+  "status": "SOURCE_PROPOSAL_NOT_APPLIED_NOT_RUNTIME_QUALIFIED",
+  "original_source_sha": "b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16",
+  "patch_sha256": "38c73cef567300e641310f4d911660cffedce8bfc544d2c5396f2aa63d3d3c4e",
+  "patch_lines": [
+    "--- a/apps/game-server/src/content/project/native_house_tiles.rs\n",
+    "+++ b/apps/game-server/src/content/project/native_house_tiles.rs\n",
+    "@@ -48,6 +48,16 @@\n",
+    "     }\n",
+    "     pub(crate) fn has_door(&self, id: u32) -> bool {\n",
+    "         self.doors.values().any(|number| *number == id)\n",
+    "+    }\n",
+    "+    /// Reverse lookup inside this qualified placement. An absent or ambiguous\n",
+    "+    /// number supplies no cell; generation/currentness remains with the owner.\n",
+    "+    pub(crate) fn door_cell(&self, id: u32) -> Option<LogicalCell> {\n",
+    "+        let mut cells = self\n",
+    "+            .doors\n",
+    "+            .iter()\n",
+    "+            .filter_map(|(cell, number)| (*number == id).then_some(*cell));\n",
+    "+        let cell = cells.next()?;\n",
+    "+        cells.next().is_none().then_some(cell)\n",
+    "     }\n",
+    "     pub(crate) fn door_at(&self, cell: LogicalCell) -> Option<u32> {\n",
+    "         self.doors.get(&cell).copied()\n",
+    "@@ -158,6 +168,50 @@\n",
+    " mod tests {\n",
+    "     #![allow(clippy::unwrap_used)]\n",
+    "     use super::*;\n",
+    "+    fn placed_doors(doors: BTreeMap<LogicalCell, u32>) -> QualifiedHousePlacement {\n",
+    "+        QualifiedHousePlacement {\n",
+    "+            house: ProjectV2DefinitionRef {\n",
+    "+                family: ProjectV2Family::House,\n",
+    "+                key: \"oteryn:content.house.door_lookup\".into(),\n",
+    "+                revision: \"door-lookup-r1\".into(),\n",
+    "+            },\n",
+    "+            cells: doors.keys().copied().collect(),\n",
+    "+            entry: LogicalCell { x: -1, y: -1, z: 7 },\n",
+    "+            doors,\n",
+    "+        }\n",
+    "+    }\n",
+    "+    #[test]\n",
+    "+    fn door_cell_absent_number_has_no_coordinate() {\n",
+    "+        let placed = placed_doors(BTreeMap::new());\n",
+    "+        assert_eq!(placed.door_cell(0), None);\n",
+    "+        assert_eq!(placed.door_cell(7), None);\n",
+    "+    }\n",
+    "+    #[test]\n",
+    "+    fn door_cell_unique_number_round_trips_actual_door_map() {\n",
+    "+        let cell = LogicalCell { x: 12, y: 31, z: 7 };\n",
+    "+        let placed = placed_doors(BTreeMap::from([(cell, 7)]));\n",
+    "+        assert_eq!(placed.door_cell(7), Some(cell));\n",
+    "+        assert_eq!(placed.door_at(cell), Some(7));\n",
+    "+        assert!(placed.contains(cell));\n",
+    "+        assert_eq!(placed.door_cell(8), None);\n",
+    "+    }\n",
+    "+    #[test]\n",
+    "+    fn door_cell_duplicate_number_never_selects_first_or_last_cell() {\n",
+    "+        let first = LogicalCell { x: 1, y: 1, z: 7 };\n",
+    "+        let middle = LogicalCell { x: 2, y: 1, z: 7 };\n",
+    "+        let last = LogicalCell { x: 3, y: 1, z: 7 };\n",
+    "+        for doors in [\n",
+    "+            BTreeMap::from([(first, 7), (middle, 8), (last, 7)]),\n",
+    "+            BTreeMap::from([(last, 7), (middle, 8), (first, 7)]),\n",
+    "+        ] {\n",
+    "+            let placed = placed_doors(doors);\n",
+    "+            assert!(placed.has_door(7));\n",
+    "+            assert_eq!(placed.door_at(first), Some(7));\n",
+    "+            assert_eq!(placed.door_at(last), Some(7));\n",
+    "+            assert_eq!(placed.door_cell(7), None);\n",
+    "+            assert_eq!(placed.door_cell(8), Some(middle));\n",
+    "+        }\n",
+    "+    }\n",
+    "     #[test]\n",
+    "     fn omission_retains_unknown_on_actual_accepted_room() {\n",
+    "         let world = crate::foundation::WorldId::decode(&[\n"
+  ],
+  "historical_source_manifest": {
+    "state": "SOURCE_PROPOSAL_ROOT_REVIEW_PENDING_NOT_APPLIED",
+    "pr": 2140,
+    "cp": "D1228 https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226099560",
+    "source_commit": "b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16",
+    "source_path": "apps/game-server/src/content/project/native_house_tiles.rs",
+    "source_git_blob": "3e2f53a79960b1e8a14113d63038638788efdb3a",
+    "original_sha256": "55a58937a6d2b71a96ba7f6d4496602502aabf3dce4430dde25043b46f320bbc",
+    "proposed_sha256": "b4f32977ffa5888b03dfba28129ed27d434ef179a1a7372b6282405bf4864d7d",
+    "patch_sha256": "38c73cef567300e641310f4d911660cffedce8bfc544d2c5396f2aa63d3d3c4e",
+    "API": "pub(crate) fn QualifiedHousePlacement::door_cell(&self, id:u32)->Option<LogicalCell>",
+    "behavior": "Returns the sole matching cell; None for absent or multiple matching cells, independent of insertion/map order. Does not change has_door/door_at, qualification or generation authority.",
+    "source_checks": {
+      "official_rustfmt_1_94_edition2024_skip_children": "PASS",
+      "git_apply_check_against_exact_snapshot": "PASS",
+      "diff_scope": "Only accessor hunk and3actualQualifiedHousePlacement unit tests; original qualification source and original test unchanged"
+    },
+    "focused_tests": {
+      "authored": 3,
+      "cases": [
+        "absent/empty",
+        "uniqueactualdoor_map_roundtrip/missingotherid",
+        "duplicatedid withuniqueneighbor andbothinsertionorders"
+      ],
+      "uses": "Real existing struct/type and BTreeMap in native source test module; no portablecopy/facsimile or authoritymock",
+      "executed": "NOT_RUN: no native Rust/PC qualification in this sourceproposal"
+    },
+    "consumer_status": "PENDING. No #2140 consumer checkout/exacthunk was supplied/authorized here. Do not invent caller wiring, digest accessor or transactional authority.",
+    "consumer_required_binding": [
+      "Exact World/House game_world_house_instances row SHARElocked in same callerTX",
+      "Both qualified_placement_digest and compatible_content_digest matchactiveQualifiedHouseTiles",
+      "Only positivelegacylist_id; missingplacement/mismatch/absent/duplicatecell remainslegacy",
+      "Keep wildcard/receipts/FKs unchanged and addDoor(TilePos) besidelegacy"
+    ],
+    "shared_order": "D1228: account for2167successor before appending exactsharedhunk; current user forbids merge/rebase, so no merging performed",
+    "checkout_changes": false,
+    "pc_calls": false,
+    "commit_push_merge": false,
+    "new_cp_comment": false
+  },
+  "historical_source_review": {
+    "state": "PASS_SOURCE_ONLY",
+    "reviewer": "Root independent of author checkpoint_policy_medium",
+    "source_commit": "b3e4fa0dccb37856fbb6f6cd8ce52e2b80de0d16",
+    "patch_sha256": "38c73cef567300e641310f4d911660cffedce8bfc544d2c5396f2aa63d3d3c4e",
+    "findings": [],
+    "verified": [
+      "Exact requested native API uses existing BTreeMap<LogicalCell,u32>",
+      "Returns sole match only; empty/multiple None preserves unknown coordinate",
+      "No authority or placement/digest qualification fabricated by lookup",
+      "Tests construct actual QualifiedHousePlacement/native ProjectV2DefinitionRef",
+      "Original qualifier and omission behavior unchanged"
+    ],
+    "native_test_execution": "NOT_RUN",
+    "consumer": "Pending real sameTX SHARE-lock and active content/placement digest comparison; legacy wildcard/receipts/FK preserved",
+    "shared_apply": "NOT_APPLIED"
+  }
+}
+```
