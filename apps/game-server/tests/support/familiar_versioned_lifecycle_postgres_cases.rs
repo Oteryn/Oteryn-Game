@@ -4,8 +4,8 @@ use crate::bestiary_postgres_harness::{
 };
 use crate::domain::CharacterId;
 use crate::durability::character_familiar::{
-    DurableFamiliarState, FamiliarLifecycleWriter, FamiliarStateOccurrence, FamiliarStateOutcome,
-    FamiliarStateRequest,
+    DurableFamiliarState, FamiliarCleanEndProof, FamiliarLifecycleWriter, FamiliarStateOccurrence,
+    FamiliarStateOutcome, FamiliarStateRequest,
 };
 use crate::durability::character_progression::CharacterProgressionError;
 /// Isolated native fixture ONLY: reconstruct an already-committed v1 receipt with
@@ -103,15 +103,15 @@ fn familiar_v2_converts_linked_checkpoint_and_rejects_record_derived_writer() ->
             let mut clean = after.clone();
             clean.lifecycle.as_mut().ok_or("missing v2")?.clean_end_game_session_id = Some(writer.game_session_id.clone());
             // This fixture is still Reconnectable (GraceExpiry context), never clean Logout.
-            let not_logout = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,request(125,after.clone(),clean.clone())?,transport).await;
+            let not_logout = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,request(125,after.clone(),clean.clone())?,FamiliarCleanEndProof::Logout(transport)).await;
             assert!(matches!(not_logout,Err(CharacterProgressionError::AuthorityRejected)),"{not_logout:?}");
             sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2 WHERE game_session_id=encode($1,'hex')::uuid").bind(fence(3)?.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
-            let wrong = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,request(126,after.clone(),clean.clone())?,wrong_transport).await;
+            let wrong = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,request(126,after.clone(),clean.clone())?,FamiliarCleanEndProof::Logout(wrong_transport)).await;
             assert!(matches!(wrong,Err(CharacterProgressionError::AuthorityRejected)),"{wrong:?}");
             let generic = h.root.commit_character_familiar_state(&authority,&h.node,fence(3)?,request(127,after.clone(),clean.clone())?).await;
             assert!(matches!(generic,Err(CharacterProgressionError::AuthorityRejected)),"{generic:?}");
             let clean_request = request(128,after.clone(),clean.clone())?;
-            let genuine = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,clean_request.clone(),transport).await.map_err(debug)?;
+            let genuine = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(3)?,clean_request.clone(),FamiliarCleanEndProof::Logout(transport)).await.map_err(debug)?;
             assert!(matches!(genuine,FamiliarStateOutcome::Committed(_)),"{genuine:?}");
             assert_eq!(h.root.read_character_familiar_state(&authority,CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?).await.map_err(debug)?.state(),&clean);
             sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$1 WHERE game_session_id=encode($2,'hex')::uuid").bind(wrong_transport.to_bytes().as_slice()).bind(fence(4)?.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -168,6 +168,61 @@ fn familiar_v2_consecutive_writes_decode_locked_linked_checkpoint() -> TestResul
             assert_eq!(loaded.committed_character_revision().map(|v| v.get()), Some(3));
             let actual: i64 = sqlx::query_scalar("SELECT committed_at FROM game_character_familiar_receipts WHERE familiar_occurrence_id=encode($1,'hex')::uuid").bind(id(131).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(loaded.checkpoint_committed_at_ms(), Some(actual));
+            Ok(())
+        }.await;
+        h.cleanup().await?;
+        result
+    })
+}
+/// #2199 Codex P1 4301237612: the end of the in-fight deadline is a clean end. Its marker
+/// commits only through the clean-end port, with the session still Reconnectable at the exact
+/// control-loss epoch and past its original grace deadline; a closed row keeps its stored
+/// waiting time, and the session writes nothing more after it (F-I11).
+#[test]
+fn familiar_v2_grace_expiry_clean_end_requires_reconnectable_epoch() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "familiar_v2_grace_clean", true).await?;
+        let result: TestResult = async {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let writer = FamiliarLifecycleWriter::from_fence(&fence(1)?).map_err(debug)?;
+            let mut clean = DurableFamiliarState::default().for_next_write(None, &writer).map_err(debug)?;
+            let lifecycle = clean.lifecycle.as_mut().ok_or("missing v2")?;
+            lifecycle.familiar_remaining_ms = 90_000;
+            lifecycle.clean_end_game_session_id = Some(writer.game_session_id.clone());
+            let request = |tag, before, after| -> TestResult<FamiliarStateRequest> { Ok(FamiliarStateRequest {
+                occurrence: FamiliarStateOccurrence::from_bytes(id(tag)).map_err(debug)?, before, after,
+                content_revision: "content-1".into(), policy_revision: "policy-1".into(), policy_digest: [1;32],
+            }) };
+            let none = DurableFamiliarState::default();
+            let session = fence(1)?.game_session_id;
+            let transport = crate::foundation::AuthenticatedTransportRefV1::decode(&[9;16]).map_err(debug)?;
+            let wrong_epoch = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(1)?,request(140,none.clone(),clean.clone())?,FamiliarCleanEndProof::GraceExpiry(2)).await;
+            assert!(matches!(wrong_epoch,Err(CharacterProgressionError::AuthorityRejected)),"{wrong_epoch:?}");
+            let not_logout = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(1)?,request(141,none.clone(),clean.clone())?,FamiliarCleanEndProof::Logout(transport)).await;
+            assert!(matches!(not_logout,Err(CharacterProgressionError::AuthorityRejected)),"{not_logout:?}");
+            let generic = h.root.commit_character_familiar_state(&authority,&h.node,fence(1)?,request(142,none.clone(),clean.clone())?).await;
+            assert!(matches!(generic,Err(CharacterProgressionError::AuthorityRejected)),"{generic:?}");
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET original_grace_deadline=floor(extract(epoch FROM clock_timestamp()))::bigint+3600 WHERE game_session_id=encode($1,'hex')::uuid").bind(session.as_bytes().as_slice()).execute(&h.pool).await?;
+            let early = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(1)?,request(143,none.clone(),clean.clone())?,FamiliarCleanEndProof::GraceExpiry(1)).await;
+            assert!(matches!(early,Err(CharacterProgressionError::AuthorityRejected)),"{early:?}");
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET original_grace_deadline=999999 WHERE game_session_id=encode($1,'hex')::uuid").bind(session.as_bytes().as_slice()).execute(&h.pool).await?;
+            let genuine = h.root.commit_character_familiar_clean_end(&authority,&h.node,fence(1)?,request(144,none.clone(),clean.clone())?,FamiliarCleanEndProof::GraceExpiry(1)).await.map_err(debug)?;
+            assert!(matches!(genuine,FamiliarStateOutcome::Committed(_)),"{genuine:?}");
+            let loaded = h.root.read_character_familiar_state(&authority,CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?).await.map_err(debug)?;
+            assert_eq!(loaded.state(),&clean);
+            // F-I11: neither clearing nor carrying its own marker is a write this session may make.
+            let mut cleared = clean.clone();
+            cleared.lifecycle.as_mut().ok_or("missing v2")?.clean_end_game_session_id = None;
+            let mut carried = clean.clone();
+            carried.last_logout_unix = 2;
+            for (tag, after) in [(145, cleared), (146, carried)] {
+                let late = h.root.commit_character_familiar_state(&authority,&h.node,fence(2)?,request(tag,clean.clone(),after)?).await;
+                assert!(matches!(late,Err(CharacterProgressionError::AuthorityRejected)),"{late:?}");
+            }
             Ok(())
         }.await;
         h.cleanup().await?;

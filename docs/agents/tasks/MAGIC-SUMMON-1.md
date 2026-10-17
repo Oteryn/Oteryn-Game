@@ -514,3 +514,27 @@ already grants both validator functions to runtime and control. The new immutabl
 legacy helper needs matching invoker permission; none of these pure JSON functions
 grants table writes or current gameplay authority. No live control caller is
 invented as justification.
+
+### D1308 round-three repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. [D1308](https://github.com/Oteryn/Oteryn-Game/pull/2131)
+approves this last repair round for four Codex P1 threads (4301237612, 4301237622,
+4301237626, 4301237630), repaired as one clean-marker / stored-lifetime state machine:
+
+- Both actor ends are clean ends (FAMILIARS0 §5). The end of the in-fight deadline now
+  closes the row with its session's marker through the clean-end port; its TX re-proves the
+  session is Reconnectable at the exact control-loss epoch and past its original grace
+  deadline on the database clock. Logout keeps its Active exact-transport proof.
+- An ordinary write may carry a closed foreign session's marker unchanged (a Login with no
+  free tile keeps the clean row, cooldowns and delayed return); only cast and return writes
+  clear it. F-I11: after a session's own clean end it writes nothing more, in the TX, the
+  owner-turn preparation and the actor-end save (a durable clean end is NotApplicable).
+- With no physical familiar, the actor-end close keeps a waiting clean row's stored time;
+  only an open row whose familiar already ended in this runtime stores zero.
+- A cast while a stored familiar waits to return is refused before any cost (§4 check 4),
+  with the source summon-limit message.
+
+This closes the hold above on GraceExpiry and non-spawn writes over an existing clean
+marker. Regression tests: one pure marker-decision test, three pure lifecycle tests and one
+PostgreSQL grace clean-end test (gated by `configured_admin()`). Local Rust build, Clippy
+and tests are NOT_RUN on this head (disk); new-head GitHub CI must pass.

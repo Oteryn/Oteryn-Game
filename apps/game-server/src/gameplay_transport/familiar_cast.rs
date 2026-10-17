@@ -482,7 +482,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         end: FamiliarActorEnd,
     ) -> FamiliarLogoutSave {
-        use crate::durability::character_familiar::FamiliarStateOutcome;
+        use crate::durability::character_familiar::{FamiliarCleanEndProof, FamiliarStateOutcome};
         let Some(content) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return FamiliarLogoutSave::NotApplicable;
         };
@@ -551,6 +551,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return FamiliarLogoutSave::Unknown;
             };
+            // F-I11 / FAMILIARS0 §5: once this session's clean end is durable (a lost response
+            // that did commit), it writes nothing more; the actor end has nothing to save.
+            if loaded
+                .state()
+                .lifecycle
+                .as_ref()
+                .and_then(|l| l.clean_end_game_session_id.as_ref())
+                == Some(&writer.game_session_id)
+            {
+                return FamiliarLogoutSave::NotApplicable;
+            }
             let now = self.owner_now();
             let Ok(owned) = runtime.owned_companions(actor, session) else {
                 return FamiliarLogoutSave::Unknown;
@@ -558,8 +569,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut familiars = owned
                 .iter()
                 .filter(|snapshot| snapshot.state.policy.is_familiar);
-            let remaining_ms = match familiars.next() {
-                None => 0,
+            // `None`: no physical familiar. The close keeps a waiting clean row's stored time
+            // and stores zero only for an open row whose familiar already ended here.
+            let physical_remaining_ms = match familiars.next() {
+                None => None,
                 Some(snapshot) => {
                     if familiars.next().is_some()
                         || snapshot.state.lifecycle_epoch != loaded.state().lifecycle_epoch
@@ -577,12 +590,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return FamiliarLogoutSave::Unknown;
                     };
                     // Both real runtime/timer owner guards are held. Never persist their origin.
-                    due.get().saturating_sub(now.get()) / 1000
+                    Some(due.get().saturating_sub(now.get()) / 1000)
                 }
-            };
-            let clean_end = match end {
-                FamiliarActorEnd::Logout(..) => Some(writer.game_session_id.clone()),
-                FamiliarActorEnd::GraceExpiry(_) => None,
             };
             let Ok(after) = crate::spell::companion_lifecycle::familiar_logout_snapshot(
                 loaded.state(),
@@ -593,8 +602,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 unix,
                 loaded.checkpoint_committed_at_ms(),
                 &writer,
-                remaining_ms,
-                clean_end,
+                physical_remaining_ms,
             ) else {
                 return FamiliarLogoutSave::Unknown;
             };
@@ -627,29 +635,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.pending_familiar_logouts.push(prepared.clone());
             prepared
         };
-        let outcome = match end {
-            FamiliarActorEnd::Logout(transport, _) => {
-                self.root
-                    .commit_character_familiar_clean_end(
-                        self.character,
-                        self.holder,
-                        prepared.fence,
-                        prepared.request.clone(),
-                        transport,
-                    )
-                    .await
-            }
-            FamiliarActorEnd::GraceExpiry(_) => {
-                self.root
-                    .commit_character_familiar_state(
-                        self.character,
-                        self.holder,
-                        prepared.fence,
-                        prepared.request.clone(),
-                    )
-                    .await
-            }
+        // Both actor ends are clean ends (FAMILIARS0 §5): the transaction re-proves the logout's
+        // ACTIVE exact transport, or the grace expiry's RECONNECTABLE control-loss epoch past
+        // its deadline, before it writes the clean-end marker.
+        let proof = match end {
+            FamiliarActorEnd::Logout(transport, _) => FamiliarCleanEndProof::Logout(transport),
+            FamiliarActorEnd::GraceExpiry(epoch) => FamiliarCleanEndProof::GraceExpiry(epoch),
         };
+        let outcome = self
+            .root
+            .commit_character_familiar_clean_end(
+                self.character,
+                self.holder,
+                prepared.fence,
+                prepared.request.clone(),
+                proof,
+            )
+            .await;
         let committed = match outcome {
             Ok(
                 FamiliarStateOutcome::Committed(value)

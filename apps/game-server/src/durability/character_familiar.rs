@@ -105,6 +105,40 @@ fn valid_lifecycle_uuid(value: &str) -> bool {
         && matches!(value.as_bytes()[19], b'8'..=b'b')
 }
 
+/// Current-session evidence of a clean session end (FAMILIARS0 §5). The writer TX verifies it
+/// against the durable session row; it is never derived from the familiar row itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FamiliarCleanEndProof {
+    /// An ACTIVE session's own logout on this exact current transport.
+    Logout(crate::foundation::AuthenticatedTransportRefV1),
+    /// The terminal release at the end of the in-fight deadline for this control-loss epoch.
+    GraceExpiry(u64),
+}
+
+/// Which clean-end proof a new write's marker needs: `Ok(None)` needs none, `Ok(Some(_))` must
+/// be verified in the same TX. F-I11: after this session's clean end committed, it writes
+/// nothing more (a lost response is a replay of the same occurrence, answered before this).
+/// A closed foreign session's marker may be carried unchanged by a later session's ordinary
+/// write; only the cast and return writes clear it.
+pub(crate) fn clean_end_marker_requirement(
+    before: Option<&str>,
+    after: Option<&str>,
+    current_session: &str,
+    proof: Option<FamiliarCleanEndProof>,
+) -> Result<Option<FamiliarCleanEndProof>> {
+    match (after, proof) {
+        (Some(marker), Some(proof))
+            if marker == current_session && before != Some(current_session) =>
+        {
+            Ok(Some(proof))
+        }
+        (_, Some(_)) => Err(CharacterProgressionError::AuthorityRejected),
+        (None, None) if before != Some(current_session) => Ok(None),
+        (Some(marker), None) if before == Some(marker) && marker != current_session => Ok(None),
+        _ => Err(CharacterProgressionError::AuthorityRejected),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FamiliarLifecycleV2 {
@@ -467,15 +501,15 @@ impl DurabilityRoot {
             .await
     }
 
-    /// Only the actor-end Logout producer supplies this authenticated current transport.
-    /// The same TX independently verifies Active/session/transport; JSON is not its proof.
+    /// Only the actor-end producer (Logout or terminal grace expiry) supplies this proof.
+    /// The same TX independently verifies the current session row; JSON is not its proof.
     pub(crate) async fn commit_character_familiar_clean_end(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
-        transport: crate::foundation::AuthenticatedTransportRefV1,
+        proof: FamiliarCleanEndProof,
     ) -> Result<FamiliarStateOutcome> {
         self.commit_character_familiar_state_inner(
             authority,
@@ -483,7 +517,7 @@ impl DurabilityRoot {
             fence,
             request,
             true,
-            Some(transport),
+            Some(proof),
         )
         .await
     }
@@ -495,7 +529,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
         allow_new_mutation: bool,
-        clean_end_transport: Option<crate::foundation::AuthenticatedTransportRefV1>,
+        clean_end_proof: Option<FamiliarCleanEndProof>,
     ) -> Result<FamiliarStateOutcome> {
         request.validate()?;
         let binding = command_binding(&fence, &request)?;
@@ -515,7 +549,7 @@ impl DurabilityRoot {
                         request,
                         binding,
                         allow_new_mutation,
-                        clean_end_transport,
+                        clean_end_proof,
                     )
                     .await?;
                     let outcome = match outcome {
@@ -657,7 +691,7 @@ fn binding_from_identity(
 }
 #[allow(
     clippy::too_many_arguments,
-    reason = "one existing TX carries independently current clean-end transport evidence"
+    reason = "one existing TX carries independently current clean-end session evidence"
 )]
 async fn apply_familiar_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -667,7 +701,7 @@ async fn apply_familiar_transaction(
     request: FamiliarStateRequest,
     binding: Vec<u8>,
     allow_new_mutation: bool,
-    clean_end_transport: Option<crate::foundation::AuthenticatedTransportRefV1>,
+    clean_end_proof: Option<FamiliarCleanEndProof>,
 ) -> std::result::Result<Result<PendingFamiliarStateOutcome>, DurabilityError> {
     if fence.character_lease_generation == 0
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
@@ -730,22 +764,32 @@ async fn apply_familiar_transaction(
         return Ok(Err(CharacterProgressionError::InvalidInput));
     }
     if let Some(lifecycle) = &request.after.lifecycle {
-        match (
+        let required = match clean_end_marker_requirement(
+            request
+                .before
+                .lifecycle
+                .as_ref()
+                .and_then(|l| l.clean_end_game_session_id.as_deref()),
             lifecycle.clean_end_game_session_id.as_deref(),
-            clean_end_transport,
+            &lifecycle_uuid_text(fence.game_session_id.as_bytes()),
+            clean_end_proof,
         ) {
-            (None, None) => {}
-            (Some(marker), Some(transport))
-                if marker == lifecycle_uuid_text(fence.game_session_id.as_bytes()) =>
-            {
-                let active_transport: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")
-                    .bind(fence.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice())
-                    .fetch_one(&mut **tx).await?;
-                if !active_transport {
-                    return Ok(Err(CharacterProgressionError::AuthorityRejected));
-                }
-            }
-            _ => return Ok(Err(CharacterProgressionError::AuthorityRejected)),
+            Ok(required) => required,
+            Err(error) => return Ok(Err(error)),
+        };
+        let proven: bool = match required {
+            None => true,
+            Some(FamiliarCleanEndProof::Logout(transport)) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice())
+                .fetch_one(&mut **tx).await?,
+            // Terminal grace expiry: still Reconnectable at this exact control-loss epoch and its
+            // original grace deadline has passed on the database clock.
+            Some(FamiliarCleanEndProof::GraceExpiry(epoch)) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND session_state=1 AND control_loss_epoch=$2::text::numeric(20,0) AND original_grace_deadline<=floor(extract(epoch FROM clock_timestamp()))::bigint)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(epoch.to_string())
+                .fetch_one(&mut **tx).await?,
+        };
+        if !proven {
+            return Ok(Err(CharacterProgressionError::AuthorityRejected));
         }
         if lifecycle.writer
             != FamiliarLifecycleWriter::from_fence(&fence)
@@ -1065,6 +1109,76 @@ mod tests {
             invalid.validate(),
             Err(CharacterProgressionError::InvalidInput)
         ));
+    }
+    #[test]
+    fn clean_end_marker_needs_current_proof_and_only_carries_foreign_close() {
+        let current = "0199aabb-1234-7000-8000-000000000001";
+        let foreign = "0199aabb-1234-7000-8000-000000000004";
+        let grace = FamiliarCleanEndProof::GraceExpiry(3);
+        let rejected = |r: Result<Option<FamiliarCleanEndProof>>| {
+            matches!(r, Err(CharacterProgressionError::AuthorityRejected))
+        };
+        // #2199 4301237612: terminal grace expiry is a clean end needing its own TX proof.
+        assert_eq!(
+            clean_end_marker_requirement(None, Some(current), current, Some(grace)).unwrap(),
+            Some(grace)
+        );
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            Some(current),
+            current,
+            None
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            Some(foreign),
+            current,
+            Some(grace)
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            None,
+            current,
+            Some(grace)
+        )));
+        // #2199 4301237622: a later session (no-room login) carries a foreign close unchanged.
+        assert_eq!(
+            clean_end_marker_requirement(Some(foreign), Some(foreign), current, None).unwrap(),
+            None
+        );
+        assert_eq!(
+            clean_end_marker_requirement(Some(foreign), None, current, None).unwrap(),
+            None
+        );
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            Some(foreign),
+            current,
+            None
+        )));
+        // F-I11: after this session's own clean end, no write reopens or rewrites it.
+        assert!(rejected(clean_end_marker_requirement(
+            Some(current),
+            Some(current),
+            current,
+            Some(grace)
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            Some(current),
+            None,
+            current,
+            None
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            Some(current),
+            Some(current),
+            current,
+            None
+        )));
+        assert_eq!(
+            clean_end_marker_requirement(None, None, current, None).unwrap(),
+            None
+        );
     }
     #[test]
     fn familiar_snapshot_rejects_unknown_or_unsorted_fields_and_preserves_unix_clocks() {
