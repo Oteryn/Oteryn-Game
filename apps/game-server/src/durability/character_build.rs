@@ -210,6 +210,9 @@ pub enum BuildCause {
     VocationChoice,
     /// One vocation key to another; every family equal.
     Promotion,
+    /// OFFLINE-0 marker; ordinary BuildChangeRequest cannot admit it.
+    Logout,
+    OfflineSettlement,
 }
 
 impl BuildCause {
@@ -218,13 +221,21 @@ impl BuildCause {
             Self::Training => "training",
             Self::VocationChoice => "vocation_choice",
             Self::Promotion => "promotion",
+            Self::Logout => "logout",
+            Self::OfflineSettlement => "offline_settlement",
         }
     }
 
     fn parse(key: &str) -> Option<Self> {
-        [Self::Training, Self::VocationChoice, Self::Promotion]
-            .into_iter()
-            .find(|cause| cause.key() == key)
+        [
+            Self::Training,
+            Self::VocationChoice,
+            Self::Promotion,
+            Self::Logout,
+            Self::OfflineSettlement,
+        ]
+        .into_iter()
+        .find(|cause| cause.key() == key)
     }
 
     /// The direction of the 0030 cause CHECK, checked before any write.
@@ -243,6 +254,7 @@ impl BuildCause {
                     && before.vocation != after.vocation
                     && from == to
             }
+            Self::Logout | Self::OfflineSettlement => false,
         }
     }
 }
@@ -481,18 +493,24 @@ async fn apply_build_in_transaction(
     if pending {
         return Ok(Err(CharacterProgressionError::RespawnPending));
     }
-    let stored = sqlx::query(concat!(
+    let stored_row = sqlx::query(concat!(
         "SELECT vocation, ",
         family_columns!("", ""),
-        " FROM game_character_build_state \
+        ", stamina_minutes, offline_pool_s, offline_skill FROM game_character_build_state \
                           WHERE character_id = encode($1,'hex')::uuid FOR UPDATE"
     ))
     .bind(character)
     .fetch_optional(&mut **tx)
-    .await?
-    .map(|row| DurableBuildState::stored(&row, "vocation", ""))
-    .transpose()?
-    .unwrap_or_default();
+    .await?;
+    let offline_columns = stored_row
+        .as_ref()
+        .map(|row| decode_offline_columns(row, ""))
+        .transpose()?
+        .unwrap_or_default();
+    let stored = stored_row
+        .map(|row| DurableBuildState::stored(&row, "vocation", ""))
+        .transpose()?
+        .unwrap_or_default();
     if stored != request.before {
         return Ok(Err(CharacterProgressionError::BuildStateMismatch));
     }
@@ -545,7 +563,7 @@ async fn apply_build_in_transaction(
         family_columns!("", "_after"),
         ", stance_before, stance_after, profile_revision, ruleset_revision, \
                            content_revision, simulation_revision, evidence_revision, \
-                           declaration_revision, policy_revision, reward_revision, committed_at) \
+                           declaration_revision, policy_revision, reward_revision, committed_at, stamina_minutes_before, offline_pool_s_before, offline_skill_before, stamina_minutes_after, offline_pool_s_after, offline_skill_after) \
                          SELECT encode($1,'hex')::uuid, $2, $3, s.character_id, \
                            $4::text::numeric(20,0), $5::text::numeric(20,0), $6, s.level, \
                            s.level, s.total_experience, s.total_experience, \
@@ -556,7 +574,7 @@ async fn apply_build_in_transaction(
                            $41, NULL, s.profile_revision, s.ruleset_revision, \
                            s.content_revision, s.simulation_revision, s.evidence_revision, \
                            s.declaration_revision, s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $43, $44, $45, $46, $47, $48 \
                            FROM game_character_progression_state s \
                           WHERE s.character_id = encode($42,'hex')::uuid"
     ))
@@ -570,6 +588,18 @@ async fn apply_build_in_transaction(
     let receipt = receipt
         .bind(request.pruned_stance.clone())
         .bind(character)
+        .bind(i32::from(offline_columns.stamina_minutes))
+        .bind(
+            i32::try_from(offline_columns.pool_s)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .bind(offline_columns.skill.map_or("none", OfflineSkill::sql_key))
+        .bind(i32::from(offline_columns.stamina_minutes))
+        .bind(
+            i32::try_from(offline_columns.pool_s)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .bind(offline_columns.skill.map_or("none", OfflineSkill::sql_key))
         .execute(&mut **tx)
         .await?;
     if receipt.rows_affected() != 1 {
@@ -849,21 +879,20 @@ async fn load_receipt(
 fn decode_receipt(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<CommittedBuildChange, DurabilityError> {
-    let invalid = |_| DurabilityError::InvalidStoredState;
     Ok(CommittedBuildChange {
         occurrence: BuildOccurrence(uuid_text(row.try_get("build_occurrence_id")?)?),
         character_id: CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
-            .map_err(invalid)?,
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
         original_character_revision: CharacterRevision::new(numeric_u64(
             row,
             "original_character_revision",
         )?)
-        .map_err(invalid)?,
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
         committed_character_revision: CharacterRevision::new(numeric_u64(
             row,
             "committed_character_revision",
         )?)
-        .map_err(invalid)?,
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
         cause: BuildCause::parse(row.try_get("cause")?)
             .ok_or(DurabilityError::InvalidStoredState)?,
         before: DurableBuildState::stored(row, "vocation_before", "_before")?,
@@ -1038,4 +1067,405 @@ mod tests {
         assert_eq!(BuildCause::parse("promotion"), Some(BuildCause::Promotion));
         assert_eq!(BuildCause::parse("death"), None);
     }
+}
+
+// D1108 native owner extension. Existing v1 ordinary build bindings/replay stay
+// unchanged; marker receipts have the v2 binding and their own lease/cause replay key.
+use crate::training::offline::{
+    LatestBuildReceipt, MarkerKey, MarkerKind, OfflineSkill, ProposedLogoutMarker,
+    ProposedOfflineColumns,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct NativeOfflineMarkerReceipt {
+    pub(crate) key: MarkerKey,
+    pub(crate) occurrence: BuildOccurrence,
+    pub(crate) original_character_revision: CharacterRevision,
+    pub(crate) committed_character_revision: CharacterRevision,
+    pub(crate) session: crate::foundation::GameSessionId,
+    pub(crate) scope: RuntimeScopeRefV1,
+    pub(crate) as_of_us: i64,
+    pub(crate) before_build: DurableBuildState,
+    pub(crate) after_build: DurableBuildState,
+    pub(crate) before_columns: ProposedOfflineColumns,
+    pub(crate) after_columns: ProposedOfflineColumns,
+}
+pub(crate) struct NativeOfflineMarkerValues {
+    pub(crate) key: MarkerKey,
+    pub(crate) as_of_us: i64,
+    pub(crate) before_build: DurableBuildState,
+    pub(crate) after_build: DurableBuildState,
+    pub(crate) before_columns: ProposedOfflineColumns,
+    pub(crate) after_columns: ProposedOfflineColumns,
+}
+pub(crate) struct LockedOfflineBuild {
+    pub(crate) build: DurableBuildState,
+    pub(crate) columns: ProposedOfflineColumns,
+    pub(crate) respawn_pending: bool,
+    pub(crate) progression_present: bool,
+}
+
+fn decode_offline_columns(
+    row: &sqlx::postgres::PgRow,
+    suffix: &str,
+) -> std::result::Result<ProposedOfflineColumns, DurabilityError> {
+    let stamina = row.try_get::<i32, _>(format!("stamina_minutes{suffix}").as_str())?;
+    let pool = row.try_get::<i32, _>(format!("offline_pool_s{suffix}").as_str())?;
+    let skill = row.try_get::<String, _>(format!("offline_skill{suffix}").as_str())?;
+    let columns = ProposedOfflineColumns {
+        stamina_minutes: u16::try_from(stamina).map_err(|_| DurabilityError::InvalidStoredState)?,
+        pool_s: u32::try_from(pool).map_err(|_| DurabilityError::InvalidStoredState)?,
+        skill: if skill == "none" {
+            None
+        } else {
+            Some(OfflineSkill::from_sql_key(&skill).ok_or(DurabilityError::InvalidStoredState)?)
+        },
+    };
+    if columns.stamina_minutes > 2520 || columns.pool_s > 43200 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(columns)
+}
+
+pub(crate) async fn load_offline_marker(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    key: MarkerKey,
+) -> std::result::Result<Option<NativeOfflineMarkerReceipt>, DurabilityError> {
+    let row = sqlx::query(
+        "SELECT r.*, build_occurrence_id::text AS occurrence_text, \
+         marker_lease_generation::text AS marker_lease_text, \
+         marker_game_session_id::text AS marker_session_text, \
+         marker_world_id::text AS marker_world_text, \
+         marker_channel_id::text AS marker_channel_text, \
+         original_character_revision::text AS original_revision_text, \
+         committed_character_revision::text AS committed_revision_text \
+         FROM game_character_build_receipts r WHERE character_id=encode($1,'hex')::uuid \
+         AND marker_lease_generation=$2::text::numeric(20,0) AND cause=$3",
+    )
+    .bind(key.character.as_bytes().as_slice())
+    .bind(key.lease.to_string())
+    .bind(key.kind.sql_key())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let binding: Vec<u8> = row.try_get("command_binding")?;
+    let as_of_us: i64 = row.try_get("marker_as_of_us")?;
+    let committed_ms: i64 = row.try_get("committed_at")?;
+    if binding.len() != 33 || binding[0] != 2 || as_of_us < 0 || as_of_us / 1000 != committed_ms {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let receipt = NativeOfflineMarkerReceipt {
+        key,
+        occurrence: BuildOccurrence::from_bytes(uuid_text(row.try_get("occurrence_text")?)?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        original_character_revision: CharacterRevision::new(numeric_u64(
+            &row,
+            "original_revision_text",
+        )?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
+        committed_character_revision: CharacterRevision::new(numeric_u64(
+            &row,
+            "committed_revision_text",
+        )?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
+        session: crate::foundation::GameSessionId::decode(&uuid_text(
+            row.try_get("marker_session_text")?,
+        )?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
+        scope: RuntimeScopeRefV1::channel(
+            crate::foundation::WorldId::decode(&uuid_text(row.try_get("marker_world_text")?)?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            crate::foundation::ChannelId::decode(&uuid_text(row.try_get("marker_channel_text")?)?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        ),
+        as_of_us,
+        before_build: DurableBuildState::stored(&row, "vocation_before", "_before")?,
+        after_build: DurableBuildState::stored(&row, "vocation_after", "_after")?,
+        before_columns: decode_offline_columns(&row, "_before")?,
+        after_columns: decode_offline_columns(&row, "_after")?,
+    };
+    // A replay is historical completion, but malformed stored chain evidence is
+    // still refused. Neither this receipt nor its expected binding grants current authority.
+    if key.lease == 0
+        || numeric_u64(&row, "marker_lease_text")? != key.lease
+        || receipt.original_character_revision.get().checked_add(1)
+            != Some(receipt.committed_character_revision.get())
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(Some(receipt))
+}
+
+pub(crate) async fn lock_offline_build(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterGameplayFence,
+) -> Result<LockedOfflineBuild> {
+    let root = assert_gameplay_fence(tx, fence, node).await??;
+    let character = fence.character_id.as_bytes().as_slice();
+    let progression = sqlx::query(
+        "SELECT character_revision::text, profile_revision, ruleset_revision, content_revision \
+         FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE"
+    ).bind(character).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
+    if let Some(row) = &progression
+        && (numeric_u64(row, "character_revision")? != root.revision
+            || !state_matches_root(row, &root))
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let respawn_pending: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid)"
+    ).bind(character).fetch_one(&mut **tx).await.map_err(DurabilityError::from)?;
+    let build = sqlx::query(
+        "SELECT * FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE"
+    ).bind(character).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
+    Ok(LockedOfflineBuild {
+        build: build
+            .as_ref()
+            .map(|row| DurableBuildState::stored(row, "vocation", ""))
+            .transpose()?
+            .unwrap_or_default(),
+        columns: build
+            .as_ref()
+            .map(|row| decode_offline_columns(row, ""))
+            .transpose()?
+            .unwrap_or_default(),
+        respawn_pending,
+        progression_present: progression.is_some(),
+    })
+}
+
+pub(crate) async fn latest_offline_build_receipt(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    fence: &CurrentCharacterGameplayFence,
+) -> std::result::Result<LatestBuildReceipt, DurabilityError> {
+    // A later death carrying build state invalidates an older logout. Do not search
+    // for the latest *logout* independently of the whole build-carrying chain.
+    let row = sqlx::query(
+        "SELECT cause, marker_lease_generation::text AS lease FROM (\
+           SELECT cause, marker_lease_generation, committed_character_revision \
+           FROM game_character_build_receipts WHERE character_id=encode($1,'hex')::uuid \
+           UNION ALL SELECT 'death', NULL, committed_character_revision \
+           FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid AND vocation IS NOT NULL\
+         ) chain ORDER BY committed_character_revision DESC LIMIT 1"
+    ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else {
+        return Ok(LatestBuildReceipt::Absent);
+    };
+    if row.try_get::<String, _>("cause")? != "logout" {
+        return Ok(LatestBuildReceipt::OtherBuildCarryingReceipt);
+    }
+    let lease = row
+        .try_get::<Option<String>, _>("lease")?
+        .ok_or(DurabilityError::InvalidStoredState)?
+        .parse::<u64>()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let receipt = load_offline_marker(
+        tx,
+        MarkerKey {
+            character: fence.character_id,
+            lease,
+            kind: MarkerKind::Logout,
+        },
+    )
+    .await?
+    .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(LatestBuildReceipt::Logout(ProposedLogoutMarker {
+        key: receipt.key,
+        session: receipt.session,
+        scope: receipt.scope,
+        // The native ms anchor is checked above against the exact DB-read us anchor.
+        // Do not reinterpret the old committed_at millisecond field as microseconds.
+        as_of_us: receipt.as_of_us,
+        committed_at_us: receipt.as_of_us,
+    }))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn write_offline_marker(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterGameplayFence,
+    occurrence: BuildOccurrence,
+    formula: &dyn BuildFormula,
+    values: NativeOfflineMarkerValues,
+) -> Result<NativeOfflineMarkerReceipt> {
+    let NativeOfflineMarkerValues {
+        key,
+        as_of_us,
+        before_build,
+        after_build,
+        before_columns,
+        after_columns,
+    } = values;
+    if key.character != fence.character_id
+        || key.lease != fence.character_lease_generation
+        || as_of_us < 0
+        || before_build.vocation != after_build.vocation
+        || !normalized(formula, &after_build)
+        || after_columns.stamina_minutes > 2520
+        || after_columns.pool_s > 43200
+    {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let (from, to) = (before_build.families(), after_build.families());
+    let valid_direction = match key.kind {
+        MarkerKind::Logout => {
+            from.iter().zip(to).all(|(a, b)| b >= *a)
+                && after_columns.stamina_minutes <= before_columns.stamina_minutes
+                && after_columns.pool_s >= before_columns.pool_s
+                && after_columns.skill == before_columns.skill
+        }
+        // The dedicated settlement source applies the source-qualified selected
+        // family and conditional shielding before reaching this same-row writer.
+        MarkerKind::Settlement => {
+            from.iter().zip(to).all(|(a, b)| b >= *a)
+                && after_columns.stamina_minutes >= before_columns.stamina_minutes
+                && after_columns.skill.is_none()
+        }
+    };
+    if !valid_direction {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    let locked = lock_offline_build(tx, node, fence).await?;
+    if locked.respawn_pending {
+        return Err(CharacterProgressionError::RespawnPending);
+    }
+    if !locked.progression_present {
+        return Err(CharacterProgressionError::MissingProgressionState);
+    }
+    if locked.build != before_build || locked.columns != before_columns {
+        return Err(CharacterProgressionError::BuildStateMismatch);
+    }
+    let current = assert_gameplay_fence(tx, fence, node).await??;
+    if current.content_revision != formula.content_revision() {
+        return Err(CharacterProgressionError::ProgressionContextMismatch);
+    }
+    let next = current
+        .revision
+        .checked_add(1)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let mut semantic = vec![2];
+    semantic.extend_from_slice(occurrence.as_bytes());
+    semantic.extend_from_slice(fence.character_id.as_bytes());
+    semantic.extend_from_slice(&key.lease.to_be_bytes());
+    semantic.extend_from_slice(key.kind.sql_key().as_bytes());
+    before_build.encode(&mut semantic);
+    after_build.encode(&mut semantic);
+    for c in [before_columns, after_columns] {
+        semantic.extend_from_slice(&c.stamina_minutes.to_be_bytes());
+        semantic.extend_from_slice(&c.pool_s.to_be_bytes());
+        semantic.extend_from_slice(c.skill.map_or("none", OfflineSkill::sql_key).as_bytes());
+        semantic.push(0);
+    }
+    let policy_digest = formula.digest();
+    semantic.extend_from_slice(&policy_digest);
+    let mut binding = vec![2];
+    binding.extend_from_slice(&Sha256::digest(semantic));
+    for sql in [
+        "UPDATE game_character_roots SET character_revision=$2::text::numeric(20,0) WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric(20,0)",
+        "UPDATE game_character_progression_state SET character_revision=$2::text::numeric(20,0) WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric(20,0)",
+    ] {
+        if sqlx::query(sql)
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(next.to_string())
+            .bind(current.revision.to_string())
+            .execute(&mut **tx)
+            .await
+            .map_err(DurabilityError::from)?
+            .rows_affected()
+            != 1
+        {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+    }
+    let sql = concat!(
+        "INSERT INTO game_character_build_receipts(build_occurrence_id,command_binding,policy_digest,character_id,original_character_revision,committed_character_revision,cause,level_before,level_after,experience_before,experience_after,vocation_before,",
+        family_columns!("", "_before"),
+        ",vocation_after,",
+        family_columns!("", "_after"),
+        ",stance_before,stance_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at,stamina_minutes_before,offline_pool_s_before,offline_skill_before,stamina_minutes_after,offline_pool_s_after,offline_skill_after,marker_lease_generation,marker_game_session_id,marker_world_id,marker_channel_id,marker_as_of_us) ",
+        "SELECT encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5::text::numeric(20,0),$6::text::numeric(20,0),$7,s.level,s.level,s.total_experience,s.total_experience,",
+        "$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,",
+        "$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42,",
+        "NULL,NULL,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,$8,",
+        "$43,$44,$45,$46,$47,$48,$49::text::numeric(20,0),encode($50,'hex')::uuid,encode($51,'hex')::uuid,encode($52,'hex')::uuid,$53 ",
+        "FROM game_character_progression_state s WHERE s.character_id=encode($4,'hex')::uuid"
+    );
+    let query = sqlx::query(sql)
+        .bind(occurrence.as_bytes().as_slice())
+        .bind(binding)
+        .bind(policy_digest.as_slice())
+        .bind(fence.character_id.as_bytes().as_slice())
+        .bind(current.revision.to_string())
+        .bind(next.to_string())
+        .bind(key.kind.sql_key())
+        .bind(as_of_us / 1000);
+    let query = after_build.bind(before_build.bind(query));
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = fence.runtime_scope
+    else {
+        return Err(CharacterProgressionError::AuthorityRejected);
+    };
+    let query = query
+        .bind(i32::from(before_columns.stamina_minutes))
+        .bind(
+            i32::try_from(before_columns.pool_s)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?,
+        )
+        .bind(before_columns.skill.map_or("none", OfflineSkill::sql_key))
+        .bind(i32::from(after_columns.stamina_minutes))
+        .bind(
+            i32::try_from(after_columns.pool_s)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?,
+        )
+        .bind(after_columns.skill.map_or("none", OfflineSkill::sql_key))
+        .bind(key.lease.to_string())
+        .bind(fence.game_session_id.as_bytes().as_slice())
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .bind(as_of_us);
+    if query
+        .execute(&mut **tx)
+        .await
+        .map_err(DurabilityError::from)?
+        .rows_affected()
+        != 1
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let query = sqlx::query(concat!(
+        "INSERT INTO game_character_build_state(character_id,vocation,",family_columns!("", ""),
+        ",committed_character_revision,last_build_occurrence_id,stamina_minutes,offline_pool_s,offline_skill) VALUES (encode($1,'hex')::uuid,",
+        "$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::text::numeric(20,0),encode($20,'hex')::uuid,$21,$22,$23) ",
+        "ON CONFLICT(character_id) DO UPDATE SET (vocation,",family_columns!("", ""),
+        ",committed_character_revision,last_build_occurrence_id,stamina_minutes,offline_pool_s,offline_skill)=(EXCLUDED.vocation,",family_columns!("EXCLUDED.", ""),
+        ",EXCLUDED.committed_character_revision,EXCLUDED.last_build_occurrence_id,EXCLUDED.stamina_minutes,EXCLUDED.offline_pool_s,EXCLUDED.offline_skill)"
+    )).bind(fence.character_id.as_bytes().as_slice());
+    let query = after_build
+        .bind(query)
+        .bind(next.to_string())
+        .bind(occurrence.as_bytes().as_slice())
+        .bind(i32::from(after_columns.stamina_minutes))
+        .bind(
+            i32::try_from(after_columns.pool_s)
+                .map_err(|_| CharacterProgressionError::InvalidInput)?,
+        )
+        .bind(after_columns.skill.map_or("none", OfflineSkill::sql_key));
+    if query
+        .execute(&mut **tx)
+        .await
+        .map_err(DurabilityError::from)?
+        .rows_affected()
+        != 1
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    load_offline_marker(tx, key)
+        .await?
+        .ok_or(DurabilityError::InvalidStoredState.into())
 }
