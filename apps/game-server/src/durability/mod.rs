@@ -56,6 +56,9 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
+#[cfg(test)]
+#[path = "../../tests/support/item_weight_lookup.rs"]
+pub mod item_weight_lookup;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod monk_state;

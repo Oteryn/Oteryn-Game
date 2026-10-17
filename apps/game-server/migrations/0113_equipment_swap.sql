@@ -176,7 +176,10 @@ BEGIN
       AND p.created_xact_id=pg_current_xact_id()) THEN RETURN NULL;END IF;
     END IF;
 
-    IF TG_TABLE_NAME='game_item_container_entries' AND EXISTS(
+    -- Guard record-field access before preparing the entry-only swap expression:
+    -- the same trigger also receives slot rows, which have no parent or ordinal.
+    IF TG_TABLE_NAME='game_item_container_entries' THEN
+    IF EXISTS(
        SELECT 1 FROM game_character_equipment_receipts r
        JOIN game_item_instances i ON i.item_instance_id=r.swap_item_instance_id
        WHERE r.operation=1 AND r.swap_item_instance_id=NEW.item_instance_id
@@ -190,6 +193,7 @@ BEGIN
            RAISE EXCEPTION 'equipment swap backpack entry ceiling exceeded' USING ERRCODE='23514';
        END IF;
        RETURN NULL;
+    END IF;
     END IF;
     IF TG_TABLE_NAME='game_item_container_entries' THEN
     -- 0082: the new entry of an NPC trade MINT line of this same physical transaction.

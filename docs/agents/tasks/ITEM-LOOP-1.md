@@ -498,3 +498,106 @@ for that run to finish, then one coherent push. The new head's targeted PG/nativ
 swap qualifier is queued on B after #2191, one start/no retry. This local increment
 remains NOT_FULLY_QUALIFIED; previous compilation receipts cover unchanged Rust
 bodies, not execution of migration 0113 or the new PG case.
+
+
+### Reconciled draft continuation (2026-10-17)
+
+The current parent is `ae038d0ddf4ba02d0a1d72a099b259b49c2948ad`.
+That independently published successor of `a989bcc1` adds a reasoned
+`dead_code` allowance to `CapacityMove::WithinCharacter`. Preserve that
+change, the capacity model and all 22 existing capacity/reference cases.
+The local alternative that removed the unused variant and its no-op test
+was not published and is excluded from this successor.
+
+This continuation fixes the actual native unequip ordinal defect and the
+duplicate catalogue registration below. Migration 0113, Content observations,
+current authority, transport, resource limits and existing swap behavior are
+unchanged. Stack merge/top-up and independent Content parity remain open.
+
+### Native unequip ordinal boundary repair (2026-10-17)
+
+The existing equipment owner selects `placement_ordinal::text` and orders by
+the unqualified output name before using the last row as the highest ordinal.
+With numeric ordinals 9 and 10, text ordering proposes 10 again instead of 11.
+Qualify the numeric table column in this one `ORDER BY`; the schema, limits,
+held locks, current authority and transaction guards remain unchanged. The
+other two `ORDER BY` expressions in this owner are unambiguous, and its swap
+branch already computes numeric `max(placement_ordinal)`.
+
+The existing `equipment_move_postgres_cases.rs` now contains
+`unequip_allocates_numeric_ordinal_after_nine_and_ten`. It uses real native
+MINT/TRANSFER and equipment transactions to create ordinals 9 and 10, then
+requires unequip to place 11, retain quantities and CharacterRevision, write
+one receipt/audit and replay without further changes. The original failing
+path must roll back its footprint and keep the worn item. No direct location
+fixture writes, guard bypasses, new test target or production wiring are added.
+
+The original owner query and the same new regression are retained as the RED
+input. Native RED/GREEN execution, full package, strict all-target Clippy and
+PostgreSQL 17.6 qualification are pending; source inspection is not a runtime
+PASS. The existing capacity model and its 22 tests are unchanged.
+
+
+### One catalogue registration per native test crate (2026-10-17)
+
+The actual strict all-target Clippy run on the earlier candidate exposed
+`clippy::duplicate_mod` for `tests/support/item_weight_lookup.rs` inside
+`character_authority_postgres`. Four fixture modules independently path-loaded
+the same catalogue into that canonical test crate.
+
+Register the test catalogue once per crate under the existing `durability`
+module, guarded by `cfg(test)`, and import it from the four fixture consumers.
+Its two imports use the exact current crate's native durability types. The
+fixture weights, lookup outcomes, production compilation and all original
+test bodies remain unchanged. No lint suppression or allowlist change is added.
+
+Workspace formatting, governance and its 124 regression tests passed on the
+prior assembled source. Native compilation and PostgreSQL qualification of
+this successor remain pending until recorded below. Build artifacts are now
+isolated per PR: a shared Cargo target reused protocol metadata without the
+`logout` module after switching between branch baselines, so that failed
+environment run is retained and cannot qualify this candidate.
+
+### D1329 native equipment and capacity qualification (2026-10-17)
+
+The actual parent of this successor is
+`c7a148f256340b2b2cf7b23732b871ddafc3c112`. Both concurrent commits are retained
+in ancestry: ae038's capacity allowance and unchanged 22 capacity cases, then
+c7a148's response to duplicate module diagnostics. The structural single
+catalogue mount supersedes c7a148's four duplicate declarations and allowances;
+the resulting Rust and test bytes match the independently reviewed candidate.
+
+Shared PostgreSQL qualification exposed a second real defect before unequip:
+the draft-owned 0113 placement trigger referenced entry-only NEW record fields
+inside an AND expression even for a container-slot row. PostgreSQL raised
+`record "new" has no field "parent_item_instance_id"`. Place the unchanged
+entry/swap predicate inside a separate table-name IF so those fields are only
+prepared for the matching record type. All existing swap proof conditions and
+other trigger arms remain exact. The CP-assigned, still-unmerged 0113 file is
+absent from inspected main f010472b; no migration number was invented and no
+already-applied main migration was edited.
+
+With that real prerequisite fixed, reverting only the numeric ORDER BY caused
+the new native 9/10 ordinal test to fail at its intended unequip assertion
+(exit 101). The runner restored the exact GREEN query and all three equipment
+cases passed on server_version_num=170006, including occupied-slot swap and
+native mint/transfer setup. All six actual derived-capacity PG cases also
+passed, including real level-award/death receipts and generation/weight refusal.
+
+| Receipt | Result | SHA-256 of complete log |
+| --- | --- | --- |
+| Numeric ordinal RED | Intended regression reproduced | `acbdcf866a33da79c6913ca0fc200e4178c6236537a36c684a61b8311e186a1c` |
+| Equipment GREEN | 3 passed, 0 failed, 0 ignored | `65869921ffdcef93547a8700c7dbf538ba48f703a2f3e002b28d46118e1230d4` |
+| Derived capacity PG | 6 passed, 0 failed, 0 ignored | `4e6ecbf07922e5fbd6856c53c426ac78ca283e130fb226fc6491c0dc2f46fd5b` |
+
+The unchanged 22 capacity/reference tests, strict all-target Clippy and actual
+duplicate-source guard had passed on these same Rust bytes before the narrow
+0113 SQL correction. Formatting and governance passed. Full normal-package
+execution is queued at this publication checkpoint; exact new-head CI remains
+pending and is not inferred from an older commit's status.
+
+All new database execution followed D1329: cargo fetch --locked before the
+unchanged owner in-pg-netns.sh, then the isolated namespace's proxy to the
+existing shared PG17.6 at host 127.0.0.1:55432. No server or container was started
+for this checkpoint. Stack merge/top-up and independent current Content parity
+remain open family work; this receipt qualifies the stated concrete repairs.

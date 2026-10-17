@@ -598,3 +598,147 @@ fn occupied_slot_swap_is_atomic_at_full_backpack_and_replay_bound() -> TestResul
         drop(authority);drop(seal);harness.cleanup().await
     })
 }
+
+#[test]
+fn unequip_allocates_numeric_ordinal_after_nine_and_ten() -> TestResult {
+    use sqlx::Row;
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "equipordinal").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = equip_backpack(&harness, &authority, fence()?, SESSION).await?;
+        let mut items = Vec::new();
+        for (n, key) in [ARMOR, SWORD, SWORD].into_iter().enumerate() {
+            let item = harness.mint(&authority, key, 1).await?;
+            match harness
+                .transfer(
+                    &authority,
+                    fence()?,
+                    to_backpack(command(2 + n as u64)?, item, plain(key)),
+                )
+                .await
+                .map_err(debug)?
+            {
+                ItemTransferOutcome::Committed(_) => items.push(item),
+                other => return Err(format!("expected bootstrap transfer, got {other:?}").into()),
+            }
+        }
+        let [armor, first, second] = items[..] else {
+            return Err("three native backpack entries".into());
+        };
+        activate_and_initialize(&harness, &authority).await?;
+        let revision = character_revision(&harness).await?;
+        let moved = |n: u64, request: EquipmentMove| {
+            let harness = &harness;
+            let authority = &authority;
+            async move {
+                harness
+                    .root
+                    .commit_equipment_move(
+                        authority,
+                        &harness.node,
+                        &fence()?,
+                        command(n)?,
+                        &Profile,
+                        request,
+                    )
+                    .await
+                    .map_err(|error| -> Box<dyn std::error::Error> { debug(error).into() })
+            }
+        };
+        moved(10, equip(armor, TORSO))
+            .await?
+            .map_err(|refusal| format!("expected armor equip, got {refusal:?}"))?;
+        // Advance ordinals through the real owner; no direct location writes or disabled guards.
+        // Alternating the two swords leaves exactly ordinals 9 and 10 with one free entry.
+        for turn in 0..7_u64 {
+            let item = if turn % 2 == 0 { first } else { second };
+            moved(11 + 2 * turn, equip(item, WEAPON))
+                .await?
+                .map_err(|refusal| format!("expected sword equip, got {refusal:?}"))?;
+            moved(12 + 2 * turn, unequip(item, WEAPON))
+                .await?
+                .map_err(|refusal| format!("expected sword unequip, got {refusal:?}"))?;
+        }
+        let ordinals: Vec<String> = sqlx::query_scalar(
+            "SELECT placement_ordinal::text FROM game_item_container_entries \
+             WHERE parent_item_instance_id=encode($1,'hex')::uuid \
+             ORDER BY game_item_container_entries.placement_ordinal",
+        )
+        .bind(backpack.as_slice())
+        .fetch_all(&harness.pool)
+        .await?;
+        assert_eq!(ordinals, ["9", "10"]);
+        assert_eq!(worn(&harness, &authority).await?, [(TORSO, armor)]);
+        let before = footprint(&harness).await?;
+        let states = [
+            (armor, harness.item_state(armor).await?),
+            (first, harness.item_state(first).await?),
+            (second, harness.item_state(second).await?),
+        ];
+        let outcome = moved(25, unequip(armor, TORSO)).await;
+        if !matches!(&outcome, Ok(Ok(_))) {
+            // The original text ordering attempts ordinal 10 again. Its failure must roll back.
+            assert_eq!(footprint(&harness).await?, before);
+            assert_eq!(worn(&harness, &authority).await?, [(TORSO, armor)]);
+            for (item, state) in states {
+                assert_eq!(harness.item_state(item).await?, state);
+            }
+            assert_eq!(character_revision(&harness).await?, revision);
+            let error = format!("unequip with ordinals 9 and 10 must commit: {outcome:?}");
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Err(error.into());
+        }
+        let receipt = outcome?
+            .map_err(|refusal| format!("expected numeric-ordinal unequip, got {refusal:?}"))?;
+        assert!(!receipt.replayed);
+        assert!(worn(&harness, &authority).await?.is_empty());
+        let proof = sqlx::query(
+            "SELECT r.backpack_ordinal::text, e.placement_ordinal::text, \
+             (SELECT count(*) FROM game_character_equipment_audit_outbox \
+              WHERE transaction_id=r.transaction_id) AS audits \
+             FROM game_character_equipment_receipts r \
+             JOIN game_item_container_entries e ON e.item_instance_id=r.item_instance_id \
+             WHERE r.transaction_id=encode($1,'hex')::uuid",
+        )
+        .bind(receipt.transaction_id.as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        assert_eq!(proof.try_get::<String, _>("backpack_ordinal")?, "11");
+        assert_eq!(proof.try_get::<String, _>("placement_ordinal")?, "11");
+        assert_eq!(proof.try_get::<i64, _>("audits")?, 1);
+        let ordinals: Vec<String> = sqlx::query_scalar(
+            "SELECT placement_ordinal::text FROM game_item_container_entries \
+             WHERE parent_item_instance_id=encode($1,'hex')::uuid \
+             ORDER BY game_item_container_entries.placement_ordinal",
+        )
+        .bind(backpack.as_slice())
+        .fetch_all(&harness.pool)
+        .await?;
+        assert_eq!(ordinals, ["9", "10", "11"]);
+        for (item, state) in states {
+            assert_eq!(harness.item_state(item).await?, state);
+        }
+        assert_eq!(character_revision(&harness).await?, revision);
+        let committed = footprint(&harness).await?;
+        let replay = moved(25, unequip(armor, TORSO))
+            .await?
+            .map_err(|refusal| format!("expected replay, got {refusal:?}"))?;
+        assert!(replay.replayed);
+        assert_eq!(replay.transaction_id, receipt.transaction_id);
+        assert_eq!(replay.event_id, receipt.event_id);
+        assert_eq!(footprint(&harness).await?, committed);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}

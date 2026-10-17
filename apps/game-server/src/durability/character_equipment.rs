@@ -599,7 +599,7 @@ pub(crate) async fn apply_equipment_in_transaction(
                 }
                 // Other legitimate custody writers for this backpack serialize
                 // on the same held Character root before changing its entries.
-                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
+                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY game_item_container_entries.placement_ordinal").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
                 let backpack_policy = content
                     .equipment_policy(
                         &backpack.try_get::<String, _>("definition_production_key")?,

@@ -12,12 +12,7 @@
 // set_materialized_ago, equip_backpack, take, ...) lets the D3-6 decay cases
 // (`corpse_decay_postgres_cases.rs`) reuse them; behavior is unchanged.
 
-// The same test-only weights file is mounted by several case modules that one
-// test crate can include together (character_authority_postgres).
-#[allow(clippy::duplicate_mod)]
-#[path = "item_weight_lookup.rs"]
-mod capacity_weights;
-use capacity_weights::TEST_WEIGHTS;
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
 
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;

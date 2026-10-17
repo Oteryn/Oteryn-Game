@@ -1,7 +1,7 @@
 //! Test-only independent Content catalogue for the explicitly named native PG fixtures.
 //! These synthetic weights are centi-oz; production never imports this module.
-use oteryn_game_server::durability::item_mint::TypedDefinitionRef;
-use oteryn_game_server::durability::item_transfer::{ItemWeightLookup, ItemWeightRefused};
+use crate::durability::item_mint::TypedDefinitionRef;
+use crate::durability::item_transfer::{ItemWeightLookup, ItemWeightRefused};
 
 pub const TEST_WEIGHTS: TestWeights = TestWeights;
 pub struct TestWeights;

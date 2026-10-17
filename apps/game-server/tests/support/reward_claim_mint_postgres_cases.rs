@@ -4,12 +4,7 @@
 // through the real B3-1 TRANSFER path; its definition is the same test-only
 // fixture as the B3-1 cases.
 
-// The same test-only weights file is mounted by several case modules that one
-// test crate can include together (character_authority_postgres).
-#[allow(clippy::duplicate_mod)]
-#[path = "item_weight_lookup.rs"]
-mod capacity_weights;
-use capacity_weights::TEST_WEIGHTS;
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
