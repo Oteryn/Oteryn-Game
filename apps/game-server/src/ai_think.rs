@@ -39,6 +39,8 @@ pub mod profile_schedule;
 pub mod targeting;
 
 use std::collections::BTreeMap;
+use std::future::Future;
+use std::pin::Pin;
 
 use crate::ability::RevisionSet;
 use crate::ai::AiProvenance;
@@ -58,9 +60,12 @@ use oteryn_simulation_determinism::{
 };
 use profile_schedule::{
     AttackTarget, MonsterSummonFacts, ProfileAbilityProposal, ProfileScheduleInput,
-    ProfileScheduleState, ProfileSummonProposal, ScheduleError, decision_occurrence,
+    ProfileScheduleState, ProfileSummonProposal, ScheduleError, SchedulePlan, decision_occurrence,
 };
 use targeting::{Strategy, TargetCandidate};
+
+type CurrentGoalFactsFuture<'a> =
+    Pin<Box<dyn Future<Output = Result<Option<MonsterSummonFacts>, ScheduleError>> + Send + 'a>>;
 
 /// §1.3: one think per creature per second (Canary's `EVENT_CREATURE_THINK_INTERVAL`).
 pub const CREATURE_THINK_INTERVAL_MILLIS: u64 = 1_000;
@@ -178,6 +183,23 @@ impl std::fmt::Debug for CreatureAiState {
     }
 }
 
+/// Target selection is read-only until the current fact reader completes. This private
+/// continuation carries decisions, never runtime or Map admission authority.
+struct ThinkContinuation {
+    attack_target: Option<AttackTarget>,
+    forced_target: Option<(ExactActorRef, u64)>,
+    forced_distance: Option<u64>,
+    change_ticks_ms: u64,
+    wander_ticks_ms: u64,
+}
+
+#[derive(Clone, Copy)]
+enum ThinkStepMode {
+    Legacy,
+    CurrentStep,
+    Goals,
+}
+
 impl CreatureAiState {
     /// `anchor` is the spawn or admission cell wander stays near (§1.4).
     #[must_use]
@@ -213,6 +235,18 @@ impl CreatureAiState {
     #[must_use]
     pub const fn target(&self) -> Option<ExactActorRef> {
         self.target
+    }
+
+    pub(crate) const fn movement_anchor(&self) -> MovementLocalPosition {
+        self.anchor
+    }
+
+    pub(crate) fn movement_target_distance(&self, now_us: u64) -> u16 {
+        if self.forced_distance.is_some_and(|until| now_us < until) {
+            1
+        } else {
+            self.profile.targeting().target_distance_tiles.max(1)
+        }
     }
 
     /// The overrides this creature holds, at most `CREATUREAI0-RL-18`.
@@ -255,12 +289,117 @@ impl CreatureAiState {
             ProfileScheduleInput<'_>,
         ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
     ) -> Result<ThinkReport, ThinkError> {
+        let (report, continuation) =
+            self.prepare_think(sequence, facts, admits, ThinkStepMode::Legacy)?;
+        let Some(continuation) = continuation else {
+            return Ok(report);
+        };
+        let input = ProfileScheduleInput {
+            occurrence: ThinkOccurrence {
+                actor: self.actor,
+                sequence,
+            },
+            behavior: self.profile.behavior(),
+            abilities: self.profile.abilities(),
+            target: continuation.attack_target,
+            revisions: facts.revisions,
+            root: facts.root,
+        };
+        let plan = summon_facts(input)
+            .and_then(|current| self.schedule.prepare_with_summons(input, current.as_ref()));
+        Ok(self.finish_think(report, continuation, plan))
+    }
+
+    /// The same single think when current Map/Item facts require an owner-bound SQL read.
+    /// Cancellation before the reader completes cannot advance the profile schedule or target.
+    pub(crate) async fn think_with_current_summon_facts(
+        &mut self,
+        sequence: u64,
+        facts: &CreatureThinkFacts<'_>,
+        admits: impl Fn(MovementLocalPosition) -> bool,
+        summon_facts: impl AsyncFnOnce(
+            ProfileScheduleInput<'_>,
+            &mut Option<CreatureStep>,
+        ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
+    ) -> Result<ThinkReport, ThinkError> {
+        let (mut report, continuation) =
+            self.prepare_think(sequence, facts, admits, ThinkStepMode::CurrentStep)?;
+        let Some(continuation) = continuation else {
+            return Ok(report);
+        };
+        let input = ProfileScheduleInput {
+            occurrence: ThinkOccurrence {
+                actor: self.actor,
+                sequence,
+            },
+            behavior: self.profile.behavior(),
+            abilities: self.profile.abilities(),
+            target: continuation.attack_target,
+            revisions: facts.revisions,
+            root: facts.root,
+        };
+        let current = summon_facts(input, &mut report.step).await;
+        let plan =
+            current.and_then(|current| self.schedule.prepare_with_summons(input, current.as_ref()));
+        Ok(self.finish_think(report, continuation, plan))
+    }
+
+    /// Native Movement chooses a goal while this same think schedules its profile once.
+    /// The returned report never commits a greedy step. The callback may keep a walk-back
+    /// think awake while preparing current facts; cancellation leaves this state untouched.
+    /// Borrowed owner context and the one Send future remain scoped to this current read.
+    pub(crate) async fn think_with_current_goal_facts<C, F>(
+        &mut self,
+        sequence: u64,
+        facts: &CreatureThinkFacts<'_>,
+        context: &mut C,
+        current: F,
+    ) -> Result<ThinkReport, ThinkError>
+    where
+        C: Send,
+        F: for<'a> FnOnce(
+                &'a mut C,
+                ProfileScheduleInput<'a>,
+                &'a mut ThinkReport,
+            ) -> CurrentGoalFactsFuture<'a>
+            + Send,
+    {
+        let (mut report, continuation) =
+            self.prepare_think(sequence, facts, |_| true, ThinkStepMode::Goals)?;
+        let Some(continuation) = continuation else {
+            return Ok(report);
+        };
+        let input = ProfileScheduleInput {
+            occurrence: ThinkOccurrence {
+                actor: self.actor,
+                sequence,
+            },
+            behavior: self.profile.behavior(),
+            abilities: self.profile.abilities(),
+            target: continuation.attack_target,
+            revisions: facts.revisions,
+            root: facts.root,
+        };
+        let facts = current(context, input, &mut report).await;
+        report.step = None;
+        let plan =
+            facts.and_then(|facts| self.schedule.prepare_with_summons(input, facts.as_ref()));
+        Ok(self.finish_think(report, continuation, plan))
+    }
+
+    fn prepare_think(
+        &self,
+        sequence: u64,
+        facts: &CreatureThinkFacts<'_>,
+        admits: impl Fn(MovementLocalPosition) -> bool,
+        step_mode: ThinkStepMode,
+    ) -> Result<(ThinkReport, Option<ThinkContinuation>), ThinkError> {
         if let Some(last) = &self.last {
             if sequence < last.sequence {
                 return Err(ThinkError::OccurrenceSuperseded);
             }
             if sequence == last.sequence {
-                return Ok(last.clone());
+                return Ok((last.clone(), None));
             }
         }
         let position = facts.position;
@@ -282,19 +421,22 @@ impl CreatureAiState {
                 .as_ref()
                 .map_or(0, |summons| summons.entries.len());
         if units > CREATUREAI0_EVALUATION_UNITS_PER_THINK {
-            return Ok(ThinkReport {
-                sequence,
-                target: self.target,
-                target_changed: false,
-                step: None,
-                proposals: Vec::new(),
-                summon_proposals: Vec::new(),
-                refusal: None,
-                fleeing: false,
-                idle: false,
-                over_budget: true,
-                units,
-            });
+            return Ok((
+                ThinkReport {
+                    sequence,
+                    target: self.target,
+                    target_changed: false,
+                    step: None,
+                    proposals: Vec::new(),
+                    summon_proposals: Vec::new(),
+                    refusal: None,
+                    fleeing: false,
+                    idle: false,
+                    over_budget: true,
+                    units,
+                },
+                None,
+            ));
         }
 
         let occurrence = ThinkOccurrence {
@@ -399,65 +541,71 @@ impl CreatureAiState {
         // §1.1, §1.4: one cardinal step.
         let target_position = target.and_then(find).map(|candidate| candidate.position);
         let mut wander_ticks_ms = self.wander_ticks_ms;
-        let step = match target_position {
-            Some(at) if fleeing => {
-                let current = targeting::plane_distance(position, at);
-                // The farthest admitted cell; ties keep the first in `CARDINALS` order.
-                CARDINALS
-                    .into_iter()
-                    .enumerate()
-                    .map(|(order, step)| (order, step, apply_step(position, step)))
-                    .filter(|(_, _, destination)| {
-                        targeting::plane_distance(*destination, at) > current
-                            && admits(*destination)
-                    })
-                    .max_by_key(|(order, _, destination)| {
-                        (
-                            targeting::plane_distance(*destination, at),
-                            std::cmp::Reverse(*order),
-                        )
-                    })
-                    .map(|(_, step, destination)| CreatureStep {
-                        kind: StepKind::Flee,
-                        step,
-                        destination,
-                    })
-            }
-            Some(at) if targeting::plane_distance(position, at) > attack_distance => {
-                step_towards(position, at)
-                    .map(|step| (step, apply_step(position, step)))
-                    .filter(|(_, destination)| admits(*destination))
-                    .map(|(step, destination)| CreatureStep {
-                        kind: StepKind::Chase,
-                        step,
-                        destination,
-                    })
-            }
-            Some(_) => None,
-            None => match self.profile.wander() {
-                Some(wander) if !perceived.is_empty() && wander.interval_ms > 0 => {
-                    wander_ticks_ms =
-                        wander_ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
-                    if wander_ticks_ms >= wander.interval_ms {
-                        wander_ticks_ms = 0;
-                        let index = usize::try_from(draw(PURPOSE_WANDER, 0)? % 4)
-                            .map_err(|_| ThinkError::Draw)?;
-                        let step = CARDINALS[index];
-                        let destination = apply_step(position, step);
-                        (chebyshev_distance(destination, self.anchor)
-                            .is_some_and(|distance| distance <= i64::from(wander.radius_tiles))
-                            && admits(destination))
-                        .then_some(CreatureStep {
-                            kind: StepKind::Wander,
+        let step = if matches!(step_mode, ThinkStepMode::Goals) {
+            None
+        } else {
+            match target_position {
+                Some(at) if fleeing => {
+                    let current = targeting::plane_distance(position, at);
+                    // The farthest admitted cell; ties keep the first in `CARDINALS` order.
+                    CARDINALS
+                        .into_iter()
+                        .enumerate()
+                        .map(|(order, step)| (order, step, apply_step(position, step)))
+                        .filter(|(_, _, destination)| {
+                            targeting::plane_distance(*destination, at) > current
+                                && admits(*destination)
+                        })
+                        .max_by_key(|(order, _, destination)| {
+                            (
+                                targeting::plane_distance(*destination, at),
+                                std::cmp::Reverse(*order),
+                            )
+                        })
+                        .map(|(_, step, destination)| CreatureStep {
+                            kind: StepKind::Flee,
                             step,
                             destination,
                         })
-                    } else {
-                        None
-                    }
                 }
-                _ => None,
-            },
+                Some(at) if targeting::plane_distance(position, at) > attack_distance => {
+                    step_towards(position, at)
+                        .map(|step| (step, apply_step(position, step)))
+                        .filter(|(_, destination)| {
+                            matches!(step_mode, ThinkStepMode::CurrentStep) || admits(*destination)
+                        })
+                        .map(|(step, destination)| CreatureStep {
+                            kind: StepKind::Chase,
+                            step,
+                            destination,
+                        })
+                }
+                Some(_) => None,
+                None => match self.profile.wander() {
+                    Some(wander) if !perceived.is_empty() && wander.interval_ms > 0 => {
+                        wander_ticks_ms =
+                            wander_ticks_ms.saturating_add(CREATURE_THINK_INTERVAL_MILLIS);
+                        if wander_ticks_ms >= wander.interval_ms {
+                            wander_ticks_ms = 0;
+                            let index = usize::try_from(draw(PURPOSE_WANDER, 0)? % 4)
+                                .map_err(|_| ThinkError::Draw)?;
+                            let step = CARDINALS[index];
+                            let destination = apply_step(position, step);
+                            (chebyshev_distance(destination, self.anchor)
+                                .is_some_and(|distance| distance <= i64::from(wander.radius_tiles))
+                                && admits(destination))
+                            .then_some(CreatureStep {
+                                kind: StepKind::Wander,
+                                step,
+                                destination,
+                            })
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                },
+            }
         };
 
         // §2.1 item 5: the profile's non-melee entries at this think's target.
@@ -467,43 +615,53 @@ impl CreatureAiState {
                 u16::try_from(targeting::plane_distance(position, at)).unwrap_or(u16::MAX)
             }),
         });
-        let input = ProfileScheduleInput {
-            occurrence,
-            behavior: self.profile.behavior(),
-            abilities: self.profile.abilities(),
-            target: attack_target,
-            revisions: facts.revisions,
-            root: facts.root,
-        };
-        let plan = summon_facts(input)
-            .and_then(|current| self.schedule.prepare_with_summons(input, current.as_ref()));
-        let (proposals, summon_proposals, refusal) = match plan {
-            Ok(plan) => (plan.proposals, plan.summon_proposals, None),
-            Err(error) => (Vec::new(), Vec::new(), Some(error)),
-        };
-
         let report = ThinkReport {
             sequence,
             target,
             target_changed,
             step,
-            proposals,
-            summon_proposals,
-            refusal,
+            proposals: Vec::new(),
+            summon_proposals: Vec::new(),
+            refusal: None,
             fleeing,
             idle: perceived.is_empty() && target.is_none() && !facts.has_active_condition,
             over_budget: false,
             units,
         };
-        self.target = target;
-        self.forced_target = forced_target.or(self
-            .forced_target
-            .filter(|(_, until)| facts.now_us < *until));
-        self.forced_distance = forced_distance;
-        self.change_ticks_ms = change_ticks_ms;
-        self.wander_ticks_ms = wander_ticks_ms;
+        Ok((
+            report,
+            Some(ThinkContinuation {
+                attack_target,
+                forced_target: forced_target.or(self
+                    .forced_target
+                    .filter(|(_, until)| facts.now_us < *until)),
+                forced_distance,
+                change_ticks_ms,
+                wander_ticks_ms,
+            }),
+        ))
+    }
+
+    fn finish_think(
+        &mut self,
+        mut report: ThinkReport,
+        continuation: ThinkContinuation,
+        plan: Result<SchedulePlan, ScheduleError>,
+    ) -> ThinkReport {
+        match plan {
+            Ok(plan) => {
+                report.proposals = plan.proposals;
+                report.summon_proposals = plan.summon_proposals;
+            }
+            Err(error) => report.refusal = Some(error),
+        }
+        self.target = report.target;
+        self.forced_target = continuation.forced_target;
+        self.forced_distance = continuation.forced_distance;
+        self.change_ticks_ms = continuation.change_ticks_ms;
+        self.wander_ticks_ms = continuation.wander_ticks_ms;
         self.last = Some(report.clone());
-        Ok(report)
+        report
     }
 }
 
@@ -514,6 +672,220 @@ struct CreatureAiEntry {
     state: CreatureAiState,
     due_us: Option<u64>,
     sequence: u64,
+    movement: Option<NativeCreatureMovement>,
+}
+
+/// Goal data retained by the existing AI entry. Summons have no source home and therefore
+/// cannot acquire wild walk-back or leash behavior from their arbitrary admission cell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NativeCreatureGoal {
+    Stand,
+    Chase {
+        target: ExactActorRef,
+        distance: u16,
+    },
+    Flee {
+        target: ExactActorRef,
+    },
+    Wander {
+        anchor: MovementLocalPosition,
+        interval_ms: u64,
+        radius_tiles: u16,
+    },
+    WalkBack {
+        home: MovementLocalPosition,
+    },
+}
+
+impl NativeCreatureGoal {
+    pub(crate) const fn target(self) -> Option<ExactActorRef> {
+        match self {
+            Self::Chase { target, .. } | Self::Flee { target } => Some(target),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct NativeCreatureMovement {
+    pub(crate) home: Option<MovementLocalPosition>,
+    pub(crate) source: crate::movement::speed::NativeCreatureSpeed,
+    pub(crate) cadence: crate::movement::speed::CreatureMovementCadence,
+    pub(crate) near: crate::movement::speed::CreatureNearTarget,
+    pub(crate) goal: NativeCreatureGoal,
+    pub(crate) goal_sequence: u64,
+    pub(crate) request_sequence: u64,
+    pub(crate) path: Option<NativeCreaturePath>,
+    pub(crate) search_pending: bool,
+    pending: Option<ThinkOccurrence>,
+    step_sequence: u64,
+}
+
+/// Full native bindings supplement the bootstrap carrier's compact interpretation fields.
+/// The route is DATA only: every consumed destination is read again from the current Map / Item
+/// transaction, and current owner / source / target checks remain mandatory at execution.
+#[derive(Debug, Clone)]
+pub(crate) struct NativeCreaturePath {
+    pub(crate) from: MovementPositionSnapshot,
+    pub(crate) target: Option<MovementPositionSnapshot>,
+    goal: NativeCreatureGoal,
+    goal_sequence: u64,
+    server: [u8; 32],
+    client: [u8; 32],
+    map: [u8; 32],
+    frame: [u8; 32],
+    revisions: RevisionSet,
+    proposal: crate::ai::PathProposal,
+    consumed: usize,
+}
+
+fn native_path_provenance(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: ExactActorRef,
+    goal_sequence: u64,
+    revisions: &RevisionSet,
+) -> AiProvenance {
+    use sha2::{Digest, Sha256};
+    let short = |bytes: &[u8]| {
+        let digest = Sha256::digest(bytes);
+        u64::from_be_bytes([
+            digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
+        ])
+    };
+    // These compact numeric fields are comparison data, not a source-membership grant.
+    // `NativeCreaturePath::current` additionally compares full exact refs, pins and revisions.
+    AiProvenance::new(crate::ai::AiProvenanceInput {
+        scope_id: short(actor.channel_id().as_bytes()),
+        scope_generation: actor.scope_generation().get(),
+        actor_generation: actor.actor_local_generation(),
+        behavior_revision: goal_sequence,
+        content_revision: runtime.content_pin().activation_sequence(),
+        navigation_revision: short(&runtime.content_pin().map_revision_digest()),
+        ruleset_revision: short(revisions.ruleset().as_bytes()),
+        determinism_profile_revision: short(revisions.simulation().as_bytes()),
+    })
+}
+
+impl NativeCreaturePath {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn from_search(
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: ExactActorRef,
+        goal: NativeCreatureGoal,
+        goal_sequence: u64,
+        request_sequence: u64,
+        target: Option<MovementPositionSnapshot>,
+        steps: &[CardinalStep],
+        revisions: &RevisionSet,
+    ) -> Option<Self> {
+        let nodes = steps
+            .iter()
+            .map(|step| {
+                crate::ai::RouteStep::new(
+                    match step {
+                        CardinalStep::North => 0,
+                        CardinalStep::East => 1,
+                        CardinalStep::South => 2,
+                        CardinalStep::West => 3,
+                    },
+                    1,
+                )
+            })
+            .collect::<Vec<_>>();
+        let proposal = crate::ai::build_path_proposal(
+            crate::ai::PathRequest::new(
+                native_path_provenance(runtime, actor, goal_sequence, revisions),
+                request_sequence,
+                1,
+                crate::movement::path_search::PATH_SEARCH_WORK,
+            ),
+            &nodes,
+        )
+        .ok()?;
+        let pin = runtime.content_pin();
+        Some(Self {
+            from: runtime.read_actor_position(actor).ok()?,
+            target,
+            goal,
+            goal_sequence,
+            server: pin.server_artifact_digest(),
+            client: pin.client_artifact_digest(),
+            map: pin.map_revision_digest(),
+            frame: pin.frame_binding_digest(),
+            revisions: revisions.clone(),
+            proposal,
+            consumed: 0,
+        })
+    }
+
+    pub(crate) fn current(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: ExactActorRef,
+        goal: NativeCreatureGoal,
+        goal_sequence: u64,
+        revisions: &RevisionSet,
+    ) -> bool {
+        let pin = runtime.content_pin();
+        self.goal == goal
+            && self.goal_sequence == goal_sequence
+            && self.revisions == *revisions
+            && self.server == pin.server_artifact_digest()
+            && self.client == pin.client_artifact_digest()
+            && self.map == pin.map_revision_digest()
+            && self.frame == pin.frame_binding_digest()
+            && runtime.read_actor_position(actor).ok() == Some(self.from)
+            && goal
+                .target()
+                .map(|target| runtime.read_actor_position(target).ok())
+                == self.target.map(Some)
+            && self
+                .proposal
+                .revalidate(native_path_provenance(
+                    runtime,
+                    actor,
+                    goal_sequence,
+                    revisions,
+                ))
+                .is_ok()
+    }
+
+    pub(crate) fn steps(&self) -> impl Iterator<Item = CardinalStep> + '_ {
+        self.proposal.steps()[self.consumed..]
+            .iter()
+            .filter_map(|step| match step.node() {
+                0 => Some(CardinalStep::North),
+                1 => Some(CardinalStep::East),
+                2 => Some(CardinalStep::South),
+                3 => Some(CardinalStep::West),
+                _ => None,
+            })
+    }
+
+    pub(crate) fn moved(
+        &mut self,
+        before: MovementPositionSnapshot,
+        after: MovementPositionSnapshot,
+    ) -> bool {
+        let Some(step) = self.steps().next() else {
+            return false;
+        };
+        let expected = apply_step(before.position(), step);
+        if self.from != before || after.position() != expected {
+            return false;
+        }
+        self.from = after;
+        self.consumed += 1;
+        true
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NativeStepFamily;
+impl TimerFamily for NativeStepFamily {
+    fn registered_maximum(self) -> usize {
+        1
+    }
 }
 
 /// The Channel's creature thinks (§2.1 item 1, `CREATUREAI0-RL-05`). Each creature holds at most
@@ -526,24 +898,42 @@ pub struct CreatureAiTable {
     entries: BTreeMap<[u8; 16], CreatureAiEntry>,
     window: Option<u64>,
     window_started: usize,
+    native_steps: Option<OwnerTimerLane<NativeStepFamily, ThinkOccurrence>>,
 }
 
 impl CreatureAiTable {
     /// Admits `state` with its first think due at `now_us`. A creature already present is
     /// replaced.
     pub fn admit(&mut self, state: CreatureAiState, now_us: u64) {
+        if let Some(previous) = self.entries.get(&state.actor().placement_identity()) {
+            self.cancel_native_step(previous.state.actor());
+        }
+        // Rebinding this same physical actor cannot reuse a consumed step identity or reset
+        // its moved-only cadence. A different exact generation gets fresh admission state.
+        let movement = self
+            .entry_mut(state.actor())
+            .and_then(|entry| entry.movement.take())
+            .map(|mut movement| {
+                movement.goal = NativeCreatureGoal::Stand;
+                movement.path = None;
+                movement.search_pending = false;
+                movement.near = Default::default();
+                movement
+            });
         self.entries.insert(
             state.actor().placement_identity(),
             CreatureAiEntry {
                 state,
                 due_us: Some(now_us),
                 sequence: 0,
+                movement,
             },
         );
     }
 
     /// Forgets a creature (death, despawn). Returns whether it was present.
     pub fn remove(&mut self, actor: ExactActorRef) -> bool {
+        self.cancel_native_step(actor);
         self.entries.remove(&actor.placement_identity()).is_some()
     }
 
@@ -668,6 +1058,71 @@ impl CreatureAiTable {
             .now_us
             .saturating_add(CREATURE_THINK_INTERVAL_MILLIS.saturating_mul(1_000));
         entry.due_us = Some(next);
+        if let Ok(report) = &report {
+            entry.sequence = sequence;
+            if report.idle {
+                entry.due_us = None;
+            }
+        }
+        Some(report)
+    }
+
+    pub(crate) async fn think_with_current_summon_facts(
+        &mut self,
+        actor: ExactActorRef,
+        facts: &CreatureThinkFacts<'_>,
+        admits: impl Fn(MovementLocalPosition) -> bool,
+        summon_facts: impl AsyncFnOnce(
+            ProfileScheduleInput<'_>,
+            &mut Option<CreatureStep>,
+        ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
+    ) -> Option<Result<ThinkReport, ThinkError>> {
+        let entry = self.entry_mut(actor)?;
+        let sequence = entry.sequence.saturating_add(1);
+        let report = entry
+            .state
+            .think_with_current_summon_facts(sequence, facts, admits, summon_facts)
+            .await;
+        let next = facts
+            .now_us
+            .saturating_add(CREATURE_THINK_INTERVAL_MILLIS.saturating_mul(1_000));
+        entry.due_us = Some(next);
+        if let Ok(report) = &report {
+            entry.sequence = sequence;
+            if report.idle {
+                entry.due_us = None;
+            }
+        }
+        Some(report)
+    }
+
+    pub(crate) async fn think_with_current_goal_facts<C, F>(
+        &mut self,
+        actor: ExactActorRef,
+        facts: &CreatureThinkFacts<'_>,
+        context: &mut C,
+        current: F,
+    ) -> Option<Result<ThinkReport, ThinkError>>
+    where
+        C: Send,
+        F: for<'a> FnOnce(
+                &'a mut C,
+                ProfileScheduleInput<'a>,
+                &'a mut ThinkReport,
+            ) -> CurrentGoalFactsFuture<'a>
+            + Send,
+    {
+        let entry = self.entry_mut(actor)?;
+        let sequence = entry.sequence.checked_add(1)?;
+        let report = entry
+            .state
+            .think_with_current_goal_facts(sequence, facts, context, current)
+            .await;
+        entry.due_us = Some(
+            facts
+                .now_us
+                .saturating_add(CREATURE_THINK_INTERVAL_MILLIS * 1_000),
+        );
         if let Ok(report) = &report {
             entry.sequence = sequence;
             if report.idle {
