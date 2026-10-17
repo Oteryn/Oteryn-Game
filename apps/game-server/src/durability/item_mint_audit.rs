@@ -340,13 +340,18 @@ pub enum OneItemOperationV1 {
     ItemUse(super::item_use_audit::OneItemUseV1),
     #[prost(message, tag = "11")]
     HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    #[prost(message, tag = "12")]
+    PlayerTrade(super::player_trade::OneItemPlayerTradeV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11")]
+    #[prost(
+        oneof = "OneItemOperationV1",
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
+    )]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -1947,6 +1952,7 @@ pub(super) mod tests {
                 "src/durability/item_use.rs",
                 "src/durability/map_item_mint.rs",
                 "src/durability/npc_trade.rs",
+                "src/durability/player_trade.rs",
                 "src/durability/reward_claim_mint.rs",
             ]
         );

@@ -2293,6 +2293,879 @@ async fn root_lock_is_available(pool: &sqlx::PgPool, character: CharacterId) -> 
     }
 }
 
+// These writer fixtures use the real native component issuance, Root, recovery,
+// node, fences, Content, MINT and TRANSFER. The session-owned installation of the
+// two FND ingresses is still external; constructing these fixture ingresses does
+// not qualify that missing transport boundary.
+async fn native_transferring_with_ingress(
+    context: &TradeReadContext<'_, '_, '_>,
+    actors: [TradeActor; 2],
+    items: [[u8; 16]; 2],
+    ingress: &mut [CommandIngress; 2],
+    now: Instant,
+) -> TestResult<TradeOwner> {
+    let mut owner = native_ready_with_ingress(context, actors, items, ingress, now).await?;
+    let id = owner.trade_id(actors[0].actor).unwrap();
+    let first = reserve_native_accept(&owner, actors[0], id, &mut ingress[0])?;
+    assert_eq!(
+        owner
+            .accept_pending(context, actors[0], id, first, &mut ingress[0], now)
+            .await
+            .map_err(native::debug)?,
+        NativeAcceptOutcome::Accepted,
+    );
+    let second = reserve_native_accept(&owner, actors[1], id, &mut ingress[1])?;
+    assert_eq!(
+        owner
+            .accept_pending(context, actors[1], id, second, &mut ingress[1], now)
+            .await
+            .map_err(native::debug)?,
+        NativeAcceptOutcome::Transferring,
+    );
+    Ok(owner)
+}
+
+fn native_frozen_trade(
+    context: &TradeReadContext<'_, '_, '_>,
+    owner: &TradeOwner,
+    actor: TradeActor,
+    identity: crate::durability::player_trade::PlayerTradeEventIdentity,
+) -> TestResult<crate::durability::player_trade::FrozenPlayerTrade> {
+    let (issued, _) = owner
+        .issued_transfer(context.runtime, actor.actor)
+        .map_err(native::debug)?
+        .ok_or("missing native trade occurrence")?;
+    Ok(
+        crate::durability::player_trade::FrozenPlayerTrade::from_issued(
+            issued,
+            context.runtime,
+            context.generation,
+            identity,
+        )?,
+    )
+}
+
+async fn native_commit_trade(
+    context: &TradeReadContext<'_, '_, '_>,
+    owner: &TradeOwner,
+    actor: TradeActor,
+    request: &crate::durability::player_trade::FrozenPlayerTrade,
+    first_current_fence: CurrentCharacterItemFence,
+) -> Result<
+    crate::durability::player_trade::PlayerTradeOutcome,
+    crate::durability::player_trade::PlayerTradeError,
+> {
+    use crate::durability::player_trade::{PlayerTradeCommitAuthority, PlayerTradeError};
+    let (issued, _) = owner
+        .issued_transfer(context.runtime, actor.actor)
+        .map_err(|_| PlayerTradeError::AuthorityRejected)?
+        .ok_or(PlayerTradeError::AuthorityRejected)?;
+    context
+        .root
+        .commit_player_trade(
+            PlayerTradeCommitAuthority {
+                recovery: context.recovery,
+                node: context.node,
+                runtime: context.runtime,
+                issued,
+                first_current_fence,
+            },
+            request,
+        )
+        .await
+}
+
+/// Full row snapshots are bounded by the disposable fixture, not a production
+/// scan. A rejected swap must preserve values as well as relation counts.
+async fn native_trade_snapshot(h: &native::Harness) -> TestResult<Vec<Vec<String>>> {
+    let mut snapshot = Vec::new();
+    for relation in [
+        "game_player_trades",
+        "game_player_trade_participants",
+        "game_player_trade_receipts",
+        "game_item_instances",
+        "game_item_container_slots",
+        "game_item_container_entries",
+        "game_item_ground_locations",
+        "game_item_mint_receipts",
+        "game_item_transfer_reservations",
+        "game_item_transfer_receipts",
+        "game_item_transfer_quantity_evidence",
+        "game_item_audit_outbox",
+        "game_item_keys",
+        "game_item_timed_states",
+        "game_item_timed_state_writes",
+        "game_character_roots",
+    ] {
+        snapshot.push(
+            sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+                "SELECT row_to_json(t)::text FROM {relation} t ORDER BY 1"
+            )))
+            .fetch_all(&h.pool)
+            .await?,
+        );
+    }
+    Ok(snapshot)
+}
+
+fn native_trade_event_identity() -> crate::durability::player_trade::PlayerTradeEventIdentity {
+    crate::durability::player_trade::PlayerTradeEventIdentity {
+        transaction_id: native::id(240),
+        event_id: native::id(241),
+        occurred_at_unix_ms: 1_700_000_000_000,
+    }
+}
+
+#[test]
+fn native_trade_writer_swaps_same_definition_ids_once_and_reconciles_history() -> TestResult {
+    use crate::durability::player_trade::{
+        PlayerTradeError, PlayerTradeOutcome, decode_player_trade_envelope,
+    };
+    pg_trade("tradewriterswap", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let owner =
+            native_transferring_with_ingress(&context, actors, items, &mut ingress, Instant::now())
+                .await?;
+        let (issued, _) = owner
+            .issued_transfer(&runtime, actors[0].actor)
+            .map_err(native::debug)?
+            .unwrap();
+        let captured = issued.intent().binding.data.clone();
+        let request =
+            native_frozen_trade(&context, &owner, actors[0], native_trade_event_identity())?;
+        let mut expected_counts = h.footprint().await?;
+        let root_revisions: Vec<(String, String)> = sqlx::query_as(
+            "SELECT character_id::text,character_revision::text FROM game_character_roots ORDER BY character_id",
+        ).fetch_all(&h.pool).await?;
+        let PlayerTradeOutcome::Committed(committed) =
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await?
+        else {
+            return Err("expected fresh native swap".into());
+        };
+        assert_eq!(
+            committed.transaction_id,
+            native_trade_event_identity().transaction_id
+        );
+        assert_eq!(committed.event_id, native_trade_event_identity().event_id);
+        assert_eq!(committed.occurrence, *issued.occurrence());
+        assert_eq!(committed.trade_id, *issued.trade_id());
+        for side in [0, 1] {
+            let bag = h
+                .root
+                .read_character_backpack(&recovery, actors[side].fence.character_id)
+                .await
+                .map_err(native::debug)?
+                .unwrap();
+            assert_eq!(bag.backpack, captured.backpacks[side].backpack);
+            assert_eq!(bag.entries.len(), 1);
+            assert_eq!(bag.entries[0].item.item_instance_id, items[1 - side]);
+            assert_eq!(
+                bag.entries[0].item.quantity, 1,
+                "equal definitions must not merge"
+            );
+            assert_eq!(bag.entries[0].placement_ordinal, 2);
+            assert_eq!(h.item_state(items[side]).await?, (1, 1));
+            let state: (String, String) = sqlx::query_as(
+                "SELECT state_revision::text,last_transaction_id::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+            ).bind(items[side].as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                state.0.parse::<u64>()?,
+                captured.offers[side].as_ref().unwrap().state_revision + 1
+            );
+            assert_eq!(state.1, native::uuid_text(committed.transaction_id));
+        }
+        // The four MINT/TRANSFER fixture outcomes remain intact; only one swap
+        // event is added. Both pre-existing item identities survive unchanged.
+        expected_counts[5] += 1;
+        assert_eq!(h.footprint().await?, expected_counts);
+        assert_eq!(h.count("game_player_trades").await?, 1);
+        assert_eq!(h.count("game_player_trade_participants").await?, 2);
+        assert_eq!(h.count("game_player_trade_receipts").await?, 2);
+        let after_revisions: Vec<(String, String)> = sqlx::query_as(
+            "SELECT character_id::text,character_revision::text FROM game_character_roots ORDER BY character_id",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(root_revisions, after_revisions);
+        let same_transaction: bool = sqlx::query_scalar(
+            "SELECT (SELECT count(*) FROM game_player_trade_participants p WHERE p.occurrence_id=c.occurrence_id AND p.created_xact_id=c.created_xact_id)=2 \
+             AND (SELECT count(*) FROM game_player_trade_receipts r WHERE r.occurrence_id=c.occurrence_id AND r.created_xact_id=c.created_xact_id)=2 \
+             AND EXISTS(SELECT 1 FROM game_item_audit_outbox a WHERE a.transaction_id=c.transaction_id AND a.created_xact_id=c.created_xact_id AND a.publication_state=1 AND a.published_at IS NULL) \
+             FROM game_player_trades c WHERE occurrence_id=encode($1,'hex')::uuid",
+        ).bind(committed.occurrence.as_slice()).fetch_one(&h.pool).await?;
+        assert!(same_transaction);
+        let bytes: Vec<u8> = sqlx::query_scalar(
+            "SELECT envelope FROM game_item_audit_outbox WHERE event_id=encode($1,'hex')::uuid",
+        )
+        .bind(committed.event_id.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let (envelope, audit) = decode_player_trade_envelope(&bytes).map_err(native::debug)?;
+        assert_eq!(
+            envelope.command_id,
+            Some(issued.trigger().command_id().get())
+        );
+        assert_eq!(audit.lines.len(), 2);
+        assert!(audit.lines.iter().all(|line| line.before == line.after));
+        assert_eq!(audit.occurrence_id, committed.occurrence);
+
+        // Historical outcome lookup is independent of current actor/session
+        // validity and never re-applies placements or reissues an acceptance.
+        h.tamper("UPDATE game_durability_reconnect_sessions SET current_generation=2")
+            .await?;
+        let mut probe = h.pool.begin().await?;
+        for side in [0, 1] {
+            assert!(
+                crate::durability::item_transfer::character_item_fence_without_root_lock(
+                    &mut probe,
+                    &h.node,
+                    &actors[side].fence,
+                    native_command(side, 4),
+                    actors[side].fence.character_id,
+                    native::id(native::WORLD),
+                    native::id(native::CHANNEL),
+                )
+                .await
+                .map_err(native::debug)?
+                .is_none()
+            );
+        }
+        probe.rollback().await?;
+        let after = native_trade_snapshot(h).await?;
+        assert_eq!(
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await?,
+            PlayerTradeOutcome::AlreadyCommitted(committed.clone())
+        );
+        assert_eq!(
+            h.root.reconcile_player_trade(&recovery, &request).await?,
+            Some(committed)
+        );
+        let mut different_identity = native_trade_event_identity();
+        different_identity.event_id = native::id(242);
+        let different = native_frozen_trade(&context, &owner, actors[0], different_identity)?;
+        assert!(matches!(
+            native_commit_trade(&context, &owner, actors[0], &different, actors[0].fence).await,
+            Err(PlayerTradeError::ConflictingOccurrence)
+        ));
+        assert!(matches!(
+            h.root.reconcile_player_trade(&recovery, &different).await,
+            Err(PlayerTradeError::ConflictingOccurrence)
+        ));
+        assert_eq!(native_trade_snapshot(h).await?, after);
+        Ok(())
+    })
+}
+
+#[test]
+fn native_trade_writer_rejects_item_changed_after_issuance_without_partial_swap() -> TestResult {
+    use crate::durability::player_trade::PlayerTradeError;
+    pg_trade("tradewriterstale", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let owner =
+            native_transferring_with_ingress(&context, actors, items, &mut ingress, Instant::now())
+                .await?;
+        let request =
+            native_frozen_trade(&context, &owner, actors[0], native_trade_event_identity())?;
+        let leaf = source_item_facts(generation, 3031)?;
+        let extra = h
+            .mint_definition(&recovery, leaf.definition.clone(), 1)
+            .await?;
+        let command = CommandRef::new(
+            actors[0].fence.game_session_id,
+            ingress[0].next_command_id().unwrap(),
+        );
+        reserve_fixture_command(&mut ingress[0], command, "pickup", extra)?;
+        let mut pickup = native::to_backpack(command, extra, leaf);
+        pickup.backpack = Some(source_item_facts(generation, 2854)?);
+        assert!(matches!(
+            h.transfer(&recovery, actors[0].fence, pickup)
+                .await
+                .map_err(native::debug)?,
+            crate::durability::item_transfer::ItemTransferOutcome::Committed(_)
+        ));
+        terminal_fixture_command(&mut ingress[0], command, "COMMITTED", extra)?;
+        assert_eq!(h.item_state(items[0]).await?, (2, 1));
+        // This direct native fixture bypasses the still-uninstalled physical
+        // command hook, so it also proves that the DB writer cannot trust an
+        // earlier in-memory reservation when another actual writer has changed it.
+        let before = native_trade_snapshot(h).await?;
+        assert!(matches!(
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await,
+            Err(PlayerTradeError::Stale)
+        ));
+        assert_eq!(
+            h.root.reconcile_player_trade(&recovery, &request).await?,
+            None
+        );
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        assert_eq!(owner.phase(actors[0].actor), Some(Phase::Transferring));
+        Ok(())
+    })
+}
+
+#[test]
+fn native_trade_writer_checks_real_owners_and_only_allows_first_connection_resume() -> TestResult {
+    use crate::durability::player_trade::{
+        PlayerTradeCommitAuthority, PlayerTradeError, PlayerTradeOutcome,
+        decode_player_trade_envelope,
+    };
+    pg_trade("tradewriterauthority", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let owner =
+            native_transferring_with_ingress(&context, actors, items, &mut ingress, Instant::now())
+                .await?;
+        let request =
+            native_frozen_trade(&context, &owner, actors[0], native_trade_event_identity())?;
+        let (issued, _) = owner
+            .issued_transfer(&runtime, actors[0].actor)
+            .map_err(native::debug)?
+            .unwrap();
+        // Only the already-terminal first accept resumes after TRANSFERRING.
+        // The native current session row independently records generation 2.
+        h.tamper(&format!(
+            "UPDATE game_durability_reconnect_sessions SET current_generation=2 WHERE game_session_id='{}'::uuid",
+            native::uuid_text(native::id(native::SESSION)),
+        )).await?;
+        let mut current = actors[0].fence;
+        current.connection_generation = ConnectionGeneration::new(2).map_err(native::debug)?;
+        let before = native_trade_snapshot(h).await?;
+        for component in 0..5 {
+            let mut wrong = current;
+            match component {
+                0 => {
+                    wrong.game_session_id =
+                        GameSessionId::decode(&native::id(62)).map_err(native::debug)?
+                }
+                1 => wrong.character_lease_generation += 1,
+                2 => {
+                    wrong.scope_ownership_generation =
+                        ScopeOwnershipGeneration::new(2).map_err(native::debug)?
+                }
+                3 => wrong.connection_generation = actors[0].fence.connection_generation,
+                4 => wrong.character_id = actors[1].fence.character_id,
+                _ => unreachable!(),
+            }
+            assert!(
+                matches!(
+                    native_commit_trade(&context, &owner, actors[0], &request, wrong).await,
+                    Err(PlayerTradeError::AuthorityRejected)
+                ),
+                "fence component {component}"
+            );
+            assert_eq!(native_trade_snapshot(h).await?, before);
+        }
+        // A genuine second registered node is still not this Channel's holder.
+        let foreign_node = native::register(&h.root, 2).await?;
+        assert!(matches!(
+            h.root
+                .commit_player_trade(
+                    PlayerTradeCommitAuthority {
+                        recovery: &recovery,
+                        node: &foreign_node,
+                        runtime: &runtime,
+                        issued,
+                        first_current_fence: current,
+                    },
+                    &request
+                )
+                .await,
+            Err(PlayerTradeError::AuthorityRejected)
+        ));
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        // Even another ready native Root connected to the same database cannot
+        // consume the original Root's borrowed recovery authority.
+        let other_root =
+            DurabilityRoot::connect_test_runtime(&h.database.url).map_err(native::debug)?;
+        assert!(
+            other_root
+                .maintain_ready_once()
+                .await
+                .map_err(native::debug)?
+        );
+        assert!(matches!(
+            other_root
+                .commit_player_trade(
+                    PlayerTradeCommitAuthority {
+                        recovery: &recovery,
+                        node: &h.node,
+                        runtime: &runtime,
+                        issued,
+                        first_current_fence: current,
+                    },
+                    &request
+                )
+                .await,
+            Err(PlayerTradeError::AuthorityRejected)
+        ));
+        drop(other_root);
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        // Vary only the trigger's current generation. That acceptance is still
+        // pending and cannot acquire the first accept's continuity exception.
+        h.tamper(&format!(
+            "UPDATE game_durability_reconnect_sessions SET current_generation=2 WHERE game_session_id='{}'::uuid",
+            native::uuid_text(native::id(61)),
+        )).await?;
+        assert!(matches!(
+            native_commit_trade(&context, &owner, actors[0], &request, current).await,
+            Err(PlayerTradeError::AuthorityRejected)
+        ));
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        h.tamper(&format!(
+            "UPDATE game_durability_reconnect_sessions SET current_generation=1 WHERE game_session_id='{}'::uuid",
+            native::uuid_text(native::id(61)),
+        )).await?;
+        let PlayerTradeOutcome::Committed(committed) =
+            native_commit_trade(&context, &owner, actors[0], &request, current).await?
+        else {
+            return Err("same-session first accept must resume".into());
+        };
+        let generations: Vec<(String, String, String)> = sqlx::query_as(
+            "SELECT game_session_id::text,connection_generation::text,current_connection_generation::text FROM game_player_trade_participants ORDER BY participant_ordinal",
+        ).fetch_all(&h.pool).await?;
+        assert_eq!(
+            generations,
+            vec![
+                (
+                    native::uuid_text(native::id(native::SESSION)),
+                    "1".into(),
+                    "2".into()
+                ),
+                (native::uuid_text(native::id(61)), "1".into(), "1".into()),
+            ]
+        );
+        let bytes: Vec<u8> = sqlx::query_scalar(
+            "SELECT envelope FROM game_item_audit_outbox WHERE event_id=encode($1,'hex')::uuid",
+        )
+        .bind(committed.event_id.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let (envelope, audit) = decode_player_trade_envelope(&bytes).map_err(native::debug)?;
+        assert_eq!(audit.participants[0].current_connection_generation, 2);
+        assert_eq!(audit.participants[1].current_connection_generation, 1);
+        assert_eq!(
+            envelope.connection_generation,
+            Some(1),
+            "the event is caused by the pending trigger"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn native_trade_writer_rolls_back_second_placement_failure_and_retries_frozen_occurrence()
+-> TestResult {
+    use crate::durability::player_trade::{PlayerTradeError, PlayerTradeOutcome};
+    pg_trade("tradewriterrollback", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let owner =
+            native_transferring_with_ingress(&context, actors, items, &mut ingress, Instant::now())
+                .await?;
+        let request =
+            native_frozen_trade(&context, &owner, actors[0], native_trade_event_identity())?;
+        let before = native_trade_snapshot(h).await?;
+        let second_item = *items.iter().max().unwrap();
+        // This test-owned failure occurs after both old entries were deleted,
+        // both revisions changed and the first new entry was inserted.
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "CREATE FUNCTION trade_test_second_placement_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.item_instance_id='{}'::uuid AND NEW.placed_transaction_id='{}'::uuid THEN RAISE EXCEPTION 'injected second swap placement failure' USING ERRCODE='23514'; END IF; RETURN NEW; END; $$",
+            native::uuid_text(second_item), native::uuid_text(native_trade_event_identity().transaction_id),
+        ))).execute(&h.pool).await?;
+        sqlx::query("CREATE TRIGGER trade_test_second_placement_failure BEFORE INSERT ON game_item_container_entries FOR EACH ROW EXECUTE FUNCTION trade_test_second_placement_failure()")
+            .execute(&h.pool).await?;
+        assert!(matches!(
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await,
+            Err(PlayerTradeError::Storage(_))
+        ));
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        assert_eq!(
+            h.root.reconcile_player_trade(&recovery, &request).await?,
+            None
+        );
+        sqlx::query(
+            "DROP TRIGGER trade_test_second_placement_failure ON game_item_container_entries",
+        )
+        .execute(&h.pool)
+        .await?;
+        sqlx::query("DROP FUNCTION trade_test_second_placement_failure()")
+            .execute(&h.pool)
+            .await?;
+        let PlayerTradeOutcome::Committed(committed) =
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await?
+        else {
+            return Err("frozen occurrence retry did not commit".into());
+        };
+        assert_eq!(
+            h.root.reconcile_player_trade(&recovery, &request).await?,
+            Some(committed.clone())
+        );
+        assert_eq!(
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await?,
+            PlayerTradeOutcome::AlreadyCommitted(committed)
+        );
+        assert_eq!(h.count("game_player_trades").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn native_trade_migration_rejects_wrong_old_receipt_missing_audit_and_third_item_write()
+-> TestResult {
+    use crate::durability::player_trade::{PlayerTradeError, PlayerTradeOutcome};
+    pg_trade("tradeguardshape", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let owner =
+            native_transferring_with_ingress(&context, actors, items, &mut ingress, Instant::now())
+                .await?;
+        let request =
+            native_frozen_trade(&context, &owner, actors[0], native_trade_event_identity())?;
+        // The third item stays on Ground and is unrelated to either captured
+        // backpack. Its real MINT does not itself make the swap stale.
+        let extra = h
+            .mint_definition(
+                &recovery,
+                source_item_facts(generation, 3031)?.definition,
+                1,
+            )
+            .await?;
+        let before = native_trade_snapshot(h).await?;
+        let faults = [
+            ("game_player_trade_receipts", "BEFORE", "INSERT", "IF NEW.line_ordinal=2 THEN NEW.state_revision_before:=NEW.state_revision_before+1; END IF; RETURN NEW;".to_string()),
+            ("game_player_trade_receipts", "BEFORE", "INSERT", "IF NEW.line_ordinal=2 THEN NEW.source_placement_ordinal:=NEW.source_placement_ordinal+1; END IF; RETURN NEW;".to_string()),
+            ("game_item_audit_outbox", "BEFORE", "INSERT", format!("IF NEW.transaction_id='{}'::uuid THEN RETURN NULL; END IF; RETURN NEW;", native::uuid_text(native_trade_event_identity().transaction_id))),
+            ("game_player_trades", "AFTER", "INSERT", format!("UPDATE game_item_instances SET last_transaction_id=NEW.transaction_id WHERE item_instance_id='{}'::uuid; RETURN NEW;", native::uuid_text(extra))),
+        ];
+        for (index, (relation, timing, operation, body)) in faults.into_iter().enumerate() {
+            // Admin adds only a test-owned fault hook. The production writer,
+            // all native guards and the candidate migration remain installed.
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE FUNCTION trade_test_shape_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN {body} END; $$",
+            ))).execute(&h.pool).await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE TRIGGER trade_test_shape_fault {timing} {operation} ON {relation} FOR EACH ROW EXECUTE FUNCTION trade_test_shape_fault()",
+            ))).execute(&h.pool).await?;
+            assert!(
+                matches!(
+                    native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence)
+                        .await,
+                    Err(PlayerTradeError::Storage(
+                        crate::durability::DurabilityError::CommitRejected
+                    ))
+                ),
+                "independent deferred fault {index}"
+            );
+            assert_eq!(
+                native_trade_snapshot(h).await?,
+                before,
+                "fault {index} leaked a row"
+            );
+            assert_eq!(
+                h.root.reconcile_player_trade(&recovery, &request).await?,
+                None
+            );
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DROP TRIGGER trade_test_shape_fault ON {relation}",
+            )))
+            .execute(&h.pool)
+            .await?;
+            sqlx::query("DROP FUNCTION trade_test_shape_fault()")
+                .execute(&h.pool)
+                .await?;
+        }
+        // The exact same real issuance/request commits after each independently
+        // injected invariant violation has been removed.
+        assert!(matches!(
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await?,
+            PlayerTradeOutcome::Committed(_)
+        ));
+        assert_eq!(h.item_state(extra).await?, (1, 1));
+        assert!(h.on_ground(extra).await?);
+        Ok(())
+    })
+}
+
+#[test]
+fn native_trade_writer_requires_capacity_before_removing_either_source() -> TestResult {
+    use crate::durability::player_trade::PlayerTradeError;
+    pg_trade("tradewritercapacity", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let owner =
+            native_transferring_with_ingress(&context, actors, items, &mut ingress, Instant::now())
+                .await?;
+        let request =
+            native_frozen_trade(&context, &owner, actors[0], native_trade_event_identity())?;
+        let bag = source_item_facts(generation, 2854)?;
+        assert_eq!(bag.container_capacity, Some(20));
+        // Fill only the first participant's destination through real MINT and
+        // TRANSFER of 19 empty nonstackable containers. No synthetic placement
+        // or changed Content capacity is used to manufacture a full backpack.
+        for _ in 1..20 {
+            let extra = h
+                .mint_definition(&recovery, bag.definition.clone(), 1)
+                .await?;
+            let command = CommandRef::new(
+                actors[0].fence.game_session_id,
+                ingress[0].next_command_id().unwrap(),
+            );
+            reserve_fixture_command(&mut ingress[0], command, "pickup", extra)?;
+            let mut pickup = native::to_backpack(command, extra, bag.clone());
+            pickup.backpack = Some(bag.clone());
+            assert!(matches!(
+                h.transfer(&recovery, actors[0].fence, pickup)
+                    .await
+                    .map_err(native::debug)?,
+                crate::durability::item_transfer::ItemTransferOutcome::Committed(_)
+            ));
+            terminal_fixture_command(&mut ingress[0], command, "COMMITTED", extra)?;
+        }
+        let full = h
+            .root
+            .read_character_backpack(&recovery, actors[0].fence.character_id)
+            .await
+            .map_err(native::debug)?
+            .unwrap();
+        assert_eq!(full.entries.len(), 20);
+        let before = native_trade_snapshot(h).await?;
+        assert!(matches!(
+            native_commit_trade(&context, &owner, actors[0], &request, actors[0].fence).await,
+            Err(PlayerTradeError::NoRoom)
+        ));
+        assert_eq!(
+            h.root.reconcile_player_trade(&recovery, &request).await?,
+            None
+        );
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
+#[test]
+fn native_trade_migration_grants_only_fact_inserts_and_bounded_ordered_slot_locks() -> TestResult {
+    pg_trade("tradeguardgrants", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, _runtime, _objects, actors) = pg_runtime();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        native_inventory(h, &recovery, controller.active().unwrap()).await?;
+        for relation in [
+            "game_player_trades",
+            "game_player_trade_participants",
+            "game_player_trade_receipts",
+        ] {
+            let privileges: bool = sqlx::query_scalar(
+                "SELECT has_table_privilege('oteryn_game_runtime',$1,'SELECT') \
+                 AND has_table_privilege('oteryn_game_runtime',$1,'INSERT') \
+                 AND NOT has_table_privilege('oteryn_game_runtime',$1,'UPDATE,DELETE,TRUNCATE') \
+                 AND has_table_privilege('oteryn_game_control',$1,'SELECT') \
+                 AND NOT has_table_privilege('oteryn_game_control',$1,'INSERT,UPDATE,DELETE,TRUNCATE')",
+            ).bind(relation).fetch_one(&h.pool).await?;
+            assert!(privileges, "{relation}");
+        }
+        let privileges: bool = sqlx::query_scalar(
+            "SELECT has_function_privilege('oteryn_game_runtime','game_player_trade_lock_slots(uuid,uuid)','EXECUTE') \
+             AND NOT has_function_privilege('oteryn_game_control','game_player_trade_lock_slots(uuid,uuid)','EXECUTE') \
+             AND NOT has_function_privilege('oteryn_game_runtime','game_player_trade_complete(uuid)','EXECUTE') \
+             AND NOT has_table_privilege('oteryn_game_runtime','game_item_container_slots','UPDATE')",
+        ).fetch_one(&h.pool).await?;
+        assert!(privileges);
+        let before = native_trade_snapshot(h).await?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let locked: i16 = sqlx::query_scalar(
+            "SELECT game_player_trade_lock_slots(encode($1,'hex')::uuid,encode($2,'hex')::uuid)",
+        )
+        .bind(actors[0].fence.character_id.as_bytes().as_slice())
+        .bind(actors[1].fence.character_id.as_bytes().as_slice())
+        .fetch_one(&mut *tx)
+        .await?;
+        assert_eq!(locked, 2);
+        for actor in actors {
+            // A separate connection observes the slot row lock, while the
+            // helper has acquired no Character root or session authority.
+            let mut observer = h.pool.begin().await?;
+            let result = sqlx::query("SELECT character_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT")
+                .bind(actor.fence.character_id.as_bytes().as_slice()).fetch_one(&mut *observer).await;
+            assert!(
+                result
+                    .as_ref()
+                    .err()
+                    .and_then(|e| e.as_database_error())
+                    .is_some_and(|e| e.code().as_deref() == Some("55P03"))
+            );
+            observer.rollback().await?;
+            assert!(root_lock_is_available(&h.pool, actor.fence.character_id).await?);
+        }
+        tx.rollback().await?;
+        for pair in [[actors[1], actors[0]], [actors[0], actors[0]]] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            let result = sqlx::query("SELECT game_player_trade_lock_slots(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+                .bind(pair[0].fence.character_id.as_bytes().as_slice())
+                .bind(pair[1].fence.character_id.as_bytes().as_slice())
+                .execute(&mut *tx).await;
+            assert!(
+                result
+                    .as_ref()
+                    .err()
+                    .and_then(|e| e.as_database_error())
+                    .is_some_and(|e| e.code().as_deref() == Some("23514"))
+            );
+            tx.rollback().await?;
+        }
+        // The helper is needed: a runtime caller still cannot take arbitrary
+        // slot locks with SELECT FOR UPDATE or change a slot through UPDATE.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let direct = sqlx::query("SELECT character_id FROM game_item_container_slots FOR UPDATE")
+            .fetch_all(&mut *tx)
+            .await;
+        assert!(
+            direct
+                .as_ref()
+                .err()
+                .and_then(|e| e.as_database_error())
+                .is_some_and(|e| e.code().as_deref() == Some("42501"))
+        );
+        tx.rollback().await?;
+        assert_eq!(native_trade_snapshot(h).await?, before);
+        Ok(())
+    })
+}
+
 #[test]
 fn native_trade_fence_phase_precedes_both_root_locks_and_preserves_wrapper() -> TestResult {
     use crate::durability::item_transfer::{

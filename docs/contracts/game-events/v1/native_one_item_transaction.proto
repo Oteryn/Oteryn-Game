@@ -110,6 +110,7 @@ message OneItemTransactionV1 {
     OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
     OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
+    OneItemPlayerTradeV1 player_trade = 12; // PLAYER-TRADE0: two reciprocal whole-item lines
   }
 }
 
@@ -549,4 +550,62 @@ message OneItemUseV1 {
   bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
   OneItemUseFlaskV1 flask = 11;
   bool flask_missing = 12;
+}
+
+
+// PLAYER-TRADE0 / D1158. Two immutable whole-item TRANSFER lines, without a merge
+// or CharacterRevision advance. Both Characters need a real free direct entry
+// before either source is removed. This event records facts, never consent or
+// reservation authority. UUIDs are exactly16-byte UUIDv7; commands remain full u64.
+message OneItemPlayerTradeLocationV1 {
+  bytes character_id = 1;
+  bytes parent_item_instance_id = 2;
+  uint64 placement_ordinal = 3; // positive; a destination is the old maximum+1
+  bytes placed_transaction_id = 4; // source's actual old placement, or this swap
+}
+
+// Present iff the item has a stored timed row; a spent row is retained as such.
+// The exact row/deadline is unchanged by the swap.
+message OneItemPlayerTradeTimedV1 {
+  OneItemTimedRowV1 row = 1;
+  optional int64 deadline_at = 2;
+}
+
+message OneItemPlayerTradeParticipantV1 {
+  bytes character_id = 1;
+  bytes account_id = 2;
+  OneItemCommandRefV1 command = 3;
+  uint64 accepted_connection_generation = 4;
+  uint64 current_connection_generation = 5;
+  uint64 character_lease_generation = 6;
+}
+
+message OneItemPlayerTradeLineV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2; // exactly equal to before, including quantity/key
+  uint64 state_revision_before = 3; // positive, below u64MAX
+  uint64 state_revision_after = 4; // before+1
+  OneItemPlayerTradeLocationV1 source = 5;
+  OneItemPlayerTradeLocationV1 destination = 6;
+  OneItemPlayerTradeTimedV1 unchanged_timed_state = 7;
+}
+
+// Exactly two participants in CharacterId order, distinct Characters/Accounts
+// and GameSessions; exactly two lines in ItemInstanceId order with reciprocal
+// source/destination Characters and main backpacks. The trigger's full current
+// fence stays pinned; the first accept may only advance connection generation.
+// DUR03 usage:2 items,4 locations,2 participants,6 work units,1 event.
+// Native payload<=7936 and envelope<=9216, unchanged from the normal tuple.
+message OneItemPlayerTradeV1 {
+  string typed_cause = 1; // exactly "player_trade"
+  bytes trade_id = 2;
+  bytes occurrence_id = 3; // private runtime occurrence bound1:1 to trigger
+  OneItemCommandRefV1 first_accept = 4;
+  OneItemCommandRefV1 trigger = 5;
+  bytes world_id = 6;
+  bytes channel_id = 7;
+  uint64 runtime_scope_ownership_generation = 8;
+  bytes content_digest = 9; // exact32-byte native active Content digest
+  repeated OneItemPlayerTradeParticipantV1 participants = 10;
+  repeated OneItemPlayerTradeLineV1 lines = 11;
 }

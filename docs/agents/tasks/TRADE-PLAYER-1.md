@@ -1,4 +1,4 @@
-# TRADE-PLAYER-1 — player-to-player trade (skeleton task record)
+# TRADE-PLAYER-1 — player-to-player trade (task record)
 
 ```yaml
 task_id: TRADE-PLAYER-1
@@ -52,6 +52,22 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `crates/protocol-oteryn/src/player_trade_tests.rs`
 - `apps/game-server/tests/player_trade_postgres.rs`
 - `docs/agents/tasks/TRADE-PLAYER-1.md` (this record: status and notes only)
+
+The concrete D1158 checkpoint allocation
+([comment6224955056](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224955056))
+also covers these paths for this native two-item shape:
+
+- `apps/game-server/migrations/0100_player_trade.sql`: owned cause, receipts and
+  complete two-Character guard extension, preserving the full latest0095 union.
+- `apps/game-server/src/durability/item_mint_audit.rs`: the native `player_trade`
+  operation mount at verified free tag12 and its actual outbox insert-site
+  inventory entry, retaining every existing operation including HOUSE11.
+- `docs/contracts/game-events/v1/native_one_item_transaction.proto`: the matching
+  hand-authored native type-2 operation and message definitions.
+
+D1158 requires the numerical tag to be checked against current main before
+publication; root publishes the coherent checked checkpoint. Generated registry
+changes remain a separate integration step after the already-merged #2163.
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
@@ -543,3 +559,124 @@ candidate audit. New Clippy, unit and native PG execution: **NOT_RUN**. Status i
 **NOT_FULLY_QUALIFIED**. This adds no migration, durable cause/receipt/event, atomic
 writer, physical cross-command reservation installation, wire dispatch or shared
 registry. Those remaining parts of TRADE-1/TRADE-WIRE are still open.
+
+## Atomic native writer and migration0100 (2026-10-17; successor source packet)
+
+Exact base: `26c4f925967c2152d646c78dada2a7c6793c4022`. CP D1340c integrated
+parents `b7fc316af538c66fb037240ceb7b70bc9625128b` and
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`, tree
+`65dcafeea0e2f4dd978734cc8a6c9d5bdbce4643`. The native main migrations through
+0095 and the D1315 fence/root helpers are now present together. All affected
+original source blobs and0095 were re-read at exact26c4 before this packet.
+
+The exact b7fc predecessor passed strict all-target Clippy and lib 3,190 passed,
+0 failed,29 ignored, plus ops6, recorded in
+[#2132 comment6233368245](https://github.com/Oteryn/Oteryn-Game/pull/2132#issuecomment-6233368245).
+That evidence belongs to b7fc. This new writer's typecheck, Clippy, unit tests,
+native PostgreSQL17.6 execution and measured audit bytes remain **NOT_RUN**.
+An optional PG fixture reported as `ok` without its actual170006 execution
+marker cannot qualify any database behavior. Status remains
+**NOT_FULLY_QUALIFIED**; the acceptance criteria above stay open.
+
+### Implemented native transaction component
+
+The private issued occurrence now retains its exact `ReservationIntent` itself.
+`FrozenPlayerTrade::from_issued` takes that captured intent only from the private
+component record, validates the real native runtime/Content, source snapshots,
+native capacities and identities, and binds all expected before-values and event
+identity into one immutable retry request. It does not accept a replacement
+caller-supplied intent. `PlayerTradeCommitAuthority` borrows the actual issued
+record, runtime, Root recovery and registered node for a new attempt. The ingress
+owner-provenance limitation documented above remains; no wrapper or DATA receipt
+is promoted into authenticated session consent.
+
+`DurabilityRoot::commit_player_trade` acquires the native type-2 activation gate,
+recovery/admission locks and occurrence lock, then resolves an existing outcome.
+A matching committed binding returns `AlreadyCommitted` without reacquiring live
+session fences. A conflicting occurrence, event/transaction/trade identity or
+previously committed participant CommandRef refuses without a second outcome.
+`reconcile_player_trade` uses current Root recovery and the same occurrence lock;
+it reports a historical outcome without re-applying the swap.
+
+For a new swap, the writer uses both D1315 native fence-only checks before either
+Character root. The first terminal accept may advance only its same-session
+connection generation; every other captured first-side component and the pending
+trigger's complete current fence stay pinned. The actual assignment/registered
+holder and active Content are independently read under their native locks.
+Both roots are acquired in CharacterId order, then the two offered item rows in
+ItemInstanceId order and both current backpack slots in CharacterId order.
+
+Under these locks the writer re-reads every captured direct backpack member,
+state revision, original placement, key and timed state. It requires a real free
+destination entry before removing either source. It inserts one immutable cause,
+two participants and two receipts; deletes both exact source entries; changes
+only both items' `last_transaction_id` (the existing native guard stamps +1 state
+revision); inserts both reciprocal new entries; and adds one native type-2 audit
+event. Both IDs, definitions, quantities, lifecycle, keys and timed rows are
+preserved. Same-definition items never merge. No MINT, CharacterRevision change,
+equipment change, tree move or pre-swap durable reservation is introduced.
+An error/unknown commit is not success; the caller must retain its frozen request
+and physical reservations until native reconciliation proves the outcome.
+
+### Migration and audit source
+
+D1158's reserved0100 owns the `player_trade` cause/receipt/event and two-Character
+guard extension. Migration0100 adds immutable, same-transaction-stamped cause,
+participant and receipt tables. Unique full-u64 CommandRefs prevent one terminal
+accept from committing in either role of two occurrences. Deferred validation
+requires exactly two canonical reciprocal lines, actual source/unchanged state,
+pre-removal capacity and ordinal bounds, exact final exclusive custody, no MINT
+or third item change, unchanged timed state and one exact fresh pending outbox
+event. A historical cause/receipt cannot authorize a new physical transaction.
+
+The three complete latest0095 item-change/removal/placement functions receive one
+narrow TRADE arm each. All earlier arms, including HOUSE5/6/7, are retained
+verbatim; the old single-Character transfer-consistency function and item BEFORE
+guard are unchanged. The bounded owned SECURITY DEFINER function
+`game_player_trade_lock_slots` grants only two ordered slot-row locks. Runtime
+retains no slot UPDATE grant and receives SELECT/INSERT only on the three outcome
+tables. The completion validator is trigger-only, not a new runtime authority API.
+
+The separately reviewable shared source proposal mounts native `PlayerTrade` at
+free `OneItemOperationV1` tag12 after HOUSE11, mirrors it in the hand-authored
+native event proto and adds the actual writer to the existing type-2 insert-site
+inventory. It preserves the normal payload7936/envelope9216 ceilings and the
+current type-2 tuple selected by the native activation gate. Its event describes
+two whole-item lines, four locations and two participants, with both accepts,
+runtime scope, Content and unchanged timed state. Shared publication remains root/CP
+controlled. No generated registry, protocol ID, Content or pin is hand-edited.
+
+### Qualification cases authored and remaining integration
+
+Six new pure cases cover canonical V1/V2 audit round trips, full-u64 identities,
+maximum field sizes, zero remaining timed state, independent conservation/
+identity changes, first-connection continuity and strict decoder bindings. The
+maximum-field case prints actual byte counts when run; no measured value is
+claimed from source inspection. The accepted six effect work units describe the
+fixed two-item/four-location shape enforced by these guards; the constants do
+not claim a charged resource permit. PLAYER-TRADE0 §4 forbids durable reservation
+rows before the swap. The different TRANSFER/HOUSE reservation counters are not
+introduced into this shape by analogy.
+
+Seven new PG cases use the real native issuer, Root/recovery/node/fences/Content
+and MINT/TRANSFER path. They cover a same-definition no-merge swap with one
+same-xact event and unchanged CharacterRevision; historical replay after both
+session generations change; conflicting retry binding; a real post-issuance item
+change; independent Root/node/fence refusals and first-session resume; rollback
+after the first new placement and retry of the same frozen occurrence; separate
+wrong OLD revision/source, missing audit and third-item deferred failures; a
+destination filled through19 real native pickups; and least-privilege ordered
+slot-lock observations. Refusals compare complete row snapshots, not only counts.
+The fixture's real FND ingresses still do not qualify their missing installation
+inside admitted session owners. Test harnesses and PostgreSQL port handling are
+unchanged; D1329's approved namespace route supplies canonical5432 to the harness.
+
+The remaining work is concrete owner/wire integration and exact-candidate
+qualification: install one session-owned native ingress and sole Channel trade
+book; call this writer/reconciler under real physical command reservations;
+terminalize the pending trigger only from its verified outcome and release both
+reservations; retain/recover ambiguous occurrences across restart; wire native
+item handles, capability, command/domain and the generated registry/resource
+rows under the shared slot. Two-client/crash/concurrency qualification, exact-head
+CI and independent review are still required. The writer itself is owned TRADE
+implementation, not a prerequisite assigned to an unspecified external producer.

@@ -417,6 +417,9 @@ pub(crate) struct IssuedTradeOccurrence {
     occurrence: [u8; 16],
     first: TerminalTradeAccept,
     trigger: CommandRef,
+    /// Exact owner-produced addresses and before-data; a caller cannot substitute another
+    /// DATA plan when freezing the native writer request from this private issuance.
+    intent: ReservationIntent,
 }
 impl IssuedTradeOccurrence {
     pub(crate) fn trade_id(&self) -> &[u8; 16] {
@@ -433,6 +436,9 @@ impl IssuedTradeOccurrence {
     }
     pub(crate) fn trigger(&self) -> CommandRef {
         self.trigger
+    }
+    pub(crate) fn intent(&self) -> &ReservationIntent {
+        &self.intent
     }
 }
 
@@ -978,6 +984,11 @@ impl TradeOwner {
                     occurrence: command_identity(b"oteryn:player-trade-occurrence:v1", command),
                     first,
                     trigger: command,
+                    intent: prepared
+                        .intent
+                        .as_ref()
+                        .ok_or(OwnerError::Authority)?
+                        .clone(),
                 };
                 trade.session = prepared.session;
                 trade.intent = prepared.intent;
