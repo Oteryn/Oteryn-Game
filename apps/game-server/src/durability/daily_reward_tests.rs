@@ -1,7 +1,65 @@
 use super::*;
+use sqlx::postgres::PgPoolOptions;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+/// Repository PostgreSQL convention: without `OTERYN_TEST_POSTGRES_ADMIN_URL` a
+/// case reports PRE-ROUTING / NONCANONICAL and returns. A routed run executes
+/// the body on its own natively migrated database, dropped afterwards. This
+/// module is compiled into every target that mounts `durability`, so the
+/// registered PostgreSQL CI targets execute these cases.
+fn postgres_case(tag: &str, case: impl AsyncFnOnce(PgPool) -> TestResult) -> TestResult {
+    let Ok(admin_url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    if !admin_url.starts_with("postgresql://oteryn_test_admin:")
+        || !admin_url.ends_with("@127.0.0.1:5432/postgres")
+    {
+        return Err("unsafe PostgreSQL test admin URL".into());
+    }
+    let prefix = admin_url
+        .strip_suffix("/postgres")
+        .ok_or("invalid admin URL")?
+        .to_owned();
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let name = format!("daily_{tag}_{}_{suffix}", std::process::id());
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let mut admin = PgConnection::connect(&admin_url).await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {name}"
+                ))))
+                .await?;
+            let result: TestResult = async {
+                let pool = PgPoolOptions::new()
+                    .max_connections(8)
+                    .connect(&format!("{prefix}/{name}"))
+                    .await?;
+                let result = async {
+                    sqlx::migrate!("./migrations").run(&pool).await?;
+                    case(pool.clone()).await
+                }
+                .await;
+                pool.close().await;
+                result
+            }
+            .await;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "DROP DATABASE {name} WITH (FORCE)"
+                ))))
+                .await?;
+            admin.close().await?;
+            result
+        })
+}
 const BINDING: [u8; 32] = [5; 32];
 
 async fn fixture(pool: &PgPool) -> TestResult<(ClaimKey, AccountId)> {
@@ -52,8 +110,15 @@ fn sqlstate(error: &sqlx::Error) -> Option<String> {
         .map(|s| s.into_owned())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_storage_replay_binding_reload_and_atomic_rollback(pool: PgPool) -> TestResult {
+#[test]
+fn daily_storage_replay_binding_reload_and_atomic_rollback() -> TestResult {
+    postgres_case(
+        "c1",
+        daily_storage_replay_binding_reload_and_atomic_rollback_case,
+    )
+}
+
+async fn daily_storage_replay_binding_reload_and_atomic_rollback_case(pool: PgPool) -> TestResult {
     let (key, account) = fixture(&pool).await?;
     let mut connection = pool.acquire().await?;
     let mut tx = connection.begin().await?;
@@ -142,8 +207,15 @@ async fn daily_storage_replay_binding_reload_and_atomic_rollback(pool: PgPool) -
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_epoch_uniqueness_waits_then_rejects_without_second_receipt(
+#[test]
+fn daily_epoch_uniqueness_waits_then_rejects_without_second_receipt() -> TestResult {
+    postgres_case(
+        "c2",
+        daily_epoch_uniqueness_waits_then_rejects_without_second_receipt_case,
+    )
+}
+
+async fn daily_epoch_uniqueness_waits_then_rejects_without_second_receipt_case(
     pool: PgPool,
 ) -> TestResult {
     let (key, _) = fixture(&pool).await?;
@@ -178,8 +250,15 @@ async fn daily_epoch_uniqueness_waits_then_rejects_without_second_receipt(
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_pending_line_runtime_lock_rollback_and_zero_credit_terminal(
+#[test]
+fn daily_pending_line_runtime_lock_rollback_and_zero_credit_terminal() -> TestResult {
+    postgres_case(
+        "c3",
+        daily_pending_line_runtime_lock_rollback_and_zero_credit_terminal_case,
+    )
+}
+
+async fn daily_pending_line_runtime_lock_rollback_and_zero_credit_terminal_case(
     pool: PgPool,
 ) -> TestResult {
     let (key, _) = fixture(&pool).await?;
@@ -230,8 +309,12 @@ async fn daily_pending_line_runtime_lock_rollback_and_zero_credit_terminal(
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_schema_bounds_and_runtime_immutable_columns(pool: PgPool) -> TestResult {
+#[test]
+fn daily_schema_bounds_and_runtime_immutable_columns() -> TestResult {
+    postgres_case("c4", daily_schema_bounds_and_runtime_immutable_columns_case)
+}
+
+async fn daily_schema_bounds_and_runtime_immutable_columns_case(pool: PgPool) -> TestResult {
     let (key, account) = fixture(&pool).await?;
     let mut connection = pool.acquire().await?;
     insert_claim(&mut connection, key).await?;
@@ -343,8 +426,15 @@ async fn append_joker_entry(
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_joker_ledger_final_state_multi_entry_and_rollback(pool: PgPool) -> TestResult {
+#[test]
+fn daily_joker_ledger_final_state_multi_entry_and_rollback() -> TestResult {
+    postgres_case(
+        "c5",
+        daily_joker_ledger_final_state_multi_entry_and_rollback_case,
+    )
+}
+
+async fn daily_joker_ledger_final_state_multi_entry_and_rollback_case(pool: PgPool) -> TestResult {
     let (key, account) = fixture(&pool).await?;
     // Both orderings must see the final transaction, not an earlier trigger's NEW row.
     for (state_first, world) in [
@@ -393,8 +483,15 @@ async fn daily_joker_ledger_final_state_multi_entry_and_rollback(pool: PgPool) -
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_joker_ledger_rejects_broken_head_chain_and_scope(pool: PgPool) -> TestResult {
+#[test]
+fn daily_joker_ledger_rejects_broken_head_chain_and_scope() -> TestResult {
+    postgres_case(
+        "c6",
+        daily_joker_ledger_rejects_broken_head_chain_and_scope_case,
+    )
+}
+
+async fn daily_joker_ledger_rejects_broken_head_chain_and_scope_case(pool: PgPool) -> TestResult {
     let (key, account) = fixture(&pool).await?;
     seed_joker_chain(&pool, key, account).await?;
     for (label, balance, cursor, entry, amount) in [
@@ -465,8 +562,15 @@ async fn daily_joker_ledger_rejects_broken_head_chain_and_scope(pool: PgPool) ->
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_joker_ledger_entries_cannot_be_rewritten_or_erased(pool: PgPool) -> TestResult {
+#[test]
+fn daily_joker_ledger_entries_cannot_be_rewritten_or_erased() -> TestResult {
+    postgres_case(
+        "c7",
+        daily_joker_ledger_entries_cannot_be_rewritten_or_erased_case,
+    )
+}
+
+async fn daily_joker_ledger_entries_cannot_be_rewritten_or_erased_case(pool: PgPool) -> TestResult {
     let (key, account) = fixture(&pool).await?;
     seed_joker_chain(&pool, key, account).await?;
     // The table owner can issue these statements: immutable history must also be a DB invariant.
@@ -493,8 +597,17 @@ async fn daily_joker_ledger_entries_cannot_be_rewritten_or_erased(pool: PgPool) 
     Ok(())
 }
 
-#[sqlx::test(migrations = "./migrations")]
-async fn daily_joker_ledger_serializes_writers_and_rejects_stale_debit(pool: PgPool) -> TestResult {
+#[test]
+fn daily_joker_ledger_serializes_writers_and_rejects_stale_debit() -> TestResult {
+    postgres_case(
+        "c8",
+        daily_joker_ledger_serializes_writers_and_rejects_stale_debit_case,
+    )
+}
+
+async fn daily_joker_ledger_serializes_writers_and_rejects_stale_debit_case(
+    pool: PgPool,
+) -> TestResult {
     let (key, account) = fixture(&pool).await?;
     seed_joker_chain(&pool, key, account).await?;
     let mut first = pool.begin().await?;

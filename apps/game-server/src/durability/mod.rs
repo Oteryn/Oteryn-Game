@@ -37,6 +37,7 @@ pub mod character_stance;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
+pub mod daily_reward;
 mod db;
 pub(crate) mod equipment_policy_abi;
 pub mod fresh_admission;

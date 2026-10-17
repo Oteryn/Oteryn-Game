@@ -4,7 +4,7 @@
 task_id: DAILY-1
 title: "DAILY-1: daily reward"
 mode: IMPLEMENT
-status: skeleton
+status: bounded_checkpoint
 repository: Oteryn/Oteryn-Game
 issue: 1622
 wave: 4
@@ -34,14 +34,14 @@ DAILY-CONTENT-1, DAILY-1 (hard), DAILY-BIND-1, DAILY-WIRE-1 (Reg).
 | Dependency | State |
 |---|---|
 | NPC-ECON-1 | BLOCKING |
-| MARKET-1 (`CharacterInbox` usage) | BLOCKING (Wave 4) |
+| MARKET-1 (`CharacterInbox` usage) | Reward Inbox bridge MERGED via MAIL-1 #2133 (2026-10-17); claim writer composition still open |
 | HUNT-1 / PREY-1 (wildcard balance) | BLOCKING (Wave 4) |
 | ADR-0021 World reset epoch | ADR present on main (docs/architecture/ADR-0021-world-map-runtime-loading.md); reset-epoch runtime: verify |
 | PREMIUM-1 | MERGED (#2110) |
 | WO-1 | MERGED |
 | EXERCISE-CONTENT-1, RUNE-USE content | verify (RUNE-USE-0 accepted, archive OTV2-20261014-accept-rune-use-0) |
 | WORLDINT-USE-1 (DAILY-WIRE-1) | verify (WORLDINT-WIRE-1 archived) |
-| acceptance of DAILY_REWARD0 (brief CANDIDATE; plan §7 acceptance gate) | BLOCKING |
+| acceptance of DAILY_REWARD0 (brief CANDIDATE; plan §7 acceptance gate) | ACCEPTED (#2209; see the 2026-10-15 section below) |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -359,3 +359,32 @@ Final native receipt SHA256: `32dfd064161ad14f8a0b4777d9583527bcc3cf8d0114f90b35
 Native output, exact commands, before/after sources and the discarded-attempt diagnosis are retained on Molehill-PC under `/root/oteryn-six-pr-20261017/`. These are component results; the schema candidate is still uninstalled and is not a claim writer, current-authority proof, delivery sink or full E2E qualification.
 
 D1317 binds lazy joker grants to #2167's committed-reset month history with Berlin10 semantics (epoch 0 bootstrap excluded); D1318 supplies #2133's real same-TX Inbox seam; D1319 assigns #2149's PREY sink. Those production interfaces and shared registration remain subject to the existing CP integration order. This owned successor does not select a migration number or mutate shared registrations.
+
+## 2026-10-17 — bounded checkpoint (CP)
+
+MERGE_AUTHORITY: CP_ONLY. This PR merges a bounded DAILY component, not full
+DAILY-1 acceptance. Main is merged in with a merge commit.
+
+In this checkpoint:
+
+- Domain arithmetic (`domain/daily_reward.rs`) and the uninstalled storage
+  schema candidate with its read/lock APIs (`durability/daily_reward.rs`),
+  unchanged from the qualified successor above.
+- Module registration: `pub mod daily_reward;` in `domain/mod.rs` and
+  `durability/mod.rs` (the registration lines this record permits).
+- The eight PostgreSQL cases now follow the repository convention instead of
+  `#[sqlx::test]`, which panics without `DATABASE_URL` once the module
+  compiles. Without `OTERYN_TEST_POSTGRES_ADMIN_URL` each case reports
+  PRE-ROUTING / NONCANONICAL and returns. A routed run creates its own
+  database, applies the native migrations, runs the unchanged body and drops
+  the database. The cases are mounted through `durability/mod.rs`, so the
+  registered PostgreSQL CI targets (`durability_postgres`,
+  `character_authority_postgres`) execute them. This closes the gap-review P2
+  that they never ran in CI.
+
+Still open (later DAILY-1 slices): migration installation of the schema
+(number assigned at the queue turn), the claim writer composed on MAIL-1's
+reward Inbox bridge (`prepare/commit_reward_claim_inbox_mint`), lazy joker
+grants from #2167's committed reset-month history, the item binding table and
+§6 refusals, PREY wildcard sink (#2149), wire/protocol, content inputs and
+`tests/daily_reward_postgres.rs`. No runtime claim path is enabled.
