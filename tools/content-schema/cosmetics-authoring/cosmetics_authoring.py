@@ -174,7 +174,11 @@ def build(authoring, manifest_path: Path) -> bytes:
                     or identity in looks or type(record["source_index"]) is not int
                     or record["source_index"] != ordinal):
                 raise ValueError("duplicate, invalid or reordered cosmetics source ID")
-            looks[identity] = record["source_record_sha256"]
+            digest = record["source_record_sha256"]
+            if (type(digest) is not str or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                    or digest == "0" * 64):
+                raise ValueError("cosmetics source record digest must be lowercase nonzero sha256")
+            looks[identity] = digest
             ordinal += 1
         shards.append({"path": name, "json": data.decode("utf-8")})
     if (not names or type(manifest["record_count"]) is not int

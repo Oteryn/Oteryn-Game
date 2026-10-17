@@ -201,6 +201,30 @@ class CosmeticsAuthoring(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.build_unvalidated(authoring, root)
 
+    def test_every_staged_record_digest_is_validated_even_if_unreferenced(self):
+        def sound(manifest, pin, shard):
+            pin["records"] = len(shard["records"])
+            manifest["record_count"] = len(shard["records"])
+
+        def digest(value):
+            def mutate(manifest, pin, shard):
+                sound(manifest, pin, shard)
+                shard["records"][1]["source_record_sha256"] = value
+            return mutate
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            authoring = self.stage_truncated(root, 2, sound)
+            self.assertEqual(c.parse(self.build_unvalidated(authoring, root))["availability"], "authored")
+        good = "a" * 64
+        for label, value in [("short", good[:63]), ("long", good + "a"), ("uppercase", "A" * 64),
+                             ("all zero", "0" * 64), ("non hex", "g" * 64), ("not a string", 7)]:
+            with self.subTest(label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                authoring = self.stage_truncated(root, 2, digest(value))
+                with self.assertRaisesRegex(ValueError, "digest"):
+                    self.build_unvalidated(authoring, root)
+
     def test_missing_authoring_produces_no_population_and_stale_output_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
