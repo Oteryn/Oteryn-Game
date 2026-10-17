@@ -221,12 +221,18 @@ class GovernanceLifecycleTests(unittest.TestCase):
             "docs/agents/tasks/active/OTV2-closed-pr.md",
             "# task\n```yaml\nstatus: validating\nissue: 12\npr: 22\n```\n",
         )
+        self.write(
+            "docs/agents/tasks/active/OTV2-not-planned.md",
+            "# task\n```yaml\nstatus: validating\nissue: 13\npr: 23\n```\n",
+        )
         payloads = {
-            "issues/10": {"state": "closed"},
+            "issues/10": {"state": "closed", "state_reason": "completed"},
             "issues/11": {"state": "closed"},
             "issues/12": {"state": "open"},
+            "issues/13": {"state": "closed", "state_reason": "not_planned"},
             "pulls/20": {"state": "closed", "merged_at": "2026-09-21T00:00:00Z"},
             "pulls/22": {"state": "closed", "merged_at": None},
+            "pulls/23": {"state": "closed", "merged_at": "2026-09-21T00:00:00Z"},
         }
 
         def request(url: str) -> object:
@@ -237,19 +243,26 @@ class GovernanceLifecycleTests(unittest.TestCase):
             prefix + "OTV2-merged-pr.md names terminal canonical PR #20 (merged)",
             prefix + "OTV2-merged-pr.md names closed Issue #10 without an open canonical PR",
         ]
+        not_planned_pr = prefix + "OTV2-not-planned.md names terminal canonical PR #23 (merged)"
+        not_planned_issue = (
+            prefix + "OTV2-not-planned.md names closed Issue #13 without an open canonical PR"
+        )
         unmerged = [
             prefix + "OTV2-closed-issue.md names closed Issue #11 without an open canonical PR",
             prefix + "OTV2-closed-pr.md names terminal canonical PR #22 (closed)",
         ]
         errors = validator.validate_active_task_live_state(request)
-        self.assertEqual(sorted(errors), sorted(merged + unmerged))
+        self.assertEqual(
+            sorted(errors), sorted(merged + unmerged + [not_planned_pr, not_planned_issue])
+        )
 
         # A merged canonical PR only awaits archiving: the caller can demote it
-        # to a warning, while a PR closed unmerged still fails.
+        # to a warning, while a PR closed unmerged or an Issue closed as
+        # anything but completed still fails.
         warnings: list[str] = []
         errors = validator.validate_active_task_live_state(request, warnings=warnings)
-        self.assertEqual(sorted(errors), sorted(unmerged))
-        self.assertEqual(warnings, merged)
+        self.assertEqual(sorted(errors), sorted(unmerged + [not_planned_issue]))
+        self.assertEqual(sorted(warnings), sorted(merged + [not_planned_pr]))
 
     def test_active_task_live_state_accepts_open_pr_for_closed_issue(self) -> None:
         self.write(

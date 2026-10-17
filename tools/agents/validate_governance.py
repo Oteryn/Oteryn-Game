@@ -452,7 +452,10 @@ def validate_active_task_live_state(
             if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
                 raise ValueError(f"invalid GitHub issue response for #{issue}")
             if payload["state"] == "closed" and not pr_open:
-                findings.append(
+                # Only a completed Issue lets a merged PR await archiving;
+                # any other closure stays an error the auto-archive won't fix.
+                target = findings if payload.get("state_reason") == "completed" else errors
+                target.append(
                     f"active task packet {relative} names closed Issue #{issue} without an open canonical PR"
                 )
     return errors
