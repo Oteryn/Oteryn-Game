@@ -1,9 +1,12 @@
 name: Auto-archive merged task packets
 
-# An active task packet whose canonical PR has merged only awaits archiving;
-# Agent governance reports it as a warning. This moves such packets to
+# An active task packet whose canonical PR has merged and whose linked Issue
+# is closed as completed only awaits archiving; Agent governance reports a
+# merged canonical PR as a warning. This moves such packets to
 # docs/agents/tasks/archive/ through a bot pull request, because the main
-# ruleset requires a pull request and the merge queue for every change.
+# ruleset requires a pull request and the merge queue for every change. A
+# merged PR alone is not completion: a multi-PR task keeps its packet active
+# until its Issue closes, and a packet without an Issue is never moved.
 
 on:
   push:
@@ -41,7 +44,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - name: Move packets whose canonical PR merged
+      - name: Move packets whose canonical PR merged and Issue completed
         id: move
         run: |
           python - <<'PY'
@@ -74,6 +77,16 @@ jobs:
               merged_at = pull.get('merged_at')
               if pull.get('state') != 'closed' or not merged_at:
                   continue
+              issue_match = re.search(r'(?m)^issue:\s*([1-9][0-9]*)\s*$', text)
+              if issue_match is None:
+                  print(f'{path.name}: PR #{number} merged but no linked Issue proves completion; left active.')
+                  continue
+              issue = json.loads(subprocess.check_output(
+                  ['gh', 'api', f'repos/{repository}/issues/{issue_match.group(1)}'], text=True,
+              ))
+              if issue.get('state') != 'closed' or issue.get('state_reason') != 'completed':
+                  print(f'{path.name}: PR #{number} merged but Issue #{issue_match.group(1)} is not closed as completed; left active.')
+                  continue
               target = archive / path.name
               if target.exists():
                   print(f'::warning title=Auto-archive skipped::{target} already exists; archive {path} by hand')
@@ -86,7 +99,7 @@ jobs:
               text = text.rstrip('\n') + (
                   '\n\n## Auto-archive\n\n'
                   f'Moved from `docs/agents/tasks/active/` by `.github/workflows/auto-archive-merged-tasks.yml` '
-                  f'after canonical PR #{number} merged at {merged_at}, detected on protected main `{main_sha}`. '
+                  f'after canonical PR #{number} merged at {merged_at} and Issue #{issue_match.group(1)} closed as completed, detected on protected main `{main_sha}`. '
                   'That workflow ran the Validation commands above on the archive commit.\n'
               )
               target.write_text(text, encoding='utf-8')
@@ -98,7 +111,7 @@ jobs:
           (temp / 'archive-list.md').write_text(listing + '\n', encoding='utf-8')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f'count={len(moved)}\n')
-          print(f'{len(moved)} active task packet(s) with a merged canonical PR.')
+          print(f'{len(moved)} active task packet(s) with a merged canonical PR and a completed Issue.')
           if listing:
               print(listing)
           PY
@@ -130,7 +143,7 @@ jobs:
           cat > "$RUNNER_TEMP/pr-body.md" <<EOF
           ## Summary
 
-          Moves active task packets whose canonical PR has merged to \`docs/agents/tasks/archive/\`:
+          Moves active task packets whose canonical PR has merged and whose linked Issue is closed as completed to \`docs/agents/tasks/archive/\`:
 
           $listing
 
