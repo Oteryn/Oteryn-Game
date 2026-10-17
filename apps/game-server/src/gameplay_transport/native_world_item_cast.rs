@@ -388,7 +388,7 @@ pub(super) async fn prepare(
             });
         }
     }
-    let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1000,effects,deferred:None,
+    let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects,deferred:None,
         binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_tile_items":format!("{current:?}"),"source_item_facts":format!("{facts:?}"),"source_item_plan":format!("{plan:?}"),"item_operations":format!("{operations:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut cues = Vec::new();
     let cue_target = match plan.success_presentation.position {
@@ -688,7 +688,7 @@ async fn prepare_barrier(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_tile_items":format!("{current:?}"),"source_world_optional_pvp":optional_pvp,"source_caster_name":name})).map_err(|_|SpellCastDisposition::Rejected)?};
+    let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_tile_items":format!("{current:?}"),"source_world_optional_pvp":optional_pvp,"source_caster_name":name})).map_err(|_|SpellCastDisposition::Rejected)?};
     stage_player_batch(runtime, states, &batch, Some(paid.next.clone()))?;
     runtime
         .stage_spell_batch(&batch)
@@ -998,7 +998,7 @@ async fn prepare_carried(
         &application,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1000,effects:vec![OwnerCombatEffect{target:b.actor,sub_ordinal:0,change:OwnerCombatChange::PlayerConditions{expected:Box::new(expected),next:Box::new(next)}}],deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_carried_item":format!("{carried:?}"),"source_item_facts":format!("{facts:?}"),"source_item_plan":format!("{plan:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
+    let mut batch=OwnerCombatBatch{caster:b.actor,attacker:CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:vec![OwnerCombatEffect{target:b.actor,sub_ordinal:0,change:OwnerCombatChange::PlayerConditions{expected:Box::new(expected),next:Box::new(next)}}],deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),"source_definition":format!("{profile:?}"),"source_carried_item":format!("{carried:?}"),"source_item_facts":format!("{facts:?}"),"source_item_plan":format!("{plan:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut cues = vec![LocatedCueRequest {
         binding: plan.success_presentation.asset_binding.clone(),
         target: CueTarget::Actor(b.actor),
