@@ -49,7 +49,111 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — D1343 installed audit contract and review repairs, REPORT_ONLY (2026-10-17)
+## Current checkpoint — D1374 receipt-to-link constraint, REPORT_ONLY (2026-10-17)
+
+[D1374](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234779578)
+allocates one complete three-file successor for
+[review 4302869631](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4302869631).
+CP first merged main into the task branch: authoring predecessor
+`63ad6c3afb37aafd4cd6cde76dcaa4696622ef25`, parents
+`b120cfc5a0d056ec47487ab544be7a90414ba9e8` and
+`ce7bccab973625d5d3d0d0c566426903229d2373`, tree
+`5b21979b90dc5c1412dc94ff61bf5aa699c811da`. Root verified the fetched ancestry,
+complete source inventory and unchanged preimages of both owned code leaves.
+The package contains only migration `0116_staff_audit.sql`, the existing
+`tests/support/staff_audit_postgres_cases.rs` and this task card. Existing
+shared mounts, registries and node/control behavior are unchanged by this delta.
+
+### Receipt integrity and remaining trust boundary
+
+The old deferred SQL guard checked RECEIPT link to receipt row only. A direct
+runtime/control INSERT could point a receipt row at an existing REQUEST link
+and commit without a new receipt link, discharging the row-presence fence in
+the subsequent request path. The added reverse constraint checks every inserted
+receipt at transaction completion: same environment and control sequence,
+RECEIPT kind, exact signed bytes, principal, key fingerprint and signature, and
+the same transaction as the link. Missing binding raises SQLSTATE `23514` with
+`staff receipt has no same-transaction link`. Existing link digest constraints,
+operation foreign keys, membership guards and all prior DDL bytes are preserved.
+The change is exactly eleven additive lines, including the deferred trigger
+and explicit PUBLIC revoke. It does not compare receipt transaction identity
+with the earlier operation transaction; normal later receipts and identical
+retries remain valid.
+
+This is a structural SQL invariant. Links have no operation_id column, so a
+misattributed receipt/link written directly with runtime database credentials
+in one transaction remains possible outside the verified writer. The signed
+operation_id, request/outcome digests and signer are checked by the existing
+Rust writer and by `audit verify`, including after outbox expiry. This is the
+accepted later-audit residual in
+`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md`,
+section 1 ruling 2, Residual, explicitly accepted for this repair by D1374.
+No SQL JSON parser or cryptographic verification claim is added. Runtime
+continues as REPORT_ONLY, with the existing mutation and activation holds.
+
+### Native regression and source-bound qualification
+
+The additional canonical test
+`staff_pg_member_logins_cannot_commit_receipts_without_matching_links` uses
+two independent fixture databases and real LOGIN members of runtime and
+control. Each first commits a lawful receipt in a transaction later than its
+operation, verifies transaction provenance and retries identical bytes. Each
+then performs the faulty direct INSERT and a real COMMIT. RED records both
+accepted writes, proves the retained wrong-kind row and confirms a fresh begin
+would bypass the missing-receipt fence. Both fixtures and generated roles are
+cleaned before the final accumulated assertion. GREEN requires the exact
+constraint error, unchanged head/counts and the preserved fence, followed by
+a lawful receipt, retry and resumed request.
+
+All 14 prior case bodies and helpers remain the exact 59,011-byte prefix
+(SHA256 `91eb131c6403d0297fd689e4c653bdb24ff10862851494c4879d07b103359c86`).
+Only the appended case was formatted; independent SQL and formatted-test
+review PASS. The family now has 15 cases.
+
+Genuine RED on the CP-merged base: one actually executed failing regression
+(exit 101), both runtime/control direct-COMMIT acceptance markers and complete
+fixture cleanup. Full source before/after:
+`5c50401d93f6bb34b5bb2423bf29b177afb5d281c0b42d272ada0ed7a85a1d8d`.
+Raw RED result: `6bdb1dc96f8cb07155e63d614a42fff0da80896cd8d7d49643e8b342aa828564`;
+raw regression log: `977b110539413dc8dcea8b24ffc2ead012b1bee7c50b25e1e7253a0cb2db0840`.
+
+GREEN completed 2026-10-17 15:04:56 UTC
+on Molehill slot I: **16 staff + 15 canonical PG + 4 node = 35 PASS,
+zero failed or ignored**, workspace format check PASS and strict all-target
+Clippy PASS. The sole RED-to-GREEN source change is the eleven-line SQL repair.
+Full 18,923-path GREEN source before/after:
+`c262033964d4b3c762efc18b2a2018378387492c3c98298dfb9de7a4fcf25c60`.
+Raw GREEN result: `4ff367e26fcd155c33fa5677d6c30f6f6e5cdaf81b6db2536f9efe9ab3bfba8b`.
+PG family log: `d584451c76c60a9017c9a1ebcc187b1d4f58979a0b8fffd71d07458dda1db37e`.
+Clippy log: `984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1`.
+The root downloaded and byte-verified all 21 raw logs/results in archive
+`12bdac76ad2deb15b701f941aa0264ce112d46b455f8fd2ce31832b7ae9b8a20`; all source inventories remain
+in their original native evidence directories.
+
+Final migration SHA256:
+`67f145e81069112f6db55ddb3339aea30ddb3cbdaecd76ff1c325d9fa13fadb6`.
+Final formatted PG source SHA256:
+`b8dec62cfaab73e928dd57227039d873dd2f99e205cad65d82dcd25903ee824a`.
+
+Molehill execution follows D1329/D1342: locked fetch before PG, the existing
+shared-PG namespace helper, one held build slot, pinned shared build environment,
+jobs=4 and MemAvailable at least 12 GiB. No private PG, foreign database/server
+or peer process/lock is used. Test executables remain only inside the held
+slot's canonical target directory. The initial prepare stopped before Cargo/PG
+because its non-login shell lacked the installed Cargo bin directory; its
+failure is retained separately, not counted as RED. The corrected launcher
+uses the verified directory and a new immutable evidence namespace.
+
+The candidate's actual published-head verification and live CI/review results
+are reported in the PR description and
+[#2131](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234761362)
+after publication. Source qualification recorded here is not relabelled as
+already executed on the future API-created commit. Ready, queue and merge
+remain CP-owned. Native checkouts are removed after source/evidence recovery
+and published-head verification, while reports and shared targets are retained.
+
+
+## Previous checkpoint — D1343 installed audit contract and review repairs, REPORT_ONLY (2026-10-17)
 
 Authoring predecessor is published draft #2181
 `df1d39389eabe030ac7dc2a37b92d202aaedae62`. The root lead is the sole branch

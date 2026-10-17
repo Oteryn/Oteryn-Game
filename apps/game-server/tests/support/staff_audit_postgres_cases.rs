@@ -1267,3 +1267,234 @@ fn staff_pg_expired_outbox_cannot_hide_forged_operation_identity() -> TestResult
         drop(root);f.cleanup().await
     })
 }
+
+#[test]
+fn staff_pg_member_logins_cannot_commit_receipts_without_matching_links() -> TestResult {
+    fn signed_receipt(
+        f: &Fixture,
+        operation: u8,
+        sequence: u64,
+        request_digest: &str,
+        stored: &StoredOutcome,
+    ) -> TestResult<signature::VerifiedReceipt> {
+        let receipt = Receipt {
+            version: 1,
+            environment: f.trust.environment().into(),
+            roster_sha256: f.trust.roster_digest().into(),
+            operation_id: f
+                .signer
+                .request(operation, sequence, request_digest)
+                .operation_id,
+            request_sha256: request_digest.into(),
+            outcome_sha256: signature::sha256(&stored.bytes),
+            disposition: Disposition::Committed,
+            issued_at: Decimal(1_000_000),
+            control_seq: Decimal(sequence),
+            previous_link_sha256: request_digest.into(),
+        };
+        let bytes = oteryn_release_manifest::jcs::encode(&receipt, signature::MAX_REQUEST_BYTES)
+            .map_err(debug)?;
+        f.trust
+            .verify_receipt(f.signer.sign(bytes, RECEIPT_NAMESPACE))
+            .map_err(debug)
+    }
+
+    async fn commit_receipt(
+        connection: &mut sqlx::PgConnection,
+        f: &Fixture,
+        receipt: &signature::VerifiedReceipt,
+    ) -> TestResult {
+        let mut tx = connection.begin().await?;
+        owner::receipt_in_transaction(&mut tx, &f.trust, receipt)
+            .await
+            .map_err(debug)?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn run_role(label: &str, group: &str) -> TestResult<Vec<String>> {
+        // Each real COMMIT attack has its own database. On the old migration an
+        // accepted row must not mask the second role with a primary-key error.
+        let Some(f) = Fixture::create(label).await? else {
+            return Ok(Vec::new());
+        };
+        let mut admin = sqlx::PgConnection::connect(&f.admin).await?;
+        let mut created_roles = Vec::new();
+        let result: TestResult<Vec<String>> = async {
+            let nonce = f.name.rsplit('_').next().ok_or("fixture name")?;
+            let login = format!("oteryn_gm_2181_{label}_{nonce}");
+            let password = signature::sha256(&node::operator_files::random_bytes::<32>()?);
+            // Only generated ASCII fixture identifiers/passwords are interpolated.
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE ROLE {login} LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '{password}'"
+            )))
+            .execute(&mut admin)
+            .await?;
+            created_roles.push(login.clone());
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "GRANT {group} TO {login} WITH INHERIT TRUE"
+            )))
+            .execute(&mut admin)
+            .await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "GRANT CONNECT ON DATABASE {} TO {login}",
+                f.name
+            )))
+            .execute(&mut admin)
+            .await?;
+            let options = f
+                .url
+                .parse::<sqlx::postgres::PgConnectOptions>()?
+                .username(&login)
+                .password(&password);
+            let mut connection = sqlx::PgConnection::connect_with(&options).await?;
+            let identity: (String, String, bool, bool, bool, bool, bool) = sqlx::query_as("SELECT current_user::text,session_user::text,pg_has_role(current_user,$1::name,'USAGE'),has_table_privilege(current_user,'game_staff_action_receipts','INSERT'),has_table_privilege(current_user,'game_staff_control_links','INSERT'),has_column_privilege(current_user,'game_staff_control_heads','control_seq','UPDATE'),has_column_privilege(current_user,'game_staff_control_heads','link_sha256','UPDATE')")
+                .bind(group).fetch_one(&mut connection).await?;
+            if identity != (login.clone(), login, true, true, true, true, true) {
+                return Err(format!("invalid receipt LOGIN fixture: {label}").into());
+            }
+
+            // A lawful receipt is committed in a later transaction than its
+            // operation, by this actual LOGIN, on both old and repaired SQL.
+            let first = f.signed(2, 2, f.trust.activation_digest(), true);
+            let first_digest = signature::sha256(&first.bytes);
+            let first_outcome = f.execute(first, Ok(1_000_000), true).await.map_err(debug)?;
+            let first_receipt = signed_receipt(&f, 2, 3, &first_digest, &first_outcome)?;
+            commit_receipt(&mut connection, &f, &first_receipt).await?;
+            let provenance: (bool, bool, bool) = sqlx::query_as("SELECT r.created_xact_id=l.created_xact_id,r.created_xact_id<>o.created_xact_id,r.receipt_bytes=l.signed_bytes AND r.principal=l.principal AND r.key_fingerprint=l.key_fingerprint AND r.signature=l.signature FROM game_staff_action_receipts r JOIN game_staff_control_links l ON l.environment=r.environment AND l.control_seq=r.control_seq AND l.link_kind='RECEIPT' JOIN game_staff_operations o ON o.environment=r.environment AND o.operation_id=r.operation_id")
+                .fetch_one(&f.pool).await?;
+            if provenance != (true, true, true) {
+                return Err(format!("lawful receipt transaction binding changed: {label}").into());
+            }
+            let after_receipt = f.counts().await?;
+            commit_receipt(&mut connection, &f, &first_receipt).await?;
+            let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_staff_action_receipts")
+                .fetch_one(&f.pool).await?;
+            if f.counts().await? != after_receipt || receipt_count != 1 {
+                return Err(format!("identical receipt retry changed evidence: {label}").into());
+            }
+
+            // A second committed mutation now requires reconciliation. Its valid
+            // signed receipt bytes are deliberately routed to the existing
+            // REQUEST sequence; no new RECEIPT link or head update is inserted.
+            let first_receipt_digest = signature::sha256(&first_receipt.signed().bytes);
+            let pending = f.signed(4, 4, &first_receipt_digest, true);
+            let pending_digest = signature::sha256(&pending.bytes);
+            let pending_outcome = f.execute(pending, Ok(1_000_000), false).await.map_err(debug)?;
+            let receipt = signed_receipt(&f, 4, 5, &pending_digest, &pending_outcome)?;
+            let before = f.counts().await?;
+            let head_before: (String, String, String) = sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
+                .fetch_one(&f.pool).await?;
+            let pending_sequence: String = sqlx::query_scalar("SELECT control_seq::text FROM game_staff_operations WHERE environment=$1 AND operation_id=$2::text::uuid AND requires_receipt")
+                .bind(f.trust.environment()).bind(&receipt.receipt().operation_id)
+                .fetch_one(&f.pool).await?;
+            let next = f.signed(5, 5, &pending_digest, false);
+            if !matches!(
+                f.execute(next.clone(), Ok(1_000_000), false).await,
+                Err(StaffError::Rejected(Error::Receipt))
+            ) {
+                return Err(format!("missing-receipt fence absent before attack: {label}").into());
+            }
+            let mut tx = connection.begin().await?;
+            sqlx::query("INSERT INTO game_staff_action_receipts(environment,operation_id,receipt_bytes,principal,key_fingerprint,signature,control_seq,created_xact_id) VALUES($1,$2::text::uuid,$3,$4,$5,$6,$7::text::numeric,txid_current())")
+                .bind(f.trust.environment())
+                .bind(&receipt.receipt().operation_id)
+                .bind(&receipt.signed().bytes)
+                .bind(&receipt.signed().principal)
+                .bind(receipt.fingerprint())
+                .bind(&receipt.signed().signature)
+                .bind(&pending_sequence)
+                .execute(&mut *tx).await?;
+            // Test the real deferred COMMIT boundary, without naming a trigger
+            // that does not exist in the genuine RED migration.
+            let attempt = tx.commit().await;
+            let mut failures = Vec::new();
+            match attempt {
+                Ok(()) => {
+                    failures.push(format!("{label}: direct receipt COMMIT accepted"));
+                    let unpaired: i64 = sqlx::query_scalar("SELECT count(*) FROM game_staff_action_receipts r JOIN game_staff_control_links l ON l.environment=r.environment AND l.control_seq=r.control_seq WHERE l.link_kind='REQUEST'")
+                        .fetch_one(&f.pool).await?;
+                    if unpaired != 1 {
+                        return Err(format!("accepted direct receipt was not retained: {label}").into());
+                    }
+                    let request = f.trust.verify_request(next).map_err(debug)?;
+                    let mut probe = connection.begin().await?;
+                    let bypass = owner::fixture_begin_in_transaction(
+                        &mut probe, &f.trust, request, Ok(1_000_000)
+                    ).await;
+                    probe.rollback().await?;
+                    if !matches!(bypass, Ok(Begin::Fresh(_))) {
+                        return Err(format!("direct receipt did not reproduce the missing-receipt bypass: {label}").into());
+                    }
+                }
+                Err(error) => {
+                    let database = error.as_database_error().ok_or_else(|| debug(&error))?;
+                    if database.code().as_deref() != Some("23514")
+                        || database.message() != "staff receipt has no same-transaction link"
+                    {
+                        return Err(debug(error));
+                    }
+                    // A failed deferred COMMIT must leave the earlier committed
+                    // mutation intact and must not discharge its receipt fence.
+                    let head_after: (String, String, String) = sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
+                        .fetch_one(&f.pool).await?;
+                    let receipts_after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_staff_action_receipts")
+                        .fetch_one(&f.pool).await?;
+                    if f.counts().await? != before || head_after != head_before || receipts_after != 1 {
+                        return Err(format!("failed receipt COMMIT changed retained state: {label}").into());
+                    }
+                    if !matches!(
+                        f.execute(next, Ok(1_000_000), false).await,
+                        Err(StaffError::Rejected(Error::Receipt))
+                    ) {
+                        return Err(format!("failed receipt COMMIT discharged the receipt fence: {label}").into());
+                    }
+                    commit_receipt(&mut connection, &f, &receipt).await?;
+                    let reconciled = f.counts().await?;
+                    commit_receipt(&mut connection, &f, &receipt).await?;
+                    if f.counts().await? != reconciled {
+                        return Err(format!("post-refusal receipt retry changed retained state: {label}").into());
+                    }
+                    let resumed = f.signed(6, 6, &signature::sha256(&receipt.signed().bytes), false);
+                    f.execute(resumed, Ok(1_000_000), false).await.map_err(debug)?;
+                }
+            }
+            connection.close().await?;
+            Ok(failures)
+        }
+        .await;
+
+        // These are the only database/cluster roles owned by this invocation.
+        // Even an accepted RED COMMIT is fully cleaned before final assertions.
+        let database_cleanup = f.cleanup().await;
+        let mut role_cleanup = Ok(());
+        for role in created_roles.iter().rev() {
+            let removed = sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {role}")))
+                .execute(&mut admin)
+                .await;
+            if let Err(error) = removed {
+                role_cleanup = Err(error);
+            }
+        }
+        let admin_cleanup = admin.close().await;
+        database_cleanup?;
+        role_cleanup?;
+        admin_cleanup?;
+        result
+    }
+
+    runtime()?.block_on(async {
+        let mut failures = Vec::new();
+        for (label, group) in [
+            ("runtime_receipt", "oteryn_game_runtime"),
+            ("control_receipt", "oteryn_game_control"),
+        ] {
+            failures.extend(run_role(label, group).await?);
+        }
+        assert!(
+            failures.is_empty(),
+            "receipt link commit failures: {failures:?}"
+        );
+        Ok(())
+    })
+}

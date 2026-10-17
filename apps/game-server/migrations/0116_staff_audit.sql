@@ -115,12 +115,22 @@ BEGIN
  THEN RAISE EXCEPTION 'staff head not advanced' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;
+CREATE FUNCTION game_staff_receipt_has_link() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_staff_control_links l WHERE l.environment=NEW.environment AND l.control_seq=NEW.control_seq
+ AND l.link_kind='RECEIPT' AND l.signed_bytes=NEW.receipt_bytes AND l.principal=NEW.principal
+ AND l.key_fingerprint=NEW.key_fingerprint AND l.signature=NEW.signature AND l.created_xact_id=NEW.created_xact_id)
+ THEN RAISE EXCEPTION 'staff receipt has no same-transaction link' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
 CREATE TRIGGER game_staff_link_predecessor BEFORE INSERT ON game_staff_control_links
  FOR EACH ROW EXECUTE FUNCTION game_staff_link_extends_head();
 CREATE CONSTRAINT TRIGGER game_staff_link_outcome AFTER INSERT ON game_staff_control_links
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_staff_link_has_outcome();
 CREATE CONSTRAINT TRIGGER game_staff_operation_audit AFTER INSERT ON game_staff_operations
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_staff_operation_has_audit();
+CREATE CONSTRAINT TRIGGER game_staff_receipt_link AFTER INSERT ON game_staff_action_receipts
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_staff_receipt_has_link();
 CREATE TRIGGER game_staff_link_immutable BEFORE UPDATE OR DELETE ON game_staff_control_links FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();
 CREATE TRIGGER game_staff_link_no_truncate BEFORE TRUNCATE ON game_staff_control_links FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();
 CREATE TRIGGER game_staff_operation_immutable BEFORE UPDATE OR DELETE ON game_staff_operations FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();
@@ -132,3 +142,4 @@ GRANT SELECT,INSERT ON game_staff_control_links,game_staff_operations,game_staff
 GRANT SELECT ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;
 GRANT UPDATE(control_seq,link_sha256) ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;
 REVOKE ALL ON FUNCTION game_staff_immutable(),game_staff_operation_has_audit(),game_staff_link_extends_head(),game_staff_link_has_outcome() FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_staff_receipt_has_link() FROM PUBLIC;
