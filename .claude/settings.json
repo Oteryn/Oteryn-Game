@@ -15,7 +15,11 @@
       "Bash(python tools/content-schema/native-gameplay/build_full_spell_artifact.py)",
       "Bash(python tools/content-schema/native-gameplay/build_full_spell_artifact.py *)",
       "Bash(python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py)",
-      "Bash(python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py *)"
+      "Bash(python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py *)",
+      "Edit(**/.github/workflows/merge-authority-audit.yml)",
+      "Write(**/.github/workflows/merge-authority-audit.yml)",
+      "Bash(git push -u origin cp/*)",
+      "Bash(git push -q -u origin cp/*)"
     ]
   }
 }

@@ -727,9 +727,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
         assert!(message(retired)?.contains("exactly one location"));
         tx.rollback().await?;
 
-        // Death, WorldReset and channel change: no function outside the Inbox's
-        // own, the item location guard and the TRANSFER consistency count names
-        // the Inbox location table, so no existing writer touches it.
+        // Closed inventory: native Inbox delivery and location/TRANSFER guards,
+        // plus MAIL's two read-only receipt/shape proofs. Unexpected readers or
+        // writers still fail this exact inventory; every Inbox DML guard stays on.
         let readers: Vec<String> = sqlx::query_scalar(
             "SELECT proname::text FROM pg_proc \
               WHERE prosrc LIKE '%game_item_character_inbox_locations%' \
@@ -743,8 +743,10 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
             [
                 "game_character_inbox_deliver",
                 "game_character_inbox_placement_proven",
+                "game_character_inbox_reward_claim_mint_proven",
                 "game_item_location_exclusive",
                 "game_item_transfer_consistency_guard",
+                "game_reward_claim_inbox_mint_is_complete",
             ]
         );
         let kept = read_character_inbox(connection, &bytes(&character)?).await?;
