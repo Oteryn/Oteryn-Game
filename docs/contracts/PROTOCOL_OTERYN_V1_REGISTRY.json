@@ -199,7 +199,7 @@
       "command_types": [],
       "state_domains": [17],
       "offered": false,
-      "offer_gate": "MAP-CUTOVER-1b: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. A World offers it only while the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
+      "offer_gate": "MAP-CUTOVER-1b: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. A World offers it only while the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2. With it selected, domain 2 WORLD_OBJECT_OVERLAY is never sent on join, resume or delta (MAP-WIRE-1 \u00a73); its object states are domain 17 tile changes."
     },
     {
       "id": 19,
@@ -244,6 +244,17 @@
       "state_domains": [19, 20],
       "offered": false,
       "offer_gate": "PRESENT-WIRE-1 registers the codecs only: the server does not offer this capability before SPELL-PRESENT-1 or COMBAT-PRESENT-1 composes an emitter, and the B3 batch measurement of SPELL-PRESENT-0 §9 is recorded on #162 before activation. It requires 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name. With it selected, domain 19 carries at most one batch of presentation events per sync unit (SPELLPRES0-RL-01..03; overflow keeps the observer's own events, then the nearest by D87, ties by decision and emission ordinal; a batch is dropped whole while SPELLPRES0-RL-07 batches are undelivered or a snapshot is in flight), domain 20 carries the own actor's cooldowns (a snapshot at admission, reconnect and channel transfer; a delta at each PRIMARY COMMIT that starts or changes one, and one corrective delta at the first liveness ack), and the command type 3 result may carry field 2 detail. Without it selected, domains 19 and 20 and field 2 are never sent and the session keeps today's behaviour; it is not refused."
+    },
+    {
+      "id": 28,
+      "name": "ITEM_LOOK_V1",
+      "owner_decision": "CP D1240 comment6226466175 (#2182 payload and capability allocation); D1240a comment6226563247 (sole-writer registry/list/closure and next ledger29)",
+      "owner": "ITEM-LOOK-1; runtime visibleActor/profile/name producer remains pending",
+      "requires": [],
+      "command_types": [30],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "Not offered: command type 30 ITEM_LOOK_INTENT is registered (CP D1268, D1292) and gated on this capability, but no command handler, rate limiter or runtime negotiation composition is installed, so the server never selects 28 and never dispatches 30. Only a session selecting capability28 may send Creature field2 EntityRef (identity16B,generationu64,max31B) or receive extended refusals3 NotVisible/4 NotReachable/5 RateLimited. Without28 Creature is malformed and server extended refusals map to existing2 NotAvailable; legacy resultdecode rejects3–5. Item field1 remains unchanged; text field1 is nonempty UTF-8 at most512B. Generation0 means unknown and requires NotVisible before runtime binding. D1240 assigns no additional capability dependency; requires stays empty."
     }
   ],
   "command_types": [
@@ -402,6 +413,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/logout_v1.proto#LogoutResultV1",
       "max_payload_bytes": 0,
       "max_result_payload_bytes": 6
+    },
+    {
+      "id": 30,
+      "name": "ITEM_LOOK_INTENT",
+      "owner_decision": "CP D1268 (#2131 comment6227075059; HOUSE_QUERY correction D1268a comment6227265767) reserves command type 30 for ITEM_LOOK_V1; CP D1292 (#2182) confirms ledger slot 30 is free and assigns this registry hunk to ITEM-LOOK-1; payload layout accepted by CP D1240 comment6226466175",
+      "capability": 28,
+      "payload_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookIntent (CP D1240 layout; no .proto is published yet): exactly one of field 1 Item = the unchanged ItemTargetV1 nonzero varint ItemHandle, or, only with capability 28 selected, field 2 Creature = EntityRef (field 1 identity, exactly 16 bytes; field 2 generation u64, omitted means 0 = unknown)",
+      "result_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookResult (CP D1240 layout; no .proto is published yet): exactly one of field 1 nonempty UTF-8 text of at most 512 bytes, or one empty refusal marker: 2 NOT_AVAILABLE, and only with capability 28 selected 3 NOT_VISIBLE, 4 NOT_REACHABLE, 5 RATE_LIMITED; a refusal carries no target facts",
+      "max_payload_bytes": 31,
+      "max_result_payload_bytes": 515
     }
   ],
   "state_domains": [
@@ -444,7 +465,7 @@
     {
       "id": 2,
       "name": "WORLD_OBJECT_OVERLAY",
-      "owner_decision": "USE-WIRE-V1 (#162 owner acceptance 5864914163)",
+      "owner_decision": "USE-WIRE-V1 (#162 owner acceptance 5864914163); never sent on join, resume or delta to a session that selected capability 18 WORLD_MAP_VIEW_V1, whose object states are domain 17 tile changes (MAP-WIRE-1 \u00a73)",
       "owner": "current ChannelRuntime",
       "delta_types": [
         {
@@ -917,7 +938,7 @@
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},
-    "capability_id": {"invalid": 0, "assignable": [1, 2147483647]},
+    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 29},
     "command_type": {"invalid": 0, "assignable": [1, 2147483647]},
     "state_domain_id": {"invalid": 0, "assignable": [1, 2147483647]},
     "delta_type": {"invalid": 0, "scope": "state_domain", "assignable": [1, 2147483647]},

@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        382,
-        "5929e141675ee186310fd9916c52a15934f02332d4ff083566bb15008e00c54d",
+        418,
+        "e0ef593aaac71f07c8dc9ce56c1619ae84e373da62efab13fb8cee4d7a35f911",
     ),
     (
         "definitions/declarations.json",
-        27_276_260,
-        "eb75b8dd9b67e8bafc77b5f53c7b0300781130e23066771a0d3328f9fac8dd51",
+        27597392,
+        "c8523ca9c2c3f342cfbd3b2cc52a8f2c5652ddd77a53d37a01329611b3127d6e",
     ),
     (
         "definitions/reference.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1945,
-        "3d0bc34001fe5966ba13585700b602a190d5af986c69fa7c964ece75bb1cea55",
+        1957,
+        "fceabb718bedb422e78b9147da512c92d83a3e228b9b678c3582f281bb24008b",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        396,
-        "30c0f61b312b61209e7ba59720ba143e30612bb1aacf77b44c077c1c9f9b4858",
+        408,
+        "0cace4b3701d42a6dcb32bf021379ac3bde7e2678f6b6077717f6fcd6f53906c",
     ),
     (
         "provenance/imports.json",
@@ -137,7 +137,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "18162da6522d436998ae773b21c6f47ab731c65d7df7790fb8ebae2ab782de40";
+const TREE_SHA256: &str = "16913e9cf3cd040ca8b70ee90ba429b57daf69333d1e4a4334dfe69e65ed9fb6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -203,7 +203,8 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // each of the 11 locator lookups: 11 more, measured.
         // The `npc-placements/` family directory (NPC-PLACE-1a) adds one more sibling to the package
         // root, seen by each of the 11 locator lookups: 11 more, measured.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11,
+        // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1,
     }
 }
 
@@ -383,7 +384,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "npc-bank-1-20261015-r1");
+    assert_eq!(
+        project.project_revision(),
+        "npc-content-2-presence-20261015-r1"
+    );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
         .imports()

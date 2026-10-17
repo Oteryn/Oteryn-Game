@@ -63,7 +63,8 @@
           "properties": {
             "walk_interval_ms": {"type": ["integer", "null"], "minimum": 0},
             "walk_radius": {"type": ["integer", "null"], "minimum": -1},
-            "floor_change": {"type": ["boolean", "null"]}
+            "floor_change": {"type": ["boolean", "null"]},
+            "base_speed": {"type": ["integer", "null"], "minimum": 0}
           }
         },
         "vitals": {

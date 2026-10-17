@@ -23,11 +23,14 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     let catalogue =
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
-    // Revision and source tree digest measured on the one-Paulie Bank-admitted repository source.
-    assert_eq!(catalogue.project_revision(), "npc-bank-1-20261015-r1");
+    // Revision and source tree digest measured on the corpse-admitted repository source (main + D3-7).
+    assert_eq!(
+        catalogue.project_revision(),
+        "npc-content-2-presence-20261015-r1"
+    );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "18162da6522d436998ae773b21c6f47ab731c65d7df7790fb8ebae2ab782de40"
+        "16913e9cf3cd040ca8b70ee90ba429b57daf69333d1e4a4334dfe69e65ed9fb6"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

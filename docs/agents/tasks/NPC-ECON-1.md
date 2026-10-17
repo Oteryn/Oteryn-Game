@@ -324,7 +324,7 @@ exact-head CI, independent architect review and CP activation/queue decision rem
   count. Quantity and unit price remain per purchase, never normalized per item.
   The measured Bank shape fits the existing BUY 23 participants/66 work
   and 27,094 payload/27,408 envelope bounds (actual 22/64 and 25,959/26,273).
-- Migration 0090 stores the immutable resolved continuation plus same-transaction
+- Migration 0114 (numbered 0090 before the 2026-10-17 main merge) stores the immutable resolved continuation plus same-transaction
   completion proof, and extends the native Bank entry cause with an exact NPC
   trade foreign key. It preserves the complete latest base 0072 Bank and 0082
   trade guard bodies except the explicitly closed new cause/value arms. Native

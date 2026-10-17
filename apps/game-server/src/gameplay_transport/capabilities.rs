@@ -6,7 +6,8 @@
 //! its continuity: a resume or channel transfer keeps it unchanged and never widens it, and a
 //! resume whose supported set lacks a selected capability is refused as resume-unavailable, so the
 //! client falls back to fresh admission. Dispatch and domain emission read the selection: a
-//! command or domain whose capability is not selected stays refused or unsent.
+//! command or domain whose capability is not selected stays refused or unsent. A core domain that
+//! a selected capability supersedes stays unsent too ([`SUPERSEDED`]).
 
 use oteryn_protocol_oteryn::achievement_notices::{
     CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
@@ -49,7 +50,9 @@ use oteryn_protocol_oteryn::world_interaction::{
 use oteryn_protocol_oteryn::world_map::{
     CAPABILITY_WORLD_MAP_VIEW_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
 };
-use oteryn_protocol_oteryn::world_object::{CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1};
+use oteryn_protocol_oteryn::world_object::{
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+};
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 
@@ -164,6 +167,11 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     LOGOUT,
 ];
 
+/// `ITEM_LOOK_V1`, registry capability 28.
+const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
+/// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
+const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
+
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
 /// `WORLD_SPATIAL_ENTITIES` is not listed: it extends the core domain 1 with payload type 2, which
@@ -253,7 +261,28 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
     ),
+    // ITEM-LOOK-1: capability 28 `ITEM_LOOK_V1` gates command type 30 `ITEM_LOOK_INTENT` (CP
+    // D1268, D1292) and owns no domain. It is not offered and command 30 has no handler yet, so a
+    // session never selects 28 and command 30 is never dispatched.
+    (
+        CAPABILITY_ITEM_LOOK_V1,
+        &[COMMAND_TYPE_ITEM_LOOK_INTENT],
+        &[],
+    ),
 ];
+
+/// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3
+/// "One object domain per World" (`MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md`, accepted) with
+/// ARCH-MAP-WIRE-1 §1.5: a World booted from a bundle serves domain 17 and does not serve
+/// `WORLD_OBJECT_OVERLAY` (domain 2); its doors, levers and other object states reach the client
+/// as tile changes of domain 17. Capability 18 is selected exactly on a bundle World (only it
+/// offers 18, and it requires 18), so a session that selected 18 is never sent domain 2 on join,
+/// resume or delta, and a client that selected 18 refuses domain 2. A fixture World never offers
+/// 18 and keeps domain 2.
+const SUPERSEDED: &[(u32, &[u32])] = &[(
+    CAPABILITY_WORLD_MAP_VIEW_V1,
+    &[STATE_DOMAIN_WORLD_OBJECT_OVERLAY],
+)];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 pub(crate) const SELECTED_CAPACITY: usize = 32;
@@ -334,12 +363,16 @@ impl SelectedCapabilities {
     }
 
     /// Whether state `domain` may be sent: a domain owned by a capability only when that
-    /// capability is selected; a core domain always.
+    /// capability is selected; a core domain unless a selected capability supersedes it
+    /// ([`SUPERSEDED`]).
     pub(crate) fn domain_selected(&self, domain: u32) -> bool {
         GATED
             .iter()
             .filter(|(_, _, domains)| domains.contains(&domain))
             .all(|(capability, _, _)| self.contains(*capability))
+            && !SUPERSEDED.iter().any(|(capability, domains)| {
+                domains.contains(&domain) && self.contains(*capability)
+            })
     }
 }
 

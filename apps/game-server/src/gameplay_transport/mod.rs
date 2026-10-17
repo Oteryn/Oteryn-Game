@@ -18,6 +18,11 @@ mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod input_gate;
+#[allow(
+    dead_code,
+    reason = "ITEM-LOOK-1 read-only examine helper is native-tested; command 30 dispatch, rate limiting and capability 28 offer remain a separate integration gate"
+)]
+mod item_look;
 mod item_move;
 mod item_ref_admission;
 mod item_use;
