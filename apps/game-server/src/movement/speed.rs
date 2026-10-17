@@ -1023,6 +1023,9 @@ pub(crate) enum CreatureCadenceError {
     Movement(crate::movement::MovementError),
 }
 impl CreatureMovementCadence {
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
     pub(crate) fn bind(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> Option<Self> {
         if !runtime.contains_live_creature(actor) {
             return None;

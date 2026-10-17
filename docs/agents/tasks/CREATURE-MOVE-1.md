@@ -4,21 +4,21 @@
 task_id: CREATURE-MOVE-1
 title: "CREATURE-MOVE-1: residue: speed step timer, A*, walk back, leash, dance, near-target, relocate (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: OPEN
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/creature-move-1
 issue: 1622
-pr: null
+pr: 2184
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md App. 7 LOOP-MONSTER-1 graph, CREATURE-MOVE-1 residue; wave 2"
 class: "hard (movement); movement and performance review"
 migration: no
 registry: no
-owner: unassigned (builder)
+owner: family F
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/ai/path_proposal.rs
@@ -26,6 +26,11 @@ owned_paths:
   - apps/game-server/src/movement/path_search.rs
   - apps/game-server/src/movement/speed.rs
   - apps/game-server/tests/creature_move_*.rs (new)
+  - apps/game-server/src/combat/attack/chase.rs
+  - apps/game-server/src/combat/attack/mod.rs
+  - apps/game-server/src/gameplay_transport/attack.rs
+  - apps/game-server/src/movement.rs
+  - docs/agents/tasks/CREATURE-MOVE-1.md
 slot_only_paths:
   - RESOURCE_LIMITS_REGISTRY.json (path budget rows, if new)
   - mod.rs (only if the step timer lane changes composition)
@@ -181,3 +186,39 @@ Local validation:
   files and this task record changed. Head is unchanged; no commit or external write.
 
 Logs are retained locally under `/tmp/creature-move-1-*.log`.
+
+
+## Recovery checkpoint — OPEN / NOT_FULLY_QUALIFIED (2026-10-17)
+
+AUTHORING resumed after loss of the previous CLOUD workspace. The owner requested
+publication of all recoverable work; CP2131 comment6230877600 explicitly directs
+reconstruction from the published heads and an NFQ checkpoint. This is a new
+candidate, not recovery of commit identity `d1019dfe844df6b8cf276d275d805028153cdcc4`.
+
+Bounded creature chase/native step, shared 65,536-unit window, 16,384-unit reserve only for real player waiters, and the six-cell chase fixture.
+
+The #2200 AI caller remains held until #2184 merges; no second scheduler or Movement authority is introduced.
+
+Sources were reconstructed from retained exact change literals and complete
+review diffs. #2184 additionally recovers the verified c2e233 Git bundle from
+the prior PC staging area; its Movement postimage matches the retained d101
+SHA256 3d3ac220d185f3874ce26e92e1b546a3001d721905acc4d37f90b70fea53815c.
+No historical shell/build commands were replayed and no foreign files were adopted.
+
+New-candidate native tests, strict all-target Clippy and full-package qualification
+are NOT_RUN. Old PASS/cache results and lost job87870 are not claimed as proof
+for this reconstruction. Focused source review, Rust formatting, governance and
+diff-check results are reported with the publication receipt. Existing full
+RED/NOT_RUN and composition gates remain open; draft only, no readiness claim.
+
+The reconstructed delta is limited to these already allocated owned paths:
+
+- `apps/game-server/src/combat/attack/chase.rs`
+- `apps/game-server/src/combat/attack/mod.rs`
+- `apps/game-server/src/gameplay_transport/attack.rs`
+- `apps/game-server/src/movement.rs`
+- `apps/game-server/src/movement/path_search.rs`
+- `apps/game-server/src/movement/speed.rs`
+- `docs/agents/tasks/CREATURE-MOVE-1.md`
+
+Allocation remains the existing family-F assignment: D1123/D1212/D1219/D1229; the player drain and shared ledger stay under one owner.

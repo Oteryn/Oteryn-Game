@@ -25,6 +25,10 @@ pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
 /// The owner window `RANGED0-RL-03` counts in (`CREATUREAI0-RL-09`'s 50 ms window).
 pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
+/// CREATURE-AI0 §5.3 / D1219: one shared Channel window, including player reserve.
+pub(crate) const WINDOW_UNITS: u32 = 65_536;
+pub(crate) const PLAYER_WAIT_RESERVE: u32 = 16_384;
+pub(crate) const UNITS_PER_SEARCH: u32 = 1_024;
 /// `RANGED0-RL-08`'s TTL: how long a cell the Movement owner refused a chase step into as
 /// blocked stays out of the search.
 pub(crate) const CHASE_REFUSED_CELL_MICROS: u64 = CHASE_FAILED_SEARCH_WAIT_MICROS;
@@ -253,12 +257,86 @@ fn stepped(at: MovementLocalPosition, step: CardinalStep) -> MovementLocalPositi
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct ChaseSearchBudget {
     drained: Option<u64>,
+    window: Option<u64>,
+    player_units_used: u32,
+    creature_units_used: u32,
 }
 
 impl ChaseSearchBudget {
+    fn advance(&mut self, now_us: u64) -> bool {
+        let window = now_us / CHASE_WINDOW_MICROS;
+        match self.window {
+            Some(current) if window < current => false,
+            Some(current) if window == current => true,
+            _ => {
+                self.window = Some(window);
+                self.player_units_used = 0;
+                self.creature_units_used = 0;
+                self.drained = None;
+                true
+            }
+        }
+    }
+
+    pub(crate) fn charge_player(&mut self, now_us: u64, units: u32) -> bool {
+        if !self.advance(now_us) {
+            return false;
+        }
+        let Some(after) = self
+            .player_units_used
+            .checked_add(units)
+            .filter(|used| *used <= WINDOW_UNITS - self.creature_units_used)
+        else {
+            return false;
+        };
+        self.player_units_used = after;
+        true
+    }
+
+    #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
+    pub(crate) fn charge_creature(
+        &mut self,
+        now_us: u64,
+        units: u32,
+        player_waiting: bool,
+    ) -> bool {
+        if !self.advance(now_us) {
+            return false;
+        }
+        let reserve = if player_waiting {
+            PLAYER_WAIT_RESERVE.saturating_sub(self.player_units_used)
+        } else {
+            0
+        };
+        let Some(after) = self
+            .creature_units_used
+            .checked_add(units)
+            .filter(|used| *used <= WINDOW_UNITS - reserve - self.player_units_used)
+        else {
+            return false;
+        };
+        self.creature_units_used = after;
+        true
+    }
+
+    #[allow(
+        dead_code,
+        reason = "D1219 current shared-window reader is consumed by #2200"
+    )]
+    pub(crate) fn remaining(&mut self, now_us: u64) -> u32 {
+        if self.advance(now_us) {
+            WINDOW_UNITS - self.player_units_used - self.creature_units_used
+        } else {
+            0
+        }
+    }
+
     /// Whether the owner window of `now_us` is still to be drained; if so it counts as drained.
     /// A caller's earlier window never reopens a drained one.
     pub(crate) fn open(&mut self, now_us: u64) -> bool {
+        if !self.advance(now_us) {
+            return false;
+        }
         let window = now_us / CHASE_WINDOW_MICROS;
         if self.drained.is_some_and(|drained| window <= drained) {
             return false;
@@ -622,6 +700,70 @@ mod tests {
             !budget.open(49_999),
             "a late caller's earlier window never reopens a drained one"
         );
+    }
+
+    #[test]
+    fn creature_work_leaves_the_exact_player_reserve_and_does_not_drain_players() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..48 {
+            assert!(budget.charge_creature(0, UNITS_PER_SEARCH, true));
+        }
+        assert_eq!(budget.remaining(0), PLAYER_WAIT_RESERVE);
+        assert!(!budget.charge_creature(0, 1, true));
+        assert!(
+            budget.open(0),
+            "creature charges never consume player drain"
+        );
+        for _ in 0..16 {
+            assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+        }
+        assert_eq!(budget.remaining(0), 0);
+        assert!(!budget.charge_player(0, 1));
+        assert!(!budget.open(0));
+    }
+
+    #[test]
+    fn both_drains_share_one_total_and_stale_windows_cannot_reset_it() {
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.open(50_000));
+        assert!(budget.charge_player(50_000, 16 * UNITS_PER_SEARCH));
+        assert!(budget.charge_creature(50_000, 32 * UNITS_PER_SEARCH, true));
+        assert!(!budget.charge_player(49_999, 1));
+        assert!(!budget.charge_creature(49_999, 1, false));
+        assert_eq!(budget.remaining(49_999), 0);
+        assert_eq!(budget.remaining(50_000), PLAYER_WAIT_RESERVE);
+        assert!(budget.charge_creature(50_000, PLAYER_WAIT_RESERVE, false));
+        assert_eq!(budget.remaining(50_000), 0);
+        assert!(budget.charge_creature(100_000, UNITS_PER_SEARCH, true));
+        assert_eq!(budget.player_units_used, 0);
+        assert_eq!(budget.creature_units_used, UNITS_PER_SEARCH);
+        assert_eq!(budget.remaining(100_000), WINDOW_UNITS - UNITS_PER_SEARCH);
+        assert!(budget.open(100_000));
+        assert!(!budget.open(50_000));
+    }
+
+    #[test]
+    fn an_overflowing_charge_preserves_the_shared_window() {
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+        assert!(!budget.charge_player(0, u32::MAX));
+        assert!(!budget.charge_creature(0, u32::MAX, false));
+        assert_eq!(budget.remaining(0), WINDOW_UNITS - UNITS_PER_SEARCH);
+    }
+
+    #[test]
+    fn no_player_waiters_release_the_entire_shared_window_to_creatures() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..64 {
+            assert!(budget.charge_creature(0, UNITS_PER_SEARCH, false));
+        }
+        assert_eq!(budget.remaining(0), 0);
+        assert!(!budget.charge_creature(0, 1, false));
+        assert!(
+            budget.open(0),
+            "the player drain marker is still independent"
+        );
+        assert!(!budget.charge_player(0, 1));
     }
 
     #[test]
