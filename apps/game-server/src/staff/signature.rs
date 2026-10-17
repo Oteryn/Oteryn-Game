@@ -180,7 +180,9 @@ impl Request {
             return Err(Error::Invalid);
         }
         if let Some(scope) = &self.scope
-            && (!uuid(&scope.world_id) || !uuid(&scope.channel_id))
+            && (!uuid(&scope.world_id)
+                || !uuid(&scope.channel_id)
+                || scope.world_id == scope.channel_id)
         {
             return Err(Error::Invalid);
         }
@@ -988,12 +990,21 @@ pub(crate) mod tests {
                 .expect("signed scoped request");
             assert_eq!(valid.request().scope, request.scope, "{name}");
 
-            for operator in ["missing scope", "invalid world", "invalid channel"] {
+            for operator in [
+                "missing scope",
+                "invalid world",
+                "invalid channel",
+                "equal world/channel",
+            ] {
                 let mut invalid = request.clone();
                 match operator {
                     "missing scope" => invalid.scope = None,
                     "invalid world" => {
                         invalid.scope.as_mut().expect("scope").world_id = "invalid".into()
+                    }
+                    "equal world/channel" => {
+                        let scope = invalid.scope.as_mut().expect("scope");
+                        scope.channel_id = scope.world_id.clone();
                     }
                     _ => invalid.scope.as_mut().expect("scope").channel_id = "invalid".into(),
                 }

@@ -49,7 +49,127 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — D1374 receipt-to-link constraint, REPORT_ONLY (2026-10-17)
+## Current checkpoint — D1393 distinct signed scope, REPORT_ONLY (2026-10-17)
+
+[D1393](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235846045)
+returns this lane to AUTHORING for
+[P2 4303224869](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4303224869).
+FAMILY-I is the sole writer for one complete two-file successor on
+`1bea35ca1d4edf8fb50648378fa17fd6ec8d176b`: exactly
+`apps/game-server/src/staff/signature.rs` and this GM card. CP explicitly
+requires no main merge first. The parent is the published D1374 receipt
+successor, sole parent `63ad6c3afb37aafd4cd6cde76dcaa4696622ef25`, tree
+`a2a3755dad78efe7f5ecf319fa8c5e8eb6aea15d`. Root remains the sole publisher.
+
+### Accepted identity invariant and minimal repair
+
+The finding is accepted: the old validator allowed an invalid World/Channel
+pair when both fields contained the same syntactically valid UUID. Both
+envelope fields were present; the defect was acceptance of equal identities,
+not loss of the channel field. The owning contract is supported by
+`docs/contracts/game-events/v1/staff_action.proto:13`, the existing
+`0008_native_entry_content_activation.sql:48` check `world_id <> channel_id`,
+and the production scope-assignment inequality and independent equal-ID
+negatives in `tests/native_scope_assignment.rs`.
+
+The approved +13/−2 patch adds `scope.world_id == scope.channel_id` to the
+existing `Some(scope)` guard. UUID decoding already requires canonical
+lowercase text, so this comparison binds exact identities without a second
+parser. The same validator covers canonical preparation and verification of
+received, genuinely signed bytes. `audit_staff_read` verifies before acquiring
+its database connection; historical chain verification uses the same checked
+request constructor. The typed, independently pinned `RosterActivate` exception
+with `None` remains valid. Existing scoped activations retain the checked
+distinct pair. Runtime remains REPORT_ONLY.
+
+### Regression operators and frozen source
+
+The existing test
+`staff::signature::tests::ordinary_requests_require_signed_world_and_channel_scope`
+adds the operator `equal world/channel` for each of ten ordinary action
+variants. It copies the valid world UUID into the channel field while retaining
+all other valid facts. Each mutation checks both `canonical_bytes()` and
+verification of adversarial JCS signed directly with the existing real OpenSSH
+fixture. The original 30 negative variants, ten distinct-scope positive controls
+and typed `None` activation remain unchanged.
+
+The genuine RED executed one failing test, exit 101, with **20 acceptance
+labels**: ten actions × `prepare` and `verify` for `equal world/channel`. The
+raw log confirmed the exact ordered list of all twenty; the original negative
+variants were not reported as accepted. GREEN exercises **40 negative variants**, the ten ordinary positive
+controls and global activation inside the existing single test. These are
+variants, not additional test functions: the staff family remains 16 and the
+selected combined inventory remains **16 staff + 15 canonical PG + 4 node = 35**.
+
+| Frozen item | SHA256 |
+| --- | --- |
+| Published-parent signature source | `661b3797dd1404a1d1fcbb7796aa32a1e08716abb4e450f21ac2672060d7e74e` |
+| RED signature source, test change only | `13ba347902a30e44b394d0ea1305b5e2eaf613ea71c4fae73defb6ba036ad3fb` |
+| GREEN signature source, approved guard and test | `0ba9b12deb3f9a0595dd29d7f0d0cefac46b1b963ffec3d229844d1d549ac424` |
+| Independently reviewed proposal patch | `b68da6fa4a665c217a50acff0e112d519bdba20bc19cc7401914cfff5c1d4780` |
+| Native source packet | `3ceed4da04244a891e41cdc2d63ab6634cdae24c90439f596f14bf9dbc1da0d9` |
+
+The RED production prefix matches the parent byte-for-byte. The GREEN
+production change is only the equality condition; the regression bytes are
+identical between phases. Independent proposal review and exact-parent
+apply/whitespace check passed. No D1393 native result is claimed by those checks.
+
+### Actual D1393 execution record
+
+These results come from the newly executed D1393 reports. Root downloaded
+and byte-verified all **21 raw files**, including every command log, in the
+GREEN checkpoint archive; seven complete source inventories remain retained
+at their original native paths. All phases preserved **18,923 source paths**.
+
+| Check | Expected execution | Observed result |
+| --- | --- | --- |
+| Genuine scope RED | 0 passed, 1 failed, exit 101; all 20 equal-ID labels | **CONFIRMED:** 0 passed, 1 failed, zero ignored; exit 101; exact 20 labels |
+| Staff unit family GREEN | 16 passed, zero failed/ignored | **16 passed**, zero failed/ignored |
+| Canonical staff PG GREEN | 15 passed, zero failed/ignored | **15 passed**, zero failed/ignored; shared PG helper, no skipped routing |
+| Node controls GREEN | 4 passed, zero failed/ignored | **4 passed**, zero failed/ignored |
+| Workspace formatting | Rust 1.94 workspace fmt check | **PASS**, exit 0 |
+| Strict Clippy | Selected server/release-manifest packages, all targets, `-D warnings` | **PASS**, exit 0 |
+
+- RED finished: `2026-10-17 15:55:48 UTC`; raw result
+  `ccffecf5878431822b9237fe53fa008014205b75537eec38b617c8e3ca548034`; regression log `8a9e07d73600de24c19d1ffe7941a5cbb6d89dfe5004f902d719616375a38e2f`.
+  Full source before/after: `538f892bf1fa0ea4cd205e60cbfe587b740e2a06a078b66dd134ba675e08f211`.
+- GREEN finished: `2026-10-17 16:03:05 UTC`; raw result
+  `fd445829e3107238426cbaeb6cf983937de5fc1330ad9ad242decdf921ea55f1`; full source before/after
+  `80a261d307fba769cd57589c93a52c24acb56882cc760aab1e5102065d7eb5a0`.
+- Downloaded, byte-verified raw native archive: `7a044aa4949b274c3d5c9164a8b57467e9bf842bf8ce667c6ba5bae24569db67`.
+
+D1329/D1342 remain applicable: shared PostgreSQL 17.6 via the existing
+`in-pg-netns.sh` after locked fetch, one allocated build slot and prescribed
+environment, jobs=4, MemAvailable at least 12 GiB, and cleanup limited to owned
+fixtures. Runtime authority, SQL, registry, Cargo, envelope encoding and the
+accepted D1374 direct-database attribution residual remain outside this delta.
+
+### Relationship to published D1374 and the next commit
+
+D1374 is complete and remains a separate historical qualification. Its source
+GREEN passed 35 tests, fmt and strict Clippy on inventory
+`c262033964d4b3c762efc18b2a2018378387492c3c98298dfb9de7a4fcf25c60`.
+The actual fetched `1bea35ca` commit then independently passed the same 35 tests
+and fmt at **2026-10-17 15:22:01 UTC**, on unchanged 18,923-path inventory
+`629d1b3865053040acea7c4faf37d95fa45b6d172823491170f68906a7c559dc`.
+Published raw result:
+`bd9f68091d4156c64de55881e96c5172a856fb56e60eb7fce17c24e3ed492400`;
+final 33-file archive:
+`ac7f8441653f483e8bfaa8cfb79aa9237de2c1543497b683e38eae606f6aac80`.
+Clippy was not rerun in that published phase; its source-bound GREEN execution
+used identical code. The receipt/link thread and four earlier findings are
+resolved; [D1374 completion](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234761362)
+records archive verification and cleanup. Those passing tests lacked the new
+equal-ID operator and do not prove this D1393 repair.
+
+The D1393 source run precedes the completed card and eventual API-created
+commit. Its results stay bound to the exact source inventory recorded above.
+Actual published-head verification, current CI and the one deduplicated review
+will be reported separately in the PR description and CP receipt. D1393
+requires one non-force publication, a reply and resolution of 4303224869, then
+one review of the new head. Ready, queue and merge remain CP-owned.
+
+## Previous checkpoint — D1374 receipt-to-link constraint, REPORT_ONLY (2026-10-17)
 
 [D1374](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234779578)
 allocates one complete three-file successor for
