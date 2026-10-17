@@ -22,6 +22,8 @@ merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - apps/game-server/src/training/offline.rs
   - apps/game-server/src/durability/character_build.rs
+  - apps/game-server/src/training/mod.rs (D1160 own new module file)
+  - apps/game-server/src/lib.rs (D1160 single `mod training;` registration line only)
   - docs/agents/tasks/LOOP-TRAIN-1.md
 slot_only_paths:
   - "apps/game-server/migrations/00NN_offline_training.sql"
@@ -374,3 +376,36 @@ and diff checks are applicable to this source-publication checkpoint. The existi
 PR remains DRAFT / NOT_FULLY_QUALIFIED; no queue, ready, merge or full completion is
 claimed. Fresh exact-head independent review and required runtime qualification
 remain prerequisites for any later acceptance.
+
+## 2026-10-17 — D1160/D1220 module registration: NOT_FULLY_QUALIFIED
+
+Fixes the canonical E0433 at `character_build.rs:1074` (`crate::training` absent from
+the crate root) under CP D1160 (#2131 comment6225264047) and D1220
+(comment6226012829). The only shared hunk is the one line `mod training;` in
+`lib.rs`. The new own file `training/mod.rs` declares only `pub(crate) mod offline;`
+(`offline.rs` keeps its own `dead_code` allowance). No re-exports, no other owners'
+paths, no exercise source, migration, content or caller change. `origin/main`
+(`cecbfda3`) is merged with a merge commit in the same push (D1220).
+
+Qualification on the merged tree, Rust 1.95.0 strict all-target Clippy for
+`oteryn-game-server` (`-D warnings`): **RED**. With the module now in the graph, the
+native marker writer (`offline.rs` `mod native_marker_writer`) fails name resolution
+on symbols that canonical main does not provide to `crate::training`:
+
+- `durability::character_progression::initialize_character_progression_in_transaction`
+  does not exist on main;
+- `durability::character_vitals_stamina::regenerate_stamina_minutes` belongs to
+  LOOP-VITALS-1 (#2196, not merged; BLOCKING row above);
+- `durability::{begin_semantic_transaction, commit_semantic_transaction}` are
+  `pub(crate)` in the private `durability::db` and not re-exported;
+  `lock_admission_relations` is `pub(super)` in `durability::db`;
+- `durability::character_authority::assert_recovery_fence` is `pub(super)`;
+- `offline.rs:1383` re-export `offline_clock_source_sealed` is unused under
+  `-D warnings`.
+
+A local diagnostic build with the native writer excluded showed the planner and
+`character_build.rs` otherwise type-check; that exclusion is not committed. Each
+remaining item needs a shared-owner hunk (durability visibility/re-export,
+character_progression) or a merged dependency, so it is routed to CP rather than
+edited here. Cargo tests, PG and runtime/full-feature acceptance remain
+**NOT_RUN**; the PR stays DRAFT / NOT_FULLY_QUALIFIED.
