@@ -7,6 +7,19 @@ embedded patches are inert source backups. This checkpoint does not apply held s
 Rust hunks, open entry/login, or mark the PR ready. The existing runtime gate remains
 `HouseClosed`; exit remains `ExitNotAdmitted`.
 
+## Current D1401b source successor
+
+The original checkpoint below was published at
+`291bd9dc748707b29e65ce7b51e40151ab98157f`. The appended
+[D1401b successor artifacts](#d1401b-successor-artifacts) preserve the complete repair
+of seven remaining references to the removed carrier field and the required actual
+NPC Channel-identity regression. Only two implementation files change; the complete
+sixteen-file successor source inventory and independent source review are embedded.
+The old fifteen-case core/stage source remains historical. The new sixteen-case
+source is **NOT_RUN** for native format, compile, LIST and execution. The actual
+eleven-case D1362 claim receipt remains bound to its separate six-file assembly.
+This Markdown backup applies no held source hunk and does not broaden D1401a/c/d/e.
+
 ## Identity and ownership
 
 The verified draft predecessor is `91faa999d4ad507e3d19538fafd36a42c1555dc4`, whose
@@ -6043,3 +6056,1214 @@ This checkpoint preserves recoverable authored work and concrete remaining owner
 Entry, login and exit acceptance, current-authority integration, full native recovery
 and the required end-to-end measurements remain open until their actual implementations
 and exact-source evidence exist.
+
+## D1401b successor artifacts
+
+This section adds nine independently recoverable artifacts to the twenty-seven
+original artifacts above. It uses the same exact decoder and whitespace notation.
+The complete published checkpoint content and every original artifact hash are
+retained. The source correction patch applies after the original stage assembly;
+its two preimage hashes, two result hashes and the final sixteen-file inventory are
+explicit below. The actual source review does not replace compiler or native test
+qualification and does not grant any held shared-source publication.
+
+Reconstruction order:
+
+1. Recover the original compact claim, carrier, identity and actual native-stage
+   source using the earlier instructions and exact actual f010/#2167 preimages.
+2. Construct the original sixteen-file stage assembly and verify its manifest
+   `6e7a4ae8e0a8bfc370acb4ff22651de82c53996515da16f22421d2e690fc75e0`.
+3. Check the actor preimage `de655311758bdc85a3bb67a529467d250add3039df8b328d9475b35cda8020b4`
+   and carrier preimage `89f6584401ed55f4e0bbdcb4ced9df35bbd015d5aaa9182f3636d6ad51b3b426`.
+   Apply only `actor2165-npc-successor.patch` to those two files.
+4. Verify all sixteen hashes against `actor2165-stage-successor-native-manifest.json`.
+   The other fourteen source files must remain exact. The separate minimal private
+   export proposal is intentionally not part of that source assembly.
+5. In a separately granted House heavy-build window, fetch locked dependencies and
+   perform the manifest's canonical LIST and sixteen-case pure run. No PG or full
+   runtime result is inferred from those proposed commands.
+
+The narrower private export clarification is a held proposal only. D1401's merge
+prerequisites and the actual PlayerSpellState/ingress owner gates remain in force.
+
+### Artifact `actor2165-npc-successor.patch`
+
+Original bytes: 14027; SHA-256 `e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-npc-successor.patch utf8 e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9 14027 -->
+````diff
+--- a/apps/game-server/src/house_scope/actor_placement.rs
++++ b/apps/game-server/src/house_scope/actor_placement.rs
+@@ -1147,4 +1147,182 @@
+         assert_eq!(carrier.attacker_authority(0, actor.0.actor_local_generation.0).expect("source authority").fence, None);
+         assert!(directory.namespaces[0].carrier.as_ref().expect("House arena").occupied.is_empty());
+     }
+-}
++
++    #[test]
++    fn house_actor_placement_npc_paths_preserve_validated_channel_identity() {
++        use super::super::npc_actor::{
++            NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
++        };
++        use super::super::{ChannelContentPin, ChannelId, MovementFacing};
++
++        fn runtime(seed: u8, capacity: usize) -> ChannelRuntimeV1 {
++            let world = WorldId::decode(&uuid(1)).expect("fixture World");
++            ChannelRuntimeV1::from_committed_assignment(
++                world,
++                ChannelId::decode(&uuid(seed)).expect("fixture Channel"),
++                NodeId::decode(&uuid(3)).expect("fixture Node"),
++                7,
++                5,
++                11,
++                "runtime-scope-assignment:11",
++                capacity,
++                ChannelContentPin::test(world),
++            )
++            .expect("actual Channel runtime under a pure fixture assignment")
++        }
++
++        fn assert_npcs(
++            runtime: &ChannelRuntimeV1,
++            expected_channel: ChannelId,
++            actors: &[ExactActorRef],
++            keys: &[&str],
++        ) {
++            // The enum's Channel payload is precisely the old carrier.channel_id.
++            // Compare that stored value independently of the continuity-based NPC write.
++            let CarrierScopeDomain::Channel(stored_channel) = &runtime.carrier.scope_domain else {
++                panic!("NPCs require the actual Channel carrier domain");
++            };
++            assert_eq!(*stored_channel, expected_channel);
++            assert_eq!(runtime.continuity.channel_id, *stored_channel);
++            assert_eq!(
++                runtime.carrier.validate_current_continuity(&runtime.continuity),
++                Ok(())
++            );
++            assert_eq!(actors.len(), keys.len());
++            for (actor, key) in actors.iter().zip(keys) {
++                assert_eq!(actor.channel_id(), *stored_channel);
++                assert_eq!(actor.world_id(), runtime.carrier.world_id);
++                assert_eq!(actor.scope_generation(), runtime.carrier.scope_generation);
++                assert_eq!(runtime.npc_key(*actor), Some(*key));
++                let index = usize::try_from(actor.actor_local_id() - 1).expect("NPC slot index");
++                let Slot::NpcOccupied { position, .. } = &runtime.carrier.slots[index] else {
++                    panic!("the returned NPC is in the original physical arena");
++                };
++                assert_eq!(position.context.channel_id, *stored_channel);
++                let mut wrong_channel = *actor;
++                wrong_channel.0.channel_id = ChannelId::decode(&uuid(222)).expect("other Channel");
++                assert_eq!(runtime.npc_key(wrong_channel), None);
++            }
++            assert_eq!(
++                runtime.visible_entities().npcs.iter().map(|npc| npc.actor).collect::<Vec<_>>(),
++                actors
++            );
++        }
++
++        fn assert_wrong_scope_is_inert(runtime: &mut ChannelRuntimeV1, table: &NpcPlacementTable) {
++            for production in [false, true] {
++                let before = runtime.carrier.clone();
++                let catalogue_called = std::cell::Cell::new(false);
++                assert_eq!(
++                    runtime.place_npcs(table, |_| {
++                        catalogue_called.set(true);
++                        true
++                    }, production),
++                    Err(NpcPlacementError::Carrier(CarrierError::WrongScope))
++                );
++                assert!(!catalogue_called.get(), "continuity is checked before NPC eligibility");
++                assert_eq!(runtime.carrier, before);
++            }
++        }
++
++        let placement = |x| NpcPlacement {
++            floor: -2,
++            y: 7,
++            x,
++            direction: MovementFacing::South,
++        };
++        let table = NpcPlacementTable {
++            npcs: vec![
++                NpcPlacements {
++                    key: "oteryn:npc.a".into(),
++                    placements: vec![placement(4), placement(5)],
++                },
++                NpcPlacements {
++                    key: "oteryn:npc.b".into(),
++                    placements: vec![placement(6)],
++                },
++            ],
++        };
++        let empty = NpcPlacementTable::default();
++        for seed in [2, 19, 99] {
++            let channel = ChannelId::decode(&uuid(seed)).expect("expected stored Channel");
++            for production in [false, true] {
++                let mut current = runtime(seed, 4);
++                let outcome = current.place_npcs(&table, |_| true, production).expect("NPC placement");
++                assert!(outcome.not_admitted.is_empty());
++                assert_npcs(&current, channel, &outcome.actors, &["oteryn:npc.a", "oteryn:npc.a", "oteryn:npc.b"]);
++                let before = current.carrier.clone();
++                assert_eq!(current.place_npcs(&table, |_| true, production), Err(NpcPlacementError::AlreadyPlaced));
++                assert_eq!(current.carrier, before);
++            }
++
++            // Production refusal cannot leak the admitted prefix. The same unchanged
++            // owner can then take the non-production path, which places only that prefix.
++            let mut current = runtime(seed, 4);
++            let before = current.carrier.clone();
++            assert_eq!(
++                current.place_npcs(&table, |key| key == "oteryn:npc.a", true),
++                Err(NpcPlacementError::NpcNotAdmitted("oteryn:npc.b".into()))
++            );
++            assert_eq!(current.carrier, before);
++            let outcome = current.place_npcs(&table, |key| key == "oteryn:npc.a", false).expect("eligible NPC prefix");
++            assert_eq!(outcome.not_admitted, vec!["oteryn:npc.b"]);
++            assert_npcs(&current, channel, &outcome.actors, &["oteryn:npc.a", "oteryn:npc.a"]);
++
++            let mut current = runtime(seed, 4);
++            let before = current.carrier.clone();
++            let outcome = current.place_npcs(&table, |_| false, false).expect("all held outside production");
++            assert_eq!(outcome.not_admitted, vec!["oteryn:npc.a", "oteryn:npc.b"]);
++            assert_npcs(&current, channel, &outcome.actors, &[]);
++            assert_eq!(current.carrier, before);
++            for production in [false, true] {
++                let outcome = current.place_npcs(&empty, |_| true, production).expect("empty NPC table");
++                assert_npcs(&current, channel, &outcome.actors, &[]);
++                assert_eq!(current.carrier, before);
++            }
++
++            let mut current = runtime(seed, 2);
++            let before = current.carrier.clone();
++            assert_eq!(current.place_npcs(&table, |_| true, true), Err(NpcPlacementError::Carrier(CarrierError::CapacityExceeded)));
++            assert_eq!(current.carrier, before);
++
++            // The first NPC is physically staged before the second slot exhausts.
++            // Rollback must restore that complete original Channel arena.
++            let mut current = runtime(seed, 4);
++            let Slot::VacantReusable { generation, .. } = &mut current.carrier.slots[1] else {
++                panic!("second reusable NPC slot");
++            };
++            *generation = u64::MAX;
++            let before = current.carrier.clone();
++            assert_eq!(current.place_npcs(&table, |_| true, true), Err(NpcPlacementError::Carrier(CarrierError::ActorGenerationExhausted)));
++            assert_eq!(current.carrier, before);
++
++            for invalid in 0..4 {
++                let mut current = runtime(seed, 4);
++                match invalid {
++                    0 => current.continuity.channel_id = ChannelId::decode(&uuid(222)).expect("wrong Channel"),
++                    1 => current.continuity.world_id = WorldId::decode(&uuid(223)).expect("wrong World"),
++                    2 => current.continuity.current_generation = ScopeOwnershipGeneration::new(6).expect("different generation"),
++                    _ => current.retire_owner_cycle(),
++                }
++                assert_wrong_scope_is_inert(&mut current, &table);
++                assert_wrong_scope_is_inert(&mut current, &empty);
++            }
++        }
++
++        // A real House arena must never acquire a Channel identity via the NPC path.
++        // This deliberately invalid composition is confined to the pure negative fixture.
++        let a = authority(10);
++        let mut directory = HouseActorDirectory::with_explicit_bound(1).expect("House directory");
++        drop(directory.reserve_entry(&a).expect("actual House namespace, then rollback"));
++        let mut wrong_domain = runtime(2, 4);
++        wrong_domain.carrier = directory.namespaces[0].carrier.take().expect("actual House carrier");
++        assert_wrong_scope_is_inert(&mut wrong_domain, &table);
++        assert_wrong_scope_is_inert(&mut wrong_domain, &empty);
++        let before = wrong_domain.carrier.clone();
++        let visible = wrong_domain.visible_entities();
++        assert!(visible.players.is_empty() && visible.creatures.is_empty() && visible.npcs.is_empty());
++        assert_eq!(wrong_domain.current_live_creature_candidates(4), Err(CarrierError::WrongScope));
++        assert_eq!(wrong_domain.carrier, before);
++    }
++}
+--- a/apps/game-server/src/foundation/runtime_actor_carrier.rs
++++ b/apps/game-server/src/foundation/runtime_actor_carrier.rs
+@@ -2404,10 +2404,13 @@
+     pub(crate) fn visible_entities(&self) -> VisibleRuntimeEntities {
+         let context = self.pinned_position_context();
+         let carrier = &self.carrier;
++        let CarrierScopeDomain::Channel(channel_id) = &carrier.scope_domain else {
++            return VisibleRuntimeEntities::default();
++        };
+         let actor = |version: &VersionedPosition| VisibleRuntimeActor {
+             actor: ExactActorRef(ActorRef {
+                 world_id: carrier.world_id,
+-                channel_id: carrier.channel_id,
++                channel_id: *channel_id,
+                 scope_generation: carrier.scope_generation,
+                 actor_local_id: version.actor_local_id,
+                 actor_local_generation: version.actor_local_generation,
+@@ -12689,7 +12692,7 @@
+                     Some((
+                         ExactActorRef(ActorRef {
+                             world_id: self.carrier.world_id,
+-                            channel_id: self.carrier.channel_id,
++                            channel_id: self.continuity.channel_id,
+                             scope_generation: self.carrier.scope_generation,
+                             actor_local_id: ActorLocalId((i + 1) as u32),
+                             actor_local_generation: ActorLocalGeneration(*generation),
+@@ -12862,7 +12865,7 @@
+                         (
+                             ExactActorRef(ActorRef {
+                                 world_id: self.carrier.world_id,
+-                                channel_id: self.carrier.channel_id,
++                                channel_id: self.continuity.channel_id,
+                                 scope_generation: self.carrier.scope_generation,
+                                 actor_local_id: ActorLocalId((index + 1) as u32),
+                                 actor_local_generation: ActorLocalGeneration(generation),
+@@ -13080,7 +13083,7 @@
+         .continuity
+         .advance(PreProductionContinuityGrant {
+             world_id: other.carrier.world_id,
+-            channel_id: other.carrier.channel_id,
++            channel_id: other.continuity.channel_id,
+             scope_generation: ScopeOwnershipGeneration::new(2)
+                 .expect("valid native fixture operation must succeed"),
+         })
+@@ -13608,7 +13611,7 @@
+             {
+                 removed.push(ExactActorRef(ActorRef {
+                     world_id: self.carrier.world_id,
+-                    channel_id: self.carrier.channel_id,
++                    channel_id: self.continuity.channel_id,
+                     scope_generation: self.carrier.scope_generation,
+                     actor_local_id: ActorLocalId(
+                         u32::try_from(i + 1)
+@@ -13841,7 +13844,7 @@
+                         {
+                             target = Some(ExactActorRef(ActorRef {
+                                 world_id: self.carrier.world_id,
+-                                channel_id: self.carrier.channel_id,
++                                channel_id: self.continuity.channel_id,
+                                 scope_generation: self.carrier.scope_generation,
+                                 actor_local_id: ActorLocalId(
+                                     u32::try_from(i + 1)
+@@ -14497,6 +14500,9 @@
+         &self,
+         limit: usize,
+     ) -> Result<Vec<ExactActorRef>, CarrierError> {
++        let CarrierScopeDomain::Channel(channel_id) = &self.carrier.scope_domain else {
++            return Err(CarrierError::WrongScope);
++        };
+         let context = self.pinned_position_context();
+         let mut out = Vec::new();
+         for (i, slot) in self.carrier.slots.iter().enumerate() {
+@@ -14522,7 +14528,7 @@
+                 .map_err(|_| CarrierError::AllocationFailed)?;
+             out.push(ExactActorRef(ActorRef {
+                 world_id: self.carrier.world_id,
+-                channel_id: self.carrier.channel_id,
++                channel_id: *channel_id,
+                 scope_generation: self.carrier.scope_generation,
+                 actor_local_id: ActorLocalId((i + 1) as u32),
+                 actor_local_generation: ActorLocalGeneration(*generation),
+````
+<!-- END ARTIFACT actor2165-npc-successor.patch -->
+
+### Artifact `actor2165-npc-successor-manifest.json`
+
+Original bytes: 1334; SHA-256 `aed49f44f70c368adae97f0b518e56808a276e6f37c4ca5b1067116d2394e277`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-npc-successor-manifest.json utf8 aed49f44f70c368adae97f0b518e56808a276e6f37c4ca5b1067116d2394e277 1334 -->
+````json
+{
+  "status": "AUTHORING_COMPLETE_AWAITING_INDEPENDENT_SOURCE_REVIEW",
+  "base_source": "actor2165-stage-native",
+  "base_manifest_sha256": "6e7a4ae8e0a8bfc370acb4ff22651de82c53996515da16f22421d2e690fc75e0",
+  "purpose": "D1401b actual NPC Channel identity regression and seven removed-field read repairs",
+  "production_shared_scope": "existing held D1373 carrier delta only; NPC source and all other 14 frozen assembly files unchanged",
+  "patch_sha256": "e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9",
+  "native_result": "NOT_RUN; no House heavy window granted",
+  "test_filter": "house_actor_placement_tests::",
+  "new_test": "house_actor_placement_npc_paths_preserve_validated_channel_identity",
+  "expected_test_count": 16,
+  "files": [
+    {
+      "path": "apps/game-server/src/house_scope/actor_placement.rs",
+      "preimage_sha256": "de655311758bdc85a3bb67a529467d250add3039df8b328d9475b35cda8020b4",
+      "sha256": "deec44ffb937e6371335c8501637c2add075ce1d72151ec074a2dfb886dd406c",
+      "bytes": 68598
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_carrier.rs",
+      "preimage_sha256": "89f6584401ed55f4e0bbdcb4ced9df35bbd015d5aaa9182f3636d6ad51b3b426",
+      "sha256": "067838d43bd1006909a6783d0b4f5493dfd64e52fc49d9e03b6e769457406652",
+      "bytes": 644114
+    }
+  ]
+}
+````
+<!-- END ARTIFACT actor2165-npc-successor-manifest.json -->
+
+### Artifact `actor2165-npc-successor-frozen-manifest.json`
+
+Original bytes: 2068; SHA-256 `f905ffe28eb64b27151ae09223490932b7501315f6fc98538ac55c13aa0ccb71`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-npc-successor-frozen-manifest.json utf8 f905ffe28eb64b27151ae09223490932b7501315f6fc98538ac55c13aa0ccb71 2068 -->
+````json
+{
+  "status": "FREEZE_SHA; independent SOURCE REVIEW PASS; native formatting/compile/LIST/16 pure cases NOT_RUN",
+  "base_source": "actor2165-stage-native",
+  "base_manifest_sha256": "6e7a4ae8e0a8bfc370acb4ff22651de82c53996515da16f22421d2e690fc75e0",
+  "purpose": "D1401b actual NPC Channel identity regression and seven removed-field read repairs",
+  "production_shared_scope": "existing held D1373 carrier delta only; NPC source and all other 14 frozen assembly files unchanged",
+  "patch_sha256": "e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9",
+  "native_result": "NOT_RUN; no House heavy window granted",
+  "test_filter": "house_actor_placement_tests::",
+  "new_test": "house_actor_placement_npc_paths_preserve_validated_channel_identity",
+  "expected_test_count": 16,
+  "files": [
+    {
+      "path": "apps/game-server/src/house_scope/actor_placement.rs",
+      "preimage_sha256": "de655311758bdc85a3bb67a529467d250add3039df8b328d9475b35cda8020b4",
+      "sha256": "deec44ffb937e6371335c8501637c2add075ce1d72151ec074a2dfb886dd406c",
+      "bytes": 68598
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_carrier.rs",
+      "preimage_sha256": "89f6584401ed55f4e0bbdcb4ced9df35bbd015d5aaa9182f3636d6ad51b3b426",
+      "sha256": "067838d43bd1006909a6783d0b4f5493dfd64e52fc49d9e03b6e769457406652",
+      "bytes": 644114
+    }
+  ],
+  "independent_review": {
+    "reviewer": "/root/pr_2145_2147_2148",
+    "report": "actor2165-npc-review/REVIEW.md",
+    "report_sha256": "b4e95ff563b2f269b82746a8dfdd0b93625861c19261cd02b2efcdfec3f70efe",
+    "actual_24_dependency_inventory": "actor2165-npc-review/inventory.json",
+    "inventory_sha256": "5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a"
+  },
+  "source_verification": {
+    "original_16_file_assembly": "all original hashes unchanged",
+    "original_15_test_bodies": "byte-identical",
+    "patch_application": "applied to copies of both exact preimages; reconstructed both complete reviewed successors",
+    "whitespace": "no added whitespace error"
+  }
+}
+````
+<!-- END ARTIFACT actor2165-npc-successor-frozen-manifest.json -->
+
+### Artifact `actor2165-stage-successor-native-manifest.json`
+
+Original bytes: 8993; SHA-256 `05b6052844b7c32a371b854f573ba14157e395fb9811ff561a47c4b4ffe091e5`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-stage-successor-native-manifest.json utf8 05b6052844b7c32a371b854f573ba14157e395fb9811ff561a47c4b4ffe091e5 8993 -->
+````json
+{
+  "status": "FREEZE_SHA; 16 actual source files; independent narrow source review PASS; native formatting/compile/LIST/tests NOT_RUN",
+  "base_sha": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+  "upstream_head": "061c16a6f4ac5f337c56f1189421fa3ecb0cd127",
+  "original_frozen_stage_manifest_sha256": "6e7a4ae8e0a8bfc370acb4ff22651de82c53996515da16f22421d2e690fc75e0",
+  "successor_patch": "actor2165-npc-successor.patch",
+  "successor_patch_sha256": "e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9",
+  "reviewed_successor_manifest_sha256": "aed49f44f70c368adae97f0b518e56808a276e6f37c4ca5b1067116d2394e277",
+  "independent_review": {
+    "reviewer": "/root/pr_2145_2147_2148",
+    "report": "actor2165-npc-review/REVIEW.md",
+    "report_sha256": "b4e95ff563b2f269b82746a8dfdd0b93625861c19261cd02b2efcdfec3f70efe",
+    "actual_24_dependency_inventory": "actor2165-npc-review/inventory.json",
+    "inventory_sha256": "5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a"
+  },
+  "assembly_order": [
+    "actual complete f010 checkout",
+    "corrected formatted combined2165-native six files",
+    "final reviewed actor2165-final-source eight files, intentionally replacing fresh/handoff with compact native-stage bridge versions",
+    "four complete exact #2167 upstream files (native_entry.rs, spatial_position.rs, content/mod.rs, tests/support/content_shim.rs)",
+    "compose exact #2167 spatial mount into already-reviewed Foundation exports; actual baseline+upstream-mount c00f1e Git blob proved before composition",
+    "replace exactly actor_placement.rs and runtime_actor_carrier.rs with independently reviewed D1401b successor; verify both old preimages and all resulting sixteen hashes"
+  ],
+  "files": [
+    {
+      "path": "apps/game-server/src/content/mod.rs",
+      "bytes": 7159,
+      "sha256": "553b509493bb72c01a0bfc54f7f9e173027f0adcf0c1c1e8e31c7d136cfe3fdf",
+      "git_blob": "054ad0d28e3c15051d692beb1d71068f09d8d17d",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/content/project/native_entry.rs",
+      "bytes": 116047,
+      "sha256": "13b401fb92e2654bb3c16dda8fa182f04ee3383668ccceb61e44c64310d67abc",
+      "git_blob": "091d086ae55dba495195d045f643a839349f2510",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/content/project/native_house_tiles.rs",
+      "bytes": 24757,
+      "sha256": "b2812a2520d0922cb535b201bc4e217d9e0929bf269d9fc4b33131d01dbd878f",
+      "git_blob": "d8d2cd5c4f25d01cbce43530fa91cda3809622da",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/content/spatial_position.rs",
+      "bytes": 626,
+      "sha256": "cd80744243a0cb519d7b4f63b4b48e50ce2e9c679fcd812398210c579a2013f2",
+      "git_blob": "9b15ae9969a65fd24f439aac30e415234a5a2f1a",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/durability/fresh_admission.rs",
+      "bytes": 193151,
+      "sha256": "78a6007bce9e55c6769f4550cfd58287a0d6839b012c8ed7ed8ba5856a4b6b15",
+      "git_blob": "b6877248902e488774a2cfe4ddcc0ec1f2920a9c",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/durability/house_scope_handoff.rs",
+      "bytes": 90121,
+      "sha256": "df5d844c99ee028949cab8adda7109019bc6651d2c6c8f9ebfe039f7499f4f5b",
+      "git_blob": "7382c1ed68894a9135b266b8f977731f50759880",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/admission_authority_publication.rs",
+      "bytes": 122351,
+      "sha256": "489429ae44ec0ff5d462b976a84391ee24b0d020a387d73ce5df72e86f6cd5b5",
+      "git_blob": "427e9a312a14a1ce26c5d872b2e3028fc8737989",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/admission_recovery_inner.rs",
+      "bytes": 250392,
+      "sha256": "f43fec1ac2d051625563962932bc275a502e33b0ad65e4cf46ef434db6a7e749",
+      "git_blob": "75420ed8c0505f0eec01353246bdbb3fda3de002",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/control_loss_reconnect_bridge_tests.rs",
+      "bytes": 128344,
+      "sha256": "1e9431e862db56d6bdb4dfa08fbffab29b74eb2a44af1bb387fd791f3bb92469",
+      "git_blob": "9c2c1b0b14c49946e6fada3697dcec792210f61a",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/fresh_admission_durability_tests.rs",
+      "bytes": 93534,
+      "sha256": "cf4d5372f46ddbd1836e9253976b83a25ff30bfb41d25a6affbf5427fe79e310",
+      "git_blob": "cb3f8a87390ae7831685934ed1b1ce00ebf1eb7f",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/mod.rs",
+      "bytes": 55723,
+      "sha256": "74f26a4f0726b001ff4dcd4960cb0b6e3c9ed785a5656f8e9ea22a43eed99990",
+      "git_blob": "6f80249a94381ccd59dcdc4dfe15a5f49d260828",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/npc_actor.rs",
+      "bytes": 23126,
+      "sha256": "b5a52c0de83f5ffc7ca64275940daa73b30188eaf3f98f3a58b5624ebda8dbbf",
+      "git_blob": "6311067f895b354db15307460780c125f35f8e25",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_carrier.rs",
+      "bytes": 644114,
+      "sha256": "067838d43bd1006909a6783d0b4f5493dfd64e52fc49d9e03b6e769457406652",
+      "git_blob": "f45e0bf4e1c3275f411e577fb9866de6e78f3cca",
+      "origin": "reviewed D1401b/removed-field successor"
+    },
+    {
+      "path": "apps/game-server/src/house_scope/actor_placement.rs",
+      "bytes": 68598,
+      "sha256": "deec44ffb937e6371335c8501637c2add075ce1d72151ec074a2dfb886dd406c",
+      "git_blob": "556fb86e9aff43bc163270dc7bdceacccda7ce01",
+      "origin": "reviewed D1401b/removed-field successor"
+    },
+    {
+      "path": "apps/game-server/src/house_scope/mod.rs",
+      "bytes": 13564,
+      "sha256": "d95734ec27e69b08b7a4fb2e32096f2b79c5f3297def205eadea984c69c92d9d",
+      "git_blob": "9726194a6c272bc9858b1000d62eef66edfcc2d6",
+      "origin": "unchanged original frozen stage assembly"
+    },
+    {
+      "path": "apps/game-server/tests/support/content_shim.rs",
+      "bytes": 1889,
+      "sha256": "1837afdbbef6122ff7d0a70b55e8d62b98d30a18933e3b33308f7c16433e9570",
+      "git_blob": "94266570e7c853150231efa15169e3590c403872",
+      "origin": "unchanged original frozen stage assembly"
+    }
+  ],
+  "test_target": "durability_postgres",
+  "test_filter": "house_actor_placement_tests::",
+  "expected_case_count": 16,
+  "expected_case_names": [
+    "house_actor_placement_preserves_native_identity_domain",
+    "house_actor_placement_reserves_one_real_slot_and_blocks_tile_before_consume",
+    "house_actor_placement_materializes_exact_source_slot_without_default_reset",
+    "house_actor_placement_consumption_binds_initial_key_lease_tile_and_physical_transaction",
+    "house_actor_placement_unknown_commit_retains_both_owners_and_prepared_reconcile_rolls_back",
+    "house_actor_placement_released_reconcile_is_same_slot_and_keeps_recycled_source_safe",
+    "house_actor_placement_changed_reconcile_key_never_frees_retained_reservation",
+    "house_actor_placement_retired_unresolved_prepared_cleanup_never_reopens_namespace",
+    "house_actor_placement_channel_methods_refuse_house_domain",
+    "house_actor_placement_namespace_is_bounded_and_never_rebootstraps_retired_generation",
+    "house_actor_placement_exhausted_generation_retires_head_and_allows_next_slot",
+    "house_actor_placement_released_wrong_source_channel_does_not_settle_either_owner",
+    "house_actor_placement_released_changed_source_payload_is_retained_for_native_reconciliation",
+    "house_actor_placement_unpositioned_or_changed_lease_source_cannot_materialize",
+    "house_actor_placement_panic_before_commit_rolls_back_exact_slot_and_source_fence",
+    "house_actor_placement_npc_paths_preserve_validated_channel_identity"
+  ],
+  "commands": [
+    "cargo fetch --locked",
+    "cargo test --locked -p oteryn-game-server --test durability_postgres house_actor_placement_tests:: -- --list",
+    "cargo test --locked -p oteryn-game-server --test durability_postgres house_actor_placement_tests:: -- --nocapture"
+  ],
+  "PG": "No PG command or PG inference for these sixteen pure cases.",
+  "heavy_window": "NOT GRANTED for House after MAIL/HUNT; root alone coordinates RDC and canonical heavy lock",
+  "shared_publication": "HELD; no D1401a/c/d/e grant inferred, no source pushed, no active caller/bind/commit API/PSS transfer",
+  "private_exports_clarification": "actor2165-private-exports-clarification.md is separate and unapplied; current sixteen-source assembly retains the earlier exports exactly"
+}
+````
+<!-- END ARTIFACT actor2165-stage-successor-native-manifest.json -->
+
+### Artifact `actor2165-npc-review/REVIEW.md`
+
+Original bytes: 8127; SHA-256 `b4e95ff563b2f269b82746a8dfdd0b93625861c19261cd02b2efcdfec3f70efe`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-npc-review/REVIEW.md utf8 b4e95ff563b2f269b82746a8dfdd0b93625861c19261cd02b2efcdfec3f70efe 8127 -->
+````markdown
+# Independent source review: D1401b NPC successor and Channel field closure
+
+Result: **SOURCE REVIEW PASS for this narrow successor. No material finding.**
+
+Reviewer: `/root/pr_2145_2147_2148`; author: `/root/pr_2165_2166`.
+Review date: 2026-10-17. This was a read-only review of the author's frozen
+files and actual pinned dependencies. The reviewer did not modify the source,
+run rustfmt, compile Rust, execute the 16 cases, use RDC, or run PostgreSQL.
+Native formatting, compilation, and the successor's test execution remain
+**NOT_RUN**. This result does not grant shared-source publication, activate the
+House consumer, or qualify the entire earlier stage assembly.
+
+## Exact reviewed packet
+
+The packet is `actor2165-npc-regression-next/`, with the following full files:
+
+| Path under the packet | Reviewed SHA-256 | Bytes |
+| --- | --- | ---: |
+| `apps/game-server/src/house_scope/actor_placement.rs` | `deec44ffb937e6371335c8501637c2add075ce1d72151ec074a2dfb886dd406c` | 68,598 |
+| `apps/game-server/src/foundation/runtime_actor_carrier.rs` | `067838d43bd1006909a6783d0b4f5493dfd64e52fc49d9e03b6e769457406652` | 644,114 |
+
+The reviewed patch is `actor2165-npc-successor.patch`, SHA-256
+`e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9`.
+Its manifest is `actor2165-npc-successor-manifest.json`, SHA-256
+`aed49f44f70c368adae97f0b518e56808a276e6f37c4ca5b1067116d2394e277`.
+
+The exact preimages are actor placement
+`de655311758bdc85a3bb67a529467d250add3039df8b328d9475b35cda8020b4`
+and carrier
+`89f6584401ed55f4e0bbdcb4ced9df35bbd015d5aaa9182f3636d6ad51b3b426`.
+An independently generated unified diff from both complete preimages to both
+complete successors equals the entire proposed patch byte for byte. Thus this
+review's narrow delta contains the stated one added test and seven repaired
+reads, without an additional hidden source change. Independently removing the
+new test restores the complete previous actor source modulo its terminal line
+ending; all 15 earlier cases and production code are retained byte for byte.
+
+## Seven reads and Channel equivalence
+
+The original carrier preimage contained seven accesses to the removed
+`ChannelActorCarrier.channel_id` field: six in production code and one in an
+existing test fixture. No direct read of that removed carrier field remains
+in the reviewed successor.
+
+Four production conversions use `self.continuity.channel_id` only after an
+existing native guard has established equality with the actual stored
+`CarrierScopeDomain::Channel` payload:
+
+| Owner path | Existing guard before the changed projection |
+| --- | --- |
+| `commit_welter_consume_inner` | `validate_ref` for the actual caster |
+| `smelly_unambiguous_targets` | `validate_ref` for the actual caster |
+| `commit_boreth_death` | `creature_target_identity` and `projected_death`, both calling `validate_ref` |
+| `commit_rum_barrel_death` | `creature_target_identity` and `projected_death`, both calling `validate_ref` |
+
+`validate_ref` first calls `validate_current_continuity`. That check requires
+an active guard, the same World, the same actual Channel domain and identifier,
+and the same scope generation. It then checks the ActorRef against both the
+guard and carrier. No relevant callback mutates the scope domain or continuity
+between that validation and the replacement read. Therefore each replacement
+retains the old Channel value on a successful native path and still refuses
+House or mismatched continuity.
+
+The two read-only census methods did not previously validate current
+continuity. Their replacements correctly project the stored enum payload
+directly: `visible_entities` returns the default empty projection for a House
+domain, while `current_live_creature_candidates` returns `WrongScope`. For a
+Channel domain both still use the old stored identifier, including the
+existing Channel retirement behavior. The change does not silently add a new
+continuity rule to those Channel census paths.
+
+The seventh replacement is in the existing Welter negative fixture's
+continuity advance. It preserves that fixture's actual Channel identity; it
+does not mint or convert a House identifier. The existing one-line
+`npc_actor.rs` conversion is unchanged by this successor and is exercised by
+the added test.
+
+## Actual sibling-module audit
+
+The audit used the actual dependency source at
+`Oteryn/Oteryn-Game@f010472bcb6794a2cbc56dfaf755bd122c10225e`.
+Twenty-four explicit child/path dependencies were fetched and read, including
+the nested spell/conditions/player-death tests. The exact Git blob identities
+and every remaining `.channel_id` hit are retained in adjacent `inventory.json`,
+SHA-256 `5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a`.
+
+No additional reference to the removed carrier field was found in these 24
+actual dependency files. Their remaining `channel_id` reads belong to live
+ActorRef, runtime binding, continuity/owner-grant fixtures, or methods on those
+types; those fields were not removed. The candidate NPC child and the owned
+actor-placement child were checked separately. This is a bounded source
+closure audit, not an assertion that arbitrary future main changes or the
+entire uncompiled stage have no compiler errors. GitHub search alone was not
+used as negative proof.
+
+## New regression and actual owner behavior
+
+The one new case is
+`house_actor_placement_npc_paths_preserve_validated_channel_identity`.
+There are 16 `#[test]` cases in the complete owned actor-placement source.
+The new case exercises the actual `ChannelRuntimeV1::place_npcs` owner, its
+physical `Slot::NpcOccupied` arena, `npc_key`, visible projection, and native
+failure rollback. It does not substitute a detached NPC allocator.
+
+The case compares the actual stored enum Channel payload independently with
+the continuity value used in the NPC write. For three distinct Channels it
+checks both production and non-production admission, multiple placements,
+returned ActorRefs, physical position context, stored NPC keys, and refusal
+of an ActorRef with a different Channel identifier.
+
+Meaningful refusal and atomicity branches are included: duplicate placement;
+production with a held NPC after an eligible prefix; non-production with only
+the eligible prefix; all-held and empty tables; insufficient capacity; and a
+second free-list slot at `u64::MAX` after the first NPC has been staged. The
+last case reaches actual `admit_npc` generation exhaustion and compares the
+complete carrier before and after the existing owner restores slots,
+free-head, and occupied index.
+
+Wrong Channel, wrong World, wrong scope generation, and retirement are tested
+with both populated and empty tables in both admission modes. The eligibility
+closure must remain uncalled, so the guard cannot be accidentally deferred
+until allocation. The actual NPC implementation checks current continuity
+before eligibility; its later `admit_npc` uses that validated continuity.
+
+A House arena produced through the real reservation owner is inserted into
+a Channel runtime only inside the deliberate pure negative fixture. NPC
+placement refuses that composition before eligibility, both census methods
+refuse to expose a Channel projection, and the full arena stays unchanged.
+No fake ChannelId is constructed from House identity. This negative fixture
+does not claim production House activation, player-spell-state transfer, or
+an active Content/admission producer.
+
+The test's imports, actual constructor signature, private-child accessibility,
+and return/error comparisons are consistent with the inspected source. This
+is source reasoning; the compiler and actual test runner remain the required
+next qualification steps in an authorized House build window.
+
+## Qualification and ownership boundary
+
+The prior 15-case core and the native stage remain separate frozen evidence.
+The successful earlier 11-case claims run does not validate this successor.
+No test PASS is claimed here. Shared carrier edits retain their CP ownership
+and order requirements, and this review does not broaden the separately
+granted NPC field hunk into permission for the full actor or PSS integration.
+````
+<!-- END ARTIFACT actor2165-npc-review/REVIEW.md -->
+
+### Artifact `actor2165-npc-review/inventory.json`
+
+Original bytes: 9229; SHA-256 `5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-npc-review/inventory.json utf8 5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a 9229 -->
+````json
+{
+  "state": "READ_ONLY_PINNED_FIELD_ACCESS_AUDIT",
+  "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+  "retrieved_children": 24,
+  "records": [
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_companion.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "50a884ccbea0ce50595e4eadd55e135acc292aef",
+      "chars": 88910,
+      "channel_field_hits": [
+        {
+          "line": 481,
+          "text": "            channel_id: self.binding.channel_id,"
+        },
+        {
+          "line": 906,
+          "text": "            || actor.0.channel_id != self.binding.channel_id"
+        },
+        {
+          "line": 956,
+          "text": "                    channel_id: self.binding.channel_id,"
+        },
+        {
+          "line": 993,
+          "text": "                    channel_id: self.binding.channel_id,"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_spell_types.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "a630dea4495900daa4aebf89679ce77f9c6262bd",
+      "chars": 8284,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_familiar_defense.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "9460873ebce5c62f719769958e6ee90ead48c0f7",
+      "chars": 10494,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_party.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "dd30ae9d5549d693df2ef920e2156348152982ed",
+      "chars": 3575,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_periodic.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "121c45821048cc41b9f878e46dedaccce1c9eca1",
+      "chars": 34390,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_reentry.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "f7a5d0c115c624c476f426e6af0ddc9c9e66f5a5",
+      "chars": 6188,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_source_reservation.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "8df89b7df878745fc6ea9e4aa519263b4bec84a1",
+      "chars": 10849,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_source_step.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "4df53f081ed5989798b21529929ee06ff312f9ba",
+      "chars": 2046,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_spell.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "ad13998824297a3b26d14f3e0b8a1154ded9c856",
+      "chars": 57952,
+      "channel_field_hits": [
+        {
+          "line": 248,
+          "text": "        self.bytes(a.channel_id.as_bytes())?;"
+        },
+        {
+          "line": 882,
+          "text": "                        self.binding.channel_id,"
+        },
+        {
+          "line": 956,
+          "text": "                    self.binding.channel_id,"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_conditions.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "5d7c0212eeed96190fdc436f7336e8af5a21e3d2",
+      "chars": 29189,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_death.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "4ccc0d178a8fd96effdb1b5de9e9945c1b49a63a",
+      "chars": 6409,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_icicle.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "9ce2a0bbf42081d9d81e5336f0d50a9fb2beeae0",
+      "chars": 1927,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/ability_exact_actor_resolution_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "1626254625923f0597a2cbc680c43c12d266e0db",
+      "chars": 6564,
+      "channel_field_hits": [
+        {
+          "line": 115,
+          "text": "            1 => wrong.channel_id = grant(40, 1).channel_id,"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/channel_owner_ability_commit_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "d00c29153f30e08a022a6ec04a5c5243d3dfc2dd",
+      "chars": 54881,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/channel_owner_creature_bite_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "a29cecfcbaba8caf31cd802eb27428da70356391",
+      "chars": 14767,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/channel_owner_combat_death_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "f59c4a8019e9aaad87eb9d06f1b1a381143c3483",
+      "chars": 37478,
+      "channel_field_hits": [
+        {
+          "line": 63,
+          "text": "        channel_id: owner.channel_id,"
+        },
+        {
+          "line": 660,
+          "text": "        key.channel_id(),"
+        },
+        {
+          "line": 669,
+          "text": "    CombatDeathFixture::new(scope.world_id, scope.channel_id, scope.scope_generation)"
+        },
+        {
+          "line": 695,
+          "text": "            actor.0.channel_id,"
+        },
+        {
+          "line": 790,
+          "text": "    assert_ne!(keys[0].channel_id(), keys[1].channel_id());"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/damage_contributors_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "07f6f82cf57788e56da8338b59f6cab7eff0d9d2",
+      "chars": 18789,
+      "channel_field_hits": [
+        {
+          "line": 59,
+          "text": "    CombatDeathFixture::new(scope.world_id, scope.channel_id, scope.scope_generation)"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/channel_actor_position_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "8801396eb30056ef00d7a056d4cd3fee4b757d17",
+      "chars": 8599,
+      "channel_field_hits": [
+        {
+          "line": 30,
+          "text": "        channel_id: continuity.channel_id,"
+        },
+        {
+          "line": 86,
+          "text": "    wrong_channel.channel_id = grant(30, 1).channel_id;"
+        },
+        {
+          "line": 113,
+          "text": "            1 => wrong.channel_id = grant(31, 1).channel_id,"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/movement_static_kernel_structural_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "142181f4c1da2f5be6ef6f43b2134b2e45aab3d8",
+      "chars": 23598,
+      "channel_field_hits": [
+        {
+          "line": 244,
+          "text": "            channel_id: owner.channel_id,"
+        },
+        {
+          "line": 516,
+          "text": "    wrong_actor.channel_id = ChannelId::decode(&uuid_v7(99)).expect(\"other channel\");"
+        },
+        {
+          "line": 666,
+          "text": "            channel_id: fixture.owner.channel_id,"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_spell_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "ee7d3d2965af78e6d465c88e546c7d7f08c83040",
+      "chars": 43163,
+      "channel_field_hits": [
+        {
+          "line": 575,
+          "text": "        super::super::super::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());"
+        },
+        {
+          "line": 1192,
+          "text": "        f.runtime.binding().channel_id(),"
+        }
+      ]
+    },
+    {
+      "path": "apps/game-server/src/foundation/runtime_actor_conditions_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "fbb82b6ba1a17d3a2b0d93ac8aeaf8b259f596fc",
+      "chars": 25011,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/foundation/channel_owner_player_death_tests.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "e565006c9db6d73c53984c43c7b2269257a9c5de",
+      "chars": 10014,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/ai/spawn.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "dd0f91d3879de41e56a9a0931d3bd1f759d5aa30",
+      "chars": 15536,
+      "channel_field_hits": []
+    },
+    {
+      "path": "apps/game-server/src/content/reference_static_cell.rs",
+      "ref": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "git_blob": "1b4982da664ac303e00d985f86c3179b0978a361",
+      "chars": 11083,
+      "channel_field_hits": []
+    }
+  ],
+  "found_additional_removed_carrier_field_reads": [],
+  "native": "NOT_RUN"
+}
+````
+<!-- END ARTIFACT actor2165-npc-review/inventory.json -->
+
+### Artifact `actor2165-npc-successor-notes.md`
+
+Original bytes: 5189; SHA-256 `4d8b5a61d0dced245186eab10acea1fa56747e7a52b2dee398f75bb7f8449b61`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-npc-successor-notes.md utf8 4d8b5a61d0dced245186eab10acea1fa56747e7a52b2dee398f75bb7f8449b61 5189 -->
+````markdown
+# #2165 D1401b — separate carrier and NPC regression successor
+
+This candidate changes two complete source files relative to the preserved
+`actor2165-stage-native` assembly. It does not alter that frozen assembly or the
+published checkpoint at `291bd9dc748707b29e65ce7b51e40151ab98157f`.
+
+## Why a successor is needed
+
+The private carrier's field became `CarrierScopeDomain::Channel(ChannelId) |
+House(HouseId)` in the D1373 proposal. Seven direct reads of the old
+`ChannelActorCarrier.channel_id` field remained in the carrier source. This is a
+source-level compilation defect discovered before the first native build of the
+stage. It is not a failed native test result. The existing eleven passing pure
+D1362 claim tests belong to their separate, exact six-file assembly.
+
+The complete source patch is `actor2165-npc-successor.patch`. The two full files
+are in `actor2165-npc-regression-next/`; the JSON payload contains those same bytes.
+
+## Seven bounded read repairs
+
+| Existing function or fixture | Replacement and preserved condition |
+| --- | --- |
+| `visible_entities` | Read the stored `Channel(id)` payload directly. A House carrier returns an empty value snapshot. Existing Channel fields, context filtering and census order remain unchanged. |
+| `commit_welter_consume_inner` | Use `self.continuity.channel_id` after the existing `validate_ref` proves exact World, Channel and generation. |
+| `smelly_unambiguous_targets` | Use that same validated continuity after the existing caster reference and position checks. |
+| `welter_native_source_owner_proof` | The pure fixture advances the real owner continuity using its own Channel ID. |
+| `commit_boreth_death` | Use validated continuity after the existing current-owner identity and projected-death proof. |
+| `commit_rum_barrel_death` | Use validated continuity after the same existing current-owner and projected-death boundary. |
+| `current_live_creature_candidates` | Read the stored `Channel(id)` payload directly. House returns `WrongScope`; all existing Channel census behavior remains unchanged. |
+
+No new public helper, alias Channel identity, default actor state, extra carrier,
+scope grant or runtime activation is introduced. The single NPC field change
+already proposed under D1401b remains byte-identical in its separate source file.
+
+## Actual NPC regression
+
+The new owned case is
+`house_actor_placement_tests::house_actor_placement_npc_paths_preserve_validated_channel_identity`.
+It calls the existing `ChannelRuntimeV1::place_npcs`, `npc_key` and
+`visible_entities` implementations on actual carrier slots, using explicitly pure
+assignment/Content fixtures. The oracle compares the enum's stored Channel payload
+(the former field) with validated continuity, returned actor identities, stored
+position contexts and the visible NPC census.
+
+It uses three distinct Channel IDs and exercises both production and non-production
+placement, refused and partially eligible catalogues, all-held and empty tables,
+already-placed refusal, capacity refusal, and a real partial-allocation rollback
+when the second slot's generation is exhausted. Negative fixtures cover mismatched
+Channel, World and generation, owner retirement, and the actual House arena. The
+wrong-scope cases also require refusal before the eligibility callback and preserve
+the complete carrier footprint. The House case verifies that the two newly explicit
+Channel projections cannot produce House-as-Channel results.
+
+All fifteen existing owned test bodies are byte-identical. The resulting filter
+`house_actor_placement_tests::` contains sixteen pure test functions. This is a
+source inventory, not an execution result.
+
+## Verification and remaining gates
+
+Local verification checked all sixteen original assembly hashes, the exact original
+fifteen test bodies, whitespace in the added deltas, and application of the patch to
+copies of both preimages. Patch reconstruction produced the full candidate bytes.
+Independent **SOURCE REVIEW PASS** is retained in `actor2165-npc-review/REVIEW.md`,
+SHA256 `b4e95ff563b2f269b82746a8dfdd0b93625861c19261cd02b2efcdfec3f70efe`.
+The reviewer also read twenty-four actual pinned child modules and found no further
+access to the removed carrier field. Their Git blob inventory is retained in
+`actor2165-npc-review/inventory.json`, SHA256
+`5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a`.
+
+Native formatting, compilation, LIST and execution of this successor are **NOT_RUN**.
+No House heavy-build window after MAIL/HUNT has been granted. No PostgreSQL command
+was executed. The published evidence remains unchanged and does not inherit results
+for this new source.
+
+D1401a/c/d/e remain held exactly as decided in
+<https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237066255>.
+The latest direct read still reports #2167 and #2132 open and unmerged. The additional
+crate-private Foundation helper re-exports in the stage are not covered by D1401a's
+identity-and-three-constants wording and require a precise follow-up allocation.
+The actual spell owner move/rollback/adopt port remains deferred. Production entry
+and login remain `HOUSE_CLOSED`; exit remains `ExitNotAdmitted`.
+````
+<!-- END ARTIFACT actor2165-npc-successor-notes.md -->
+
+### Artifact `actor2165-private-exports-clarification.md`
+
+Original bytes: 4168; SHA-256 `98fe15c2ae224a5c751faa0aae7bfc1501b8d02bdb64c780534b5e39e69ff623`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-private-exports-clarification.md utf8 98fe15c2ae224a5c751faa0aae7bfc1501b8d02bdb64c780534b5e39e69ff623 4168 -->
+````markdown
+## #2165 — precise additional private seam after D1401a
+
+Prepared for root's next concrete CP follow-up. This is an unapplied source proposal;
+it grants no permission and changes none of the frozen assembly files.
+
+D1401a orders the same `HouseId` and its three constants after #2167 and #2132 merge.
+Its wording permits only those identity exports. The actual retained native stage
+also needs the following six crate-private names to connect the existing Durability
+prepare object and the owned physical consumer without making the carrier public.
+
+| Additional crate-private name | Existing concrete consumer in the retained stage |
+| --- | --- |
+| `HouseActorAuthorityV1` | The native `PreparedHouseScopeTransitionClaims` implementation in `durability/fresh_admission.rs`; authority method calls in `house_scope/mod.rs`. |
+| `house_actor_authority_seal` | The sealed implementation on that actual native prepare object. Its constructor remains Durability-private. |
+| `HouseActorDirectory` | The borrowed physical House owner supplied to `stage_house_entry_in_transaction`. |
+| `HouseEntryPlacement` | The retained real reservation/materialization/consumption guard in `StagedHouseEntry`. |
+| `HouseSourceActorHold` | The borrowed original physical Channel slot retained by the same staged operation. |
+| `HousePlacementError` | The existing error carried by `HouseEntryStageError`. |
+
+The earlier full proposal also exported `HouseActorReconcileAuthorityV1`,
+`HouseActorReconcileOutcome`, `HouseActorSettledState` and `HousePlacedActor`. No
+external caller in the current native stage needs those four names. This narrower
+request leaves them inside the private carrier subtree until their actual consumer
+is separately reviewable. It is a reduction of the earlier proposal, not a visibility
+increase.
+
+**Question for CP:** may these exact six crate-private exports be allocated to #2165
+in the later held native-stage integration slot, separately from D1401a's public
+identity exports? We preserve the prerequisite that #2167 and #2132 both merge,
+D1401c's later #2187 gate, and the remaining D1373/SESSION-INGRESS-1 order. The exact
+post-merge Foundation blob will be re-cited before application. The carrier module
+stays private; this block adds no constructor, bind/commit method, admission grant or
+PlayerSpellState access. The existing staged consumer still cannot commit the SQL
+transaction or attach gameplay.
+
+The direct read performed for this follow-up reports #2167 open and unmerged at
+`061c16a6f4ac5f337c56f1189421fa3ecb0cd127`, and #2132 open and unmerged at
+`e4adb97e1cfb68b7fba5cd024fa34531ab1e117b`. Those observations do not satisfy the
+merge gates. The later spell-owner request still must identify the pending item-use,
+training, familiar and timer owners; none is silently covered by this export block.
+
+### Concrete current preimage and unapplied hunk
+
+Current reviewed Foundation preimage Git blob:
+`de761247000eaee0792f7d35dfe46a54406f57a1`.
+Preimage SHA256:
+`abc9bd0885bd624520d3a31a62c52604138f6dfeb8046a643896cf5e89f21691`.
+The exact 744-byte patch is `actor2165-minimal-private-exports-proposal.patch`, SHA256
+`a1321782949cb79ca57875a61526d1f040b11c4df0fd88041675c7776713cd0e`.
+Its complete resulting-source SHA256 would be
+`2528e305a7b0ffa0cb30b2760b867b21848769094b3aa8e7c1658426775b13a6`.
+This is a concrete present-source proposal, not a claim about a future merged blob.
+
+```diff
+--- a/apps/game-server/src/foundation/mod.rs
++++ b/apps/game-server/src/foundation/mod.rs
+@@ -21,6 +21,14 @@
+ mod protocol;
+ #[allow(dead_code)]
+ mod runtime_actor_carrier;
++// D1373: the one native House identity and the one existing carrier's House arm.
++pub use runtime_actor_carrier::house_actor_placement::{
++    HOUSE_KEY_MAX_BYTES, HOUSE_SCOPE_CHARACTERS_MAX, HOUSE_TILE_MAX_BYTES, HouseId,
++};
++pub(crate) use runtime_actor_carrier::house_actor_placement::{
++    HouseActorAuthorityV1, HouseActorDirectory, HouseEntryPlacement, HousePlacementError,
++    HouseSourceActorHold, house_actor_authority_seal,
++};
+ pub(crate) use runtime_actor_carrier::npc_actor::{
+     NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
+ };
+```
+````
+<!-- END ARTIFACT actor2165-private-exports-clarification.md -->
+
+### Artifact `actor2165-minimal-private-exports-proposal.patch`
+
+Original bytes: 744; SHA-256 `a1321782949cb79ca57875a61526d1f040b11c4df0fd88041675c7776713cd0e`; encoding `utf8`.
+
+<!-- BEGIN ARTIFACT actor2165-minimal-private-exports-proposal.patch utf8 a1321782949cb79ca57875a61526d1f040b11c4df0fd88041675c7776713cd0e 744 -->
+````diff
+--- a/apps/game-server/src/foundation/mod.rs
++++ b/apps/game-server/src/foundation/mod.rs
+@@ -21,6 +21,14 @@
+ mod protocol;
+ #[allow(dead_code)]
+ mod runtime_actor_carrier;
++// D1373: the one native House identity and the one existing carrier's House arm.
++pub use runtime_actor_carrier::house_actor_placement::{
++    HOUSE_KEY_MAX_BYTES, HOUSE_SCOPE_CHARACTERS_MAX, HOUSE_TILE_MAX_BYTES, HouseId,
++};
++pub(crate) use runtime_actor_carrier::house_actor_placement::{
++    HouseActorAuthorityV1, HouseActorDirectory, HouseEntryPlacement, HousePlacementError,
++    HouseSourceActorHold, house_actor_authority_seal,
++};
+ pub(crate) use runtime_actor_carrier::npc_actor::{
+     NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
+ };
+````
+<!-- END ARTIFACT actor2165-minimal-private-exports-proposal.patch -->
+
+### D1401b artifact index
+
+| Artifact | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `actor2165-npc-successor.patch` | 14027 | `e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9` |
+| `actor2165-npc-successor-manifest.json` | 1334 | `aed49f44f70c368adae97f0b518e56808a276e6f37c4ca5b1067116d2394e277` |
+| `actor2165-npc-successor-frozen-manifest.json` | 2068 | `f905ffe28eb64b27151ae09223490932b7501315f6fc98538ac55c13aa0ccb71` |
+| `actor2165-stage-successor-native-manifest.json` | 8993 | `05b6052844b7c32a371b854f573ba14157e395fb9811ff561a47c4b4ffe091e5` |
+| `actor2165-npc-review/REVIEW.md` | 8127 | `b4e95ff563b2f269b82746a8dfdd0b93625861c19261cd02b2efcdfec3f70efe` |
+| `actor2165-npc-review/inventory.json` | 9229 | `5bc4ceac177feabf17d23a7806e7b6b705e8106b5af2fe54cc3d9f1d577ad39a` |
+| `actor2165-npc-successor-notes.md` | 5189 | `4d8b5a61d0dced245186eab10acea1fa56747e7a52b2dee398f75bb7f8449b61` |
+| `actor2165-private-exports-clarification.md` | 4168 | `98fe15c2ae224a5c751faa0aae7bfc1501b8d02bdb64c780534b5e39e69ff623` |
+| `actor2165-minimal-private-exports-proposal.patch` | 744 | `a1321782949cb79ca57875a61526d1f040b11c4df0fd88041675c7776713cd0e` |

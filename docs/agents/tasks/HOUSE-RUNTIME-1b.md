@@ -22,6 +22,54 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+## 2026-10-17 D1401b correction — current frozen source candidate
+
+The source backup published at `291bd9dc748707b29e65ce7b51e40151ab98157f` is
+preserved below. This successor adds a concrete correction to that inert D1373
+candidate: seven reads still named the removed private carrier `channel_id` field.
+They were found by source inspection before the stage's first native compilation.
+The correction preserves the stored Channel identity, and its new owned regression
+checks the actual NPC allocation, key lookup, position context, visible projection
+and rollback paths. This is authored implementation and a real regression body;
+it is not a claim that the new source has compiled or run.
+
+The two changed complete source files are actor placement SHA-256
+`deec44ffb937e6371335c8501637c2add075ce1d72151ec074a2dfb886dd406c` and carrier SHA-256
+`067838d43bd1006909a6783d0b4f5493dfd64e52fc49d9e03b6e769457406652`.
+The other fourteen files of the disclosed native stage assembly are byte-identical.
+All fifteen previous owned test bodies remain unchanged; the new
+`house_actor_placement_npc_paths_preserve_validated_channel_identity` gives a source
+inventory of sixteen pure cases. Independent SOURCE REVIEW PASS binds the exact
+two-file patch `e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9`.
+The reviewer also read twenty-four actual pinned dependency modules and found no
+additional access to the removed carrier field.
+
+The complete correction, review, dependency inventory and final source manifest are
+recoverable in the [D1401b successor appendix](../evidence/HOUSE-RUNTIME-1b-D1362-D1373-SOURCE-CHECKPOINT-2026-10-17.md#d1401b-successor-artifacts).
+Native format, compilation, LIST and execution of these sixteen cases remain
+**NOT_RUN**. The earlier eleven passing D1362 pure cases still qualify only their
+exact six-file assembly. The initial stage assembly is retained as historical
+source, including the discovered field-read defect; use the new sixteen-file
+manifest `05b6052844b7c32a371b854f573ba14157e395fb9811ff561a47c4b4ffe091e5` for the
+next disclosed attempt. No House heavy-build window after MAIL/HUNT was granted
+for this authoring pass, and no RDC or PostgreSQL command was executed.
+
+[D1401](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237066255)
+retains precise shared-source gates. The public identity plus three constants are
+ordered after both #2167 and #2132 merge; D1362 private prepare views follow that
+landing and #2187; the two qualified-House accessors wait for #2167. The NPC field
+change has a conditional grant in the same commit as the carrier delta, with the
+Channel identity regression required. It is not an early grant for the other shared
+source. The actual staged consumer also needs six exact crate-private Foundation
+exports; a narrower, unapplied follow-up hunk is preserved in the appendix. No new
+export grant is inferred from D1401a. The PlayerSpellState move/rollback/House-adopt
+seam remains deferred to the actual spell owner and the stated ingress order.
+
+The repository source in this backup checkpoint retains entry/login `HouseClosed`
+and exit `ExitNotAdmitted`. Shared source activation, complete player-state transfer,
+native PG rollback/restart and runtime acceptance are still incomplete. The older
+sections and receipts below are preserved with their original source identities.
+
 ## 2026-10-17 authored-source checkpoint — NOT_FULLY_QUALIFIED
 
 The verified draft predecessor is `91faa999d4ad507e3d19538fafd36a42c1555dc4` after CP's
