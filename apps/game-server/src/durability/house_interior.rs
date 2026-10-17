@@ -847,7 +847,7 @@ fn bytes_position(p: &Value, key: &str) -> DbResult<Vec<u8>> {
         .collect()
 }
 // Character-side Place source facts are kind-exact and fail closed: inventory (kind 1)
-// carries parent + ordinal and no slot; container slot (kind 2) carries slot 9 only;
+// carries a UUIDv7 parent + positive ordinal and no slot; container slot (kind 2) carries slot 9 only;
 // equipment (kind 3) carries one slot in 1..=10 other than 9. The stored kind must equal
 // the frozen request kind. A missing, extra, malformed or out-of-range fact is
 // InvalidStoredState, never a defaulted slot/ordinal 0 in the signed audit message.
@@ -865,7 +865,11 @@ fn character_source_location(
     let slot = optional_number(p, "source_slot")?;
     let (parent_item_instance_id, placement_ordinal, equipment_slot) =
         match (stored_kind, has_parent, ordinal, slot) {
-            (1, true, Some(ordinal), None) => (bytes_uuid(p, "source_parent")?, ordinal, 0),
+            (1, true, Some(ordinal @ 1..), None) => {
+                let parent = bytes_uuid(p, "source_parent")?;
+                audit::check_uuid_v7(&parent).map_err(|_| DurabilityError::InvalidStoredState)?;
+                (parent, ordinal, 0)
+            }
             (2, false, None, Some(9)) => (vec![], 0, 9),
             (3, false, None, Some(slot @ 1..=10)) if slot != 9 => (
                 vec![],
@@ -1039,9 +1043,12 @@ async fn charge_retry_work(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
+
     use super::*;
 
     const PARENT: &str = "0190f0e2-7a4b-7c3d-8e5f-0a1b2c3d4e5f";
+    const NON_V7_PARENT: &str = "0190f0e2-7a4b-4c3d-8e5f-0a1b2c3d4e5f";
 
     fn refused(kind: i16, facts: Value) -> bool {
         matches!(
@@ -1097,6 +1104,14 @@ mod tests {
         assert!(refused(
             1,
             json!({"source_kind": 1, "source_parent": "not-a-uuid", "source_ordinal": 4})
+        ));
+        assert!(refused(
+            1,
+            json!({"source_kind": 1, "source_parent": PARENT, "source_ordinal": 0})
+        ));
+        assert!(refused(
+            1,
+            json!({"source_kind": 1, "source_parent": NON_V7_PARENT, "source_ordinal": 4})
         ));
         assert!(refused(
             1,
