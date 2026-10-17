@@ -237,7 +237,8 @@ pub(crate) async fn mint_corpse(
         item: typed("ItemType", "fixture:corpse.rat", "corpse-r1"),
         quantity: 1,
         ground: GroundPlacement {
-            spatial_position: vec![9, 9, 0],
+            // Canonical 10-byte Ground64 address (x=9, y=9, floor=0).
+            spatial_position: vec![0, 0, 0, 9, 0, 0, 0, 9, 0, 0],
             corpse_ref: id(3).to_vec(),
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),

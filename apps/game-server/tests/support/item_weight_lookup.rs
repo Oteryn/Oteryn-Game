@@ -37,6 +37,7 @@ impl ItemWeightLookup for TestWeights {
             ) => Ok(10),
             ("Item", "oteryn:item.tibia.i3607", "definition-r1") => Ok(400),
             ("Item", "fixture:house.item", "definition-r1") => Ok(1),
+            ("Item", "fixture:ground.root", "definition-r1") => Ok(1),
             ("ItemType", "fixture:corpse-loot", "rev-1") => Ok(1),
             ("Item", "fixture:capacity.exact", "definition-r1") => Ok(155999),
             ("Item", "fixture:capacity.over", "definition-r1") => Ok(156000),

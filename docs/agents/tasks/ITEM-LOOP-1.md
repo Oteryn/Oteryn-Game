@@ -100,7 +100,7 @@ The item loop works end to end on the bundle World: equip/unequip, drop/pickup (
 
 ## Inseparable bundles
 
-migration+writer+durability; mint/burn+ledger for starter pack (STARTER-1 MINT). Children split into separate PRs in App. 7 order: ITEM-MOVE-2a residue, BAGS-1, ITEM-MOVE-2b, STACK-WIRE-1, STACK-1, STARTER-1, B3-3.
+migration+writer+durability; mint/burn+ledger for starter pack (STARTER-1 MINT). Children land in App. 7 order (ITEM-MOVE-2a residue, BAGS-1, ITEM-MOVE-2b, STACK-WIRE-1, STACK-1, STARTER-1, B3-3) inside this task's PR. Only the CP may carve a child out into a separately allocated follow-up; CP D1408 did so for rows 62-63 (see *D1408 bounded checkpoint*).
 
 ## Acceptance criteria
 
@@ -130,11 +130,11 @@ plan App. 7 ITEM-LOOP-1; Reference item move rules. Plan: `docs/architecture/rev
 ## Context checkpoint
 
 ```yaml
-last_progress: bounded native-type planner prepared; 12 focused tests and Clippy pass
+last_progress: D1408 bounded checkpoint; main merged; B3-3 cap/weight and ITEM-MOVE-2a equip/unequip/swap land
 status: authoring
 branch: skeleton/item-loop-1
-blocker: accepted item-weight scale and character capacity source; transaction/caller integration and child gates
-next_action: CP/architect qualify weight/capacity sources, independent review and transaction integration slot
+blocker: rows 62-63 carved out to MAP-PICKUP-1 follow-up (D1408); rows 64/65/68 children need CP allocation or wider owned paths
+next_action: CP review of the bounded checkpoint head; CP allocates the carved-out children
 ```
 
 ## Bounded B3-3 local preparation (2026-10-15)
@@ -694,3 +694,42 @@ new exact head's required CI is still pending at this checkpoint and must be
 read back after publication. Stack merge/top-up, independent current Content
 parity, the remaining ITEM-LOOP child work and final integration gates remain
 open. The PR remains a draft.
+
+## D1408 bounded checkpoint (2026-10-17)
+
+CP decision D1408 splits this task. This PR lands a bounded checkpoint; the
+task stays open for the carved-out children.
+
+**Lands in this PR**
+
+- Row 66, B3-3: DUR-03 TRANSFER into the Character checks carried weight plus
+  incoming weight against the derived capacity; unknown weight is refused.
+- ITEM-MOVE-2a residue: native equip/unequip and whole-item occupied-slot swap
+  (`character_equipment.rs`, draft migration `0113_equipment_swap.sql`).
+- Merge of main: `ground_cell_limit_tests.rs` (LOOP-GROUND-1, #2158) adapted
+  to the weighted transfer API, with one explicit test-catalogue weight for
+  `fixture:ground.root`. No production behaviour changes.
+- Gap-review fixes: the *Inseparable bundles* text and the stale
+  `item_transfer.rs` header that said weight was not checked.
+
+**Carved out by D1408 (follow-up, not in this PR)**
+
+- Rows 62-63, base-map drop/pickup (ITEM-MOVE-2b, BAGS-GROUND-1). They depend
+  on MAP-PICKUP-1, which is not merged, and on MAP-OVERLAY-1.
+
+**Not implementable inside owned paths (needs CP allocation or owner decision)**
+
+- Row 64, BAGS-1: re-keys the container entries for every item writer and
+  needs a new migration slot plus performance qualification.
+- Row 65, stacks: STACK-WIRE-1 needs the protocol crate and registry
+  (slot-only); STACK-1 (merges, top-up, partial moves) is an integration child
+  outside the completion set and depends on ITEM-MOVE-2b, BAGS-1 and
+  GROUND-MOVE-1.
+- Row 68, STARTER-1: needs chest/admission wiring, a new DUR-03 audit tag and
+  registry rows, all outside owned paths.
+- Premium equipment requirement (ITEM-SEM-2b) and timed-slot wiring
+  (ITEM-TIMED-1) have no source in this task.
+
+The capacity tests stay in `tests/item_loop_capacity.rs` through a `#[path]`
+mount. An in-crate `#[cfg(test)]` module would also compile in every test crate
+that mounts `src/durability/mod.rs`, and those crates do not mount `content`.

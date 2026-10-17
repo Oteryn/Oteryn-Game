@@ -28,7 +28,12 @@
 //! display order is newest first and nothing is renumbered.
 //!
 //! Capacity (D81): an entry-placing TRANSFER needs
-//! `current_entry_count < definition_capacity`; weight is not checked here.
+//! `current_entry_count < definition_capacity`. Weight (B3-3, BAGS0 §7): a
+//! TRANSFER into the character also needs the carried weight (every equipped
+//! item and the main backpack tree, re-read and locked at commit) plus the
+//! incoming unit weight times its quantity to stay within the Character's
+//! derived capacity; weights come from the [`ItemWeightLookup`] of the admitted
+//! Content generation bound in the request, and an unknown weight is refused.
 //! Stacks (D82): the stack maximum is the definition's proven value or 100,
 //! never above 100; an unknown stack class is refused. Merge (D83): the
 //! receiver is the compatible stack with room and the highest ordinal; full
