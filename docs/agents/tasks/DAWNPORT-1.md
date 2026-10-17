@@ -338,3 +338,25 @@ single draft checkpoint allowance must be rechecked by root before publication;
 9229576 was unpublished when this successor proposal was prepared. No duplicate
 CP request is emitted; routing remains `→ CP #2191` in #2131, with mechanics status
 only on #2191.
+
+
+## D1220 actual own CI lint successor — NOT_FULLY_QUALIFIED
+
+Actual published head55b94969 strict Clippy ran in Merge gate38971820564,
+job117212223130, with Rust1.95.0/all-targets and ended exit101: nine own dead-code
+diagnostic groups in the NPC vocation APIs/retained fields plus three collapsible-if
+diagnostics in rollback/completion. The unit-test step was skipped. These are
+actual canonical CI results, distinct from historical private R4 native11.
+
+This successor scopes reasoned dead_code allowances to only the diagnosed authored
+methods/functions/fields whose real NPC caller is held in A2 by D1173. It preserves
+all API visibility, payloads, bodies and runtime guards, and collapses the two nested
+rollback/completion if chains equivalently. No module/impl-wide lint suppression,
+registration removal, cfg/test hiding or foreign shared-file hunk is introduced.
+
+NOT_RUN: successor Clippy/typecheck/native11/PG/full-package qualification. Earlier
+55b94969 workspace fmt PASS remains scoped to that head. Successor isolated changed
+Rust formatting/patch-whitespace checks are preparation only; no full integration
+or PASS inheritance is claimed. Existing actual-content/start-pin and A2 caller
+boundaries remain open. Root reviews this immutable source packet before deciding
+any existing-draft update; no rebase/merge/push or CI restart occurred here.

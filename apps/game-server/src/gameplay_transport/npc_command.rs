@@ -157,6 +157,10 @@ impl NpcTradeRefusal {
 const MAX_TRADE_QUANTITY: u32 = 100;
 
 impl NpcConversations {
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 NPC caller must retrieve the retained confirmed choice; preserve this authored port until D1173 integration."
+    )]
     pub(crate) fn dawnport_choice(
         &self,
         session: GameSessionId,
@@ -169,6 +173,10 @@ impl NpcConversations {
             .as_ref()?
             .confirmed()
     }
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 NPC caller retains the exact durable request across unknown commits; D1173 integration is pending."
+    )]
     pub(crate) fn retain_dawnport_choice(
         &self,
         session: GameSessionId,
@@ -187,36 +195,41 @@ impl NpcConversations {
             })
             .unwrap_or(false)
     }
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 NPC caller clears only the rolled-back retained request; D1173 integration is pending."
+    )]
     pub(crate) fn rollback_dawnport_request(
         &self,
         session: GameSessionId,
         occurrence: crate::durability::character_build::BuildOccurrence,
     ) {
-        if let Ok(mut sessions) = self.sessions.lock() {
-            if let Some(topic) = sessions
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(topic) = sessions
                 .get_mut(&session)
                 .and_then(|state| state.vocation.as_mut())
-            {
-                topic.rollback_request(occurrence);
-            }
+        {
+            topic.rollback_request(occurrence);
         }
     }
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 NPC caller clears the confirmed topic after actual durable completion; D1173 integration is pending."
+    )]
     pub(crate) fn complete_dawnport_choice(
         &self,
         session: GameSessionId,
         occurrence: crate::durability::character_build::BuildOccurrence,
     ) {
-        if let Ok(mut sessions) = self.sessions.lock() {
-            if let Some(state) = sessions.get_mut(&session) {
-                if state
-                    .vocation
-                    .as_ref()
-                    .and_then(|topic| topic.confirmed())
-                    .is_some_and(|choice| choice.occurrence == occurrence)
-                {
-                    state.vocation = None;
-                }
-            }
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+            && state
+                .vocation
+                .as_ref()
+                .and_then(|topic| topic.confirmed())
+                .is_some_and(|choice| choice.occurrence == occurrence)
+        {
+            state.vocation = None;
         }
     }
 

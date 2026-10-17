@@ -20,6 +20,10 @@ use crate::durability::character_progression::CharacterProgressionError;
 /// `pruned_stance` is the owner's already-qualified decision: `None` leaves the stored stance
 /// alone, `Some` names the stored key to prune in this same build receipt. No extra stance
 /// receipt is created. The occurrence is preserved for the writer's existing replay contract.
+#[allow(
+    dead_code,
+    reason = "D1220: A2 native NPC caller needs the cumulative conversion request; D1173 caller integration is pending."
+)]
 pub(crate) fn vocation_choice_request(
     occurrence: BuildOccurrence,
     before: DurableBuildState,
@@ -66,16 +70,44 @@ const BASE_VOCATIONS: [&str; 4] = ["knight", "paladin", "druid", "sorcerer"];
 
 #[derive(Debug, Clone)]
 pub(crate) struct RetainedNpcVocation {
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) fence: CurrentCharacterGameplayFence,
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) request: BuildChangeRequest,
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) formula_digest: [u8; 32],
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct ConfirmedNpcVocation {
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) actor: ExactActorRef,
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) npc: EntityRef,
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) selected: &'static str,
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
+    )]
     pub(crate) occurrence: BuildOccurrence,
     pub(crate) retained: Option<RetainedNpcVocation>,
 }
@@ -93,6 +125,10 @@ impl NpcVocationConversation {
     pub(crate) fn confirmed(&self) -> Option<ConfirmedNpcVocation> {
         self.confirmed.clone()
     }
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 NPC rollback path retains this occurrence-specific operation; D1173 integration is pending."
+    )]
     pub(crate) fn rollback_request(&mut self, occurrence: BuildOccurrence) {
         if let Some(choice) = self
             .confirmed
@@ -102,6 +138,10 @@ impl NpcVocationConversation {
             choice.retained = None;
         }
     }
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC caller retains the exact build intent through this operation; D1173 integration is pending."
+    )]
     pub(crate) fn retain(
         &mut self,
         occurrence: BuildOccurrence,
@@ -272,6 +312,10 @@ pub(crate) fn dawnport_choice_dialogue(
     )
 }
 
+#[allow(
+    dead_code,
+    reason = "D1220: A2 native NPC caller must recheck current actor and NPC ownership; D1173 integration is pending."
+)]
 fn current_npc_owner(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &ChannelRuntimeV1,
@@ -310,6 +354,10 @@ fn current_npc_owner(
         && player.position.y.abs_diff(npc.position.y) <= TALK_RANGE_TILES
 }
 
+#[allow(
+    dead_code,
+    reason = "D1220: A2 native NPC commit must compare current session lease and scope; D1173 integration is pending."
+)]
 fn same_authority(a: &CurrentCharacterGameplayFence, b: &CurrentCharacterGameplayFence) -> bool {
     a.character_id == b.character_id
         && a.game_session_id == b.game_session_id
@@ -324,6 +372,10 @@ fn same_authority(a: &CurrentCharacterGameplayFence, b: &CurrentCharacterGamepla
 #[allow(
     clippy::too_many_arguments,
     reason = "existing real writer inputs plus retained intent and per-character slot"
+)]
+#[allow(
+    dead_code,
+    reason = "D1220: A2 native NPC caller needs this actual retained-intent build writer; D1173 integration is pending."
 )]
 pub(crate) async fn commit_retained_npc_vocation(
     slot: &mut RevisionSlot,
@@ -374,6 +426,10 @@ pub(crate) async fn commit_retained_npc_vocation(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 native NPC finish path needs this independent current fence read; D1173 integration is pending."
+    )]
     async fn npc_vocation_fence(
         &self,
         session: GameSessionId,
@@ -403,6 +459,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Runs only after native NPC admission and explicit confirmation. The CP caller hunk invokes
     /// this after dropping the runtime lock. No runtime/spell/NPC lock crosses the build write.
+    #[allow(
+        dead_code,
+        reason = "D1220: A2 NPC dispatch is held under D1173; preserve the real native finish operation."
+    )]
     pub(crate) async fn finish_npc_vocation_choice(
         &self,
         actor: ExactActorRef,
@@ -614,3 +674,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 }
+
+// Exercise the existing request cases against this actual private adapter.
+#[cfg(test)]
+#[path = "../../tests/support/dawnport_vocation_cases.rs"]
+mod dawnport_vocation_cases;

@@ -1,12 +1,12 @@
 #![allow(clippy::unwrap_used)]
 
 // Library unit-test placement: import the actual registered adapter and real durable owners.
+use crate::durability;
 use durability::character_build::{
     BuildCause, BuildFormula, BuildOccurrence, DurableBuildState, MAX_BUILD_LEVEL, MIN_SKILL_LEVEL,
     NO_VOCATION, cumulative_progress,
 };
 use durability::character_progression::CharacterProgressionError;
-use oteryn_game_server::durability;
 
 use crate::gameplay_transport::vocation_choice::vocation_choice_request;
 
