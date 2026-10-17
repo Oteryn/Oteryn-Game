@@ -742,3 +742,28 @@ Cargo, strict Clippy and native execution are NOT_RUN at source freeze and must
 be read from the successor's own CI. The active NPC-source membership, complete
 trigger/height producers and actual budgeted caller remain open under D1314 and
 D1344a. The PR remains draft and NOT_FULLY_QUALIFIED.
+
+## Walking enum size repair after exact-head strict Clippy (2026-10-17)
+
+On `efbdae23e94cbb94113912eed4e7c6ceeef0a60c`, the
+[strict Rust job](https://github.com/Oteryn/Oteryn-Game/actions/runs/39032843180/job/117396866444)
+failed on `clippy::large_enum_variant`: `WalkThink::Propose` stores an inline
+`NpcWalkProposal` of at least 248 bytes while the other variants carry no data.
+This was the only reported strict error at repair intake. S3-B had passed;
+integration-rest and PostgreSQL were still running. Those observations belong
+to that exact predecessor and do not qualify this successor.
+
+This isolated repair changes that variant to `Box<NpcWalkProposal>`, wraps the
+one constructor with `Box::new` and unwraps ownership with `*proposal` in the
+existing test helper. The proposal data, authority and terrain checks, interval
+and replay behavior, and all twelve walking test bodies remain unchanged. No
+lint suppression or new test is added. The earlier lossless floor conversion
+remains intact.
+
+The three full preimages are checked against the published head's exact Git
+blobs. Repository Rust1.94 formatting and apply/whitespace checks pass at source
+freeze. Successor Cargo, strict Clippy and native PostgreSQL execution are
+NOT_RUN and require results from its own head; no predecessor result is carried
+forward. The active NPC-source membership, complete terrain/trigger producers
+and actual budgeted caller still require their accepted integration under
+D1314/D1344a. The PR remains draft and NOT_FULLY_QUALIFIED.

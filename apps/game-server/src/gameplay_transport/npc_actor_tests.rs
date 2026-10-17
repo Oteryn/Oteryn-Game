@@ -233,7 +233,7 @@ fn proposal(result: Result<WalkThink, WalkError>) -> NpcWalkProposal {
     let WalkThink::Propose(proposal) = result.expect("prepared") else {
         panic!("interval is due");
     };
-    proposal
+    *proposal
 }
 
 #[test]

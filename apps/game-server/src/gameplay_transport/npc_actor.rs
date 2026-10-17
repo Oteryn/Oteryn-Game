@@ -156,7 +156,7 @@ pub(crate) enum WalkThink {
     Idle,
     Talking,
     Waiting,
-    Propose(NpcWalkProposal),
+    Propose(Box<NpcWalkProposal>),
     /// No second interval advance or proposal for the same native occurrence.
     Replay,
 }
@@ -263,14 +263,14 @@ impl NpcWalkState {
                     let directions = shuffled_directions(root, occurrence)?;
                     (
                         0,
-                        WalkThink::Propose(NpcWalkProposal {
+                        WalkThink::Propose(Box::new(NpcWalkProposal {
                             occurrence,
                             expected,
                             anchor: self.anchor,
                             radius_tiles: self.profile.radius_tiles,
                             base_speed: self.profile.base_speed,
                             directions,
-                        }),
+                        })),
                     )
                 }
             };
