@@ -315,6 +315,7 @@ ruleset_revision = "rules-s3b-1"
 content_revision = "content-s3b-1"
 map_revision = "map-s3b-1"
 world_policy_revision = "policy-s3b-1"
+required_gameplay_capabilities = []
 offer_revision = "offer-s3b-1"
 [platform]
 source_authority = "platform"
