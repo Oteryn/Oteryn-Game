@@ -1,0 +1,530 @@
+{
+  "decision": "https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226466175",
+  "source": "https://www.tibiawiki.com.br/wiki/Measuring_Tibia_Quest",
+  "evidence_class": "CP_ACCEPTED_WIKI_W2",
+  "regions": [
+    "Ab'Dendriel",
+    "Carlin",
+    "Edron",
+    "Feyrist",
+    "Hrodmir",
+    "Kazordoon",
+    "Kilmaresh",
+    "Krailos",
+    "Marapur",
+    "Northern Darama",
+    "Oramond",
+    "Quirefang",
+    "Roshamuul",
+    "Southern Darama",
+    "Thais",
+    "Tiquanda",
+    "Vandura",
+    "Venore",
+    "Yalahar",
+    "Zao"
+  ],
+  "join_rule": "Exact raw_area.source_name in twenty region names; no parent inheritance, substring/fuzzy match or geometric mapping",
+  "membership_source_sha256": "b3488ba592d9e65e3c15ea7ff7752eb4b6596f0fa8d31afc45befc17ee4843f9",
+  "raw_crosswalk_sha256": "58a23a424b7f80ff0fb0620befa75e8ad12dcbf6913590dda72645407ff64e84",
+  "admitted_source_masks": [
+    {
+      "source_id": 458,
+      "source_name": "Hrodmir",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 93,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "f9c952669d75b380b1f77750e5ffcc7fba099acae85d95b58dcab41459277beb"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 7,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "c4456bc11d8d7ec755a73a7fdf4d67c46ca61b7f7f46079f6f459d0aa2ee2766"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 451,
+      "source_name": "Ab'Dendriel",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 86,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "2f0cad6e195ba661503008985539261815326e2ce2093b88cb9bb905130d1f45"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 25,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "d525ee243ea36f7c7f3585b5b34a31f6c08a6ea557ce1ab2743e6fde27a6b79a"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 449,
+      "source_name": "Zao",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 84,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "842297d360e756802c734c822fe6c7075e6b9235b00d63c387e7498d084a9059"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 32,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "0bd08e1bc66f0820c3424ff9554cfd4efa329dcb455710dd2b59f893ba220b3f"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 461,
+      "source_name": "Yalahar",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 96,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "80e8981bee21d1b5fe17eb69ec9ab8c3c64e055faf6490c1b3b56893a75d83d3"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 40,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "f505afca2308f3bb3420bb513ec5f6c3dc026d7c3be62d5658f00155e87b0543"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 456,
+      "source_name": "Carlin",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 91,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "ba753136336c90badcbf765ac459d6c7964984f5015ac41a6310c38a54603c1f"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 69,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "51e390fa56079ce7d0685c143b994fa1c9855007f03ed99473a49c21d09379ec"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 463,
+      "source_name": "Krailos",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 98,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "9e47096d0a12e88cfa81ec3a16386ea7de1b6afc914020e03536c599dcef2c2d"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 93,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "f424f1d456d201f4c7fa8249090d5c6c7865c3fa98c84569dcab3c49f7e187f6"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 453,
+      "source_name": "Oramond",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 88,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "05c41df95631fff8bc40295891ce23521554ad831187380e58a75d4d29f6200d"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 99,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "f862666db7dde352db154d6efe893f1122ac3d18e2b66f732af34ca6f2e595f7"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 448,
+      "source_name": "Kazordoon",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 83,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "81d60693224c27a61bdd01751fcf0fc33b91b2df597baf59b6876a872c78a647"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 103,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "881e88df5a9f7c0ff36db4b43a952923c9d386e41937fd70af6a5de7a06c2684"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 455,
+      "source_name": "Edron",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 90,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "07855793ee0cdd95a71bdbe684bfb4cb8c4b6f1650bc3570f90ba99d96effbed"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 105,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "cdc27839d56fcf29d4096a222e61a2386e5072dc3a1334257d962a294a5c0ff9"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 454,
+      "source_name": "Thais",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 89,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "06cc9ebffe2f4732ed05f31cceeb8a73c865805091a4694a5df9c066b8efdddf"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 131,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "aa9fa4a8737f09ef259430537e1213a48c02dad1f177f4b0b93a4286363d3e4d"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 460,
+      "source_name": "Venore",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 95,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "df406e0f386cba34d20b2473749fc082e4f5855e27cc9fb5d0328d88fd1498c4"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 132,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "a56a2db69ced64e9f1c9ac6a6f08fe52206a8be3928cf2e14353f71f1ef7c54e"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 459,
+      "source_name": "Tiquanda",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 94,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "645a8a0753927b046a12e721729bb494454424068a0b0bc05470b69ff0ebb666"
+      },
+      "raw_mask_locator": {
+        "git_blob": "edb0f68edbbe91846e80693a7a98329ea1bf0b0d",
+        "record_index": 141,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00000-00149.json",
+        "source_record_sha256": "a422f5ee76ac30187785c23fede0a2abbea64b06d147e7ecc064f2105396a22e"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 450,
+      "source_name": "Roshamuul",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 85,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "bed62410bf12f06278a957918397f52deffc322e1aa844c23b373db782a3b1c2"
+      },
+      "raw_mask_locator": {
+        "git_blob": "e197dbd8ab4674afdd9844f8f47be712603fc569",
+        "record_index": 3,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00150-00299.json",
+        "source_record_sha256": "cd95ee5958e51459fe315078b037d64657186faa762933aad5396afae1a27662"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 457,
+      "source_name": "Southern Darama",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 92,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "33c06747390ba99d11193fb05b55959213b5f7abb4e893c9389ef14f22dc781f"
+      },
+      "raw_mask_locator": {
+        "git_blob": "e197dbd8ab4674afdd9844f8f47be712603fc569",
+        "record_index": 12,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00150-00299.json",
+        "source_record_sha256": "4e75a55d13942343f1b5ebe809bb2c650c7a48c1b8de6015bf69ea7c6ce694e4"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 452,
+      "source_name": "Northern Darama",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 87,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "ee2d42de9fe3717732bac174f5762e87b7343b8d789763805cc620034e1bb123"
+      },
+      "raw_mask_locator": {
+        "git_blob": "e197dbd8ab4674afdd9844f8f47be712603fc569",
+        "record_index": 20,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00150-00299.json",
+        "source_record_sha256": "833d646323acd6e7f8ecbe768774936d0da562a4583c762d6adc9327babc7bd4"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    },
+    {
+      "source_id": 462,
+      "source_name": "Vandura",
+      "raw_area_locator": {
+        "git_blob": "9ef5b4ea36826807cd841710403baa04ba9fb6f8",
+        "record_index": 97,
+        "repository_path": "imports/cipsoft-staticdata/map/areas/areas-00300-00449.json",
+        "source_record_sha256": "a665baadf9f06865847558f541e0c463a147a7401f69d195bcbf9745cdf3281b"
+      },
+      "raw_mask_locator": {
+        "git_blob": "e197dbd8ab4674afdd9844f8f47be712603fc569",
+        "record_index": 33,
+        "repository_path": "imports/cipsoft-staticdata/map/subareas/subareas-00150-00299.json",
+        "source_record_sha256": "3964425525e81850f8e9325091dffbcc8bfb7a379d544bb6f4b890ebbcce635c"
+      },
+      "source_membership_qualification": "CP_ADMITTED_SOURCE_REGION_MASK",
+      "native_membership_admitted": false
+    }
+  ],
+  "unadmitted_source_mask_ids": [
+    109,
+    53,
+    302,
+    117,
+    531,
+    394,
+    145,
+    201,
+    114,
+    152,
+    131,
+    151,
+    130,
+    273,
+    138,
+    202,
+    362,
+    113,
+    298,
+    112,
+    511,
+    319,
+    148,
+    68,
+    132,
+    149,
+    144,
+    287,
+    150,
+    299,
+    111,
+    128,
+    169,
+    290,
+    306,
+    134,
+    70,
+    397,
+    133,
+    289,
+    39,
+    167,
+    314,
+    129,
+    439,
+    40,
+    168,
+    279,
+    136,
+    116,
+    141,
+    127,
+    142,
+    110,
+    507,
+    312,
+    135,
+    125,
+    356,
+    357,
+    143,
+    256,
+    360,
+    254,
+    365,
+    271,
+    281,
+    63,
+    43,
+    445,
+    54,
+    55,
+    242,
+    303,
+    361,
+    243,
+    280,
+    437,
+    46,
+    35,
+    443,
+    60,
+    61,
+    192,
+    106,
+    274,
+    275,
+    64,
+    47,
+    441,
+    50,
+    38,
+    57,
+    313,
+    209,
+    388,
+    120,
+    59,
+    58,
+    315,
+    208,
+    526,
+    272,
+    210,
+    301,
+    69,
+    288,
+    214,
+    72,
+    239,
+    49,
+    286,
+    45,
+    213,
+    496,
+    293,
+    276,
+    78,
+    295,
+    29,
+    28,
+    34,
+    327,
+    104,
+    77,
+    317,
+    522,
+    498,
+    516,
+    518,
+    76,
+    519,
+    440,
+    521,
+    75,
+    71,
+    73,
+    308,
+    515,
+    33,
+    195,
+    307,
+    478,
+    200,
+    504,
+    74,
+    217,
+    292,
+    296,
+    66,
+    291,
+    514,
+    107,
+    538,
+    198,
+    391,
+    537,
+    475,
+    92,
+    90,
+    530,
+    86,
+    282,
+    82,
+    96,
+    283,
+    84,
+    85,
+    99,
+    539,
+    83,
+    354,
+    98,
+    285,
+    235,
+    284,
+    95,
+    528,
+    184,
+    438,
+    309,
+    81,
+    102,
+    442,
+    94,
+    297,
+    87,
+    97,
+    238,
+    444,
+    100,
+    228,
+    101
+  ],
+  "regions_without_exact_named_mask": [
+    "Feyrist",
+    "Kilmaresh",
+    "Marapur",
+    "Quirefang"
+  ],
+  "counts": {
+    "source_masks": 209,
+    "admitted_source_region_masks": 16,
+    "unadmitted_source_masks": 193,
+    "native_memberships_admitted": 0
+  },
+  "runtime_admission": false,
+  "canonical_map_area_ids_emitted": false,
+  "discoverability_or_donation_flags_emitted": false
+}
