@@ -178,3 +178,7 @@ test = false
 
 [lints]
 workspace = true
+
+[[test]]
+name = "house_interior_postgres"
+test = false

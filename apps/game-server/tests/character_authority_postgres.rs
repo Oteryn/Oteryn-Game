@@ -3399,6 +3399,10 @@ mod item_ref_production_postgres_cases;
 
 #[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
 mod familiar_versioned_lifecycle_postgres_cases;
+#[path = "support/house_interior_postgres_cases.rs"]
+mod house_interior_postgres_cases;
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;
 
 // D1112 APP-1 installed storage and native authority cases share their cases with the focused
 // standalone targets through the same protected lane, on the Bestiary harness included above.

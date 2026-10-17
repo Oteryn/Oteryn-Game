@@ -171,6 +171,12 @@ impl NodeIncarnationProof {
     pub const fn fact(&self) -> NodeRegistrationFact {
         self.fact
     }
+
+    /// Only for a bound parameter to the existing native SQL possession predicate.
+    /// Never serialize, log or retain these bytes in a receipt or audit event.
+    pub(super) fn sql_possession_secret(&self) -> &[u8] {
+        self.secret.0.as_slice()
+    }
 }
 
 impl fmt::Debug for NodeIncarnationProof {

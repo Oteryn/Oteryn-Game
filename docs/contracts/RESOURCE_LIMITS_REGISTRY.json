@@ -6034,7 +6034,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5 (2 for the merge and top-up shapes, 1 otherwise); registered by OTV2-20260928-b3-1-transfer."
     },
@@ -6058,7 +6059,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -6082,7 +6084,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
     },
@@ -6106,7 +6109,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
     },
@@ -6130,7 +6134,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
     },
@@ -6155,7 +6160,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
     },
@@ -6180,7 +6186,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)"
+        "apps/game-server/src/durability/item_transfer_audit.rs (B3-1 runtime TRANSFER: TransferShape::usage checked in the payload gate and before commit)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Amended by B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1 \u00a74.5; registered by OTV2-20260928-b3-1-transfer."
     },
@@ -6204,7 +6211,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: TransactionResourceUsage::MINT checked before freeze and in the payload gate)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. D50: one audit event per logical transaction."
     },
@@ -6227,13 +6235,15 @@
         "worst-case MINT of the final schema (7,167 B) accepted",
         "integer-overflow accounting rejected",
         "worst-case B3 top-up TRANSFER envelope of the final schema (6,816 B) accepted",
-        "worst-case map-item MINT envelope (5,552 B) accepted"
+        "worst-case map-item MINT envelope (5,552 B) accepted",
+        "House tile-move with admitted maximal fields and 128-byte build id: 5,913 B accepted; malformed, noncanonical or Channel-bearing House envelopes rejected"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
         "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
-        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
     },
@@ -6254,14 +6264,16 @@
         "7,936-byte payload passes the size gate",
         "7,937 bytes rejected before decode",
         "worst-case MINT payload of the final schema (6,129 B) accepted",
-        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 \u00a74.5 bound 7,821 B) accepted",
-        "worst-case map-item MINT payload (4,514 B) accepted"
+        "worst-case B3 top-up TRANSFER payload of the final schema (5,778 B; B3 §4.5 bound 7,821 B) accepted",
+        "worst-case map-item MINT payload (4,514 B) accepted",
+        "House tile-move with admitted maximal fields: 5,543 B accepted; 7,937 B rejected before decode"
       ],
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint_audit.rs (stage C runtime MINT: encoded_len and wire length checked before allocation/decode; migration 0010 caps the stored envelope)",
         "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
-        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)"
+        "apps/game-server/src/durability/map_item_mint_audit.rs (MAP-OVERLAY-1b map-item MINT, operation tag 8)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -6381,7 +6393,8 @@
       "consumers": [
         "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence)",
         "apps/game-server/src/durability/item_mint.rs (stage C runtime MINT: the logical transaction is a durable reservation keyed by the full cause tuple; each commit attempt or reconciliation pass first charges one unit to it with a committed conditional UPDATE, across re-freezes, restarts and concurrent holders; the fourth is rejected before the pass's work)",
-        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)"
+        "apps/game-server/src/durability/item_transfer.rs (B3-1 runtime TRANSFER)",
+        "apps/game-server/src/durability/house_interior_audit.rs and house_interior.rs (HOUSE-RUNTIME-1a: closed one-item House place/take/tile-move, same-transaction custody/receipt/event)"
       ],
       "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
     },
@@ -11495,6 +11508,31 @@
         "apps/game-server/src/gameplay_transport/logout.rs the per-session outstanding logout guard"
       ],
       "notes": "ARCH-KILL-REWARD-LOGOUT-1 \u00a71.6 and \u00a72.2. The oteryn-protocol-oteryn test logout::tests::the_registries_bind_the_logout_constants binds this row to the constant. Registered by OTV2-20261004-logout-wire-1."
+    },
+    {
+      "id": "HOUSEOWN0-RL-14",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md",
+      "resource": "ItemInstances stored in one House interior, including container contents",
+      "unit": "ItemInstances per House interior",
+      "hard_maximum": 2000,
+      "configurable_range": {
+        "minimum": 2000,
+        "maximum": 2000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The House advisory/assignment/access locks serialize the count before the one-item insertion. A container with contents is refused, so this shape never imports uncounted descendants. At 2,000 the next placement returns typed HouseWriterError::StorageFull before reservation commit, custody or audit changes; no truncation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1,999 independently seeded inactive occupancy DATA plus a genuine current actor/native item placement reaches 2,000",
+        "the next actual placement is refused StorageFull without source, event or reservation changes",
+        "empty containers are admitted; containers with contents are refused before write"
+      ],
+      "consumers": [
+        "apps/game-server/migrations/0095_house_interior_shapes.sql (game_house_item_apply)",
+        "apps/game-server/src/durability/house_interior.rs (typed StorageFull refusal)",
+        "apps/game-server/tests/support/house_interior_postgres_cases.rs (real PostgreSQL 17.6 boundary)"
+      ],
+      "notes": "Accepted HOUSE-OWN-0 §§7/12 (HOUSEOWN0-RL-14); HOUSE_RUNTIME0 §6.1 and HOUSE_RT_INBOX_PACKETS §1.3/§2.1. This storage count is separate from the 200-Character scope admission limit HOUSERT0-RL-03. Test occupancy is synthetic inactive DATA, never current actor/session/access authority or a 100-Character capacity claim."
     },
     {
       "id": "PUBPROJ-HS-REQUEST-BYTES",
