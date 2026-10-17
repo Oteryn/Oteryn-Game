@@ -358,3 +358,171 @@ that slot. Capability 16 remains **unoffered**. Journal text/wire ownership is t
 separate `QUEST-LOG-WIRE-1` task. Content/registry/capability activation, literal
 chest-use E2E and full QUEST-RT-1 acceptance remain unfinished. This draft is
 `NOT_FULLY_QUALIFIED`; only CP has integration/merge authority.
+
+## Owner-requested repository persistence of the held patch (2026-10-17)
+
+The owner requested that the draft changes be pushed to the repository. This
+appendix persists the complete prepared integration patch in the owned task
+record, so its source code is carried by a repository commit as well as the PR
+description. This successor changes this document only; it preserves all bytes
+of the previously published task card from
+`de4eb5dd4f1afe8330e48f7600c5075c2c295e07`.
+
+The original **6,101-byte** patch remains in the PR description with SHA-256
+`ffc34a4c85e70561d41c19f0e4ce23a6a4d608d3bb6bb3c45327a124a3737280`.
+The readable patch embedded below is **6,097 bytes**, including its final newline,
+with SHA-256
+`c726152beb51c248eecc197e0da07444a5cc246ddb079a5f59cc1fb2193f51be`.
+Only four context lines containing exactly one ASCII space were normalized to
+empty lines, so the Markdown file passes the ordinary whitespace check. No code,
+hunk content or other patch text changed.
+
+Both representations were checked against exact protected main
+`b1e90b421692289db3aac78a915629251ba80481`. The normalized patch passed
+`git apply --check` and was applied in an isolated copy of those exact baseline
+files. Its resulting bytes match the previously qualified caller and mount:
+
+| Resulting source | SHA-256 |
+|---|---|
+| `apps/game-server/src/gameplay_transport/mod.rs` | `45631d837035110e5e77c870f8cf2d4074e9d74e871fa5cd82a7943769abdb4c` |
+| `apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` | `582e50fc7889e599d506d9c2560f8b63e4f7df856e516e207e9160a22862d399` |
+
+Both shared changes remain held. D1150 places the caller after #2197 and after
+merging then-current main; the additional native fixture mount remains
+validation-only pending integration allocation. Neither shared file is changed
+by this documentation commit, and the already-published test leaf remains
+unregistered on this PR branch. The full patch requires the appropriate source
+composition at that slot; its original mount context does not apply unchanged
+to the earlier `de4eb5dd4f1afe8330e48f7600c5075c2c295e07` branch snapshot.
+
+This is source-proposal persistence, not a new native test run or runtime
+qualification. Existing native results above remain scoped to the exact pinned
+main plus three-file assembly already recorded. This appendix does not activate
+capability 16, settle the separate `QUEST-LOG-WIRE-1` gate, or claim chest-use E2E,
+full-package tests or completed shared integration.
+
+```diff
+diff --git a/apps/game-server/src/gameplay_transport/mod.rs b/apps/game-server/src/gameplay_transport/mod.rs
+index cfb0ce57d1067aec2d201473e3094a94c0e0cfc1..445b0142826f4f912234a4236c9246bdeef578ca 100644
+--- a/apps/game-server/src/gameplay_transport/mod.rs
++++ b/apps/game-server/src/gameplay_transport/mod.rs
+@@ -1028,6 +1028,8 @@
+     pub(crate) copy: Option<crate::durability::quest_state::QuestStateCopy>,
+     /// When the pending obligations may be requested again after a failed attempt.
+     pub(crate) retry_at: Option<std::time::Instant>,
++    /// QUEST-XP-ADMISSION-1: report an unbound session once, across refreshes and resume.
++    experience_deferred_logged: bool,
+ }
+
+ /// SPEED-1: the level a player's effective speed uses until a Character progression owner
+@@ -1835,9 +1837,12 @@
+     /// session that may have ended meanwhile: it then updates only a session still present.
+     async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
+         let fence = self.current_quest_fence(session).await;
++        #[cfg(test)]
++        monk_save::postgres_tests::quest_admission::after_fence().await;
++        let mut experience_deferred = false;
+         let (copy, retry) = match fence {
+             Ok(Some(fence)) => {
+-                let admission = crate::durability::quest_state::admit_character_quest_state(
++                let mut admission = crate::durability::quest_state::admit_character_quest_state(
+                     &self.revision_sequencer,
+                     self.root,
+                     self.character,
+@@ -1846,7 +1851,31 @@
+                     self.quest_catalogue.as_ref(),
+                 )
+                 .await;
+-                let retry = admission.retry || admission.copy.is_none();
++                let mut retry = admission.retry || admission.copy.is_none();
++                if let Some(copy) = admission.copy.as_mut() {
++                    // The session's pinned progression policy is independent of quest content.
++                    // progression_binding clones the Arc and releases the map lock before await.
++                    if let Some(binding) = self.progression_binding(session) {
++                        // The XP helper owns a full policy in each award request, as the
++                        // progression initializer does. Keep that future off the caller's frame.
++                        retry |= Box::pin(
++                            crate::durability::quest_state::request_pending_quest_experience(
++                                &self.revision_sequencer,
++                                self.root,
++                                self.character,
++                                self.holder,
++                                fence,
++                                &binding.policy,
++                                copy,
++                            ),
++                        )
++                        .await;
++                    } else {
++                        // No binding cannot be repaired by a quest retry. Preserve any retry
++                        // requested independently by the load or pending claim obligations.
++                        experience_deferred = true;
++                    }
++                }
+                 (Some(admission.copy), retry)
+             }
+             // A proven terminal session: no quest action and nothing to retry.
+@@ -1855,11 +1884,22 @@
+             Err(()) => (None, true),
+         };
+         let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
++        let mut report_experience_deferred = false;
+         if let Ok(mut sessions) = self.quest_sessions.lock() {
+             match (copy, sessions.get_mut(&session)) {
+-                (Some(copy), Some(entry)) => *entry = QuestSession { copy, retry_at },
++                (Some(copy), Some(entry)) => {
++                    entry.copy = copy;
++                    entry.retry_at = retry_at;
++                }
+                 (Some(copy), None) if insert => {
+-                    sessions.insert(session, QuestSession { copy, retry_at });
++                    sessions.insert(
++                        session,
++                        QuestSession {
++                            copy,
++                            retry_at,
++                            experience_deferred_logged: false,
++                        },
++                    );
+                 }
+                 (None, Some(entry)) => entry.retry_at = retry_at,
+                 (None, None) if insert => {
+@@ -1868,11 +1908,22 @@
+                         QuestSession {
+                             copy: None,
+                             retry_at,
++                            experience_deferred_logged: false,
+                         },
+                     );
+                 }
+                 _ => {}
+             }
++            if experience_deferred
++                && let Some(entry) = sessions.get_mut(&session)
++                && !entry.experience_deferred_logged
++            {
++                entry.experience_deferred_logged = true;
++                report_experience_deferred = true;
++            }
++        }
++        if report_experience_deferred {
++            operator_event("quest_experience_deferred reason=no_progression_binding");
+         }
+     }
+
+diff --git a/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs b/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
+index e4aad206000477a3ad6dee50ae2fa8ab39dde30c..c10df78a15369372ffb7f43a827ed219d1ddf0ab 100644
+--- a/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
++++ b/apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
+@@ -14,6 +14,10 @@
+
+ #[path = "map_bundle_domain_postgres_tests.rs"]
+ mod map_bundle_domain;
++
++// QUEST-RT-1 uses this actual native owner and its coherent fresh-admission fixture.
++#[path = "../quest/admission_tests.rs"]
++pub(in crate::gameplay_transport) mod quest_admission;
+
+ use super::{ComposedFreshAdmission, MonkSave};
+ use crate::durability::character_authority::ReconciledCharacterAuthority;
+```
