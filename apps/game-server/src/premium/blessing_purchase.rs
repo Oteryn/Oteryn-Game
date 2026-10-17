@@ -8,12 +8,12 @@ use crate::durability::DurabilityError;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
-use crate::durability::character_revision_sequencer::NpcPurchaseWriteContext;
 use crate::durability::item_fee_burn::{
     FeeBankDebit, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest,
     burn_fee_in_transaction,
 };
 use crate::durability::item_mint_audit::{Type2Transaction, check_technical_text, check_uuid_v7};
+use crate::durability::npc_purchase::NpcPurchaseWriteContext;
 use crate::interaction::npc_promotion::{
     BlessingNpcOffer, BlessingPriceBand, PremiumBlessingService,
 };
@@ -21,6 +21,33 @@ use crate::premium::promotion::NpcPurchaseSource;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+
+/// Native-gate borrowed operation; the lower port owns physical commit/rollback.
+pub(crate) struct BlessingPurchaseOperation<'r, 'p> {
+    pub(crate) fence: CurrentCharacterGameplayFence,
+    pub(crate) request: &'r BlessingPurchaseRequest,
+    pub(crate) premium: &'r PremiumStatus<'p>,
+}
+
+impl crate::durability::npc_purchase::NpcPurchaseOperation for BlessingPurchaseOperation<'_, '_> {
+    type Output = PendingBlessingPurchase;
+    type Error = BlessingPurchaseError;
+
+    fn apply<'a, 't>(
+        self,
+        context: &'a NpcPurchaseWriteContext,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>,
+    >
+    where
+        Self: 'a,
+    {
+        Box::pin(async move {
+            prepare_blessing_purchase(context, tx, self.fence, self.request, self.premium).await
+        })
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct BlessingPurchaseRequest {

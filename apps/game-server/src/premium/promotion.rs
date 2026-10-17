@@ -13,14 +13,42 @@ use crate::durability::DurabilityError;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
-use crate::durability::character_revision_sequencer::NpcPurchaseWriteContext;
 use crate::durability::item_fee_burn::{
     FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, burn_fee_in_transaction,
 };
 use crate::durability::item_mint_audit::{Type2Transaction, check_technical_text, check_uuid_v7};
+use crate::durability::npc_purchase::NpcPurchaseWriteContext;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+
+/// Borrowed once inside the native Premium gate. The durability port commits
+/// the physical transaction before this operation's pending answer is exposed.
+pub(crate) struct PromotionPurchaseOperation<'r, 'p> {
+    pub(crate) fence: CurrentCharacterGameplayFence,
+    pub(crate) request: &'r PromotionPurchaseRequest,
+    pub(crate) premium: &'r PremiumStatus<'p>,
+}
+
+impl crate::durability::npc_purchase::NpcPurchaseOperation for PromotionPurchaseOperation<'_, '_> {
+    type Output = PendingPromotionPurchase;
+    type Error = PromotionPurchaseError;
+
+    fn apply<'a, 't>(
+        self,
+        context: &'a NpcPurchaseWriteContext,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>,
+    >
+    where
+        Self: 'a,
+    {
+        Box::pin(async move {
+            prepare_promotion_purchase(context, tx, self.fence, self.request, self.premium).await
+        })
+    }
+}
 
 /// PREMIUM_ACTIVATION §4.2: promotion starts at level 20.
 pub(crate) const PROMOTION_MINIMUM_LEVEL: u32 = 20;

@@ -18,12 +18,13 @@ registry: maybe
 owner: "Codex family lead: Rozwój postaci i trening; policy worker /root/training_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/premium.rs
   - apps/game-server/src/premium/promotion.rs (new)
   - apps/game-server/src/premium/blessing_purchase.rs (sole leaf author /root/vitals)
+  - apps/game-server/src/durability/npc_purchase.rs (D1176 lower transaction participant; recovery rebuild CP 6230877600)
   - apps/game-server/src/durability/item_fee_burn.rs (D1106 source-specific causes only)
   - apps/game-server/src/durability/item_fee_burn_audit.rs (matching D1106 audit causes only)
   - apps/game-server/src/durability/premium_activation_latch.rs (promotion-specific composition only)
@@ -459,3 +460,39 @@ only durability-tree types; premium/interaction consume that port. The private
 generation8 sequencer extension names upper-layer types and requires a separate
 source repair and fresh qualification. It is not installed or approved as the
 final shared context by this checkpoint.
+
+## Recovery rebuild — NOT_FULLY_QUALIFIED (2026-10-17)
+
+CP [6230877600](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6230877600)
+permits rebuilding the lost increment from public `d09323200f5f00f2283c31fe9ea0763e35459677`.
+The unavailable private generation9/26-case sources are not reconstructed from
+their old execution claims. This increment retains the public promotion and
+blessing SQL writers, immutable replay receipts, fee audit and provenance, and
+rebuilds the missing D1176 durability-only transaction participant.
+
+`durability/npc_purchase.rs` accepts lower operation traits; Premium owns their
+implementations. It binds the context to the physical PostgreSQL XID, obtains
+recovery from the actual reconciled root, rechecks current recovery, and admits
+fresh writes through the existing gameplay fence and locked progression/root
+interpretation. The request account must equal the independently fenced root
+account; the operation cannot substitute another Character. Source receipt
+lookups remain before fresh gameplay/Premium guards, with no second fee on
+exact replay. Promotion retains coins-only payment; the existing blessing
+policy still permits Bank fallback. The lower runner commits the original
+Type2 transaction once on success and rolls it back on a typed callback error;
+it introduces no savepoint and exposes no pending answer before commit.
+
+Held integration: durability module registration, actual semantic-pass and
+RevisionSlot invocation, native Premium gate composition, schema installation,
+fee consumers/Bank cause, qualified blessing catalogue and NPC dispatch remain
+with their assigned owners/final slot after #2197. The new lower entry point is
+restricted to durability callers and requires that native owning composition;
+it does not claim a runnable production purchase or new current authority.
+
+Validation: exact changed Rust paths passed official Rust 1.94 rustfmt syntax/
+format and `--check`; `git diff --check` passed. These are source checks only.
+Fresh compiler, strict Clippy, canonical/full-package and mandatory PostgreSQL
+replay/concurrency/fencing/XID/partial-callback-rollback qualification are
+**NOT_RUN**. All earlier private 25/25 and 26/26 (7/8 PG) results above are
+historical evidence only and do not qualify this rebuilt source. No ready,
+review trigger, merge, rebase or heavy/native execution is requested here.
