@@ -3399,3 +3399,10 @@ mod item_ref_production_postgres_cases;
 
 #[path = "support/pvp_readmission_postgres_cases.rs"]
 mod pvp_readmission_postgres_cases;
+
+// D1112 APP-1 installed storage and native authority cases share their cases with the focused
+// standalone targets through the same protected lane, on the Bestiary harness included above.
+#[path = "support/character_appearance_native_postgres_cases.rs"]
+mod character_appearance_native_postgres_cases;
+#[path = "support/character_appearance_postgres_cases.rs"]
+mod character_appearance_postgres_cases;
