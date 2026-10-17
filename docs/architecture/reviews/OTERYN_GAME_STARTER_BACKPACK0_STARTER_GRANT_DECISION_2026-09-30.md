@@ -1,7 +1,7 @@
 # STARTER-BACKPACK-0 Starter backpack
 
 - Decision: `STARTER-BACKPACK0-STARTER-GRANT-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence and
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence and
   security) and protected integration. No owner question: the owner accepted starter inventory as
   template content bound at creation (GAME-CHAR-01 Stage B §6), and the backpack is its Global-parity
   application (owner rule 5905825574).
