@@ -40,8 +40,16 @@ Source base is CP's main-merge head `610d60cdf0f9c11618d085152a683293ddf69448`.
 The published `#[cfg(test)] mod world_change;` mount now makes all five component
 cases part of native library tests. The earlier five PASS came from the disclosed
 private mount at exact source ded94838, not published integration. The acceptance
-checkbox is reopened until CI passes on this repaired head. New execution is
-NOT_RUN; fmt/diff checks PASS. The refusal is `WorldChangeBindingsUnavailable`.
+checkbox remains open until CI passes on this repaired head. Exact source
+`c410ebf60cd58aee762fd5164322840abed309ee` compiled through the canonical
+native library root, and all five exact selection-source cases PASS without
+private mounts or wrappers. Actual inventory: 3259 tests; the source occurs once
+in native dep-info. ELF SHA256:
+`11631e4177976817d25f69a83d75023ee787bee2beae37def8d1ec4ce1de8c7d`.
+Evidence is retained outside the checkout in `evidence/2178-D1287-native/`.
+The publication adds only this task-documentation bridge to tested c410ebf6.
+Fmt/diff and exact-head governance PASS; strict/all-target/full runtime checks
+remain NOT_RUN. The refusal is `WorldChangeBindingsUnavailable`.
 ADR/BOSS status lines now record the D1136 amendments; source-only W1 selection
 scope and pending separate LAYER/ACT mechanics remain unchanged. The PR body must
 name the final published repair head, replacing the stale 95bcebd7 reference.
