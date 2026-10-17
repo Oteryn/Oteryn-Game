@@ -38,6 +38,7 @@ owned_paths:
   - apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs
   - apps/game-server/src/foundation/channel_owner_creature_ai_tests.rs
   - apps/game-server/src/foundation/channel_owner_creature_bite_tests.rs
+  - apps/game-server/src/foundation/runtime_actor_spell_types.rs
   - apps/game-server/src/gameplay_transport/actor_conditions.rs
   - apps/game-server/src/gameplay_transport/actor_spell.rs
   - apps/game-server/src/gameplay_transport/actor_spell_commit_tests.rs
@@ -498,3 +499,37 @@ The concrete recovery delta contains these 29 already allocated paths:
 - `apps/game-server/src/spell/periodic_execution.rs`
 - `apps/game-server/src/spell/source_player_conditions.rs`
 - `docs/agents/tasks/PVP-DEATH-1.md`
+
+## Continuation repair — 2026-10-17
+
+The exact recovered source `a8c043095d34a448191db0fa16f4ab723cb834d0` failed the
+changed-crate strict Clippy job in run
+[`39012371333`](https://github.com/Oteryn/Oteryn-Game/actions/runs/39012371333):
+17 library compilation errors and 37 library-test compilation errors; unit execution
+was skipped. This repair corrects the four observed diagnostic families together:
+the Foundation owner-time type at native damage/ledger boundaries and their tests,
+the condition carrier in `OwnerCombatChange::PlayerConditions`, an omitted `None`
+carrier in the condition-ordering fixture, and a borrowed damage-receipt assertion.
+
+The two `runtime_actor_spell_types.rs` field changes are mechanical `L` propagation
+under [D1258a](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226901320),
+and the path is now included in this card's owned allocation. No caller discards the
+historical carrier to accommodate the old default `()` type.
+
+The ledger and the receipt observation retain the exact
+[D1244](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226513017)
+source scope: one 64-source runtime ledger, five-minute last-observation pruning,
+oldest-source eviction, and killer plus HP-ordered other sources. Downstream PvP
+totals/buckets, skull and death-transaction outcomes are not implemented or qualified
+by this source repair. The shared `character_death.rs` writer remains with #2193
+until that dependency merges.
+
+Three additional native regression cases are authored beside the existing source
+owner tests: clock regression leaves HP/ledger/replay unchanged; a removed source
+can replay its retained result but cannot deal fresh damage; and a failed lethal
+mint does not publish staged five-minute pruning. Existing first-instance condition
+carrier, unknown-carrier, composite and bite cases remain required.
+
+Validation of this repair is pending on its complete immutable candidate. No Rust,
+PostgreSQL, full-package PASS or downstream PvP completion is inferred from the
+historical recovery evidence above.
