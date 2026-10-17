@@ -856,7 +856,8 @@ impl ChannelAttackStates {
     /// takes its own stored route. Nothing here depends on which check drains: the inputs are
     /// the Channel's runtime, its path tiles and the waiting chases alone. A drain the shared
     /// work budget stops is suspended, not completed: a later check in the same window resumes
-    /// it once creature refunds return capacity, and the search count spans the resume.
+    /// it once creature refunds return capacity; the search count and still-planned destinations
+    /// span the resume.
     pub(in crate::gameplay_transport) fn drain_chase_searches(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -892,7 +893,24 @@ impl ChannelAttackStates {
             .chain(&visible.players)
             .map(|other| (other.actor, other.position))
             .collect();
-        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = Vec::new();
+        // A searched chaser's first step may be stored or returned but not yet committed by
+        // Movement. Retain that destination, never an older route or a later step of a mover.
+        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = entries
+            .iter()
+            .filter_map(|entry| {
+                let target = entry
+                    .state
+                    .target()
+                    .filter(|_| entry.modes.chase == ChaseMode::Chase)?;
+                let (from, to) =
+                    chase_ends(runtime, room, entry.actor, entry.session, target, now)?;
+                if crate::movement::path_search::chebyshev(from, to) <= 1 {
+                    return None;
+                }
+                let next = entry.chase.planned_search_cell(now.get(), from)?;
+                Some((entry.actor, next))
+            })
+            .collect();
         for (_, index) in order {
             if chase_searches.player_searches() >= CHASE_SEARCHES_PER_WINDOW {
                 break;
