@@ -31,7 +31,9 @@ use sqlx::Row;
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use std::time::{Duration, Instant};
 
-pub(super) async fn return_connection(connection: PoolConnection<sqlx::Postgres>) -> TestResult {
+pub(super) async fn return_connection(
+    mut connection: PoolConnection<sqlx::Postgres>,
+) -> TestResult {
     let disposition = connection
         .return_to_pool_observed_until(Instant::now() + Duration::from_secs(5))
         .await;
