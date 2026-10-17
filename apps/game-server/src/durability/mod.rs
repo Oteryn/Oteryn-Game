@@ -20,6 +20,7 @@ pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub(crate) mod character_chat_name;
+pub(crate) mod character_chat_recipient;
 pub mod character_command;
 pub mod character_death;
 pub mod character_equipment;
