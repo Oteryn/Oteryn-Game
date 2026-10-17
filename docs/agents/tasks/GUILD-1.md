@@ -1110,3 +1110,34 @@ Local stable source release for independent review before any heavy execution:
 No commit/push, rebase/merge, foreign C/E/Bank/shared-file write, @codex trigger,
 ready transition, CI restart or fullqualification claim is made. Accepted review
 repairs reopen AUTHORING and supersede these source hashes.
+
+### 2026-10-17 — CP bounded checkpoint: main merge and composition probe
+
+The branch merges main `f094e032`, which includes #2197 NPC-ECON-1 and the CHAT-2B re-land #2227. Owned files are unchanged by the merge. The `house_release_secret()`
+prerequisite is now met on main by #2163's `NodeIncarnationProof::sql_possession_secret()`.
+The modules stay unregistered and the harness stays `#![cfg(any())]`, so CI does not compile them.
+
+Composition probe on the PC (local only, not pushed; D1420 lib.rs touch, D1429 `slot-run.sh`). The setup:
+- this head, overlaid with #2137 `c03dc6c1`, #2139 `65a834fe` and #2153 `4b435e05`;
+- registration lines only.
+
+Results:
+- `cargo check --lib`: 0 errors.
+- `cargo clippy --lib -- -D warnings`: PASS.
+- `guild_postgres` harness: builds and lists 104 guild cases.
+- PG run (shared PG 17.6 via `in-pg-netns.sh`, filters `durability::guild:: domain::guild:: node::guild_jobs::`):
+  101 passed, 3 failed. The same counts held on main `1d632319`.
+
+The 3 failures are in `disband_terminal_tests`: `real_owner_wait`, `pending_cursor` and `two_current_roots`.
+Each fails with `Unavailable(Database)` at the House port, because their `install()` loads
+no House release SQL (`game_house_guild_reserve`). That SQL in turn requires:
+- the HOUSE-1b #2141 guild fence ABI (`game_house_disposition_guild_fence_abi()`, its migration 0121);
+- the item/entry hooks;
+- the BED-1 #2147 revision hook.
+
+These cases stay unqualified until that stack composes. Nothing here is skipped or rewritten.
+
+`durability/guild.rs` and the Bank/Hall/House modules import each other, so only the full set of
+four compiles. Activation (registration, migration from the first free number at or above 0124,
+harness enablement) belongs in one slot commit, after #2141 and #2147. The proposed owner of that slot is #2153 GUILDHALL-1.
+The composition order is in the #2136 status comment.

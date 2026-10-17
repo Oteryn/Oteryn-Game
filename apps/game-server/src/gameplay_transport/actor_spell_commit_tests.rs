@@ -90,6 +90,7 @@ fn fixture() -> Fixture {
             next.payment_anchor_from(before)
                 .expect("actual cost and cooldowns"),
         ),
+        now_us: None,
         now_ms: 100,
         effects: vec![
             OwnerCombatEffect {
@@ -138,11 +139,17 @@ fn actual_creature_and_player_owners_commit_cost_heal_and_damage_once() {
         .expect("physical stage");
     let proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
         .expect("real player stage");
-    assert!(
-        commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
-            .expect("one owner turn")
-            .applied
-    );
+    let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+        .expect("one owner turn");
+    assert!(receipt.applied);
+    let heal = receipt
+        .effects
+        .iter()
+        .find(|effect| effect.sub_ordinal == 1)
+        .expect("actual heal receipt")
+        .health
+        .expect("player HP transition");
+    assert_eq!((heal.health_before, heal.health_after), (20, 29));
     let state = f
         .states
         .get(&f.runtime, f.caster, f.session)
@@ -157,11 +164,10 @@ fn actual_creature_and_player_owners_commit_cost_heal_and_damage_once() {
         .runtime
         .stage_spell_batch(&f.batch)
         .expect("retained original batch");
-    assert!(
-        !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
-            .expect("receipt replay")
-            .applied
-    );
+    let replay_receipt =
+        commit_owner_batch(&mut f.runtime, &mut f.states, replay, None).expect("receipt replay");
+    assert!(!replay_receipt.applied);
+    assert_eq!(replay_receipt.effects, receipt.effects);
     assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&before));
     assert_eq!(target_health(&f), 17);
 }

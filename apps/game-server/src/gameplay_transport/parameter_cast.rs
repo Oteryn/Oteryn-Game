@@ -629,7 +629,7 @@ async fn prepare_parameter(
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
     let mut batch=OwnerCombatBatch{caster:actor,attacker:crate::foundation::CharacterId::decode(&b.character).map_err(|_|SpellCastDisposition::Rejected)?,current_lease_generation:b.lease_generation,
-        command,occurrence:occurrence.into(),anchor:paid_success.then(||common.anchor.clone()),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
+        command,occurrence:occurrence.into(),anchor:paid_success.then(||common.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
         binding:serde_json::to_vec(&json!({"intent":intent_bytes,"result":result_bytes,"spell":profile.spell(),"before":format!("{before:?}"),"paid":format!("{:?}",common.next),"owned":format!("{owned:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
     // Consume the transaction-borrowing source proof while Item locks are held.
     // The Foundation seal and real reserved destination survive unknown COMMIT.

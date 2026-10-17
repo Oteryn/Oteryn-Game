@@ -1,0 +1,143 @@
+{
+  "by_damage_type": [
+    {
+      "color": "dark_red",
+      "damage_type": "death",
+      "hit_effect": "canary.appearance:effect/smallclouds",
+      "source_member": "COMBAT_DEATHDAMAGE"
+    },
+    {
+      "color": "light_blue",
+      "damage_type": "drowning",
+      "hit_effect": "canary.appearance:effect/loseenergy",
+      "source_member": "COMBAT_DROWNDAMAGE"
+    },
+    {
+      "color": "light_green",
+      "damage_type": "earth",
+      "hit_effect": "canary.appearance:effect/green_rings",
+      "source_member": "COMBAT_EARTHDAMAGE"
+    },
+    {
+      "color": "purple",
+      "damage_type": "energy",
+      "hit_effect": "canary.appearance:effect/energyhit",
+      "source_member": "COMBAT_ENERGYDAMAGE"
+    },
+    {
+      "color": "orange",
+      "damage_type": "fire",
+      "hit_effect": "canary.appearance:effect/hitbyfire",
+      "source_member": "COMBAT_FIREDAMAGE"
+    },
+    {
+      "color": "pastel_red",
+      "damage_type": "healing",
+      "hit_effect": null,
+      "source_member": "Game::combatChangeHealth"
+    },
+    {
+      "color": "yellow",
+      "damage_type": "holy",
+      "hit_effect": "canary.appearance:effect/holydamage",
+      "source_member": "COMBAT_HOLYDAMAGE"
+    },
+    {
+      "color": "sky_blue",
+      "damage_type": "ice",
+      "hit_effect": "canary.appearance:effect/iceattack",
+      "source_member": "COMBAT_ICEDAMAGE"
+    },
+    {
+      "color": "red",
+      "damage_type": "life_drain",
+      "hit_effect": "canary.appearance:effect/magic_red",
+      "source_member": "COMBAT_LIFEDRAIN"
+    },
+    {
+      "color": "blue",
+      "damage_type": "mana_drain",
+      "hit_effect": "canary.appearance:effect/loseenergy",
+      "source_member": "Game::combatChangeHealth mana shield; Game::combatChangeMana"
+    },
+    {
+      "color": null,
+      "damage_type": "untyped",
+      "hit_effect": null,
+      "source_member": "default"
+    }
+  ],
+  "decision": "SPELL-PRESENT-0 §3, §5",
+  "physical_by_race": [
+    {
+      "color": "red",
+      "hit_effect": "canary.appearance:effect/drawblood",
+      "race": "blood",
+      "source_member": "RACE_BLOOD"
+    },
+    {
+      "color": "dark_red",
+      "hit_effect": "canary.appearance:effect/sirup",
+      "race": "candy",
+      "source_member": "RACE_CANDY"
+    },
+    {
+      "color": "light_grey",
+      "hit_effect": "canary.appearance:effect/cacao",
+      "race": "chocolate",
+      "source_member": "RACE_CHOCOLATE"
+    },
+    {
+      "color": "purple",
+      "hit_effect": "canary.appearance:effect/energyhit",
+      "race": "energy",
+      "source_member": "RACE_ENERGY"
+    },
+    {
+      "color": "orange",
+      "hit_effect": "canary.appearance:effect/drawblood",
+      "race": "fire",
+      "source_member": "RACE_FIRE"
+    },
+    {
+      "color": "light_grey",
+      "hit_effect": "canary.appearance:effect/hitarea",
+      "race": "ink",
+      "source_member": "RACE_INK"
+    },
+    {
+      "color": "light_grey",
+      "hit_effect": "canary.appearance:effect/hitarea",
+      "race": "undead",
+      "source_member": "RACE_UNDEAD"
+    },
+    {
+      "color": "light_green",
+      "hit_effect": "canary.appearance:effect/hitbypoison",
+      "race": "venom",
+      "source_member": "RACE_VENOM"
+    }
+  ],
+  "player_race": "blood",
+  "schema": "OTERYN_PRESENTATION_HIT_TABLE/v1",
+  "source": {
+    "functions": [
+      {
+        "line": 8186,
+        "name": "Game::combatGetTypeInfo"
+      },
+      {
+        "line": 8498,
+        "name": "Game::combatChangeHealth"
+      },
+      {
+        "line": 9325,
+        "name": "Game::combatChangeMana"
+      }
+    ],
+    "path": "src/game/game.cpp",
+    "repository": "opentibiabr/canary",
+    "revision": "99902524e052f37574194466c2949c576e4ab269",
+    "sha256": "b337fb7d7ce61d9ccde4f315cb696df0add9a0bf933c9b5c634b9ed79d7f01dd"
+  }
+}
