@@ -735,3 +735,107 @@ fn a_private_recipient_that_is_not_a_character_id_is_a_bad_payload() {
         );
     }
 }
+
+#[test]
+fn a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_a_replay() {
+    let ring = ring(&[(1, 0)]);
+    let (mut window, _) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let start = window.floor;
+    renew(&mut window, start);
+    let admitted = room_line(1, start);
+    let admitted_text = seal_with_nonce(&ring, CHANNEL, &admitted, NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &admitted_text, start),
+        Ok(admitted)
+    );
+    // The listener drops; a line is sent while it is down, and it reconnects one second later.
+    let missed = room_line(2, start + 500_000);
+    let missed_text = seal_with_nonce(&ring, CHANNEL, &missed, NONCE).expect("seal");
+    let back = start + 1_000_000;
+    window.reconnected(back);
+    assert_eq!(window.floor, startup_floor(back));
+    let floor = window.floor;
+    // Until the reading reaches the new floor nothing this node stamps would be admitted.
+    assert_eq!(window.admitting_clock(back), None);
+    assert_eq!(window.admitting_clock(floor - 1), None);
+    renew(&mut window, floor);
+    assert_eq!(window.admitting_clock(floor), Some(floor));
+    // A copy of the missed line republished after the reconnect is not delivered, nor is the line
+    // admitted before the drop; a line sent past the new floor is.
+    for (text, at) in [
+        (&missed_text, back),
+        (&admitted_text, start + FRESHNESS_MICROS),
+    ] {
+        assert!(
+            matches!(
+                window.receive(&ring, CHANNEL, text, at),
+                Err(RelayError::BeforeStart | RelayError::Stale | RelayError::Replayed)
+            ),
+            "at {at}"
+        );
+    }
+    let fresh = room_line(3, floor);
+    let fresh_text = seal_with_nonce(&ring, CHANNEL, &fresh, NONCE).expect("seal");
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &fresh_text, floor),
+        Ok(fresh)
+    );
+    // A reconnect reading behind the newest reading moves the floor past that reading, never
+    // back, and quick reconnects follow the readings, not the raised clock, so they do not
+    // compound.
+    window.reconnected(NOW);
+    assert_eq!(window.floor, startup_floor(floor));
+    window.reconnected(back);
+    assert_eq!(window.floor, startup_floor(floor));
+}
+
+#[test]
+fn after_the_database_clock_steps_back_the_window_admits_what_its_clock_stamps() {
+    let ring = ring(&[(1, 0)]);
+    let (mut window, _) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let running = NOW + 10_000_000;
+    renew(&mut window, running);
+    assert_eq!(window.admitting_clock(running), Some(running));
+    // A small step back: the clock stays at the newest reading and a line stamped with it is
+    // admitted.
+    let stepped = running - 1_000_000;
+    let clock = window.admitting_clock(stepped).expect("still covered");
+    assert_eq!(clock, running);
+    let line = room_line(1, clock);
+    let text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    assert_eq!(window.receive(&ring, CHANNEL, &text, stepped), Ok(line));
+    // A step back past the freshness window: a line stamped with the raw reading would be
+    // dropped, so the relay is not ready rather than accepting it.
+    let far = NOW - 2 * FRESHNESS_MICROS;
+    assert_eq!(window.admitting_clock(far), None);
+    let raw = room_line(2, far);
+    let raw_text = seal_with_nonce(&ring, CHANNEL, &raw, NONCE).expect("seal");
+    assert!(window.receive(&ring, CHANNEL, &raw_text, far).is_err());
+}
+
+#[test]
+fn a_reconnect_after_the_database_clock_stepped_back_keeps_the_floor_past_the_newest_reading() {
+    let ring = ring(&[(1, 0)]);
+    let (mut window, _) = resumed(NOW - FRESHNESS_MICROS - 1, None);
+    let running = NOW + 10_000_000;
+    renew(&mut window, running);
+    assert!(window.admitting_clock(running).is_some());
+    // While this listener is down another node stamps a line near the newest reading, and the
+    // database clock steps back past the freshness window before the reconnect.
+    let missed = room_line(1, running + 1_000_000);
+    let missed_text = seal_with_nonce(&ring, CHANNEL, &missed, NONCE).expect("seal");
+    let back = running - 2 * FRESHNESS_MICROS;
+    window.reconnected(back);
+    assert_eq!(window.floor, startup_floor(running));
+    // A quick second reconnect without a newer reading does not move the floor again.
+    window.reconnected(back);
+    assert_eq!(window.floor, startup_floor(running));
+    // Once the reading and the lease reach the floor the missed line is still refused.
+    let floor = window.floor;
+    renew(&mut window, floor);
+    assert_eq!(window.admitting_clock(floor), Some(floor));
+    assert_eq!(
+        window.receive(&ring, CHANNEL, &missed_text, floor),
+        Err(RelayError::BeforeStart)
+    );
+}

@@ -102,6 +102,9 @@ pub(crate) struct OwnerCombatBatch {
     /// typed field itself, so callers cannot hide an effect change behind an unchanged hash.
     pub(crate) binding: Vec<u8>,
     pub(crate) anchor: Option<SpellAnchor>,
+    /// Original native semantic time, captured before millisecond conversion.
+    /// Missing precision cannot qualify shared-experience activity.
+    pub(crate) now_us: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     pub(crate) now_ms: u64,
     pub(crate) effects: Vec<OwnerCombatEffect>,
     pub(crate) deferred: Option<DeferredCommitAuthority>,
@@ -158,6 +161,8 @@ pub(crate) mod player_proof_seal {
 }
 pub(crate) trait PlayerBatchProof: player_proof_seal::Sealed {
     fn matches_batch(&self, batch: &OwnerCombatBatch) -> bool;
+    /// Actual per-effect HP transitions staged by the player-vitals owner.
+    fn health_receipt(&self, target: ExactActorRef, sub_ordinal: u16) -> Option<OwnerDamageResult>;
 }
 
 /// Immutable scheduler provenance, not current ownership. The actual timer owner's
@@ -177,6 +182,7 @@ pub(crate) struct DeferredCommitAuthority {
     parent_binding: Vec<u8>,
     binding: Vec<u8>,
     effects: Vec<OwnerCombatEffect>,
+    now_us: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     now_ms: u64,
 }
 impl DeferredCommitAuthority {
@@ -214,6 +220,7 @@ impl DeferredCommitAuthority {
             parent_binding,
             binding: batch.binding.clone(),
             effects: batch.effects.clone(),
+            now_us: batch.now_us,
             now_ms: batch.now_ms,
         })
     }
@@ -233,6 +240,7 @@ impl DeferredCommitAuthority {
             && self.occurrence == batch.occurrence
             && self.binding == batch.binding
             && self.effects == batch.effects
+            && self.now_us == batch.now_us
             && self.now_ms == batch.now_ms
             && batch.anchor.is_none()
     }

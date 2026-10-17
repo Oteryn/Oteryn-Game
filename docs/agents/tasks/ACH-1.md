@@ -636,3 +636,25 @@ previous gates. This selected qualification is not an aggregate CI rerun.
 The final source/card commit still requires frozen-commit diff/governance checks
 and remote publication readback. Their actual outcomes belong to the publication
 record and PR evidence; this appendix does not claim a future commit result.
+
+## 2026-10-17 — Bounded checkpoint after merging main f094e032
+
+MERGE_AUTHORITY: CP_ONLY. Status stays NOT_FULLY_QUALIFIED; this head is a bounded
+checkpoint (batch grant API, account lock, pending counter-threshold loader,
+coverage report), not full ACH-1 delivery.
+
+- Ordinary merge of main `f094e0320289975a220852ff60ca7baf6d234ff4` into `8e346345`.
+  The one conflict was the module list in `tests/character_authority_postgres.rs`;
+  both the ACH batch mount and main's familiar lifecycle mount are kept.
+- No unresolved Codex threads at `8e346345`; no source change besides the merge.
+- Molehill-PC (shared target, `heavy.lock`, `lib.rs` touched before each cargo run,
+  D1329 shared PostgreSQL 17.6 via `in-pg-netns.sh`), merged tree `73654fa1`:
+  `cargo fetch --locked` PASS; `cargo fmt --all -- --check` PASS;
+  `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings` PASS;
+  `cargo test --locked -p oteryn-game-server --lib achievement` 23/23 PASS;
+  `in-pg-netns.sh cargo test --locked -p oteryn-game-server --test account_achievement_postgres -- --test-threads=1` 1192/1192 PASS;
+  `in-pg-netns.sh cargo test --locked -p oteryn-game-server --test character_authority_postgres achievement_batch_ -- --test-threads=1` 12/12 PASS.
+
+Remaining gates are unchanged: D1363b orders merge after #2181 (not yet on main) and
+a further main merge then; D1331/D1333/D1334, earning callers and receipts, XP/build
+hooks, quest/encounter composition, notices and gameplay/E2E stay open.

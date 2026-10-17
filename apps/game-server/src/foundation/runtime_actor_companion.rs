@@ -1970,6 +1970,7 @@ mod tests {
             },
             binding: b"test:qualified-companion-damage".to_vec(),
             anchor: None,
+            now_us: None,
             now_ms: 100,
             effects: vec![OwnerCombatEffect {
                 target: second,
@@ -2266,6 +2267,7 @@ mod tests {
             },
             binding: b"source.monster.drainHealth.invisible".to_vec(),
             anchor: None,
+            now_us: None,
             now_ms: 100,
             effects: vec![OwnerCombatEffect {
                 target: actor,
