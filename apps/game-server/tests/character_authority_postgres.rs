@@ -3404,6 +3404,8 @@ mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 
+#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
+mod familiar_versioned_lifecycle_postgres_cases;
 #[path = "support/house_interior_postgres_cases.rs"]
 mod house_interior_postgres_cases;
 #[path = "support/house_test_fixture.rs"]
