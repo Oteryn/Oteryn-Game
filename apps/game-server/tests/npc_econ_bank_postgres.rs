@@ -26,6 +26,10 @@ mod item_transfer_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+// The native source carrier uses this test root's actual Foundation identities.
+#[allow(dead_code)]
+#[path = "../src/ability/player_lethal.rs"]
+mod player_lethal;
 
 // The protected PostgreSQL aggregate consumes these same case bodies.
 #[path = "support/npc_econ_bank_postgres_cases.rs"]

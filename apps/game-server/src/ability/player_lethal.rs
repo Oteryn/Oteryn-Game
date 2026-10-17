@@ -150,10 +150,16 @@ impl PartialOrd for LethalSource {
         Some(self.cmp(other))
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LedgerEntry {
+    /// Sum of the retained `contributions`; it never includes an expired hit.
     pub(crate) hp_total: u64,
     pub(crate) last_at_us: crate::foundation::owner_timer::SemanticTimeMicros,
+    /// Per-hit window: oldest-first one-second buckets of (latest hit in bucket, HP).
+    /// A bucket expires with its latest hit, so retention exceeds the exact per-hit
+    /// window by under one second and never drops a contribution early.
+    contributions:
+        std::collections::VecDeque<(crate::foundation::owner_timer::SemanticTimeMicros, u64)>,
 }
 #[allow(dead_code)] // Historical fields are consumed by E after #2193; no E writer edit here.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -179,6 +185,8 @@ pub(crate) enum DamageLedgerError {
 impl PlayerDamageLedger {
     const WINDOW_US: u64 = 300_000_000;
     const MAX_SOURCES: usize = 64;
+    /// Bucket width for per-hit expiry; bounds a source to 301 buckets in the window.
+    const BUCKET_US: u64 = 1_000_000;
 
     /// Called exactly once AFTER a fresh successful HP commit. Replay detection belongs
     /// before that commit; this ledger is not an occurrence memo and must not replace it.
@@ -192,16 +200,35 @@ impl PlayerDamageLedger {
         if self.last_observed.is_some_and(|last| now < last) {
             return Err(DamageLedgerError::NonMonotonicTime);
         }
-        let retained = self
+        let in_window = |at: crate::foundation::owner_timer::SemanticTimeMicros| {
+            now.get().saturating_sub(at.get()) <= Self::WINDOW_US
+        };
+        // Each hit expires on its own timestamp, not on the source's latest hit.
+        let expired_hp = |entry: &LedgerEntry| {
+            entry
+                .contributions
+                .iter()
+                .take_while(|(at, _)| !in_window(*at))
+                .fold(0_u64, |sum, (_, hp)| sum.saturating_add(*hp))
+        };
+        let total = self
             .entries
             .get(&source)
-            .filter(|entry| now.get().saturating_sub(entry.last_at_us.get()) <= Self::WINDOW_US);
-        let total = retained
-            .map_or(0, |entry| entry.hp_total)
+            .map_or(0, |entry| entry.hp_total.saturating_sub(expired_hp(entry)))
             .checked_add(u64::from(hp_applied))
             .ok_or(DamageLedgerError::Overflow)?;
-        self.entries
-            .retain(|_, entry| now.get().saturating_sub(entry.last_at_us.get()) <= Self::WINDOW_US);
+        self.entries.retain(|_, entry| {
+            let expired = expired_hp(entry);
+            while entry
+                .contributions
+                .front()
+                .is_some_and(|(at, _)| !in_window(*at))
+            {
+                entry.contributions.pop_front();
+            }
+            entry.hp_total = entry.hp_total.saturating_sub(expired);
+            !entry.contributions.is_empty()
+        });
         self.last_observed = Some(now);
         self.last_applied = (hp_applied > 0).then_some((source, now));
         if hp_applied == 0 {
@@ -218,13 +245,20 @@ impl PlayerDamageLedger {
                 self.entries.remove(&oldest);
             }
         }
-        self.entries.insert(
-            source,
-            LedgerEntry {
-                hp_total: total,
-                last_at_us: now,
-            },
-        );
+        let entry = self.entries.entry(source).or_insert_with(|| LedgerEntry {
+            hp_total: 0,
+            last_at_us: now,
+            contributions: std::collections::VecDeque::new(),
+        });
+        match entry.contributions.back_mut() {
+            Some((at, hp)) if at.get() / Self::BUCKET_US == now.get() / Self::BUCKET_US => {
+                *at = now;
+                *hp = hp.saturating_add(u64::from(hp_applied));
+            }
+            _ => entry.contributions.push_back((now, u64::from(hp_applied))),
+        }
+        entry.hp_total = total;
+        entry.last_at_us = now;
         Ok(())
     }
     /// Snapshot immediately after observing the actual final hit. No current-authority
@@ -274,6 +308,51 @@ mod damage_ledger_tests {
         ledger.observe(source(3), 1, at(300_000_001))?;
         assert!(!ledger.entries.contains_key(&source(1)));
         assert!(ledger.entries.contains_key(&source(2)));
+        Ok(())
+    }
+    #[test]
+    fn each_hit_expires_on_its_own_timestamp_not_the_source_latest_hit()
+    -> Result<(), DamageLedgerError> {
+        let mut ledger = PlayerDamageLedger::default();
+        ledger.observe(source(1), 10, at(0))?;
+        ledger.observe(source(1), 20, at(299_000_000))?;
+        ledger.observe(source(2), 5, at(301_000_000))?;
+        let snapshot = ledger.snapshot(source(2), at(301_000_000))?;
+        assert_eq!(snapshot.assists, vec![(source(1), 20)]);
+        // A repeated attacker keeps only its in-window hits, including the final blow.
+        ledger.observe(source(1), 7, at(302_000_000))?;
+        assert_eq!(
+            ledger.entries.get(&source(1)).map(|entry| entry.hp_total),
+            Some(27)
+        );
+        ledger.observe(source(1), 1, at(600_000_000))?;
+        assert_eq!(
+            ledger.entries.get(&source(1)).map(|entry| entry.hp_total),
+            Some(8)
+        );
+        assert!(ledger.entries.contains_key(&source(2)));
+        Ok(())
+    }
+    #[test]
+    fn continuous_hits_stay_bounded_and_within_one_bucket_of_the_window()
+    -> Result<(), DamageLedgerError> {
+        let mut ledger = PlayerDamageLedger::default();
+        for i in 0..2_000_u64 {
+            ledger.observe(source(1), 1, at(i * 250_000))?;
+        }
+        let entry = ledger
+            .entries
+            .get(&source(1))
+            .ok_or(DamageLedgerError::MissingFinalHit)?;
+        assert!(entry.contributions.len() <= 301);
+        // Last hit at 499.75 s. Exact per-hit retention keeps 1201 hits (>= 199.75 s);
+        // bucket 199 s (latest hit 199.75 s) adds its three earlier sub-second hits.
+        assert_eq!(entry.contributions.len(), 301);
+        assert_eq!(entry.hp_total, 1_204);
+        assert_eq!(
+            entry.contributions.iter().map(|(_, hp)| *hp).sum::<u64>(),
+            entry.hp_total
+        );
         Ok(())
     }
     #[test]

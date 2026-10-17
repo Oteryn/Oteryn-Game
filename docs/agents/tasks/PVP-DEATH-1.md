@@ -4,7 +4,7 @@
 task_id: PVP-DEATH-1
 title: "PVP-DEATH-1: outcome leaf; shared death integration after #2193 (D1105)"
 mode: IMPLEMENTATION
-status: NOT_FULLY_QUALIFIED
+status: partial
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/pvp-death-1
@@ -20,6 +20,7 @@ control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-17
 execution_policy: continuous_progress
+merge_authority: CP_ONLY (bounded checkpoint; builder never marks ready)
 owned_paths:
   - apps/game-server/src/combat/pvp/death.rs
   - apps/game-server/src/combat/pvp/death_tests.rs
@@ -518,7 +519,8 @@ historical carrier to accommodate the old default `()` type.
 
 The ledger and the receipt observation retain the exact
 [D1244](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226513017)
-source scope: one 64-source runtime ledger, five-minute last-observation pruning,
+source scope: one 64-source runtime ledger, five-minute pruning (per hit since the
+bounded checkpoint below),
 oldest-source eviction, and killer plus HP-ordered other sources. Downstream PvP
 totals/buckets, skull and death-transaction outcomes are not implemented or qualified
 by this source repair. The shared `character_death.rs` writer remains with #2193
@@ -638,3 +640,25 @@ All three keep `test = false`; their cases still run through
 `character_authority_postgres`. No production source changes. The shared
 `character_death.rs` death-transaction integration stays blocked on #2193
 (DEATH-ML-LOSS-1), DEATH-3 and PVP-1b; status remains NOT_FULLY_QUALIFIED.
+
+## Bounded checkpoint — 2026-10-17
+
+Main `f094e0320289975a220852ff60ca7baf6d234ff4` is merged with a merge commit (no
+textual conflicts). Main's new standalone root
+`apps/game-server/tests/npc_econ_bank_postgres.rs` mounts `foundation/mod.rs`; under
+the same D1258a mechanical-consumer allocation it now mounts the real
+`ability/player_lethal.rs` like the 29 roots above. It keeps `test = false`; its cases
+run through `character_authority_postgres`.
+
+Codex P1 "Track the five-minute window per hit" is fixed in `ability/player_lethal.rs`.
+Each source entry keeps the D1244 `{hp_total, last_at_us}` shape, 64-source cap and
+oldest-`last_at_us` eviction, plus oldest-first one-second contribution buckets
+(at most 301 per source). Every bucket expires on its own latest hit, so
+`hp_total` is the sum of in-window hits only; a bucket can outlive its earliest hit by
+under one second and never drops damage early. Refusals still leave the ledger
+unchanged. Two cases cover per-hit expiry and the bucket bound.
+
+This is a bounded checkpoint with `merge_authority: CP_ONLY`: the native lethal source
+ledger and the typed outcome leaf. Shared `character_death.rs` death-transaction
+integration, PvP totals/buckets, skull settlement and full death acceptance stay out of
+scope and blocked on #2193 (DEATH-ML-LOSS-1), DEATH-3 and PVP-1b.
