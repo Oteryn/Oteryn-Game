@@ -103,7 +103,7 @@ Table: `WIKI` = https://tibia.fandom.com/wiki/Mini_World_Changes (Statistics, da
 | Change (key) | Trigger and chance | Variants (weight) | Gap, duration | Source (Tibia value; OT value for comparison) |
 |---|---|---|---|---|
 | `fury_gates` | `at_reset` 343 | 10 cities (1) | 0; reset | `WIKI` 160/465 + 11/33 = 171/498; https://www.tibiaqa.com/17805 (253/729 = 347). OT: 1000, `fury_gates.lua:20-29` (uniform `math.random(1, 10)` at :26) |
-| `nightmare_isles` | `at_reset` 1000 | 3 isles (1) | 0; reset | `WIKI` 33/33; https://tibia.fandom.com/wiki/Nightmare_Isles_Mini_World_Change/Spoiler ("active every day"; three portals, one board message each). OT: same, `nightmare_isles.lua:85-92` |
+| `nightmare_isles` | `at_reset` 1000 | 3 isles (1) | 0; reset | `WIKI` 33/33; https://tibia.fandom.com/wiki/Nightmare_Isles_Mini_World_Change/Spoiler ("active every day"; three portals, one board message each). OT: same, `nightmare_isles.lua:13-26` (`math.random`:18) |
 | `oriental_trader` (Yasir) | `at_reset` 151 | 3 towns (1) | 0; reset | `WIKI` 69/465 + 6/33 = 75/498. OT: 330, `oriental_trader.lua:3,43-44` |
 | `thawing` | `at_reset` 187 | 1 | 0; reset | `WIKI` 93/465 + 0/33. OT: Crystalserver 100, `thawing.lua:2,31-33`; Canary has none |
 | `their_masters_voice` (World Change) | `at_reset` 200 | 1 | 0; reset | no Tibia number ("less than a day", https://tibia.fandom.com/wiki/World_Changes). OT: 200, `their_masters_voice.lua:4` (Canary and Crystalserver agree) |

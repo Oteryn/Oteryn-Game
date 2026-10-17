@@ -8,7 +8,7 @@ status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/events-world-1
-base_sha: 5742f30f3
+base_sha: efecd2209e71e209878ac543cd70966c6300e8dd
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -23,12 +23,28 @@ owned_paths:
   - "apps/game-server/src/world_change/ (new) + tests"
   - "content/encounters/{world-changes,mini-world-changes}/ source inputs"
   - "docs/agents/tasks/EVENTS-WORLD-1.md"
+  - "apps/game-server/src/lib.rs (D1287 cfg(test) world_change registration only)"
+  - "docs/architecture/ADR-0021-world-map-runtime-loading.md (D1136/D1287 amendments and status)"
+  - "docs/architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md (D1136/D1287 amendments and status)"
+  - "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md (D1287 W15 source locator correction)"
 slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, manifest.json, content.lock.json, content/world/pins/*, Rust pins"
   - "migration if durable"
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## D1287 review repair — source only
+
+Source base is CP's main-merge head `610d60cdf0f9c11618d085152a683293ddf69448`.
+The published `#[cfg(test)] mod world_change;` mount now makes all five component
+cases part of native library tests. The earlier five PASS came from the disclosed
+private mount at exact source ded94838, not published integration. The acceptance
+checkbox is reopened until CI passes on this repaired head. New execution is
+NOT_RUN; fmt/diff checks PASS. The refusal is `WorldChangeBindingsUnavailable`.
+ADR/BOSS status lines now record the D1136 amendments; source-only W1 selection
+scope and pending separate LAYER/ACT mechanics remain unchanged. The PR body must
+name the final published repair head, replacing the stale 95bcebd7 reference.
 
 ## Goal
 
@@ -48,6 +64,10 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 - apps/game-server/src/world_change/ (new) + tests
 - `content/encounters/{world-changes,mini-world-changes}/ source inputs`
+- `apps/game-server/src/lib.rs` — D1287 test-only registration.
+- `docs/architecture/ADR-0021-world-map-runtime-loading.md` — D1136/D1287 amendments and status.
+- `docs/architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` — D1136/D1287 amendments and status.
+- `docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md` — D1287 W15 source locator correction.
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -82,7 +102,7 @@ LAYER/ACT mechanics and are NOT_APPLICABLE here.
 - [x] Retain Fury Gates/Nightmare Isles source facts and provenance without fake W1 bindings.
 - [x] Compile validated inputs into typed WorldChangeSelection.
 - [x] Refuse unavailable W1 bindings with WorldChangeBindingsUnavailable.
-- [x] Five actual native component cases (four original plus refusal), independently reviewed.
+- [ ] Five actual native component cases (four original plus refusal) pass through the published mount on this repaired head; exact-head CI pending.
 - [ ] Required final exact-head repository gates and CP lifecycle before leaving draft.
 
 ## Validation commands
@@ -151,15 +171,16 @@ chance/date values, unique keys/variants, positive non-overflowing weights,
 per-field source/hash shape and explicit unresolved bindings. It neither fetches
 nor attests provenance and does not parse unbounded files or admit a bundle.
 Existing bounded World Project capture/compiler integration remains required.
-Four authored tests cover the accepted two source documents, malformed bounds,
-identity/weight faults, unknown fields, missing provenance and false completion.
+Five authored tests cover the accepted two source documents, malformed bounds,
+identity/weight faults, unknown fields, missing provenance, false completion and
+the WorldChangeBindingsUnavailable refusal (added in D1206).
 Source validation does not prove exclusive-layer composition, House safety,
 spawn limits, native compilation, activation or gameplay behavior.
 
 Cheap checks: JSON syntax/accepted selector facts/provenance digest binding,
 explicit Rustfmt of all three owned Rust files and `git diff --check` PASS.
-New Rust compilation, four tests, strict lint, compiler/bundle/native runtime and
-all gameplay qualification remain **NOT_RUN**. Status remains
+At the original four-test source checkpoint, Rust compilation, strict lint and
+gameplay qualification were NOT_RUN; exact later component evidence is retained below. Status remains
 NOT_FULLY_QUALIFIED; production acceptance **RED** pending the missing bindings
 and LAYER/ACT plus later RT/ANNOUNCE. No shared root registration, generator,
 shared schema, manifest, content pin, wire/RNG/activation or other owner's source

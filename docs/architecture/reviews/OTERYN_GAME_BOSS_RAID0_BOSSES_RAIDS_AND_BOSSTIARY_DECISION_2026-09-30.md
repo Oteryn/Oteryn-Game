@@ -1,7 +1,7 @@
 # BOSS-RAID-0 Bosses, raids and the Bosstiary
 
 - Decision: `BOSSRAID0-BOSSES-RAIDS-BOSSTIARY-V1`
-- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED; amended by EVENTS-WORLD-1 (#2178)**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`). Original gate: Acceptance needs exact-head validation, independent review (persistence,
   economy, security, concurrency and protocol) and protected integration. R1-R3 (§17) are
   architect rulings; owner question R4 (§17) is answered (2026-09-30, #162): the slot swap fee is
   a gold sink as in Tibia, the first change after a server save free (§10.3).

@@ -106,6 +106,9 @@ impl WorldChangeSelection<'_> {
     /// Compiler boundary for an entry that needs native W1 bindings. Selection-source
     /// compilation alone cannot supply geometry, House, value-source or spawn authority.
     pub(crate) fn require_w1_bindings(&self) -> Result<(), WorldChangeBindingsUnavailable> {
+        // Ok is unreachable for validated input: validate_candidates rejects an
+        // empty unresolved list, and compile_selection_source alone constructs
+        // this selection's private source field. No complete bindings are invented.
         if self.source.unresolved.is_empty() {
             Ok(())
         } else {
