@@ -2312,6 +2312,11 @@ mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
 
+// LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
+// cases) on the CHARM-2 harness included above; its only test mount.
+#[path = "../src/durability/ground_cell_limit_tests.rs"]
+mod ground_cell_limit_tests;
+
 // ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
 // focused standalone target through the same protected lane, on the CHARM-2
 // harness included above.
@@ -3397,10 +3402,14 @@ mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 
+#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
+mod familiar_versioned_lifecycle_postgres_cases;
 #[path = "support/house_interior_postgres_cases.rs"]
 mod house_interior_postgres_cases;
 #[path = "support/house_test_fixture.rs"]
 mod house_test_fixture;
+#[path = "support/pvp_readmission_postgres_cases.rs"]
+mod pvp_readmission_postgres_cases;
 
 // D1112 APP-1 installed storage and native authority cases share their cases with the focused
 // standalone targets through the same protected lane, on the Bestiary harness included above.
