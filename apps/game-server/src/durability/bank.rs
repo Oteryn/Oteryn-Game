@@ -35,15 +35,16 @@ use super::db::{
 };
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::{ITEM_LIFECYCLE_LIVE, check_technical_text, check_uuid_v7};
-use super::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts};
+use super::item_transfer::{CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass};
 use super::item_transfer_audit::ITEM_LIFECYCLE_RETIRED;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
+use crate::domain::character_name::CharacterName;
 use crate::domain::currency::{
     BACKPACK_ENTRIES_MAX, COIN_DEFINITION_FAMILY, Coin, CoinStack, FeePlanError, plan_fee_within,
 };
-use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+use crate::foundation::{ChannelId, CommandRef, RuntimeScopeRefV1, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
@@ -363,6 +364,358 @@ impl BankRequest {
     }
 }
 
+/// Historical provenance of a native Bank owner's accepted command. It supplies no current
+/// NPC, session, node, Content or money authority. The NPC owner checks those facts when enqueueing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BankNpcSource {
+    pub(crate) command: CommandRef,
+    pub(crate) npc_identity: [u8; 16],
+    pub(crate) npc_key: String,
+    pub(crate) npc_generation: u64,
+    pub(crate) catalogue_revision: u64,
+    pub(crate) prompt_generation: u64,
+    pub(crate) recipient_name: Option<CharacterName>,
+}
+
+pub(crate) struct BankNpcCompletion {
+    pub(crate) request: BankRequest,
+    pub(crate) outcome: BankOperationOutcome,
+    pub(crate) recipient_name: Option<CharacterName>,
+    pub(crate) npc_identity: [u8; 16],
+    pub(crate) npc_generation: u64,
+}
+
+struct StoredNpcBankCommand {
+    bytes: Vec<u8>,
+    recipient_name: Option<CharacterName>,
+    npc_identity: [u8; 16],
+    npc_key: String,
+    npc_generation: u64,
+    catalogue_revision: u64,
+    prompt_generation: u64,
+}
+
+/// Versioned, bounded frozen request bytes, not raw dialogue and not a generic command journal.
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FrozenNpcBankRequest {
+    version: u8,
+    kind: i16,
+    occurrence: [u8; 16],
+    transaction_id: [u8; 16],
+    event_id: [u8; 16],
+    occurred_at_unix_ms: i64,
+    server_build_id: String,
+    amount: u64,
+    slots: [Option<[u8; 16]>; 3],
+    coins: Option<FrozenNpcBankCoins>,
+    recipient: Option<[u8; 16]>,
+    recipient_name_key: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FrozenNpcBankCoins {
+    gold: [String; 3],
+    platinum: [String; 3],
+    crystal: [String; 3],
+    backpack: [String; 3],
+    stack_kind: u8,
+    stack_maximum: Option<u32>,
+    capacity: Option<u32>,
+    container_slot_equip_pattern: bool,
+}
+
+fn freeze_npc_bank(request: &BankRequest) -> Result<Vec<u8>> {
+    let identity = request.identity();
+    let def = |d: &TypedDefinitionRef| {
+        [
+            d.family.clone(),
+            d.production_key.clone(),
+            d.revision_ref.clone(),
+        ]
+    };
+    let coins = match request {
+        BankRequest::Deposit(r) => Some(&r.coins),
+        BankRequest::Withdraw(r) => Some(&r.coins),
+        BankRequest::Transfer(_) => None,
+    }
+    .map(|coins| {
+        let (stack_kind, stack_maximum) = match coins.backpack.stack {
+            ItemStackClass::NonStackable => (1, None),
+            ItemStackClass::Stackable { proven_maximum } => (2, proven_maximum),
+            ItemStackClass::Unknown => (3, None),
+        };
+        FrozenNpcBankCoins {
+            gold: def(&coins.gold),
+            platinum: def(&coins.platinum),
+            crystal: def(&coins.crystal),
+            backpack: def(&coins.backpack.definition),
+            stack_kind,
+            stack_maximum,
+            capacity: coins.backpack.container_capacity,
+            container_slot_equip_pattern: coins.backpack.container_slot_equip_pattern,
+        }
+    });
+    let (recipient, recipient_name_key) = match request {
+        BankRequest::Transfer(r) => (
+            Some(*r.recipient_character_id.as_bytes()),
+            Some(r.recipient_name_key.clone()),
+        ),
+        _ => (None, None),
+    };
+    let frozen = FrozenNpcBankRequest {
+        version: 1,
+        kind: request.kind().code(),
+        occurrence: *identity.occurrence.as_bytes(),
+        transaction_id: identity.transaction_id,
+        event_id: identity.event_id,
+        occurred_at_unix_ms: identity.occurred_at_unix_ms,
+        server_build_id: identity.server_build_id.clone(),
+        amount: request.amount(),
+        slots: request.planned_slots(),
+        coins,
+        recipient,
+        recipient_name_key,
+    };
+    serde_json::to_vec(&frozen)
+        .map_err(|_| BankError::InvalidInput)
+        .and_then(|bytes| {
+            if bytes.len() <= 8192 {
+                Ok(bytes)
+            } else {
+                Err(BankError::InvalidInput)
+            }
+        })
+}
+
+fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
+    if bytes.len() > 8192 {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let r: FrozenNpcBankRequest =
+        serde_json::from_slice(bytes).map_err(|_| DurabilityError::InvalidStoredState)?;
+    if r.version != 1 {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let identity = BankOperationIdentity {
+        occurrence: BankOperationOccurrence::from_bytes(r.occurrence)?,
+        transaction_id: r.transaction_id,
+        event_id: r.event_id,
+        occurred_at_unix_ms: r.occurred_at_unix_ms,
+        server_build_id: r.server_build_id,
+    };
+    let def = |[family, production_key, revision_ref]: [String; 3]| TypedDefinitionRef {
+        family,
+        production_key,
+        revision_ref,
+    };
+    let coins = r
+        .coins
+        .map(|c| {
+            let stack = match c.stack_kind {
+                1 if c.stack_maximum.is_none() => ItemStackClass::NonStackable,
+                2 => ItemStackClass::Stackable {
+                    proven_maximum: c.stack_maximum,
+                },
+                3 if c.stack_maximum.is_none() => ItemStackClass::Unknown,
+                _ => return Err(DurabilityError::InvalidStoredState),
+            };
+            Ok(BankCoinFacts {
+                gold: def(c.gold),
+                platinum: def(c.platinum),
+                crystal: def(c.crystal),
+                backpack: ItemDefinitionFacts {
+                    definition: def(c.backpack),
+                    stack,
+                    container_capacity: c.capacity,
+                    container_slot_equip_pattern: c.container_slot_equip_pattern,
+                },
+            })
+        })
+        .transpose()?;
+    let invalid = || BankError::Unavailable(DurabilityError::InvalidStoredState);
+    match r.kind {
+        1 if r.recipient.is_none() && r.recipient_name_key.is_none() && r.slots[0].is_none() => {
+            Ok(BankRequest::Deposit(BankDepositRequest {
+                identity,
+                amount: r.amount,
+                coins: coins.ok_or_else(invalid)?,
+                change_item_instance_ids: [
+                    r.slots[1].ok_or_else(invalid)?,
+                    r.slots[2].ok_or_else(invalid)?,
+                ],
+            }))
+        }
+        2 if r.recipient.is_none() && r.recipient_name_key.is_none() => {
+            Ok(BankRequest::Withdraw(BankWithdrawRequest {
+                identity,
+                amount: r.amount,
+                coins: coins.ok_or_else(invalid)?,
+                output_item_instance_ids: [
+                    r.slots[0].ok_or_else(invalid)?,
+                    r.slots[1].ok_or_else(invalid)?,
+                    r.slots[2].ok_or_else(invalid)?,
+                ],
+            }))
+        }
+        3 if coins.is_none() && r.slots == [None; 3] => {
+            Ok(BankRequest::Transfer(BankTransferRequest {
+                identity,
+                amount: r.amount,
+                recipient_character_id: CharacterId::from_bytes(r.recipient.ok_or_else(invalid)?)
+                    .map_err(|_| invalid())?,
+                recipient_name_key: r.recipient_name_key.ok_or_else(invalid)?,
+            }))
+        }
+        _ => Err(invalid()),
+    }
+}
+
+impl DurabilityRoot {
+    /// Accept one resolved confirmation as actual retained Bank-owner pending work. The NPC
+    /// owner must hold its current conversation/NPC/Content facts at this call boundary. This
+    /// durable enqueue is NOT proof that a money SQL transaction was sent or committed.
+    pub(crate) async fn enqueue_npc_bank(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        source: BankNpcSource,
+        request: BankRequest,
+    ) -> Result<()> {
+        validate_request(&fence, &request)?;
+        if source.command.game_session_id() != fence.game_session_id
+            || source.npc_generation == 0
+            || source.catalogue_revision == 0
+            || source.prompt_generation == 0
+            || super::item_mint_audit::check_content_key(&source.npc_key).is_err()
+        {
+            return Err(BankError::InvalidInput);
+        }
+        match (&request, &source.recipient_name) {
+            (BankRequest::Transfer(request), Some(name))
+                if name.comparison_key() == request.recipient_name_key => {}
+            (BankRequest::Deposit(_) | BankRequest::Withdraw(_), None) => {}
+            _ => return Err(BankError::InvalidInput),
+        }
+        let frozen = freeze_npc_bank(&request)?;
+        let binding = request_binding(&fence, &request);
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BankError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            lock_npc_bank_command(&mut tx, source.command).await?;
+            if let Some(stored) = read_npc_bank_command(&mut tx, &fence, source.command).await? {
+                return Ok(if stored.bytes == frozen && stored.recipient_name == source.recipient_name
+                            && stored.npc_identity == source.npc_identity && stored.npc_key == source.npc_key && stored.npc_generation == source.npc_generation
+                            && stored.catalogue_revision == source.catalogue_revision && stored.prompt_generation == source.prompt_generation { Ok(()) } else { Err(BankError::ConflictingOccurrence) });
+            }
+            let Some(acting) = acting_fence(&mut tx, &node, &fence).await? else { return Ok(Err(BankError::AuthorityRejected)); };
+            if let Err(error) = lock_acting_root(&mut tx, &acting).await { return nested_bank_error(error); }
+            let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Ok(Err(BankError::AuthorityRejected)); };
+            sqlx::query("INSERT INTO game_npc_bank_confirmations (game_session_id, command_id, character_id, world_id, npc_identity, npc_generation, catalogue_revision, prompt_generation, operation_occurrence_id, request_binding, frozen_request, recipient_name, npc_key, origin_channel_id, origin_scope_generation, origin_connection_generation, origin_character_lease_generation, origin_node_id, origin_node_registration_revision) VALUES (encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6::text::numeric,$7::text::numeric,$8::text::numeric,encode($9,'hex')::uuid,$10,$11,$12,$13,encode($14,'hex')::uuid,$15::text::numeric,$16::text::numeric,$17::text::numeric,encode($18,'hex')::uuid,$19::text::numeric)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(source.command.command_id().get().to_string())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+                .bind(source.npc_identity.as_slice()).bind(source.npc_generation.to_string())
+                .bind(source.catalogue_revision.to_string()).bind(source.prompt_generation.to_string())
+                .bind(request.identity().occurrence.as_bytes().as_slice()).bind(binding).bind(frozen)
+                .bind(source.recipient_name.as_ref().map(CharacterName::as_str))
+                .bind(&source.npc_key).bind(channel_id.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
+                .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
+                .bind(node.fact().node_id().as_bytes().as_slice()).bind(node.fact().registration_revision().to_string())
+                .execute(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(()))
+        })).await?
+    }
+
+    /// Drain the exact accepted original CommandRef under independently reconciled authority.
+    /// Replay is first inside the existing Bank writer, including after an unknown commit. A
+    /// crash before that writer leaves pending work; a known abort leaves no Bank operation and
+    /// retains these same request/identity bytes for the original command, never a new enqueue.
+    pub(crate) async fn resume_npc_bank(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+    ) -> Result<Option<BankNpcCompletion>> {
+        if command.game_session_id() != fence.game_session_id {
+            return Err(BankError::AuthorityRejected);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BankError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            lock_npc_bank_command(&mut tx, command).await?;
+            let Some(stored) = read_npc_bank_command(&mut tx, &fence, command).await? else { return Ok(Ok(None)); };
+            let request = match thaw_npc_bank(&stored.bytes) { Ok(request) => request, Err(error) => return nested_bank_error(error) };
+            let outcome = match bank_operation_in_transaction(&mut tx, &node, &fence, &request).await {
+                Ok(outcome) => outcome, Err(error) => return nested_bank_error(error),
+            };
+            sqlx::query("UPDATE game_npc_bank_confirmations SET completed = TRUE WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric AND NOT completed")
+                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(Some(BankNpcCompletion { request, outcome, recipient_name: stored.recipient_name,
+                        npc_identity: stored.npc_identity, npc_generation: stored.npc_generation })))
+        })).await?
+    }
+}
+
+async fn lock_npc_bank_command(
+    tx: &mut PgConnection,
+    command: CommandRef,
+) -> std::result::Result<(), DurabilityError> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:npc-bank-command:' || encode($1,'hex') || ':' || $2,0))")
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).execute(tx).await?;
+    Ok(())
+}
+
+async fn read_npc_bank_command(
+    tx: &mut PgConnection,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+) -> std::result::Result<Option<StoredNpcBankCommand>, DurabilityError> {
+    let row = sqlx::query("SELECT character_id::text, world_id::text, npc_identity, npc_key, npc_generation::text, catalogue_revision::text, prompt_generation::text, frozen_request, recipient_name FROM game_npc_bank_confirmations WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric FOR UPDATE")
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(tx).await?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    if uuid_text(&row.try_get::<String, _>("character_id")?)? != *fence.character_id.as_bytes()
+        || uuid_text(&row.try_get::<String, _>("world_id")?)? != *world_id.as_bytes()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let name = row
+        .try_get::<Option<String>, _>("recipient_name")?
+        .map(|name| CharacterName::parse(&name).map_err(|_| DurabilityError::InvalidStoredState))
+        .transpose()?;
+    Ok(Some(StoredNpcBankCommand {
+        bytes: row.try_get("frozen_request")?,
+        recipient_name: name,
+        npc_identity: row
+            .try_get::<Vec<u8>, _>("npc_identity")?
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        npc_key: row.try_get("npc_key")?,
+        npc_generation: numeric_u64(&row, "npc_generation")?,
+        catalogue_revision: numeric_u64(&row, "catalogue_revision")?,
+        prompt_generation: numeric_u64(&row, "prompt_generation")?,
+    }))
+}
+
 /// The junior state of a character (BANK-0 §4.4, Q1 b): junior until it has left the starter
 /// island (D119, DAWNPORT-1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -396,6 +749,98 @@ pub fn transfer_party_refusal(
         Some(BankResult::RecipientCannotReceiveTransfers)
     } else {
         None
+    }
+}
+
+/// Prompt facts read through the same native session, node, admission and Character fences as
+/// the money writer. These are display/resolution data, never a grant to a later operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BankNpcPreview {
+    pub(crate) balance: u64,
+    pub(crate) eligible_coins: u64,
+    pub(crate) junior: bool,
+    /// Only a live Character in the acting Character's actual World can be returned.
+    pub(crate) recipient: Option<(CharacterId, CharacterName)>,
+    pub(crate) recipient_refusal: Option<BankResult>,
+}
+
+impl DurabilityRoot {
+    /// Read a bank prompt from current native custody. A missing backpack contributes zero
+    /// eligible coins. A recipient in another World is indistinguishable from an unknown name.
+    pub(crate) async fn preview_npc_bank(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        coins: Option<BankCoinFacts>,
+        recipient_name: Option<CharacterName>,
+    ) -> Result<BankNpcPreview> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BankError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                let Some(acting) = acting_fence(&mut tx, &node, &fence).await? else {
+                    return Ok(Err(BankError::AuthorityRejected));
+                };
+                if let Err(error) = lock_acting_root(&mut tx, &acting).await {
+                    return nested_bank_error(error);
+                }
+                let eligible_coins = if let Some(coins) = coins {
+                    let backpack = match lock_backpack(&mut tx, &acting, &coins, true).await {
+                        Ok(backpack) => backpack,
+                        Err(error) => return nested_bank_error(error),
+                    };
+                    backpack.map_or(Some(0), |backpack| backpack.coins.iter().try_fold(0_u64,
+                        |total, (stack, _, _)| total.checked_add(u64::from(stack.quantity) * stack.coin.worth())
+                    )).ok_or(DurabilityError::InvalidStoredState)?
+                } else { 0 };
+                let balance: Option<i64> = sqlx::query_scalar(
+                    "SELECT balance FROM game_account_bank_balances WHERE account_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid"
+                ).bind(acting.account_id.as_slice()).bind(acting.world_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx).await?;
+                let balance = u64::try_from(balance.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?;
+                let junior = is_junior(starter_island_fact(acting.character_id));
+                let mut recipient = None;
+                let mut recipient_refusal = None;
+                if let Some(name) = recipient_name {
+                    let row = sqlx::query(
+                        "SELECT character_id::text, account_id::text, name FROM game_character_roots WHERE world_id = encode($1,'hex')::uuid AND name_key = $2 AND lifecycle = 1"
+                    ).bind(acting.world_id.as_bytes().as_slice()).bind(name.comparison_key())
+                        .fetch_optional(&mut *tx).await?;
+                    match row {
+                        None => recipient_refusal = Some(BankResult::UnknownRecipient),
+                        Some(row) => {
+                            let id = CharacterId::from_bytes(uuid_text(&row.try_get::<String,_>("character_id")?)?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let account = uuid_text(&row.try_get::<String,_>("account_id")?)?;
+                            if account == acting.account_id {
+                                recipient_refusal = Some(BankResult::SameAccount);
+                            } else if is_junior(starter_island_fact(id)) {
+                                recipient_refusal = Some(BankResult::RecipientCannotReceiveTransfers);
+                            } else {
+                                let name = CharacterName::parse(&row.try_get::<String,_>("name")?)
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                                recipient = Some((id, name));
+                            }
+                        }
+                    }
+                }
+                // Read-only: dropping the transaction releases all current-fact locks.
+                Ok(Ok(BankNpcPreview { balance, eligible_coins, junior, recipient, recipient_refusal }))
+            })
+        }).await?
+    }
+}
+
+fn nested_bank_error<T>(error: BankError) -> std::result::Result<Result<T>, DurabilityError> {
+    match error {
+        BankError::Unavailable(error) => Err(error),
+        error => Ok(Err(error)),
     }
 }
 
@@ -1140,6 +1585,55 @@ pub(super) async fn insert_fee_debit_entry(
     balance: &FeeDebitBalance,
     amount: u64,
 ) -> std::result::Result<FeeDebitEntry, DurabilityError> {
+    insert_burn_debit_entry(
+        connection,
+        BurnDebitSource::GoldFee(*fee_transaction_id),
+        world_id,
+        account_id,
+        payer,
+        balance,
+        amount,
+    )
+    .await
+}
+
+/// Closed accepted FEE_DEBIT sources. The source-specific FK and deferred same-transaction
+/// guards remain authoritative; no caller supplies a cause name or SQL fragment.
+enum BurnDebitSource {
+    GoldFee([u8; 16]),
+    NpcTrade([u8; 16]),
+}
+
+pub(super) async fn insert_npc_trade_fee_debit_entry(
+    connection: &mut PgConnection,
+    transaction_id: &[u8; 16],
+    world_id: WorldId,
+    account_id: [u8; 16],
+    payer: CharacterId,
+    balance: &FeeDebitBalance,
+    amount: u64,
+) -> std::result::Result<FeeDebitEntry, DurabilityError> {
+    insert_burn_debit_entry(
+        connection,
+        BurnDebitSource::NpcTrade(*transaction_id),
+        world_id,
+        account_id,
+        payer,
+        balance,
+        amount,
+    )
+    .await
+}
+
+async fn insert_burn_debit_entry(
+    connection: &mut PgConnection,
+    source: BurnDebitSource,
+    world_id: WorldId,
+    account_id: [u8; 16],
+    payer: CharacterId,
+    balance: &FeeDebitBalance,
+    amount: u64,
+) -> std::result::Result<FeeDebitEntry, DurabilityError> {
     let balance_after = balance
         .balance
         .checked_sub(amount)
@@ -1157,29 +1651,42 @@ pub(super) async fn insert_fee_debit_entry(
         balance_after,
     };
     let gold = |value: u64| i64::try_from(value).map_err(|_| DurabilityError::InvalidStoredState);
-    sqlx::query(
-        "INSERT INTO game_account_bank_entries(entry_id, fee_transaction_id, account_id, \
+    let (transaction_id, statement) = match source {
+        BurnDebitSource::GoldFee(id) => (
+            id,
+            "INSERT INTO game_account_bank_entries(entry_id, fee_transaction_id, account_id, \
            world_id, kind, amount, balance_before, balance_after, previous_entry_id, \
            acting_character_id) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5, $6, $7, $8, encode($9,'hex')::uuid, \
            encode($10,'hex')::uuid)",
-    )
-    .bind(entry.entry_id.as_slice())
-    .bind(fee_transaction_id.as_slice())
-    .bind(account_id.as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(
-        i16::try_from(super::item_fee_burn_audit::LEDGER_FEE_DEBIT)
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
-    )
-    .bind(gold(amount)?)
-    .bind(gold(entry.balance_before)?)
-    .bind(gold(entry.balance_after)?)
-    .bind(balance.last_entry_id.map(|id| id.to_vec()))
-    .bind(payer.as_bytes().as_slice())
-    .execute(&mut *connection)
-    .await?;
+        ),
+        BurnDebitSource::NpcTrade(id) => (
+            id,
+            "INSERT INTO game_account_bank_entries(entry_id, npc_trade_transaction_id, account_id, \
+           world_id, kind, amount, balance_before, balance_after, previous_entry_id, \
+           acting_character_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+           encode($4,'hex')::uuid, $5, $6, $7, $8, encode($9,'hex')::uuid, \
+           encode($10,'hex')::uuid)",
+        ),
+    };
+    sqlx::query(statement)
+        .bind(entry.entry_id.as_slice())
+        .bind(transaction_id.as_slice())
+        .bind(account_id.as_slice())
+        .bind(world_id.as_bytes().as_slice())
+        .bind(
+            i16::try_from(super::item_fee_burn_audit::LEDGER_FEE_DEBIT)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .bind(gold(amount)?)
+        .bind(gold(entry.balance_before)?)
+        .bind(gold(entry.balance_after)?)
+        .bind(balance.last_entry_id.map(|id| id.to_vec()))
+        .bind(payer.as_bytes().as_slice())
+        .execute(&mut *connection)
+        .await?;
     let moved = sqlx::query(
         "UPDATE game_account_bank_balances SET balance = $3, last_entry_id = encode($4,'hex')::uuid \
           WHERE account_id = encode($1,'hex')::uuid AND world_id = encode($2,'hex')::uuid \

@@ -20,6 +20,7 @@ pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub(crate) mod character_chat_name;
+pub(crate) mod character_chat_recipient;
 pub mod character_command;
 pub mod character_death;
 pub(crate) mod character_depot;
@@ -52,6 +53,7 @@ pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
+pub(crate) mod item_text;
 pub mod item_timed_state;
 pub mod item_timed_state_audit;
 pub mod item_transfer;
@@ -61,6 +63,7 @@ pub mod item_use_audit;
 #[cfg(test)]
 #[path = "../../tests/support/item_weight_lookup.rs"]
 pub mod item_weight_lookup;
+pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod monk_state;
