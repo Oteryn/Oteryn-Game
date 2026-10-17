@@ -48,6 +48,7 @@ CREATURE_FAMILIES = {
 # Service declaration shard families (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1): tree family -> (node, shard stem, discriminating field).
 SERVICE_FAMILIES = {
     "Service.Trade": ("content/services/trade/", "trade", "offers"),
+    "Service.Bank": ("content/services/bank/", "bank", "bank"),
     "Service.Travel": ("content/services/travel/", "travel", "routes"),
 }
 # Canonical capability relations: a known typed fact names the ruleset that governs it.
@@ -485,7 +486,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 380:
+    if len(service_records) != 381:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

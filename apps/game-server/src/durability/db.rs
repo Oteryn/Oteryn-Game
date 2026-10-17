@@ -673,6 +673,7 @@ impl DurabilityRootConfig {
         self,
     ) -> (
         PgConnectOptions,
+        PgConnectOptions,
         RootIReservation,
         Option<ProductionRootAdmission>,
     ) {
@@ -703,9 +704,18 @@ impl DurabilityRootConfig {
         .ssl_tls13_only(true)
         .ssl_session_resumption(false)
         .authentication_policy(PgAuthenticationPolicy::ScramSha256)
-        .oteryn_wp3_resource_budget(resource_budget)
         .statement_cache_capacity(STATEMENT_CACHE_CAPACITY);
-        (options, root_i_reservation, production_admission)
+        // The chat relay pool (CHAT-2B) takes the same verified endpoint and credentials but
+        // stays outside the WP3 root budget: it is a separate pool on the node runtime and
+        // never carries durability work.
+        let relay_options = options.clone();
+        let options = options.oteryn_wp3_resource_budget(resource_budget);
+        (
+            options,
+            relay_options,
+            root_i_reservation,
+            production_admission,
+        )
     }
 }
 
@@ -715,7 +725,7 @@ impl DurabilityRootConfig {
 /// maintenance; active work must use a ready-only `try_begin()` path.
 #[cfg(test)]
 fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
-    let (options, root_i_reservation, _admission) = config.into_connect_options();
+    let (options, _relay_options, root_i_reservation, _admission) = config.into_connect_options();
     let pool = PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
@@ -769,11 +779,12 @@ fn build_production_root_pool(
     handle: &tokio::runtime::Handle,
 ) -> (
     PgPool,
+    PgConnectOptions,
     RootIReservation,
     Option<ProductionRootAdmission>,
     tokio::runtime::OterynWp3TaskAllocationProfile,
 ) {
-    let (options, root_i_reservation, admission) = config.into_connect_options();
+    let (options, relay_options, root_i_reservation, admission) = config.into_connect_options();
     let (pool, maintenance_profile) = PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
@@ -781,7 +792,13 @@ fn build_production_root_pool(
         .idle_timeout(HOLDER_IDLE_TIMEOUT)
         .max_lifetime(HOLDER_MAX_LIFETIME)
         .connect_lazy_with_oteryn_wp3_runtime(options, handle);
-    (pool, root_i_reservation, admission, maintenance_profile)
+    (
+        pool,
+        relay_options,
+        root_i_reservation,
+        admission,
+        maintenance_profile,
+    )
 }
 
 /// Process-scoped owner of the accepted max-one durability holder.
@@ -820,6 +837,9 @@ pub struct DurabilityRoot {
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
     /// `DB_PASS_DEADLINE` except while a [`BootPassDeadline`] guard lives.
     pass_deadline_millis: Arc<AtomicU64>,
+    /// Connect options for the chat relay pool (CHAT-2B): the root endpoint without the WP3
+    /// budget. `None` when the root was built without them.
+    relay_options: Option<Box<PgConnectOptions>>,
     _root_i_charge: Option<Arc<RootICharge>>,
 }
 
@@ -859,7 +879,7 @@ impl DurabilityRoot {
             }
         };
         let runtime_handle = runtime.handle().ok_or(DurabilityError::RootUnavailable)?;
-        let (pool, root_i_reservation, admission, actual_maintenance) =
+        let (pool, relay_options, root_i_reservation, admission, actual_maintenance) =
             build_production_root_pool(config, runtime_handle);
         if actual_maintenance != expected_maintenance {
             return Err(DurabilityError::RootUnavailable);
@@ -882,8 +902,16 @@ impl DurabilityRoot {
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
+            relay_options: Some(Box::new(relay_options)),
             _root_i_charge: root_i_charge,
         })
+    }
+
+    /// Connect options for the World chat relay pool (CHAT-2B): the root's verified endpoint
+    /// and credentials without the WP3 root budget. The relay pool is separate from the root
+    /// holder and carries no durability work.
+    pub(crate) fn chat_relay_connect_options(&self) -> Option<PgConnectOptions> {
+        self.relay_options.as_deref().cloned()
     }
 
     #[cfg(test)]
@@ -901,6 +929,9 @@ impl DurabilityRoot {
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
+            relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
+                .ok()
+                .map(Box::new),
             _root_i_charge: None,
         })
     }
@@ -1048,6 +1079,30 @@ impl DurabilityRoot {
             deadline: Instant::now() + self.pass_deadline(),
         })
     }
+
+    /// [`Self::try_issue_semantic_pass`] for work owed to an outer operation
+    /// budget: the pass deadline is the earlier of the ordinary one and
+    /// `deadline`, and an already expired budget issues nothing.
+    pub(crate) fn try_issue_semantic_pass_by(
+        &self,
+        deadline: Instant,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        let now = Instant::now();
+        if deadline <= now {
+            return Err(DurabilityError::RootPassDeadlineExceeded);
+        }
+        let holder = self.try_acquire_ready()?;
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: bounded_pass_deadline(now, self.pass_deadline(), deadline),
+        })
+    }
+}
+
+/// The earlier of the ordinary pass deadline from `now` and an outer `budget`.
+fn bounded_pass_deadline(now: Instant, pass: Duration, budget: Instant) -> Instant {
+    (now + pass).min(budget)
 }
 
 pub(crate) async fn await_root_task<T>(
@@ -1623,6 +1678,29 @@ mod wp3_root_contract_tests {
             Ok::<(), DurabilityError>(())
         })?;
         drop(root);
+        Ok(())
+    }
+
+    #[test]
+    fn budgeted_pass_never_outlives_its_outer_budget() -> Result<(), Box<dyn std::error::Error>> {
+        let now = Instant::now();
+        let pass = DB_PASS_DEADLINE;
+        assert_eq!(
+            bounded_pass_deadline(now, pass, now + Duration::from_millis(700)),
+            now + Duration::from_millis(700)
+        );
+        assert_eq!(
+            bounded_pass_deadline(now, pass, now + Duration::from_secs(9)),
+            now + pass
+        );
+        // An expired budget issues no pass and records no ready demand.
+        let root = DurabilityRoot::new(config()?)?;
+        root.ready_demand.store(false, Ordering::Release);
+        assert!(matches!(
+            root.try_issue_semantic_pass_by(Instant::now()),
+            Err(DurabilityError::RootPassDeadlineExceeded)
+        ));
+        assert!(!root.ready_demand.load(Ordering::Acquire));
         Ok(())
     }
 

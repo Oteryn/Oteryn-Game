@@ -350,7 +350,7 @@ mod tests {
             caster, attacker:CharacterId::decode(&id(92)).unwrap(), current_lease_generation:1,
             command:CommandRef::new(session, CommandId::new(1).unwrap()),
             occurrence:occurrence.clone().into(), binding:serde_json::to_vec(&serde_json::json!({"source_chain_origins":[[u64::from(target.actor_local_id()),1,0,0,7]]})).unwrap(),
-            anchor:None, now_ms:0, effects:vec![OwnerCombatEffect { target,sub_ordinal:0,
+            anchor:None, now_us:None,now_ms:0, effects:vec![OwnerCombatEffect { target,sub_ordinal:0,
                 change:OwnerCombatChange::Damage { target_atom:runtime.creature_spell_target_atom(target).unwrap(), magnitude:1 }}], deferred:None,
         };
         let delayed = vec![TimedCombatEffect {
@@ -481,6 +481,9 @@ mod tests {
                         magnitude: 7,
                     },
                 }],
+                now_us: Some(
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(at.get()),
+                ),
                 now_ms: at.get() / 1000,
                 anchor: None,
                 deferred: None,

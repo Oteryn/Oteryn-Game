@@ -382,6 +382,15 @@ fn proficiency_familiar_and_quest_writes_share_the_0073_progression_guard() -> T
             profile_revision: "spell-p2-r20".into(),
             ..DurableFamiliarState::default()
         };
+        let summoned = summoned
+            .for_next_write(
+                Some(1_800_000_000_000),
+                &crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                    &fence(1)?,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
         let mut logout = summoned.clone();
         logout.last_logout_unix = 1_800_000_010;
         let root = &a.h.root;
