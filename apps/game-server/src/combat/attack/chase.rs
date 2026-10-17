@@ -262,6 +262,10 @@ pub(crate) struct ChaseSearchBudget {
     window: Option<u64>,
     player_units_used: u32,
     creature_units_used: u32,
+    /// Units the creature queue declared for its already-pending searches (CREATURE-MOVE-1
+    /// packet: pending creature searches go before player chase). Not reset by a new window, so
+    /// a player drain that runs before the creature drain in that window cannot take them.
+    creature_pending_units: u32,
 }
 
 impl ChaseSearchBudget {
@@ -280,14 +284,31 @@ impl ChaseSearchBudget {
         }
     }
 
+    /// Units of the current window held for declared pending creature work. A charging player
+    /// is waiting, so the hold never cuts into the player reserve: creatures stay within
+    /// `WINDOW_UNITS - PLAYER_WAIT_RESERVE` while a player waits.
+    fn creature_hold(&self) -> u32 {
+        self.creature_pending_units
+            .min((WINDOW_UNITS - PLAYER_WAIT_RESERVE).saturating_sub(self.creature_units_used))
+    }
+
+    /// Declare the total units the creature queue's pending searches need (for example
+    /// pending searches times [`UNITS_PER_SEARCH`]); it replaces the earlier declaration.
+    /// [`Self::charge_creature`] consumes it; the owner re-declares when its queue changes.
+    #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
+    pub(crate) fn declare_creature_pending(&mut self, units: u32) {
+        self.creature_pending_units = units;
+    }
+
     pub(crate) fn charge_player(&mut self, now_us: u64, units: u32) -> bool {
         if !self.advance(now_us) {
             return false;
         }
+        let limit = WINDOW_UNITS - self.creature_units_used - self.creature_hold();
         let Some(after) = self
             .player_units_used
             .checked_add(units)
-            .filter(|used| *used <= WINDOW_UNITS - self.creature_units_used)
+            .filter(|used| *used <= limit)
         else {
             return false;
         };
@@ -335,6 +356,7 @@ impl ChaseSearchBudget {
             return false;
         };
         self.creature_units_used = after;
+        self.creature_pending_units = self.creature_pending_units.saturating_sub(units);
         true
     }
 
@@ -770,6 +792,49 @@ mod tests {
         assert_eq!(budget.remaining(0), 0);
         assert!(!budget.charge_player(0, 1));
         assert!(!budget.open(0));
+    }
+
+    #[test]
+    fn pending_creature_work_stays_admissible_when_players_charge_first() {
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.charge_creature(0, UNITS_PER_SEARCH, true));
+        budget.declare_creature_pending(4 * UNITS_PER_SEARCH);
+        // A new window: the player drain wins the lock before the creature drain.
+        let mut players = 0;
+        while budget.charge_player(50_000, UNITS_PER_SEARCH) {
+            players += 1;
+        }
+        assert_eq!(players, 60);
+        for _ in 0..4 {
+            assert!(budget.charge_creature(50_000, UNITS_PER_SEARCH, true));
+        }
+        assert_eq!(budget.creature_pending_units, 0);
+        assert_eq!(budget.remaining(50_000), 0);
+        // A declaration over the creature share never cuts into the player reserve.
+        budget.declare_creature_pending(WINDOW_UNITS);
+        let mut players = 0;
+        while budget.charge_player(100_000, UNITS_PER_SEARCH) {
+            players += 1;
+        }
+        assert_eq!(players, 16);
+        for _ in 0..48 {
+            assert!(budget.charge_creature(100_000, UNITS_PER_SEARCH, true));
+        }
+        assert!(!budget.charge_creature(100_000, 1, true));
+    }
+
+    #[test]
+    fn without_pending_creature_work_players_can_use_the_full_window() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..64 {
+            assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+        }
+        assert_eq!(budget.remaining(0), 0);
+        assert!(!budget.charge_player(0, 1));
+        // Charged creature work consumed its declaration, so it no longer holds capacity.
+        budget.declare_creature_pending(2 * UNITS_PER_SEARCH);
+        assert!(budget.charge_creature(50_000, 2 * UNITS_PER_SEARCH, false));
+        assert!(budget.charge_player(100_000, WINDOW_UNITS));
     }
 
     #[test]

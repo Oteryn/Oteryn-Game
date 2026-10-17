@@ -195,7 +195,17 @@ pub(crate) fn route_to_cell(
     spawn: MovementLocalPosition,
     tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> Option<Vec<CardinalStep>> {
-    search(
+    route_to_cell_counted(start, spawn, tile_cost).0
+}
+
+/// [`route_to_cell`] plus the search's actual expansion count (at most [`PATH_SEARCH_WORK`]),
+/// so the caller can refund the unused part of its shared-window reservation.
+pub(crate) fn route_to_cell_counted(
+    start: MovementLocalPosition,
+    spawn: MovementLocalPosition,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
+    search_counted(
         start,
         spawn,
         SearchGoal::Cell,
@@ -774,6 +784,25 @@ mod tests {
         assert_eq!(walk(at(0, 0), &route), at(3, 0));
         // Keep the accepted player chase's adjacent goal unchanged.
         assert_eq!(chase(at(0, 0), at(3, 0), open).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn creature_walk_back_reports_its_actual_expansion_count() {
+        assert_eq!(
+            route_to_cell_counted(at(0, 0), at(0, 0), open),
+            (Some(vec![]), 0)
+        );
+        let (route, work) = route_to_cell_counted(at(0, 0), at(1, 0), open);
+        assert_eq!(route, Some(vec![CardinalStep::East]));
+        assert!((1..8).contains(&work), "{work}");
+        let (route, work) = route_to_cell_counted(at(0, 0), at(3, 0), open);
+        assert_eq!(route, route_to_cell(at(0, 0), at(3, 0), open));
+        assert!(work < 16, "{work}");
+        let sealed = |cell| (chebyshev(cell, at(50, 0)) > 1).then_some(0);
+        assert_eq!(
+            route_to_cell_counted(at(0, 0), at(50, 0), sealed),
+            (None, PATH_SEARCH_WORK)
+        );
     }
 
     #[test]
