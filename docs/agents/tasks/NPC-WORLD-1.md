@@ -493,3 +493,43 @@ checkpoint under [D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issueco
 The remaining fee/cause producer, current content and eligibility, physical placement,
 admission/death/position owners, actor movement, budgeted scheduler and chat egress
 gates remain open. All original acceptance boxes remain open.
+
+## D1314 — retain verified NPC-LOAD-1 catalogue binding — AUTHORING (2026-10-17)
+
+The owner reopens AUTHORING from draft
+`937c260716f0557dd2c978a61152902e8c12af07` for the bounded shared hunk granted by CP
+[D1314](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232733238).
+The grant covers `node/serve/bundle_npcs.rs` only in the NPC-LOAD-1 lineage: retain the
+already-verified bundle catalogue digest and expose it read-only to the native boot path.
+
+`bind` continues to compare the loaded catalogue's `catalogue_sha256` with the digest
+read from the verified World Bundle. Only the successful `NpcBoot::Place` branch now
+moves that exact bundle digest into the retained boot state. The read-only accessor
+borrows it from that state; absent or skipped boot state returns no digest. Native NPC
+boot uses the accessor to record the bound catalogue digest in its diagnostic event.
+No new filesystem read, digest calculation, revision substitute or alternate hash domain
+is introduced. Production refusal, non-production skipping, NPC admission and placement
+behavior are unchanged.
+
+This is the compiler's NPC catalogue-files digest under NPC-LOAD-1. It is not the
+canonical World Project tree digest and establishes no membership in `ActiveGeneration`.
+D1314 explicitly reserves that membership for a separate CP slot, so
+`content/npc_runtime_pin.rs` remains blocked and is not introduced by this change.
+The activation caller remains ordered after #2173 under D1159. Scheduler, chat egress,
+travel/admission callers and the fee producer still require their respective allocations.
+
+The four existing ordinary `node::serve::bundle_npcs::tests` cases retain their native
+bundle writer/reader, binding and Channel placement paths. Added assertions verify the
+exact retained digest before and after successful placement; a bound catalogue that
+fails NPC admission still carries only catalogue-binding evidence. Missing or mismatched
+catalogues, an absent boot and the empty-frame/no-catalogue skip expose no digest. The
+existing damaged-bundle refusal and all existing placement assertions remain intact.
+
+**Status remains NOT_FULLY_QUALIFIED.** This material source-retention successor needs
+its own frozen head and fresh native validation. At author handoff Cargo compilation,
+strict all-target Clippy and execution of these four boot cases are **NOT_RUN**, as are
+the successor's hold5 + voice7 and canonical PostgreSQL travel1 checks. Prior CI and
+native results retain their original exact source bindings. The lead coordinates the
+new explicitly reviewed native/PG recipe required by CP; no historical runner, PG mapping
+or old-head test result qualifies this successor. All original acceptance boxes remain
+open; no production NPC runtime activation or completed NPC-WORLD delivery is claimed.
