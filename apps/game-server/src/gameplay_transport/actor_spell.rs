@@ -130,6 +130,9 @@ pub(crate) struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_map_initialization_pass_us: u64,
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
+    /// D1239: one in-memory replay/admission owner per Channel. The native think caller
+    /// completes child registration or rollback before leaving this owner turn.
+    pub(in crate::gameplay_transport) native_summons: crate::monster_summon::NativeSummonOwner,
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
@@ -263,6 +266,7 @@ impl Default for ChannelSpellStates {
             next_map_initialization_pass_us: Default::default(),
             next_party_deadline_pass_us: Default::default(),
             monster_melee: Default::default(),
+            native_summons: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),

@@ -65,7 +65,7 @@ impl NativeSummonSpec {
     }
 }
 // Immutable source specs only; live facts and native admission remain independently owned.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct NativeSummonCatalog {
     parent: Ref,
     entries: Vec<Result<NativeSummonSpec, SummonError>>,
@@ -77,6 +77,63 @@ fn member(draft: &ProjectV2Draft, r: &Ref) -> bool {
  &&draft.state.source_identity_bindings.iter().any(|b|b.target==*r&&b.disposition==ProjectV2SourceIdentityDisposition::Exact&&draft.state.sources.iter().any(|s|s.key==b.source_key&&s.revision==b.source_revision))
 }
 impl NativeSummonCatalog {
+    /// Decode already resolved these entries from the actual pinned profile closure.
+    /// Channel identity, current parent/target and admission are checked only by execute.
+    pub(crate) fn from_source_closure(
+        parent: &Ref,
+        entries: &[crate::content::native_gameplay::QualifiedSummonEntry],
+    ) -> Result<Self, SummonError> {
+        let Some(first) = entries.first() else {
+            return Err(SummonError::InvalidSource);
+        };
+        let content = first.content();
+        if parent.family != ProjectV2Family::Creature || entries.len() > 8 {
+            return Err(SummonError::InvalidSource);
+        }
+        let mut specs = Vec::new();
+        let mut targets = Vec::new();
+        for (index, entry) in entries.iter().enumerate() {
+            if entry.parent() != parent
+                || entry.child().family != ProjectV2Family::Creature
+                || entry.index() != index
+                || entry.content() != content
+                || entry.maximum() != first.maximum()
+                || entry.maximum() == 0
+                || entry.maximum() > 16
+                || entry.count() == 0
+                || entry.count() > 16
+                || entry.health() <= 0
+            {
+                return Err(SummonError::InvalidSource);
+            }
+            specs.push(Ok(NativeSummonSpec {
+                parent: parent.clone(),
+                child: entry.child().clone(),
+                health: entry.health(),
+                index,
+                total: entry.maximum(),
+                count: entry.count(),
+                content,
+                admission: NativeSummonAdmissionSpec::qualified(
+                    &parent.key,
+                    &entry.child().key,
+                    entry.health(),
+                    index,
+                    entry.maximum(),
+                    entry.count(),
+                    content,
+                )
+                .map_err(SummonError::Carrier)?,
+            }));
+            targets.push(entry.child().clone());
+        }
+        Ok(Self {
+            parent: parent.clone(),
+            entries: specs,
+            targets,
+            content,
+        })
+    }
     pub(crate) fn from_project(
         runtime: &ChannelRuntimeV1,
         parent: &Ref,
@@ -227,12 +284,13 @@ pub(crate) struct SummonReceipt {
     pub(crate) newly_created: bool,
     pub(crate) position: MovementLocalPosition,
 }
+#[derive(Debug)]
 struct SummonMemo {
     sequence: u64,
     binding: [u8; 32],
     result: Result<SummonReceipt, SummonError>,
 }
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(crate) struct NativeSummonOwner {
     /// By parent and summon entry (Codex 4243039220).
     memos: ActorMemoTable<usize, SummonMemo>,
@@ -247,6 +305,48 @@ impl NativeSummonOwner {
         proposal: &ProfileSummonProposal,
         policy: &mut dyn SummonLocationPolicy,
     ) -> Result<SummonReceipt, SummonError> {
+        self.execute_registered(
+            runtime,
+            Some(fence),
+            stamp,
+            catalog,
+            proposal,
+            policy,
+            |_, _| Ok(()),
+        )
+    }
+
+    /// One synchronous Channel transaction: physical admission, the caller's atomic native
+    /// registration, or exact-child rollback. Replay returns the final result without running
+    /// registration again. The current fence comes from the runtime's installed owner cycle.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn execute_current_owner(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        catalog: &NativeSummonCatalog,
+        proposal: &ProfileSummonProposal,
+        policy: &mut dyn SummonLocationPolicy,
+        register: impl FnOnce(&mut ChannelRuntimeV1, ExactActorRef) -> Result<(), CarrierError>,
+    ) -> Result<SummonReceipt, SummonError> {
+        self.execute_registered(runtime, None, stamp, catalog, proposal, policy, register)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn execute_registered(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        external_fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        catalog: &NativeSummonCatalog,
+        proposal: &ProfileSummonProposal,
+        policy: &mut dyn SummonLocationPolicy,
+        register: impl FnOnce(&mut ChannelRuntimeV1, ExactActorRef) -> Result<(), CarrierError>,
+    ) -> Result<SummonReceipt, SummonError> {
+        let fence = match external_fence {
+            Some(fence) => fence,
+            None => runtime.owner_fence().map_err(|_| SummonError::StaleOwner)?,
+        };
         let b = runtime.binding();
         if !fence.is_current_for_scope(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
@@ -314,7 +414,27 @@ impl NativeSummonOwner {
                 return Err(SummonError::Capacity);
             }
         }
-        let result = self.place(runtime, fence, stamp, source, proposal, policy);
+        let result = self
+            .place(runtime, external_fence, stamp, source, proposal, policy)
+            .and_then(|receipt| {
+                if let Err(error) = register(runtime, receipt.child) {
+                    match external_fence {
+                        Some(fence) => runtime.retire_native_summon_registration_failure(
+                            fence,
+                            stamp,
+                            receipt.child,
+                        ),
+                        None => runtime
+                            .retire_native_summon_registration_failure_from_current_owner(
+                                stamp,
+                                receipt.child,
+                            ),
+                    }
+                    .map_err(SummonError::Carrier)?;
+                    return Err(SummonError::Carrier(error));
+                }
+                Ok(receipt)
+            });
         let memo = SummonMemo {
             sequence: proposal.occurrence.sequence,
             binding,
@@ -326,7 +446,7 @@ impl NativeSummonOwner {
     fn place(
         &self,
         runtime: &mut ChannelRuntimeV1,
-        fence: &ScopeRuntimeFence,
+        external_fence: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
         source: &NativeSummonSpec,
         proposal: &ProfileSummonProposal,
@@ -395,15 +515,22 @@ impl NativeSummonOwner {
         )
         .map_err(|_| SummonError::InvalidSource)?;
         let position = free[(draw % (free.len() as u64)) as usize];
-        let child = runtime
-            .admit_native_summon(
+        let child = match external_fence {
+            Some(fence) => runtime.admit_native_summon(
                 fence,
                 stamp,
                 proposal.occurrence.actor,
                 &source.admission,
                 position,
-            )
-            .map_err(SummonError::Carrier)?;
+            ),
+            None => runtime.admit_native_summon_from_current_owner(
+                stamp,
+                proposal.occurrence.actor,
+                &source.admission,
+                position,
+            ),
+        }
+        .map_err(SummonError::Carrier)?;
         Ok(SummonReceipt {
             child,
             newly_created: true,
@@ -624,6 +751,95 @@ mod tests {
             .expect("monster_summon.rs:tests:590: qualified fixture operation must succeed");
         f.stamp(o)
     }
+
+    #[test]
+    fn current_owner_summon_rejects_retired_stamp_before_admission_registration_or_memo() {
+        let (mut runtime, _, parent, _, catalog, proposal) = setup();
+        let stamp = runtime
+            .issue_owner_work()
+            .expect("actual current owner stamp");
+        assert_eq!(runtime.native_summon_count(parent, None), 0);
+        runtime.retire_owner_cycle();
+        let mut owner = NativeSummonOwner::default();
+        let mut registrations = 0;
+        let result = owner.execute_current_owner(
+            &mut runtime,
+            stamp,
+            &catalog,
+            &proposal,
+            &mut Map {
+                known: true,
+                allow: true,
+            },
+            |_, _| {
+                registrations += 1;
+                Ok(())
+            },
+        );
+        assert_eq!(result, Err(SummonError::StaleOwner));
+        assert_eq!(registrations, 0);
+        assert_eq!(owner.memos.len(), 0);
+    }
+
+    #[test]
+    fn current_owner_summon_physical_boundaries_refuse_foreign_stamp_without_touching_live_child() {
+        let (mut runtime, _, parent, _, catalog, _) = setup();
+        let current = runtime
+            .issue_owner_work()
+            .expect("actual current owner stamp");
+        let source = catalog.entries[0]
+            .as_ref()
+            .expect("qualified physical source");
+        let at = MovementLocalPosition {
+            x: 101,
+            y: 100,
+            floor: 7,
+        };
+        let child = runtime
+            .admit_native_summon_from_current_owner(current, parent, &source.admission, at)
+            .expect("current physical child");
+        let mut foreign_world = [0; 16];
+        foreign_world[6] = 0x70;
+        foreign_world[8] = 0x80;
+        foreign_world[15] = 42;
+        let (mut other, _, _, _, _, _) =
+            setup_world(WorldId::decode(&foreign_world).expect("independent foreign World"));
+        let foreign = other
+            .issue_owner_work()
+            .expect("other actual current owner stamp");
+        assert_eq!(
+            runtime.admit_native_summon_from_current_owner(
+                foreign,
+                parent,
+                &source.admission,
+                MovementLocalPosition {
+                    x: 99,
+                    y: 100,
+                    floor: 7
+                },
+            ),
+            Err(CarrierError::WrongScope),
+        );
+        assert_eq!(
+            runtime.retire_native_summon_registration_failure_from_current_owner(foreign, child),
+            Err(CarrierError::WrongScope),
+        );
+        assert_eq!(runtime.native_summon_count(parent, None), 1);
+        assert_eq!(runtime.native_summon_role(child), Ok(Some(parent)));
+        assert_eq!(
+            runtime
+                .read_actor_position(child)
+                .expect("child still live")
+                .position(),
+            at
+        );
+        runtime
+            .retire_native_summon_registration_failure_from_current_owner(current, child)
+            .expect("same actual owner can retire its child");
+        assert_eq!(runtime.native_summon_count(parent, None), 0);
+        assert!(runtime.read_actor_position(child).is_err());
+    }
+
     /// `CREATUREAI0-RL-04` and `CREATUREAI0-RL-08` (Codex 4242954089): more than 64 monsters
     /// summon in one Channel. The D57 envelope refused the summon once 64 creatures were alive,
     /// and the retirement once 65 children were dead together.

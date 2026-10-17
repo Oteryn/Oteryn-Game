@@ -628,6 +628,15 @@ pub async fn serve_gameplay(
             None => std::future::pending().await,
         }
     });
+    // LOOP-MONSTER-1: the session-free respawn wake loop on the SAME clock origin as the
+    // session-driven pass (`drain_monster_melee`), under the Channel's own current-owner fence.
+    // It ends on shutdown (or a retired owner), so it never holds the seam's end.
+    let respawn_wake = authority.respawn_wake();
+    let mut respawns = pin!(crate::monster_owner_cycle::run_world_respawns(
+        owners.runtime,
+        &respawn_wake,
+        shutdown
+    ));
     // CHAT-2B: the relay listener; it parks once shutdown is requested.
     let mut relay = pin!(async {
         match authority.chat.relay() {
@@ -638,6 +647,7 @@ pub async fn serve_gameplay(
     let mut serving_done = false;
     let mut cycles_done = false;
     let mut flush_done = false;
+    let mut respawns_done = false;
     poll_fn(|context| {
         if !flush_done && flush.as_mut().poll(context).is_ready() {
             flush_done = true;
@@ -652,7 +662,10 @@ pub async fn serve_gameplay(
         if !cycles_done && cycles.as_mut().poll(context).is_ready() {
             cycles_done = true;
         }
-        if serving_done && cycles_done {
+        if !respawns_done && respawns.as_mut().poll(context).is_ready() {
+            respawns_done = true;
+        }
+        if serving_done && cycles_done && respawns_done {
             Poll::Ready(())
         } else {
             Poll::Pending

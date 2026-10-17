@@ -645,6 +645,46 @@ pub(crate) fn creature_step_duration(
     )
 }
 
+/// CREATURE-MOVE-1 §1.3: ephemeral near-target state, reset on admission by `Default`.
+/// The existing AI owner must retain this alongside its creature state and evaluate it once per
+/// chase/keep-distance evaluation. Steps only read it; no timer or alternate owner lives here.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct CreatureNearTarget {
+    evaluations: u8,
+}
+
+impl CreatureNearTarget {
+    pub(crate) fn evaluate(
+        &mut self,
+        at: crate::foundation::MovementLocalPosition,
+        target: crate::foundation::MovementLocalPosition,
+    ) {
+        let nearby = at.floor == target.floor
+            && at.x.abs_diff(target.x) <= 1
+            && at.y.abs_diff(target.y) <= 1;
+        self.evaluations = if nearby {
+            self.evaluations.saturating_add(1).min(2)
+        } else {
+            self.evaluations.saturating_sub(1)
+        };
+    }
+
+    /// Apply the near ×2 after the canonical table/ground duration. Flee and summons retain
+    /// that duration. Overflow refuses pacing before any Movement commit.
+    pub(crate) fn step_duration(
+        &self,
+        canonical: Duration,
+        fleeing: bool,
+        is_summon: bool,
+    ) -> Option<Duration> {
+        canonical.checked_mul(if self.evaluations >= 1 && !fleeing && !is_summon {
+            2
+        } else {
+            1
+        })
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::unwrap_used)]
 mod creature_native_speed_tests {
@@ -658,6 +698,88 @@ mod creature_native_speed_tests {
         actor: ExactActorRef,
         base: u16,
         pin: [u8; 32],
+    }
+    #[test]
+    fn creature_move_near_counter_saturates_and_decays_per_target_evaluation() {
+        let at = MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        };
+        let near = MovementLocalPosition { x: 1, y: -1, ..at };
+        let far = MovementLocalPosition { x: 2, ..at };
+        let mut counter = CreatureNearTarget::default();
+        let duration = Duration::from_millis(900);
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration)
+        );
+        for _ in 0..3 {
+            counter.evaluate(at, near);
+        }
+        assert_eq!(counter.evaluations, 2);
+        counter.evaluate(at, far);
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration * 2)
+        );
+        counter.evaluate(at, far);
+        counter.evaluate(at, far);
+        assert_eq!(counter.evaluations, 0);
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration)
+        );
+    }
+
+    #[test]
+    fn creature_move_near_duration_excludes_flee_and_summons_and_checks_overflow() {
+        let at = MovementLocalPosition {
+            x: i32::MIN,
+            y: i32::MAX,
+            floor: 7,
+        };
+        let mut counter = CreatureNearTarget::default();
+        counter.evaluate(at, at);
+        let duration = Duration::from_millis(900);
+        assert_eq!(counter.step_duration(duration, true, false), Some(duration));
+        assert_eq!(counter.step_duration(duration, false, true), Some(duration));
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration * 2)
+        );
+        assert_eq!(counter.step_duration(Duration::MAX, false, false), None);
+        counter.evaluate(
+            at,
+            MovementLocalPosition {
+                x: i32::MAX,
+                y: i32::MIN,
+                ..at
+            },
+        );
+        assert_eq!(counter.evaluations, 0);
+        counter.evaluate(at, MovementLocalPosition { floor: 8, ..at });
+        assert_eq!(counter.evaluations, 0);
+    }
+
+    #[test]
+    fn creature_move_rat_67_uses_the_canonical_beat_before_near_doubling() {
+        let duration = StepSpeedTable::embedded()
+            .unwrap()
+            .step_duration(67, 150)
+            .unwrap();
+        assert_eq!(duration, Duration::from_millis(900));
+        let at = MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        };
+        let mut counter = CreatureNearTarget::default();
+        counter.evaluate(at, MovementLocalPosition { x: 1, ..at });
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(Duration::from_millis(1_800))
+        );
     }
     impl CurrentCreatureSpeedReader for Native {
         fn current_native_base_speed(&self, r: &ChannelRuntimeV1, a: ExactActorRef) -> Option<u16> {
@@ -737,6 +859,12 @@ mod creature_native_speed_tests {
         assert!(r.commit_actor_condition(&plan, at(100)).unwrap());
         assert_eq!(runtime_creature_speed(&r, actor, &src, at(99)), None);
         assert_eq!(runtime_creature_speed(&r, actor, &src, at(101)), Some(330));
+        let immobile = Native { base: 0, ..src };
+        assert_eq!(
+            creature_step_duration(&r, actor, &immobile, &EngineeringGroundSpeed, onto, at(101)),
+            None,
+            "a SPEED condition cannot make a source-immobile creature walk"
+        );
         assert_eq!(
             creature_step_duration(&r, actor, &src, &EngineeringGroundSpeed, onto, at(101)),
             Some(Duration::from_millis(250))
@@ -825,6 +953,36 @@ pub(crate) struct NativeCreatureSpeed {
     server: [u8; 32],
 }
 impl NativeCreatureSpeed {
+    /// The live native caller already holds the loader-decoded selected Creature profile.
+    /// Reuse that actual membership and the installed exact policy; no source core record is
+    /// reconstructed from an artifact digest to use the older detached-closure adapter.
+    pub(crate) fn from_current_native(
+        runtime: &ChannelRuntimeV1,
+        content: &crate::content::native_gameplay::NativeGameplayState,
+        actor: ExactActorRef,
+    ) -> Option<Self> {
+        let installed = runtime.companion_snapshot(actor).ok()?;
+        let record = content.creature_profiles().records.iter().find(|record| {
+            record.profile.target.key == installed.state.policy.definition_key
+                && record.profile.target.revision == installed.state.policy.definition_revision
+        })?;
+        if !content.qualifies_current_creature_profile(
+            runtime.content_pin().server_artifact_digest(),
+            &record.profile,
+        ) {
+            return None;
+        }
+        let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data
+        else {
+            return None;
+        };
+        Some(Self {
+            creature: record.profile.target.clone(),
+            base: u16::try_from(profile.speed?).ok()?,
+            server: content.source_digest(),
+        })
+    }
+
     pub(crate) fn from_native(
         runtime: &ChannelRuntimeV1,
         creature: &crate::content::ProjectV2DefinitionRef,
@@ -872,6 +1030,12 @@ impl CurrentCreatureSpeedReader for NativeCreatureSpeed {
         {
             return None;
         }
+        let installed = runtime.companion_snapshot(actor).ok()?;
+        if installed.state.policy.definition_key != self.creature.key
+            || installed.state.policy.definition_revision != self.creature.revision
+        {
+            return None;
+        }
         runtime.read_actor_position(actor).ok()?;
         Some(self.base)
     }
@@ -879,6 +1043,7 @@ impl CurrentCreatureSpeedReader for NativeCreatureSpeed {
 
 /// Per-exact-actor cadence state; no actor census, condition store or Movement authority.
 /// Caller retains this alongside the existing native actor owner and supplies current work.
+#[derive(Debug)]
 pub(crate) struct CreatureMovementCadence {
     actor: ExactActorRef,
     content: [u8; 32],
@@ -895,6 +1060,113 @@ pub(crate) enum CreatureCadenceError {
     Movement(crate::movement::MovementError),
 }
 impl CreatureMovementCadence {
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+    pub(crate) const fn next_due(&self) -> Option<SemanticTimeMicros> {
+        self.pacer.next_due()
+    }
+
+    /// The existing Channel's current owner executes one already selected, current Map step.
+    /// Timing is shared with the ordinary adapter; intrinsic summons keep the physical
+    /// removal-aware sibling. Only a moved outcome records the same per-actor pacer.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn step_from_current_owner(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: &dyn CurrentCreatureSpeedReader,
+        ground: &dyn GroundSpeedSource,
+        now: SemanticTimeMicros,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+        direction: crate::movement::CardinalStep,
+        near: &CreatureNearTarget,
+        fleeing: bool,
+        current_tile_admits: impl Fn(
+            &ChannelRuntimeV1,
+            crate::foundation::MovementPositionSnapshot,
+            crate::foundation::MovementLocalPosition,
+        ) -> Option<bool>,
+    ) -> Result<Option<crate::foundation::NativeSummonMovementOutcome>, CreatureCadenceError> {
+        use CreatureCadenceError as E;
+        let owner = runtime.owner_fence().map_err(E::Carrier)?;
+        if !owner.accepts_stamp(stamp) {
+            return Err(E::StaleOwner);
+        }
+        if self.content != runtime.content_pin().server_artifact_digest()
+            || !runtime.contains_live_creature(self.actor)
+        {
+            return Err(E::StaleActor);
+        }
+        let before = runtime
+            .read_actor_position(self.actor)
+            .map_err(E::Carrier)?;
+        if scope.world_id != before.world_id() || scope.generation_digest != self.content {
+            return Err(E::MissingMap);
+        }
+        let (dx, dy) = crate::movement::path_search::delta(direction);
+        let next = crate::foundation::MovementLocalPosition {
+            x: before.position().x.checked_add(dx).ok_or(E::MissingMap)?,
+            y: before.position().y.checked_add(dy).ok_or(E::MissingMap)?,
+            floor: before.position().floor,
+        };
+        let onto = LogicalCell {
+            x: next.x,
+            y: next.y,
+            z: i32::from(next.floor),
+        };
+        let is_summon = runtime
+            .native_summon_role(self.actor)
+            .map_err(E::Carrier)?
+            .is_some();
+        let duration = near
+            .step_duration(
+                creature_step_duration(runtime, self.actor, source, ground, onto, now)
+                    .ok_or(E::MissingSpeed)?,
+                fleeing,
+                is_summon,
+            )
+            .ok_or(E::ClockOverflow)?;
+        if self.pacer.wait_until(now).is_some() {
+            return Ok(None);
+        }
+        self.pacer
+            .prepare_moved_deadline(now, duration)
+            .ok_or(E::ClockOverflow)?;
+        if current_tile_admits(runtime, before, next) != Some(true)
+            || !runtime.native_summon_cell_free(next)
+        {
+            return Err(E::MissingMap);
+        }
+        let outcome = if is_summon {
+            runtime
+                .commit_native_summon_cardinal_from_current_owner(stamp, self.actor, before, next)
+                .map_err(E::Carrier)?
+        } else {
+            let selection = crate::movement::MovementEngineeringSelection {
+                owner_context: before.context(),
+                content_scope: scope,
+            };
+            let after = crate::movement::step_current_native_creature(
+                runtime,
+                stamp,
+                self.actor,
+                before,
+                &selection,
+                direction,
+                current_tile_admits,
+            )
+            .map_err(E::Movement)?;
+            crate::foundation::NativeSummonMovementOutcome::Moved(after)
+        };
+        if matches!(
+            outcome,
+            crate::foundation::NativeSummonMovementOutcome::Moved(_)
+        ) {
+            self.pacer.record(now, Some(duration));
+        }
+        Ok(Some(outcome))
+    }
     pub(crate) fn bind(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> Option<Self> {
         if !runtime.contains_live_creature(actor) {
             return None;

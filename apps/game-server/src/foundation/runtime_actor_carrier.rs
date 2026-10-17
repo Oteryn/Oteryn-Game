@@ -2259,6 +2259,45 @@ impl ChannelRuntimeV1 {
             .current_owner_movement_position(&self.continuity)
     }
 
+    /// The Movement owner's source-home leash entry for a live ordinary creature. It checks
+    /// the exact pinned snapshot and occupancy, then uses the existing position commit.
+    /// Intrinsic summons and players cannot use this relocation entry.
+    pub(crate) fn relocate_creature_from_current_owner(
+        &mut self,
+        stamp: super::RuntimeWorkStamp,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        destination: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        if !self.owner_fence()?.accepts_stamp(stamp) {
+            return Err(CarrierError::WrongScope);
+        }
+        if !self.contains_live_creature(actor) || self.native_summon_role(actor)?.is_some() {
+            return Err(CarrierError::NotCreature);
+        }
+        if expected.0.actor_ref != actor.0
+            || self.read_actor_position(actor)? != expected
+            || expected.context() != self.pinned_movement_context()
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        if self.position_occupied_by_other(actor, destination)? {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        self.carrier
+            .compare_commit_position(
+                &self.continuity,
+                expected.0,
+                expected.0.version.context,
+                LocalPosition {
+                    x: destination.x,
+                    y: destination.y,
+                    floor: destination.floor,
+                },
+            )
+            .map(MovementPositionSnapshot)
+    }
+
     /// The Movement owner context of this runtime's fixed Content pin; a step is eligible only
     /// for a position initialized under exactly this context.
     pub(crate) fn pinned_movement_context(&self) -> MovementPositionContext {
@@ -11570,7 +11609,31 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
-        self.retire_native_summons(current, stamp)?;
+        self.admit_native_summon_checked(parent, spec, at)
+    }
+
+    /// The installed Channel owner admits under its actual non-clonable cycle. The fence
+    /// borrow ends before the shared mutation body borrows the runtime mutably.
+    pub(crate) fn admit_native_summon_from_current_owner(
+        &mut self,
+        stamp: super::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeSummonAdmissionSpec,
+        at: MovementLocalPosition,
+    ) -> Result<ExactActorRef, CarrierError> {
+        if !self.owner_fence()?.accepts_stamp(stamp) {
+            return Err(CarrierError::WrongScope);
+        }
+        self.admit_native_summon_checked(parent, spec, at)
+    }
+
+    fn admit_native_summon_checked(
+        &mut self,
+        parent: ExactActorRef,
+        spec: &NativeSummonAdmissionSpec,
+        at: MovementLocalPosition,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.retire_native_summons_checked()?;
         if spec.content() != self.content.server_artifact_digest
             || !self.matches_live_creature_identity(parent, spec.parent_key().as_bytes())
             || self.native_summon_master(parent).is_some()
@@ -11967,6 +12030,10 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
+        self.retire_native_summons_checked()
+    }
+
+    fn retire_native_summons_checked(&mut self) -> Result<usize, CarrierError> {
         // A bounded pass (`SPAWNCEIL-RL-02`, Codex 4243039217): at most 256 links from where the
         // previous call stopped, wrapping, so any number of dead children is retired over later
         // calls without one call costing every link. It never refuses: the old fixed array of 64
@@ -12014,6 +12081,25 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
+        self.retire_native_summon_registration_failure_checked(actor)
+    }
+
+    /// Roll back an exact child under this actual current owner turn.
+    pub(crate) fn retire_native_summon_registration_failure_from_current_owner(
+        &mut self,
+        stamp: super::RuntimeWorkStamp,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        if !self.owner_fence()?.accepts_stamp(stamp) {
+            return Err(CarrierError::WrongScope);
+        }
+        self.retire_native_summon_registration_failure_checked(actor)
+    }
+
+    fn retire_native_summon_registration_failure_checked(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
         if self.native_summon_role(actor)?.is_none() {
             return Err(CarrierError::NotCreature);
         }
@@ -12119,6 +12205,28 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
+        self.commit_native_summon_cardinal_checked(actor, expected, next)
+    }
+
+    pub(crate) fn commit_native_summon_cardinal_from_current_owner(
+        &mut self,
+        stamp: super::RuntimeWorkStamp,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<NativeSummonMovementOutcome, CarrierError> {
+        if !self.owner_fence()?.accepts_stamp(stamp) {
+            return Err(CarrierError::WrongScope);
+        }
+        self.commit_native_summon_cardinal_checked(actor, expected, next)
+    }
+
+    fn commit_native_summon_cardinal_checked(
+        &mut self,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<NativeSummonMovementOutcome, CarrierError> {
         let parent = self
             .native_summon_role(actor)?
             .ok_or(CarrierError::NotCreature)?;
