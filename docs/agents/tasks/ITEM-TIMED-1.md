@@ -52,6 +52,9 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/durability/item_timed_repair.rs` (new)
 - `apps/game-server/tests/item_timed_postgres.rs` (new; planning tests only here)
 - `docs/agents/tasks/ITEM-TIMED-1.md` (packet/notes)
+- `apps/game-server/Cargo.toml` (target registration; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
+- `apps/game-server/tests/durability_postgres.rs` (includes the support cases in a CI-run target; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
+- `apps/game-server/tests/support/item_timed_postgres_cases.rs` (Postgres cases moved here; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
 
 This narrower root allocation supersedes the skeleton family's broad suggestions.
 No module registration is permitted in this local preparation.
