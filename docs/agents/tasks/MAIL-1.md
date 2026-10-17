@@ -606,3 +606,60 @@ Independent bounded source review corrected the callback's owned/static
 lifetime contract and isolated the caught-refusal test. It did not compile or
 execute the source. Publication, protected integration, exact-source native
 qualification, ready and merge remain separately controlled by the coordinator.
+
+## CI routing repair after D1318 — 2026-10-17
+
+This repair is bound to published head
+`941a94c1a7d04cf9a779d846d1e9d5d2973c0c06`. It supersedes the earlier
+missing-admin-as-error statement and the earlier six-wrapper
+`DATABASE_URL` prerequisite. The source writer, SQL candidate, test bodies,
+assertions and expected inventory remain unchanged.
+
+Actual exact-head evidence for **941a94c1**, distinct from this successor:
+
+- Strict Rust job `117383203472` failed on ten `expect_used` diagnostics in
+  the pure test leaf and duplicate loading of the canonical bestiary harness.
+- Integration-rest job `117382981285`, without canonical PostgreSQL routing,
+  finished **1496 passed / 14 failed / 0 ignored**. All MAIL failures were the
+  two inconsistent environment prerequisites, before their PostgreSQL bodies.
+- PostgreSQL job `117382981119` checked out the exact 941a94c1 head, installed
+  Rust **1.95.0**, and used the pinned PostgreSQL **17.6** service.
+  `character_authority_postgres` finished **1504 passed / 6 failed / 0 ignored**.
+  **All eight new native Inbox sink/composition cases executed and passed.**
+  Its only failures were the six historical MAIL wrappers requiring the
+  absent `DATABASE_URL`, while the canonical admin URL was configured.
+  This is actual sink/composition evidence with the disclosed upstream fixture;
+  it does not qualify the unimplemented full fresh-mint/DAILY bridge.
+
+The pure test leaf now has the existing canonical test-local
+`clippy::expect_used` allowance. The new native leaf imports
+`crate::bestiary_postgres_harness` instead of loading that file again.
+The six historical wrappers use the canonical root's existing `Database`,
+which validates the routed admin endpoint, enforces `server_version_num=170006`,
+applies the full migration set and cleans up each private database.
+Their unchanged native exercises receive that migrated pool.
+
+All fourteen cases use the canonical `configured_admin()` routing:
+an absent `OTERYN_TEST_POSTGRES_ADMIN_URL` emits **PRE-ROUTING / NONCANONICAL**
+and returns without a PostgreSQL qualification claim. A present but unsafe URL,
+connection failure, wrong PostgreSQL version or failing migration is an error.
+With the configured PostgreSQL 17.6 service, all fourteen bodies execute with
+their existing assertions. No test was ignored or removed; no new harness,
+alternate endpoint, shared root edit or production grant was introduced.
+
+**Successor Cargo, Clippy, unit and native PostgreSQL: NOT_RUN.**
+Rustfmt 1.94 parsing/check and exact-parent patch/whitespace checks are the
+local preparation gates; predecessor results do not qualify the successor.
+The coordinator runs the exact successor's strict CI and the configured
+canonical filter, retaining its inventory and complete output:
+
+```bash
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --list
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --test-threads=1 --nocapture
+```
+
+Expected inventory is **14**: six unchanged recipient/text exercises and eight
+Inbox sink/composition cases. Without routed PostgreSQL, the same filter is
+only noncanonical regression execution. Status remains **NOT_FULLY_QUALIFIED**;
+the actual fresh-mint receipt/audit bridge, protected activation and source-owner
+composition remain unfinished work, with no ready or merge claim.

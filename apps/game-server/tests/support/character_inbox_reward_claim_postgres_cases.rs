@@ -8,10 +8,7 @@
 //! transaction runner execute normally, including runtime-role grants. These
 //! cases qualify the Inbox sink and composition, not production DAILY/CHEST mint.
 
-#[allow(dead_code)]
-#[path = "bestiary_postgres_harness.rs"]
-mod harness;
-
+use crate::bestiary_postgres_harness as harness;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_inbox::{
     CharacterInboxDeliveryError, REWARD_CLAIM_INBOX_SCHEMA_CANDIDATE, RewardClaimInboxError,
@@ -41,10 +38,11 @@ fn plan(command_id: u64) -> TestResult<RewardClaimInboxPlan> {
 }
 
 fn run(tag: &'static str, case: impl AsyncFnOnce(&Harness) -> TestResult) -> TestResult {
-    // Unlike the historical helper, qualification cannot succeed by returning
-    // early when routing is missing. Never print the URL or its credentials.
-    let admin = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")
-        .map_err(|_| "native Inbox qualification requires OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+    // Match the canonical target's PRE-ROUTING / NONCANONICAL path. Only a
+    // configured PostgreSQL 17.6 run that executes the body qualifies this seam.
+    let Some(admin) = harness::configured_admin() else {
+        return Ok(());
+    };
     harness::runtime()?.block_on(async move {
         let harness = Harness::create(admin, tag, true).await?;
         let result = async {

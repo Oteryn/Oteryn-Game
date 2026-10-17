@@ -1,3 +1,5 @@
+#![allow(clippy::expect_used)]
+
 use super::*;
 use crate::foundation::{CommandId, GameSessionId};
 
