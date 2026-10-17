@@ -458,7 +458,7 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
 def validate_native_bank_admission(declarations: Any) -> None:
     """One closed native admission; profession and arbitrary source callbacks grant no service."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "fa6edea043748245172dfd2cc70efb859d60d15a6ffe03bc78524cec42fb91ee", "BANK_ADMISSION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "228797d08e37486f5021e1e97090959681de89c9b6d3a9a464825423efdbe204", "BANK_ADMISSION_PACKET_DIGEST")
     packet = json.loads(raw)
     require(packet["schema"] == "OTERYN_NATIVE_BANK_ADMISSION/v1"
             and packet["scope"] == ["oteryn:npc.paulie"], "BANK_ADMISSION_PACKET_SCOPE")

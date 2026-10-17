@@ -551,3 +551,15 @@ protocol field, value-line registry, schema, capability or other shared hunk cha
 New-head canonical PG/CI: NOT_RUN, not a new PASS. Existing native component evidence
 is retained for its tested source/context. D1122 comment6224930201 allows one coherent
 existing-draft checkpoint after fmt/diff; the protocol/resource slot still follows #2163.
+
+### Main merge and Bank stage order (2026-10-17)
+
+Main (cecbfda3) was merged at 5ef65a81, and the migration is renumbered 0114.
+CP chose option A for composing with NPC-CONTENT-2: the Bank admission now runs
+after `npc_presence::apply`, on the presence package
+(`npc-content-2-presence-20261015-r1`), instead of inside the ranged stage. The Bank
+packet's `from_project_revision` and `before_npc` now name that package. Paulie's
+five presence fields come from the tracked post-presence declaration and equal it
+exactly; the packet digest is updated in all three pins. Still open: the derived
+content and every pin measured from it need a cargo-capable `regenerate_content.py`
+run. No regeneration has run, and no new PASS is claimed.

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NATIVE_BANK_ADMISSION/v1",
-  "from_project_revision": "ranged-content-1-20261013-r1",
+  "from_project_revision": "npc-content-2-presence-20261015-r1",
   "project_revision": "npc-bank-1-20261015-r1",
   "scope": [
     "oteryn:npc.paulie"
@@ -47,6 +47,20 @@
     "services": [],
     "fields": [
       {
+        "field_path": "oteryn:source.npc.base_speed",
+        "value": {
+          "type": "Integer",
+          "value": 55
+        }
+      },
+      {
+        "field_path": "oteryn:source.npc.floor_change",
+        "value": {
+          "type": "Boolean",
+          "value": false
+        }
+      },
+      {
         "field_path": "oteryn:source.npc.profession",
         "value": {
           "type": "Text",
@@ -65,6 +79,27 @@
         "value": {
           "type": "Text",
           "value": "banker"
+        }
+      },
+      {
+        "field_path": "oteryn:source.npc.voice_chance_percent",
+        "value": {
+          "type": "Integer",
+          "value": 50
+        }
+      },
+      {
+        "field_path": "oteryn:source.npc.voice_interval_ms",
+        "value": {
+          "type": "Integer",
+          "value": 15000
+        }
+      },
+      {
+        "field_path": "oteryn:source.npc.voice_lines",
+        "value": {
+          "type": "Text",
+          "value": "[{\"text\":\"Don't forget to deposit your money here in the Global Bank before you head out for adventure.\",\"yell\":false}]"
         }
       }
     ]

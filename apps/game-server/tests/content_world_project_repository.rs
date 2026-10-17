@@ -693,7 +693,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         world_project_sha256(bank_packet_bytes),
-        "fa6edea043748245172dfd2cc70efb859d60d15a6ffe03bc78524cec42fb91ee"
+        "228797d08e37486f5021e1e97090959681de89c9b6d3a9a464825423efdbe204"
     );
     let bank_packet: serde_json::Value =
         serde_json::from_slice(bank_packet_bytes).expect("closed source-qualified Bank packet");

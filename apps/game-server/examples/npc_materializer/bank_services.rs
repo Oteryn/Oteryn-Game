@@ -4,10 +4,12 @@ use super::*;
 const PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json"
 );
-const DIGEST: &str = "fa6edea043748245172dfd2cc70efb859d60d15a6ffe03bc78524cec42fb91ee";
+const DIGEST: &str = "228797d08e37486f5021e1e97090959681de89c9b6d3a9a464825423efdbe204";
+/// The NPC presence package (NPC-CONTENT-2) this admission applies on.
+const PRESENCE_REVISION: &str = "npc-content-2-presence-20261015-r1";
 
 pub(super) fn apply(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Error>> {
-    if hex_sha256(PACKET) != DIGEST || draft.core.project_revision != RANGED_PROJECT_REVISION {
+    if hex_sha256(PACKET) != DIGEST || draft.core.project_revision != PRESENCE_REVISION {
         return Err("Bank admission source or predecessor drifted".into());
     }
     let packet: Value = serde_json::from_slice(PACKET)?;
