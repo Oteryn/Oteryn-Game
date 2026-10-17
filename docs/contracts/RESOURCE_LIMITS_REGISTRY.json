@@ -6846,6 +6846,31 @@
       "notes": "NPC-0 \u00a74 command 8 NPC_TRADE_INTENT and \u00a75.5 (NPC_SINGLE_TRADE_COMMIT_V1); NPC trade shape only, the one-item DUR03-RL-01..08 and fee DUR03-RL-*-FEE-BURN rows are unchanged; registered by OTV2-20261013-npc-trade-1. BUY: up to 20 coin BURN lines of the gold fee plan (FeeBurnCause::NpcTrade), up to 2 change MINTs and the item MINT; SELL: one item BURN and up to 3 coin MINTs."
     },
     {
+      "id": "DUR03-RL-03-NPC-TRADE-BUY",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_BANK_FEE0_FEES_FROM_THE_BANK_DECISION_2026-09-30.md",
+      "resource": "Value lines in one DUR-03 NPC BUY trade transaction (the bank part of the price)",
+      "unit": "value lines per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 1
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Checked in the payload gate and before any write; never truncated. 1 when the carried coins are worth less than the BUY price and the rest is debited from the buyer's (Account, World) bank balance (one FEE_DEBIT value line, class BURN, OneItemNpcTradeV1 field 14 bank_debit, an OneItemFeeBankDebitV1); then every coin BURN is whole, there is no change MINT and burned + bank_debit = total. 0 for a coin-only BUY and for every SELL. Admitted only under the (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: a BUY with a bank part carries exactly one value line and is accepted",
+        "0: a coin-only BUY and every SELL carry none",
+        "max+1=2 rejected (INVALID_INPUT); a SELL carrying the value line is rejected (INVALID_INPUT)",
+        "a (1, V1) event carrying the value line is rejected (INVALID_INPUT)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/npc_trade_audit.rs",
+        "apps/game-server/src/durability/npc_trade.rs (in-transaction BUY with its bank part; the one FEE_DEBIT bank entry is written in the same transaction)"
+      ],
+      "notes": "BANK-FEE-0 \u00a74.3 and \u00a75 (NPC BUY) with NPC-0 \u00a75.3; NPC trade shape only: the DUR03-RL-01/02/06/07-NPC-TRADE-BUY rows are unchanged (the bank line adds one participant and 2 work units; the largest bank-part BUY of 20 whole burns, the bank line and the item MINT is 22 participants / 64 work units and fits the measured RL-07 byte rows). Registered by NPC-ECON-1 under the CP takeover grant on #2131."
+    },
+    {
       "id": "DUR03-RL-01-NPC-TRADE-EXCHANGE",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md",
       "resource": "ItemInstances touched by one DUR-03 NPC EXCHANGE transaction (NpcTradeCause side EXCHANGE)",
@@ -11839,6 +11864,208 @@
         "apps/game-server/migrations/0091_public_projections.sql"
       ],
       "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Sized for a store of 1,000,000 Characters plus all their highscores pairs (about 30 s at about 30 us per subject); if a resync exceeds it, re-run one family at a time, and if a single family still exceeds it, that is a blocker for the contract owner, resolved by a contract change and never by editing this deadline in place. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "DUR03-RL-01-REWARD-INBOX",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "Fresh ItemInstances in one existing reward_claim_mint Inbox output plan",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before reservation or value writes and by the registered payload gate. Outputs are never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "20 outputs: source cap/codec and native fresh-mint case",
+        "21 outputs: rejected before reservation/encode"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-RL-02-REWARD-INBOX",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "Permanent Inbox location lines in one reward-claim mint plan",
+      "unit": "location custody lines per logical transaction",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One native placement per exact fresh output in the immutable source order.",
+      "client_visible": false,
+      "boundary_tests": [
+        "20 ordered positions: native same-transaction case",
+        "21st output: rejected before mutation"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-RL-06-REWARD-INBOX-PARTICIPANTS",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "Fresh item participants in one reward-claim Inbox mint",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One participant for each minted item; the complete source owner accounts for any additional source effects.",
+      "client_visible": false,
+      "boundary_tests": [
+        "20 participants accepted by reward_inbox_usage",
+        "21 participants rejected"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-RL-06-REWARD-INBOX-EFFECT-WORK-UNITS",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "Mint bridge effect work: one participant and Inbox placement per output plus one aggregate reward receipt",
+      "unit": "effect work units per logical transaction",
+      "hard_maximum": 41,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 41
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Computed as 2 * output_count + 1 from a checked 1..20 count, before mutation. No source claim or binding effect is silently omitted from its owner's separate accounting.",
+      "client_visible": false,
+      "boundary_tests": [
+        "20 outputs compute exactly 41 bridge effect units",
+        "21 outputs rejected before computing admitted work"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-RL-07-REWARD-INBOX-EVENTS",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "Audit events for one existing reward_claim_mint Inbox plan",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One event under existing operation tag4 and type2; count and ordinal stay 1, no split or additional Cause.",
+      "client_visible": false,
+      "boundary_tests": [
+        "native positive commits one registered event for20 outputs",
+        "source gate requires TransactionEventRef ordinal1/count1"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-RL-07-REWARD-INBOX-PAYLOAD-BYTES",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "One exact OneItemTransactionV1 payload with the additive reward_claim_mint Inbox field5",
+      "unit": "bytes",
+      "hard_maximum": 32768,
+      "configurable_range": {
+        "minimum": 32768,
+        "maximum": 32768
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check encoded_len before allocation and borrowed wire length before decode. Conservative proposed ceiling for20 bounded states and one source header; the ordinary one-item cap stays7936.",
+      "client_visible": false,
+      "boundary_tests": [
+        "maximal admitted20-output fields: prost test records actual encoded bytes and checks <=32768",
+        "32769 borrowed bytes rejected before decoding",
+        "legacy CHEST remains under its original7936-byte gate"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-RL-07-REWARD-INBOX-ENVELOPE-BYTES",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "One normative ANL-01 type2 envelope carrying an Inbox reward mint",
+      "unit": "bytes",
+      "hard_maximum": 34816,
+      "configurable_range": {
+        "minimum": 34816,
+        "maximum": 34816
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check before retaining, decoding or publishing; ANL01's global ceiling remains. Candidate SQL permits the wider stored row only with the exact complete same-transaction Inbox mint receipt. Old9216/25712/27408 proof branches remain byte-identical.",
+      "client_visible": false,
+      "boundary_tests": [
+        "maximal admitted20-output envelope: prost test records actual bytes and checks <=34816",
+        "34817 bytes rejected before decode",
+        "missing native receipt or audit rolls back the real mint"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "DUR03-REWARD-INBOX-MINT-SPEC-BYTES",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md",
+      "resource": "Immutable canonical JSON spec retained before a reward-claim Inbox mint attempt",
+      "unit": "bytes",
+      "hard_maximum": 65536,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 65536
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound source text/definitions and20 outputs before canonical serialization; SQL independently rejects an oversized byte vector before JSON parsing. The complete SHA256 and source/plan binding freeze all admitted mint facts.",
+      "client_visible": false,
+      "boundary_tests": [
+        "20 maximally JSON-escaped definitions: pure source test checks <=65536",
+        "21 outputs and oversized source fields refuse before preparation"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_inbox_reward_claim_mint.rs",
+        "apps/game-server/src/durability/reward_claim_inbox_mint_audit.rs",
+        "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
+      ],
+      "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
     }
   ]
 }

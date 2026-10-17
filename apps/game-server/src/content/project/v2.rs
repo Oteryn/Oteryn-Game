@@ -249,6 +249,9 @@ pub enum ProjectV2Declaration {
     },
     Service {
         identity: ProjectV2Identity,
+        /// An explicitly admitted Bank service, sourced from the pinned banker module.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        bank: bool,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         offers: Vec<ProjectV2ServiceOffer>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]

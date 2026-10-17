@@ -529,7 +529,9 @@ fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
         .expect("source");
     let text = collapse(&raw).replace(' ', "");
     let lock = text
-        .find("letattack=owner.attack.lock().await;")
+        // LOOP-PROGRESS-1: the guard is `mut` because the committed batch also records
+        // shared-experience activity under it; the lock order this pins is unchanged.
+        .find("letmutattack=owner.attack.lock().await;")
         .expect("native takes the attack guard");
     let install = text
         .find("letmutattempt=window.install();")
