@@ -165,6 +165,17 @@ fn selection_source_cannot_disguise_missing_native_bindings_as_completed() -> Te
 }
 
 #[test]
+fn partial_binding_gap_set_refuses() -> TestResult {
+    let mut value = candidates()?.remove(0);
+    value.unresolved.truncate(1);
+    assert_eq!(
+        validate_candidates(&[value]),
+        Err(CandidateError::MissingBindingGaps)
+    );
+    Ok(())
+}
+
+#[test]
 fn typed_selection_compiles_but_w1_without_native_bindings_refuses() -> TestResult {
     let values = candidates()?;
     let selections = compile_selection_source(&values).map_err(|error| format!("{error:?}"))?;

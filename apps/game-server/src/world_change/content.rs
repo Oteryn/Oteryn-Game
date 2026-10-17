@@ -77,6 +77,15 @@ enum BindingGap {
     CompilerBundleBinding,
 }
 
+const ALL_BINDING_GAPS: [BindingGap; 6] = [
+    BindingGap::NativeLayerGeometry,
+    BindingGap::TargetHouseMembership,
+    BindingGap::ValueSourceMultiplicity,
+    BindingGap::SpawnNpcRaidBindings,
+    BindingGap::AnnouncementText,
+    BindingGap::CompilerBundleBinding,
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CandidateError {
     DefinitionCount,
@@ -218,7 +227,8 @@ pub(crate) fn validate_candidates(
             }
         }
         let gaps: BTreeSet<_> = candidate.unresolved.iter().collect();
-        if gaps.is_empty() || gaps.len() != candidate.unresolved.len() {
+        // Resolved bindings are not representable yet, so every gap must remain.
+        if gaps.len() != candidate.unresolved.len() || gaps.len() != ALL_BINDING_GAPS.len() {
             return Err(CandidateError::MissingBindingGaps);
         }
     }
