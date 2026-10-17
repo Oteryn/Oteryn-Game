@@ -865,7 +865,7 @@ pub(super) async fn resume_bank_talk(
     let (fence, reference) = match retained_bank_key(&command) {
         Ok(Some(key)) => key,
         Ok(None) => return None,
-        Err(held) => return Some(held),
+        Err(BankLookupHeld) => return Some(held_bank_outcome()),
     };
     match admission
         .root
@@ -909,6 +909,11 @@ fn held_bank_outcome() -> NpcTalkOutcome {
     }
 }
 
+/// A retained Bank command that cannot be classified with current authority; its outcome is
+/// [`held_bank_outcome`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BankLookupHeld;
+
 /// The current fence and original `CommandRef` under which a retained Bank command of
 /// `command` is looked up. `Ok(None)`: the CommandId is invalid, so no Bank work can have been
 /// retained for it. `Err`: the session has no current item fence (a resume whose post-commit
@@ -921,13 +926,13 @@ fn retained_bank_key(
         crate::durability::item_transfer::CurrentCharacterItemFence,
         crate::foundation::CommandRef,
     )>,
-    NpcTalkOutcome,
+    BankLookupHeld,
 > {
     let Ok(id) = crate::foundation::CommandId::new(command.command_id) else {
         return Ok(None);
     };
     let Some(fence) = command.item_fence else {
-        return Err(held_bank_outcome());
+        return Err(BankLookupHeld);
     };
     Ok(Some((
         fence,
@@ -1136,7 +1141,11 @@ mod bank_context_tests {
             command_id: 7,
             item_fence: None,
         };
-        let held = retained_bank_key(&unfenced).expect_err("held without a current fence");
+        assert_eq!(
+            retained_bank_key(&unfenced).expect_err("held without a current fence"),
+            super::BankLookupHeld
+        );
+        let held = super::held_bank_outcome();
         assert!(held.unknown);
         assert!(!held.inventory_changed);
         assert!(held.conversation.is_none() && held.window.is_none());

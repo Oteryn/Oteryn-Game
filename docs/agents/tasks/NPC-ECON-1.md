@@ -18,7 +18,7 @@ registry: maybe
 owner: "Codex family B lead (direct owner allocation 2026-10-16)"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/npc_trade_command.rs
@@ -47,7 +47,8 @@ external_repositories: []
 
 Recorded implementation disposition at source head
 `222c7dce99ee3fb854b25bcb2140e4fde8e7fc9e`: **owned native/content/pin core
-qualified; shared protocol/resource/protected-PG tail unapplied**. The title, PR
+qualified; shared protocol/resource/protected-PG tail applied by the 2026-10-17
+CP takeover successor below**. The title, PR
 link, acceptance rows and narrow value-path criterion are reconciled with
 [CP gap review 6216355456](https://github.com/Oteryn/Oteryn-Game/pull/2197#issuecomment-6216355456)
 (2026-10-16). Other allocation/base fields are retained historical metadata, not
@@ -81,9 +82,9 @@ Bank NPC service and the NPC trade intent (command 8) wired to the merged writer
 The former BANK_FEE0/NPC0 candidate holds are superseded by merged #2209
 [ACCEPT-BATCH §1](../../architecture/reviews/OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md#1-accepted-briefs-owner-items-1-to-6);
 their primary brief Status lines read ACCEPTED. This acceptance grants no live
-write lease. The shared protocol/resource/Cargo/protected-PG tail remains held
-by HOUSE-RUNTIME-1a (#2163), pending CP release, main composition, a new
-authorized candidate generation and exact-head qualification as recorded below.
+write lease. HOUSE-RUNTIME-1a (#2163) merged; the shared protocol/resource/Cargo/
+protected-PG tail is applied under the CP takeover grant on #2131 (successor
+section at the end).
 
 ## Owned paths (builder edits freely)
 
@@ -560,6 +561,42 @@ after `npc_presence::apply`, on the presence package
 (`npc-content-2-presence-20261015-r1`), instead of inside the ranged stage. The Bank
 packet's `from_project_revision` and `before_npc` now name that package. Paulie's
 five presence fields come from the tracked post-presence declaration and equal it
-exactly; the packet digest is updated in all three pins. Still open: the derived
-content and every pin measured from it need a cargo-capable `regenerate_content.py`
-run. No regeneration has run, and no new PASS is claimed.
+exactly; the packet digest is updated in all three pins. The derived content and
+every pin measured from it were regenerated in 36ada570 (with the Quest
+evidence in 3d907242 and 4f145796).
+
+### CP takeover successor: Codex fixes and common-file tail (2026-10-17)
+
+Status NOT_FULLY_QUALIFIED. Main (ce7bccab) was merged with a merge commit. Under the
+CP takeover grant on #2131 this head fixes the three Codex findings and applies the
+common-file tail:
+
+- A retained Bank lookup without a current item fence is held as unknown and
+  unsequenced, never classified as complete.
+- Backpack coin custody is resolved only for deposit and withdraw.
+- `OneItemNpcTradeV1.bank_debit = 14` is registered in the proto and in
+  GAME_EVENT_FOUNDATION_REGISTRY.json. Coins are conserved as `burned + bank_debit = total`.
+- The tail also adds the resource row `DUR03-RL-03-NPC-TRADE-BUY`, the
+  `npc_econ_bank_postgres` `test = false` Cargo entry, and the service-model count
+  pin of 381, which counts Paulie's Bank service.
+
+Local evidence on Molehill-PC (shared PG 17.6 through the unchanged `in-pg-netns.sh`):
+
+| Check | Result |
+|---|---|
+| `cargo fmt --check` | pass |
+| `clippy +1.95.0 --all-targets -D warnings` | pass |
+| duplicate-test guard | pass |
+| architecture check | pass |
+| `cargo test -p oteryn-game-server` | 10,317 passed, 0 failed |
+| `npc_econ_bank` + `npc_trade` PG cases | 11 of 11 passed |
+
+The `dur03_native_one_item_audit` example has one failure, its forbidden-term check
+on the word "candidate". That failure exists on main already: the word is in the
+#2163 `house_transfer = 11` comment.
+
+The quest-authoring discovery run took 380 s locally: 984 tests, 8 skipped, and one
+error, a donor C++ build that this host's toolchain cannot compile. CI job
+117410514636 was cancelled at the job's 30-minute limit. Other PRs that same day were
+cancelled the same way, so this PR did not cause it. No test was skipped and no
+timeout was raised. Exact-head CI is NOT_RUN at authoring time.

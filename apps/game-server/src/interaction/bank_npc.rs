@@ -42,7 +42,10 @@ impl BankNpcIntent {
     /// Deposit and withdraw move coin custody and need current backpack coin facts; balance
     /// and transfer read only the Bank account and never resolve item custody.
     pub(crate) const fn uses_coin_custody(&self) -> bool {
-        matches!(self, Self::Deposit(_) | Self::DepositAll | Self::Withdraw(_))
+        matches!(
+            self,
+            Self::Deposit(_) | Self::DepositAll | Self::Withdraw(_)
+        )
     }
 }
 
