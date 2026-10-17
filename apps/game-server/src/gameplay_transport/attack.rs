@@ -854,7 +854,9 @@ impl ChannelAttackStates {
     /// [`CHASE_SEARCHES_PER_WINDOW`], in the order [`chase_search_order`] gives, each against
     /// the occupancy the earlier ones leave once they take their next step; every chase then
     /// takes its own stored route. Nothing here depends on which check drains: the inputs are
-    /// the Channel's runtime, its path tiles and the waiting chases alone.
+    /// the Channel's runtime, its path tiles and the waiting chases alone. A drain the shared
+    /// work budget stops is suspended, not completed: a later check in the same window resumes
+    /// it once creature refunds return capacity, and the search count spans the resume.
     pub(in crate::gameplay_transport) fn drain_chase_searches(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -891,9 +893,8 @@ impl ChannelAttackStates {
             .map(|other| (other.actor, other.position))
             .collect();
         let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = Vec::new();
-        let mut searched = 0;
         for (_, index) in order {
-            if searched == CHASE_SEARCHES_PER_WINDOW {
+            if chase_searches.player_searches() >= CHASE_SEARCHES_PER_WINDOW {
                 break;
             }
             let entry = &mut entries[index];
@@ -927,6 +928,7 @@ impl ChannelAttackStates {
                 && crate::movement::path_search::chebyshev(from, to) > 1
                 && !chase_searches.charge_player(now.get(), UNITS_PER_SEARCH)
             {
+                chase_searches.suspend_drain(now.get());
                 break;
             }
             let work = entry.chase.search(now.get(), from, to, |cell| {
@@ -944,7 +946,7 @@ impl ChannelAttackStates {
                 let used =
                     u32::try_from(work).map_or(UNITS_PER_SEARCH, |w| w.min(UNITS_PER_SEARCH));
                 chase_searches.refund_player(now.get(), UNITS_PER_SEARCH - used);
-                searched += 1;
+                chase_searches.note_player_search(now.get());
             }
             if let Some(next) = entry.chase.next_cell() {
                 stepping.push((entry.actor, next));

@@ -266,6 +266,12 @@ pub(crate) struct ChaseSearchBudget {
     /// packet: pending creature searches go before player chase). Not reset by a new window, so
     /// a player drain that runs before the creature drain in that window cannot take them.
     creature_pending_units: u32,
+    /// Player chase searches the drain ran in the current window ([`CHASE_SEARCHES_PER_WINDOW`]
+    /// counts across a resumed drain).
+    player_searches: u32,
+    /// The current window's player drain stopped on the shared work budget, not on its own
+    /// queue or search count; it resumes once a full search fits again (creature refunds).
+    drain_suspended: bool,
 }
 
 impl ChaseSearchBudget {
@@ -279,6 +285,8 @@ impl ChaseSearchBudget {
                 self.player_units_used = 0;
                 self.creature_units_used = 0;
                 self.drained = None;
+                self.player_searches = 0;
+                self.drain_suspended = false;
                 true
             }
         }
@@ -300,11 +308,16 @@ impl ChaseSearchBudget {
         self.creature_pending_units = units;
     }
 
+    /// The most player work the current window still admits.
+    fn player_limit(&self) -> u32 {
+        WINDOW_UNITS - self.creature_units_used - self.creature_hold()
+    }
+
     pub(crate) fn charge_player(&mut self, now_us: u64, units: u32) -> bool {
         if !self.advance(now_us) {
             return false;
         }
-        let limit = WINDOW_UNITS - self.creature_units_used - self.creature_hold();
+        let limit = self.player_limit();
         let Some(after) = self
             .player_units_used
             .checked_add(units)
@@ -373,17 +386,46 @@ impl ChaseSearchBudget {
     }
 
     /// Whether the owner window of `now_us` is still to be drained; if so it counts as drained.
-    /// A caller's earlier window never reopens a drained one.
+    /// A caller's earlier window never reopens a drained one. A drain [`Self::suspend_drain`]
+    /// stopped on the shared budget reopens in its window once a full search fits again, so
+    /// work creature refunds return stays usable by waiting players.
     pub(crate) fn open(&mut self, now_us: u64) -> bool {
         if !self.advance(now_us) {
             return false;
         }
         let window = now_us / CHASE_WINDOW_MICROS;
         if self.drained.is_some_and(|drained| window <= drained) {
-            return false;
+            let resumable = self.drain_suspended
+                && self.drained == Some(window)
+                && self.player_searches < CHASE_SEARCHES_PER_WINDOW
+                && self.player_limit().saturating_sub(self.player_units_used) >= UNITS_PER_SEARCH;
+            if resumable {
+                self.drain_suspended = false;
+            }
+            return resumable;
         }
         self.drained = Some(window);
         true
+    }
+
+    /// The drain of the window of `now_us` stopped because [`Self::charge_player`] refused a
+    /// search: it is not complete, and [`Self::open`] resumes it once capacity returns.
+    pub(crate) fn suspend_drain(&mut self, now_us: u64) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.drain_suspended = true;
+        }
+    }
+
+    /// Player chase searches run in the current window, across a resumed drain.
+    pub(crate) const fn player_searches(&self) -> u32 {
+        self.player_searches
+    }
+
+    /// Count one player chase search run in the window of `now_us`.
+    pub(crate) fn note_player_search(&mut self, now_us: u64) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.player_searches = self.player_searches.saturating_add(1);
+        }
     }
 }
 
@@ -821,6 +863,48 @@ mod tests {
             assert!(budget.charge_creature(100_000, UNITS_PER_SEARCH, true));
         }
         assert!(!budget.charge_creature(100_000, 1, true));
+    }
+
+    #[test]
+    fn a_budget_stopped_player_drain_resumes_after_creature_refunds() {
+        let mut budget = ChaseSearchBudget::default();
+        // 48 pending creature searches hold their full reservations in a new window.
+        budget.declare_creature_pending(48 * UNITS_PER_SEARCH);
+        assert!(budget.open(50_000));
+        // The first player searches do their full bounded work, so nothing is refunded.
+        let mut players = 0;
+        while budget.charge_player(50_000, UNITS_PER_SEARCH) {
+            budget.note_player_search(50_000);
+            players += 1;
+        }
+        assert_eq!(players, 16);
+        budget.suspend_drain(50_000);
+        assert!(!budget.open(50_000), "no capacity returned yet");
+        // The creature drain runs and each search does a single expansion.
+        for _ in 0..48 {
+            assert!(budget.charge_creature(50_000, UNITS_PER_SEARCH, true));
+            budget.refund_creature(50_000, UNITS_PER_SEARCH - 1);
+        }
+        assert!(
+            budget.open(50_000),
+            "the refunded units reopen the suspended player drain"
+        );
+        assert!(!budget.open(50_000), "a resumed drain is drained once more");
+        // The resumed searches are trivial: only one expansion each stays debited.
+        while budget.player_searches() < CHASE_SEARCHES_PER_WINDOW
+            && budget.charge_player(50_000, UNITS_PER_SEARCH)
+        {
+            budget.refund_player(50_000, UNITS_PER_SEARCH - 1);
+            budget.note_player_search(50_000);
+            players += 1;
+        }
+        assert_eq!(players, 64, "the per-window search count spans the resume");
+        // A complete drain (not suspended) never reopens, even with capacity left.
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.open(0));
+        assert!(!budget.open(0));
+        budget.suspend_drain(50_000);
+        assert!(!budget.open(0), "another window's suspension is ignored");
     }
 
     #[test]
