@@ -2560,6 +2560,7 @@ mod charm_wire;
 pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
+pub mod house;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;

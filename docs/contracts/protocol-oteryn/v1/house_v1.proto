@@ -1,0 +1,74 @@
+// HOUSE-WIRE-1 INACTIVE PROPOSAL, pending independent protocol review and CP slot.
+// Accepted semantics: HOUSE_OWN0§11; HOUSE_RUNTIME0§5.3/§5.5 adds kick/leave.
+// This draft proposes these message/field numbers, date representation and flat byte bound;
+// CP D1170 leaf assignments: HOUSE_V1=27, HOUSE_INTENT=27, HOUSE_QUERY=28, domain23.
+// Registry/capability/dispatch activation remains A2-owned; no codegen/pins.
+// FND-02 owns CommandRef and current session. Every body is request data, never authorization.
+// Exactly one variant required. Unknown fields/wire types, repeated singular fields, invalid
+// UTF-8/UUIDv7, duplicate list identities and >200 list entries fail closed. Empty list clears.
+// Every intent carries HouseIdV1; its World must equal the actor current World at transport.
+// Body never selects owner/session/lease or proves current admission/placement.
+// Proposed max4168 bytes: largest native Door action3626 + target536 +6B slack.
+// Target536 is World18B +512-byte key515B +nested envelope3B. Resource row remains pending.
+// Existing guild ACL amendment needs its own reviewed wire representation before this
+// character-only editing subset can claim complete ACL coverage. Query/domain projection,
+// common+house result mapping and client panel are NOT defined or activated by this proposal.
+syntax = "proto3";
+package oteryn.protocol.v1.house;
+
+message HouseBidV1 {
+  reserved 1; //target moved to common HouseIdV1; no second independently chosen key
+  uint64 max_gold = 2; //0 valid syntactically; owning auction writer applies actual admission
+}
+message HouseMoveOutV1 {
+  uint64 date_unix_ms = 1; //PROPOSED positive <=i64::MAX; writer checks1..30 days under DB clock
+}
+message HouseEmptyV1 {}
+enum HouseAclRole {
+  HOUSE_ACL_ROLE_UNSPECIFIED = 0;
+  HOUSE_ACL_ROLE_SUBOWNER = 1;
+  HOUSE_ACL_ROLE_GUEST = 2;
+}
+message HouseAclSetV1 {
+  HouseAclRole role = 1;
+  repeated bytes character_ids = 2; //0..200 distinct16-byte UUIDv7s; input order preserved
+  uint64 expected_revision = 3; //0 is forwarded syntactically; legal/stale revision check belongs writer
+}
+// Same encoding as native world_spatial ActorPositionV1. Actual house/door membership is not
+// implied by a syntactically valid position; owning runtime resolves it at current revision.
+// Native world_map::tile_pos copies the signed floor directly; no sign flip/coordinate remap.
+message HouseDoorPositionV1 { sint32 x = 1; sint32 y = 2; sint32 floor = 3; } //x/y0..65535; floor-15..0
+message HouseDoorSetV1 {
+  HouseDoorPositionV1 position = 1;
+  repeated bytes character_ids = 2;
+  uint64 expected_revision = 3;
+}
+message HouseKickV1 { bytes character_id = 1; }
+message HouseIdV1 { bytes world_id = 1; string house_key = 2; } //UUIDv7,1..512UTF8B; native grammar in transport
+message HouseIntentV1 {
+  HouseIdV1 house = 8; //required exactly once for every action, including leave/cancel/kick/ACL/door
+  oneof intent {
+    HouseBidV1 bid = 1;
+    HouseMoveOutV1 move_out = 2;
+    HouseEmptyV1 cancel_move_out = 3;
+    HouseAclSetV1 acl_set = 4;
+    HouseDoorSetV1 door_set = 5;
+    HouseKickV1 kick = 6;
+    HouseEmptyV1 leave = 7;
+  }
+}
+
+// HOUSE_QUERY request-only contract approved CP D1261 (#2131 comment6226929679); no response/projection/currentness/read grant.
+// Native town identity is FirstProductionArea.key: ProductionKey, catalogue reference prefix
+// oteryn:content.area.city.<slug>, never a numeric source-town ID. Native transport validates
+// production key syntax/prefix and current actor World; active-bundle membership stays unresolved.
+// D1261 approved technical bounds: town<=512 UTF8B (native ProductionKey cap), cursor0..512 opaque B
+// when present, body<=1056B (maximum encoded1048 +8B slack). Cursor absent or empty means first page only;
+// it is not authorization, a session selector or proof of an earlier authorized response.
+// World/town required exactly once, cursor optional exactly once; strict duplicate/unknown/
+// wrong wire/UTF8/UUIDv7 rejection. D1261 approves tags1/2/3 and these bounds; native transport normalizes empty to absence.
+message HouseQueryV1 {
+  bytes world_id = 1;
+  string catalogue_town = 2;
+  optional bytes cursor = 3;
+}
