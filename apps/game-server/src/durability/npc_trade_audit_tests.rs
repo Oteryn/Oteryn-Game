@@ -106,6 +106,7 @@ fn trade(side: u32, quantity: u32, unit_price: u64) -> OneItemNpcTradeV1 {
         burned_gold_units: 0,
         minted_gold_units: 0,
         lines: Vec::new(),
+        bank_debit: None,
     }
 }
 
@@ -410,6 +411,8 @@ fn trade_rows_equal_the_registry() {
             "DUR03-RL-06-NPC-TRADE-SELL-EFFECT-WORK-UNITS",
             SELL_RL06_EFFECT_WORK_UNITS_MAX,
         ),
+        // BANK-FEE-0 §4.3/§5: one bank value line on a BUY, none on a SELL.
+        ("DUR03-RL-03-NPC-TRADE-BUY", 1),
         ("DUR03-RL-07-NPC-TRADE-EVENTS", NPC_TRADE_RL07_EVENTS_MAX),
         (
             "DUR03-RL-07-NPC-TRADE-PAYLOAD-BYTES",
@@ -482,7 +485,7 @@ fn worst_case(burns: usize) -> OneItemNpcTradeV1 {
             202,
             definition(&family, &long, &long),
             u64::MAX,
-            100,
+            1,
         ),
     ]);
     value.burned_gold_units = burned;
@@ -529,4 +532,113 @@ fn worst_case_payload_and_envelope_are_the_registered_rows() {
         decode_npc_trade_payload(&vec![0; NPC_TRADE_RL07_PAYLOAD_BYTES_MAX + 1]),
         Err(AuditError::CapacityExceeded)
     );
+}
+
+#[test]
+fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
+    let mut value = trade(SIDE_BUY, 1, 250);
+    value.lines = vec![mint_line(LINE_ITEM_MINT, 21, sword("s"), 1, 1)];
+    value.bank_debit = Some(super::super::item_fee_burn_audit::OneItemFeeBankDebitV1 {
+        entry_id: uuid(90),
+        asset: "gold".into(),
+        account_id: uuid(91),
+        world_id: value.world_id.clone(),
+        kind: 5,
+        line_class: 3,
+        debit_gold_units: 250,
+        balance_before_gold_units: 300,
+        balance_after_gold_units: 50,
+    });
+    assert!(check_npc_trade(&value).is_ok());
+    assert_eq!(npc_trade_usage(&value).value_lines, 1);
+    assert_eq!(npc_trade_usage(&value).participants, 2);
+    let mut over_value_lines = npc_trade_usage(&value);
+    over_value_lines.value_lines = 2;
+    assert_eq!(
+        check_npc_trade_usage(SIDE_BUY, &over_value_lines),
+        Err(AuditError::InvalidInput)
+    );
+    // Prost accepts a repeated singular message by merging it. The canonical native gate
+    // must reject the extra raw field even when the decoded last value is valid and equal.
+    let mut duplicate = value.encode_to_vec();
+    let debit = value.bank_debit.as_ref().unwrap().encode_to_vec();
+    prost::encoding::encode_varint((14 << 3) | 2, &mut duplicate);
+    prost::encoding::encode_varint(debit.len() as u64, &mut duplicate);
+    duplicate.extend_from_slice(&debit);
+    assert_eq!(
+        OneItemNpcTradeV1::decode(duplicate.as_slice()).unwrap(),
+        value
+    );
+    let mut duplicate_payload = OneItemTransactionV1 {
+        interpretation_revision: mint::INTERPRETATION_REVISION,
+        operation: None,
+    }
+    .encode_to_vec();
+    prost::encoding::encode_varint((9 << 3) | 2, &mut duplicate_payload);
+    prost::encoding::encode_varint(duplicate.len() as u64, &mut duplicate_payload);
+    duplicate_payload.extend_from_slice(&duplicate);
+    assert_eq!(
+        decode_npc_trade_payload(&duplicate_payload),
+        Err(AuditError::InvalidInput)
+    );
+    assert!(encode_npc_trade_event(identity(), value.clone(), Type2EventTuple::V1).is_err());
+    let wire = encode_npc_trade_event(identity(), value.clone(), Type2EventTuple::V2).unwrap();
+    assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, value);
+    for mutate in [0, 1, 2, 3] {
+        let mut broken = value.clone();
+        match mutate {
+            0 => broken.bank_debit.as_mut().unwrap().balance_after_gold_units += 1,
+            1 => broken.bank_debit.as_mut().unwrap().debit_gold_units -= 1,
+            2 => broken.bank_debit.as_mut().unwrap().kind = 1,
+            _ => broken.cause.as_mut().unwrap().side = SIDE_SELL,
+        }
+        assert!(check_npc_trade(&broken).is_err());
+    }
+}
+
+#[test]
+fn largest_bank_remainder_fits_existing_measured_trade_envelope_bounds() {
+    let mut value = worst_case(FEE_INPUTS_MAX);
+    value.lines.retain(|line| line.kind != LINE_COIN_MINT);
+    value.lines.last_mut().unwrap().placement_ordinal = u64::MAX - 2;
+    value.minted_gold_units = 0;
+    value.total_gold_units = NPC_TRADE_BUY_GOLD_UNITS_MAX;
+    value.unit_price = value.total_gold_units;
+    let maximum = super::super::bank_audit::BANK_BALANCE_MAX;
+    value.bank_debit = Some(super::super::item_fee_burn_audit::OneItemFeeBankDebitV1 {
+        entry_id: uuid(90),
+        asset: "gold".into(),
+        account_id: uuid(91),
+        world_id: value.world_id.clone(),
+        kind: 5,
+        line_class: 3,
+        debit_gold_units: maximum,
+        balance_before_gold_units: maximum,
+        balance_after_gold_units: 0,
+    });
+    assert!(check_npc_trade(&value).is_ok());
+    assert_eq!(npc_trade_usage(&value).participants, 22);
+    assert_eq!(npc_trade_usage(&value).effect_work_units, 64);
+    let payload = OneItemTransactionV1 {
+        interpretation_revision: mint::INTERPRETATION_REVISION,
+        operation: Some(OneItemOperationV1::NpcTrade(value.clone())),
+    }
+    .encoded_len();
+    let build = "b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX);
+    let wire = encode_npc_trade_event(
+        NpcTradeEventIdentity {
+            occurred_at_unix_ms: i64::MAX,
+            server_build_id: &build,
+            ..identity()
+        },
+        value,
+        Type2EventTuple::V2,
+    )
+    .unwrap();
+    eprintln!(
+        "NPC-BUY-BANK-D50 payload={payload} envelope={} participants=22 work=64",
+        wire.len()
+    );
+    assert!(payload <= NPC_TRADE_RL07_PAYLOAD_BYTES_MAX);
+    assert!(wire.len() <= NPC_TRADE_RL07_ENVELOPE_BYTES_MAX);
 }

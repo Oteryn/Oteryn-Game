@@ -2906,6 +2906,7 @@ mod tests {
             }
         };
         let native_input = NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::SourceQualifiedSpellEntryR2,
             catalog: pinned("catalog"),
             source_selection: pinned("source_selection"),
@@ -3272,6 +3273,7 @@ mod tests {
             }
         };
         let native_input = NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::SourceQualifiedSpellEntryR2,
             catalog: pinned("catalog"),
             source_selection: pinned("source_selection"),

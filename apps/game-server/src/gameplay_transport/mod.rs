@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[path = "../interaction/bank_npc.rs"]
+mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
@@ -11,6 +13,7 @@ mod character_progression_binding;
 mod character_progression_binding_tests;
 pub(crate) mod charm;
 mod chat_intent;
+mod chat_relay;
 mod combat_lock_fact;
 mod connection;
 mod container_view;
@@ -578,6 +581,13 @@ pub async fn serve_gameplay(
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
     }
+    // CHAT-2B: the World chat relay, when its key file is configured.
+    if let Some(relay) = chat_relay::configured(
+        *owners.world_id.as_bytes(),
+        owners.root.chat_relay_connect_options(),
+    ) {
+        authority.chat.install_relay(std::sync::Arc::new(relay));
+    }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
@@ -627,6 +637,13 @@ pub async fn serve_gameplay(
         &respawn_wake,
         shutdown
     ));
+    // CHAT-2B: the relay listener; it parks once shutdown is requested.
+    let mut relay = pin!(async {
+        match authority.chat.relay() {
+            Some(relay) => relay.run(&authority.chat, shutdown).await,
+            None => std::future::pending().await,
+        }
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
     let mut flush_done = false;
@@ -637,6 +654,8 @@ pub async fn serve_gameplay(
         }
         // Never ends on its own; it parks once shutdown is requested.
         let _ = positions.as_mut().poll(context);
+        // Never ends: it parks once shutdown is requested.
+        let _ = relay.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -3019,11 +3038,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat.delivered(session);
     }
 
+    async fn chat_rooms_changed(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
+        self.chat.take_rooms_change(session)
+    }
+
     async fn npc_session_open(&self, session: GameSessionId) {
         // A client without chat still has a conversation state, held with the chat session.
         if !self.chat.knows(session) {
             self.chat_open(session).await;
         }
+        self.npc_conversations.cancel_bank(session);
         self.chat.set_npc_service(session);
     }
 
@@ -3038,22 +3065,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .follow(&self.chat, &runtime, session, shown)
     }
 
+    async fn resume_npc_bank(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<npc_command::NpcTalkOutcome> {
+        npc_command::resume_bank_talk(self, actor, command).await
+    }
+
     async fn npc_talk(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        let runtime = self.runtime.lock().await;
-        self.npc_conversations.talk_in(
-            &self.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-            self.owner_now(),
-            item_ref_admission::pinned_index(&runtime, self.active_generation),
-        )
+        npc_command::npc_bank_talk(self, actor, command, intent).await
     }
 
     async fn npc_trade(

@@ -498,6 +498,7 @@ fn assert_damages_fixture_creature(name: &str) {
         occurrence: SpellOccurrenceBinding::from(occurrence),
         binding: b"qualified:spell-book-sweep".to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 100,
         effects: vec![OwnerCombatEffect {
             target,

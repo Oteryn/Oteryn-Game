@@ -1948,6 +1948,7 @@ pub(crate) mod tests {
                 paid_soul: 0,
                 cooldown_deadlines: vec![],
             }),
+            now_us: None,
             now_ms: 0,
             effects: vec![OwnerCombatEffect {
                 target,
@@ -3959,6 +3960,7 @@ mod source_creature_dot_owner_tests {
             },
             binding: b"actual-source-wound".to_vec(),
             anchor: None,
+            now_us: None,
             now_ms: 0,
             effects: vec![OwnerCombatEffect {
                 target,

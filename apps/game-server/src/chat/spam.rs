@@ -1,11 +1,13 @@
 //! Spam bucket, mute and yell rules of one character (CHAT-0 §3 and §6).
 //!
 //! The state is in memory only; the durable mute row that carries it across relogs and Channel
-//! transfers is CHAT-2. Spell casts do not take from the bucket, but a muted character cannot cast
-//! ([`ChatLimiter::is_muted`] is read by the cast path).
+//! transfers is CHAT-2C. Spell casts do not take from the bucket, but a muted character cannot cast
+//! ([`ChatLimiter::is_muted`] is read by the cast path). Room and private lines (CHAT-2B) share the
+//! bucket and the mute with local speech.
 
 use std::collections::VecDeque;
 
+use oteryn_protocol_oteryn::chat::ChatRoom;
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::SpeechMode;
@@ -27,8 +29,16 @@ const OFFENCE_WINDOW_MICROS: u64 = 30 * 60 * MICROS_PER_SECOND;
 const OFFENCES_KEPT: usize = 16;
 /// A mute lasts 5 s × n², n being the offences in the window (the Tibia manual).
 const MUTE_UNIT_MICROS: u64 = 5 * MICROS_PER_SECOND;
-/// Yell needs level 20, or `premium_current` once Premium is delivered (CHAT-0 §6).
+/// Yell and the World, English and Advertising rooms need level 20, or `premium_current` once
+/// Premium is delivered (CHAT-0 §6).
 const YELL_FREE_LEVEL: u32 = 20;
+/// Private messages need the sender at level 3 (CHAT-0 §6).
+const PRIVATE_LEVEL: u32 = 3;
+/// `CHAT0-RL-05`: more than 20 distinct private recipients in 10 minutes is an offence.
+const RECIPIENTS_MAX: usize = 20;
+const RECIPIENT_WINDOW_MICROS: u64 = 10 * 60 * MICROS_PER_SECOND;
+/// `CHAT0-RL-10`: one Advertising line per 2 minutes.
+const ADVERTISING_INTERVAL_MICROS: u64 = 2 * 60 * MICROS_PER_SECOND;
 
 /// Why a line that passed the text checks is not sent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,6 +63,17 @@ impl YellGate {
     fn allows(self) -> bool {
         self.level > 1 && (self.level >= YELL_FREE_LEVEL || self.premium_current)
     }
+
+    /// Whether the speaker may write to `room`: Help is open to all, the other rooms need level 20
+    /// or `premium_current`. The level-1 ban is the yell's own and does not apply here.
+    pub(crate) fn allows_room(self, room: ChatRoom) -> bool {
+        room == ChatRoom::Help || self.level >= YELL_FREE_LEVEL || self.premium_current
+    }
+
+    /// Whether the speaker may send a private message: level 3.
+    pub(crate) fn allows_private(self) -> bool {
+        self.level >= PRIVATE_LEVEL
+    }
 }
 
 /// One character's spam bucket, offences, mute and yell cooldown.
@@ -67,6 +88,11 @@ pub(crate) struct ChatLimiter {
     /// Until when a yell is refused `LEVEL_TOO_LOW` at the pre-gate (taking its line): set when the
     /// full path refused one for its level, cleared when the full path finds the level.
     yell_level_recheck_at: Option<SemanticTimeMicros>,
+    /// The distinct private recipients of the last 10 minutes with the time each was last
+    /// written to, oldest first. In memory only; never logged.
+    recipients: VecDeque<(SemanticTimeMicros, [u8; 16])>,
+    /// When the next Advertising line may be sent.
+    advertising_ready_at: Option<SemanticTimeMicros>,
     /// The latest time seen; an earlier `now` is read as this one, so no deadline moves back.
     last_seen: SemanticTimeMicros,
 }
@@ -81,6 +107,8 @@ impl ChatLimiter {
             muted_until: None,
             yell_ready_at: None,
             yell_level_recheck_at: None,
+            recipients: VecDeque::new(),
+            advertising_ready_at: None,
             last_seen: now,
         }
     }
@@ -178,6 +206,84 @@ impl ChatLimiter {
             self.yell_level_recheck_at = None;
             self.yell_ready_at = Some(after(now, YELL_COOLDOWN_MICROS));
         }
+        Ok(())
+    }
+
+    /// The gate of a room or private line in front of the Channel lock and the relay (CHAT-0 §6),
+    /// in the order: mute, the Advertising interval (`advertising`), empty bucket. A muted line and
+    /// an Advertising line inside its interval take no line; a line beyond an empty bucket starts
+    /// the offence. Any other line takes its line here, before its level, its recipient or the
+    /// relay is consulted, so a refused line (`LEVEL_TOO_LOW`, `NOT_ONLINE`, `NO_VOCATION`) costs a
+    /// line like a sent one and a flood of them reaches the mute without the Channel locks.
+    pub(crate) fn pre_gate_relay(
+        &mut self,
+        advertising: bool,
+        now: SemanticTimeMicros,
+    ) -> Result<(), ChatRefusal> {
+        let now = now.max(self.last_seen);
+        self.last_seen = now;
+        if let Some(until) = self.muted_until.filter(|until| *until > now) {
+            return Err(ChatRefusal::Muted {
+                seconds: seconds_until(now, until),
+            });
+        }
+        if let Some(ready) = self
+            .advertising_ready_at
+            .filter(|ready| advertising && *ready > now)
+        {
+            return Err(ChatRefusal::Exhausted {
+                seconds: seconds_until(now, ready),
+            });
+        }
+        self.refill(now);
+        if self.lines == 0 {
+            let until = self.offend(now);
+            return Err(ChatRefusal::Muted {
+                seconds: seconds_until(now, until),
+            });
+        }
+        self.lines -= 1;
+        Ok(())
+    }
+
+    /// Claims the Advertising interval for a line about to be sent: `Exhausted` while it runs.
+    /// Checked again here, under the same lock as the claim, so two lines racing past
+    /// [`Self::pre_gate_relay`] cannot both be sent.
+    pub(crate) fn claim_advertising(&mut self, now: SemanticTimeMicros) -> Result<(), ChatRefusal> {
+        let now = now.max(self.last_seen);
+        self.last_seen = now;
+        if let Some(ready) = self.advertising_ready_at.filter(|ready| *ready > now) {
+            return Err(ChatRefusal::Exhausted {
+                seconds: seconds_until(now, ready),
+            });
+        }
+        self.advertising_ready_at = Some(after(now, ADVERTISING_INTERVAL_MICROS));
+        Ok(())
+    }
+
+    /// Records a private message to `recipient` (`CHAT0-RL-05`). A 21st distinct recipient within
+    /// 10 minutes is an offence: the line is dropped and the character is muted as for an empty
+    /// bucket. A recipient already written to in the window is always admitted.
+    pub(crate) fn admit_recipient(
+        &mut self,
+        recipient: [u8; 16],
+        now: SemanticTimeMicros,
+    ) -> Result<(), ChatRefusal> {
+        let now = now.max(self.last_seen);
+        self.last_seen = now;
+        self.recipients.retain(|(at, _)| {
+            now.elapsed_since(*at)
+                .is_ok_and(|age| age < RECIPIENT_WINDOW_MICROS)
+        });
+        if let Some(index) = self.recipients.iter().position(|(_, id)| *id == recipient) {
+            self.recipients.remove(index);
+        } else if self.recipients.len() >= RECIPIENTS_MAX {
+            let until = self.offend(now);
+            return Err(ChatRefusal::Muted {
+                seconds: seconds_until(now, until),
+            });
+        }
+        self.recipients.push_back((now, recipient));
         Ok(())
     }
 

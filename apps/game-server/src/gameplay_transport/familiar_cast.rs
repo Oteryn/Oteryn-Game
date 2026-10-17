@@ -1167,6 +1167,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             occurrence: binding.occurrence.clone().into(),
             binding: binding.parent_binding.clone(),
             anchor: Some(prepared.anchor.clone()),
+            now_us: Some(
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                    binding.cast_at.get(),
+                ),
+            ),
             now_ms: binding.cast_at.get() / 1000,
             effects: Vec::new(),
             deferred: None,
