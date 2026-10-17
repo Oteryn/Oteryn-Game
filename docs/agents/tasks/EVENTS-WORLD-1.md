@@ -27,6 +27,7 @@ owned_paths:
   - "docs/architecture/ADR-0021-world-map-runtime-loading.md (D1136/D1287 amendments and status)"
   - "docs/architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md (D1136/D1287 amendments and status)"
   - "docs/architecture/reviews/OTERYN_GAME_EVENTS_WORLD1_DECISION_2026-10-15.md (D1287 W15 source locator correction)"
+  - "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md (EVENTS-WORLD-1 row brief reference only)"
 slot_only_paths:
   - "regenerate_content.py outputs, content/project.json, manifest.json, content.lock.json, content/world/pins/*, Rust pins"
   - "migration if durable"
