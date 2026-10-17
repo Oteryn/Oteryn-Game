@@ -2,23 +2,23 @@
 
 ```yaml
 task_id: MAGIC-SUMMON-1
-title: "MAGIC-SUMMON-1: summons, familiars, magic fields (skeleton)"
+title: "MAGIC-SUMMON-1: fenced familiar lifecycle and clean logout"
 mode: IMPLEMENT
 status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/magic-summon-1
 issue: 1622
-pr: null
+pr: 2199
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 3 MAGIC-SUMMON-1 (rows 57, 58); App. 7 LOOP-MONSTER-1, MAGIC-SUMMON-1; wave 2"
 class: "hard (child graph)"
 migration: maybe
 registry: maybe
-owner: unassigned (builder)
+owner: family F
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/monster_summon.rs
@@ -414,3 +414,45 @@ The pre-integration f0f9dfbc bundle and all older evidence remain historical.
 ### 2026-10-17 source qualification continuation
 
 NOT_FULLY_QUALIFIED. Exact-source native LIST initially rejected a stale shared-target artifact (2 tests versus the required 3); candidate-only detached metadata freshness retained all raw Git bytes and old proof metadata. A subsequent disk-guard stop occurred before any native test while preparing the separate source handoff; physical deduplication restored the reserve, with no cache clean or runner change. The actual fresh compiler then reported E0308 in the existing runtime PostgreSQL fixture helper (String error versus boxed TestResult error); the helper now uses the normal `Ok(...?)` conversion. These stopped attempts are retained, and no native test, strict Clippy or full-package PASS is claimed for this continuation. The complete source-bound native inventory and strict all-targets Clippy remain mandatory; earlier scoped evidence stays tied to its own source.
+
+
+### 2026-10-17 qualified component checkpoint (D1122 / D1220)
+
+NOT_FULLY_QUALIFIED. This checkpoint supersedes earlier NOT_RUN statements only
+for the bounded native coverage and strict Clippy below. Tested source:
+`12540672013a6312a79a43033ca589cab5b02b9f`, full raw inventory 18,864 files,
+SHA256 fingerprint `039bb4c2e5c027f161f22d2af10e166922a192f5271dccbc09f903e9fece8f58`.
+The publication successor changes only this task record; it does not change Rust,
+SQL, fixtures, Cargo inputs or registration.
+
+Coverage is 15 unique native cases (4 pure + 11 canonical PostgreSQL), using 14
+retained passes with independently verified unchanged relevant inputs and one
+re-executed conversion case after its same-value initializer lint repair. This is
+not a fresh 15-case run on the final source. The earlier five-case run was followed
+by a writer-fixture compile RED; the remaining ten PostgreSQL cases then passed
+after its boxed-error conversion repair. That run's strict Clippy RED was repaired
+only in the pure test initializer, without suppressing a lint. All stopped attempts
+and their original logs remain distinct evidence.
+
+The affected exact native LIST and test passed on the tested source. Strict
+`cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings`
+passed in 737.6 seconds under Rust/Cargo 1.94.0, jobs1, debug0, incremental0.
+Actual SQL before/after reports PostgreSQL 170006 and the same 14 database
+name/OID/owner identities; no pre-existing database identity changed or was removed. Full source fingerprints are
+identical before/after and all recorded owned process groups drained. Native logs
+do not print a positive version marker; the real SQL and source-bound canonical
+fixture checks supply that evidence. The dependency's Tokio warning is retained.
+
+Evidence: `2199-clippy-initializer-fixed-native-result.json` SHA256
+`33a95ad99fac97b19797b6ae8d300e77f1d5d05a07ed3f2d0f2fd556a75a1b5a`;
+retained-case review `32798cef7439ad030880b75eba15fa66fe4a16d8fab22b82733bec894d812f76`;
+final independent actual review
+`fd40f7d2be0ed2ea605c750ab3feee3f0fcdcd4e566cc338eef016796ac9c68a`.
+Evidence and verified Git bundles are preserved outside the author checkout in
+the family evidence/recovery directories.
+
+Full-package tests remain NOT_RUN for this component. This does not resolve the
+retained shared full-package REDs or grant readiness, merge, queue movement or
+production activation. Generic non-spawn/GraceExpiry writes with an existing clean
+marker and same-session open Login reconstruction remain held as described above;
+they do not silently reset a familiar timer or manufacture clean-end evidence.
