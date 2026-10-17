@@ -1,0 +1,151 @@
+name: Auto-archive merged task packets
+
+# An active task packet whose canonical PR has merged only awaits archiving;
+# Agent governance reports it as a warning. This moves such packets to
+# docs/agents/tasks/archive/ through a bot pull request, because the main
+# ruleset requires a pull request and the merge queue for every change.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: auto-archive-merged-tasks
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    name: Auto-archive / merged task packets
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BRANCH: automation/archive-merged-tasks
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Check out protected main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Move packets whose canonical PR merged
+        id: move
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          repository = os.environ['REPOSITORY']
+          main_sha = os.environ['GITHUB_SHA']
+          active = Path('docs/agents/tasks/active')
+          archive = Path('docs/agents/tasks/archive')
+          validation = (
+              '- `python tools/agents/validate_governance.py`: pass (auto-archive candidate)\n'
+              '- `python -m unittest discover -s tools/agents/tests`: pass (auto-archive candidate)\n'
+          )
+          moved = []
+          for path in sorted(active.glob('*.md')):
+              if path.name == 'README.md':
+                  continue
+              text = path.read_text(encoding='utf-8')
+              match = re.search(r'(?m)^pr:\s*([1-9][0-9]*)\s*$', text)
+              if match is None:
+                  continue
+              number = match.group(1)
+              pull = json.loads(subprocess.check_output(
+                  ['gh', 'api', f'repos/{repository}/pulls/{number}'], text=True,
+              ))
+              merged_at = pull.get('merged_at')
+              if pull.get('state') != 'closed' or not merged_at:
+                  continue
+              target = archive / path.name
+              if target.exists():
+                  print(f'::warning title=Auto-archive skipped::{target} already exists; archive {path} by hand')
+                  continue
+              text = re.sub(r'(?m)^status:[^\n]*$', 'status: completed', text, count=1)
+              if '\n## Validation\n' in text:
+                  text = text.replace('\n## Validation\n', '\n## Validation\n\n' + validation, 1)
+              else:
+                  text = text.rstrip('\n') + '\n\n## Validation\n\n' + validation
+              text = text.rstrip('\n') + (
+                  '\n\n## Auto-archive\n\n'
+                  f'Moved from `docs/agents/tasks/active/` by `.github/workflows/auto-archive-merged-tasks.yml` '
+                  f'after canonical PR #{number} merged at {merged_at}, detected on protected main `{main_sha}`. '
+                  'That workflow ran the Validation commands above on the archive commit.\n'
+              )
+              target.write_text(text, encoding='utf-8')
+              path.unlink()
+              moved.append(f'- `{path.name}`: PR #{number} merged at {merged_at}')
+
+          temp = Path(os.environ['RUNNER_TEMP'])
+          listing = '\n'.join(moved)
+          (temp / 'archive-list.md').write_text(listing + '\n', encoding='utf-8')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'count={len(moved)}\n')
+          print(f'{len(moved)} active task packet(s) with a merged canonical PR.')
+          if listing:
+              print(listing)
+          PY
+
+      - name: Validate the archive commit
+        if: steps.move.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          python tools/agents/validate_governance.py
+          python -m unittest discover -s tools/agents/tests
+
+      - name: Open or update the archive pull request
+        if: steps.move.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          listing="$(cat "$RUNNER_TEMP/archive-list.md")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898333+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$BRANCH"
+          git add -A docs/agents/tasks
+          git commit -q -m 'docs(tasks): archive task packets whose PR merged' -m "$listing"
+          # The branch is rebuilt from the latest protected main on every run.
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+          existing="$(gh pr list --repo "$REPOSITORY" --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            echo "Updated archive pull request #$existing." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/pr-body.md" <<EOF
+          ## Summary
+
+          Moves active task packets whose canonical PR has merged to \`docs/agents/tasks/archive/\`:
+
+          $listing
+
+          ## Scope
+
+          \`docs/agents/tasks/active/\` and \`docs/agents/tasks/archive/\` only. Each record gets \`status: completed\`, the auto-archive Validation lines and an Auto-archive note.
+
+          ## Validation
+
+          The workflow ran \`python tools/agents/validate_governance.py\` and \`python -m unittest discover -s tools/agents/tests\` on this commit; both passed.
+
+          The workflow token pushed this branch, so PR checks do not start on their own. Close and reopen this PR, or push to it, to run the merge gate. The branch is rebuilt from main on every push to main.
+          EOF
+          if ! gh pr create --repo "$REPOSITORY" --base main --head "$BRANCH" \
+              --title 'docs(tasks): archive task packets whose PR merged' \
+              --body-file "$RUNNER_TEMP/pr-body.md"; then
+            echo "::warning title=Auto-archive::could not open a pull request; open one from branch $BRANCH"
+          fi

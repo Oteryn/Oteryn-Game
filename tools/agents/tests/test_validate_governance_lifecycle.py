@@ -217,24 +217,39 @@ class GovernanceLifecycleTests(unittest.TestCase):
             "docs/agents/tasks/active/OTV2-closed-issue.md",
             "# task\n```yaml\nstatus: waiting\nissue: 11\npr: null\n```\n",
         )
+        self.write(
+            "docs/agents/tasks/active/OTV2-closed-pr.md",
+            "# task\n```yaml\nstatus: validating\nissue: 12\npr: 22\n```\n",
+        )
         payloads = {
-            "issues/10": {"state": "open"},
+            "issues/10": {"state": "closed"},
             "issues/11": {"state": "closed"},
+            "issues/12": {"state": "open"},
             "pulls/20": {"state": "closed", "merged_at": "2026-09-21T00:00:00Z"},
+            "pulls/22": {"state": "closed", "merged_at": None},
         }
 
         def request(url: str) -> object:
             return payloads[url.rsplit("/", 2)[-2] + "/" + url.rsplit("/", 1)[-1]]
 
+        prefix = "active task packet docs/agents/tasks/active/"
+        merged = [
+            prefix + "OTV2-merged-pr.md names terminal canonical PR #20 (merged)",
+            prefix + "OTV2-merged-pr.md names closed Issue #10 without an open canonical PR",
+        ]
+        unmerged = [
+            prefix + "OTV2-closed-issue.md names closed Issue #11 without an open canonical PR",
+            prefix + "OTV2-closed-pr.md names terminal canonical PR #22 (closed)",
+        ]
         errors = validator.validate_active_task_live_state(request)
-        self.assertIn(
-            "active task packet docs/agents/tasks/active/OTV2-merged-pr.md names terminal canonical PR #20 (merged)",
-            errors,
-        )
-        self.assertIn(
-            "active task packet docs/agents/tasks/active/OTV2-closed-issue.md names closed Issue #11 without an open canonical PR",
-            errors,
-        )
+        self.assertEqual(sorted(errors), sorted(merged + unmerged))
+
+        # A merged canonical PR only awaits archiving: the caller can demote it
+        # to a warning, while a PR closed unmerged still fails.
+        warnings: list[str] = []
+        errors = validator.validate_active_task_live_state(request, warnings=warnings)
+        self.assertEqual(sorted(errors), sorted(unmerged))
+        self.assertEqual(warnings, merged)
 
     def test_active_task_live_state_accepts_open_pr_for_closed_issue(self) -> None:
         self.write(
