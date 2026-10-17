@@ -575,3 +575,121 @@ this publication checkpoint; the new successor's CI is not yet qualified.
 The separate reviewed native TRANSFER/exclusivity packet and its isolated
 root-order regression require their own composed execution. These results do
 not establish actual current-locker or open-view runtime admission.
+
+## 2026-10-17 composed Depot TRANSFER native qualification
+
+This is a new authored successor of storage head
+`dd92a9eac7349a36668048dfe0f5966bfde4a89b`, composed with the full qualified
+main/HOUSE input `f010472bcb6794a2cbc56dfaf755bd122c10225e` and the exact
+Items repair `ea7dab45bcb9b9ce7edcd66ac08eb8c5162cc35d`. All three histories
+are retained. Private preparation HEAD is
+`0fb9fd34bdeabd828112c611b705c9563158adce`, with 82 numbered migrations and
+the actual corrected 0113 blob `7bb7ff5d5179adc926cd8b7f47276c3dc513c2f2`.
+The six qualified source files form native Git tree
+`7a9cf0f5e7ccba977e8140dcad2f2a233658d83c`; an independently reconstructed
+GitHub tree matches it exactly. This task-card entry is a strict append after
+native completion, checked separately with diff and governance.
+
+### Resulting behavior
+
+The actual native TRANSFER owner now implements the two bounded whole-item
+main-backpack/Depot shapes with the existing operation3. It binds Character,
+World, source custody, destination, numeric placement ordinal, actual item
+quantity, command, same physical transaction receipt and native audit. The
+Character root precedes globally ordered item locks and subsequent slot locks.
+Withdrawal creates one new main-backpack entry and does not scatter or merge.
+Retry uses the committed receipt. The final proposal preserves the complete
+HOUSE/Items proof bodies and includes Depot in exclusive live custody.
+
+The native source packet extends TRANSFER fields8–10, shapes8–9, source kinds5–6
+and destination6. It retains World-only Depot scope and the private 15,000-entry
+bound, with ordinal max+1. No new outer operation tag or replacement migration
+number is allocated. Positive slot withdrawal still requires the existing
+HouseExit admission; the qualified roundtrip uses the actual main backpack.
+
+The SQL remains an explicitly unnumbered proposal installed by its real native
+test fixture. The packet does not create a gameplay Locker/USE/window caller,
+current Premium authority or admitted Content binding. Raw map placement and
+source observations remain data; missing runtime admission is not manufactured.
+
+### Immutable source and repair lineage
+
+The original five-file root-order successor remains frozen: manifest
+`a1dbcb9fca8d9ee546d1a9aec4008cd06811ff089df0703fa1f2a825e1089dff`,
+patch `661b26cba81fa818aba0dd02e698afd5b62b1fa73d8a1ad3293c357b125696b5`.
+Its first actual Clippy invocation exposed missing test-fact weight and a
+panic rejected by the canonical path-loaded target. That failed attempt is
+retained as failed evidence and does not qualify PostgreSQL.
+
+The explicit two-file repair has manifest
+`a1e6a2b1acbe232d339a715ed1ddbf30e93d4329770405a6b2e53e157c0071db`
+and patch `a29051ef69580a0e741b355418976f53b6fdd5edfc7fd97df0998a4aa709ac89`.
+It supplies the missing optional weight in the existing test implementation
+and replaces the test helper panic with an equivalent assertion. Production
+logic and old case bodies are preserved. The successor source receipt is
+`f653e5cd32848473c6e035a4e1d437c594c569acc7cb9a5c1150b242b2bc6d2d`;
+the original source receipt and v1 logs are unchanged.
+
+The complete original/prepared/formatted/repair chain passed forward/reverse
+checks. Actual v2 formatting changed only assertion wrapping in the audit
+test helper. An independent byte-level review matched all six exported files
+to the actual formatted source receipt
+`dab571265aa0c26c2b54b033924e772c28d9ab24ac6aa93c38e2154fd72190b9`.
+A read-only export observed during an intentional SQL RED overlay was rejected;
+only the later complete GREEN export
+`bf84ed7e1728b32587f869bd762edc0c6f119174b78ce713125780dd40a7efd7`
+is a publication input.
+
+### Executed qualification on Molehill-PC
+
+Rust1.95.0, two Cargo jobs and a separate native target were used. Locked fetch,
+actual package edition discovery, owned formatting, full workspace fmt check,
+governance, strict all-target Clippy and the duplicate-source guard all passed.
+The guard consumed the actual Cargo artifact/dep-info output and observed
+57 test-harness units with the existing 11 exceptions; its rules were unchanged.
+
+| Native stage | Observed result | Complete log SHA-256 |
+| --- | --- | --- |
+| Strict all-target Clippy | PASS | `7e89f83286398ad7372465972eef9e24deb4f20dcf67587781e4ff7c0bcee03c` |
+| Actual duplicate-source guard | PASS, 57 units / 11 existing exceptions | `a70bce278550167d18c832ac3e36b222cd22f92e1e18e24ef5fea07531778d5e` |
+| Exact pure roundtrip/resources | 1 passed, 0 failed, 0 ignored | `c0be4123b3df22a55d90c48c81cddd1031e3eb7f5e1559ea1dc2d8e5e96027b6` |
+| Exact pure custody/command refusals | 1 passed, 0 failed, 0 ignored | `4eefa4be7c96fcb824a9bceec8bfb79ec2a7d6bb55588cf0e535aaa2a7928d47` |
+| Exact pure unsigned/closed-shape bounds | 1 passed, 0 failed, 0 ignored | `7d360b20bb39e5e28c52bfcb3a758d5039c46608f393de030314351042222346` |
+| Isolated root-order RED | Intended case failed, actual PG17.6 reached | `33dbaa9a0da0b6764993e2dcc7e559f275c8caeeab43c9e1f8fcb077b34593e9` |
+| Isolated exclusivity RED | Intended case failed, actual PG17.6 reached | `277b98459fa8fd7b9a494ad67133423542622ae3fa28edc7b80c92bdcaa9b2fd` |
+| Restored canonical Depot PG cases | 4 passed, 0 failed, 0 ignored; 4 actual170006 markers | `af5178f3dbaebb0f44d571103fbdc2689b499d0904ef37fb366509a8713483c1` |
+| Full normal game-server package | 10,303 passed, 0 failed, 37 ignored; 59 groups;833.22s | `faffcd450a89fb3d1dd67181eb7c0e318d5d815dcdc46406f422d1c44711d28f` |
+
+Both RED operators modify only their isolated SQL invariant, not their tests.
+They reached the exact intended failure; their exit101 is recorded separately
+from the restored GREEN. All subsequent source hashes match restored SQL
+`8d50b1b03eea0009c288a257e9a1e5da527ac5f4866e245cee544de0a7b3a546`.
+
+The complete 29-record native evidence bundle is SHA-256
+`c7768aa2bbf20c871b72f2769b0f83fbdbd52e5dec26163d4a4f0f65b276f41a`;
+the actual runner summary is
+`abcca7761b18b100a3fc1e1c943e0590237da8b58d302ca5a8d567a774c8c900`.
+Source, command, full-log hashes and separate stage results are retained at
+`/home/mole/work/pr4-20261017-1135/logs/feature2156-depot-v2-*`.
+
+D1329 was followed throughout: locked fetch preceded the owner's unchanged
+`in-pg-netns.sh`; all PG cases used its route to existing shared PostgreSQL17.6
+at real host127.0.0.1:55432. No server/container was created and real host5432
+was untouched. Cleanup matched only database creation markers from these exact
+invocations; all such databases are absent, without inspecting or changing
+other databases. Normal-package totals are not a substitute for the separately
+observed PG qualification.
+
+### Publication and remaining integration
+
+This completed native checkpoint supersedes the prior pending TRANSFER and
+normal-package statuses on its exact inputs. The later main Ground successor
+`ce7bccab973625d5d3d0d0c566426903229d2373` arrived after those inputs were
+frozen; its shared-source composition is a subsequent authored qualification,
+not silently covered by these receipts. Exact new published-head CI is pending
+until observed. Draft status is retained.
+
+Final installed Depot proof/migration composition and actual current Locker,
+USE, session-bound view, Content and Premium admission remain explicit
+integration dependencies. Stash and writable-item children keep their accepted
+separate scope. These native tests do not establish those runtime producers.

@@ -26,6 +26,7 @@ fn coin(coin: Coin) -> TypedDefinitionRef {
 
 fn facts(definition: TypedDefinitionRef, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: None,
         definition,
         stack,
         container_capacity: None,
@@ -69,6 +70,7 @@ fn request(side: NpcTradeSide, quantity: u32, unit_price: u64) -> NpcTradeReques
             crystal: coin(Coin::Crystal),
         },
         backpack: ItemDefinitionFacts {
+            weight: None,
             container_capacity: Some(20),
             ..facts(
                 definition("Item", "oteryn:item.tibia.i2854"),

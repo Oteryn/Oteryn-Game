@@ -6,6 +6,7 @@ use super::runtime_scope_assignment::{
 };
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::{Postgres, Row, Transaction};
+use std::time::Instant;
 
 type Result<T> = std::result::Result<T, DurabilityError>;
 
@@ -559,6 +560,36 @@ impl DurabilityRoot {
         slot_id: i16,
         operation_binding: Vec<u8>,
     ) -> Result<()> {
+        self.clear_native_source_publication_within(custody, slot_id, operation_binding, None)
+            .await
+    }
+
+    /// [`Self::clear_native_source_publication`] owed to an outer
+    /// NSRC-PUBLISH budget: its pass, database acquisition included, ends
+    /// by `deadline`.
+    pub(crate) async fn clear_native_source_publication_by(
+        &self,
+        custody: &NodeIncarnationProof,
+        slot_id: i16,
+        operation_binding: Vec<u8>,
+        deadline: Instant,
+    ) -> Result<()> {
+        self.clear_native_source_publication_within(
+            custody,
+            slot_id,
+            operation_binding,
+            Some(deadline),
+        )
+        .await
+    }
+
+    async fn clear_native_source_publication_within(
+        &self,
+        custody: &NodeIncarnationProof,
+        slot_id: i16,
+        operation_binding: Vec<u8>,
+        deadline: Option<Instant>,
+    ) -> Result<()> {
         let custody = custody.clone();
         if !matches!(slot_id, 1 | 2)
             || operation_binding.is_empty()
@@ -566,7 +597,11 @@ impl DurabilityRoot {
         {
             return Err(DurabilityError::Unavailable);
         }
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+        let pass = match deadline {
+            Some(deadline) => self.try_issue_semantic_pass_by(deadline)?,
+            None => self.try_issue_semantic_pass()?,
+        };
+        pass.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             fence_custody(&mut tx, &custody).await?;
             let changed = sqlx::query("UPDATE game_durability_native_source_publication_slots SET operation_binding=NULL,checkpointed_at=NULL WHERE registration_id=1 AND slot_id=$1 AND operation_binding=$2").bind(slot_id).bind(operation_binding).execute(&mut *tx).await?.rows_affected();

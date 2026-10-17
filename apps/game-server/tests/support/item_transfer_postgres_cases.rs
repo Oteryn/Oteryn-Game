@@ -7,6 +7,8 @@
 // equipment semantics are UNKNOWN), so the backpack below is a test-only
 // fixture definition, like the D1 CombatDeathFixture.
 
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::domain::progression::{
@@ -549,7 +551,7 @@ impl Harness {
     ) -> Result<ItemTransferOutcome, ItemTransferError> {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await?;
         self.root
             .commit_item_transfer(
@@ -558,6 +560,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
     }
@@ -664,6 +667,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -674,6 +678,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 pub(crate) fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -698,6 +703,7 @@ pub(crate) fn to_slot(
     facts: ItemDefinitionFacts,
 ) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::ContainerSlot,
@@ -859,6 +865,7 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
                 &harness.node,
                 fence()?,
                 to_backpack(command(4)?, second, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -873,6 +880,7 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
                 &harness.node,
                 fence()?,
                 &mut replay,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?
@@ -906,6 +914,7 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
                     &harness.node,
                     fence()?,
                     to_backpack(command(4)?, first, stone()),
+                    &TEST_WEIGHTS
                 )
                 .await,
             Err(ItemTransferError::ConflictingCause)
@@ -1216,6 +1225,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         stale,
                         to_backpack(command(next)?, item, stone()),
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1234,6 +1244,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     fence()?,
                     to_backpack(command(next)?, item, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await
                 .map_err(debug)?;
@@ -1246,6 +1257,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         stale,
                         &mut candidate,
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1275,6 +1287,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &other_node,
                     fence()?,
                     to_backpack(command(next)?, item, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "assignment holder",
@@ -1287,6 +1300,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 fence()?,
                 to_backpack(command(next)?, item, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1301,6 +1315,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &other_node,
                     fence()?,
                     &mut candidate,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "assignment holder",
@@ -1348,6 +1363,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     fence()?,
                     to_backpack(command(next)?, item, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await
                 .map_err(debug)?;
@@ -1361,6 +1377,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         fence()?,
                         to_backpack(command(next)?, item, stone()),
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1376,6 +1393,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                         &harness.node,
                         fence()?,
                         &mut candidate,
+                        &TEST_WEIGHTS,
                     )
                     .await,
                 label,
@@ -1396,6 +1414,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 fence()?,
                 to_backpack(pending, item, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1413,6 +1432,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     fence()?,
                     &mut candidate,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "predecessor connection generation",
@@ -1427,6 +1447,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 reconnected,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?
@@ -1446,6 +1467,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 reconnected,
                 to_backpack(command(next)?, late, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1465,6 +1487,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     &mut candidate,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "ended node incarnation",
@@ -1478,6 +1501,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     to_backpack(command(next)?, late, stone()),
+                    &TEST_WEIGHTS,
                 )
                 .await,
             "ended node incarnation",
@@ -1493,6 +1517,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 &harness.node,
                 reconnected,
                 to_backpack(pending, item, stone()),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1522,6 +1547,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     to_backpack(pending, item, stone()),
+                    &TEST_WEIGHTS
                 )
                 .await,
             Err(ItemTransferError::Unavailable(_))
@@ -1535,6 +1561,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                     &harness.node,
                     reconnected,
                     to_backpack(command(next)?, late, stone()),
+                    &TEST_WEIGHTS
                 )
                 .await,
             Err(ItemTransferError::Unavailable(_))
@@ -2409,11 +2436,17 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
         let request = to_backpack(command(2)?, coin, facts(COIN, STACKABLE));
         let mut one = harness
             .root
-            .freeze_item_transfer(&first, &harness.node, fence()?, request.clone())
+            .freeze_item_transfer(
+                &first,
+                &harness.node,
+                fence()?,
+                request.clone(),
+                &TEST_WEIGHTS,
+            )
             .await
             .map_err(debug)?;
         let mut two = second_root
-            .freeze_item_transfer(&second, &harness.node, fence()?, request)
+            .freeze_item_transfer(&second, &harness.node, fence()?, request, &TEST_WEIGHTS)
             .await
             .map_err(debug)?;
         assert_eq!(one.transaction_id(), two.transaction_id());
@@ -2426,6 +2459,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 &harness.node,
                 fence()?,
                 &mut one,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_item_transfer(
                 &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
@@ -2435,6 +2469,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 &harness.node,
                 fence()?,
                 &mut two,
+                &TEST_WEIGHTS,
             ),
         )
         .await;
@@ -2462,6 +2497,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                     stone,
                     facts(STONE, ItemStackClass::NonStackable),
                 ),
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -2489,6 +2525,7 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 &harness.node,
                 fence()?,
                 &mut candidate,
+                &TEST_WEIGHTS,
             ),
         )
         .await;
@@ -2864,4 +2901,1238 @@ async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellL
     Ok(SpellLanePermit::of_fresh_scope(scope)
         .await
         .map_err(debug)?)
+}
+
+#[test]
+fn derived_capacity_exact_boundary_and_terminal_replay_ignore_current_lookup() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_exact").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        // Actual seeded level 50 / native default vocation none gives 156000 centi-oz.
+        // The carried backpack weighs 1; this real incoming instance weighs 155999.
+        let item = harness
+            .mint(&authority, "fixture:capacity.exact", 1)
+            .await?;
+        let mut item_facts = facts("fixture:capacity.exact", ItemStackClass::NonStackable);
+        item_facts.weight = Some(155999);
+        let request = to_backpack(command(2)?, item, item_facts);
+        let committed = harness.committed(&authority, request.clone()).await?;
+        // A terminal receipt retains its original result even when current Content cannot
+        // resolve that generation. It does not reacquire live item/session authority.
+        let mut replay = harness
+            .root
+            .freeze_item_transfer(
+                &authority,
+                &harness.node,
+                fence()?,
+                request,
+                &UnavailableWeights,
+            )
+            .await
+            .map_err(debug)?;
+        let outcome = harness
+            .root
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &authority,
+                &harness.node,
+                fence()?,
+                &mut replay,
+                &UnavailableWeights,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(outcome, ItemTransferOutcome::AlreadyCommitted(committed));
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+struct UnavailableWeights;
+impl oteryn_game_server::durability::item_transfer::ItemWeightLookup for UnavailableWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xEE; 32]
+    }
+    fn weight_of(
+        &self,
+        _: &TypedDefinitionRef,
+    ) -> Result<u32, oteryn_game_server::durability::item_transfer::ItemWeightRefused> {
+        Err(oteryn_game_server::durability::item_transfer::ItemWeightRefused::Unknown)
+    }
+}
+
+#[test]
+fn derived_capacity_one_centi_over_and_unknown_refuse_without_transfer_writes() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_refuse").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness.committed(&authority, to_slot(command(1)?, backpack, backpack_facts())).await?;
+        for (index, key, weight, refusal) in [
+            (2, "fixture:capacity.over", Some(156000), ItemTransferRefusal::Overweight),
+            (3, "fixture:capacity.unknown", None, ItemTransferRefusal::WeightUnknown),
+        ] {
+            let item = harness.mint(&authority, key, 1).await?;
+            let mut item_facts = facts(key, ItemStackClass::NonStackable);
+            item_facts.weight = weight;
+            let before = harness.footprint().await?;
+            refused(harness.transfer(&authority, fence()?, to_backpack(command(index)?, item, item_facts)).await, refusal)?;
+            assert_eq!(harness.footprint().await?, before);
+            let on_ground: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)")
+                .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+            assert!(on_ground);
+        }
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+// Single-operator negative: only the admitted generation changes; weights stay valid.
+struct ShiftedGenerationWeights;
+impl oteryn_game_server::durability::item_transfer::ItemWeightLookup for ShiftedGenerationWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xEE; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Result<u32, oteryn_game_server::durability::item_transfer::ItemWeightRefused> {
+        oteryn_game_server::durability::item_transfer::ItemWeightLookup::weight_of(
+            &TEST_WEIGHTS,
+            definition,
+        )
+    }
+}
+
+#[test]
+fn derived_capacity_commit_rechecks_generation_after_freeze() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_generation").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        let request = to_slot(command(1)?, backpack, backpack_facts());
+        let mut candidate = harness
+            .root
+            .freeze_item_transfer(&authority, &harness.node, fence()?, request, &TEST_WEIGHTS)
+            .await
+            .map_err(debug)?;
+        refused(
+            harness
+                .root
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                    &ShiftedGenerationWeights,
+                )
+                .await,
+            ItemTransferRefusal::WeightGenerationMismatch,
+        )?;
+        assert_eq!(harness.count("game_item_transfer_receipts").await?, 0);
+        // The same reservation remains usable with the genuinely matching generation.
+        assert!(matches!(
+            harness
+                .root
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                    &TEST_WEIGHTS,
+                )
+                .await
+                .map_err(debug)?,
+            ItemTransferOutcome::Committed(_)
+        ));
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn derived_capacity_commit_reweighs_carried_items_added_after_freeze() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_current").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness.committed(&authority, to_slot(command(1)?, backpack, backpack_facts())).await?;
+        let exact = harness.mint(&authority, "fixture:capacity.exact", 1).await?;
+        let mut item_facts = facts("fixture:capacity.exact", ItemStackClass::NonStackable);
+        item_facts.weight = Some(155999);
+        let mut candidate = harness.root.freeze_item_transfer(
+            &authority, &harness.node, fence()?, to_backpack(command(2)?, exact, item_facts), &TEST_WEIGHTS,
+        ).await.map_err(debug)?;
+        // A different native TRANSFER changes actual custody after PREPARE, without
+        // changing Character revision or the admitted immutable Content generation.
+        let stone = harness.mint(&authority, STONE, 1).await?;
+        harness.committed(&authority, to_backpack(command(3)?, stone, facts(STONE, ItemStackClass::NonStackable))).await?;
+        refused(harness.root.commit_item_transfer(
+            &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope).await.map_err(debug)?,
+            &authority, &harness.node, fence()?, &mut candidate, &TEST_WEIGHTS,
+        ).await, ItemTransferRefusal::Overweight)?;
+        assert_eq!(harness.count("game_item_transfer_receipts").await?, 2);
+        let on_ground: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid)")
+            .bind(exact.as_slice()).fetch_one(&harness.pool).await?;
+        assert!(on_ground);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+struct MissingBackpackWeights;
+impl oteryn_game_server::durability::item_transfer::ItemWeightLookup for MissingBackpackWeights {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xD1; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> Result<u32, oteryn_game_server::durability::item_transfer::ItemWeightRefused> {
+        if definition.production_key == BACKPACK {
+            Err(oteryn_game_server::durability::item_transfer::ItemWeightRefused::Unknown)
+        } else {
+            oteryn_game_server::durability::item_transfer::ItemWeightLookup::weight_of(
+                &TEST_WEIGHTS,
+                definition,
+            )
+        }
+    }
+}
+
+#[test]
+fn derived_capacity_unknown_carried_weight_refuses_even_with_known_incoming() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_unknown_carried").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        let item = harness.mint(&authority, STONE, 1).await?;
+        let before = harness.footprint().await?;
+        refused(
+            harness
+                .root
+                .freeze_item_transfer(
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    to_backpack(
+                        command(2)?,
+                        item,
+                        facts(STONE, ItemStackClass::NonStackable),
+                    ),
+                    &MissingBackpackWeights,
+                )
+                .await,
+            ItemTransferRefusal::WeightUnknown,
+        )?;
+        assert_eq!(harness.footprint().await?, before);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+fn capacity_gameplay_fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
+    let item = fence()?;
+    Ok(CurrentCharacterGameplayFence {
+        character_id: item.character_id,
+        game_session_id: item.game_session_id,
+        connection_generation: item.connection_generation,
+        character_lease_generation: item.character_lease_generation,
+        runtime_scope: item.runtime_scope,
+        scope_ownership_generation: item.scope_ownership_generation,
+        expected_character_revision: crate::domain::CharacterRevision::new(revision)
+            .map_err(debug)?,
+    })
+}
+
+#[test]
+fn derived_capacity_follows_real_level_award_and_death_receipts() -> TestResult {
+    use crate::durability::character_death::{
+        CharacterDeathOutcome, CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
+    };
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacity_levels").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        let item = harness
+            .mint(&authority, "fixture:capacity.level51", 1)
+            .await?;
+        let mut item_facts = facts("fixture:capacity.level51", ItemStackClass::NonStackable);
+        item_facts.weight = Some(157998);
+        let request = to_backpack(command(2)?, item, item_facts);
+        // Level 50: 157999 total is above the actual derived 156000 capacity.
+        refused(
+            harness
+                .transfer(&authority, fence()?, request.clone())
+                .await,
+            ItemTransferRefusal::Overweight,
+        )?;
+        let base = xp_request(71)?;
+        // This explicit finite test oracle supports the fixture's level50 seed and
+        // every possible level reached by the real native death calculator. It is
+        // not asserted to be the production XP curve.
+        let mut thresholds = [LevelThreshold {
+            level: 1,
+            minimum_experience: ExactI64::new(0),
+        }; 51];
+        for (index, threshold) in thresholds.iter_mut().enumerate() {
+            *threshold = LevelThreshold {
+                level: u32::try_from(index + 1)?,
+                minimum_experience: ExactI64::new(match index {
+                    49 => 1000,
+                    50 => 1100,
+                    _ => i64::try_from(index)? * 20,
+                }),
+            };
+        }
+        let award = ExperienceAwardRequest {
+            occurrence: base.occurrence,
+            amount: ExactI64::new(199),
+            context: base.context,
+            policy_revision: base.policy_revision,
+            reward_revision: base.reward_revision,
+            policy: FiniteProgressionPolicy {
+                context: base.policy.context,
+                policy_revision: base.policy.policy_revision,
+                reward_revision: base.policy.reward_revision,
+                death_policy_revision: base.policy.death_policy_revision,
+                declared_difference_revision: base.policy.declared_difference_revision,
+                thresholds,
+                terminal_exclusive_experience: base.policy.terminal_exclusive_experience,
+                death_loss_numerator: 1,
+                death_loss_denominator: 1,
+                death_loss_rounding: RoundingMode::Floor,
+            },
+        };
+        let death_policy = award.clone();
+        let gained = harness
+            .root
+            .commit_character_experience(
+                &authority,
+                &harness.node,
+                capacity_gameplay_fence(1)?,
+                award,
+            )
+            .await
+            .map_err(debug)?;
+        let ExperienceCommitOutcome::Committed(gained) = gained else {
+            return Err("XP receipt missing".into());
+        };
+        assert_eq!((gained.level_before, gained.level_after), (50, 51));
+        assert_eq!(gained.experience_after, ExactI64::new(1199));
+        let after_gain = harness
+            .root
+            .read_character_progression(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("post-XP progression")?;
+        assert_eq!(
+            (after_gain.level, after_gain.character_revision),
+            (51, gained.committed_character_revision)
+        );
+        // Same command/facts now pass through the actual native transfer writer at level51.
+        harness.committed(&authority, request).await?;
+        let stone = harness.mint(&authority, STONE, 1).await?;
+        let mut candidate = harness
+            .root
+            .freeze_item_transfer(
+                &authority,
+                &harness.node,
+                fence()?,
+                to_backpack(
+                    command(3)?,
+                    stone,
+                    facts(STONE, ItemStackClass::NonStackable),
+                ),
+                &TEST_WEIGHTS,
+            )
+            .await
+            .map_err(debug)?;
+        // The native level51 death loss is capped at the current1199 XP, leaving
+        // level1 under the finite test oracle; no direct progression SQL is written.
+        let occurrence = PlayerDeathOccurrence::from_bytes(id(72)).map_err(debug)?;
+        let died = harness
+            .root
+            .commit_character_death(
+                &authority,
+                &harness.node,
+                capacity_gameplay_fence(after_gain.character_revision.get())?,
+                CharacterDeathRequest {
+                    occurrence,
+                    context: death_policy.context,
+                    policy_revision: death_policy.policy_revision,
+                    reward_revision: death_policy.reward_revision,
+                    policy: death_policy.policy,
+                    held_blessings: Vec::new(),
+                    death_cell: DeathCell {
+                        world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+                        spatial_position: vec![1, 2, 3, 7],
+                        map_revision: "map-1".into(),
+                    },
+                    respawn_position: b"fixture:temple".to_vec(),
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let CharacterDeathOutcome::Committed(died) = died else {
+            return Err("death receipt missing".into());
+        };
+        assert_eq!((died.level_before, died.level_after), (51, 1));
+        assert_eq!(died.experience_after, ExactI64::new(0));
+        let after_loss = harness
+            .root
+            .read_character_progression(&authority, fence()?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("post-death progression")?;
+        assert_eq!(
+            (after_loss.level, after_loss.character_revision),
+            (1, died.committed_character_revision)
+        );
+        assert!(
+            harness
+                .root
+                .consume_pending_respawn(
+                    &authority,
+                    &harness.node,
+                    capacity_gameplay_fence(after_loss.character_revision.get())?,
+                    Some(occurrence),
+                )
+                .await
+                .map_err(debug)?
+                .is_some()
+        );
+        // The prepared item does not retain level51 capacity after the real level loss.
+        refused(
+            harness
+                .root
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                    &TEST_WEIGHTS,
+                )
+                .await,
+            ItemTransferRefusal::Overweight,
+        )?;
+        assert!(harness.on_ground(stone).await?);
+        assert_eq!(harness.count("game_item_transfer_receipts").await?, 2);
+        assert_eq!(harness.count("game_character_xp_receipts").await?, 1);
+        assert_eq!(harness.count("game_character_death_receipts").await?, 1);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+// Private DEPOT0 continuation: actual native schema/fence/proof qualification.
+// This does not provide an admitted locker, open view, Premium or Content source.
+mod depot_native_proposal_cases {
+    use super::*;
+    use crate::durability::item_mint_audit::{
+        AUDIT_RETENTION_P90D_MS, EVENT_TYPE_ID, ITEM_LIFECYCLE_LIVE, OneItemStateV1,
+        OneItemTypedDefinitionRevisionV1, Type2Transaction,
+    };
+    use crate::durability::item_transfer::character_item_fence_is_current;
+
+    const SQL: &str = include_str!("depot_native_proposal.sql");
+
+    struct Occurrence {
+        command: CommandRef,
+        item: [u8; 16],
+        transaction: [u8; 16],
+        event: [u8; 16],
+        occurred_at: i64,
+    }
+
+    #[derive(Clone, Copy)]
+    enum Fault {
+        None,
+        NoAudit,
+        NoReceipt,
+        ClaimedQuantity,
+    }
+
+    async fn native_relation_fence(tx: &mut Type2Transaction<'_>) -> TestResult {
+        // Exact db.rs relation order, before the native typed node/session/root fence.
+        // No relation trigger, constraint, proof or native authority row is bypassed.
+        sqlx::raw_sql(
+            "LOCK TABLE game_durability_admission_account_guards,
+            game_durability_admission_character_guards,game_durability_admission_guard_history,
+            game_durability_admission_lifecycle_receipts,game_durability_admission_runtime_guards,
+            game_durability_admission_signing_trust_guards,game_durability_control_loss_continuity,
+            game_durability_executor_custody,game_durability_fresh_admission_receipts,
+            game_durability_reconnect_attempts,game_durability_reconnect_pending_commands,
+            game_durability_reconnect_sessions,game_durability_recovery_grant_consumptions,
+            game_durability_session_replacements,game_durability_session_use_ledgers,
+            game_durability_session_use_memberships,game_durability_transport_ref_reservations
+            IN EXCLUSIVE MODE",
+        )
+        .execute(&mut ***tx)
+        .await?;
+        Ok(())
+    }
+
+    async fn transaction(h: &Harness, command: CommandRef) -> TestResult<Type2Transaction<'_>> {
+        let mut tx = Type2Transaction::open(h.pool.begin().await?).await?;
+        native_relation_fence(&mut tx).await?;
+        sqlx::query("SELECT 1 FROM game_item_transfer_reservations
+            WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
+            .bind(command.game_session_id().as_bytes().as_slice())
+            .bind(command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
+        let current = fence()?;
+        assert!(
+            character_item_fence_is_current(
+                &mut tx,
+                &h.node,
+                &current,
+                command,
+                current.character_id,
+                id(WORLD),
+                id(CHANNEL),
+            )
+            .await?
+        );
+        Ok(tx)
+    }
+
+    async fn install(h: &Harness) -> TestResult {
+        sqlx::raw_sql(SQL).execute(&h.pool).await?;
+        let forbidden: bool = sqlx::query_scalar("SELECT
+            has_function_privilege('oteryn_game_runtime',
+                'game_depot_proposal_apply(uuid,numeric,uuid,numeric,numeric,numeric)','EXECUTE')
+            OR has_table_privilege('oteryn_game_runtime','game_item_character_depot_locations','INSERT')
+            OR has_table_privilege('oteryn_game_runtime','game_item_depot_shape_proofs','INSERT')")
+            .fetch_one(&h.pool).await?;
+        assert!(
+            !forbidden,
+            "private proposal must not activate runtime writes"
+        );
+        Ok(())
+    }
+
+    async fn reserve(
+        h: &Harness,
+        value: u64,
+        item: [u8; 16],
+        box_index: u8,
+        source_kind: i16,
+        destination_kind: i16,
+    ) -> TestResult<Occurrence> {
+        let command = command(value)?;
+        let mut tx = transaction(h, command).await?;
+        let intent = serde_json::json!({
+            "character": uuid_text(id(CHARACTER)), "world": uuid_text(id(WORLD)),
+            "item": uuid_text(item), "source_kind": source_kind,
+            "destination_kind": destination_kind, "box": box_index,
+            "content_revision": "content-1", "ruleset_revision": "ruleset-1",
+            "sim_revision": "sim-1", "weight_generation_digest": "d1".repeat(32),
+        })
+        .to_string();
+        // Native UUIDv7/timestamp owner, actual CommandRef, exact versioned binding.
+        // This reservation is a private persistence fixture, not locker admission.
+        sqlx::query(
+            "INSERT INTO game_item_transfer_reservations(game_session_id,command_id,
+            character_id,world_id,channel_id,source_item_instance_id,destination_kind,
+            intent_binding,transaction_id,event_id,occurred_at,work_units_used,reserved_at,
+            source_kind,depot_intent)
+            SELECT encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,
+                encode($4,'hex')::uuid,NULL,encode($5,'hex')::uuid,$6,
+                decode('03','hex')||sha256(convert_to(($7::jsonb)::text,'UTF8')),
+                game_character_uuid_v7(),game_character_uuid_v7(),
+                floor(extract(epoch FROM statement_timestamp())*1000)::bigint,1,
+                floor(extract(epoch FROM statement_timestamp())*1000)::bigint,$8,$7::jsonb
+            ON CONFLICT(game_session_id,command_id) DO NOTHING",
+        )
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(WORLD).as_slice())
+        .bind(item.as_slice())
+        .bind(destination_kind)
+        .bind(&intent)
+        .bind(source_kind)
+        .execute(&mut **tx)
+        .await?;
+        let row = sqlx::query(
+            "SELECT uuid_send(transaction_id) AS transaction_id,
+            uuid_send(event_id) AS event_id,occurred_at,depot_intent=$3::jsonb AS same_intent
+            FROM game_item_transfer_reservations
+            WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
+        )
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .bind(intent)
+        .fetch_one(&mut **tx)
+        .await?;
+        if !row.try_get::<bool, _>("same_intent")? {
+            tx.into_inner().rollback().await?;
+            return Err("DEPOT_CONFLICTING_OCCURRENCE".into());
+        }
+        let occurrence = Occurrence {
+            command,
+            item,
+            transaction: row
+                .try_get::<Vec<u8>, _>("transaction_id")?
+                .try_into()
+                .map_err(|_| "transaction UUID width")?,
+            event: row
+                .try_get::<Vec<u8>, _>("event_id")?
+                .try_into()
+                .map_err(|_| "event UUID width")?,
+            occurred_at: row.try_get("occurred_at")?,
+        };
+        tx.into_inner().commit().await?;
+        Ok(occurrence)
+    }
+
+    async fn apply(tx: &mut Type2Transaction<'_>, occurrence: &Occurrence) -> TestResult<bool> {
+        Ok(sqlx::query_scalar("SELECT (game_depot_proposal_apply(
+            encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,1,1,1)->>'replayed')::boolean")
+            .bind(occurrence.command.game_session_id().as_bytes().as_slice())
+            .bind(occurrence.command.command_id().get().to_string())
+            .bind(id(CHANNEL).as_slice()).fetch_one(&mut ***tx).await?)
+    }
+
+    async fn finish(
+        tx: &mut Type2Transaction<'_>,
+        occurrence: &Occurrence,
+        fault: Fault,
+    ) -> TestResult<Vec<u8>> {
+        let row = sqlx::query("SELECT *,uuid_send(world_id) AS world_bytes,
+            uuid_send(character_id) AS character_bytes,uuid_send(source_parent) AS source_parent_bytes,
+            uuid_send(destination_parent) AS destination_parent_bytes,
+            source_ordinal::text AS source_ordinal_text,destination_ordinal::text AS destination_ordinal_text,
+            depot_ordinal::text AS depot_ordinal_text,connection_generation::text AS connection_text,
+            lease_generation::text AS lease_text
+            FROM game_item_depot_shape_proofs WHERE transaction_id=encode($1,'hex')::uuid")
+            .bind(occurrence.transaction.as_slice()).fetch_one(&mut ***tx).await?;
+        let state = OneItemStateV1 {
+            item_instance_id: occurrence.item.to_vec(),
+            world_id: row.try_get("world_bytes")?,
+            definition: Some(OneItemTypedDefinitionRevisionV1 {
+                family: row.try_get("definition_family")?,
+                production_key: row.try_get("definition_production_key")?,
+                revision_ref: row.try_get("definition_revision_ref")?,
+            }),
+            quantity: u32::try_from(row.try_get::<i64, _>("quantity_before")?)?,
+            lifecycle: ITEM_LIFECYCLE_LIVE,
+            key_number: u32::try_from(row.try_get::<i64, _>("key_number")?)?,
+        };
+        let deposit = row.try_get::<i16, _>("shape")? == 8;
+        let parent: Option<Vec<u8>> = row.try_get(if deposit {
+            "source_parent_bytes"
+        } else {
+            "destination_parent_bytes"
+        })?;
+        let ordinal: Option<String> = row.try_get(if deposit {
+            "source_ordinal_text"
+        } else {
+            "destination_ordinal_text"
+        })?;
+        let inventory = audit::OneItemInventoryV1 {
+            character_id: row.try_get("character_bytes")?,
+            expected_session_generation: row.try_get::<String, _>("connection_text")?.parse()?,
+            expected_game_session_id: occurrence.command.game_session_id().as_bytes().to_vec(),
+            expected_character_lease_generation: row.try_get::<String, _>("lease_text")?.parse()?,
+            container_entry: match (parent, ordinal) {
+                (Some(parent), Some(ordinal)) => Some(audit::OneItemContainerEntryV1 {
+                    parent_item_instance_id: parent,
+                    placement_ordinal: ordinal.parse()?,
+                }),
+                (None, None) => None,
+                _ => return Err("partial inventory position".into()),
+            },
+            equipment_container_slot: row.try_get::<i16, _>("destination_kind")? == 1,
+        };
+        let depot = audit::OneItemCharacterDepotV1 {
+            character_id: row.try_get("character_bytes")?,
+            world_id: row.try_get("world_bytes")?,
+            box_index: u32::try_from(row.try_get::<i16, _>("depot_box")?)?,
+            placement_ordinal: row.try_get::<String, _>("depot_ordinal_text")?.parse()?,
+        };
+        let (inventory_source, depot_source, destination, depot_destination) = if deposit {
+            (Some(Box::new(inventory)), None, None, Some(Box::new(depot)))
+        } else {
+            (None, Some(Box::new(depot)), Some(inventory), None)
+        };
+        let tuple = tx.tuple();
+        let wire = audit::encode_transfer_event(
+            audit::TransferEventIdentity {
+                event_id: occurrence.event,
+                transaction_id: occurrence.transaction,
+                occurred_at_unix_ms: occurrence.occurred_at,
+                server_build_id: "oteryn-game-server/depot-proposal-test",
+            },
+            audit::OneItemTransferV1 {
+                before: Some(state.clone()),
+                after: Some(state),
+                source: None,
+                corpse_source: None,
+                destination,
+                inventory_source,
+                depot_source,
+                depot_destination,
+                receiver: None,
+                cause: Some(audit::OneItemTransferCauseV1 {
+                    typed_cause: audit::CHARACTER_DEPOT_TYPED_CAUSE.into(),
+                    content_revision: row.try_get("content_revision")?,
+                    ruleset_revision: row.try_get("ruleset_revision")?,
+                    sim_revision: row.try_get("sim_revision")?,
+                    command_ref: Some(audit::OneItemCommandRefV1 {
+                        game_session_id: occurrence.command.game_session_id().as_bytes().to_vec(),
+                        command_id: occurrence.command.command_id().get(),
+                    }),
+                }),
+            },
+            tuple.tuple(),
+        )
+        .map_err(debug)?;
+        if !matches!(fault, Fault::NoAudit) {
+            sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,
+                transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,
+                occurred_at,expires_at,envelope,envelope_sha256,publication_state)
+                VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,$3,$4,$5,
+                    encode($6,'hex')::uuid,$7,$7+$8,$9,sha256($9),1)")
+                .bind(occurrence.event.as_slice()).bind(occurrence.transaction.as_slice())
+                .bind(i64::from(EVENT_TYPE_ID)).bind(i64::from(tuple.schema_revision()))
+                .bind(tuple.retention_profile_id()).bind(occurrence.item.as_slice())
+                .bind(occurrence.occurred_at).bind(AUDIT_RETENTION_P90D_MS).bind(&wire)
+                .execute(&mut ***tx).await?;
+        }
+        if !matches!(fault, Fault::NoReceipt) {
+            let delta: i64 = if matches!(fault, Fault::ClaimedQuantity) {
+                1
+            } else {
+                0
+            };
+            sqlx::query("INSERT INTO game_item_transfer_receipts(game_session_id,command_id,character_id,
+                intent_binding,transaction_id,event_id,shape,source_item_instance_id,source_quantity_before,
+                source_quantity_after,destination_parent_item_instance_id,destination_ordinal,occurred_at,
+                envelope_sha256,committed_at,depot_box,depot_ordinal)
+                SELECT p.game_session_id,p.command_id,p.character_id,v.intent_binding,p.transaction_id,
+                    p.event_id,p.shape,p.item_instance_id,p.quantity_before+$2,p.quantity_before+$2,
+                    p.destination_parent,p.destination_ordinal,v.occurred_at,sha256($3),
+                    floor(extract(epoch FROM statement_timestamp())*1000)::bigint,p.depot_box,p.depot_ordinal
+                FROM game_item_depot_shape_proofs p JOIN game_item_transfer_reservations v USING(transaction_id)
+                WHERE p.transaction_id=encode($1,'hex')::uuid")
+                .bind(occurrence.transaction.as_slice()).bind(delta).bind(&wire)
+                .execute(&mut ***tx).await?;
+        }
+        Ok(wire)
+    }
+
+    async fn move_once(h: &Harness, occurrence: &Occurrence) -> TestResult<bool> {
+        let mut tx = transaction(h, occurrence.command).await?;
+        let replayed = apply(&mut tx, occurrence).await?;
+        if !replayed {
+            finish(&mut tx, occurrence, Fault::None).await?;
+        }
+        tx.into_inner().commit().await?;
+        Ok(replayed)
+    }
+
+    async fn footprint(h: &Harness, item: [u8; 16]) -> TestResult<(Vec<i64>, String)> {
+        let mut counts = h.footprint().await?;
+        for relation in [
+            "game_item_character_depot_locations",
+            "game_item_depot_shape_proofs",
+            "game_item_depot_removal_evidence",
+            "game_item_transfer_quantity_evidence",
+        ] {
+            counts.push(h.count(relation).await?);
+        }
+        let state = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        Ok((counts, state))
+    }
+
+    fn constraint_error(error: &sqlx::Error) {
+        let code = error.as_database_error().and_then(|value| value.code());
+        assert!(
+            matches!(code.as_deref(), Some("23514" | "23503")),
+            "unexpected database error: {error}"
+        );
+    }
+
+    #[test]
+    fn depot_native_whole_item_roundtrip_no_merge_replay_and_revision() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let h = Harness::create(admin, "depot_native_roundtrip").await?;
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let backpack = h.mint(&authority, BACKPACK, 1).await?;
+            h.committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+                .await?;
+            let item = h.mint(&authority, COIN, 37).await?;
+            h.committed(
+                &authority,
+                to_backpack(command(2)?, item, facts(COIN, STACKABLE)),
+            )
+            .await?;
+            let deposit = reserve(&h, 1001, item, 17, 5, 6).await?;
+            assert!(!move_once(&h, &deposit).await?);
+            assert_eq!(h.item_state(item).await?, (37, 1));
+            let ordinal: String = sqlx::query_scalar(
+                "SELECT ordinal::text FROM game_item_character_depot_locations
+                WHERE item_instance_id=encode($1,'hex')::uuid AND box=17",
+            )
+            .bind(item.as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(ordinal, "1");
+            let stored: Vec<u8> = sqlx::query_scalar(
+                "SELECT envelope FROM game_item_audit_outbox WHERE event_id=encode($1,'hex')::uuid",
+            )
+            .bind(deposit.event.as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            let (envelope, payload) = audit::decode_transfer_envelope(&stored).map_err(debug)?;
+            assert_eq!(envelope.world_id, Some(id(WORLD).to_vec()));
+            assert_eq!(envelope.channel_id, None);
+            assert_eq!(
+                audit::check_transfer(&payload).map_err(debug)?,
+                TransferShape::DepotDeposit
+            );
+
+            // A compatible stack now exists in inventory. Depot withdrawal must
+            // still create one new entry, with both exact quantities preserved.
+            let receiver = h.mint(&authority, COIN, 60).await?;
+            h.committed(
+                &authority,
+                to_backpack(command(3)?, receiver, facts(COIN, STACKABLE)),
+            )
+            .await?;
+            let withdraw = reserve(&h, 1002, item, 17, 6, 2).await?;
+            assert!(!move_once(&h, &withdraw).await?);
+            let row = sqlx::query(
+                "SELECT shape,destination_ordinal::text AS ordinal,depot_box,
+                depot_ordinal::text AS depot_ordinal FROM game_item_transfer_receipts
+                WHERE transaction_id=encode($1,'hex')::uuid",
+            )
+            .bind(withdraw.transaction.as_slice())
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(row.try_get::<i16, _>("shape")?, 9);
+            assert_eq!(row.try_get::<String, _>("ordinal")?, "2");
+            assert_eq!(row.try_get::<i16, _>("depot_box")?, 17);
+            assert_eq!(row.try_get::<String, _>("depot_ordinal")?, "1");
+            assert_eq!(h.item_state(item).await?, (37, 1));
+            assert_eq!(h.item_state(receiver).await?, (60, 1));
+            assert_eq!(h.count("game_item_character_depot_locations").await?, 0);
+            assert_eq!(h.count("game_item_container_entries").await?, 2);
+            assert_eq!(h.character_revision().await?, "1");
+            let before = footprint(&h, item).await?;
+            // Historical deposit is a terminal receipt replay even after the
+            // item moved again. It must not regain its former Depot custody.
+            assert!(move_once(&h, &deposit).await?);
+            assert!(move_once(&h, &withdraw).await?);
+            assert_eq!(footprint(&h, item).await?, before);
+            assert!(reserve(&h, 1001, item, 16, 5, 6).await.is_err());
+            assert_eq!(footprint(&h, item).await?, before);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    }
+
+    #[test]
+    fn depot_native_same_transaction_receipt_audit_and_actual_quantity_required() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let h = Harness::create(admin, "depot_native_atomic").await?;
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let backpack = h.mint(&authority, BACKPACK, 1).await?;
+            h.committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+                .await?;
+            let item = h.mint(&authority, STONE, 1).await?;
+            h.committed(
+                &authority,
+                to_backpack(
+                    command(2)?,
+                    item,
+                    facts(STONE, ItemStackClass::NonStackable),
+                ),
+            )
+            .await?;
+            for (offset, fault) in [Fault::NoAudit, Fault::NoReceipt, Fault::ClaimedQuantity]
+                .into_iter()
+                .enumerate()
+            {
+                let occurrence = reserve(&h, 1001 + u64::try_from(offset)?, item, 1, 5, 6).await?;
+                let before = footprint(&h, item).await?;
+                let mut tx = transaction(&h, occurrence.command).await?;
+                assert!(!apply(&mut tx, &occurrence).await?);
+                finish(&mut tx, &occurrence, fault).await?;
+                let error = tx
+                    .into_inner()
+                    .commit()
+                    .await
+                    .err()
+                    .ok_or("incomplete Depot transaction committed")?;
+                constraint_error(&error);
+                assert_eq!(
+                    footprint(&h, item).await?,
+                    before,
+                    "atomic rollback case {offset}"
+                );
+                assert_eq!(h.character_revision().await?, "1");
+            }
+            drop(authority);
+            drop(seal);
+            h.cleanup().await
+        })
+    }
+
+    #[test]
+    fn depot_native_exclusivity_removal_and_historical_proof_are_closed() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let h = Harness::create(admin,"depot_native_custody").await?;
+            install(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let backpack = h.mint(&authority,BACKPACK,1).await?;
+            h.committed(&authority,to_slot(command(1)?,backpack,backpack_facts())).await?;
+            let item = h.mint(&authority,STONE,1).await?;
+            h.committed(&authority,to_backpack(command(2)?,item,facts(STONE,ItemStackClass::NonStackable))).await?;
+            let before = footprint(&h,item).await?;
+            // The new table's insertion proof is deferred. Calling the actual
+            // existing exclusivity owner now isolates its eighth location arm;
+            // no trigger or constraint is disabled and this attempt rolls back.
+            let mut duplicate = h.pool.begin().await?;
+            sqlx::query("INSERT INTO game_item_character_depot_locations
+                (item_instance_id,world_id,character_id,box,ordinal,placed_transaction_id)
+                VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,game_character_uuid_v7())")
+                .bind(item.as_slice()).bind(id(WORLD).as_slice()).bind(id(CHARACTER).as_slice())
+                .execute(&mut *duplicate).await?;
+            let error = sqlx::query("SELECT game_item_location_exclusive(encode($1,'hex')::uuid)")
+                .bind(item.as_slice()).execute(&mut *duplicate).await.err().ok_or("Depot missing from native exclusivity union")?;
+            constraint_error(&error);duplicate.rollback().await?;
+            assert_eq!(footprint(&h,item).await?,before);
+            let deposit = reserve(&h,1001,item,1,5,6).await?;
+            assert!(!move_once(&h,&deposit).await?);
+            let before = footprint(&h,item).await?;
+            let mut removal = h.pool.begin().await?;
+            let error = sqlx::query("DELETE FROM game_item_character_depot_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item.as_slice()).execute(&mut *removal).await.err().ok_or("unproven Depot removal accepted")?;
+            constraint_error(&error);removal.rollback().await?;
+            let mut history = h.pool.begin().await?;
+            let error = sqlx::query("SELECT game_depot_shape_complete(encode($1,'hex')::uuid)")
+                .bind(deposit.transaction.as_slice()).execute(&mut *history).await.err().ok_or("historical proof reused as physical authority")?;
+            constraint_error(&error);history.rollback().await?;
+            assert_eq!(footprint(&h,item).await?,before);
+            // Current native fences reject each changed generation independently.
+            for field in 0..3 {
+                let mut tx = Type2Transaction::open(h.pool.begin().await?).await?;
+                native_relation_fence(&mut tx).await?;
+                let mut stale = fence()?;
+                match field {
+                    0 => stale.connection_generation = ConnectionGeneration::new(2).map_err(debug)?,
+                    1 => stale.character_lease_generation = 2,
+                    _ => stale.scope_ownership_generation = ScopeOwnershipGeneration::new(2).map_err(debug)?,
+                }
+                assert!(!character_item_fence_is_current(&mut tx,&h.node,&stale,command(1002)?,
+                    stale.character_id,id(WORLD),id(CHANNEL)).await?);
+                tx.into_inner().rollback().await?;
+                assert_eq!(footprint(&h,item).await?,before);
+            }
+            drop(authority);drop(seal);h.cleanup().await
+        })
+    }
+
+    async fn root_precedes_item_locks(
+        h: &Harness,
+        occurrence: &Occurrence,
+        backpack: [u8; 16],
+    ) -> TestResult {
+        // The blocker acquires only the actual native Character root row. It never
+        // acquires an item, backpack, reservation or admission-relation lock.
+        let mut blocker = h.pool.begin().await?;
+        let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut *blocker)
+            .await?;
+        sqlx::query_scalar::<_, i32>(
+            "SELECT 1 FROM game_character_roots
+            WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .fetch_one(&mut *blocker)
+        .await?;
+
+        // A real pre-opened type-2 transaction calls the unchanged physical primitive.
+        // No caller-side root/item/relation lock can mask its own ordering here.
+        let mut pending = Type2Transaction::open(h.pool.begin().await?).await?;
+        sqlx::query("SET LOCAL lock_timeout='10s'")
+            .execute(&mut **pending)
+            .await?;
+        sqlx::query("SET LOCAL statement_timeout='15s'")
+            .execute(&mut **pending)
+            .await?;
+        let pending_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut **pending)
+            .await?;
+
+        let inspect_and_release = async {
+            let inspection: TestResult = async {
+                // Inspect only the two backends opened by this test in this database.
+                // A late root lock in an insertion trigger can also satisfy this wait;
+                // the independent NOWAIT row probe below distinguishes that wrong order.
+                tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    loop {
+                        let waiting: bool = sqlx::query_scalar("SELECT EXISTS(
+                            SELECT 1 FROM pg_stat_activity a WHERE a.pid=$1
+                            AND a.datid=(SELECT oid FROM pg_database WHERE datname=current_database())
+                            AND a.wait_event_type='Lock' AND $2::integer=ANY(pg_blocking_pids(a.pid)))")
+                            .bind(pending_pid).bind(blocker_pid).fetch_one(&h.pool).await?;
+                        if waiting { return Ok::<(), sqlx::Error>(()); }
+                        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    }
+                }).await.map_err(|_| "DEPOT_ROOT_ORDER: primitive did not wait on the own root blocker")??;
+
+                let mut probe = h.pool.begin().await?;
+                let rows: Result<Vec<Vec<u8>>, sqlx::Error> = async {
+                    sqlx::query("SET LOCAL statement_timeout='2s'").execute(&mut *probe).await?;
+                    sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances
+                        WHERE item_instance_id=encode($1,'hex')::uuid
+                           OR item_instance_id=encode($2,'hex')::uuid
+                        ORDER BY item_instance_id FOR UPDATE NOWAIT")
+                        .bind(occurrence.item.as_slice()).bind(backpack.as_slice())
+                        .fetch_all(&mut *probe).await
+                }.await;
+                // Release the probe's row locks before releasing the Character root,
+                // on both the successful and refused NOWAIT paths.
+                let probe_rollback = probe.rollback().await;
+                probe_rollback?;
+                let actual = match rows {
+                    Ok(rows) => rows,
+                    Err(error) if error.as_database_error().and_then(|e| e.code()).as_deref() == Some("55P03") => {
+                        return Err("DEPOT_ROOT_ORDER: item lock acquired before Character root".into());
+                    }
+                    Err(error) => return Err(error.into()),
+                };
+                let mut expected = vec![occurrence.item.to_vec(), backpack.to_vec()];
+                expected.sort();
+                if actual != expected || actual.len() != 2 {
+                    return Err("DEPOT_ROOT_ORDER: probe did not lock both actual source and backpack rows".into());
+                }
+                eprintln!("DEPOT_ROOT_ORDER: own root blocks primitive; both actual item rows remain unlocked");
+                Ok(())
+            }.await;
+            // Always unblock the awaited worker, including an intended RED failure.
+            let release: TestResult = blocker.rollback().await.map_err(Into::into);
+            inspection?;
+            release
+        };
+        let (attempt, inspection) =
+            join_two(apply(&mut pending, occurrence), inspect_and_release).await;
+        // No task is detached. Both futures have completed before ending the worker's
+        // physical transaction, so failed probes cannot leave it hanging on the root.
+        let rollback = pending.into_inner().rollback().await;
+        rollback?;
+        inspection?;
+        if attempt? {
+            return Err("DEPOT_ROOT_ORDER: expected a new move, not historical replay".into());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn depot_native_root_lock_serializes_box_ordinal_and_retry() -> TestResult {
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let h = Harness::create(admin, "depot_native_root").await?;
+            let result: TestResult = async {
+                install(&h).await?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let backpack = h.mint(&authority, BACKPACK, 1).await?;
+                h.committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+                    .await?;
+                let first = h.mint(&authority, STONE, 1).await?;
+                let second = h.mint(&authority, STONE, 1).await?;
+                h.committed(
+                    &authority,
+                    to_backpack(
+                        command(2)?,
+                        first,
+                        facts(STONE, ItemStackClass::NonStackable),
+                    ),
+                )
+                .await?;
+                h.committed(
+                    &authority,
+                    to_backpack(
+                        command(3)?,
+                        second,
+                        facts(STONE, ItemStackClass::NonStackable),
+                    ),
+                )
+                .await?;
+                let one = reserve(&h, 1001, first, 1, 5, 6).await?;
+                let two = reserve(&h, 1002, second, 1, 5, 6).await?;
+                // The separate root-only blocker and independent two-row NOWAIT probe
+                // distinguish root-before-items from a shared backpack or late trigger lock.
+                // The reservations were established under the real native fence; admission
+                // facts remain unchanged during this private persistence-only probe.
+                let before_probe = footprint(&h, first).await?;
+                root_precedes_item_locks(&h, &one, backpack).await?;
+                assert_eq!(footprint(&h, first).await?, before_probe);
+                // The probe's completed physical attempt was rolled back. Its actual retry
+                // consumes another unit on the same immutable native reservation.
+                sqlx::query(
+                    "UPDATE game_item_transfer_reservations SET work_units_used=work_units_used+1
+                WHERE transaction_id=encode($1,'hex')::uuid",
+                )
+                .bind(one.transaction.as_slice())
+                .execute(&h.pool)
+                .await?;
+                // These next two moves prove serialization, rollback and ordinal retry.
+                // Their shared backpack alone does not establish the root-lock order;
+                // that independent claim belongs to the preceding probe.
+                let mut winner = Type2Transaction::open(h.pool.begin().await?).await?;
+                assert!(!apply(&mut winner, &one).await?);
+                finish(&mut winner, &one, Fault::None).await?;
+                let mut contender = Type2Transaction::open(h.pool.begin().await?).await?;
+                sqlx::query("SET LOCAL lock_timeout='100ms'")
+                    .execute(&mut **contender)
+                    .await?;
+                let error = sqlx::query(
+                    "SELECT game_depot_proposal_apply(encode($1,'hex')::uuid,
+                $2::text::numeric,encode($3,'hex')::uuid,1,1,1)",
+                )
+                .bind(two.command.game_session_id().as_bytes().as_slice())
+                .bind(two.command.command_id().get().to_string())
+                .bind(id(CHANNEL).as_slice())
+                .execute(&mut **contender)
+                .await
+                .err()
+                .ok_or("competing Depot move did not wait")?;
+                assert_eq!(
+                    error.as_database_error().and_then(|e| e.code()).as_deref(),
+                    Some("55P03")
+                );
+                contender.into_inner().rollback().await?;
+                winner.into_inner().commit().await?;
+                sqlx::query(
+                    "UPDATE game_item_transfer_reservations SET work_units_used=work_units_used+1
+                WHERE transaction_id=encode($1,'hex')::uuid",
+                )
+                .bind(two.transaction.as_slice())
+                .execute(&h.pool)
+                .await?;
+                assert!(!move_once(&h, &two).await?);
+                let ordinals: Vec<String> = sqlx::query_scalar(
+                    "SELECT ordinal::text
+                FROM game_item_character_depot_locations d ORDER BY d.ordinal",
+                )
+                .fetch_all(&h.pool)
+                .await?;
+                assert_eq!(ordinals, vec!["1".to_owned(), "2".to_owned()]);
+                assert_eq!(h.count("game_item_depot_shape_proofs").await?, 2);
+                assert_eq!(h.character_revision().await?, "1");
+                drop(authority);
+                drop(seal);
+                Ok(())
+            }
+            .await;
+            // In particular, a returned RED probe failure still drops the own test DB
+            // after the blocker, observer and worker transactions have been ended.
+            let cleanup = h.cleanup().await;
+            result?;
+            cleanup
+        })
+    }
 }

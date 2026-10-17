@@ -2021,6 +2021,7 @@ mod tests {
             platinum: definition(Coin::Platinum.production_key()),
             crystal: definition(Coin::Crystal.production_key()),
             backpack: ItemDefinitionFacts {
+                weight: None,
                 definition: definition("oteryn:item.tibia.i2854"),
                 stack: ItemStackClass::NonStackable,
                 container_capacity: Some(20),

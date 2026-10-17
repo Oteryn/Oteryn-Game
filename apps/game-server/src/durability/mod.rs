@@ -11,6 +11,11 @@ pub(crate) mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
 pub mod bestiary_progress;
+#[allow(
+    dead_code,
+    reason = "APP-1 production caller awaits admitted content, sex and grant owners"
+)]
+pub(crate) mod character_appearance;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
@@ -36,7 +41,10 @@ mod db;
 pub(crate) mod equipment_policy_abi;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub mod house_interior;
+pub mod house_interior_audit;
 pub mod house_scope_handoff;
+pub(crate) mod item_capacity;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
@@ -49,6 +57,9 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
+#[cfg(test)]
+#[path = "../../tests/support/item_weight_lookup.rs"]
+pub mod item_weight_lookup;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
 pub mod monk_state;
@@ -59,6 +70,7 @@ pub mod npc_trade;
 pub mod npc_trade_audit;
 pub mod premium_activation_latch;
 pub mod premium_fence;
+pub mod public_projections;
 pub mod pvp_state;
 pub mod quest_state;
 pub mod recovery_evidence_composition;
@@ -587,6 +599,25 @@ mod account_characters_projection_linkage {
         let _ = DurabilityRoot::next_account_characters_snapshot;
         let _ = DurabilityRoot::clear_account_characters;
         let _ = DurabilityRoot::account_characters_watermark_facts;
+    }
+}
+
+#[cfg(test)]
+mod public_projections_linkage {
+    use super::DurabilityRoot;
+    use super::public_projections::PublicProjectionsStore;
+
+    #[test]
+    fn public_projections_api_is_linked() {
+        let _ = std::mem::size_of::<PublicProjectionsStore<'_, '_, '_, '_>>();
+        let _ = DurabilityRoot::next_public_profiles;
+        let _ = DurabilityRoot::clear_public_profiles;
+        let _ = DurabilityRoot::public_outbox_facts;
+        let _ = DurabilityRoot::next_public_highscores;
+        let _ = DurabilityRoot::clear_public_highscores;
+        let _ = DurabilityRoot::public_online_cut;
+        let _ = DurabilityRoot::persist_public_online;
+        let _ = DurabilityRoot::ack_public_online;
     }
 }
 

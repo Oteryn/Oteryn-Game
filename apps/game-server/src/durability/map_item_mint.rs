@@ -1163,6 +1163,7 @@ mod tests {
 
     fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: TypedDefinitionRef {
                 family: ITEM_FAMILY.into(),
                 production_key: key.into(),
@@ -1270,6 +1271,7 @@ mod tests {
             },
             MapItemMintRequest {
                 item: ItemDefinitionFacts {
+                    weight: None,
                     definition: TypedDefinitionRef {
                         family: "RewardClaim".into(),
                         ..request().item.definition

@@ -183,6 +183,7 @@ mod tests {
     }
     fn facts(item: &InventoryItem) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: item.definition.clone(),
             stack: ItemStackClass::Stackable {
                 proven_maximum: None,
