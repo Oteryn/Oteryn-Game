@@ -898,13 +898,17 @@ impl ChannelAttackStates {
         let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = entries
             .iter()
             .filter_map(|entry| {
-                let target = entry
+                // A step already returned may still commit after target cleanup, so the live
+                // target is not required; only the actor's own position gates the plan.
+                let from = runtime.read_actor_position(entry.actor).ok()?.position();
+                let held = entry
                     .state
                     .target()
-                    .filter(|_| entry.modes.chase == ChaseMode::Chase)?;
-                let (from, to) =
-                    chase_ends(runtime, room, entry.actor, entry.session, target, now)?;
-                if crate::movement::path_search::chebyshev(from, to) <= 1 {
+                    .filter(|_| entry.modes.chase == ChaseMode::Chase);
+                if let Some((from, to)) = held.and_then(|target| {
+                    chase_ends(runtime, room, entry.actor, entry.session, target, now)
+                }) && crate::movement::path_search::chebyshev(from, to) <= 1
+                {
                     return None;
                 }
                 let next = entry.chase.planned_search_cell(now.get(), from)?;

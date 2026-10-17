@@ -58,6 +58,10 @@ pub(crate) struct ChaseState {
     /// `RANGED0-RL-03`: the owner time since which a due search has waited for the Channel's
     /// window budget.
     waiting_since: Option<u64>,
+    /// The first step a search planned and `next_step` returned: window, starting cell and
+    /// destination. Survives [`Self::reset`] (target cleanup) because Movement may still commit
+    /// it; it only counts while the actor stands on the starting cell in that window.
+    in_flight: Option<(u64, MovementLocalPosition, MovementLocalPosition)>,
 }
 
 /// What a chase check decided.
@@ -76,6 +80,7 @@ impl ChaseState {
     pub(crate) fn reset(&mut self) {
         *self = Self {
             next_search_us: self.next_search_us,
+            in_flight: self.in_flight,
             ..Self::default()
         };
     }
@@ -200,7 +205,12 @@ impl ChaseState {
         at: MovementLocalPosition,
     ) -> Option<MovementLocalPosition> {
         if self.search_origin != Some((now_us / CHASE_WINDOW_MICROS, at)) {
-            return None;
+            return self
+                .in_flight
+                .filter(|&(window, origin, _)| {
+                    window == now_us / CHASE_WINDOW_MICROS && origin == at
+                })
+                .map(|(_, _, destination)| destination);
         }
         let expected = self.expected_at?;
         if expected == at {
@@ -224,6 +234,9 @@ impl ChaseState {
         if self.search_origin.is_some_and(|(_, origin)| origin != at) {
             self.search_origin = None;
         }
+        self.in_flight = self
+            .search_origin
+            .map(|(window, origin)| (window, origin, stepped(at, step)));
         self.expected_at = Some(stepped(at, step));
         ChaseDecision::Step(step)
     }
@@ -252,6 +265,7 @@ impl ChaseState {
     /// the route is dropped and nothing is remembered (`RANGED0-RL-08`); the cell stays a path
     /// tile.
     pub(crate) fn step_refused(&mut self) {
+        self.in_flight = None;
         self.route.clear();
         self.expected_at = None;
         self.search_origin = None;

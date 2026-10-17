@@ -1524,6 +1524,7 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
     fn routes(
         suspend: bool,
         first_caller: usize,
+        clear_first: bool,
     ) -> ([Option<CardinalStep>; 2], Option<MovementLocalPosition>) {
         let (mut owner, chasers) = two_chasers();
         let room = owner.room.clone();
@@ -1603,10 +1604,15 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
                 budget.refund_creature(now, UNITS_PER_SEARCH - 1);
             }
         }
+        if clear_first {
+            // The target is cleared while the returned step still awaits Movement.
+            let (player, session) = chasers[0];
+            owner.attack.clear_target(player, session);
+        }
         // As in chase_step_now's await of paced_step, no returned step has committed yet. The
         // resumed search must see the first destination even if next_step already consumed it.
         for (step, (player, session)) in steps.iter_mut().zip(chasers) {
-            if step.is_none() {
+            if step.is_none() && !(clear_first && player == chasers[0].0) {
                 *step = owner.attack.chase_decision(
                     &owner.runtime,
                     &room,
@@ -1632,7 +1638,7 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         (steps, owner.attack.entries[index].chase.next_cell())
     }
 
-    let uninterrupted = routes(false, 1);
+    let uninterrupted = routes(false, 1, false);
     assert!(uninterrupted.1.is_some());
     assert_ne!(
         uninterrupted.1,
@@ -1642,16 +1648,21 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         }),
         "the second route avoids the first chaser's planned destination"
     );
-    assert_eq!(routes(false, 0), uninterrupted);
+    assert_eq!(routes(false, 0, false), uninterrupted);
     assert_eq!(
-        routes(true, 1),
+        routes(true, 1, false),
         uninterrupted,
         "the first step is still stored"
     );
     assert_eq!(
-        routes(true, 0),
+        routes(true, 0, false),
         uninterrupted,
         "the first step awaits Movement"
+    );
+    assert_eq!(
+        routes(true, 0, true),
+        uninterrupted,
+        "the in-flight step survives target cleanup"
     );
 }
 
