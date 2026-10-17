@@ -33,6 +33,53 @@ pub struct ContentActivationRecord {
     pub frame_binding_digest: [u8; 32],
 }
 
+fn validate_content_activation_request(request: &ContentActivationRequest) -> Result<()> {
+    if request.activation_sequence == 0
+        || request.previous_sequence == Some(0)
+        || request
+            .previous_sequence
+            .is_some_and(|previous| previous >= request.activation_sequence)
+    {
+        return Err(DurabilityError::Unavailable);
+    }
+    Ok(())
+}
+
+/// Record one issuance within the caller's existing semantic transaction (D1189).
+/// The caller commits only after every related activation write succeeds. A refusal
+/// may leave the PostgreSQL transaction aborted; callers must roll back on `false`.
+/// This does not grant reset authority: the reset wrapper must separately prove its
+/// locked RETIRING job and exact digests before calling this issuance primitive.
+pub(crate) async fn record_content_activation_in_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &ContentActivationRequest,
+) -> Result<bool> {
+    validate_content_activation_request(request)?;
+    let recorded = sqlx::query(
+        "SELECT game_content_record_activation(encode($1::bytea, 'hex')::uuid, \
+         encode($2::bytea, 'hex')::uuid, $3::text::numeric(20,0), \
+         $4::text::numeric(20,0), $5, $6, $7)",
+    )
+    .bind(request.world_id.as_bytes().as_slice())
+    .bind(request.channel_id.as_bytes().as_slice())
+    .bind(request.activation_sequence.to_string())
+    .bind(request.previous_sequence.map(|value| value.to_string()))
+    .bind(request.server_artifact_digest.as_slice())
+    .bind(request.client_artifact_digest.as_slice())
+    .bind(request.frame_binding_digest.as_slice())
+    .execute(&mut **tx)
+    .await;
+    match recorded {
+        Ok(_) => Ok(true),
+        Err(sqlx::Error::Database(error))
+            if matches!(error.code().as_deref(), Some("OTC01" | "42501")) =>
+        {
+            Ok(false)
+        }
+        Err(error) => Err(error.into()),
+    }
+}
+
 impl DurabilityRoot {
     /// Control-plane: durably record one activation issuance. An exact replay succeeds; a
     /// conflicting replay, stale predecessor, non-newer sequence or missing exact-scope grant
@@ -41,41 +88,14 @@ impl DurabilityRoot {
         &self,
         request: &ContentActivationRequest,
     ) -> Result<bool> {
-        if request.activation_sequence == 0
-            || request.previous_sequence == Some(0)
-            || request
-                .previous_sequence
-                .is_some_and(|previous| previous >= request.activation_sequence)
-        {
-            return Err(DurabilityError::Unavailable);
-        }
+        validate_content_activation_request(request)?;
         let request = request.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let recorded = sqlx::query(
-                        "SELECT game_content_record_activation(encode($1::bytea, 'hex')::uuid, \
-                         encode($2::bytea, 'hex')::uuid, $3::text::numeric(20,0), \
-                         $4::text::numeric(20,0), $5, $6, $7)",
-                    )
-                    .bind(request.world_id.as_bytes().as_slice())
-                    .bind(request.channel_id.as_bytes().as_slice())
-                    .bind(request.activation_sequence.to_string())
-                    .bind(request.previous_sequence.map(|value| value.to_string()))
-                    .bind(request.server_artifact_digest.as_slice())
-                    .bind(request.client_artifact_digest.as_slice())
-                    .bind(request.frame_binding_digest.as_slice())
-                    .execute(&mut *tx)
-                    .await;
-                    match recorded {
-                        Ok(_) => {}
-                        Err(sqlx::Error::Database(error))
-                            if matches!(error.code().as_deref(), Some("OTC01" | "42501")) =>
-                        {
-                            return Ok(false);
-                        }
-                        Err(error) => return Err(error.into()),
+                    if !record_content_activation_in_tx(&mut tx, &request).await? {
+                        return Ok(false);
                     }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(true)

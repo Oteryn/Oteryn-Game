@@ -33,3 +33,6 @@ pub use production::{
     Sha256HexDigest,
 };
 pub use reference_playable::*;
+
+// Reuse the one physical encoder mounted by this crate's native Foundation.
+pub(crate) use crate::foundation::encode_spatial_position;

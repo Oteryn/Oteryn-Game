@@ -7,7 +7,8 @@
 //! One step retires exactly one live item — a corpse `ItemInstance` from its
 //! own Ground, or one live entry of that corpse's container — to `RETIRED`,
 //! quantity 0 and no location, under the one closed cause
-//! `CorpseDecay { corpse_item, deadline }`. A corpse decays as N+1 such
+//! `CorpseDecay { corpse_item, deadline }`, or accepted `WorldReset` (§1.11).
+//! The reset writer is a separate unregistered candidate. A corpse decays as N+1 such
 //! events, never one multi-item event, so each fits the default
 //! `DUR03-RL-01`/`-RL-06` one-item shape and no new resource row exists. The
 //! event is server originated: it carries no session, CommandRef or
@@ -37,6 +38,28 @@ pub struct OneItemCorpseDecayV1 {
     pub deadline_unix_ms: u64,
 }
 
+/// Accepted SOCIAL_MAP §1.11 reset occurrence; epoch is supplied by the admitted reset owner.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemWorldResetV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub world_id: Vec<u8>,
+    #[prost(uint64, tag = "2")]
+    pub reset_epoch: u64,
+    #[prost(bytes = "vec", tag = "3")]
+    pub item_instance_id: Vec<u8>,
+}
+
+/// A direct entry of an admitted Ground container, never Character inventory.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemGroundContainerEntryV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub container_item_instance_id: Vec<u8>,
+    #[prost(uint64, tag = "2")]
+    pub placement_ordinal: u64,
+    #[prost(message, optional, tag = "3")]
+    pub container_ground: Option<OneItemGroundV1>,
+}
+
 /// One `DECAY_RETIRE` step: exactly one of `ground` (the corpse's own step)
 /// and `corpse_entry` (an entry's step) is the before-location.
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -53,6 +76,10 @@ pub struct OneItemDecayRetireV1 {
     pub cause: Option<OneItemCorpseDecayV1>,
     #[prost(uint64, tag = "6")]
     pub runtime_scope_ownership_generation: u64,
+    #[prost(message, optional, tag = "7")]
+    pub world_reset: Option<OneItemWorldResetV1>,
+    #[prost(message, optional, tag = "8")]
+    pub ground_container_entry: Option<OneItemGroundContainerEntryV1>,
 }
 
 /// Which of the N+1 steps one event records.
@@ -62,6 +89,8 @@ pub enum DecayRetireShape {
     Entry,
     /// The now-empty corpse itself retires from its Ground (the final step).
     Corpse,
+    WorldResetGround,
+    WorldResetEntry,
 }
 
 /// DUR03-RL-01/-RL-06 defaults: one ItemInstance, its one location line (the
@@ -100,9 +129,17 @@ fn check_ground(value: &OneItemGroundV1) -> Result<(), AuditError> {
 
 /// The corpse's live Ground: the scope authority of either step.
 fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditError> {
-    match (value.ground.as_ref(), value.corpse_entry.as_ref()) {
-        (Some(ground), None) => Ok(ground),
-        (None, Some(entry)) => entry.corpse_ground.as_ref().ok_or(AuditError::InvalidInput),
+    match (
+        value.ground.as_ref(),
+        value.corpse_entry.as_ref(),
+        value.ground_container_entry.as_ref(),
+    ) {
+        (Some(ground), None, None) => Ok(ground),
+        (None, Some(entry), None) => entry.corpse_ground.as_ref().ok_or(AuditError::InvalidInput),
+        (None, None, Some(entry)) => entry
+            .container_ground
+            .as_ref()
+            .ok_or(AuditError::InvalidInput),
         _ => Err(AuditError::InvalidInput),
     }
 }
@@ -112,23 +149,58 @@ fn scope_ground(value: &OneItemDecayRetireV1) -> Result<&OneItemGroundV1, AuditE
 pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireShape, AuditError> {
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
-    let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
     check_state(before)?;
     check_state(after)?;
-    check_uuid_v7(&cause.corpse_item_instance_id)?;
     let ground = scope_ground(value)?;
     check_ground(ground)?;
     if before.item_instance_id != after.item_instance_id
         || before.world_id != after.world_id
         || before.definition != after.definition
+        || before.key_number != after.key_number
+        || before.key_number > mint::WORLDINT0_KEY_NUMBER_MAX
+        || (before.key_number != 0 && before.quantity != 1)
         || before.lifecycle != ITEM_LIFECYCLE_LIVE
         || before.quantity == 0
         || after.lifecycle != ITEM_LIFECYCLE_RETIRED
         || after.quantity != 0
         || ground.world_id != before.world_id
-        || cause.deadline_unix_ms < CORPSE_DECAY_AFTER_MS
         || value.runtime_scope_ownership_generation == 0
     {
+        return Err(AuditError::InvalidInput);
+    }
+    if let Some(reset) = &value.world_reset {
+        // The job epoch is a predecessor epoch: activation creates N+1, so the
+        // jobs, reservations and receipts cap it at u64::MAX - 1.
+        if value.cause.is_some()
+            || value.corpse_entry.is_some()
+            || reset.world_id != before.world_id
+            || reset.item_instance_id != before.item_instance_id
+            || reset.reset_epoch == u64::MAX
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        check_uuid_v7(&reset.world_id)?;
+        check_uuid_v7(&reset.item_instance_id)?;
+        if let Some(entry) = &value.ground_container_entry {
+            check_uuid_v7(&entry.container_item_instance_id)?;
+            // A direct entry of a live Ground container at a
+            // GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX ordinal, as the
+            // reservation and receipt tables constrain it.
+            if entry.container_item_instance_id == before.item_instance_id
+                || !(1..=mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX)
+                    .contains(&entry.placement_ordinal)
+            {
+                return Err(AuditError::InvalidInput);
+            }
+            DECAY_RETIRE_USAGE.check()?;
+            return Ok(DecayRetireShape::WorldResetEntry);
+        }
+        DECAY_RETIRE_USAGE.check()?;
+        return Ok(DecayRetireShape::WorldResetGround);
+    }
+    let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
+    check_uuid_v7(&cause.corpse_item_instance_id)?;
+    if value.ground_container_entry.is_some() || cause.deadline_unix_ms < CORPSE_DECAY_AFTER_MS {
         return Err(AuditError::InvalidInput);
     }
     let shape = match value.corpse_entry.as_ref() {
@@ -188,8 +260,7 @@ pub fn decode_decay_retire_envelope(
     let deadline = retire
         .cause
         .as_ref()
-        .map(|cause| cause.deadline_unix_ms)
-        .ok_or(AuditError::InvalidInput)?;
+        .map_or(0, |cause| cause.deadline_unix_ms);
     if value.world_id.as_deref() != Some(ground.world_id.as_slice())
         || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
         || value.game_session_id.is_some()
@@ -341,6 +412,8 @@ mod tests {
                 deadline_unix_ms: DEADLINE,
             }),
             runtime_scope_ownership_generation: 2,
+            world_reset: None,
+            ground_container_entry: None,
         }
     }
 
@@ -355,6 +428,8 @@ mod tests {
                 deadline_unix_ms: DEADLINE,
             }),
             runtime_scope_ownership_generation: 2,
+            world_reset: None,
+            ground_container_entry: None,
         }
     }
 
@@ -645,5 +720,142 @@ mod tests {
         );
         let dropped = GroundOnlyTransferV1::decode(wire.as_slice()).unwrap();
         assert_ne!(dropped.encode_to_vec(), wire);
+    }
+    #[test]
+    fn world_reset_key_and_closed_cause_grammar_preserve_native_identity() {
+        let mut value = corpse_step();
+        value.cause = None;
+        value.world_reset = Some(OneItemWorldResetV1 {
+            world_id: value.before.as_ref().unwrap().world_id.clone(),
+            reset_epoch: 0,
+            item_instance_id: value.before.as_ref().unwrap().item_instance_id.clone(),
+        });
+        for number in [0, 7, mint::WORLDINT0_KEY_NUMBER_MAX] {
+            value.before.as_mut().unwrap().key_number = number;
+            value.after.as_mut().unwrap().key_number = number;
+            assert_eq!(
+                check_decay_retire(&value),
+                Ok(DecayRetireShape::WorldResetGround)
+            );
+            let wire = OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(value.clone())),
+            }
+            .encode_to_vec();
+            assert_eq!(decode_decay_retire_payload(&wire).unwrap(), value);
+        }
+        let valid = value.clone();
+        value.before.as_mut().unwrap().key_number = mint::WORLDINT0_KEY_NUMBER_MAX + 1;
+        value.after.as_mut().unwrap().key_number = mint::WORLDINT0_KEY_NUMBER_MAX + 1;
+        assert!(check_decay_retire(&value).is_err());
+        value = valid.clone();
+        value.after.as_mut().unwrap().key_number = 0;
+        assert!(check_decay_retire(&value).is_err());
+        value = valid.clone();
+        value.before.as_mut().unwrap().quantity = 2;
+        assert!(check_decay_retire(&value).is_err());
+        value = valid.clone();
+        value.world_reset.as_mut().unwrap().item_instance_id = uuid(99);
+        assert!(check_decay_retire(&value).is_err());
+        value = valid.clone();
+        value.cause = corpse_step().cause;
+        assert!(check_decay_retire(&value).is_err());
+        value = valid;
+        value.world_reset = None;
+        assert!(check_decay_retire(&value).is_err());
+    }
+
+    #[test]
+    fn world_reset_entry_ordinal_is_bounded_by_the_container_ceiling() {
+        let mut value = corpse_step();
+        value.cause = None;
+        value.world_reset = Some(OneItemWorldResetV1 {
+            world_id: value.before.as_ref().unwrap().world_id.clone(),
+            reset_epoch: 0,
+            item_instance_id: value.before.as_ref().unwrap().item_instance_id.clone(),
+        });
+        let container_ground = value.ground.take();
+        let mut entry_at = |ordinal: u64| {
+            value.ground_container_entry = Some(OneItemGroundContainerEntryV1 {
+                container_item_instance_id: uuid(CORPSE + 1),
+                placement_ordinal: ordinal,
+                container_ground: container_ground.clone(),
+            });
+            value.clone()
+        };
+        for ordinal in [1, mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX] {
+            let accepted = entry_at(ordinal);
+            assert_eq!(
+                check_decay_retire(&accepted),
+                Ok(DecayRetireShape::WorldResetEntry)
+            );
+            let wire = OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(accepted.clone())),
+            }
+            .encode_to_vec();
+            assert_eq!(decode_decay_retire_payload(&wire).unwrap(), accepted);
+        }
+        for ordinal in [
+            0,
+            mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1,
+            u64::MAX,
+        ] {
+            let refused = entry_at(ordinal);
+            assert_eq!(check_decay_retire(&refused), Err(AuditError::InvalidInput));
+            let wire = OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(refused.clone())),
+            }
+            .encode_to_vec();
+            assert!(decode_decay_retire_payload(&wire).is_err());
+            assert!(
+                encode_decay_retire_event(
+                    identity(AT_DEADLINE),
+                    refused,
+                    mint::Type2EventTuple::V1
+                )
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn world_reset_epoch_is_bounded_by_the_predecessor_ceiling() {
+        let mut value = corpse_step();
+        value.cause = None;
+        let reset_at = |value: &mut OneItemDecayRetireV1, epoch: u64| {
+            value.world_reset = Some(OneItemWorldResetV1 {
+                world_id: value.before.as_ref().unwrap().world_id.clone(),
+                reset_epoch: epoch,
+                item_instance_id: value.before.as_ref().unwrap().item_instance_id.clone(),
+            });
+            value.clone()
+        };
+        let wire = |value: &OneItemDecayRetireV1| {
+            OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(value.clone())),
+            }
+            .encode_to_vec()
+        };
+        for epoch in [0, u64::MAX - 1] {
+            let accepted = reset_at(&mut value, epoch);
+            assert_eq!(
+                check_decay_retire(&accepted),
+                Ok(DecayRetireShape::WorldResetGround)
+            );
+            assert_eq!(
+                decode_decay_retire_payload(&wire(&accepted)).unwrap(),
+                accepted
+            );
+        }
+        let refused = reset_at(&mut value, u64::MAX);
+        assert_eq!(check_decay_retire(&refused), Err(AuditError::InvalidInput));
+        assert!(decode_decay_retire_payload(&wire(&refused)).is_err());
+        assert!(
+            encode_decay_retire_event(identity(AT_DEADLINE), refused, mint::Type2EventTuple::V1)
+                .is_err()
+        );
     }
 }

@@ -342,6 +342,9 @@ impl DurabilityRoot {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, step.item_instance_id).await?;
                     if let Some(receipt) = load_receipt(&mut tx, step.item_instance_id).await? {
+                        if receipt.try_get::<String, _>("cause_kind")? != "CORPSE_DECAY" {
+                            return Ok(Err(DecayRetireError::ConflictingCause));
+                        }
                         let committed = decode_receipt(&receipt)?;
                         if committed.corpse_item_instance_id != step.corpse_item_instance_id {
                             return Ok(Err(DecayRetireError::ConflictingCause));
@@ -353,6 +356,9 @@ impl DurabilityRoot {
                         else {
                             return Err(DurabilityError::InvalidStoredState);
                         };
+                        if row.try_get::<String, _>("cause_kind")? != "CORPSE_DECAY" {
+                            return Ok(Err(DecayRetireError::ConflictingCause));
+                        }
                         let reservation = decode_reservation(&row)?;
                         tx.commit(deadline).await?;
                         return Ok(Ok(reservation));
@@ -361,6 +367,9 @@ impl DurabilityRoot {
                     if let Some(row) =
                         load_reservation(&mut tx, step.item_instance_id, &generation).await?
                     {
+                        if row.try_get::<String, _>("cause_kind")? != "CORPSE_DECAY" {
+                            return Ok(Err(DecayRetireError::ConflictingCause));
+                        }
                         let reservation = decode_reservation(&row)?;
                         if reservation.corpse_item_instance_id != step.corpse_item_instance_id {
                             return Ok(Err(DecayRetireError::ConflictingCause));
@@ -552,6 +561,9 @@ impl DurabilityRoot {
                     lock_cause(&mut tx, step.item_instance_id).await?;
 
                     if let Some(row) = load_receipt(&mut tx, step.item_instance_id).await? {
+                        if row.try_get::<String, _>("cause_kind")? != "CORPSE_DECAY" {
+                            return Ok(Err(DecayRetireError::ConflictingCause));
+                        }
                         let committed = decode_receipt(&row)?;
                         if committed.corpse_item_instance_id != step.corpse_item_instance_id {
                             return Ok(Err(DecayRetireError::ConflictingCause));
@@ -569,6 +581,9 @@ impl DurabilityRoot {
                     else {
                         return Ok(Err(DecayRetireError::ConflictingCandidate));
                     };
+                    if row.try_get::<String, _>("cause_kind")? != "CORPSE_DECAY" {
+                        return Ok(Err(DecayRetireError::ConflictingCause));
+                    }
                     let reservation = decode_reservation(&row)?;
                     if reservation.transaction_id != transaction_id
                         || reservation.event_id != event_id
@@ -634,6 +649,9 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
+                    if row.try_get::<String, _>("cause_kind")? != "CORPSE_DECAY" {
+                        return Ok(Err(DecayRetireError::ConflictingCause));
+                    }
                     let committed = decode_receipt(&row)?;
                     if committed.corpse_item_instance_id != step.corpse_item_instance_id {
                         return Ok(Err(DecayRetireError::ConflictingCause));
@@ -828,6 +846,8 @@ fn decay_message(
             deadline_unix_ms: u64::try_from(admitted.deadline_unix_ms).unwrap_or(0),
         }),
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
+        world_reset: None,
+        ground_container_entry: None,
     }
 }
 
@@ -1132,7 +1152,8 @@ async fn load_receipt(
     Ok(sqlx::query(
         "SELECT item_instance_id::text, corpse_item_instance_id::text, \
                 fence_scope_ownership_generation::text, transaction_id::text, \
-                event_id::text, deadline, occurred_at, envelope_sha256 \
+                event_id::text, deadline, occurred_at, envelope_sha256, \
+                COALESCE(to_jsonb(game_item_decay_retire_receipts)->>'cause_kind','CORPSE_DECAY') AS cause_kind \
            FROM game_item_decay_retire_receipts \
           WHERE item_instance_id = encode($1,'hex')::uuid",
     )
@@ -1167,7 +1188,8 @@ async fn load_reservation(
         "SELECT corpse_item_instance_id::text, fence_scope_ownership_generation::text, \
                 transaction_id::text, event_id::text, occurred_at, deadline, quantity_before, \
                 placement_ordinal::text, envelope, fence_holder_node_id::text, \
-                fence_holder_registration_revision::text, work_units_used \
+                fence_holder_registration_revision::text, work_units_used, \
+                COALESCE(to_jsonb(game_item_decay_retire_reservations)->>'cause_kind','CORPSE_DECAY') AS cause_kind \
            FROM game_item_decay_retire_reservations \
           WHERE item_instance_id = encode($1,'hex')::uuid \
             AND fence_scope_ownership_generation = $2::text::numeric(20,0)",

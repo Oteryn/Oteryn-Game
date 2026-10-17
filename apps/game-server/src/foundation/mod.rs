@@ -1,5 +1,10 @@
 //! Protocol/runtime authority primitives for the native Oteryn game server.
 
+// One physical encoder for production and native roots without a content module.
+#[path = "../content/spatial_position.rs"]
+mod spatial_position;
+pub(crate) use spatial_position::encode_spatial_position;
+
 mod admission {
     include!("admission.rs");
     include!("admission_recovery_inner.rs");

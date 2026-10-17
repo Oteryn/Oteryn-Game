@@ -3415,6 +3415,8 @@ mod house_interior_postgres_cases;
 mod house_test_fixture;
 #[path = "support/pvp_readmission_postgres_cases.rs"]
 mod pvp_readmission_postgres_cases;
+#[path = "support/world_reset_postgres_cases.rs"]
+mod world_reset_postgres_cases;
 
 // D1112 APP-1 installed storage and native authority cases share their cases with the focused
 // standalone targets through the same protected lane, on the Bestiary harness included above.
