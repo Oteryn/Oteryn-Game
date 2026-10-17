@@ -4,13 +4,13 @@
 task_id: MAGIC-SUMMON-1
 title: "MAGIC-SUMMON-1: fenced familiar lifecycle and clean logout"
 mode: IMPLEMENT
-status: waiting
+status: OPEN
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/magic-summon-1
 issue: 1622
 pr: 2199
-base_sha: 5742f30f3
+base_sha: efecd2209e71e209878ac543cd70966c6300e8dd
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 3 MAGIC-SUMMON-1 (rows 57, 58); App. 7 LOOP-MONSTER-1, MAGIC-SUMMON-1; wave 2"
 class: "hard (child graph)"
 migration: maybe
@@ -25,12 +25,24 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/familiar_cast*.rs
   - apps/game-server/src/gameplay_transport/world_item_cast.rs
   - apps/game-server/tests/summon_*.rs (new)
+  - apps/game-server/migrations/0107_familiar_state_versioned_lifecycle.sql
+  - apps/game-server/src/durability/character_familiar.rs
+  - apps/game-server/src/gameplay_transport/familiar_cast.rs
+  - apps/game-server/src/spell/companion_lifecycle.rs
+  - apps/game-server/src/spell/delayed_execution.rs
+  - apps/game-server/src/spell/delayed_execution_tests.rs
+  - apps/game-server/tests/character_authority_postgres.rs
+  - apps/game-server/tests/support/character_familiar_writer_postgres_cases.rs
+  - apps/game-server/tests/support/character_proficiency_postgres_cases.rs
+  - apps/game-server/tests/support/familiar_versioned_lifecycle_postgres_cases.rs
+  - apps/game-server/tests/support/spell_familiar_runtime_postgres_cases.rs
+  - docs/agents/tasks/MAGIC-SUMMON-1.md
 slot_only_paths:
   - connection.rs
   - mod.rs
   - capabilities.rs (SUMMON-WIRE-1)
   - PROTOCOL_OTERYN_V1_REGISTRY.json
-  - migration number (FAMILIAR-1)
+  - other unallocated migration numbers (0107 is owned under CP D1296)
   - content spell/creature pins
 public_contracts: []
 depends_on:
@@ -73,15 +85,30 @@ Summons, familiars and magic fields; children MONSTER-SUMMON-1, SUMMON-1, SUMMON
 - `apps/game-server/src/gameplay_transport/world_item_cast.rs`
 - apps/game-server/tests/summon_*.rs (new)
 
+Current D1296 PR-owned paths (in addition to the historical skeleton allocation):
+
+- `apps/game-server/migrations/0107_familiar_state_versioned_lifecycle.sql`
+- `apps/game-server/src/durability/character_familiar.rs`
+- `apps/game-server/src/gameplay_transport/familiar_cast.rs`
+- `apps/game-server/src/spell/companion_lifecycle.rs`
+- `apps/game-server/src/spell/delayed_execution.rs`
+- `apps/game-server/src/spell/delayed_execution_tests.rs`
+- `apps/game-server/tests/character_authority_postgres.rs`
+- `apps/game-server/tests/support/character_familiar_writer_postgres_cases.rs`
+- `apps/game-server/tests/support/character_proficiency_postgres_cases.rs`
+- `apps/game-server/tests/support/familiar_versioned_lifecycle_postgres_cases.rs`
+- `apps/game-server/tests/support/spell_familiar_runtime_postgres_cases.rs`
+- `docs/agents/tasks/MAGIC-SUMMON-1.md`
+
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
 - connection.rs
 - mod.rs
 - capabilities.rs (SUMMON-WIRE-1)
 - PROTOCOL_OTERYN_V1_REGISTRY.json
-- migration number (FAMILIAR-1)
+- other unallocated migration numbers (0107 is owned under CP D1296)
 - content spell/creature pins
-- Always slot-only, whether or not listed: regenerate_content.py outputs, `content/project.json`, `content/manifest.json`, `content/content.lock.json`, `content/interactions/index.json`, `content/world/pins/*`, Rust pins, `docs/contracts/*REGISTRY*.json`, migration numbers, wiring in `gameplay_transport/connection.rs`, `gameplay_transport/mod.rs`, `capabilities.rs`, `crates/protocol-oteryn/src/lib.rs`.
+- Always slot-only, whether or not listed: regenerate_content.py outputs, `content/project.json`, `content/manifest.json`, `content/content.lock.json`, `content/interactions/index.json`, `content/world/pins/*`, Rust pins, `docs/contracts/*REGISTRY*.json`, unallocated migration numbers, wiring in `gameplay_transport/connection.rs`, `gameplay_transport/mod.rs`, `capabilities.rs`, `crates/protocol-oteryn/src/lib.rs`.
 
 ## Wiring points (verified on main@5742f30f3)
 
@@ -119,11 +146,11 @@ CREATURE_AI0; FAMILIARS0; SPELL_NPC_MAP0 §2-§3. Plan: `docs/architecture/revie
 ## Context checkpoint
 
 ```yaml
-last_progress: skeleton created by CP architect
-status: waiting
+last_progress: D1296 scoped repair after CP D1299 main integration
+status: OPEN
 branch: skeleton/magic-summon-1
 blocker: CREATURE_AI0 ACCEPTED (summon children); FAMILIARS0 ACCEPTED; CREATURE-MOVE-1 residue (SUMMON-1); HOUSE-1b (`house_access`)
-next_action: CP rechecks BLOCKING rows
+next_action: new-head CI, then CP-owned external and final review
 ```
 
 ## Bounded caller and contract qualification — 2026-10-15
@@ -236,9 +263,9 @@ supply the missing clean-end discriminator or its return-admission ordering.
 2. **FAMILIAR persistence + caller, inseparable:** extend the existing row/writer with
    FAMILIARS0 §5's remaining durations, revision, full gameplay fence identity, runtime
    scope owner/generation, open and durable clean-end session. Allocate the migration
-   at the CP slot; architect must decide conversion of legacy absolute-expiry rows,
-   because expiry/logout alone cannot reconstruct crash versus clean end. Do not invent
-   a current owner or silently return a legacy row as clean. Preserve immutable exact
+   under [CP D1296](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6228238402). CP approved lazy legacy absolute-expiry conversion on the next fenced write;
+   expiry/logout alone does not reconstruct crash versus clean end. Do not invent
+   a current owner. Preserve immutable exact
    receipt binding, Character revision ordering and replay reconciliation.
 3. **Admission/return:** before costs, resolve current level/vocation/Premium/support
    cooldown, actual lever-boss room membership, complete owned-summon census, stored
@@ -313,10 +340,10 @@ The whole appended diff was reviewed against the source trace; no code or shared
 changed. CP scope allocation and independent architecture/persistence/combat/content/
 protocol reviews remain required before the proposed integrations can be accepted.
 
-## #2199 D1126 / D1195 source continuation (2026-10-16)
+## #2199 D1126 / D1296 source continuation (2026-10-16)
 
-AUTHORING; NOT_FULLY_QUALIFIED. CP D1126 owns `durability/character_familiar.rs`
-and `spell/companion_lifecycle.rs`; D1195 assigns next-checkpoint migration
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. [CP D1126](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225655585) owns `durability/character_familiar.rs`
+and `spell/companion_lifecycle.rs`; [CP D1296](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6228238402) confirms next-checkpoint migration
 `0107_familiar_state_versioned_lifecycle.sql`. This task-card entry is the scoped
 migration allocation ledger; no separate migration-number registry was identified.
 No historical migration or receipt is rewritten. The 0041 full legacy cooldown
@@ -456,3 +483,34 @@ retained shared full-package REDs or grant readiness, merge, queue movement or
 production activation. Generic non-spawn/GraceExpiry writes with an existing clean
 marker and same-session open Login reconstruction remain held as described above;
 they do not silently reset a familiar timer or manufacture clean-end evidence.
+
+
+### D1296 round-one repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. [CP D1296](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6228238402)
+records the repair allocation. The [specific review decision](https://github.com/Oteryn/Oteryn-Game/pull/2199#issuecomment-6228238236)
+approves lazy legacy conversion on the next fenced write and accepts a foreign
+still-open lifecycle as crash: remaining lifetime becomes zero, with cooldowns
+retained. The existing same-lifecycle reconnect and clean-end guards remain.
+This repair adds one pure decision test and specific InvalidInput
+assertions, and makes a missing checkpoint projection column fail closed.
+The audit scan now projects the actual linked receipt checkpoint using the same
+character/occurrence/revision join as the reader. No historical state is rewritten.
+
+CP performed the main update in [D1299](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6228329035), producing
+`cba8aa3ced137413361ecea73c48218bc15802de`. The clean author branch fast-forwarded
+to that exact merge; its integrated main parent is
+`efecd2209e71e209878ac543cd70966c6300e8dd`. These three owned files were unchanged
+by the main update before applying this repair. F performed no merge or rebase.
+
+Changed-case native execution and strict Clippy on this repaired source are
+NOT_RUN locally; new-head GitHub CI, including Agent governance / validate, must
+pass as required by D1296. The earlier 15-case coverage and strict Clippy belong
+only to their historical source and do not qualify this repair. Full-package tests
+remain NOT_RUN. CP owns the subsequent external-review trigger and final review.
+
+The 0107 EXECUTE grants are intentional validation-only parity with 0041, which
+already grants both validator functions to runtime and control. The new immutable
+legacy helper needs matching invoker permission; none of these pure JSON functions
+grants table writes or current gameplay authority. No live control caller is
+invented as justification.

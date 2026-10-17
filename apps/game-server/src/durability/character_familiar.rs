@@ -831,7 +831,7 @@ fn decode_projection(
     }
     Ok(DurableFamiliarProjection {
         state: decode_state(row.try_get("state")?)?,
-        checkpoint_committed_at_ms: row.try_get("checkpoint_committed_at_ms").ok(),
+        checkpoint_committed_at_ms: row.try_get("checkpoint_committed_at_ms")?,
         committed_character_revision: Some(
             CharacterRevision::new(revision).map_err(|_| DurabilityError::InvalidStoredState)?,
         ),
@@ -952,7 +952,7 @@ pub(crate) async fn verify_familiar_chain(
     }
     let mut after = "00000000-0000-0000-0000-000000000000".to_owned();
     loop {
-        let rows=sqlx::query("SELECT character_id::text,state::text,committed_character_revision::text FROM game_character_familiar_state WHERE character_id>$1::uuid ORDER BY character_id LIMIT 256").bind(&after).fetch_all(&mut **tx).await?;
+        let rows=sqlx::query("SELECT s.character_id::text,s.state::text,s.committed_character_revision::text,r.committed_at AS checkpoint_committed_at_ms FROM game_character_familiar_state s LEFT JOIN game_character_familiar_receipts r ON r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision WHERE s.character_id>$1::uuid ORDER BY s.character_id LIMIT 256").bind(&after).fetch_all(&mut **tx).await?;
         let Some(last) = rows.last() else {
             break;
         };
@@ -986,7 +986,10 @@ mod tests {
             with_cooldown
         );
         with_cooldown.cooldowns[0].reference_spell_id = 0;
-        assert!(with_cooldown.validate().is_err());
+        assert!(matches!(
+            with_cooldown.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         assert!(
             serde_json::from_str::<FamiliarCooldownSnapshot>(
                 r#"{"reference_spell_id":197,"remaining_micros":5,"unused":1}"#
@@ -1021,7 +1024,10 @@ mod tests {
         assert!(!after.lifecycle.as_ref().unwrap().open);
         assert_eq!(after.cooldowns, before.cooldowns);
         assert_eq!(encode_state(&before).unwrap(), bytes);
-        assert!(before.for_next_write(None, &writer).is_err());
+        assert!(matches!(
+            before.for_next_write(None, &writer),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         assert_eq!(
             before
                 .for_next_write(Some(100_000), &writer)
@@ -1055,7 +1061,10 @@ mod tests {
             .as_mut()
             .unwrap()
             .clean_end_game_session_id = Some(writer.game_session_id);
-        assert!(invalid.validate().is_err());
+        assert!(matches!(
+            invalid.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
     }
     #[test]
     fn familiar_snapshot_rejects_unknown_or_unsorted_fields_and_preserves_unix_clocks() {
@@ -1067,18 +1076,33 @@ mod tests {
         state.last_logout_unix = 1_799_999_990;
         assert!(state.validate().is_ok());
         state.granted_looks = vec![993, 991];
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.granted_looks = vec![991, 991];
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.granted_looks = vec![0];
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.granted_looks = vec![991];
         state.familiar_definition = Some("creature:knight/familiar".into());
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.familiar_revision = Some("r20".into());
         assert!(state.validate().is_ok());
         state.saved_expiry_unix = -1;
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         assert!(decode_state("{\"extra\":1}".into()).is_err());
     }
 }

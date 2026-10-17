@@ -961,6 +961,27 @@ struct FamiliarParts {
     facts: FamiliarFacts,
     after: DurableFamiliarState,
 }
+/// Normalize a stored lifecycle for Login after current owner facts were independently resolved.
+/// CP D1296 accepts a foreign still-open lifecycle as a crash: discard its remaining
+/// lifetime and close it, fail-closed against duplicating value. A same-lifecycle
+/// reconnect must retain its live physical/timer state instead of restoring storage.
+fn prepare_familiar_login_lifecycle(
+    lifecycle: &mut crate::durability::character_familiar::FamiliarLifecycleV2,
+    current_writer: &FamiliarLifecycleWriter,
+) -> Result<(), CompanionExecutionError> {
+    if lifecycle.clean_end_game_session_id.as_ref() == Some(&current_writer.game_session_id) {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    if lifecycle.open {
+        if lifecycle.writer.same_lifecycle(current_writer) {
+            return Err(CompanionExecutionError::InvalidOwnerFacts);
+        }
+        lifecycle.familiar_remaining_ms = 0;
+        lifecycle.open = false;
+    }
+    Ok(())
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the owner turn binds every independently resolved fact explicitly"
@@ -1047,20 +1068,7 @@ fn prepare_familiar_parts(
         .as_mut()
         .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
     if event == FamiliarEvent::Login {
-        if lifecycle.clean_end_game_session_id.as_ref()
-            == Some(&current.lifecycle_writer.game_session_id)
-        {
-            return Err(CompanionExecutionError::InvalidOwnerFacts);
-        }
-        if lifecycle.open {
-            if lifecycle.writer.same_lifecycle(&current.lifecycle_writer) {
-                // A reconnect must retain the existing physical/timer state. Replaying
-                // persisted remaining here would reset its live duration.
-                return Err(CompanionExecutionError::InvalidOwnerFacts);
-            }
-            lifecycle.familiar_remaining_ms = 0;
-            lifecycle.open = false;
-        }
+        prepare_familiar_login_lifecycle(lifecycle, &current.lifecycle_writer)?;
     }
     let return_ms = (event == FamiliarEvent::Login).then_some(lifecycle.familiar_remaining_ms);
     let return_seconds = return_ms
@@ -2955,5 +2963,65 @@ mod direct_acquisition_owner_tests {
             Some(oteryn_protocol_oteryn::actor_spell::SpellCastDisposition::CoolingDown)
         );
         assert_eq!(paid.next.vitals().mana, 250);
+    }
+}
+
+#[cfg(test)]
+mod familiar_login_lifecycle_tests {
+    use super::*;
+    use crate::durability::character_familiar::{FamiliarCooldownSnapshot, FamiliarLifecycleV2};
+
+    #[test]
+    fn foreign_open_login_discards_crash_remaining_and_preserves_writer_and_cooldown()
+    -> Result<(), CompanionExecutionError> {
+        let old_writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000001".into(),
+            connection_generation: 1,
+            world_id: "0199aabb-1234-7000-8000-000000000002".into(),
+            channel_id: "0199aabb-1234-7000-8000-000000000003".into(),
+            scope_ownership_generation: 4,
+        };
+        let current_writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000004".into(),
+            ..old_writer.clone()
+        };
+        let mut state = DurableFamiliarState {
+            lifecycle: Some(FamiliarLifecycleV2 {
+                version: 2,
+                familiar_remaining_ms: 90_000,
+                open: true,
+                writer: old_writer.clone(),
+                clean_end_game_session_id: None,
+            }),
+            cooldowns: vec![FamiliarCooldownSnapshot {
+                reference_spell_id: 197,
+                remaining_micros: 1_234,
+            }],
+            ..DurableFamiliarState::default()
+        };
+        let before = state.clone();
+        let lifecycle = state
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+        prepare_familiar_login_lifecycle(lifecycle, &current_writer)?;
+        assert_eq!(lifecycle.familiar_remaining_ms, 0);
+        assert!(!lifecycle.open);
+        assert_eq!(lifecycle.writer, old_writer);
+        assert_eq!(lifecycle.clean_end_game_session_id, None);
+        assert_eq!(state.cooldowns, before.cooldowns);
+        let mut expected = before;
+        expected
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?
+            .familiar_remaining_ms = 0;
+        expected
+            .lifecycle
+            .as_mut()
+            .ok_or(CompanionExecutionError::InvalidOwnerFacts)?
+            .open = false;
+        assert_eq!(state, expected);
+        Ok(())
     }
 }
