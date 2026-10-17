@@ -370,10 +370,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1) and
 // 22 RUNE_USE_V1 (RUNE-WIRE-1, not offered before RUNE-CAST-1) and 23 PRESENTATION_V1
 // (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or COMBAT-PRESENT-1). Registered is not
-// offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
+// offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
+// LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 22, 23,
+    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -2556,6 +2557,7 @@ pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
 pub mod item_view;
+pub mod logout;
 pub mod npc_service;
 pub mod presentation;
 pub mod quest_log;
