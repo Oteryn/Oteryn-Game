@@ -42,9 +42,9 @@ fn state() -> TestResult<DurableFamiliarState> {
     let writer =
         crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(&fence(1)?)
             .map_err(debug)?;
-    state
+    Ok(state
         .for_next_write(Some(1_800_000_000_000), &writer)
-        .map_err(debug)
+        .map_err(debug)?)
 }
 
 fn save(
