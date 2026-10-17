@@ -5,6 +5,7 @@ pub mod bestiary;
 pub mod character_name;
 pub mod charm;
 pub mod currency;
+pub mod cyclopedia;
 pub mod death;
 pub mod equipment;
 pub mod forge_dust;
