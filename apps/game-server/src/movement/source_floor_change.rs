@@ -413,6 +413,7 @@ mod tests {
     ) {
         let world = crate::foundation::WorldId::decode(&id(1)).unwrap();
         let input = NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pin(include_bytes!(
                 "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
