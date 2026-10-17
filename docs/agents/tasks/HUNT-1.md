@@ -735,3 +735,90 @@ slots and bonuses, Task Board, transport, runtime activation and full HUNT
 family qualification remain open. Space recovery and any future heavy build
 window belong to CP and the owner under D1398. Ready/merge authority remains
 with CP; the PR remains draft and `NOT_FULLY_QUALIFIED`.
+
+## D1406 combined-source native qualification (2026-10-17)
+
+**The D1392 combined assembly completed native qualification with PASS at
+17:26:35 UTC. HUNT remains draft and `NOT_FULLY_QUALIFIED`.** This later result
+preserves all 43,600 bytes of the task card published at
+`110e73b3feac309ed8023c0ab8c5374bc1c99803`. The earlier two Clippy failures and
+the D1398 `NOT_RUN`, path, busy-lock and capacity refusals remain historical
+facts; their receipts are neither replaced nor reclassified.
+
+[CP D1406](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237407548)
+granted the separate successor after MAIL finished. Its only code change from
+the reviewed `f25e5460…` runner is the new evidence directory. The executed
+driver SHA256 is
+`76984b5454773cb0eee4d328b11f013876504ca930518aea67fb61337db41aa5`.
+The original capacity receipt `028274cf…` stays in its original namespace.
+
+### Actual result and scope
+
+The qualified composition is HUNT
+`0d4a1483fdb19327aae3803e6ae893575a7878dd` plus actual DAILY
+`6b75183305b53277d0ca0a3ab2d8bb8f12ff09e9`, the held integration bundle and
+the reviewed D1392 public audit API, support cases, thin wrapper, Cargo and
+Character authority registration, with the two DAILY validation module lines.
+The real preparation remains `ee87465b…`. All **31 source inputs** matched
+before and after execution; the assembly still has 15 dirty paths and
+16 preserved inputs. Its final terminal records `source_after: UNCHANGED`.
+
+| Executed stage | Actual result |
+| --- | --- |
+| Fresh `cargo fetch --locked` | PASS, exit 0 |
+| `prey_postgres` / `prey_daily_delivery_` | 5 passed, 0 failed, 0 ignored; 1,140 filtered; 7.86 s |
+| `prey_postgres` / `prey_wildcard_` | 4 passed, 0 failed, 0 ignored; 1,141 filtered; 0.00 s |
+| Strict explicit six-target Clippy | PASS, exit 0 |
+| Strict game-server all-target Clippy | PASS, exit 0 |
+| Unchanged duplicate-source checker on the all-target JSON log | PASS: 55 test-harness units, 11 allowlisted targets |
+| `cargo fmt --all -- --check` | PASS, exit 0 |
+
+The six explicit Clippy targets were Prey, Bestiary, native admission source,
+runtime scope assignment, WP5-S3B composition and Character authority. Clippy
+used `-D warnings`; its output retained the existing `missing_docs` dependency
+warning in vendor Tokio. These are successful exits, not a claim of empty
+warning output. The five PG cases and four codec cases retain their reviewed
+bodies. Final source, test-artifact and protocol-artifact checks completed
+while slot A was held.
+
+The actual outer invocation exited 0 after 322.70 seconds. The checkpoint was
+qualified at `2026-10-17T17:26:34.955244+00:00`, the terminal finished at
+`17:26:35.184332+00:00`, and slot A was released at
+`17:26:35.184895+00:00`. The D1397a outer flock used the canonical file in
+Ubuntu/mole around the existing Ubuntu-24.04/root runner. The 50 GB physical
+guard, shared PG 17.6 wrapper and inherited slot target were preserved;
+`RUST_MIN_STACK` and Rust flags remained unset. The runner's outer-lock policy
+is static metadata; actual outer completion is recorded separately.
+
+### Bound raw evidence
+
+The complete new raw directory is
+`/root/oteryn-six-pr-20261017/evidence-hunt-daily-native-d1392-heavy-retry-1017`.
+
+| Evidence | SHA256 |
+| --- | --- |
+| `results.json` (43,875 bytes) | `e913d00b7f88b00811cd56e329af0fa80f94366fe767c10350a3e2442a726258` |
+| `hunt-qualified.json` (53,732 bytes) | `26b069e1a0317de8ed1cafc69fe59fca0de63630d074308fdd6f96a2069a8dec` |
+| Complete 20-file inventory | `3d58fa6f3fdd531b1020476b2111ca6685bf142ddfabc350de61c5efdf196225` |
+| Separate actual outer-completion observation | `e7fa4aabf40ec5d492b6a0173660a87e8276b2e000224b5a3d21fdd42450e241` |
+
+The inventory binds the seven logs, locked-fetch receipt, test/protocol
+artifact receipts and identical before/after source snapshots and patches.
+The qualified receipt binds the successor driver and these new paths.
+
+### Unchanged integration and lifecycle limits
+
+Qualification is limited to the combined assembly above. Standalone published
+`110e73b3…`, installed main integration, the full package test suite and runtime
+activation remain outside this result. PG extraction, Cargo/aggregate mounts,
+migration 0115, authority/module/registry integration remain held until DAILY
+#2151 merges, then current main is merged into HUNT and shared preimages are
+reread. The sequencer and sixth case retain the D1336b/current-main/#2193 gate.
+Resource rows **191/500/64 remain CANDIDATE**; actual expired deletion, expired
+active-hold behavior and operator access/export remain unqualified. Production
+content, the other HUNT flows and full family completion remain open.
+
+This is a documentation-only follow-up to the published D1398 checkpoint.
+Worktree archive/removal is **PENDING** at this checkpoint. Existing work
+finishes where it is; every future new checkout must use Ubuntu/mole and its
+shared `~/oteryn-cache`, as directed by the owner. Ready/merge remains CP-only.
