@@ -1,0 +1,143 @@
+// GUILD-WIRE-1 OWNED BODY PROPOSAL, from accepted GUILD0§9 and §4.2–4.3.
+// No global capability/command/state-domain/snapshot/delta/error ID is allocated here.
+// Module registration, registry/resource rows, capability offer, codegen and live dispatch are
+// CP-only after dependencies. Local field/enum values below are proposed body schema fields.
+// This file does not accept candidate OTERYN_GAME_GUILDS_V1 Q1 or its extra decline command.
+//
+// FND-02 owns CommandRef, World/session routing, server sequence and domain revisions. No body
+// contains an Account, Channel, node, actor-authority assertion or position. Client identifiers,
+// revisions, keysets and amounts are DATA; the real owner independently rechecks all authority,
+// replay/request binding, membership, deadlines, balance and source fences in its transaction.
+// Unknown/repeated singular fields, wrong wire types, missing/duplicate/unknown oneof, unknown
+// enums, malformed UTF-8, wrong UUIDv7 shape and exceeded byte/count bounds fail closed.
+syntax = "proto3";
+package oteryn.protocol.v1.guild;
+
+message GuildNameV1 { string name = 1; }
+message GuildCharacterV1 { string character = 1; }
+message GuildReferenceV1 { bytes guild_id = 1; } //16-byte Game-issued UUIDv7; not existence proof.
+message GuildLeaveV1 {}
+message GuildSetRankV1 {
+  string character = 1; //1..29 UTF-8 bytes; native CharacterName grammar at server boundary.
+  uint32 level = 2; //1..20, never actor/target eligibility proof.
+  uint64 expected_revision = 3; //Required, nonzero.
+}
+message GuildEditRanksV1 {
+  //3..20 names; ≤507 UTF-8 bytes each, derived from512-byte projected rank-entry budget:
+  //level(tag+value)=2, name(tag+length)=3. Actual name_key/uniqueness stays with the owner.
+  repeated string names = 1;
+  uint64 expected_revision = 2;
+}
+message GuildSetTitleV1 {
+  string character = 1;
+  optional string title = 2; //Required presence, empty metadata allowed; ≤116 UTF-8 bytes.
+  uint64 expected_revision = 3;
+}
+message GuildSetMessageV1 {
+  optional string text = 1; //Required presence, empty metadata allowed; ≤1,020 UTF-8 bytes.
+  uint64 expected_revision = 2;
+}
+message GuildAmountV1 { uint64 amount = 1; } //1..9,000,000,000,000,000, no balance proof.
+
+//At most10,214 bytes. All guild-name/confirmation/target-name fields ≤29 UTF-8 bytes.
+//The server reuses native CharacterName and CHAT-0 text parsing (29 title/255 message scalars).
+message GuildIntentV1 {
+  oneof intent {
+    GuildNameV1 found = 1;
+    GuildCharacterV1 invite = 2;
+    GuildCharacterV1 revoke_invite = 3;
+    GuildReferenceV1 accept = 4;
+    GuildLeaveV1 leave = 5;
+    GuildCharacterV1 exclude = 6;
+    GuildSetRankV1 set_rank = 7;
+    GuildEditRanksV1 edit_ranks = 8;
+    GuildSetTitleV1 set_title = 9;
+    GuildSetMessageV1 set_message = 10;
+    GuildCharacterV1 resign = 11; //character is the successor.
+    GuildNameV1 disband = 12; //name is the explicit confirmation.
+    GuildAmountV1 deposit = 13;
+    GuildAmountV1 withdraw = 14;
+    GuildReferenceV1 claim_disband_payout = 15;
+  }
+}
+enum GuildResult {
+  GUILD_RESULT_UNSPECIFIED = 0;
+  GUILD_RESULT_OK = 1;
+  GUILD_RESULT_NOT_ALLOWED = 2;
+  GUILD_RESULT_NAME_TAKEN = 3;
+  GUILD_RESULT_NAME_INVALID = 4;
+  GUILD_RESULT_ALREADY_IN_GUILD = 5;
+  GUILD_RESULT_ACCOUNT_HAS_POSITION = 6;
+  GUILD_RESULT_NOT_PREMIUM = 7;
+  GUILD_RESULT_GUILD_FULL = 8;
+  GUILD_RESULT_NOT_INVITED = 9;
+  GUILD_RESULT_JUNIOR = 10;
+  GUILD_RESULT_INSUFFICIENT_FUNDS = 11;
+  GUILD_RESULT_BALANCE_LIMIT = 12;
+  GUILD_RESULT_STALE_REVISION = 13;
+  GUILD_RESULT_GUILD_DISBANDING = 14;
+  GUILD_RESULT_GUILD_DEADLINE_PASSED = 15;
+  GUILD_RESULT_INVITATION_LIMIT = 16;
+}
+message GuildResultV1 { GuildResult result = 1; } //Exactly2bytes; common FND results stay outer.
+enum GuildSection {
+  GUILD_SECTION_UNSPECIFIED = 0;
+  GUILD_SECTION_SUMMARY = 1;
+  GUILD_SECTION_ROSTER = 2;
+  GUILD_SECTION_INVITATIONS = 3;
+  GUILD_SECTION_ACTIVITY = 4;
+  GUILD_SECTION_DISBAND_CLAIMS = 5;
+  GUILD_SECTION_PUBLIC = 6;
+}
+message GuildRosterKeyV1 { uint32 level = 1; bytes character_id = 2; }
+message GuildActivityKeyV1 {
+  //Existing game-event foundation occurred_at_unix_ms; not an admission/clock proof. The future
+  //guild event/query owner must provide exact source conversion, not reinterpret DB timestamps.
+  uint64 occurred_at_unix_ms = 1; //0..INT64_MAX; actual30-day window is owner-checked.
+  bytes event_id = 2; //16-byte UUIDv7.
+}
+//At most51bytes. Client-editable keyset DATA, no signature/grant or alternate read authority.
+message GuildCursorV1 {
+  //Required for guild-scoped lists, forbidden for Account+World claims. It is not a grant.
+  optional bytes guild_id = 1;
+  GuildSection section = 2;
+  oneof key {
+    GuildRosterKeyV1 roster = 3;
+    bytes invitation_character_id = 4; //Actual(GuildId,CharacterId) invitation key; UUIDv7.
+    GuildActivityKeyV1 activity = 5;
+    bytes claim_guild_id = 6; //Actual GuildId claim key across current Account+World; UUIDv7.
+  }
+}
+//At most86bytes. PUBLIC requires public_guild; ROSTER may name another guild's public roster.
+//Other sections forbid public_guild. SUMMARY/PUBLIC forbid cursors. The query owner resolves
+//the selected guild and rejects any cursor naming another guild/section before reading rows.
+//This proposal supplies requests/keysets only, not a page/read-model owner. Accepted GUILD0
+//requires ≤100entries, ≤512encoded bytes each, keyset next_cursor and ≤64KiB result; actual
+//section privacy, source conversion, page contents and transaction integration remain CP work.
+//Claims key DATA is proposed above without inventing a numeric row ID or selected Guild.
+//Its current Account+World query context/cursor acceptance needs the real claims owner at CP;
+//the server's guild-binding adapter explicitly refuses to qualify a claims cursor as guild-bound.
+message GuildQueryV1 {
+  GuildSection section = 1;
+  optional string public_guild = 2;
+  optional GuildCursorV1 cursor = 3;
+}
+enum GuildEmblem {
+  GUILD_EMBLEM_UNSPECIFIED = 0;
+  GUILD_EMBLEM_NONE = 1;
+  GUILD_EMBLEM_OWN_GUILD = 2;
+  GUILD_EMBLEM_OTHER_GUILD = 3;
+}
+message GuildEmblemEntryV1 {
+  bytes identity = 1; //Same opaque16-byte native visibility identity, not a GuildId/AccountId.
+  uint64 generation = 2; //Nonzero player generation, resolved by actual visibility owner.
+  GuildEmblem emblem = 3;
+}
+//Whole emblem list, ascending identity, one record per identity, ≤256native visibility entries.
+//Entry≤31bytes; payload≤8,448bytes. No other-guild name/rank/title or location is encoded.
+//Actual membership, viewer-relative selection, visibility enter/leave and own guild name/rank
+//domain composition are CP runtime work; this codec never attests any supplied emblem.
+message GuildEmblemsV1 { repeated GuildEmblemEntryV1 entries = 1; }
+
+//Guildhall bid/move_out/ACL/door additions belong to HOUSE_INTENT. Its accepted native body
+//owner is not present at this base; no competing House schema, authority port or numbers here.
