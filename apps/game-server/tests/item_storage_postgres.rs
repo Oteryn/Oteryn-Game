@@ -1,7 +1,6 @@
 //! DEPOT0 private schema/read qualification only, not native TRANSFER/exclusivity integration.
 //! Uses real public native imports and the exact owned module by path; no extracted facade.
 use oteryn_game_server::{domain, durability};
-#[allow(dead_code)] // This target qualifies storage; planner-only helpers are tested in the library.
 #[path = "../src/durability/character_depot.rs"]
 mod depot_owner;
 use depot_owner::*;
