@@ -17,11 +17,32 @@ briefs:
 base_branch: main
 base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
 branch: skeleton/loop-map-1
-needs_migration: true
-needs_registry: true
-needs_content_regeneration: true
+needs_migration: false
+needs_registry: false
+needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
+
+## Current accepted scope — D1242a / D1249a
+
+This draft contains source-only regional admission (16 admitted, 193 unadmitted),
+the qualified donation amount/known GUI flags, and an unconditional typed
+NotWiredInRuntime port with six explicit PARITY_PENDING groups. D1249a confirms
+that D1249 did not revoke the earlier GUI decisions. That conflict is resolved.
+
+The full CYC runtime, native map admission, Bank/debit, POI persistence, protocol,
+registry and PostgreSQL execution are NOT_APPLICABLE to this closed draft scope;
+they belong to the separate parity follow-up authorized by CP. They are not
+completed or qualified by this source checkpoint. No new PR is opened here.
+Final exact-head repository gates and CP review remain required; draft status
+stays NOT_FULLY_QUALIFIED.
+
+The actual native component packet at Reset e50db673 + exact Cyc f8a53069 compiled
+successfully and executed this leaf's donation boundary test: 1 PASS. Its overall
+12-case packet was 10 PASS / 2 FAIL in unrelated House fixtures. This is component
+qualification through a disclosed private cfg(test) registration, not published
+runtime wiring. The six-group port compiled from its exact recorded source.
+The sections below retain historical goals/dependencies; D1242a governs this PR.
 
 ## Goal
 
