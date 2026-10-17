@@ -68,4 +68,24 @@ DO $$ DECLARE i UUID:=(SELECT item_instance_id FROM game_item_instances WHERE de
  BEGIN PERFORM fixture_temporal_drain(i,FALSE);SET CONSTRAINTS ALL IMMEDIATE;RAISE EXCEPTION 'unaudited timer accepted';EXCEPTION WHEN check_violation THEN NULL;END;
  IF EXISTS(SELECT 1 FROM game_spell_item_temporal_receipts WHERE item_instance_id=i) OR (SELECT state_revision FROM game_item_instances WHERE item_instance_id=i)<>1 THEN RAISE EXCEPTION 'failed audit did not rollback all writes';END IF;
 END $$;
+-- Production uses FOR UPDATE OF the immutable schedule as well as the Item.
+-- Owner-role fixtures alone cannot detect a missing runtime row-lock privilege.
+SET ROLE oteryn_game_runtime;
+DO $$ BEGIN
+ PERFORM item_instance_id FROM game_spell_item_temporal_schedules LIMIT 1 FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'row-lock control needs a real schedule'; END IF;
+ BEGIN UPDATE game_spell_item_temporal_schedules SET item_instance_id=item_instance_id;
+  RAISE EXCEPTION 'runtime changed an immutable schedule';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ BEGIN UPDATE game_spell_item_temporal_schedules SET duration_millis=duration_millis+1;
+  RAISE EXCEPTION 'runtime can update schedule payload';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ BEGIN DELETE FROM game_spell_item_temporal_schedules;
+  RAISE EXCEPTION 'runtime can delete schedules';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ BEGIN TRUNCATE game_spell_item_temporal_schedules;
+  RAISE EXCEPTION 'runtime can truncate schedules';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+RESET ROLE;
 SELECT 'SPELL_TEMPORAL_REAL_SOURCE_GUARDS_PASS';

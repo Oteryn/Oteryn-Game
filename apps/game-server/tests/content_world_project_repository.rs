@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        430,
-        "aecd3e4c85b1765dfe2e80de0f955b593c9318302bbd2780d1c34a9e9b22034a",
+        418,
+        "e0ef593aaac71f07c8dc9ce56c1619ae84e373da62efab13fb8cee4d7a35f911",
     ),
     (
         "definitions/declarations.json",
-        27275107,
-        "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95",
+        27597392,
+        "c8523ca9c2c3f342cfbd3b2cc52a8f2c5652ddd77a53d37a01329611b3127d6e",
     ),
     (
         "definitions/reference.json",
-        27_269_641,
-        "f72512349bb24e9d814c97271133a4acf077914c6d841459ed9d9fb3f897c5c5",
+        27_270_299,
+        "2a49ef4b92c0f893d30d8de0b6c4e032547e4dfa8dbdd1b0242e86d7748117c5",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1961,
-        "2641cdb6f36125392985cf0f0a4f622dd248aa212ba321c9e6543c07c4579550",
+        1957,
+        "fceabb718bedb422e78b9147da512c92d83a3e228b9b678c3582f281bb24008b",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        412,
-        "eb23b3236d6aa3ab247a991347ed3e047473ca912f5b74aad6053d0d3f391dbc",
+        408,
+        "0cace4b3701d42a6dcb32bf021379ac3bde7e2678f6b6077717f6fcd6f53906c",
     ),
     (
         "provenance/imports.json",
@@ -137,7 +137,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "6a8bd4e00fc81488613131bb8cd1e7191d48e13466e17dc3f862f957ef77fee3";
+const TREE_SHA256: &str = "16913e9cf3cd040ca8b70ee90ba429b57daf69333d1e4a4334dfe69e65ed9fb6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -385,7 +385,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "item-sem-use-2-consumables-20261013-r1"
+        "npc-content-2-presence-20261015-r1"
     );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
