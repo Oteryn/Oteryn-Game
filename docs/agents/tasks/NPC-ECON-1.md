@@ -600,3 +600,8 @@ error, a donor C++ build that this host's toolchain cannot compile. CI job
 117410514636 was cancelled at the job's 30-minute limit. Other PRs that same day were
 cancelled the same way, so this PR did not cause it. No test was skipped and no
 timeout was raised. Exact-head CI is NOT_RUN at authoring time.
+
+CP decision D1404: the Quest Authoring Schema job `timeout-minutes` is raised from 30 to 45 in
+`.github/workflows/quest-authoring-schema.yml`. Measured: about 21.5 min locally on main and on this PR; the CI runner is
+about 1.37x slower, so the job reached its 30 min limit. No test is skipped or weakened; job and check names are unchanged.
+Splitting the job is a later follow-up.
