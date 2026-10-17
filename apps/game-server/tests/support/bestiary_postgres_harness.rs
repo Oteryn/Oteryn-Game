@@ -291,6 +291,10 @@ fn bootstrap_binding() -> Vec<u8> {
     binding
 }
 
+// LOOP-GROUND-1 not-ready writer case and this bootstrap share one genuine issuer.
+#[path = "ground_native_readiness_enforcement.rs"]
+pub(crate) mod ground_native_readiness_enforcement;
+
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
 
 impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
@@ -343,8 +347,7 @@ async fn publish_readiness(
             offer_revision: "offer-1".into(),
         },
     };
-    let publication =
-        AdmissionAuthorityPublicationV1::prepare(&RuntimeReadiness(change), now).map_err(debug)?;
+    let publication = ground_native_readiness_enforcement::prepare(change, now)?;
     let disposition = root
         .publish_runtime_readiness(node, &publication)
         .await
