@@ -2444,7 +2444,7 @@ mod tests {
                 assert!(steps.iter().any(|(_, _, r)| r.as_ref().is_ok_and(|h| {
                     h.targets.iter().any(|(_, t)| {
                         t.as_ref()
-                            .is_ok_and(|t| t.damage.is_some_and(|d| d.applied > 0))
+                            .is_ok_and(|t| t.damage.as_ref().is_some_and(|d| d.applied > 0))
                     })
                 })));
                 observed = true;
