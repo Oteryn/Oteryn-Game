@@ -455,6 +455,15 @@ fn native_inbox_refuses_wrong_root_world_old_mint_and_real_ground_atomically() -
                     &mut reached,
                     |context, reached| {
                         Box::pin(async move {
+                            // The actual Ground MINT has a historical receipt/audit.
+                            // Evaluate only the existing location constraint now so
+                            // fresh-receipt guards cannot mask its intended OTI03
+                            // at the later ALL check. Every native guard stays on.
+                            sqlx::query(
+                                "SET CONSTRAINTS game_character_inbox_location_exclusive IMMEDIATE",
+                            )
+                            .execute(&mut **context.transaction())
+                            .await?;
                             *reached = true;
                             let item = context.plan().item_instance_ids[0];
                             context.deliver(item).await
@@ -466,12 +475,15 @@ fn native_inbox_refuses_wrong_root_world_old_mint_and_real_ground_atomically() -
             if old_transaction {
                 assert!(matches!(result, Err(RewardClaimInboxError::MintNotProven)));
             } else {
-                assert!(matches!(
-                    result,
-                    Err(RewardClaimInboxError::Delivery(
-                        CharacterInboxDeliveryError::ItemInAnotherLocation
-                    ))
-                ));
+                assert!(
+                    matches!(
+                        &result,
+                        Err(RewardClaimInboxError::Delivery(
+                            CharacterInboxDeliveryError::ItemInAnotherLocation
+                        ))
+                    ),
+                    "expected native Ground exclusivity OTI03, got {result:?}"
+                );
             }
             assert_eq!(footprint(h).await?, before);
             assert_eq!(h.count("game_item_ground_locations").await?, 1);

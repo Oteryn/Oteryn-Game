@@ -57,6 +57,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `crates/protocol-oteryn/src/mail.rs`
 - `crates/protocol-oteryn/src/mail_tests.rs`
 - `apps/game-server/tests/mail_postgres.rs`
+- `apps/game-server/tests/support/character_inbox_postgres_cases.rs` — D1390 only: the two named read-only function entries and explanatory comment in the existing `inbox_rows_are_immutable_and_no_other_writer_touches_them` inventory; no other fixture, query or assertion change.
 - content authoring inputs for parcel/letter/label/stamped definitions and mailbox bindings (source files only, not regenerated outputs)
 - `docs/agents/tasks/MAIL-1.md` (this record: status and notes only)
 
@@ -869,3 +870,178 @@ checks pass. The coordinator qualifies the complete migration through the
 actual native migration path before making any runtime claim. Resource rows
 remain CANDIDATE and production activation remains after #2197. The separate
 owned TEXT ACL/retirement proposal is not included in this repair.
+
+## Owned TEXT runtime ACL and retirement port checkpoint (2026-10-17)
+
+**Status: NOT_FULLY_QUALIFIED. This candidate's Cargo, strict Clippy and native
+PostgreSQL are NOT_RUN at author handoff.** Its exact base is MAIL
+`4322022f2738789519f3fd1b6425f2cec77317f3`, tree
+`0d4c42017e90aef0dc6d4ea60f38c4dd11042978`, sole parent
+`9579944b48fb24fe36163a7befa4592ed8a68d1e`. This is a separate four-file owned
+successor. It uses the existing TEXT leaf, canonical MAIL test mount, task
+record and standing migration **0101** under the existing grants/cleanup
+allocation; it introduces no new migration number or shared registration.
+
+The predecessor `9579944b` had successful strict Clippy/unit and integration-rest
+metadata, but its [PostgreSQL job](https://github.com/Oteryn/Oteryn-Game/actions/runs/39037287703/job/117409572690)
+failed migration 101 with SQLSTATE `42601` at character 20084. The exact failure
+was recovered in [CP comment 6234971256](https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6234971256).
+The [published parse repair](https://github.com/Oteryn/Oteryn-Game/pull/2133#issuecomment-6235286577)
+is now the exact base above. This rebind preserves both pairs of CASE parentheses
+and the complete newly appended repair evidence. The two Rust leaves and the
+TEXT SQL hunk are identical to the separately reviewed historical TEXT proposal.
+Independent bounded TEXT review was SOURCE PASS; neither that review nor the
+predecessor's CI qualifies this new candidate. Cargo, Clippy, SQL parsing and
+native PostgreSQL for this TEXT successor remain **NOT_RUN** at handoff.
+
+### Native storage privileges and proven retirement
+
+The existing TEXT writer had installed tables but lacked runtime privileges.
+0101 now grants only its actual storage operations: SELECT/INSERT plus
+`last_revision` UPDATE on the revision table; SELECT/INSERT/DELETE plus the
+four mutable text columns on the text table; and SELECT/INSERT on CommandRef
+receipts. Runtime cannot directly delete a revision, change its item key, or
+update/delete a receipt. The original TEXT table/key/check/index definitions
+are unchanged, and the complete D1318 sink and D1356 fresh-mint/guard/grant
+suffix, including the published CASE parse repair, remains byte-identical
+to the exact `4322022f` base.
+
+`cleanup_retired_item_text` is a same-transaction port over a caller-held native
+SQL transaction, typed WorldId and ItemInstanceId. Its pinned definer helper
+locks the actual item row, requires that exact World and stored lifecycle 2,
+and removes only the text and revision rows. A live, missing or foreign-World
+item is ineligible. The return value reports deletions; it is no authority
+token. Runtime receives only this narrow cleanup EXECUTE grant; the control
+role and PUBLIC receive none. The function pins the actual migration schema
+with the same search-path pattern as the existing native helpers.
+
+Cleanup leaves the ItemInstance, its value receipts/audit and all TEXT command
+receipts intact. It never retires an item, changes custody, advances a Character
+revision, starts a second transaction or invents a receipt retention period.
+A repeated cleanup of the same retired item is a no-op result. The caller owns
+commit/rollback and eventual real World-job authority; scheduling, selection
+of a daily batch and the scheduler's fence are not installed by this leaf.
+
+### Four added native cases and preserved prior assertions
+
+The canonical MAIL inventory becomes **24**: the prior 20 cases plus four TEXT
+cases below. All prior 20 test bodies and the existing TEXT rewrite/persistence
+production bodies are preserved. The three old TEXT assertion bodies still
+exercise the same storage helper; its shared storage transaction now explicitly
+uses the real runtime role. Their historical privileged identity/rate fixtures
+remain storage fixtures, not claims of Content or ingress qualification.
+
+- Runtime storage writes succeed, while direct revision/key and receipt
+  mutation fail with PostgreSQL `42501`; the control role cannot execute cleanup,
+  and a live item's empty-text revision and receipts survive.
+- A genuinely native-minted, transferred and ItemUse-retired item can be cleaned
+  only in its actual World; live, missing and foreign-World controls preserve
+  the entire TEXT footprint.
+- Two real transactions serialize on the retained item row lock (`55P03` for
+  the blocked second call). Rollback restores both metadata rows and the exact
+  original receipt; committed cleanup and its retry preserve that receipt.
+- Empty text retains its revision while the item is live. After actual native
+  retirement, cleanup removes only that tombstone and preserves both exact
+  command receipts.
+
+The retirement cases reuse the canonical target's already-mounted native
+MINT/TRANSFER harness. MINT, backpack custody and last-unit ItemUse execute
+their actual Root, fences, receipts and value audit under the runtime role.
+The item is not seeded retired and no value trigger is bypassed. The existing
+Combat-death/backpack inputs are disclosed test fixtures; attaching TEXT
+metadata through the real storage half to that test item does not claim an
+admitted writable-item Content definition or an installed text command caller.
+
+All cases require the exact installed SQLx migration101 checksum. Each new
+configured retirement case emits its body-plus-cleanup marker only after both
+succeed. Absent admin routing remains PRE-ROUTING / NONCANONICAL, emits no such
+marker, and cannot qualify PostgreSQL. The coordinator retains the exact
+inventory and output under the current approved runner/resource route:
+
+```bash
+cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --list
+cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --test-threads=1 --nocapture
+```
+
+### Actual remaining owner composition
+
+[D1369](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234490484)
+assigns common SESSION-INGRESS-1 only after A2/#2187. TEXT activation still needs
+that common owner serialization guard retained through the complete native
+transaction and the actual TRADE owner's offered-item check. The existing
+writer-only TRADE storage does not supply this shared caller. This checkpoint
+adds no caller boolean, duplicate reservation owner, transport capability or
+shared scheduler hook. Qualified Content admission, text/parcel posting,
+stamp transfer/transform, actual DAILY claim acquisition and full MAIL runtime
+composition retain their concrete owner gates; the owned cleanup and storage
+ports are now available for those callers. Ready/merge remain CP decisions.
+
+## TEXT and installed-Inbox fixture completion after 4322022f — 2026-10-17
+
+Status **NOT_FULLY_QUALIFIED / candidate native execution NOT_RUN**. This complete
+six-file successor composes the previously reviewed four-file TEXT packet with
+the exact [D1390 shared inventory grant](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235491923)
+and one owned negative-fixture repair. Its sole predecessor is
+`4322022f2738789519f3fd1b6425f2cec77317f3`. The published two CASE parenthesis
+pairs and the entire D1318/D1356 migration suffix remain byte-identical.
+
+Actual predecessor evidence is [PG run39042229146](https://github.com/Oteryn/Oteryn-Game/actions/runs/39042229146/job/117423864377):
+the full installed migrator proceeded, `durability_root` finished **1278 PASS**,
+and `character_authority` finished **1610 PASS / 2 FAIL**, with no ignored cases.
+Within that run the exact twenty MAIL cases were **19 PASS / 1 FAIL**. The fresh
+twenty-keyed-output commit/audit/replay, source rollback, omitted proof, current
+fences, runtime grants and durable attempt-budget cases passed. The log captures
+no passing-case resource measurements; no payload/JSON number is promoted from
+CANDIDATE on that basis. The full failed run is not relabeled success.
+
+D1390 adds exactly `game_character_inbox_reward_claim_mint_proven` and
+`game_reward_claim_inbox_mint_is_complete` to the existing closed Inbox function
+inventory. Both complete function bodies were checked as direct read-only proof
+readers, without DML or dynamic execution; their pinned definer/ACL and trigger
+routes remain unchanged. The query, filters, sorting and exact-list assertion
+are preserved. The current MAIL branch has six names. TRADE's separately owned
+addition and these two belong to the **same existing list**; ordinary integration
+with migration0100 must retain the seven-name union, without importing a function
+that does not yet exist on this branch or creating a second test.
+
+The other actual failure was the exact `Delivery(ItemInAnotherLocation)` assertion
+in `native_inbox_refuses_wrong_root_world_old_mint_and_real_ground_atomically`.
+Its real, previously committed Ground MINT intentionally also lacks a fresh
+same-transaction Inbox mint receipt/audit. Source review shows that delivery is
+inserted before the Inbox location, allowing the newly installed deferred delivery
+proofs to refuse before the later location guard. The old assertion did not print
+the alternate result, so its exact CI error variant remains unobserved.
+
+Only that deliberate malformed-output callback now sets the **existing named**
+`game_character_inbox_location_exclusive` constraint to IMMEDIATE before deliver.
+This exercises the genuine Ground/Inbox collision at INSERT. All receipt, audit,
+location and transaction guards stay enabled, the exact OTI03 typed assertion is
+retained, and its failure now prints the actual result. Existing rollback,
+Ground/item/receipt/root-revision checks and the other seven sink test bodies are
+unchanged. This isolates the location invariant; it does not claim that OTI03 has
+priority over every other refusal during ordinary production ALL evaluation.
+
+The TEXT SQL grants, retired-item cleanup port and four real test bodies are byte-identical
+to the reviewed TEXT source packet. The existing owned migration check adds one
+read-only observation of `current_database()` and `server_version_num` before each
+body, inside its unchanged cleanup boundary. It prints only the actual database
+name and version, enabling the native runner to verify and clean its observed own
+databases without guessing names or exposing a connection URL. No other wrapper,
+case body or shared harness changes. If shared creation fails before returning a
+pool, no database identity has been observed and no guessed DROP is authorized.
+There are now **24 canonical MAIL PG cases**:
+the existing twenty (one isolated refusal fixture corrected) and four TEXT ACL/
+retirement/serialization/tombstone cases. Both new native execution and all
+changed-head CI remain separate pending gates. Root and independent TRADE source
+review passed on the exact TEXT and both fixture deltas; no SQL/storage permission
+or runtime error mapping is weakened by these fixture changes. Independent MAIL
+review also passed on the single database-observation hunk and all three existing
+result/cleanup routes, with no native execution claim.
+
+The concrete [DAILY source-owner handoff](https://github.com/Oteryn/Oteryn-Game/pull/2151#issuecomment-6235666199)
+binds the unchanged published prepare/commit/reconcile API. It records callback
+ordering after mint, separate source/CommandRef idempotency, mandatory rollback of
+a competing fresh claim, exact recovery bindings and the narrow runtime proof ACL.
+DAILY source writes, zero-item claims and an actual PENDING delivery producer remain
+with their allocated owners. This checkpoint claims no full MAIL client flow or
+production activation; those prerequisites remain as recorded above.

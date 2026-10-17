@@ -1,10 +1,11 @@
 //! MAIL-TEXT-1: native letter/label rewrites in the direct main backpack.
 //!
-//! This is a bounded producer with storage in migration 0101, awaiting content
-//! admission, module registration and transport composition. It admits neither write-once
-//! definitions nor other custody locations. The compositor must also refuse an
-//! item offered in player trade (WRITE-0 §5.1); no native trade reservation port
-//! exists in this base. Do not activate this writer before that integration.
+//! This is a bounded producer with its native storage ACL in migration 0101 and
+//! registered Content/storage modules, awaiting actual transport composition.
+//! It admits neither write-once definitions nor other custody locations.
+//! The compositor must also refuse an
+//! item offered in player trade (WRITE-0 §5.1). D1369 defers that shared guard
+//! until SESSION-INGRESS-1 after A2; do not activate this writer before integration.
 //! No player text, writer name or text-derived diagnostic enters value audit.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -18,11 +19,66 @@ use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_cu
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::mail::{MailText, MailTextClass, MailTextRefusal};
-use crate::foundation::CommandRef;
+use crate::foundation::{CommandRef, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
 // Storage is installed once by the standing MAIL migration 0101.
+
+/// Result data only: no current World, session, reach or retirement authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    dead_code,
+    reason = "the actual daily scheduler is a separate owner slot"
+)]
+pub(crate) enum RetiredItemTextCleanup {
+    /// The exact World/item pair is absent or its item is still live.
+    NotEligible,
+    /// The database proved retirement under the item row lock. A retry may find
+    /// neither metadata row remaining; it still observes the same retired item.
+    Cleaned {
+        text_removed: bool,
+        revision_removed: bool,
+    },
+}
+
+/// Remove only the metadata of one actually retired item in the caller's native
+/// transaction. The SQL function locks and checks the real World/lifecycle row;
+/// no caller flag grants deletion. CommandRef receipts are always retained.
+/// The caller owns the eventual World-job fence and commit/rollback. This port
+/// neither schedules a job nor retires/moves an ItemInstance or advances a revision.
+#[allow(
+    dead_code,
+    reason = "the actual daily scheduler is a separate owner slot"
+)]
+pub(crate) async fn cleanup_retired_item_text(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    item_instance_id: [u8; 16],
+) -> Result<RetiredItemTextCleanup> {
+    if check_uuid_v7(&item_instance_id).is_err() {
+        return Err(ItemTextWriteError::InvalidInput);
+    }
+    let row = sqlx::query("SELECT retired,text_removed,revision_removed FROM game_item_text_cleanup_retired(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+        .bind(world.as_bytes().as_slice()).bind(item_instance_id.as_slice())
+        .fetch_one(&mut **tx).await?;
+    let retired: bool = row.try_get("retired")?;
+    let text_removed: bool = row.try_get("text_removed")?;
+    let revision_removed: bool = row.try_get("revision_removed")?;
+    if (!retired && (text_removed || revision_removed)) || (text_removed && !revision_removed) {
+        return Err(ItemTextWriteError::Unavailable(
+            DurabilityError::InvalidStoredState,
+        ));
+    }
+    Ok(if retired {
+        RetiredItemTextCleanup::Cleaned {
+            text_removed,
+            revision_removed,
+        }
+    } else {
+        RetiredItemTextCleanup::NotEligible
+    })
+}
 
 /// Text is intentionally absent from Debug and from receipts.
 pub(crate) struct ItemTextWriteRequest {
@@ -168,7 +224,7 @@ impl DurabilityRoot {
     /// recovery, node, session, admission, root and current direct custody.
     #[expect(
         dead_code,
-        reason = "MAIL-TEXT-1 awaits CP wire composition, admitted content, migration and real offered-trade exclusion"
+        reason = "MAIL-TEXT-1 awaits actual qualified Content/transport composition and the D1369 shared offered-trade guard"
     )]
     pub(crate) async fn commit_item_text_rewrite(
         &self,
@@ -455,18 +511,97 @@ pub(crate) mod tests {
         command: u64,
         body: &str,
     ) -> TestResult<ItemTextWriteOutcome> {
+        store_fixture_request(pool, character, request(command, body)?).await
+    }
+
+    /// Storage half only, under the real runtime role. New retirement cases can
+    /// attach fixture text to a genuinely minted/transferred item through this
+    /// same storage code; that does not qualify Content or the uninstalled ingress.
+    pub(crate) async fn store_fixture_request(
+        pool: &sqlx::PgPool,
+        character: &[u8; 16],
+        request: ItemTextWriteRequest,
+    ) -> TestResult<ItemTextWriteOutcome> {
         let mut tx = pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let role: String = sqlx::query_scalar("SELECT current_user")
+            .fetch_one(&mut *tx)
+            .await?;
+        assert_eq!(role, "oteryn_game_runtime");
         // Same real root/item locks as the production path. No claim that
         // locking fixture rows supplies current session/content authority.
         sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
             .bind(character.as_slice()).execute(&mut *tx).await?;
         sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
-            .bind(id(2).as_slice()).execute(&mut *tx).await?;
-        let text =
-            MailText::parse(MailTextClass::Letter, body).map_err(|_| "invalid fixture text")?;
-        let outcome = persist_rewrite(&mut tx, character, &request(command, body)?, &text).await?;
+            .bind(request.item_instance_id.as_slice()).execute(&mut *tx).await?;
+        let text = MailText::parse(MailTextClass::Letter, &request.text)
+            .map_err(|_| "invalid fixture text")?;
+        let outcome = persist_rewrite(&mut tx, character, &request, &text).await?;
         tx.commit().await?;
         Ok(outcome)
+    }
+
+    pub(crate) async fn text_runtime_storage_acl_keeps_receipts_and_live_revision_private(
+        pool: sqlx::PgPool,
+    ) -> TestResult {
+        let character = storage_fixture(&pool).await?;
+        assert_eq!(
+            store(&pool, &character, 1, "private").await?.text_revision,
+            1
+        );
+        assert_eq!(store(&pool, &character, 2, "").await?.text_revision, 2);
+        for statement in [
+            "DELETE FROM game_item_text_revisions",
+            "UPDATE game_item_text_revisions SET item_instance_id=item_instance_id",
+            "UPDATE game_item_text_write_receipts SET changed=false",
+            "DELETE FROM game_item_text_write_receipts",
+        ] {
+            let mut tx = pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            let error = sqlx::query(statement)
+                .execute(&mut *tx)
+                .await
+                .err()
+                .ok_or("runtime acquired a forbidden TEXT mutation")?;
+            let error = error
+                .as_database_error()
+                .ok_or("TEXT ACL refusal was not PostgreSQL")?;
+            assert_eq!(error.code().as_deref(), Some("42501"));
+            tx.rollback().await?;
+        }
+        let mut control = pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_control")
+            .execute(&mut *control)
+            .await?;
+        let error = sqlx::query("SELECT * FROM game_item_text_cleanup_retired(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
+            .bind(id(3).as_slice()).bind(id(2).as_slice())
+            .fetch_one(&mut *control).await.err()
+            .ok_or("control role acquired the runtime TEXT cleanup grant")?;
+        assert_eq!(
+            error
+                .as_database_error()
+                .and_then(|error| error.code())
+                .as_deref(),
+            Some("42501")
+        );
+        control.rollback().await?;
+        let mut tx = pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        assert_eq!(
+            cleanup_retired_item_text(&mut tx, WorldId::decode(&id(3))?, id(2)).await?,
+            RetiredItemTextCleanup::NotEligible
+        );
+        let state: (String, i64) = sqlx::query_as("SELECT last_revision::text,(SELECT count(*) FROM game_item_text_write_receipts) FROM game_item_text_revisions WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(2).as_slice()).fetch_one(&mut *tx).await?;
+        assert_eq!(state, ("2".into(), 2));
+        tx.commit().await?;
+        Ok(())
     }
 
     pub(crate) async fn text_storage_delete_retains_tombstone_and_rewrite_advances(

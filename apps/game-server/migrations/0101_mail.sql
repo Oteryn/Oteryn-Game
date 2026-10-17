@@ -6,8 +6,8 @@
 -- Production activation remains after #2197; resource ceilings are CANDIDATE
 -- until the native prost/JSON qualification prints its measured byte sizes.
 
--- Existing owned MAIL-TEXT storage. The actual text caller and retirement/grant
--- integration retain their task-card gates; this move changes no table shape.
+-- Existing owned MAIL-TEXT storage. The actual text/TRADE ingress and daily
+-- scheduler retain their task-card gates; the native storage ports are below.
 CREATE TABLE game_item_text_revisions (
  item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances ON DELETE RESTRICT,
  last_revision NUMERIC(20,0) NOT NULL CHECK(last_revision BETWEEN 1 AND 18446744073709551615)
@@ -31,6 +31,53 @@ CREATE TABLE game_item_text_write_receipts (
 );
 CREATE INDEX game_item_text_write_rate ON game_item_text_write_receipts(character_id,written_at DESC)
  WHERE changed;
+
+-- Only the operations used by the existing fenced TEXT writer. An empty write
+-- may remove text but never its revision; receipts stay immutable and retained.
+REVOKE ALL ON game_item_text_revisions, game_item_texts, game_item_text_write_receipts
+ FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
+GRANT SELECT, INSERT, UPDATE(last_revision) ON game_item_text_revisions
+ TO oteryn_game_runtime;
+GRANT SELECT, INSERT, DELETE, UPDATE(text,writer_character_id,written_at,text_revision)
+ ON game_item_texts TO oteryn_game_runtime;
+GRANT SELECT, INSERT ON game_item_text_write_receipts TO oteryn_game_runtime;
+
+-- MAIL0 §4 / WRITE0 §5.2: exactly one already-retired item in the caller's TX.
+-- This is not a scheduler, World-owner permit or item-retirement operation.
+-- The item row lock serializes cleanup with the existing write/retirement paths.
+-- Runtime gets no direct revision DELETE; only this proven-retired branch may
+-- remove it. CommandRef receipts are deliberately outside the deletion set.
+CREATE FUNCTION game_item_text_cleanup_retired(p_world UUID, p_item UUID)
+RETURNS TABLE(retired BOOLEAN, text_removed BOOLEAN, revision_removed BOOLEAN)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+ v_lifecycle SMALLINT;
+ v_text_rows BIGINT;
+ v_revision_rows BIGINT;
+BEGIN
+ IF p_world IS NULL OR p_item IS NULL THEN
+  RAISE EXCEPTION 'text cleanup requires exact World and item identities'
+   USING ERRCODE = '22023';
+ END IF;
+ SELECT lifecycle INTO v_lifecycle FROM game_item_instances
+  WHERE item_instance_id=p_item AND world_id=p_world FOR UPDATE;
+ IF NOT FOUND OR v_lifecycle<>2 THEN
+  RETURN QUERY SELECT FALSE, FALSE, FALSE;
+  RETURN;
+ END IF;
+ DELETE FROM game_item_texts WHERE item_instance_id=p_item;
+ GET DIAGNOSTICS v_text_rows = ROW_COUNT;
+ DELETE FROM game_item_text_revisions WHERE item_instance_id=p_item;
+ GET DIAGNOSTICS v_revision_rows = ROW_COUNT;
+ RETURN QUERY SELECT TRUE, v_text_rows=1, v_revision_rows=1;
+END $$;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_item_text_cleanup_retired(UUID,UUID) SET search_path = pg_catalog, %I, pg_temp', current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_item_text_cleanup_retired(UUID,UUID)
+ FROM PUBLIC, oteryn_game_runtime, oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_item_text_cleanup_retired(UUID,UUID)
+ TO oteryn_game_runtime;
 
 -- D1318: the narrow same-transaction Inbox seam.
 -- The registry spelling is migration 0076's uppercase representation of the
