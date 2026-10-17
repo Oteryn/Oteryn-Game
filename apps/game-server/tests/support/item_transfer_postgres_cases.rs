@@ -7,6 +7,9 @@
 // equipment semantics are UNKNOWN), so the backpack below is a test-only
 // fixture definition, like the D1 CombatDeathFixture.
 
+// The same test-only weights file is mounted by several case modules that one
+// test crate can include together (character_authority_postgres).
+#[allow(clippy::duplicate_mod)]
 #[path = "item_weight_lookup.rs"]
 mod capacity_weights;
 use capacity_weights::TEST_WEIGHTS;
