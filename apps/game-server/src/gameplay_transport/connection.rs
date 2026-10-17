@@ -86,8 +86,8 @@ use oteryn_protocol_oteryn::attack::{
 };
 use oteryn_protocol_oteryn::chat::{
     COMMAND_TYPE_CHAT_INTENT, ChatIntent, ChatIntentResult, ChatLine, ChatRoomSet,
-    DELTA_TYPE_CHAT_LINE_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT, decode_chat_intent,
-    encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
+    DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT,
+    decode_chat_intent, encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
 };
 use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
 use oteryn_protocol_oteryn::container_tree::{
@@ -647,7 +647,7 @@ pub(crate) trait FreshAdmissionAuthority {
     }
 
     /// CHAT-WIRE-1: a session with capability 7 starts chatting. Returns the rooms it has open
-    /// (none before CHAT-2); the authority loads the speaker name and drops undelivered lines.
+    /// (CHAT-2B); the authority loads the speaker name and drops undelivered lines.
     fn chat_admit(
         &self,
         _actor: ExactActorRef,
@@ -669,6 +669,15 @@ pub(crate) trait FreshAdmissionAuthority {
                 wait_seconds: 0,
             }
         }
+    }
+
+    /// CHAT-2B: the open rooms of the session when an intent changed them since its client was
+    /// last shown them (a domain 12 delta type 2); `None` when unchanged.
+    fn chat_rooms_changed(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<ChatRoomSet>> {
+        async { None }
     }
 
     /// CHAT-WIRE-1: the oldest line queued for the session, if any.
@@ -3476,8 +3485,27 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
-            // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks.
-            Dispatch::Chat(_) => {}
+            // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks. CHAT-2B: an
+            // opened or closed room follows the result as one domain 12 delta type 2.
+            Dispatch::Chat(_) => {
+                if let Some(rooms) = authority.chat_rooms_changed(admitted.game_session_id).await {
+                    let Some((delta_sequence, frame, revision)) = chat_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.chat_revision,
+                        DELTA_TYPE_CHAT_ROOMS_V1,
+                        &encode_chat_rooms(rooms),
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.chat_revision = revision;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
             // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
             // follow the result, to the speaker alone.
             Dispatch::NpcTrade(_, update, deltas) => {
@@ -3843,17 +3871,35 @@ fn chat_line_delta(
     revision: u64,
     line: &ChatLine,
 ) -> Option<(u64, Vec<u8>, u64)> {
+    let payload = encode_chat_line(line).ok()?;
+    chat_delta(
+        generation,
+        sequence,
+        revision,
+        DELTA_TYPE_CHAT_LINE_V1,
+        &payload,
+    )
+}
+
+/// One domain 12 delta of `delta_type` from the sequence after `sequence` and the revision
+/// after `revision`: `(sequence, frame, revision)` of the delta, `None` on an encoding fault.
+fn chat_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    delta_type: u32,
+    payload: &[u8],
+) -> Option<(u64, Vec<u8>, u64)> {
     let delta_sequence = sequence.checked_add(1)?;
     let to = revision.checked_add(1)?;
-    let payload = encode_chat_line(line).ok()?;
     let frame = encode_state_delta(
         generation,
         delta_sequence,
         STATE_DOMAIN_CHAT,
         revision,
         to,
-        DELTA_TYPE_CHAT_LINE_V1,
-        &payload,
+        delta_type,
+        payload,
     )
     .ok()?;
     Some((delta_sequence, frame, to))
