@@ -122,6 +122,10 @@ pub(crate) struct IncomingWeight<'a> {
 /// Direction is a current transaction-owner fact, never a client assertion. This helper does
 /// not prove ownership, containment, source liveness or completeness of the incoming tree.
 pub(crate) enum CapacityMove<'a> {
+    #[allow(
+        dead_code,
+        reason = "no-weight-change move; the library caller is CP-composed later, qualified by item_loop_capacity"
+    )]
     WithinCharacter,
     IntoCharacter {
         carried_weight: Option<u64>,
