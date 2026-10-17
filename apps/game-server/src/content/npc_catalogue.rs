@@ -55,7 +55,8 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
         // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
         // each of the 11 locator lookups: 11 more, measured.
         // Combined with #1940 NPC placement content the scan exceeded 218: one more package-root sibling seen by each of the 11 locator lookups, +11 (measured).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11,
+        // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1,
     }
 }
 
