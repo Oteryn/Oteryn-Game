@@ -5,11 +5,11 @@
 //! receive no direct EXECUTE or table grants in this uninstalled design. Registered house
 //! event and content projection revision remain production integration gates.
 
-use super::house_move_out::{
+use super::move_out::{
     self as owner, HouseMoveOutError as E, HouseMoveOutOutcome, Result, ReturnedHouseItem,
 };
-use super::house_scope_handoff::HouseId;
-use super::runtime_scope_assignment::NodeIncarnationProof;
+use crate::durability::house_scope_handoff::HouseId;
+use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::RuntimeScopeRefV1;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};

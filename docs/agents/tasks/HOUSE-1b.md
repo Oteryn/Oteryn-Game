@@ -8,7 +8,7 @@ status: skeleton
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-1b
-base_sha: 5742f30f3
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -24,6 +24,8 @@ owned_paths:
   - "apps/game-server/src/house/*_tests.rs"
   - "apps/game-server/tests/house_move_out_*.rs"
   - "docs/agents/tasks/HOUSE-1b.md"
+  - "apps/game-server/tests/support/house_move_out_postgres_cases.rs (D1349 native cases)"
+  - "apps/game-server/tests/support/house_move_out_waiting_postgres_cases.rs (unmounted producer gate)"
 slot_only_paths:
   - "apps/game-server/migrations/00NN_house_transfer.sql"
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json"
@@ -53,6 +55,111 @@ allocation; the previous slot allocation has ended. No native PASS is transferre
 from the prior source. Independent source review passed after exact hash and
 owned-path checks; this successor is preserved as a local commit and verified
 bundle outside the checkout. Publication is separate; no ready/merge/rebase.
+
+## 2026-10-17 canonical House source and case routing — native bridge
+
+This packet starts from CP's ordinary main merge
+`168c64fa49dccda4af692bae57399adfd699a59a`. Exact preimages for the owned sources,
+native module roots and canonical aggregate were read at that head. Earlier
+qualification below remains historical. Native formatting passes for this
+twelve-file packet; native compilation and PostgreSQL qualification are NOT_RUN.
+
+[D1349](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418)
+requires `house::{move_out,transfer}`. Their previous private Durability-child
+mount directly used Durability-private recovery and transaction helpers. The
+private `durability/house_disposition_native.rs` retains the actual existing Root
+method, semantic transaction, recovery check, admission/handoff locks and
+commit/rollback. Canonical House keeps the SQL/body and real native node/item
+fences. A pure forwarder delegates Channel-key encoding to its actual native owner.
+
+[D1367](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234458700)
+grants the six-source bridge packet with a private module. The bridge does not
+widen `record_for`, `assert_recovery_fence`,
+`lock_admission_relations`, `scope_key`, the DB module or node secret access. Its
+new path and one private Durability mod line follow that grant. Its pure encoder
+is a crate-visible associated function on the existing DurabilityRoot, without a
+module visibility change or reexport. The three owned House functions `notice/cancel/freeze`
+receive crate visibility only so this native envelope can call them. No callback,
+caller-selected currentness flag or replacement authority is introduced.
+
+### Exact original-case prerequisite inventory
+
+Sixteen existing cases have no unmerged bank, Guildhall, BED or access producer.
+Their marked native bodies move into
+`tests/support/house_move_out_postgres_cases.rs`, with only canonical House import
+paths and removal of unused committed-entry imports. The sixteen domain assertions
+and commands are retained. Runners additionally follow D1366 below. They use the existing real
+`bestiary_postgres_harness`, native migrations and this task's actual private
+disposition schema; initial retained ownership/items are disclosed fixture data.
+
+The canonical `tests/durability_postgres.rs` receives only this task's House source
+mount and case mount. The old standalone file becomes a thin compilable wrapper; its whole-file
+cfg(any()) gate is removed. The own Cargo test=false entry excludes duplicate
+default execution, while the actual cases remain mounted once in the aggregate.
+The native aggregate selector is `house_move_out_postgres_cases::`.
+
+| Existing case | D1349 route / prerequisite |
+|---|---|
+| `frozen_native_item_and_provenance_mutations_share_the_content_fence` | Native aggregate now; existing native owners on main |
+| `ordinary_drained_fence_remains_without_a_guild_owner_installation` | Native aggregate now; existing native owners on main |
+| `notice_is_current_fenced_bounded_and_idempotent` | Native aggregate now; existing native owners on main |
+| `unloaded_house_101_items_return_to_real_reclaim_subjects_once` | Native aggregate now; existing native owners on main |
+| `reconstructed_roots_resume_frozen_and_partial_custody_without_redelivery` | Native aggregate now; existing native owners on main |
+| `native_inbox_failure_rolls_back_source_provenance_cursor_and_evidence` | Native aggregate now; existing native owners on main |
+| `native_source_and_frozen_manifest_cannot_be_forged_or_edited` | Native aggregate now; existing native owners on main |
+| `current_job_scope_owner_and_native_ownership_revision_are_independent` | Native aggregate now; existing native owners on main |
+| `concurrent_same_step_and_new_notice_serialize_without_double_delivery` | Native aggregate now; existing native owners on main |
+| `real_prepared_entrant_blocks_custody_and_fence_prevents_late_commit` | Native aggregate now; existing native owners on main |
+| `overfull_native_house_is_refused_before_full_census_capture` | Native aggregate now; existing native owners on main |
+| `another_current_world_channel_can_process_an_unloaded_house` | Native aggregate now; existing native owners on main |
+| `owner_cancel_is_fenced_retained_and_allows_a_fresh_notice` | Native aggregate now; existing native owners on main |
+| `overdue_cancel_races_freeze_without_reopening_or_returning_items` | Native aggregate now; existing native owners on main |
+| `before_due_cancel_races_not_due_freeze_as_one_retained_successor` | Native aggregate now; existing native owners on main |
+| `current_successor_connection_can_cancel_an_older_notice` | Native aggregate now; existing native owners on main |
+| `actual_committed_house_session_blocks_after_reservation_is_released` | NOT MOUNTED; #2137 + #2140 actual composed `game_house_access` and current owner/schema fixture |
+
+The waiting case is retained separately in
+`tests/support/house_move_out_waiting_postgres_cases.rs`, with no mod declaration,
+ignore attribute, successful stub or skip return. Its previous test-only
+`game_house_access` replacement is removed. It must not be enabled merely because
+an unqualified owner DTO or source snapshot exists.
+
+The Guild name in the ordinary drained-fence negative and ABI capability check
+does not make those Guildhall-positive tests: they assert ordinary safety with
+the Guild owner absent. None of these seventeen cases performs a bank operation,
+Guildhall release or BED write. Future positive bank cases wait for #2136/#2139,
+Guildhall cases for #2137 and BED cases for #2147; none is invented or counted as an
+authored passing case here.
+
+[D1366](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234335395)
+governs NON-PG CI routing: the existing native helper reports the missing routed
+database, and these cases return without a PostgreSQL qualification marker.
+Both the common runner and reconstructed-Root case keep the actual Harness outside
+the panic-catching boundary, then clean its own database after normal errors or
+assertion panics. A panic is resumed after cleanup. A QUALIFIED PostgreSQL17.6
+marker is printed only when a routed case and its own database cleanup both
+succeed; NON-PG CI is not native qualification.
+
+[D1371](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234628102)
+allocates the exact four Cargo lines and five canonical aggregate lines for this
+coherent twelve-file checkpoint. The private bridge remains under D1367. Root
+checks the exact current shared-file preimages before publication.
+
+**PASS:** native formatting of all changed Rust sources in this twelve-file
+packet on Molehill, including the final case registration and cleanup runners.
+The exact formatter-only changes are incorporated into the publication payload.
+
+**NOT_RUN:** native compilation/Clippy, the sixteen canonical
+native PG cases and the separate waiting access-owner case for this source
+identity. Root is the executor under D1329/D1342: fetch locked dependencies first,
+use the existing PG namespace helper and isolated own fixture database, with the
+free Molehill slot/memory gate. Source transform and exact case names are retained
+with the publication packet.
+
+This routing does not complete ordinary terminal ownership/slot release, automatic
+rent/grace processing, bank burns/refunds, BED freeing, runtime exit/quiescence or
+registered House events. DRAINED continues to retain the owner and native content
+fence until the actual same-transaction participants are integrated.
 
 ## Goal
 

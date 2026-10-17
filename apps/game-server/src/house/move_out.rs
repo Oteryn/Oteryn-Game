@@ -1,19 +1,19 @@
 //! Bounded HOUSE-1b preparation over the native ownership, handoff and custody tables.
 //!
-//! UNINSTALLED: this source is intended as a durability child at the CP slot. The private
-//! schema below and its callers are qualified only in an isolated database. Its retained SQL
+//! The canonical House body uses the real native Durability transaction envelope. The
+//! private schema below remains uninstalled outside isolated qualification. Its retained SQL
 //! evidence is not the registered HouseOperation event: production installation/permissions,
 //! acquisition/property/slot reconciliation, exit/quiesce, house content revision and BED
 //! integration remain mandatory. DRAINED deliberately keeps the content fence and owner.
 
-use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+use crate::durability::house_scope_handoff::HouseId;
+use crate::durability::item_transfer::{
+    CurrentCharacterItemFence, character_item_fence_is_current,
 };
-use super::house_scope_handoff::HouseId;
-use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current};
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
-use super::{DurabilityError, DurabilityRoot};
+use crate::durability::runtime_scope_assignment::{
+    NodeIncarnationProof, prove_current_incarnation,
+};
+use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CommandRef, RuntimeScopeRefV1};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
@@ -135,89 +135,6 @@ impl std::fmt::Display for HouseMoveOutError {
 impl std::error::Error for HouseMoveOutError {}
 pub(crate) type Result<T> = std::result::Result<T, HouseMoveOutError>;
 
-/// A private owner pass. It is executable with the native Root and fences, but is not wired
-/// or production-qualified until the owning registered event/projection/release seams land.
-impl DurabilityRoot {
-    pub async fn run_private_house_move_out(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        operation: HouseMoveOutPass,
-    ) -> Result<HouseMoveOutOutcome> {
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| HouseMoveOutError::AuthorityRejected)?;
-        let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    // Before property/item locks. Together with the native admission relation fence
-                    // this freezes both canonical session and PREPARED/COMMITTED entrant census.
-                    sqlx::query("LOCK TABLE game_house_scope_handoffs IN SHARE MODE")
-                        .execute(&mut *tx)
-                        .await?;
-                    let result = match operation {
-                        HouseMoveOutPass::Notice {
-                            fence,
-                            command,
-                            request,
-                        } => notice(&mut tx, &node, fence, command, request).await,
-                        HouseMoveOutPass::Cancel {
-                            fence,
-                            command,
-                            request,
-                        } => cancel(&mut tx, &node, fence, command, request).await,
-                        HouseMoveOutPass::Freeze {
-                            operation,
-                            house,
-                            execution_scope,
-                            scope_generation,
-                        } => {
-                            freeze(
-                                &mut tx,
-                                &node,
-                                operation,
-                                &house,
-                                execution_scope,
-                                scope_generation,
-                            )
-                            .await
-                        }
-                        HouseMoveOutPass::Step {
-                            operation,
-                            house,
-                            execution_scope,
-                            scope_generation,
-                            step,
-                        } => {
-                            super::house_transfer::step(
-                                &mut tx,
-                                &node,
-                                operation,
-                                &house,
-                                execution_scope,
-                                scope_generation,
-                                step,
-                            )
-                            .await
-                        }
-                    };
-                    match result {
-                        Ok(value) => {
-                            commit_semantic_transaction(tx, deadline).await?;
-                            Ok(Ok(value))
-                        }
-                        Err(error) => Ok(Err(error)), // transaction drops/rolls back as a whole
-                    }
-                })
-            })
-            .await?
-    }
-}
-
 pub(crate) fn valid_id(id: &[u8; 16]) -> bool {
     id[6] >> 4 == 7 && id[8] & 0xc0 == 0x80
 }
@@ -302,7 +219,7 @@ pub(crate) async fn current_world_job(
     }
     let fact = node.fact();
     let held: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_runtime_scope_assignments WHERE scope_key=$1 AND scope_kind=1 AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND ownership_generation=$4::text::numeric(20,0) AND state=1 AND holder_node_id=encode($5,'hex')::uuid AND holder_registration_revision=$6::text::numeric(20,0) FOR SHARE)")
-        .bind(super::runtime_scope_assignment::scope_key(world_id,channel_id).as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(generation.to_string()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
+        .bind(DurabilityRoot::house_disposition_channel_scope_key(world_id,channel_id).as_slice()).bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(generation.to_string()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
     if !held {
         return Err(HouseMoveOutError::AuthorityRejected);
     }
@@ -319,8 +236,8 @@ fn command_binding(
     if command.game_session_id() != fence.game_session_id {
         return Err(HouseMoveOutError::AuthorityRejected);
     }
-    let (world, channel) =
-        super::item_transfer::scope_of(fence).map_err(|_| HouseMoveOutError::AuthorityRejected)?;
+    let (world, channel) = crate::durability::item_transfer::scope_of(fence)
+        .map_err(|_| HouseMoveOutError::AuthorityRejected)?;
     // Private durable binding, not a new wire codec: fixed-width identities and length-prefixed
     // House key; includes the command's original fences. Never reused as current authority.
     let mut binding = Vec::new();
@@ -340,7 +257,7 @@ fn command_binding(
     Ok(binding)
 }
 
-async fn notice(
+pub(crate) async fn notice(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     fence: CurrentCharacterItemFence,
@@ -353,8 +270,8 @@ async fn notice(
     {
         return Err(HouseMoveOutError::InvalidInput);
     }
-    let (world, channel) =
-        super::item_transfer::scope_of(&fence).map_err(|_| HouseMoveOutError::AuthorityRejected)?;
+    let (world, channel) = crate::durability::item_transfer::scope_of(&fence)
+        .map_err(|_| HouseMoveOutError::AuthorityRejected)?;
     let binding = command_binding(
         &fence,
         command,
@@ -398,7 +315,7 @@ async fn notice(
     )?))
 }
 
-async fn cancel(
+pub(crate) async fn cancel(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     fence: CurrentCharacterItemFence,
@@ -421,8 +338,8 @@ async fn cancel(
         if previous.try_get::<bool,_>("notice_command")? || bytes(&previous,"operation")? !=request.operation || previous.try_get::<Option<Vec<u8>>,_>("cancel_binding")?.as_deref()!=Some(binding.as_slice()) {return Err(HouseMoveOutError::ConflictingOperation);}
         return Ok(HouseMoveOutOutcome::Cancelled(view(&load(tx,request.operation,&request.house).await?)?));
     }
-    let (world, channel) =
-        super::item_transfer::scope_of(&fence).map_err(|_| HouseMoveOutError::AuthorityRejected)?;
+    let (world, channel) = crate::durability::item_transfer::scope_of(&fence)
+        .map_err(|_| HouseMoveOutError::AuthorityRejected)?;
     if world != request.house.world_id()
         || !character_item_fence_is_current(
             tx,
@@ -457,7 +374,7 @@ async fn cancel(
     )?))
 }
 
-async fn freeze(
+pub(crate) async fn freeze(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     operation: [u8; 16],

@@ -40,6 +40,7 @@ mod db;
 pub(crate) mod equipment_policy_abi;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+mod house_disposition_native;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;
