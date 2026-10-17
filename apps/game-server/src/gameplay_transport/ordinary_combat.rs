@@ -498,6 +498,7 @@ async fn prepare_inner(
         .as_ref()
         .ok_or(SpellCastDisposition::Rejected)?;
     let party = if matches!(spell.execution, Execution::PartyBuff(_))
+        || may_heal_player(spell)
         || matches!(
             before.source_party_vocation(),
             crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
