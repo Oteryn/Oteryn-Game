@@ -49,6 +49,10 @@ merging main after #2163, never by rebase; this repair does not claim a newer an
 - `apps/game-server/src/durability/mod.rs` (D1112 appearance registration only)
 - `apps/game-server/migrations/0093_character_appearance.sql` (D1112 installed migration)
 - `docs/agents/tasks/APP-1.md`
+- `apps/game-server/Cargo.toml` (target registration; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
+- `apps/game-server/tests/support/character_appearance_postgres_cases.rs` (cases included from CI-run targets; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
+- `apps/game-server/tests/support/character_appearance_native_postgres_cases.rs` (added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
+- `apps/game-server/tests/character_authority_postgres.rs` (CI-run target include; added per CP D1280 (https://github.com/Oteryn/Oteryn-Game/issues/2131#issuecomment-6227727089))
 
 Other shared registries, protocol/runtime wiring, pins, content regeneration and grant-owner
 ports remain outside this task. One writer, one batched push; CP owns ready, queue and merge.

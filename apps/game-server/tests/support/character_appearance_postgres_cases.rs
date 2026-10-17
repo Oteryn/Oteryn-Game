@@ -5,15 +5,15 @@
 // wrapper, both of which provide the path-loaded crate root and the Bestiary harness.
 
 use crate::bestiary_postgres_harness::{CHARACTER, Harness, TestResult, debug, id, runtime};
-use character_appearance::{
-    AccountAppearanceUnlock, read_account_appearance_unlocks, read_selected_appearance,
-    verify_character_appearance_integrity,
-};
 use crate::domain::appearance::{
     AccountUnlocks, AppearanceContent, AppearanceRejection, Sex, UnlockFact, validate_selection,
 };
 use crate::domain::{AccountId, CharacterId};
 use crate::durability::character_appearance::stored as character_appearance;
+use character_appearance::{
+    AccountAppearanceUnlock, read_account_appearance_unlocks, read_selected_appearance,
+    verify_character_appearance_integrity,
+};
 use sqlx::Connection;
 
 fn run<F>(tag: &'static str, body: F) -> TestResult
