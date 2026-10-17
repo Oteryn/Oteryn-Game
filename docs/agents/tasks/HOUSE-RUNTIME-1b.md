@@ -14,7 +14,7 @@ briefs:
   - docs/architecture/reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md
   - docs/architecture/reviews/OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md
 base_branch: main
-base_sha: 5742f30f37f5ae4e21b9c03ad25211ec5349eed6
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 branch: skeleton/house-runtime-1b
 needs_migration: false
 needs_registry: true
@@ -22,7 +22,120 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## 2026-10-16 D1122 checkpoint — NOT_FULLY_QUALIFIED
+## 2026-10-17 authored-source checkpoint — NOT_FULLY_QUALIFIED
+
+The verified draft predecessor is `91faa999d4ad507e3d19538fafd36a42c1555dc4` after CP's
+ordinary merge of main `f010472bcb6794a2cbc56dfaf755bd122c10225e`. Root subsequently
+observed actual main `ce7bccab973625d5d3d0d0c566426903229d2373`; the relevant native
+carrier and House module preimages were unchanged. This checkpoint preserves the real
+authored implementation and exact reviews in the owned evidence file:
+
+[D1362/D1373 complete source, tests, manifests and recovery instructions](../evidence/HOUSE-RUNTIME-1b-D1362-D1373-SOURCE-CHECKPOINT-2026-10-17.md).
+
+That evidence contains the complete recoverable semantic patches, the owned actor
+source, actual native stage, exact dependency preimages, compiler-input reproduction
+and independent reviews. The source remains inert in this checkpoint because shared
+activation order and the remaining actual owner seams are not complete. The existing
+four Rust files keep entry/login `HouseClosed` and exit `ExitNotAdmitted`. No unused
+loader wrapper is being published as runtime completion.
+
+### Authored implementation and allocated ownership
+
+[D1362](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234053855) assigned
+the additive House lifecycle shape, sealed claim predicate, exact complete predecessor
+history, same-transaction preparation/persistence and durable successor to this PR.
+The authored component now binds the actual initial receipt, exact native session-use
+membership and one ledger advance; its historical tag-3 result requires Released.
+Both scope-generation comparisons preserve ordering only within the same scope identity.
+The original Platform observation keeps its strict five-second age without refresh.
+
+[D1373](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234768517) additionally
+assigns the actual actor producer and consumer in the two owned House paths below.
+The implementation uses the existing one physical carrier, a private Channel/House
+domain and real HousePlayer slots. Reservation, materialization, consumption and an
+uncertain commit retain the same physical slot and tile. Source state comes from the
+real Channel Slot, with its complete position revision, lifecycle and combat state;
+there is no default player state or synthetic Channel scope. Reviewed denial paths
+preserve free-list exhaustion behavior, exact source namespace, retired-namespace
+rollback and full retained payload before source removal.
+
+The actual owned native stage consumes the private native PREPARED object in its original
+SQL transaction. It checks the actual source runtime/session/lease/pin, canonical locked
+tile, single qualified House identity/digest and current locked 0047 ownership before
+retaining the real #2163 interior snapshot and reserving/materializing/consuming the
+physical actor. Both physical owners and the SQL transaction remain borrowed by the
+stage. It has no COMMIT or bind API, writes no successor session/receipt/lease/generation,
+and cannot activate a player with only part of its state transferred.
+
+The native loader is already merged in #2163, at
+`cecbfda32b8d4cbb830566cf1b7d1173bef2a6cd`. Its bounded native snapshot is used as
+point-in-time materialization input; it is not current Content, placement, admission
+or future-write authority.
+
+### Exact source/review and native disposition
+
+| Component | Exact disposition |
+| --- | --- |
+| D1362 claims, complete history/ledger and two generation-domain fixes | Independent SOURCE REVIEW PASS. Eleven pure regression bodies are in the actual six-file native source assembly. |
+| First native six-file compile | Library compiled; three fixture-only E0277 error conversions stopped compilation before LIST or case execution. Fixed using the existing debug-string conversion, without changing production errors or adding a broad allow. |
+| Corrected native six-file attempt 2 | Actual PC slot C run started `2026-10-17 14:49:19 UTC`, exit 0; native LIST exactly 11 and **11 pure cases PASS, 0 failed, 0 ignored**, in 0.19 seconds after 47.22 seconds compilation/link. All six before/after source hashes match; final fixture SHA-256 `cf4d5372f46ddbd1836e9253976b83a25ff30bfb41d25a6affbf5427fe79e310`. Seventeen dead-code warnings for unconnected callers are retained. No PG or strict Clippy result is inferred. Complete native result/LIST/test logs and source-before/source-after are embedded in the evidence; result SHA-256 `dfe5c4edab35da18d8b7da0e637b48cf9dce2fd5da4e3bbe3d968a5691e68f8d`. |
+| One-carrier core3 | Independent SOURCE REVIEW PASS at actor SHA-256 `de655311758bdc85a3bb67a529467d250add3039df8b328d9475b35cda8020b4`; fifteen pure arena cases. Native format/compile/LIST/execution NOT_RUN in this checkpoint. |
+| Actual native stage | Independent SOURCE REVIEW PASS at stage patch SHA-256 `800caa75490a65aa6b5de75455a380f7b34a1bee5ca60f1408e8036cd5ed0926`; final composed core3/stage eight-file manifest `c19dde52b40bc9a5bcb481f91c665394a831080c4494502a95a9dd6bf4dbbb3a`. Compile/native/PG execution NOT_RUN. |
+| Full runtime, current Content/FND activation, complete actor transfer, PG rollback/restart and RL-02/RL-04 | Incomplete and unqualified. The pure cases and original selected component receipt do not qualify these boundaries. |
+
+The evidence records the original compact semantic source separately from the actual
+native formatter output. Broad formatting is preserved only to reproduce native
+inputs; it is not permission to publish unrelated shared formatting. The known three
+fixture conversions are also supplied as a compact correction for later source
+composition. Every embedded artifact has a hash and exact recovery instructions.
+
+[The original component receipt](https://github.com/Oteryn/Oteryn-Game/pull/2165#issuecomment-6226079840)
+qualifies historical source `5b164bcf5f0b6d86854498050a91f8817c1d5ab6`: selected native
+Clippy/rlib/link, LIST exactly five, four pure tests and one PG 17.6 test passed, with
+server version 170006 and one post-cleanup marker. Missing-URL refusal separately
+exited 101. [D1214b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226222851)
+confirmed that selected receipt. The later `4d53a1fc6799989b538709e02fa26d1ad301e9eb`
+was a documentation-only successor. This is preserved historical evidence, not a
+current full-head qualification. Earlier D1122 slot holds below are historical only.
+
+### Concrete remaining integration
+
+The shared order is `#2197 → #2198 → #2187 → SESSION-INGRESS-1 → House consumer`.
+Exact post-merge preimages and the next free lifecycle tag must be checked at that
+slot. [The concrete seven-hunk CP request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237005166)
+is also preserved in the evidence: the single native
+HouseId move/re-exports, one already-validated NPC field access, private PREPARED views
+and sealed bridge, and two finite qualified-House read accessors. The actual #2167
+spatial encoder/mount/qualified-room source must compose with those hunks; a current
+full-bundle House catalogue remains Unknown.
+
+The actual `ChannelSpellStates` owner stores PlayerSpellState outside the carrier Slot.
+It has no existing take/rollback/House-adoption port, and its current initializer would
+prune a removed source or create default state. CP must allocate its exact native
+transfer owner, preserving existing vitals, cooldowns, conditions, regeneration and
+pending owner custody. The owned stage deliberately cannot commit until that complete
+transfer and current House-aware adoption exist. A second actor map, default spell
+state or historical receipt cannot fill this gap.
+
+The final actual owner must perform PREPARED read, entry tile reservation, materialization,
+consumption, claims, bind and generation advance in one ordered transaction. It must
+replace the old terminal-destination / generation-greater-than-one placement surrogate,
+resolve uncertain COMMIT before releasing retained owners, and use the original initial
+receipt for retry/restart. Native invalid-interior/placement rollback, same-TX and
+history rejection, crash recovery, complete usable-door RL-02 and measured RL-04 remain
+mandatory. Entry/login and exits remain closed until these implementations are integrated.
+
+D1329 requires shared PG 17.6 only, `cargo fetch --locked` before `in-pg-netns.sh`, and
+cleanup of owned databases. D1342/D1379 and [D1397/D1397a](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236550340)
+require the real canonical `/home/mole/oteryn-cache/heavy.lock`, with the granted outer
+Ubuntu/mole bridge for an existing Ubuntu-24.04 runner. [D1399b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236882742)
+sets MAIL D1396a then HUNT D1392 before the next House heavy run; new worktrees go in
+Ubuntu/mole, and each run removes only its own target/temp files. Root alone publishes
+the coherent draft successor with exact ref/file readback. No ready, merge, activation
+or external review trigger is part of this checkpoint.
+
+
+## Historical 2026-10-16 D1122 checkpoint — superseded disposition
 
 This checkpoint retains the bounded closed-boundary implementation at source head
 `5b164bcf5f0b6d86854498050a91f8817c1d5ab6`. The evidence below updates the
@@ -94,12 +207,15 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/gameplay_transport/house_runtime_loading.rs`
 - `apps/game-server/src/gameplay_transport/house_runtime_tests.rs`
 - `apps/game-server/tests/house_runtime_postgres.rs`
+- `apps/game-server/src/house_scope/actor_placement.rs` (D1373 actual producer)
+- `apps/game-server/src/house_scope/mod.rs` (D1373 actual consumer)
 - `docs/agents/evidence/HOUSE-RUNTIME-1b-*.md`
 - `docs/agents/tasks/HOUSE-RUNTIME-1b.md` (this record: status and notes only)
 
-CP D1062 fixes the four implementation paths above. Shared `mod.rs` registration and
-the aggregate test target are slot-only; the historical registration permission
-does not authorize a shared edit during this authoring pass.
+CP D1062 fixes the four original implementation paths. D1373 additionally assigns
+the two House scope paths above to the actual producer and consumer. Other shared
+registrations, lifecycle/carrier dependency hunks and the aggregate test target remain
+subject to their exact allocated slot; the embedded source backup does not apply them.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
