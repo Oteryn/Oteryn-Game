@@ -3397,6 +3397,11 @@ mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 
+#[path = "support/house_interior_postgres_cases.rs"]
+mod house_interior_postgres_cases;
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;
+
 // D1112 APP-1 installed storage and native authority cases share their cases with the focused
 // standalone targets through the same protected lane, on the Bestiary harness included above.
 #[path = "support/character_appearance_native_postgres_cases.rs"]
