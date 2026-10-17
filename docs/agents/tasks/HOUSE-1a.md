@@ -1,0 +1,600 @@
+# HOUSE-1a — house ownership, auction and rent (skeleton task record)
+
+```yaml
+task_id: HOUSE-1a
+title: "HOUSE-1a: house ownership, auction and rent (skeleton)"
+mode: IMPLEMENT
+status: NOT_FULLY_QUALIFIED
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: skeleton/house-1a
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
+issue: 1622
+wave: 5
+plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
+created_at: 2026-10-15
+plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 5 row HOUSE-1a (row 119); App. 7 HOUSE-*; §5 Wave 5"
+class: "hard (persistence, economy, security)"
+needs_migration: yes
+needs_registry: no
+needs_content_regeneration: false
+merge_authority: CP_ONLY (builder never marks ready)
+owned_paths:
+  - "apps/game-server/src/house/ (new: ownership, auction, rent)"
+  - "apps/game-server/src/durability/house_ownership.rs (new)"
+  - "apps/game-server/src/house/*_tests.rs"
+  - "apps/game-server/tests/house_ownership_*.rs"
+  - "docs/agents/tasks/HOUSE-1a.md"
+slot_only_paths:
+  - "apps/game-server/migrations/00NN_house_ownership.sql (number leased by CP at queue turn)"
+  - "apps/game-server/src/lib.rs / mod.rs module wiring"
+  - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json"
+  - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+  - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
+```
+
+## 2026-10-17 D1375 native-cap value plans
+
+This separate owned arithmetic checkpoint starts from
+`a896ec6199bc5cfa0ce8f270aee49b23e50b1569`. The published property/Guild fixture
+follow-up and its **6 property PASS, 9 Guild PASS / 4 Guild FAIL** evidence remain
+unchanged. No diagnostic probe is part of this checkpoint.
+
+The two arithmetic leaves have independent bounded source review PASS and
+**native formatting PASS**. Compilation and their **17 pure cases are NOT_RUN**
+for this candidate. No PostgreSQL or runtime qualification is claimed. The
+retained ten original pure test bodies remain byte-identical after formatting;
+seven new cases cover the native cap and the new value plans. The formatter only
+reflowed two assertions in the new native-cap case; it changed no original case
+body or production byte.
+
+The native stdin-format receipt has SHA-256
+`ccf21c1a17cc32fcec8bc47c38f48f5c6fa7a3a533b1143a93976d6855dffa5b`.
+The retained production leaf has SHA-256
+`719ee8d26f6e16e0625fe1baa5f34f224c5427a47d333130e1723aa96b963e37`
+and the formatted test leaf has SHA-256
+`59fa4129147e0b84c7c2507c60e0112f4daf82d03ab2ebe5c3fa8e002d49420a`.
+The format-only test patch has SHA-256
+`83e9337fc44ea191b0797def133beb29095877d6402971e3d829382bc50f6a4c`.
+The diagnostic worktree and its 24-source manifest were unchanged; this formatter
+run executed no Cargo or PostgreSQL command.
+
+### Account Bank and escrow arithmetic
+
+[D1375](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234889956)
+retains the existing native `bank_audit::BANK_BALANCE_MAX`, currently
+`999999999999`. The House code now uses that real constant instead of a separate
+House ceiling. It changes no Bank audit limit or SQL ceiling.
+
+| Pure plan | Exact value movement represented |
+| --- | --- |
+| `plan_bid_value` | Reserve only the increased `maximum + captured first rent`; return only a decrease. Repeated values produce no entry. |
+| `plan_release_value` | Return the full remaining maximum and snapshotted first rent to the captured Account, ending with zero escrow. |
+| `plan_winner_value` | Return `maximum - price`; burn the price and first rent from already debited escrow. Neither burn charges the Account balance again. |
+| `plan_ongoing_rent_value` | Debit the later rent from the actual Account balance, using the same rent ledger kind. |
+
+The value plans identify D1375 ledger kinds 7 (reserve), 8 (release), 9 (price
+burn), and 10 (rent burn), with before/after balance and escrow. Checked widened
+arithmetic proves conservation and rejects insufficient or out-of-range inputs.
+Zero amounts create neither a native ledger-entry plan nor a value line. A winner
+has at most three ledger entries plus one changed escrow line, so its eventual
+House event needs four value lines. The future House transaction must use its own
+event-8 resource accounting, not the Bank command's two-entry limit.
+
+### Actual integration remains gated
+
+These values do not create a Bank entry, commit an auction, assert current Premium,
+read a catalogue, or confer ownership. The native acquisition owner must consume the
+real locked auction and current eligibility, then apply the plan in its owning
+transaction. In particular, a local conservation result does not prove the global
+credit headroom of `Bank balance + Market held + private House held + Guildhall
+Account held + incoming`.
+
+The Bank helper/call-site slot remains dependent on actual #2134 integration under
+D1375. The full qualified catalogue producer remains assigned to the bundle lane
+after #2167 under
+[D1383](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235281112).
+No VACANT ownership anchor, caller boolean or direct unqualified content read is
+substituted for that producer. Migration 0119, its event-8/native ledger closure,
+the real Premium batch consumer, acquisition/first rent, and #2141's later rent
+consumer remain distinct implementation and qualification work. This packet does
+not include the held shared Bank proposal or uninstalled SQL journal proposal.
+
+The native qualification recipe mounts only the actual auction leaf under the
+native library for a declared source assembly and retains the native `AccountId`
+and Bank cap. On exact parent `a896ec61`, `house/mod.rs` is absent and the library
+has no House root, so the temporary test registration must be disclosed rather
+than claiming that the uncomposed published PR already lists seventeen cases.
+Module publication and any heavy native run require their actual allocated window.
+
+
+## 2026-10-17 native fixture routing and cleanup follow-up
+
+This owned follow-up starts from published checkpoint
+`5effcbb66072bf5ff4857dd2c25f6b6f6d607fc9`. It changes only the two owned native
+test runners and the Guild release test's disposition schema import to canonical
+`crate::house::move_out` from D1349. All six property and thirteen Guild release
+domain cases, assertions, SQL actions and expected refusals remain unchanged.
+
+The property runner retains its actual PostgreSQL17.6 Database outside the
+panic-catching boundary. The Guild release child runner retains the genuine
+D2136 `Harness`, calls unchanged private `super::install` and uses its existing
+`cleanup`. It stays below the real `guild::disband_terminal_tests` parent; no D
+helper visibility, fake context, replacement schema or authority constructor is
+introduced. Both runners attempt cleanup after setup/body errors and assertion
+panics, then resume assertion panics. The native Harness constructor itself
+remains owned by its existing fixture.
+
+[D1366](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234335395)
+NON-PG routing uses the existing native `configured_admin` helper. Missing routing
+returns without a PostgreSQL qualification marker. A QUALIFIED PostgreSQL17.6
+marker appears only after the routed case and its own database cleanup succeed.
+
+The first genuine source assembly failed compilation before PostgreSQL: the
+existing two-connection acquisition race used `tokio::join!`, but the tracked
+Cargo configuration does not enable that macro. Its adapter now calls the actual
+`item_transfer_postgres_cases::join_two` fixture helper, already mounted for the
+genuine D tests. Both connection futures still run concurrently; the SQL and every
+domain assertion are unchanged. The unused `RecipientReservation` reexport is
+removed; its actual private type and all participating function signatures remain.
+
+**Historical runner generation:** native formatting of both Rust sources PASS;
+compilation FAILED before PostgreSQL. **Current adapter follow-up:** native
+formatting and compilation PASS. The real source assembly ran on Molehill slot I,
+2026-10-17 at 14:45:47 UTC, after locked fetch, through the shared PostgreSQL17.6
+wrapper. Ordinary property cases **6/6 PASS**, with six own-database cleanup
+qualification markers (6.61 s). Guild release cases **9 PASS / 4 FAIL**, zero
+ignored (27.94 s). The combined run is **NOT_FULLY_QUALIFIED**.
+
+Three Guild cases report actual native SQLSTATE23514, `house removal lacks actual
+source shape`: `guild_house_bounded_101_retains_actual_fence_until_final_real_delivery`,
+`guild_house_disposition_preserves_prior_freed_bed_cause_and_time`, and
+`guild_house_real_inbox_release_rollback_then_commit_reload`. The fourth,
+`guild_house_runtime_exact_ports_without_direct_table_writes`, reports
+`Unavailable(Database(Database(None)))`; its underlying cause is not yet
+established. The native 0095 guard proves player Take/Move; a Guild disposition
+must supply its own genuine reservation/census/delivery proof. This checkpoint
+does not disable the native trigger, fabricate a player receipt or claim a
+successful Guild qualification. The failures are reported to CP #2131.
+
+The exact source assembly records real D2136, D2139, D2153, canonical C2141's
+formatted compile-repair sources and published BED2147@`87674e53`; these are actual
+production sources and native fixtures, with line-only mounts. The composition
+qualifies those stated source inputs, not an uncomposed published PR head. The
+pending canonical disposition migration and a separately accepted Guild removal
+proof remain necessary before all nineteen cases can pass.
+
+## 2026-10-17 checkpoint — ACL/BED rollback regressions, NOT_FULLY_QUALIFIED
+
+This bounded packet follows CP's ordinary main merge at
+`79287646d31bad5bd72213ae535136f6ac0f15e6`. All four file preimages were read at
+that head and match the retained predecessor blobs. CP
+[D1345/D1349](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418)
+releases owned authoring and the single-successor publication route. Root remains
+the sole remote writer; the PR remains draft. The historical sections below retain
+older evidence and are not qualification of this packet.
+
+The source change adds these boundaries to the actual native tests:
+
+- `house_ownership_legacy_acl_revision_is_atomic_and_has_no_runtime_property_grant`
+  exercises the real legacy ACL receipt and deferred guard with the canonical
+  property fragment. Successful ACL changes advance the property ACL revision;
+  a missing same-transaction receipt rejects the commit and rolls both revisions
+  back. ACL deletion retains receipts and advances only the ACL revision. A literal
+  runtime-role direct property update must be denied.
+- `guild_house_missing_bed_revision_hook_rolls_back_the_participant` uses the real
+  D transaction, Inbox and BED schema. It disables only the BED revision trigger
+  in its own isolated test database, then verifies typed refusal and complete
+  participant rollback even when the enclosing caller commits. It does not change
+  the shared PostgreSQL service or another task's database.
+- The existing release/rollback/reload case now checks BED and ACL revisions before
+  and after the actual terminal release. The `OHG05` error describes both native
+  disposition and BED revision dependencies; its SQLSTATE, ABI and fail-closed
+  behavior are unchanged.
+
+The ordinary property inventory is six cases; the real Guildhall participant
+inventory is thirteen. None is ignored or replaced with a successful stub. The
+Guildhall leaf remains unmounted until its actual native dependency assembly exists.
+It must be a child of `durability::guild::disband_terminal_tests`, so its
+`super::run/install/job` are the owning D fixtures.
+
+| Retained source dependency | Exact source identity | Required source/schema |
+|---|---|---|
+| Native main, including #2163 | `f010472bcb6794a2cbc56dfaf755bd122c10225e` | Existing migration set, genuine recovery/node possession, Inbox and native harness |
+| #2136 | `e26f3480c08b14e5b97b2131afec0a2623b9d168` | Actual Guild domain/writer/audit/jobs; `GUILD_TABLES_PROPOSAL`, `GUILD_GUARDS_PROPOSAL` and terminal fixture |
+| #2139 | `65a834fe536cd04c53d59189a35af032328e8f67` | Guild bank writer/audit; `GUILD_BANK_SCHEMA_PROPOSAL`, `GUILDHALL_LEDGER_SCHEMA_PROPOSAL` |
+| #2153 | `4b435e05143f6ea66b90ecb2e2df26174c945d6d` | Guildhall writer/domain; `BID_SOURCE_SCHEMA`, `OPERATION_SCHEMA`, `HALL_GUARDS_SCHEMA` |
+| #2141 | `7abcd81b06c0caa27192d9129efe180398d000ec` | Actual disposition source and `PRIVATE_DISPOSITION_SCHEMA`; successor mount follows D1349 |
+| #2147 | `0782ef496a6bcfbefb5be7bf89d778d6b1981c06` | Actual `bed_sleeper`/`house_bed::sleeper`; `PRIVATE_SLEEPER_SCHEMA_SQL` and native BED revision trigger |
+
+These identities describe retained source inputs, not merged prerequisites or a
+completed combined run. D1349 preserves the #2141 → #2137 → #2167 → #2147 order.
+D1330's nullable spell-consumer repair is excluded from this PR.
+
+Qualification for this packet:
+
+- **PASS, bounded source review:** Root independently reviewed the three Rust
+  changes and found no material defect. This does not establish PostgreSQL behavior.
+- **PASS, whitespace:** `git diff --check` on the bounded packet.
+- **Formatting:** native Rustfmt reported focused formatting differences; the exact
+  returned hunks were applied. The final native formatting recheck is pending.
+- **NOT_RUN:** native compilation/Clippy and all nineteen PostgreSQL cases for this
+  packet, including the deferred `23514` rollback expectation and BED hook refusal.
+  No result from an older source generation is transferred to this one.
+
+D1329 applies to the next execution: `cargo fetch --locked` first, then the existing
+`in-pg-netns.sh` beside the shared PG17.6 env. Use only the harness's isolated own
+database and cleanup. Molehill execution follows D1342's free nonblocking slot,
+slot target, jobs=4 and memory gate; the VPS permits one cargo build at a time.
+No new PostgreSQL server/container is part of this packet.
+
+Auction opening/settlement and ongoing rent still need the genuine bank/Premium,
+canonical property and event owners; this regression packet does not activate
+those absent writers. Production schema/runtime grants, registered House events,
+canonical mounts and full native qualification remain open integration work.
+
+## Historical trigger-order catalogue repair — NOT_FULLY_QUALIFIED
+
+Actual227 on #2141 identified the generic DUR-03 BEFORE trigger refusing23514
+before the House NOWAIT anchor could refuse55P03. #2141 now authors only four
+trigger-object renames to `a_house_disposition_{content,provenance,item,entry}_fence`;
+the underlying functions, event masks and native ABI1 remain unchanged.
+
+This #2137 successor changes only the exact enabled-hook catalogue names and the
+disabled-item-hook negative consumer. Its four expected tables, functions, masks,
+enabled-state requirements and fail-closed count remain unchanged. New producer
+with old consumer, or old producer with new consumer, still refuses before freeze.
+The D1162 #2141→#2137 order governs their coherent integration. No shared wiring,
+grant, migration number or ABI version/signature changes are added.
+
+Focused official Rustfmt1.94 and whitespace checks pass. Native12/PG qualification
+for this source generation remains NOT_RUN; prior checkpoint evidence remains
+historical. Independent review and a new actual executor allocation are required.
+Independent source review passed after exact hash and owned-path checks. This
+successor is preserved as a local commit and verified external recovery bundle;
+publication is separate and no PC execution, ready, merge or rebase is implied.
+
+## Historical checkpoint — real Guildhall release port, NOT_FULLY_QUALIFIED
+
+The product-source candidate is local commit
+`50bc410809bdb0f909160134b487fa7ed76e0c8e`, with independent source-only PASS
+for the actual caller-transaction Guildhall release participant and its twelve
+authored native cases. This task-record update does not change those Rust bytes.
+The earlier storage-only and detached-auction evidence below is historical and
+does not qualify this real D/native port.
+
+CP D1122, [decision6224930201](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201),
+permits one coherent checkpoint push to the existing draft #2137 before full
+qualification. The PR remains draft and NOT_FULLY_QUALIFIED; this exception grants
+no ready, review or merge qualification. No `@codex review` request, ready action
+or manual CI restart accompanies the checkpoint. Publication itself remains for
+Root's exact-candidate review, recovery preservation and guarded remote readback.
+
+Checkpoint check state:
+
+- **PASS, bounded:** retained official Rust1.94 `rustfmt`, edition2024 with
+  `skip_children=true`, is recorded for the exact three Rust source hashes in
+  the frozen50bc source manifest; those bytes remain unchanged. This is focused
+  formatting evidence, not package compilation or all-target qualification.
+- **RED:** none observed for this generation; the native checks below are NOT_RUN.
+- **NOT_RUN:** native Rust compilation and Clippy for this port; all twelve real
+  D-fixture cases, including their PostgreSQL17.6 execution; full package,
+  all-target, runtime-role and gameplay/E2E qualification.
+- **PASS, checkpoint whitespace:** `git diff --check` passes on this task-record
+  delta; Root rechecks the final publication candidate. Full checks remain mandatory
+  before a frozen candidate is submitted for review.
+
+Functional activation remains blocked on the actual D caller/occurrence and
+pre-financial transaction composition, D runtime-role grants and protected
+terminal/current-authority installation, genuine D context/native-node accessors,
+the recipient-pin/late-NOWAIT lock-order contract, and the exact D/C14/BED native
+fixture composition. The authored tests do not replace these missing seams.
+Module/schema/shared-file registration remains uninstalled and follows the CP
+queue after #2163; this checkpoint adds no registration, migration number or
+shared-file hunk. The native12 mount/closure packet remains a proposal only.
+
+## Goal
+
+House ownership, auction (bid escrow) and rent per HOUSE-OWN-0 §3-§9 and SOCIAL_MAP_PACKETS HOUSE-1a.
+
+## Dependencies (state on main@5742f30f3, 2026-10-15)
+
+| Dependency | State | Gate |
+|---|---|---|
+| BANK-1 (NPC-ECON-1) | MERGED (archive OTV2-20261004-bank-1) | ok |
+| HOUSE-RUNTIME-1a | NOT MERGED (Wave 3) | **BLOCKING** |
+| HOUSE-RUNTIME-1b | NOT MERGED (Wave 3) | **BLOCKING** |
+| HOUSE-RUNTIME-1c | NOT MERGED (Wave 3) | **BLOCKING** |
+| PREM-WIRE-1 (PREMIUM-1) | MERGED (#2110) | ok |
+| HOUSE_OWN0 acceptance | ACCEPTED by ACCEPT-SOCIAL-MAP-0 #1771; current main status reconciled | ok |
+
+Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
+
+## Owned paths (builder edits freely)
+
+- apps/game-server/src/house/ (new: ownership, auction, rent)
+- apps/game-server/src/durability/house_ownership.rs (new)
+- `apps/game-server/src/house/*_tests.rs`
+- `apps/game-server/tests/house_ownership_*.rs`
+
+## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
+
+- apps/game-server/migrations/00NN_house_ownership.sql (number leased by CP at queue turn)
+- apps/game-server/src/lib.rs / mod.rs module wiring
+- docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json
+- docs/contracts/RESOURCE_LIMITS_REGISTRY.json
+- tools/content-migration/regenerate_content.py outputs; content/project.json; content/manifest.json, content/world/manifest.json; content/content.lock.json, content/world/content.lock.json; content/interactions/index.json; content/world/pins/*; Rust pins
+- docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
+- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
+- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring; crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants; module registration in lib.rs / durability/mod.rs / domain/mod.rs
+
+To compile on the branch the builder may add only module registration lines in shared `mod.rs`/`lib.rs`; they are re-applied in the slot commit after merging main.
+
+## Wiring points (verified on origin/main 5742f30f3)
+
+- apps/game-server/src/house_scope/mod.rs, handoff.rs (house scope)
+- apps/game-server/src/durability/world_house_instance.rs
+- apps/game-server/src/content/project/native_house_tiles.rs
+- bank writer from BANK-1 (archive record)
+- connection.rs command dispatch chain `else if command.command_type == COMMAND_TYPE_...` (USE_INTENT l.2481, CHAT_INTENT l.2735, NPC_TRADE_INTENT l.2766)
+- capabilities.rs `GATED` table l.165, offered sets l.76/104/132 (new capability not offered until CP decides)
+
+## Inseparable bundles (never split across PRs)
+
+- migration + writer + durability
+- mint/burn + ledger (bid escrow, rent debit through the bank ledger)
+
+## Acceptance criteria
+
+- [ ] auction bid escrow and refund are exactly-once under the session fence
+- [ ] rent debit idempotent per period; eviction path deterministic
+- [ ] Premium gate fails closed
+- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
+- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [ ] Every BLOCKING dependency above merged (or acceptance landed) before the PR leaves draft.
+
+## Validation commands
+
+```sh
+cargo test -p oteryn-game-server house
+cargo test -p oteryn-game-server --test '*house*' (Postgres e2e)
+cargo clippy -p oteryn-game-server -- -D warnings
+cargo fmt --all -- --check
+cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
+```
+
+## Reference evidence pointers
+
+- docs/architecture/reviews/OTERYN_GAME_HOUSE_OWN0_HOUSE_OWNERSHIP_DECISION_2026-09-30.md §3-§9
+- docs/architecture/reviews/OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md (HOUSE-1a)
+- `docs/reference/tibia-manual/houses.md`
+- `docs/agents/tasks/archive/OTV2-20261010-house-1-contract.md`
+- docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 5), §7
+- docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
+
+## Builder instructions
+
+- Fill only owned_paths until CP gives the queue turn; then merge main and add slot-only paths in ONE final commit.
+- Push rarely and batched: one push per round of fixes (heavy builds per push); no status-only commits.
+- Never mark the PR ready, never enable auto-merge, never post `@codex review`; CP does that.
+- Max 2 fix rounds; after that CP closes and splits the task.
+- Confirm every BLOCKING dependency on main before starting code that needs it.
+- A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+## Bounded local preparation (2026-10-15)
+
+- Existing draft #2137, `skeleton/house-1a`, inspected source
+  `212540a23cfb5f1654367567ee7b9bba29f0e07d`. This preparation is restricted to
+  `src/house/auction.rs`, its `auction_tests.rs`, and this record. No module registration,
+  migration, registry, runtime, content pin, regeneration, commit or publication is included.
+- Accepted basis: HOUSE-OWN-0 §4 and §12, accepted by ACCEPT-SOCIAL-MAP-0 #1771
+  (the acceptance document explicitly names `HOUSE-OWN0-PHYSICAL-HOUSE-OWNERSHIP-V1`),
+  and SOCIAL-MAP-PACKETS-1 §1.3, §1.9 and §2.3. The older brief's CANDIDATE header does
+  not introduce an ACCEPT-BATCH #2207 dependency for this allocation.
+- Scope discrepancy: this skeleton broadly mentions rent/grace. The accepted §1.3 split
+  assigns ongoing rent collection, grace, warnings, eviction, move-out and disposition to
+  HOUSE-1b. HOUSE-1a covers acquisition/auction and the first rent reserved with a bid.
+  The packet locates pure rules under `domain/house_auction.rs`; the local allocation instead
+  owns `house/auction.rs`. Final placement/registration remains a CP-slot decision.
+- Prepared pure subset: proxy price and chronological maximum ties, the 256-bidder bound,
+  maximum-plus-snapshotted-first-rent arithmetic and raise/lower deltas, escrow-return
+  headroom arithmetic, seven-day opening and fifteen-minute anti-sniping deadlines.
+  Existing `domain::AccountId` and bank-style `u64` gold are reused. No new identity,
+  money wrapper, table, schema, authority proof, escrow writer or host action is invented.
+- A quote is a calculation over the supplied qualified bid set, not settlement authority.
+  The future writer must independently check current Character/Account/World binding,
+  property state/ownership, housing slot, ban, eligibility/Premium, held escrow and bank facts
+  under the accepted lock/fence order, then update escrow, balance, ledger and event atomically.
+  Settlement must exclude currently ineligible bids before calculating the proxy price.
+  Maximum-reached order is a serialized durable input, not a client timestamp or tie fallback.
+  The pure tests cover input ordering, not actual concurrent writers or exactly-once durability.
+- `cross_domain_finding: HOUSE-1a-BANK-HEADROOM`: SOCIAL-MAP §1.12 requires the one shared
+  credit-headroom check and architect escalation if a credit path does not use it. On this
+  supplied source, `durability/bank.rs` deposit and receiver-transfer paths directly apply
+  `checked_add`/`BANK_BALANCE_MAX` (around lines 1473 and 1781), with no shared headroom
+  helper; `bank_audit::BANK_BALANCE_MAX` is still 999,999,999,999. The detached arithmetic
+  does not implement the RL-15 deferred guard, change that ceiling or integrate any credit.
+  CP/architect must resolve and allocate this bank seam before acquisition integration.
+- HOUSE-RUNTIME-1a/1b/1c and the exit gate remain runtime/slot dependencies. The detached
+  subset assumes no unmerged schema. Premium proof consumption and batch-gate-before-lock
+  wiring (§1.4), nomination/eligibility, one bid/slot per Account+World, property/tile guards,
+  escrow custody, settlement, release jobs, replay bindings, audit, migrations and resource
+  registration remain incomplete. No auction can open from this detached module.
+
+### Source-accurate local harness
+
+`/workspace/oteryn-prep/house-1a-evidence/harness.rs` includes the allocated auction source
+by path and the verbatim existing `domain/mod.rs` prefix containing `DomainError`, UUIDv7
+validation and the existing strong-ID definitions. The harness adds no replacement identity
+implementation. Its extraction bounds and hashes are retained in `harness-provenance.txt`:
+
+- Existing domain source SHA-256:
+  `93732d431fddb5f2ca6aefc95cc1c61d5b9c513d8110e848d52e6e31762f60df`.
+- Verbatim prefix SHA-256:
+  `5bac8f9bdf403a115c84d6201dceb8350bfb91c64fb4f91620806fcf9999f0f1`.
+- Harness SHA-256:
+  `8d1c33564c46e13d5d948e48a8b61b3ffe989d9a887c599b792d1f0b50faaef6`.
+
+Focused formatting, `rustc --test` and `clippy-driver --test --emit=metadata -D warnings`
+use Rust 1.94.0 under `flock /tmp/oteryn-prep-rust.lock`, shared
+`CARGO_TARGET_DIR=/workspace/oteryn-prep/cargo-target` and `CARGO_BUILD_JOBS=2`.
+These qualify only the detached source subset; package-wide checks, PostgreSQL scenarios,
+independent exact-head review and final CP/architect/slot acceptance remain pending.
+
+Local result: **10 passed, 0 failed, 0 ignored**, covering proxy/no-reserve pricing,
+six input-order permutations and changed-maximum chronology, duplicate/ambiguous inputs,
+256/257 bidders, reserve/raise/lower conservation, gold ceiling/overflow, escrow headroom,
+closed-at-deadline/anti-sniping boundaries and time overflow. Focused `rustfmt --check`
+and `clippy-driver -D warnings` passed. Governance validation passed (22 documents, 9 lanes),
+governance unit tests **124 passed**, and `git diff --check` passed. No package-wide or
+PostgreSQL result is claimed for these unwired rules.
+
+Prepared source SHA-256:
+
+- `auction.rs`: `0fa5ed8c22c5204d09a49139031d21bec45f22ba55537581c66a0c11b604ed34`.
+- `auction_tests.rs`: `727b9289add1ce88939b881613aefcb2da68211bf8e7de7e0e0ed9f3465a12ab`.
+
+Logs/provenance and the small standalone executable remain under
+`/workspace/oteryn-prep/house-1a-evidence/` (about 6.2 MiB); no server binary was built.
+Whole-diff self-review and owned-path check: only the two allocated Rust files and this
+record differ; no shared wiring or durable authority/value mutation was prepared.
+
+## ROOT-AJ-20261016-C — independent ordinary-property storage
+
+Direct owner assignment, reiterated by CP comment
+https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6195906702,
+authorizes this family writer without an additional lease number or a new CP decision.
+This continuation starts from #2137 `e467fb5f0274ed0a8212e8fcedefd0671fbed215`.
+The earlier detached-auction qualification above remains historical; it does not qualify
+this new source or a future frozen candidate.
+
+`apps/game-server/src/durability/house_ownership.rs` now prepares the independent
+ordinary-property storage unit required by accepted HOUSE-OWN-0 §3 and HOUSE-TENURE
+§4.2 / owner answer Q1a. Its SQL fragment creates canonical properties, World-global
+tiles and one personal housing slot per Account+World. It preserves the legacy `0038`
+ownership anchor used by `0047` instance bindings and immutable ACL receipts. The
+canonical property and retained legacy row must agree at transaction commit; ownership
+generation remains separate from property lifecycle and global ACL revisions. An
+acquisition must succeed an auction with a new receipt; a release increments ownership
+generation, clears both owners, retains the acquisition receipt and removes the slot
+atomically. The legacy owner trigger is replaced to permit this NULL-owner release.
+Neither the property nor its legacy anchor may be deleted. A retired property cannot
+return to `VACANT` or `AUCTION`. Deferred slot checks cover both old and new property
+keys, so moving a slot cannot strand its previous owned property.
+
+This unit grants no runtime or control-role ownership writer. It provides no auction
+settlement, bank debit, escrow, Premium proof, Game event or production installer. The
+receipt UUID binds storage generations; it is not current acquisition authority. The
+initial fragment is explicitly ordinary-house-only: guildhall mutation and its genuine
+guild lifecycle proofs remain with that later owner. HOUSE-1a acquisition/first rent
+does not absorb HOUSE-1b's ongoing rent, grace, eviction or disposition implementation.
+
+Pre-existing legacy ownership is an exact import boundary: `0038` stores no first-rent
+or `paid_until` facts. Installation refuses unreconciled legacy rows without changing
+them. It does not infer tenancy dates, discard their receipts or replace immutable
+instance bindings. Any actual import must supply accepted original tenancy evidence.
+
+Five native PostgreSQL17.6 tests are prepared in the same owned module. They use the
+unchanged native migration set and administrative native-root fixture seeding, with
+all property/anchor/slot guards enabled for the actual cases. Cases cover durable
+release/reload with instance and immutable receipt retention and CharacterRevision
+unchanged; incomplete release rollback and independent anchor mutation/deletion
+refusal; two real connections competing for one Account+World slot; terminal retirement;
+and failclosed legacy import without invented rent. These are storage invariants,
+not qualified session, Premium, economy or gameplay acquisition cases.
+
+Validation of this continuation: official Rust1.94 `rustfmt` with edition2024 and
+`skip_children=true`, and diff whitespace checks passed. Native compilation, Clippy,
+all five PostgreSQL cases and RED/GREEN execution are **NOT_RUN**. D1011 requires
+the approved PC executor/global slot; its current allocation/helper is pending, not
+declared globally unavailable. Module registration and numbered migration installation
+remain CP-slot work, so existing PR CI cannot qualify an unregistered source file.
+No native checks, commit, push, shared-file changes, schema installation or paid review
+were performed in this continuation. Source review is independent and remains distinct
+from the mandatory native qualification before readiness.
+
+The bank finding is scoped to live reserve/credit/settlement integration, not a blanket
+block on this independent storage unit. SOCIAL-MAP §1.12 still requires resolving the
+one shared credit-headroom seam before those acquisition operations are activated.
+Remaining acquisition gates include current session/recovery fences, accepted runtime
+exit dependencies, Premium before locks, native occurrence/economy/event evidence,
+catalogue admission and tile/Ground guards, and canonical access-function integration.
+
+### ROOT-C-D-TERMINAL-PORT — new isolated authoring generation
+
+Explicit D1098/Root allocation adds the real caller-transaction Guildhall release port
+in `durability/house_ownership.rs` and its private `house/guildhall_release.rs` child.
+Source parent is frozen `c75a0dbe585c746e0f5fca3c1b4000527cb049d2`; that candidate,
+its bundle and PC snapshot remain unchanged. This new generation is AUTHORING.
+
+Canonical storage now distinguishes Guild ownership from Character/Account ownership;
+a Guildhall occupies the unique Guild owner binding and never a personal Account slot.
+The port consumes the genuine D `GuildDisbandTransaction`; it creates no replacement
+Guild context, session, actor, pool getter or independent transaction. A source-derived
+next-at-most-100-recipient reservation acquires sorted native deletion pins before D's
+Guild spine and stamps protected evidence last. Every use checks the same physical
+transaction and database marker. Actual Guild/spine locks are reacquired before property
+and legacy-anchor locks because a D in-memory xid alone survives SAVEPOINT rollback.
+Participant errors explicitly roll back a protected SAVEPOINT before returning.
+
+The bounded House SECURITY DEFINER entrypoints grant runtime EXECUTE only. Protected
+C tables, canonical ownership, ACL and BED receive no runtime DML grant. Their actual
+writer captures an immutable native custody census, explicitly frees genuine BED rows
+with `disposition`, transfers flat House items through native `game_character_inbox_deliver`,
+retains immutable delivery/step evidence, deletes live ACL while preserving receipts and
+editors, and clears canonical/legacy Guild ownership atomically with revision successors.
+The immutable same-transaction terminal journal requires zero native House sources,
+occupants, admission reservations, live ACL, personal slots and open sleepers. Only that
+proof permits the typed Guild operation's terminal state5 and real fence release; ordinary
+MOVE_OUT/DRAINED history remains independently fenced.
+
+The real common item/entry/provenance/ItemInstance hooks are C2141 candidate
+`d77b6a820472329dd452bc2ce3ab32aabc06cdfb`, ABI1. This writer checks all four enabled
+native triggers and their actual functions/operation coverage before freeze. Its hooks
+are not a parallel content flag; late native writers use the accepted-proposal NOWAIT
+anchor fallback. The Guild hook itself acquires no earlier blocking root/Guild/property lock.
+
+Focused tests are authored in `house/guildhall_release_tests.rs` for a private child mount
+inside the genuine D2136 native fixture. Required production-source composition is
+D2136 `caf3c375c02c97db1bb667f384529a110bcfe7d9`, D2153
+`498e44e7ed20b91d121bc4d531cc7d3e49dce6de`, actual D2139 Bank source from the
+verified eight-module `d-terminal-sources/manifest.json`, actual BED2147, and the C2141
+candidate above. No fake Guild tables/context, fake Inbox, or replacement native functions
+are used. Initial retained fixture state is administrative seeding; native release guards
+are active for cases. The separate literal runtime-role case is not qualified by that seeding.
+Twelve cases cover actual Inbox release/rollback/reload; 100+1 bounded work and Root reconstruction;
+actual native frozen mutation boundaries; reservation and release SAVEPOINT invalidation;
+D-context lock loss and real lock reacquisition; exact second-delivery fault with full
+participant footprint conservation even if the caller commits after error; runtime direct
+DML denial; missing native capability; changed recovery, foreign World and canonical
+revision resnapshot. Native compilation and all focused cases are **NOT_RUN**.
+
+Activation remains blocked on the explicitly proposed, unaccepted recipient-pin/late
+NOWAIT lock-order amendment; D's actual occurrence/spine and pre-financial caller
+composition; D's protected SQL terminal delegate/current-authority installation; genuine
+D runtime table/authority grants (its current fragments grant none); and module/schema
+registration plus native qualification. The directly callable definer writer independently checks the full Root-provided recovery
+record, the actual admission lock set, secret-bearing native node possession, current World
+assignment and actual Guild spine. It stamps protected immutable authority evidence only
+after all those locks. Consumers recheck current facts and that same-transaction stamp;
+SAVEPOINT rollback losing any of the locks also removes the stamp. Raw node secrets are
+bound as a separate SQL parameter and are never serialized or retained. The Rust leaf
+uses the real D context reference getters and existing native private
+`NodeIncarnationProof::sql_possession_secret` after the required upstream integration.
+No shared accessor is added or silently applied in these owned paths. Deferred Guild
+revision changes require the actual same-transaction D step and complete event successor.
+The protected Guild/world terminal SQL predicate supports D's deferred state3→4 check
+only with current physical-transaction marker and actual release/absence, never history.
+No migration installation, PC call, native execution, push or publication occurred.
+
+
+## Native possession adapter — LOCAL_CHECKPOINT / NOT_FULLY_QUALIFIED
+
+The House Guild release leaf now binds the existing native `sql_possession_secret()` byte
+slice directly to the same BYTEA parameter. The actual upstream method is in
+`durability/runtime_scope_assignment.rs`; the loader source at2163/e2a658ad already consumes
+it. The older proposed `house_release_secret` accessor is unnecessary and remains unapplied.
+No recovery/node JSON, public API, SQL authority checks, property/Inbox effects or lock order
+changes. The consumer stays a private descendant of durability, within the real accessor
+visibility. D1167/CP integration order (2163 before2137) remains; no mixed-source compilation
+or execution is claimed. Fmt/source review are cheap checks; native/PG are NOT_RUN.
