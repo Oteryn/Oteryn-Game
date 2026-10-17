@@ -1,12 +1,13 @@
 //! Native-only private continuation tests. The canonical Character-authority target supplies
 //! the real library modules and item_transfer_postgres_cases harness. The root runs these
 //! only through the authorized shared PostgreSQL route (D1329), never an agent-owned server.
-use crate::domain::CharacterRevision;
+use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::character_forge_dust::{
     ForgeDustGainCause, ForgeDustLimitCandidate, ForgeDustLimitDisposition, ForgeDustLimitError,
     ForgeDustLimitRequest, ForgeDustWriteIds, gain_forge_dust_in_transaction, read_forge_dust,
+    read_forge_dust_limit_history,
 };
 use crate::durability::character_forge_dust_audit::{
     audit_forge_dust_ledger, decode_forge_dust_limit_envelope,
@@ -1007,6 +1008,320 @@ fn native_limit_raise_migration_rejects_legacy_225_and_disconnected_history() ->
             tx.rollback().await?;
             let legacy_limit:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='game_character_forge_dust_limit_range' AND pg_get_constraintdef(oid) LIKE '%225%')").fetch_one(&h.pool).await?;
             assert!(legacy_limit, "failed migration did not alter the old bound");
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn native_limit_history_descending_keyset_survives_new_commits_and_replay() -> TestResult {
+    run_case("forge_limit_history_page", |h| {
+        Box::pin(async move {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let character = native::fence()?.character_id;
+            let mut reader = h.pool.begin().await?;
+            sqlx::query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                .execute(&mut *reader)
+                .await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *reader)
+                .await?;
+            let empty = read_forge_dust_limit_history(&mut reader, character, None, 2)
+                .await
+                .map_err(debug)?;
+            assert!(empty.entries.is_empty());
+            assert_eq!(empty.next_before_ordinal, None);
+
+            fund(h, 1, 100).await?;
+            let mut receipts = Vec::new();
+            for (index, stage) in [(1, 0), (2, 1), (3, 2)] {
+                let candidate = reserve(h, &authority, index, stage).await?;
+                let outcome = h
+                    .root
+                    .commit_forge_dust_limit(
+                        &authority,
+                        &h.node,
+                        native::fence()?,
+                        native::command(u64::from(index) + 1)?,
+                        &candidate,
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(!outcome.replayed);
+                receipts.push(outcome.receipt);
+            }
+            let first = read_forge_dust_limit_history(&mut reader, character, None, 2)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                first
+                    .entries
+                    .iter()
+                    .map(|entry| entry.ordinal)
+                    .collect::<Vec<_>>(),
+                [3, 2]
+            );
+            assert_eq!(first.entries[0].receipt, receipts[2]);
+            assert_eq!(first.entries[1].receipt, receipts[1]);
+            assert_eq!(first.next_before_ordinal, Some(2));
+
+            // The reader keeps its real READ COMMITTED transaction. A fresh committed
+            // operation between pages must not shift its exclusive ordinal cursor.
+            fund(h, 2, 100).await?;
+            let fourth = reserve(h, &authority, 4, 3).await?;
+            let outcome = h
+                .root
+                .commit_forge_dust_limit(
+                    &authority,
+                    &h.node,
+                    native::fence()?,
+                    native::command(5)?,
+                    &fourth,
+                )
+                .await
+                .map_err(debug)?;
+            receipts.push(outcome.receipt);
+            let tail =
+                read_forge_dust_limit_history(&mut reader, character, first.next_before_ordinal, 2)
+                    .await
+                    .map_err(debug)?;
+            assert_eq!(tail.entries.len(), 1);
+            assert_eq!(tail.entries[0].ordinal, 1);
+            assert_eq!(tail.entries[0].receipt, receipts[0]);
+            assert_eq!(tail.next_before_ordinal, None);
+
+            let all = read_forge_dust_limit_history(&mut reader, character, None, 1000)
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                all.entries
+                    .iter()
+                    .map(|entry| entry.ordinal)
+                    .collect::<Vec<_>>(),
+                [4, 3, 2, 1]
+            );
+            assert_eq!(all.next_before_ordinal, None);
+            for (entry, expected) in all.entries.iter().zip(receipts.iter().rev()) {
+                assert_eq!(&entry.receipt, expected);
+            }
+            let one = read_forge_dust_limit_history(&mut reader, character, None, 1)
+                .await
+                .map_err(debug)?;
+            assert_eq!(one.entries, all.entries[..1]);
+            assert_eq!(one.next_before_ordinal, Some(4));
+            let end = read_forge_dust_limit_history(&mut reader, character, Some(1), 1)
+                .await
+                .map_err(debug)?;
+            assert!(end.entries.is_empty());
+            assert_eq!(end.next_before_ordinal, None);
+
+            let before_replay = effect_counts(h).await?;
+            let original = reserve(h, &authority, 1, 0).await?;
+            let replay = h
+                .root
+                .commit_forge_dust_limit(
+                    &authority,
+                    &h.node,
+                    native::fence()?,
+                    native::command(500)?,
+                    &original,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(replay.replayed);
+            assert_eq!(replay.receipt, receipts[0]);
+            assert_eq!(effect_counts(h).await?, before_replay);
+            let after_replay = read_forge_dust_limit_history(&mut reader, character, None, 1000)
+                .await
+                .map_err(debug)?;
+            assert_eq!(after_replay, all);
+            reader.rollback().await?;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn native_limit_history_excludes_reservations_and_terminal_revision_changed() -> TestResult {
+    run_case("forge_limit_history_terminal", |h| {
+        Box::pin(async move {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let character = native::fence()?.character_id;
+            fund(h, 1, 100).await?;
+            let candidate = reserve(h, &authority, 1, 0).await?;
+            let mut reader = h.pool.begin().await?;
+            sqlx::query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                .execute(&mut *reader)
+                .await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *reader)
+                .await?;
+            let prepared = read_forge_dust_limit_history(&mut reader, character, None, 1000)
+                .await
+                .map_err(debug)?;
+            assert!(prepared.entries.is_empty());
+            assert_eq!(prepared.next_before_ordinal, None);
+
+            activate(h, 2, Some(1), [0x49; 32]).await?;
+            let terminal = h
+                .root
+                .commit_forge_dust_limit(
+                    &authority,
+                    &h.node,
+                    native::fence()?,
+                    native::command(2)?,
+                    &candidate,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                terminal.receipt.disposition,
+                ForgeDustLimitDisposition::RevisionChanged
+            );
+            let rejected = read_forge_dust_limit_history(&mut reader, character, None, 1000)
+                .await
+                .map_err(debug)?;
+            assert_eq!(rejected, prepared);
+
+            activate(h, 3, Some(2), CONTENT).await?;
+            let replay = h
+                .root
+                .commit_forge_dust_limit(
+                    &authority,
+                    &h.node,
+                    native::fence()?,
+                    native::command(99)?,
+                    &candidate,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(replay.replayed);
+            assert_eq!(replay.receipt, terminal.receipt);
+            let accepted = reserve(h, &authority, 2, 0).await?;
+            let raised = h
+                .root
+                .commit_forge_dust_limit(
+                    &authority,
+                    &h.node,
+                    native::fence()?,
+                    native::command(3)?,
+                    &accepted,
+                )
+                .await
+                .map_err(debug)?;
+            let page = read_forge_dust_limit_history(&mut reader, character, None, 1000)
+                .await
+                .map_err(debug)?;
+            assert_eq!(page.entries.len(), 1);
+            assert_eq!(page.entries[0].ordinal, 1);
+            assert_eq!(page.entries[0].receipt, raised.receipt);
+            assert_eq!(page.next_before_ordinal, None);
+            assert_eq!(effect_counts(h).await?, [2, 2, 1, 1]);
+            reader.rollback().await?;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn native_limit_history_bounds_and_actual_character_world_isolation() -> TestResult {
+    run_case("forge_limit_history_isolation", |h| {
+        Box::pin(async move {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let character = native::fence()?.character_id;
+            fund(h, 1, 100).await?;
+            let candidate = reserve(h, &authority, 1, 0).await?;
+            let raised = h
+                .root
+                .commit_forge_dust_limit(
+                    &authority,
+                    &h.node,
+                    native::fence()?,
+                    native::command(2)?,
+                    &candidate,
+                )
+                .await
+                .map_err(debug)?;
+            // The canonical cross-World fixture seeds real Character roots this way.
+            // These roots are data only: neither gains current session authority.
+            for (other_character, world, name) in
+                [(52, native::WORLD, "Other Hero"), (53, 54, "Distant Hero")]
+            {
+                sqlx::query(
+                    "INSERT INTO game_character_roots VALUES \
+                     (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
+                      1,1,'profile-1','ruleset-1','content-1','starter-1',$4)",
+                )
+                .bind(native::id(other_character).as_slice())
+                .bind(native::id(40).as_slice())
+                .bind(native::id(world).as_slice())
+                .bind(name)
+                .execute(&h.pool)
+                .await?;
+            }
+            let before = effect_counts(h).await?;
+            let before_revision = revision(h).await?;
+            let mut reader = h.pool.begin().await?;
+            sqlx::query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
+                .execute(&mut *reader)
+                .await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *reader)
+                .await?;
+            let page = read_forge_dust_limit_history(&mut reader, character, None, 1000)
+                .await
+                .map_err(debug)?;
+            assert_eq!(page.entries.len(), 1);
+            assert_eq!(page.entries[0].receipt, raised.receipt);
+            assert_eq!(page.next_before_ordinal, None);
+            for other in [52, 53] {
+                let other = CharacterId::from_bytes(native::id(other)).map_err(debug)?;
+                let empty = read_forge_dust_limit_history(&mut reader, other, None, 1000)
+                    .await
+                    .map_err(debug)?;
+                assert!(empty.entries.is_empty());
+                assert_eq!(empty.next_before_ordinal, None);
+            }
+            for (cursor, size) in [
+                (None, 0),
+                (None, 1001),
+                (None, u16::MAX),
+                (Some(0), 1),
+                (Some(1_u64 << 63), 1),
+                (Some(u64::MAX), 1),
+            ] {
+                assert!(matches!(
+                    read_forge_dust_limit_history(&mut reader, character, cursor, size).await,
+                    Err(ForgeDustLimitError::InvalidInput)
+                ));
+            }
+            let at_max_cursor = read_forge_dust_limit_history(
+                &mut reader,
+                character,
+                Some(u64::try_from(i64::MAX)?),
+                1000,
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(at_max_cursor, page);
+            assert_eq!(effect_counts(h).await?, before);
+            assert_eq!(revision(h).await?, before_revision);
+            reader.rollback().await?;
             Ok(())
         })
     })

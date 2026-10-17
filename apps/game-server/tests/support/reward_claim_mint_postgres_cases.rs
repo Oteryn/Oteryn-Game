@@ -495,7 +495,8 @@ impl Harness {
             item: definition("Item", key),
             quantity,
             ground: GroundPlacement {
-                spatial_position: vec![1, 2, 3],
+                // Canonical 10-byte Ground64 address (x=1, y=2, floor=3).
+                spatial_position: vec![0, 0, 0, 1, 0, 0, 0, 2, 0, 3],
                 corpse_ref: id(3).to_vec(),
                 map_revision: "map-1".into(),
                 content_revision: "content-1".into(),

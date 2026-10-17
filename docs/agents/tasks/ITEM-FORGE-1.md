@@ -657,3 +657,139 @@ composed-tree binding. The v3 local evidence is bound to the native input tree
 above; it is not a ready/merge declaration or exact-successor CI receipt.
 Post-publication CI must be read on its actual published head. The task remains
 in authoring, with the family acceptance checkboxes unchanged.
+
+### 2026-10-17 — native DustLimit retained-history DATA reader, qualified v4 checkpoint
+
+This successor adds `read_forge_dust_limit_history(connection, character_id,
+before_ordinal, page_size)` to the existing native FORGE-1a owner. It returns
+typed, retained successful DustLimit receipts and their history ordinals. Its
+boundary is DATA reading under the caller's existing read admission, as for
+`read_forge_dust`. A CharacterId or cursor does not establish current gameplay,
+session, Content, custody, recovery or Forge-object authority.
+
+#### Exact source and composition
+
+The coordinator qualified the complete private composition
+`32f55a8e98afcd9e6415b79c6ccaeaf7004e01ed` of published Forge predecessor
+`723ad25188671494148490631633bdf0edf2328d` and the pinned Ground main
+`ce7bccab973625d5d3d0d0c566426903229d2373`. Its private base tree is
+`59b9d402fd1edff1e8905b2ba49a96be92bd8740`. The exact native GREEN tree is
+`5e300afe8c14c0b69f4326f4cb77b2daae45d0fc`, captured by
+`exports/feature2146-tree-history-v4-native.json`, SHA256
+`647605f8a1e51581a6bb6dc5313a7134dd4ce9c0c522d493f08ed60f6d4e238d`. The private composition's parents describe qualification
+provenance; they do not declare the parent list or SHA of the forthcoming
+remote successor. A later main head requires its own composition and evidence.
+
+The native input receipt `feature2146-source-v4.json` has SHA256
+`bfddae3ccb2fa28ccb2431a06ab28740d9da0b53312936786b78206ad1cae146`. The exported source packet has SHA256
+`273146b02a4e6fc16e3ee77840cc0d05d81cbb2b568a54c3778a96af9178fbcc`. The actual formatted-source receipt has SHA256
+`6b397b76c7093e13ab3ef3024ab9b1201a08b3cd1d5915adc29f4860b7cab54b`.
+
+| Native GREEN source | Git blob | SHA256 |
+| --- | --- | --- |
+| `apps/game-server/src/durability/character_forge_dust.rs` | `66b2a2af899a30a50dc5093642b0ac1e015f540a` | `e81776ff2570c34c2457ea11fa33367e872c36e8563393c1a8655a0b2d857870` |
+| `apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs` | `40241422f4091586793a0a02a3a42483aa3b1472` | `74eea614a134a8ae37048893acf15a5ec3f23ec966cfb30c0dee572efcc617cf` |
+
+These are the two history-continuation sources on that complete base. The
+separate task-card append preserves every byte of the prior 39,806-byte record.
+Actual rustfmt changed only five layout sites and three optional trailing
+commas relative to the frozen history proposal. All fourteen test names and
+the complete earlier eleven-case/support prefix remain unchanged. The bounded
+source-consistency review has SHA256
+`0964c40ddd803f151e842d3340c2328f9debe78d78f0cefd53a350c6916ee7e8`. This review performed no additional native run.
+
+#### Reader behavior and scope
+
+One PostgreSQL statement reads history, reservation and receipt under one
+statement snapshot. It binds the CharacterId and uses descending, exclusive
+ordinal keyset pagination. The decoder checks the coupled stored evidence and
+rejects missing, mismatched or malformed state. Prepared reservations and
+terminal `RevisionChanged` receipts remain absent from successful history.
+Existing reservation and receipt decoders are reused with their checks intact.
+
+The page size is 1 through the existing 1,000-row retention ceiling. A smaller
+page takes one lookahead row within the same ceiling; no offset, count scan or
+per-row query is added. Cursor zero or a value beyond positive PostgreSQL
+BIGINT is refused before SQL. A newer native commit between pages does not
+repeat the retained cursor row. Each page follows the caller's transaction
+isolation and existing retention; the reader does not promise a cross-page
+snapshot. The current DustLimit algebra permits 225 successful raises, so the
+1,000 page-size boundary test does not fabricate 1,000 successful operations.
+
+Three added native cases cover real commit/replay pagination, exclusion of
+prepared and terminal-refused occurrences, invalid page/cursor boundaries,
+and actual same-World and cross-World Character DATA isolation. The actual
+fixture successor uses distinct valid Character names. It does not fabricate
+current authority for those other Character roots. All eleven earlier native
+DustLimit cases and their assertions remain present.
+
+#### Completed native v4 evidence
+
+The coordinator executed all thirteen stages on Molehill-PC with Rust 1.95.0,
+jobs 2, the dedicated feature target directory and the pinned complete Ground
+composition above. The terminal summary is
+`feature2146-history-v4-summary.json`, SHA256
+`7634abf859b3aff919397095a271df47249608c84e214f18eab6cf19188b0e6e`,
+with state `COMPLETE_NATIVE_QUALIFICATION`. The complete imported receipt
+bundle has SHA256 `2ce3639ff40df7460d0c763e891ec0da2f6a8795f52a4bcd86a89b459585df29`; all 27 contained receipt hashes were
+independently reproduced. Each post-format GREEN gate is bound to the two
+exact source identities above. Fetch/metadata retain their real pre-format
+input, and both deliberate RED executions retain their own mutated input.
+
+| Executed stage | Terminal result | Actual log SHA256 |
+| --- | --- | --- |
+| Locked Cargo fetch, before offline PG routing | PASS, exit 0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Actual Cargo metadata / Rust edition | PASS, exit 0 | `5028ae447f5e7a743142354754441fbe6c1eb123ec6bd4d51df6b6ec3115df33` |
+| Rust 1.95.0 formatting of the two owned Rust files | PASS, exit 0; actual successor bytes captured | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Whole-workspace `cargo +1.95.0 fmt --all -- --check` | PASS, exit 0 | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Native governance validator | PASS, exit 0 | `ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f` |
+| Strict package Clippy, all targets, `-D warnings` | PASS, exit 0; 156.81 seconds | `0be416910e599da305236a9011ec6e342c94e71e87178ae04f833787a4cd9133` |
+| Actual Cargo artifact/dep-info duplicate-source guard | PASS; existing source-registration policy retained | `db5b5f4338644ceb286e11783c17465770d3b88c1b71c9d8362e456c0414f2f2` |
+| `--lib forge_dust_limit_audit_tests::` | 5 passed, 0 failed, 0 ignored | `75bf622855b8318f19be42f3a18ab8cc023fe1e830007d062497fb31631f6816` |
+| RED: remove only the history Character row filter | Intended regression reproduced; 0 passed, 1 failed, exit 101 | `a83589b15dc32c7ea568842205ee898323b1d619cb11d991bbadb55311ae5bec` |
+| RED: change only exclusive `<` cursor comparison to `<=` | Intended regression reproduced; 0 passed, 1 failed, exit 101 | `141215d558e05e09db1666c281ff671279e7dfe143f9a2713a70a2111e389e67` |
+| Canonical `character_authority_postgres` / `forge_dust_limit_postgres_cases::` | 14 passed, 0 failed, 0 ignored; 132.41 seconds | `266feee663152c873ce848ddb21c39c9189a05c24e5608e509e1357b28f022a8` |
+| Existing `character_forge_dust_postgres` target | 8 passed, 0 failed, 0 ignored; 36.66 seconds | `64c6ba9cb4ccacd2c731f26bafb631cbaebefb7a1939fd9708dbd879866c972b` |
+| Full normal `oteryn-game-server` package, PostgreSQL URL absent | 10,300 passed, 0 failed, 37 ignored; 58 groups; 862.29 seconds | `e182cb44c31ff1cbca1e4fbd47010fa3bbdb5c8d80b17eebb7c28c26f55ddbed` |
+
+Each RED run reached the real PostgreSQL 17.6 fixture and failed its exact
+selected native assertion. They are successful regression witnesses, not
+passing tests. Both runs restored the exact GREEN owner before the following
+stage. The restored canonical GREEN suite passed all fourteen names with
+fourteen `server_version_num=170006` markers. The eight legacy dust cases also
+executed their actual source-bound 170006 checks on the same approved route;
+that legacy harness emits no per-case version marker, so no eight-marker
+claim is made. The normal-package result remains separate from actual PG
+qualification; its 37 existing ignored cases are reported unchanged.
+
+D1329 routing remained in force: `cargo fetch --locked` first, then the owner's
+unchanged namespace helper mapping isolated loopback5432 to the existing
+shared PG17.6 at host127.0.0.1:55432. No new PG server or container was started.
+The cleanup receipt confirms the exact fourteen GREEN databases named in its
+own case output are absent; RED cleanup likewise uses its own logged names.
+The legacy harness retains its own database cleanup. These scoped receipts do
+not assert ownership of unlogged databases or absence of unrelated databases.
+
+The full normal-package receipt has SHA256
+`30d479290ef498a074a162b19874858926241aee969fb5b23d4f82a95048bdd8`. Logs and JSON evidence
+remain under `/home/mole/work/pr4-20261017-1135/logs/`.
+
+#### Retained installation and gameplay boundaries
+
+The history continuation adds no SQL migration, protocol field, operation tag,
+grant, workflow or registration change. Existing Gain, Spend, DustLimit freeze,
+commit and reconcile behavior, native fences, root locks, audit and retry
+budgets remain in the qualified composition. Historical failed attempts keep
+their original source and failed status; this v4 checkpoint does not rewrite
+them or borrow their results.
+
+The DustLimit schema is still an unnumbered append proposal installed only in
+its native harness databases. This reader does not install it in production,
+claim a migration lease or make Forge USE/window admission available. Runtime
+`FORGE_V1`, material recipes, gold fees, conversions, fusion, transfer, tier
+effects and the combined Forge history API retain their separate accepted
+owner/integration requirements. The qualified reader covers only retained
+DustLimit success DATA. Native tree qualification is complete for the scope
+above; final card governance, remote successor identity and that exact head's
+CI are separate publication evidence. This remains an authoring draft with
+family acceptance checkboxes unchanged.

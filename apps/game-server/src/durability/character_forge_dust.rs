@@ -511,6 +511,113 @@ pub struct ForgeDustLimitOutcome {
     pub replayed: bool,
 }
 
+/// One retained DustLimit operation, in its Character's history order.
+/// This is stored data, not current session, Content, custody or Forge permission.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ForgeDustLimitHistoryEntry {
+    pub ordinal: u64,
+    pub receipt: ForgeDustLimitReceipt,
+}
+
+/// A descending page of the existing DustLimit history subset. The cursor is
+/// exclusive and never changes the Character selected by the caller.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ForgeDustLimitHistoryPage {
+    pub entries: Vec<ForgeDustLimitHistoryEntry>,
+    pub next_before_ordinal: Option<u64>,
+}
+
+/// Read retained DustLimit history in one statement snapshot, newest first.
+/// Like `read_forge_dust`, this accepts a caller-owned connection and returns raw
+/// Character data; the caller remains responsible for its actual read admission.
+/// Neither this API nor its cursor authorizes a Forge operation or replays one.
+///
+/// `page_size` is 1..=IMBFORGE0-RL-12 (1,000). At most that existing retained-row
+/// ceiling is fetched, including a lookahead row when the requested page is
+/// smaller. Concurrent new operations do not shift an exclusive ordinal cursor;
+/// normal oldest-row retention can remove entries before a later page is read.
+/// Receipt-only REVISION_CHANGED outcomes are not successful history entries.
+pub async fn read_forge_dust_limit_history(
+    connection: &mut PgConnection,
+    character_id: CharacterId,
+    before_ordinal: Option<u64>,
+    page_size: u16,
+) -> LimitResult<ForgeDustLimitHistoryPage> {
+    if page_size == 0 || i64::from(page_size) > dust_audit::DUST_LIMIT_HISTORY_ROWS_MAX {
+        return Err(ForgeDustLimitError::InvalidInput);
+    }
+    let mut previous = before_ordinal;
+    let before_ordinal = before_ordinal
+        .map(i64::try_from)
+        .transpose()
+        .map_err(|_| ForgeDustLimitError::InvalidInput)?;
+    if before_ordinal == Some(0) {
+        return Err(ForgeDustLimitError::InvalidInput);
+    }
+    let fetch_limit = (i64::from(page_size) + 1).min(dust_audit::DUST_LIMIT_HISTORY_ROWS_MAX);
+    let rows = sqlx::query(
+        "SELECT h.character_id::text AS history_character_id, h.occurrence_id::text AS history_occurrence_id, \
+         h.history_ordinal, s.world_id::text, s.channel_id::text, s.transaction_id::text, s.event_id::text, \
+         s.entry_id::text, s.occurred_at, s.content_digest, s.ruleset_revision, \
+         s.simulation_profile_revision, s.expected_upgrade_count, r.outcome, r.previous_entry_id::text, \
+         r.amount, r.balance_before, r.balance_after, r.dust_limit_before, r.dust_limit_after, r.envelope_sha256 \
+         FROM game_forge_dust_limit_history h \
+         LEFT JOIN game_forge_dust_limit_reservations s \
+           ON s.character_id=h.character_id AND s.occurrence_id=h.occurrence_id \
+         LEFT JOIN game_forge_dust_limit_receipts r \
+           ON r.character_id=h.character_id AND r.occurrence_id=h.occurrence_id \
+         WHERE h.character_id=encode($1,'hex')::uuid \
+           AND ($2::bigint IS NULL OR h.history_ordinal<$2) \
+         ORDER BY h.history_ordinal DESC LIMIT $3",
+    )
+    .bind(character_id.as_bytes().as_slice())
+    .bind(before_ordinal)
+    .bind(fetch_limit)
+    .fetch_all(connection)
+    .await
+    .map_err(DurabilityError::from)?;
+    let mut entries = Vec::with_capacity(rows.len());
+    for row in rows {
+        let entry = dust_limit_history_entry_from_row(&row, character_id)?;
+        if previous.is_some_and(|ordinal| entry.ordinal >= ordinal) {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        previous = Some(entry.ordinal);
+        entries.push(entry);
+    }
+    let next_before_ordinal = if entries.len() > usize::from(page_size) {
+        entries.pop();
+        entries.last().map(|entry| entry.ordinal)
+    } else {
+        None
+    };
+    Ok(ForgeDustLimitHistoryPage {
+        entries,
+        next_before_ordinal,
+    })
+}
+
+fn dust_limit_history_entry_from_row(
+    row: &PgRow,
+    character_id: CharacterId,
+) -> NativeResult<ForgeDustLimitHistoryEntry> {
+    if uuid_text(row.try_get("history_character_id")?)? != *character_id.as_bytes() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let ordinal = u64::try_from(row.try_get::<i64, _>("history_ordinal")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    if ordinal == 0 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let occurrence = uuid_text(row.try_get("history_occurrence_id")?)?;
+    let frozen = frozen_dust_limit_from_row(row, character_id, occurrence)?;
+    let receipt = dust_limit_receipt_from_row(row, &frozen)?;
+    if receipt.disposition != ForgeDustLimitDisposition::Raised {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(ForgeDustLimitHistoryEntry { ordinal, receipt })
+}
+
 #[derive(Debug)]
 pub enum ForgeDustLimitError {
     InvalidInput,
@@ -841,34 +948,38 @@ async fn load_dust_limit_reservation(
 ) -> NativeResult<Option<FrozenDustLimit>> {
     let row = sqlx::query("SELECT world_id::text, channel_id::text, transaction_id::text, event_id::text, entry_id::text, occurred_at, content_digest, ruleset_revision, simulation_profile_revision, expected_upgrade_count FROM game_forge_dust_limit_reservations WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid FOR UPDATE")
         .bind(character.as_bytes().as_slice()).bind(occurrence.as_slice()).fetch_optional(&mut **tx).await?;
-    row.map(|row| {
-        Ok(FrozenDustLimit {
-            character_id: character,
-            request: ForgeDustLimitRequest {
-                occurrence_id: occurrence,
-                expected_upgrade_count: u16::try_from(
-                    row.try_get::<i16, _>("expected_upgrade_count")?,
-                )
+    row.map(|row| frozen_dust_limit_from_row(&row, character, occurrence))
+        .transpose()
+}
+
+fn frozen_dust_limit_from_row(
+    row: &PgRow,
+    character: CharacterId,
+    occurrence: [u8; 16],
+) -> NativeResult<FrozenDustLimit> {
+    Ok(FrozenDustLimit {
+        character_id: character,
+        request: ForgeDustLimitRequest {
+            occurrence_id: occurrence,
+            expected_upgrade_count: u16::try_from(row.try_get::<i16, _>("expected_upgrade_count")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
-            },
-            world_id: uuid_text(row.try_get("world_id")?)?,
-            channel_id: uuid_text(row.try_get("channel_id")?)?,
-            transaction_id: uuid_text(row.try_get("transaction_id")?)?,
-            event_id: uuid_text(row.try_get("event_id")?)?,
-            entry_id: uuid_text(row.try_get("entry_id")?)?,
-            occurred_at_unix_ms: row.try_get("occurred_at")?,
-            content_digest: row
-                .try_get::<Vec<u8>, _>("content_digest")?
-                .try_into()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-            ruleset_revision: row.try_get("ruleset_revision")?,
-            simulation_profile_revision: u32::try_from(
-                row.try_get::<i64, _>("simulation_profile_revision")?,
-            )
+        },
+        world_id: uuid_text(row.try_get("world_id")?)?,
+        channel_id: uuid_text(row.try_get("channel_id")?)?,
+        transaction_id: uuid_text(row.try_get("transaction_id")?)?,
+        event_id: uuid_text(row.try_get("event_id")?)?,
+        entry_id: uuid_text(row.try_get("entry_id")?)?,
+        occurred_at_unix_ms: row.try_get("occurred_at")?,
+        content_digest: row
+            .try_get::<Vec<u8>, _>("content_digest")?
+            .try_into()
             .map_err(|_| DurabilityError::InvalidStoredState)?,
-        })
+        ruleset_revision: row.try_get("ruleset_revision")?,
+        simulation_profile_revision: u32::try_from(
+            row.try_get::<i64, _>("simulation_profile_revision")?,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
     })
-    .transpose()
 }
 
 async fn matches_dust_limit_reservation(
@@ -902,9 +1013,14 @@ async fn load_dust_limit_receipt(
 ) -> NativeResult<Option<ForgeDustLimitReceipt>> {
     let row = sqlx::query("SELECT outcome, previous_entry_id::text, amount, balance_before, balance_after, dust_limit_before, dust_limit_after, envelope_sha256 FROM game_forge_dust_limit_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid")
         .bind(frozen.character_id.as_bytes().as_slice()).bind(frozen.request.occurrence_id.as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else {
-        return Ok(None);
-    };
+    row.map(|row| dust_limit_receipt_from_row(&row, frozen))
+        .transpose()
+}
+
+fn dust_limit_receipt_from_row(
+    row: &PgRow,
+    frozen: &FrozenDustLimit,
+) -> NativeResult<ForgeDustLimitReceipt> {
     let disposition = match row.try_get::<i16, _>("outcome")? {
         1 => ForgeDustLimitDisposition::Raised,
         2 => ForgeDustLimitDisposition::RevisionChanged,
@@ -929,8 +1045,8 @@ async fn load_dust_limit_receipt(
             amount: u32::try_from(row.try_get::<i64, _>("amount")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
             lost: 0,
-            before: balance(&row, "balance_before", "dust_limit_before")?,
-            after: balance(&row, "balance_after", "dust_limit_after")?,
+            before: balance(row, "balance_before", "dust_limit_before")?,
+            after: balance(row, "balance_after", "dust_limit_after")?,
         };
         let plan = entry
             .before
@@ -946,7 +1062,7 @@ async fn load_dust_limit_receipt(
         }
         None
     };
-    Ok(Some(ForgeDustLimitReceipt {
+    Ok(ForgeDustLimitReceipt {
         disposition,
         character_id: frozen.character_id,
         occurrence_id: frozen.request.occurrence_id,
@@ -958,7 +1074,7 @@ async fn load_dust_limit_receipt(
         bound_simulation_profile_revision: frozen.simulation_profile_revision,
         entry,
         envelope_sha256,
-    }))
+    })
 }
 
 fn dust_limit_message(
