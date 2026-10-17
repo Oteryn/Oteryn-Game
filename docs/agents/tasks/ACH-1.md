@@ -201,3 +201,74 @@ No compilation, runtime batch PASS or full ACH-1 completion is claimed.
 Quest-transition schema belongs to #2198; counter receipts, encounter receipt
 migration0098, true earning callers and post-commit notices remain unfinished.
 Shared slot ordering and migration/registry wiring remain subject to CP.
+
+
+## Native batch evidence persistence — 2026-10-17
+
+This appendix preserves and corrects the historical qualification boundary above.
+The earlier `NOT_RUN` statements describe the 2026-10-16 checkpoint; they do not
+describe the native runs recorded here. This is a task-record amendment only.
+The batch source, original test bodies and existing registrations already belong
+to the published implementation.
+
+### Exact post-merge native candidate
+
+The current batch qualification is bound to complete source head
+`f43eb51dbf12650d744b993f8fa847893edd5939`, including its merged runtime dependencies.
+A separate clean checkout used a fresh Cargo target directory and the original
+registered `account_achievement_postgres` target. The PostgreSQL server reported
+`server_version_num=170006` (17.6), with
+`OTERYN_TEST_POSTGRES_ADMIN_URL` configured for the unchanged native harness.
+No source overlay, altered URL guard or process-wide `RUST_MIN_STACK` was used.
+
+| Check on this exact source | Observed result |
+|---|---|
+| Original `achievement_batch_` selection | PASS: 11/11, four pure and seven PostgreSQL cases; zero failed or ignored; 1,151 unrelated filtered; 8.54 seconds |
+| Strict game-server all-target Clippy | PASS, exit 0 |
+| Workspace format check | PASS, exit 0 |
+| Exact HEAD, clean worktree and source/build-input hashes before and after | PASS |
+
+The selected tests completed at **2026-10-17T09:19:31Z**. Clippy and formatting
+completed at **2026-10-17T09:22:37Z**. Clippy's only emitted warning was the
+existing vendor Tokio `missing_docs` warning; the strict command exited 0.
+
+```sh
+cargo test --locked -p oteryn-game-server --test account_achievement_postgres achievement_batch_ --quiet -- --test-threads=1
+cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo fmt --all -- --check
+```
+
+The source readback included the account-achievement writer, original test leaf,
+dedicated native target, `Cargo.lock` and server `Cargo.toml`. The selected batch
+files retain these exact Git blobs at the tested head:
+
+| Source | Git blob |
+|---|---|
+| `apps/game-server/src/durability/account_achievement.rs` | `242d663b2946e51cdbff2459cccdcf62330d1022` |
+| `apps/game-server/src/achievement/grant_tests.rs` | `ae5c41fc21908157be49c9c011b21015526d5699` |
+| `apps/game-server/tests/account_achievement_postgres.rs` | `b8240fd304de4c2368c9e34e4370871a37df2c21` |
+
+The evidence is retained on Molehill-PC under
+`/root/oteryn-six-pr-20261017/evidence-ach-current/`: `source-head-before.txt`,
+`source-before.sha256`, `achievement-batch.log`, `achievement-batch-result.txt`,
+`clippy-all-targets.log`, `clippy-fmt-result.txt` and `fmt.log`.
+This was a fresh run after the main merge, rather than an extrapolation from
+unchanged batch blobs.
+
+### Earlier evidence and remaining delivery
+
+The earlier exact source `40163df019b45f0af136139ffba0fda6109be2f5` separately
+passed the same 11 selected cases (1,105 unrelated filtered, 7.93 seconds), strict
+all-target Clippy and formatting. Its evidence remains under
+`/root/oteryn-six-pr-20261017/evidence-ach/`. The initial noncanonical-port
+attempt correctly refused the seven database cases before execution; that setup
+failure remains separate from the later successful canonical-port run. The
+harness guard was unchanged.
+
+Only the existing selected batch component is qualified by these native runs.
+Full package execution, quest-transition schema and earning callers, durable
+counter earning receipts, encounter receipt/grant composition with allocated
+migration 0098, post-commit notices and complete gameplay/E2E delivery remain
+unfinished. The earlier 23-case offline coverage result remains a separate
+tooling result. `NOT_FULLY_QUALIFIED`, the shared-slot gates and CP-only
+integration/merge authority remain in force.
