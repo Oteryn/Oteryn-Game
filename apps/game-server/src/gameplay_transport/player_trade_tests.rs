@@ -3758,19 +3758,26 @@ fn native_trade_owner_retains_the_same_request_when_cancelled_at_actual_commit()
         ));
         let observed = tokio::time::timeout(Duration::from_millis(1500), async {
             loop {
-                tokio::select! {
-                    result = &mut attempt => {
-                        return Err::<(), Box<dyn std::error::Error>>(
-                            format!("trade continuation returned before the COMMIT gate: {result:?}").into()
-                        );
-                    }
-                    blocked = sqlx::query_scalar::<_, bool>(
+                let mut observation = std::pin::pin!(
+                    sqlx::query_scalar::<_, bool>(
                         "SELECT EXISTS(SELECT 1 FROM pg_stat_activity a WHERE a.datname=current_database() \
                          AND a.state='active' AND upper(btrim(a.query))='COMMIT' \
                          AND a.wait_event_type='Lock' AND $1=ANY(pg_blocking_pids(a.pid)))",
-                    ).bind(gate_pid).fetch_one(&h.pool) => {
-                        if blocked? { return Ok(()); }
+                    ).bind(gate_pid).fetch_one(&h.pool)
+                );
+                let blocked = std::future::poll_fn(|task| {
+                    if let std::task::Poll::Ready(result) =
+                        std::future::Future::poll(attempt.as_mut(), task)
+                    {
+                        return std::task::Poll::Ready(Err::<bool, Box<dyn std::error::Error>>(
+                            format!("trade continuation returned before the COMMIT gate: {result:?}").into(),
+                        ));
                     }
+                    std::future::Future::poll(observation.as_mut(), task)
+                        .map(|result| result.map_err(Into::into))
+                }).await?;
+                if blocked {
+                    return Ok::<(), Box<dyn std::error::Error>>(());
                 }
                 tokio::task::yield_now().await;
             }
