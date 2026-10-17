@@ -4,8 +4,10 @@
     reason = "test fixtures and expected typed outcomes"
 )]
 
-use super::{ForgeItemShape, ForgeShapeError, ItemTier};
 use crate::content::ProjectV2ItemForgeProfile;
+use crate::domain::forge::{
+    ForgeDustError, ForgeDustLimit, ForgeDustResources, ForgeItemShape, ForgeShapeError, ItemTier,
+};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
 
@@ -231,7 +233,6 @@ fn convergence_transfer_requires_both_class_four_and_keeps_the_donor_tier_within
 
 #[test]
 fn accepted_dust_limit_and_next_cost_follow_separately_classified_evidence() {
-    use super::ForgeDustLimit;
     let initial = ForgeDustLimit::INITIAL;
     assert_eq!(initial.current_limit(), Ok(100));
     let (cost, second) = initial.next_upgrade().unwrap();
@@ -252,7 +253,6 @@ fn accepted_dust_limit_and_next_cost_follow_separately_classified_evidence() {
 
 #[test]
 fn wiki_dust_ceiling_refuses_further_upgrades_and_invalid_states() {
-    use super::{ForgeDustError, ForgeDustLimit};
     let penultimate = ForgeDustLimit::new(224).unwrap();
     let (last_cost, maximum) = penultimate.next_upgrade().unwrap();
     assert_eq!(last_cost, 249);
@@ -271,7 +271,6 @@ fn wiki_dust_ceiling_refuses_further_upgrades_and_invalid_states() {
 
 #[test]
 fn accepted_conversions_charge_exact_inputs_and_preserve_other_resources() {
-    use super::ForgeDustResources;
     let before = ForgeDustResources {
         dust: 120,
         slivers: 47,
@@ -311,7 +310,6 @@ fn accepted_conversions_charge_exact_inputs_and_preserve_other_resources() {
 
 #[test]
 fn conversions_refuse_underfunded_and_overflowing_projections() {
-    use super::{ForgeDustError, ForgeDustResources};
     let zero = ForgeDustResources {
         dust: 0,
         slivers: 0,

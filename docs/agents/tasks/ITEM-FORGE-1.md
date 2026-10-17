@@ -382,3 +382,132 @@ as qualification of the changed D1230 policy or test registration. D1145's share
 atomic writer remains gated after#2156; FORGE-CONTENT recipes, runtime operation
 and full mechanic acceptance remain pending. No runtime, GUI or complete
 qualification is claimed.
+
+### 2026-10-17 — test-source registration repair (AUTHORING)
+
+The continuation starts from draft #2146 head
+`86bf82f27326fc81ed8f1c6bd1d88f3b9a751847`. Source inspection found that
+`domain/forge.rs` included the same nine pure cases in both the native library
+and the path-loaded `forge_postgres` integration target. The repository's
+duplicate-test-source guard has no Forge exception.
+
+The repair mounts `durability/forge_tests.rs` once, as the native
+`domain::forge_tests` sibling module, and uses explicit imports from
+`crate::domain::forge`. Both native module mounts remain test-only under
+`#[cfg(test)]`, preserving the D1160 registration boundary. The nine tests' assertions,
+Forge algorithms and PostgreSQL cases are unchanged. The focused library filter
+is now `domain::forge_tests::`; the historical `domain::forge::tests::` filter
+does not select these cases.
+
+The exact repository checker rejected the original source-derived two-harness
+inclusion graph and found no duplicate for the repaired graph. This is a static
+reproduction, not Cargo dep-info or an executed native test suite.
+`git apply --check --whitespace=error-all` passed against the exact originals.
+Independent source review found no blocking issue. Fresh native fmt, strict
+all-target Clippy, package tests, canonical PostgreSQL and exact-head CI remain
+pending for this authoring candidate.
+
+Current protected-main workflow blob
+`d7cfbf90b2b81c43f92c010660f41d242a3cf840` contains the canonical
+`run_registered_target` helper but no `forge_postgres` invocation. The minimum
+shared integration delta is
+`run_registered_target forge_postgres apps/game-server/tests/forge_postgres.rs`;
+its workflow/pin slot remains with the publication coordinator. This owned
+repair does not install that delta or claim full package qualification.
+
+D1145's atomic writer, the shared Forge dust schema/cause changes, accepted
+executable Content recipes and runtime operation remain open dependencies.
+At the inspected PR head, the production dust model admits limits 100–225; the D1230 pure
+limit policy is not a production migration or a substitute for that integration.
+No mechanic acceptance box is closed by this test registration repair.
+
+### 2026-10-17 — PG target registration and workflow pins (AUTHORING)
+
+This continuation repairs draft head
+`86bf82f27326fc81ed8f1c6bd1d88f3b9a751847`. The current user instruction to
+complete and update this existing draft, with the lead as the sole writer,
+authorizes this bounded CI repair now. D1147 and D1182 above retain their
+historical Storage-first sequencing and exact Storage pin approval; they are
+not represented as approval of the new Forge workflow hash. No other PR is
+merged or rebased for this draft checkpoint.
+
+Current main `cecbfda32b8d4cbb830566cf1b7d1173bef2a6cd` and this original
+Forge head share workflow blob `d7cfbf90b2b81c43f92c010660f41d242a3cf840`.
+The workflow now appends only its own existing target through the unchanged
+helper:
+`run_registered_target forge_postgres apps/game-server/tests/forge_postgres.rs`.
+All four existing target registrations, exact source/metadata checks and the
+PostgreSQL 17.6 service and routed admin environment remain unchanged.
+
+The resulting workflow Git blob is
+`bb57d117da6eeb58d61d6ca946605ab662c02490`. Only the existing `APPROVED`
+constant in `tools/repository/test_validate_merge_group_pg_sim.py` and
+`EXPECTED_MERGE_GROUP_GATE_BLOB` in
+`tools/repository/validate_repository_policy_core.py` change to that exact hash.
+No validator logic, aggregation or duplicate-source guard, allowlist or helper
+behavior changes. The one-line workflow edit alone would leave both protected
+pin checks inconsistent, so these three lines form one repair.
+
+The unchanged native `tests/support/postgres_target_aggregation.rs` reads
+`run_registered_target` declarations and requires standalone PG cases to be
+included by a declared target or run directly. This registration selects the
+existing `forge_postgres` target's four cases: one pure tier-bound case and three
+actual PostgreSQL 17.6 schema/read cases. It adds no fixture or target and makes
+no new production Forge operation available. The separate test-source repair
+retains all nine pure assertions under the `domain::forge_tests::` filter.
+
+Exact-source review and hash checks cover the authored input. Governance,
+repository policy and workflow regressions, native aggregation and Cargo
+dep-info guards, fmt, strict all-target Clippy, the normal package, canonical
+PG execution and exact-head CI remain pending for the assembled candidate.
+Historical receipts above retain their original source and execution scope;
+this checkpoint remains NOT_FULLY_QUALIFIED. D1145's atomic writer and executable
+Content dependencies remain open.
+
+### 2026-10-17 — native qualification through the shared PG (D1329)
+
+The registration candidate was executed on Molehill-PC in a genuine Git
+worktree at base `86bf82f27326fc81ed8f1c6bd1d88f3b9a751847`, with a separate
+Cargo target directory for this PR. The tested seven-file patch before this
+receipt-only card addition has SHA-256
+`74183ed05d483f1637db935d7e57ea34c45cd652c34bebab384c8b16dff9b0f2`.
+Its Rust, workflow and validator bytes are unchanged by this receipt.
+
+| Executed check | Result |
+| --- | --- |
+| `cargo +1.95.0 fmt --all --check` | PASS |
+| Native governance and its Python tests | PASS, 124 tests |
+| Strict package Clippy, all targets, `-D warnings` | PASS, 192.37 seconds |
+| Actual Cargo artifact/dep-info duplicate-source guard | PASS, 56 test-harness units and 11 existing allowlisted targets |
+| `--lib domain::forge_tests::` | 9 passed, 0 failed, 0 ignored |
+| Existing `--test forge_postgres` target | 4 passed, 0 failed, 0 ignored; one pure case and three actual PostgreSQL 17.6 cases |
+| Governance, repository policy, governance lifecycle, complete merge-group PG workflow regression programs | All four PASS with actual PowerShell 7.6.7 |
+
+The complete workflow regression exercised its real Atlas/World aggregation,
+native-target failure positions, workflow mutations and fan-in rejection cases.
+The earlier missing-PowerShell attempt remains recorded as a failed preparation
+attempt and is not substituted for this successful execution.
+
+PG execution followed the current user D1329 instruction: first
+`cargo fetch --locked`, then the exact owner-provided `in-pg-netns.sh` beside
+the task copy of the supplied env. Its isolated namespace maps namespace5432
+to the existing shared PostgreSQL17.6 at host127.0.0.1:55432. The helper has
+SHA-256 `368fd9867c97ca1d59aa8b9f7123b77f0e23fa8b6a16fbb5ace4d18b6e1bfd99`.
+No private PG server/container was started for these runs. The three PG cases
+executed their exact17.6 version checks and cleaned their own databases.
+
+Raw logs and source-bound JSON receipts are retained under
+`/home/mole/work/pr4-20261017-1135/logs/` on Molehill-PC. The strict Clippy log
+has SHA-256 `ed3e9c9a67c1849e2fa245fb4ab3d7e35018ca0854262fddff09b8afaeb06882`,
+the duplicate guard log `db5b5f4338644ceb286e11783c17465770d3b88c1b71c9d8362e456c0414f2f2`,
+the nine-case pure log `bbc206606b95109c6074e7a9ffc6384a2efbfeb868ce42507cbefd0e045ce6ca`,
+and the four-case PG log `eac8642a9ca96a7f20f6a83f70da2b7a999e55571413416e99d47827deb2d4c1`.
+The complete PG workflow-regression log has SHA-256
+`e79d24b3539dea374bc6543152bfabce1a4c941371d0eb95bf158b335718135d`.
+
+At this draft publication checkpoint, the full normal package is still running;
+its partial output is not a package PASS. Exact successor CI awaits publication.
+The qualified changes repair test registration and canonical routing. They do
+not install the native dust LIMIT_RAISE proposal, atomic Forge recipes, current
+world-object admission or complete mechanic acceptance. This remains a D1122
+draft checkpoint, with no ready or merge claim.

@@ -244,7 +244,3 @@ impl ForgeDustResources {
         })
     }
 }
-
-#[cfg(test)]
-#[path = "../durability/forge_tests.rs"]
-mod tests;

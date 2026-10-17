@@ -10,6 +10,9 @@ pub mod equipment;
 #[cfg(test)]
 mod forge;
 pub mod forge_dust;
+#[cfg(test)]
+#[path = "../durability/forge_tests.rs"]
+mod forge_tests;
 pub mod premium;
 pub mod progression;
 pub mod timed_item;
