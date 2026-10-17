@@ -720,3 +720,25 @@ and walking
 `ab062d125c3eeeda75aa8168508cd4a5d01f04f680b22a301829ef04315bb477`;
 this combined packet changes only their task-card record. The original acceptance
 boxes remain open and the PR stays NOT_FULLY_QUALIFIED.
+
+## Native coordinate type repair after main composition (2026-10-17)
+
+CP merged main `f010472bcb6794a2cbc56dfaf755bd122c10225e` into the presence
+checkpoint, producing `c806f4bca0b2e4409d01c377731990cfe95a15e1` with parents
+`f8ca704a3a7f54394875f6e165ca9ff8288bb612` and that main head.
+Its [strict Rust job](https://github.com/Oteryn/Oteryn-Game/actions/runs/39032203119/job/117395051384)
+and [PostgreSQL job](https://github.com/Oteryn/Oteryn-Game/actions/runs/39032203170/job/117394780056)
+stopped at E0308 in the new walking consumer: Movement floor is i16, while the
+native map LogicalCell z coordinate is i32. The same compile error appeared in
+integration-rest and S3-B. No new walking, voice or PostgreSQL case executed on
+that head; earlier successful evidence retains its original source identity.
+
+This successor widens that coordinate with `i32::from(position.floor)`. It is an
+exact, lossless conversion of every possible native floor and leaves the existing
+floor bounds, radius, Movement authority and terrain checks intact. This is the
+only Rust change; existing test bodies and registrations remain byte-identical.
+Source inspection, repository rustfmt and patch/whitespace checks pass. Successor
+Cargo, strict Clippy and native execution are NOT_RUN at source freeze and must
+be read from the successor's own CI. The active NPC-source membership, complete
+trigger/height producers and actual budgeted caller remain open under D1314 and
+D1344a. The PR remains draft and NOT_FULLY_QUALIFIED.

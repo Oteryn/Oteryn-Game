@@ -419,7 +419,7 @@ fn cell(position: MovementLocalPosition) -> LogicalCell {
     LogicalCell {
         x: position.x,
         y: position.y,
-        z: position.floor,
+        z: i32::from(position.floor),
     }
 }
 
