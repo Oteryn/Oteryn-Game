@@ -164,6 +164,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         occurrence: binding.occurrence.clone().into(),
         binding: binding.parent_binding.clone(),
         anchor: None,
+        now_us: None,
         now_ms: 0,
         effects: vec![OwnerCombatEffect {
             target,
@@ -290,6 +291,7 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
         };
         Ok(OwnerCombatBatch {
             effects: vec![saved.at_due(now)?],
+            now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get())),
             now_ms: now.get() / 1000,
             ..original.clone()
         })

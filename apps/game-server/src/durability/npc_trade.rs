@@ -399,6 +399,8 @@ struct Plan {
     lines: Vec<NpcTradeLine>,
     burned_gold_units: u64,
     minted_gold_units: u64,
+    bank_debit_gold_units: u64,
+    bank_debit: Option<super::item_fee_burn_audit::OneItemFeeBankDebitV1>,
     /// The bought or sold item.
     item_instance_id: [u8; 16],
 }
@@ -410,6 +412,8 @@ fn plan_buy(
     units: u32,
     capacity: usize,
     entries: &[Entry],
+    tuple: Type2EventTuple,
+    junior: bool,
 ) -> Result<Plan> {
     let mut inputs = Vec::new();
     // §5.3: a price of 0 pays from no coin, so no coin stack is an input or refused.
@@ -440,11 +444,25 @@ fn plan_buy(
         ));
     }
     let stacks: Vec<CoinStack> = inputs.iter().map(|(stack, _)| *stack).collect();
+    let eligible = stacks
+        .iter()
+        .try_fold(0_u64, |total, stack| {
+            total.checked_add(u64::from(stack.quantity) * stack.coin.worth())
+        })
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let bank_debit_gold_units = super::item_fee_burn::bank_part(total, eligible, tuple, junior)
+        .map_err(|error| match error {
+            super::item_fee_burn::FeeBurnError::InsufficientFunds => {
+                NpcTradeError::InsufficientFunds
+            }
+            _ => NpcTradeError::Unavailable(DurabilityError::InvalidStoredState),
+        })?;
+    let coin_part = total - bank_debit_gold_units;
     // §5.3: a price of 0 burns nothing and mints no change.
-    let (burns, change) = if total == 0 {
+    let (burns, change) = if coin_part == 0 {
         (Vec::new(), 0)
     } else {
-        match plan_fee_within(total, &stacks, entries.len(), BACKPACK_ENTRIES_MAX) {
+        match plan_fee_within(coin_part, &stacks, entries.len(), BACKPACK_ENTRIES_MAX) {
             Ok(plan) => (plan.lines, plan.change),
             Err(FeePlanError::InsufficientFunds) => return Err(NpcTradeError::InsufficientFunds),
             Err(FeePlanError::CapacityExceeded) => return Err(NpcTradeError::CapacityExceeded),
@@ -501,7 +519,9 @@ fn plan_buy(
     });
     Ok(Plan {
         lines,
-        burned_gold_units: total + change,
+        burned_gold_units: coin_part + change,
+        bank_debit_gold_units,
+        bank_debit: None,
         minted_gold_units: change,
         item_instance_id: item,
     })
@@ -555,6 +575,8 @@ fn plan_sell(
         ordinal = ordinal.checked_add(1).ok_or(NpcTradeError::DoesNotFit)?;
     }
     Ok(Plan {
+        bank_debit_gold_units: 0,
+        bank_debit: None,
         lines,
         burned_gold_units: 0,
         minted_gold_units: total,
@@ -759,15 +781,32 @@ impl DurabilityRoot {
                         .unwrap_or(0);
                     let entries = lock_entries(&mut tx, &backpack, world_id).await?;
                     let plan = match request.cause.side {
-                        NpcTradeSide::Buy => plan_buy(&request, total, units, capacity, &entries),
+                        NpcTradeSide::Buy => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id)),
                         NpcTradeSide::Sell => plan_sell(&request, total, units, capacity, &entries),
                     };
-                    let plan = match plan {
+                    let mut plan = match plan {
                         Ok(plan) => plan,
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
 
+                    if plan.bank_debit_gold_units > 0 {
+                        // The complete native Character fence already locked the live payer
+                        // root; resolve its actual Account after backpack/coin custody locks.
+                        let account_text: String = sqlx::query_scalar("SELECT account_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND lifecycle=1")
+                            .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+                        let account = uuid_text(&account_text)?;
+                        let balance = super::bank::lock_fee_debit_balance(&mut tx, world_id, account).await?;
+                        if balance.balance < plan.bank_debit_gold_units { return Ok(Err(NpcTradeError::InsufficientFunds)); }
+                        let debit = super::bank::insert_npc_trade_fee_debit_entry(&mut tx, &request.transaction_id, world_id, account,
+                            fence.character_id, &balance, plan.bank_debit_gold_units).await?;
+                        plan.bank_debit = Some(super::item_fee_burn_audit::OneItemFeeBankDebitV1 {
+                            entry_id: debit.entry_id.to_vec(), asset: super::bank_audit::ASSET_GOLD.into(), account_id: account.to_vec(),
+                            world_id: world_id.as_bytes().to_vec(), kind: super::item_fee_burn_audit::LEDGER_FEE_DEBIT,
+                            line_class: super::item_fee_burn_audit::LINE_CLASS_BURN, debit_gold_units: debit.amount,
+                            balance_before_gold_units: debit.balance_before, balance_after_gold_units: debit.balance_after,
+                        });
+                    }
                     let tuple = tx.tuple().tuple();
                     let message = trade_message(
                         &fence, world_id, channel_id, &backpack, &request, total, &plan,
@@ -912,6 +951,7 @@ fn trade_message(
         total_gold_units: total,
         burned_gold_units: plan.burned_gold_units,
         minted_gold_units: plan.minted_gold_units,
+        bank_debit: plan.bank_debit.clone(),
         lines: plan
             .lines
             .iter()
@@ -954,13 +994,13 @@ async fn apply_trade(
            quantity, unit_price, total_gold_units, item_definition_family, \
            item_definition_production_key, item_definition_revision_ref, item_instance_id, \
            item_units, backpack_item_instance_id, burned_gold_units, minted_gold_units, \
-           line_count, occurred_at, envelope_sha256, committed_at) \
+           line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
-           sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+           sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -990,6 +1030,7 @@ async fn apply_trade(
     .bind(i16::try_from(plan.lines.len()).map_err(|_| DurabilityError::InvalidStoredState)?)
     .bind(request.occurred_at_unix_ms)
     .bind(envelope)
+    .bind(gold(plan.bank_debit_gold_units)?)
     .execute(&mut **tx)
     .await?;
 
