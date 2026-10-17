@@ -874,3 +874,96 @@ inputs were frozen and needs its own explicit composition/qualification.
 Numbered migration installation, runtime elapsed-time authority, actual
 Apply/Clear item-only fee and gameplay admission remain with their real
 producers; neither stored zero rows nor this codec correction fabricate them.
+
+### 2026-10-17 — completed native qualification with pinned Ground input
+
+This receipt closes the preceding checkpoint's outstanding composition with
+Ground commit `ce7bccab973625d5d3d0d0c566426903229d2373`. That commit is the pinned
+Ground input for this qualification, not a claim about the latest main. Later
+main successors are outside this receipt. The existing Imbue draft head
+`377ed34b4ddfe13de5ee99236654c370bdc2ceb6` was composed with that complete Ground
+tree in private commit `d700ba58256f5cce87b808e9cc621b671e9345cb`, with ordered
+parents `[377ed34b, ce7bccab]`. The complete qualified tree is
+`3a8d0abde048b1c757ea502fad184d192072ea16`.
+
+The full merge-tree and 18,924-path inventory were checked before execution.
+Every native stage finished with the same complete HEAD, tree, ordered parents,
+Cargo.lock, real index hash and empty changed-file map. There was no additional
+Rust, SQL, codec or formatting change in this integration attempt. The exact
+Cargo.lock is Git blob `eba8094c71724362b911f309d6fa13262b2b7279`,
+SHA-256 `a3b9800ad3199130b2ddc363b6b3972b1ecf119d22e595c243701fcd00f5a35e`.
+The native preparation receipt is
+`365995723a8c3a8f33ea77d3288d3ea6ac983a6dd72f145d0934e6edc5d2621a`; the local exported
+source metadata is `f292b162a68d633e4ba93b7241937fe12c4d41c02bcca697c995821c2be53d75`.
+
+All nine fresh native stages passed under Rust 1.95.0 with two Cargo jobs, the
+existing core build lock and the separate `targets/feature2144` cache:
+
+| Ground integration qualification | Observed result | Complete log SHA-256 |
+| --- | --- | --- |
+| Locked dependency fetch | PASS | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Full workspace formatting check | PASS; no formatting mutation | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Repository governance | PASS on the native source tree | `ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f` |
+| Strict all-target Clippy | PASS | `9a5d17ee9f9a4ed814e909a52954c7be8e7aad585d49b4dcf91c5ea14f322b7b` |
+| Actual Cargo dep-info duplicate-source guard | PASS; 55 test-harness units | `466c2037f51ba756d6b9e0f50a3b3d475bb97def0476b5ad19a99d8ef670b58e` |
+| Actual Expire PostgreSQL cases | 8 passed, 0 failed, 0 ignored; 8 actual 170006 markers | `32de44d1ab3e468f6e2b363a98851d76d7c9c43a5efa27e6fbca1b0517e7c85f` |
+| Actual checkpoint PostgreSQL cases | 10 passed, 0 failed, 0 ignored; 10 actual 170006 markers | `43b8788d2fdb2137dc8725a6bd259eb0e68aaf1a28ecdf5478243087f9e8010e` |
+| Ground canonical regression group | 28 passed, 0 failed, 0 ignored: 12 pure and 16 actual PG cases | `e63a2bda67260099fd15833ca44a54dafe4ffbae8fa6030899722995177f1bad` |
+| Full normal game-server package | 10,303 passed, 0 failed, 37 ignored; 57 groups; 894.47 s | `85057f004f6a80d42695bffddf1c2e26bacfb6f427109b76328d62a8b57f10bc` |
+
+The Ground group is registered once in the existing
+`character_authority_postgres` target. Its unchanged source is Git blob
+`9c9c8740ac45872f2a92d9d2afdbbc1f4fcd9f2a`. The 12 pure cases and 16 actual
+PostgreSQL cases cover the 64-root bound, exact native scope and placement,
+opaque-state refusal, removal/replacement, replay and native mint/map/spell
+atomicity and concurrency. Each of the 16 PG bodies supplied its own expected
+Ground tag and PostgreSQL 170006 marker. The separate Imbue groups each supplied
+their exact names, successful statuses and one actual 170006 marker per body.
+No zero-test or missing-URL execution established these PG results. The ordinary
+package deliberately ran without a PostgreSQL URL and is separate evidence;
+its case counts do not add database coverage.
+
+D1329 locked fetch preceded the unchanged owner `in-pg-netns.sh` route to the
+existing shared PostgreSQL 17.6 on real host 127.0.0.1:55432. This attempt created
+no PostgreSQL server or container and performed no operation on real host 5432.
+All three same-route database-control receipts report server_version_num=170006,
+empty cleanup errors, empty logged-name inventories and zero additional DROP
+operations. These unchanged native harnesses completed their own cleanup. The
+controller did not infer ownership, query or delete unlogged databases; an
+empty logged-name inventory is not an independent census of every created DB.
+The controls are bound to their exact current test logs:
+
+| Actual PG group | Database-control receipt SHA-256 |
+| --- | --- |
+| Expire 8 | `a57a1ffdc9c3c46b24dcc97a5adf40202a5385b7aa0b0e2079d49492a56ab584` |
+| Checkpoint 10 | `b2888ddbac53f235f3e602db8b2e34ed47786384cbdfe56be1b15ec1f8a93ebb` |
+| Ground 16 PG within 28 cases | `fef8598b16ae9743850c8bf78ead7ace04574f8ffe52e15e753525c66b5d1f14` |
+
+The immutable 17-record native bundle is
+`036c7b79985f95decd838f3f54b565fef2946a6919d39b0130c240fb00afb572`. Its complete
+summary is `4b4ee27759141ef9c17f25d9efc8c1f5f40f3cf00028fd85c1d8454aa1d69914` and the
+normal-package receipt is
+`23a403e1eb819ec796bdd43776c327d2fec5c5315b0486cc90b42b8333bf6c19`.
+Stage and complete-log receipts remain in
+`/home/mole/work/pr4-20261017-1135/logs/feature2144-ground-v4-ground-v4-native-*`.
+The coordinator subsequently captured the unchanged native tree above in
+`/home/mole/work/pr4-20261017-1135/exports/feature2144-tree-ground-v4-native.json`,
+receipt SHA-256
+`876c81e7cad06af02e9ac9776fdc9375f4e7675736e5901b762985a4a015bfac`.
+
+Publication preserves the complete native tree and adds only this strict card
+append, retaining all 56,166 prior card bytes as an exact prefix. The successor
+uses the existing published Imbue head `377ed34b` as its sole parent; its commit
+identity therefore differs from the private two-parent qualification commit.
+The final card receives its own diff/governance checks and publication receipt.
+Those checks and exact-new-head CI are not asserted by this native receipt.
+Existing qualification worktrees, cache locations and historical evidence are
+retained.
+
+This integration neither repeats nor replaces the earlier isolated SQL and
+codec RED evidence; the relevant feature logic is unchanged. Operation 14
+remains the reviewed private Imbue proposal, with its existing history and
+allocation limits preserved. No new tag, CP lease, numbered migration,
+production grant, elapsed-time authority, Apply/Clear item-only fee producer,
+Content admission or gameplay entrypoint is introduced. The tested checkpoint
+and retained-zero Expire remain within the draft's existing family boundaries.
