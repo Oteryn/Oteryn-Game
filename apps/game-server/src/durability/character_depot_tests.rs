@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used)]
-use super::*;
-use crate::domain::premium::PremiumStatus;
+use crate::depot_owner::{DepotBox, PAGE_ENTRIES, insertion_fits, next_ordinal};
+use crate::domain::premium::{PremiumGate, PremiumStatus};
+use std::num::NonZeroU64;
 
 #[test]
 fn depot_boxes_use_exact_accepted_bounds() {

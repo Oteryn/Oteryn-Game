@@ -184,7 +184,3 @@ END $$;
 REVOKE ALL ON game_item_character_depot_locations FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_depot_character_world(),game_depot_capacity() FROM PUBLIC;
 "#;
-
-#[cfg(test)]
-#[path = "character_depot_tests.rs"]
-mod tests;

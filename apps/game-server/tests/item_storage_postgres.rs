@@ -3,6 +3,9 @@
 use oteryn_game_server::{domain, durability};
 #[path = "../src/durability/character_depot.rs"]
 mod depot_owner;
+// One canonical mount of the three pure cases; the library owns no copy.
+#[path = "../src/durability/character_depot_tests.rs"]
+mod depot_tests;
 use depot_owner::*;
 use sqlx::{Connection, Executor, PgConnection};
 use std::num::NonZeroU64;

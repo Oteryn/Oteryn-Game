@@ -517,3 +517,61 @@ note above; the protected-base merge-authority audit RED (protected main still
 pins merge-group gate blob `d7cfbf90…` against this PR's CP-approved
 `50d0ff3c…`) needs an owner-authorized audit rotation on main and is not
 changed here.
+
+
+## 2026-10-17 native registration repair on current draft
+
+Current authoring base: `46fd398195cb7ae24403fdf837b8597672ac4293`.
+The coordinator's actual native Clippy run on that head passed. The Cargo
+artifact/dep-info duplicate-source guard then rejected
+`src/durability/character_depot_tests.rs`: its three pure cases were mounted
+both by the native library and by the path-loaded owner in
+`item_storage_postgres`. This is a separate executed guard failure, not a
+PostgreSQL qualification result; the PG suite had not started.
+
+This bounded repair removes only the nested test registration from the native
+owner and mounts the same three pure cases explicitly in the existing
+`item_storage_postgres` target. The target therefore owns the same four cases
+once: three pure bounds/classification cases and one PG schema/read case.
+The test imports name the exact path-loaded owner and the library's real
+`domain::premium` types. All three pure function bodies, the PG function and
+its SQL fixtures/assertions are unchanged. Native owner definitions and SQL,
+module visibility, target registration, workflow and guard allowlists are
+unchanged.
+
+The current user authorized completing this named draft; root is the sole
+publication and remote qualification coordinator. This is AUTHORING for a new
+candidate, not a claim that the earlier freeze already passed the new guard.
+Independent source review, native duplicate-source GREEN and the exact four
+canonical cases remain pending until their receipts are attached. PostgreSQL
+execution must follow D1329 using the existing shared PostgreSQL17.6 and its
+namespace wrapper; no private server/container is started. The scope remains
+private schema/read/capacity qualification. Native DEPOT0 TRANSFER, exclusivity
+and actual current-locker/open-view admission are not qualified by this repair.
+
+### D1329 native registration repair receipt (2026-10-17)
+
+This receipt supersedes the pending qualification above. The exact three Rust
+files passed workspace formatting, governance and all 124 governance tests,
+strict all-target Clippy, and the guard using the actual Cargo artifact and
+dep-info output on Molehill-PC with Rust 1.95.0. The guard observed 56 harness
+units and the existing 11 exceptions. No exception or validator was changed.
+
+The canonical `item_storage_postgres` target then passed all four cases once:
+three unchanged pure cases and the actual PostgreSQL 17.6 schema/read case.
+The complete PG log contains its qualified version marker, with zero failures
+or ignored cases. Locked dependency fetch preceded the unchanged D1329 owner
+`in-pg-netns.sh`; database traffic used its namespace route to the existing
+shared server on host 127.0.0.1:55432. No PG server or container was started.
+
+| Receipt | Result | SHA-256 of complete log |
+| --- | --- | --- |
+| Strict all-target Clippy | PASS | `fb5f108fbbfe064d6c2fa561d830a92012227017f4857b97ce2d6a11f8b011d9` |
+| Actual duplicate-source guard | PASS, 56 harness units | `db5b5f4338644ceb286e11783c17465770d3b88c1b71c9d8362e456c0414f2f2` |
+| Canonical depot target | 4 passed, 0 failed, 0 ignored | `0edc2250e34d3dd8f49bff6ff55dfab6575f8d863881739dc63172b16acbe37f` |
+
+Independent source review passed. Full normal-package execution is running at
+this publication checkpoint; the new successor's CI is not yet qualified.
+The separate reviewed native TRANSFER/exclusivity packet and its isolated
+root-order regression require their own composed execution. These results do
+not establish actual current-locker or open-view runtime admission.
