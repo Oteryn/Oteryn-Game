@@ -713,6 +713,17 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.oldest_undelivered_ms, None);
 
+    // GAME-PUBLIC-PROJ-PRODUCER-1: the public projections' store reads over the same
+    // bootstrap and reconciled authority.
+    public_projections_postgres_cases::bootstrap_reads(
+        &root,
+        &authority,
+        &pool,
+        &uuid(*first.character_id.as_bytes()),
+        &uuid(id(90)),
+    )
+    .await?;
+
     // A superseded incarnation cannot mutate; its successor can.
     allow(&root, &node, 33).await?;
     let successor = register(&root, 2, Some(1)).await?;
@@ -2311,6 +2322,11 @@ mod account_achievement_postgres_cases;
 // share their cases with the protected PostgreSQL lane.
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
+
+// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0091): outboxes, epoch, guards,
+// resync and least privilege, plus the store reads `bootstrap_audit_flow` runs.
+#[path = "support/public_projections_postgres_cases.rs"]
+mod public_projections_postgres_cases;
 
 // PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
 // CHARM-2 harness included above.

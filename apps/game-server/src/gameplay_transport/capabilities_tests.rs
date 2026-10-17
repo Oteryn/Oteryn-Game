@@ -343,6 +343,30 @@ fn commands_and_domains_follow_the_selection() {
     assert!(!selection(&[16]).command_selected(11));
     assert!(!selection(&[16]).command_selected(12));
     assert!(!selection(&[16]).domain_selected(10));
+    // MAP-WIRE-1 §3: one object domain per World. Capability 18 supersedes core domain 2.
+    assert!(!selection(&[4, 6, 18]).domain_selected(2));
+    assert!(selection(&[4, 6, 18]).domain_selected(17));
+    assert!(selection(&[4, 6]).domain_selected(2));
+}
+
+/// A superseding capability is offered only by a bundle World, never by the production or the
+/// fixture item-view set, so a fixture World session keeps the core domain it supersedes. A
+/// superseded domain is a core domain: no capability gates it.
+#[test]
+fn a_superseding_capability_is_bundle_only_and_supersedes_only_core_domains() {
+    let offers = |set: &[OfferedCapability], id: u32| set.iter().any(|offer| offer.id == id);
+    assert!(!SUPERSEDED.is_empty());
+    for (capability, domains) in SUPERSEDED {
+        assert!(offers(BUNDLE_WORLD_OFFERED_CAPABILITIES, *capability));
+        assert!(!offers(PRODUCTION_OFFERED_CAPABILITIES, *capability));
+        assert!(!offers(ITEM_VIEW_OFFERED_CAPABILITIES, *capability));
+        for domain in *domains {
+            assert!(
+                GATED.iter().all(|(_, _, gated)| !gated.contains(domain)),
+                "domain {domain}"
+            );
+        }
+    }
 }
 
 // The production connection path: `admit_frame` and `serve_admitted` with an injected offered

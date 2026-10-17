@@ -282,7 +282,7 @@ class Converter:
                              'speech_bubble': self.symbol(config.get('speechBubble'), 'SPEECHBUBBLE_'),
                              'light': config.get('light')},
             'movement': {'walk_interval_ms': config.get('walkInterval'), 'walk_radius': config.get('walkRadius'),
-                         'floor_change': flags.get('floorchange')},
+                         'floor_change': flags.get('floorchange'), 'base_speed': config.get('speed')},
             'vitals': {'health': config.get('health'), 'max_health': config.get('maxHealth')},
             'respawn': self.symbol(config.get('respawnType')),
         }
