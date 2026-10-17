@@ -24,6 +24,8 @@ const PUMP_SLICE: Duration = Duration::from_millis(1);
 pub enum PlayCommand {
     Step(StepDir),
     Combat(CombatCommand),
+    /// Leave the game (capability 21 `LOGOUT_INTENT`).
+    Logout,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
