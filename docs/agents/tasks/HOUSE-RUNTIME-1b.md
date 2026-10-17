@@ -1,0 +1,918 @@
+# HOUSE-RUNTIME-1b — house scope runtime and entry
+
+```yaml
+task_id: HOUSE-RUNTIME-1b
+title: "HOUSE-RUNTIME-1b: house scope runtime and entry"
+mode: IMPLEMENT
+status: NOT_FULLY_QUALIFIED
+repository: Oteryn/Oteryn-Game
+issue: 1622
+wave: 3
+plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
+plan_row: "§4 row HOUSE-RUNTIME-1b; §7 'HOUSE-RUNTIME-1a/1b/1c'"
+briefs:
+  - docs/architecture/reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md
+  - docs/architecture/reviews/OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md
+base_branch: main
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
+branch: skeleton/house-runtime-1b
+needs_migration: false
+needs_registry: true
+needs_content_regeneration: false
+merge_authority: CP_ONLY (builder never marks ready)
+```
+
+## 2026-10-17 own PostgreSQL fixture cleanup successor
+
+This owned source-and-card checkpoint follows `9b5730b121042491a72730c4f37d801b849e2615`,
+which published the complete D1421 organization change in its one granted push.
+That publication and every earlier source/archive byte remain preserved below.
+This successor changes only the now-owned support leaf and this task record;
+it adds no shared mount, Cargo entry, production caller or actor-stage activation.
+
+The configured fixture formerly could unwind after CREATE and bypass its own
+DROP. It now retains the existing admin connection outside the caught case,
+executes the unchanged native case inside that boundary, then attempts the same
+own-database DROP and admin close. Closing is attempted even after a returned
+DROP error. The original case error or panic payload is returned/resumed after
+cleanup; any additional cleanup error is reported with that own database name.
+The QUALIFIED marker requires both case success and cleanup success. The existing
+CREATE failure/unknown-outcome behavior and process-abort limits are unchanged.
+
+All original SQL strings, assertions, URL validation, the four pure bodies and
+the configured PG case name remain intact. D1421's aggregate-only entirely-absent
+URL PRE-ROUTING rule is unchanged; the focused target remains strict.
+
+Independent source review: PASS for the complete control flow, original error/
+panic preservation, all 27 original literals, and isolated forward/reverse patch
+application. Native stdin formatting on Molehill-PC completed with exit0; its
+only changes wrap three print macros. Actual formatted source SHA256
+`753c563e7135d787d75fbfc23b57c204edfacbf2669a22ab9e79fa88ba773eda`, 8751 bytes. Native formatter result SHA256
+`726d014bdfa84e719784e384eacf6c25581decd6302ce2181308b38c7e39d5fd`.
+The existing sixteen-file worktree source, status, patch and environment guards
+were unchanged. No Cargo or PostgreSQL command ran in that formatting step.
+
+Compilation, the configured original PG case, and actual returned-error/panic
+cleanup with proof that the exact own database is absent remain NOT_RUN for this
+successor. Source review and formatting do not qualify those paths. The current
+four-child House queue remains unchanged; any later native run requires its actual
+window, D1420's source touch before every Cargo command, D1329 locked fetch and the
+existing shared PG namespace wrapper. No other database may be touched. The actual
+D1421 aggregation test and new-head CI remain required. All runtime/producer gates
+and open acceptance criteria below remain in force; the PR remains draft.
+
+### Recoverable cleanup source and formatting evidence
+
+The following gzip/base64 JSON archive contains three named UTF-8 artifacts. To
+recover, base64-decode and gunzip, then verify every content's UTF-8 byte length and
+SHA256 against its entry. Uncompressed archive SHA256 `7d31f85fc52fba1ddfbf8446af651d62285b73417575582f4f0bd1a1a80ae29a`, 23253 bytes.
+
+```base64
+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
+```
+
+## 2026-10-17 D1421 canonical test registration checkpoint
+
+[CP D1421](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6240084090)
+grants one coherent successor on #2165: the focused thin wrapper, shared case leaf,
+actual canonical aggregate mounts/routing, the one Cargo test entry and this owned
+record. The exact predecessor is `43b638341b479f1076f823b3bcca2a331cd1bfc3`, tree
+`d28cf056d529c4a817e7c822966cb18c9ff6296f`. The complete source proposal is retained in
+[the CP request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6240080882),
+patch SHA256 `d6691a459536a64007a51c1e24112ec25ece2c7982c581169b0e361e2204ad61`.
+The root rechecks the actual shared preimages and preserves the full current union
+immediately before its single fast-forward publication; this card does not declare
+that a future head, ref readback or CI run has already completed.
+
+### Concrete defect and granted change
+
+At the predecessor, the existing PG-COVERAGE-1 test failed because
+`house_runtime_postgres` contained inline tests and included no `support/*_cases.rs`
+file. Both affected jobs belong to the ordinary pull_request workflow
+[39058279023](https://github.com/Oteryn/Oteryn-Game/actions/runs/39058279023), despite
+their Merge Queue labels. The reported target completed 1579 cases and failed this
+one aggregation guard. The failure is not a result of the separate unpublished
+sixteen-case actor assembly.
+
+The focused target now has a literal support include and `test = false`; an explicit
+focused run still requires PostgreSQL. The new support leaf keeps the original four
+pure cases and the existing configured-PG closed-boundary case. It is mounted once
+in `durability_postgres`, which already composes native Foundation and Durability.
+The same aggregate now mounts the actual existing HouseScope source, Git blob
+`6ca2a8fd15d4d227032d2d89059268da2b6b076c`, so all request and native identity types
+belong to that same aggregate. No substitute types or held actor/stage source are
+introduced. The three existing HouseScope unit cases become visible through that
+source mount and are counted separately from the original five cases.
+
+D1421 explicitly accepts both the actual HouseScope mount and this routing split:
+
+| Target and configuration | Required behavior |
+| --- | --- |
+| Focused target, absent URL | Preserve the original strict refusal. |
+| Canonical aggregate, entirely absent URL | Emit PRE-ROUTING / NONCANONICAL and return before runtime/database construction; no PostgreSQL qualification. |
+| Either target, present empty, non-Unicode or unsafe URL | Reach the original validator and fail. |
+| Either target, valid configured URL | Execute the original PostgreSQL17.6 schema, SQL/assertions and cleanup path. |
+
+The four pure bodies remain in their unchanged source file, SHA256
+`582233ed04dbbfdb2a0d46584fee426ffe924af39b939ca5c581684396288feb`.
+The pre-format configured-PG body is preserved exactly, 2145 bytes from opening
+brace through closing brace and final LF, SHA256
+`99e6f23b5ee8bedeea6c08298febdc3f1b5d50c2f4b66adb712a47be66cc7308`.
+The original outer PG test name remains; its new routing wrapper delegates to that
+configured helper. This is an explicit routing change, not a claim that the entire
+old outer function is byte-identical. The existing cleanup on returned errors is
+retained. Its assertion-panic gap is also retained and disclosed: a panic can bypass
+the old DROP, so panic-safe cleanup is not claimed by this organization patch.
+A separate bounded cleanup successor is outside this exact D1421 publication.
+
+### Validation and preserved implementation evidence
+
+Independent source reviews verified all four preimage/output identities, exact
+configured-PG/pure preservation, coherent type identity and the unchanged aggregation
+and duplicate-source guard rules. Isolated forward/reverse patch application recovered
+every complete preimage. No audit, allowlist, workflow or native authority guard was
+weakened. The source-level aggregation predicates are satisfied; execution of the Rust
+aggregation test is a separate required result.
+
+Native STDIN Rust1.94 formatting PASS on the three Rust files; Cargo bytes unchanged. Full result SHA256 `03aa87ca68e05a2cd2361930d80d9d5a680e42b4bbf1bc53638f6a8154eca4f9` and all four returned file bytes were verified. No worktree source, Cargo command or PostgreSQL operation was used by the formatter.
+
+| Evidence group | Current disposition |
+| --- | --- |
+| D1421 source4 registration and routing | Independently reviewed source checkpoint. Native compilation/LIST/the five selected cases and actual aggregation execution are NOT_RUN for this successor at authoring. D1421 requires the actual aggregation test to pass and CI on the new head. |
+| Earlier D1362 claims assembly | Historical LIST11 and 11 pure PASS on the recorded six-file source. It lacked D1420's touch step and is not current D1420 native qualification. All old logs and identities remain archived. |
+| Actual D1401b actor/stage assembly | Sixteen native-formatted source files, raw manifest `aa36216617d90a91a0ba42c31cc8e4cda456e0f489b33e21532f9265043af95f`; formatter delta independently reviewed. LIST16/RUN16 remain NOT_RUN at this authoring checkpoint, fourth D1409 child only. |
+| Complete native House runtime and admission | NOT_FULLY_QUALIFIED. Entry/login remain HouseClosed and exit remains ExitNotAdmitted; placement, complete state transfer, native rollback/restart and actual caller integration remain open. |
+
+[CP D1420](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6239666536)
+requires touching the own changed crate's `apps/game-server/src/lib.rs` inside the
+canonical lease before every Cargo command, including locked fetch, LIST and test
+execution. Prior no-touch results require a repeat and remain historical. The same
+rule is present in the frozen sixteen-case runner; its source bytes and resource,
+HEAD/manifest and final integrity gates stay pinned. The four-child queue remains
+#2141 -> #2137 diagnostic -> BED13 -> #2165 pure16. D1421 adds no competing native job.
+D1329's existing shared PostgreSQL17.6 service, wrapper, own-database cleanup and
+D1415's separate lease per child remain mandatory.
+
+The previous evidence file
+`docs/agents/evidence/HOUSE-RUNTIME-1b-D1362-D1373-SOURCE-CHECKPOINT-2026-10-17.md`
+is unchanged, SHA256
+`ab14b67e88bc515ef1c8959ad95eb211f76c8fb2a89750e41b37a776654c3467`.
+Its complete 36-artifact source/review/manifest archive remains byte-identical;
+this checkpoint edits only the four granted source files and this card. The new test
+registration does not apply any inert lifecycle/carrier/source-assembly proposal.
+All other D1401 producer/export and actual PlayerSpellState owner gates remain.
+
+### Published source payload identities
+
+The following are the complete proposed file identities for the sole publisher's
+fresh-preimage/readback checks; a future commit identity is not guessed here.
+
+- `apps/game-server/tests/house_runtime_postgres.rs`: 346 bytes; Git blob `dfe0b80bfa65e2baf498cd91f0361e39f3d8d623`; SHA256 `7fd129f73cfc5c72db71a068e8e02ab15e9c1197978835dae8114722c767128b`.
+- `apps/game-server/tests/support/house_runtime_postgres_cases.rs`: 7808 bytes; Git blob `8e4b242738aa822d00832d35df0cb0d86e5814f4`; SHA256 `b81cb65a3ff048e754590c71a16fabe46cc270b265a5eb973c6c10e31da2d815`.
+- `apps/game-server/tests/durability_postgres.rs`: 367735 bytes; Git blob `287b3a81fc9247edac217b4fe0d82f6b0cefbd1b`; SHA256 `4395c5b29f53e669e47c25a0dba38e65d9745e44b3f2f531dc77884d83f8a3d7`.
+- `apps/game-server/Cargo.toml`: 4560 bytes; Git blob `6481c2e6fc17fd97af016ed06f1c72a27ac4773a`; SHA256 `2d8890d05a3a9f72f76f7fff66a3d40b634c870f8b1688c1c0fe8f5c94c57e9f`.
+
+Ready, review triggers, queue and merge remain CP-owned. The historical authoring
+sections below keep their original source and execution identities. Their old native
+statements do not supersede this current D1420 disposition.
+
+## Historical 2026-10-17 D1401b authoring checkpoint
+
+The source backup published at `291bd9dc748707b29e65ce7b51e40151ab98157f` is
+preserved below. This successor adds a concrete correction to that inert D1373
+candidate: seven reads still named the removed private carrier `channel_id` field.
+They were found by source inspection before the stage's first native compilation.
+The correction preserves the stored Channel identity, and its new owned regression
+checks the actual NPC allocation, key lookup, position context, visible projection
+and rollback paths. This is authored implementation and a real regression body;
+it is not a claim that the new source has compiled or run.
+
+The two changed complete source files are actor placement SHA-256
+`deec44ffb937e6371335c8501637c2add075ce1d72151ec074a2dfb886dd406c` and carrier SHA-256
+`067838d43bd1006909a6783d0b4f5493dfd64e52fc49d9e03b6e769457406652`.
+The other fourteen files of the disclosed native stage assembly are byte-identical.
+All fifteen previous owned test bodies remain unchanged; the new
+`house_actor_placement_npc_paths_preserve_validated_channel_identity` gives a source
+inventory of sixteen pure cases. Independent SOURCE REVIEW PASS binds the exact
+two-file patch `e8eda1d3062c853a0027d914c4a3fc0bf247bdfccd14732596c78686d01171d9`.
+The reviewer also read twenty-four actual pinned dependency modules and found no
+additional access to the removed carrier field.
+
+The complete correction, review, dependency inventory and final source manifest are
+recoverable in the [D1401b successor appendix](../evidence/HOUSE-RUNTIME-1b-D1362-D1373-SOURCE-CHECKPOINT-2026-10-17.md#d1401b-successor-artifacts).
+Native format, compilation, LIST and execution of these sixteen cases remain
+**NOT_RUN**. The earlier eleven passing D1362 pure cases still qualify only their
+exact six-file assembly. The initial stage assembly is retained as historical
+source, including the discovered field-read defect; use the new sixteen-file
+manifest `05b6052844b7c32a371b854f573ba14157e395fb9811ff561a47c4b4ffe091e5` for the
+next disclosed attempt. No House heavy-build window after MAIL/HUNT was granted
+for this authoring pass, and no RDC or PostgreSQL command was executed.
+
+[D1401](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237066255)
+retains precise shared-source gates. The public identity plus three constants are
+ordered after both #2167 and #2132 merge; D1362 private prepare views follow that
+landing and #2187; the two qualified-House accessors wait for #2167. The NPC field
+change has a conditional grant in the same commit as the carrier delta, with the
+Channel identity regression required. It is not an early grant for the other shared
+source. The actual staged consumer also needs six exact crate-private Foundation
+exports; a narrower, unapplied follow-up hunk is preserved in the appendix. No new
+export grant is inferred from D1401a. The PlayerSpellState move/rollback/House-adopt
+seam remains deferred to the actual spell owner and the stated ingress order.
+
+The repository source in this backup checkpoint retains entry/login `HouseClosed`
+and exit `ExitNotAdmitted`. Shared source activation, complete player-state transfer,
+native PG rollback/restart and runtime acceptance are still incomplete. The older
+sections and receipts below are preserved with their original source identities.
+
+## 2026-10-17 authored-source checkpoint — NOT_FULLY_QUALIFIED
+
+The verified draft predecessor is `91faa999d4ad507e3d19538fafd36a42c1555dc4` after CP's
+ordinary merge of main `f010472bcb6794a2cbc56dfaf755bd122c10225e`. Root subsequently
+observed actual main `ce7bccab973625d5d3d0d0c566426903229d2373`; the relevant native
+carrier and House module preimages were unchanged. This checkpoint preserves the real
+authored implementation and exact reviews in the owned evidence file:
+
+[D1362/D1373 complete source, tests, manifests and recovery instructions](../evidence/HOUSE-RUNTIME-1b-D1362-D1373-SOURCE-CHECKPOINT-2026-10-17.md).
+
+That evidence contains the complete recoverable semantic patches, the owned actor
+source, actual native stage, exact dependency preimages, compiler-input reproduction
+and independent reviews. The source remains inert in this checkpoint because shared
+activation order and the remaining actual owner seams are not complete. The existing
+four Rust files keep entry/login `HouseClosed` and exit `ExitNotAdmitted`. No unused
+loader wrapper is being published as runtime completion.
+
+### Authored implementation and allocated ownership
+
+[D1362](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234053855) assigned
+the additive House lifecycle shape, sealed claim predicate, exact complete predecessor
+history, same-transaction preparation/persistence and durable successor to this PR.
+The authored component now binds the actual initial receipt, exact native session-use
+membership and one ledger advance; its historical tag-3 result requires Released.
+Both scope-generation comparisons preserve ordering only within the same scope identity.
+The original Platform observation keeps its strict five-second age without refresh.
+
+[D1373](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234768517) additionally
+assigns the actual actor producer and consumer in the two owned House paths below.
+The implementation uses the existing one physical carrier, a private Channel/House
+domain and real HousePlayer slots. Reservation, materialization, consumption and an
+uncertain commit retain the same physical slot and tile. Source state comes from the
+real Channel Slot, with its complete position revision, lifecycle and combat state;
+there is no default player state or synthetic Channel scope. Reviewed denial paths
+preserve free-list exhaustion behavior, exact source namespace, retired-namespace
+rollback and full retained payload before source removal.
+
+The actual owned native stage consumes the private native PREPARED object in its original
+SQL transaction. It checks the actual source runtime/session/lease/pin, canonical locked
+tile, single qualified House identity/digest and current locked 0047 ownership before
+retaining the real #2163 interior snapshot and reserving/materializing/consuming the
+physical actor. Both physical owners and the SQL transaction remain borrowed by the
+stage. It has no COMMIT or bind API, writes no successor session/receipt/lease/generation,
+and cannot activate a player with only part of its state transferred.
+
+The native loader is already merged in #2163, at
+`cecbfda32b8d4cbb830566cf1b7d1173bef2a6cd`. Its bounded native snapshot is used as
+point-in-time materialization input; it is not current Content, placement, admission
+or future-write authority.
+
+### Exact source/review and native disposition
+
+| Component | Exact disposition |
+| --- | --- |
+| D1362 claims, complete history/ledger and two generation-domain fixes | Independent SOURCE REVIEW PASS. Eleven pure regression bodies are in the actual six-file native source assembly. |
+| First native six-file compile | Library compiled; three fixture-only E0277 error conversions stopped compilation before LIST or case execution. Fixed using the existing debug-string conversion, without changing production errors or adding a broad allow. |
+| Corrected native six-file attempt 2 | Actual PC slot C run started `2026-10-17 14:49:19 UTC`, exit 0; native LIST exactly 11 and **11 pure cases PASS, 0 failed, 0 ignored**, in 0.19 seconds after 47.22 seconds compilation/link. All six before/after source hashes match; final fixture SHA-256 `cf4d5372f46ddbd1836e9253976b83a25ff30bfb41d25a6affbf5427fe79e310`. Seventeen dead-code warnings for unconnected callers are retained. No PG or strict Clippy result is inferred. Complete native result/LIST/test logs and source-before/source-after are embedded in the evidence; result SHA-256 `dfe5c4edab35da18d8b7da0e637b48cf9dce2fd5da4e3bbe3d968a5691e68f8d`. |
+| One-carrier core3 | Independent SOURCE REVIEW PASS at actor SHA-256 `de655311758bdc85a3bb67a529467d250add3039df8b328d9475b35cda8020b4`; fifteen pure arena cases. Native format/compile/LIST/execution NOT_RUN in this checkpoint. |
+| Actual native stage | Independent SOURCE REVIEW PASS at stage patch SHA-256 `800caa75490a65aa6b5de75455a380f7b34a1bee5ca60f1408e8036cd5ed0926`; final composed core3/stage eight-file manifest `c19dde52b40bc9a5bcb481f91c665394a831080c4494502a95a9dd6bf4dbbb3a`. Compile/native/PG execution NOT_RUN. |
+| Full runtime, current Content/FND activation, complete actor transfer, PG rollback/restart and RL-02/RL-04 | Incomplete and unqualified. The pure cases and original selected component receipt do not qualify these boundaries. |
+
+The evidence records the original compact semantic source separately from the actual
+native formatter output. Broad formatting is preserved only to reproduce native
+inputs; it is not permission to publish unrelated shared formatting. The known three
+fixture conversions are also supplied as a compact correction for later source
+composition. Every embedded artifact has a hash and exact recovery instructions.
+
+[The original component receipt](https://github.com/Oteryn/Oteryn-Game/pull/2165#issuecomment-6226079840)
+qualifies historical source `5b164bcf5f0b6d86854498050a91f8817c1d5ab6`: selected native
+Clippy/rlib/link, LIST exactly five, four pure tests and one PG 17.6 test passed, with
+server version 170006 and one post-cleanup marker. Missing-URL refusal separately
+exited 101. [D1214b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226222851)
+confirmed that selected receipt. The later `4d53a1fc6799989b538709e02fa26d1ad301e9eb`
+was a documentation-only successor. This is preserved historical evidence, not a
+current full-head qualification. Earlier D1122 slot holds below are historical only.
+
+### Concrete remaining integration
+
+The shared order is `#2197 → #2198 → #2187 → SESSION-INGRESS-1 → House consumer`.
+Exact post-merge preimages and the next free lifecycle tag must be checked at that
+slot. [The concrete seven-hunk CP request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237005166)
+is also preserved in the evidence: the single native
+HouseId move/re-exports, one already-validated NPC field access, private PREPARED views
+and sealed bridge, and two finite qualified-House read accessors. The actual #2167
+spatial encoder/mount/qualified-room source must compose with those hunks; a current
+full-bundle House catalogue remains Unknown.
+
+The actual `ChannelSpellStates` owner stores PlayerSpellState outside the carrier Slot.
+It has no existing take/rollback/House-adoption port, and its current initializer would
+prune a removed source or create default state. CP must allocate its exact native
+transfer owner, preserving existing vitals, cooldowns, conditions, regeneration and
+pending owner custody. The owned stage deliberately cannot commit until that complete
+transfer and current House-aware adoption exist. A second actor map, default spell
+state or historical receipt cannot fill this gap.
+
+The final actual owner must perform PREPARED read, entry tile reservation, materialization,
+consumption, claims, bind and generation advance in one ordered transaction. It must
+replace the old terminal-destination / generation-greater-than-one placement surrogate,
+resolve uncertain COMMIT before releasing retained owners, and use the original initial
+receipt for retry/restart. Native invalid-interior/placement rollback, same-TX and
+history rejection, crash recovery, complete usable-door RL-02 and measured RL-04 remain
+mandatory. Entry/login and exits remain closed until these implementations are integrated.
+
+D1329 requires shared PG 17.6 only, `cargo fetch --locked` before `in-pg-netns.sh`, and
+cleanup of owned databases. D1342/D1379 and [D1397/D1397a](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236550340)
+require the real canonical `/home/mole/oteryn-cache/heavy.lock`, with the granted outer
+Ubuntu/mole bridge for an existing Ubuntu-24.04 runner. [D1399b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236882742)
+sets MAIL D1396a then HUNT D1392 before the next House heavy run; new worktrees go in
+Ubuntu/mole, and each run removes only its own target/temp files. Root alone publishes
+the coherent draft successor with exact ref/file readback. No ready, merge, activation
+or external review trigger is part of this checkpoint.
+
+
+## Historical 2026-10-16 D1122 checkpoint — superseded disposition
+
+This checkpoint retains the bounded closed-boundary implementation at source head
+`5b164bcf5f0b6d86854498050a91f8817c1d5ab6`. The evidence below updates the
+historical execution dispositions later in this record; it does not complete the
+original runtime acceptance scope or open entry/exit gates.
+
+| Check | Observed disposition |
+|---|---|
+| Independent bounded source review | PASS; four owned Rust files, native closed refusals, no production caller or shared registration. |
+| PREPARE and actual Cargo CAPTURE | PASS; retained PREPARE proof and actual175 CAPTURE exit0, source match, quiescence and all112 resource samples PASS. CAPTURE records compiler context; it does not execute test cases. |
+| Selected native Clippy, cfg(test) rlib and driver link | PASS; actual184 reports all three exits0, source match, quiescence and all30 resource samples PASS. Body reconstruction verifies all five original test bodies remain literal. This is selected native compiler evidence, not a global test-ELF or package-wide qualification. |
+| Native LIST and four closed-boundary case executions | NOT_RUN; actual189 stopped on slot admission EAGAIN before child creation or LIST evidence. No case PASS or test RED is inferred. |
+| Native PostgreSQL17.6 case execution | NOT_RUN; no runtime case or database qualification is claimed. |
+| Full runtime, native loader/caller integration, restart/recovery and RL02/RL04 | NOT_RUN / incomplete; the dependencies and original acceptance items below remain open. |
+
+Exact retained observations are
+`/workspace/house-pc-execution-20261016/175-2165-capture-proof-observed.json`
+(SHA-256 `301607d482317edaab717c53c3e3bf8e74bdfe92cbc143144bdb97b50704d678`)
+and `/workspace/house-pc-execution-20261016/184-2165-native-proof-observed.json`
+(SHA-256 `75e8145caf0a3cf961b58408ab1707416e59e50c3c8ad3abc4c4ab5116e37a6f`).
+The latter pins the actual rlib, driver, metadata, compiler results and literal-body
+proof; none of those artifacts is a runtime test result.
+
+The operational blocker is a prechild slot HOLD. Actual191 observed A and PG held
+by RANK_2168 (supervisor283316, group283705); the A record lacks custody fields
+required by the current guard. The B kernel lock was free at that observation,
+which grants no later reservation. No lock record, guard or competing job was
+changed. The concrete coordination request is
+[CP2131 comment6225557139](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6225557139).
+True native interior loader/read authority, actor/map and reservation/placement
+callers, transfer contract, shared registration and integrated measurements still
+require the owning native teams and CP decisions listed below.
+
+Retained formatter evidence is `/workspace/house-family-handoff/runtime.json`
+(SHA-256 `aad1b4500dfbb96ce4ac5557325c7a592fa68a4418897db0699eacb8f7ddadf1`),
+`tasks[0].authoring_packet.validation.rustfmt`: official verified Rust1.94.0,
+`--edition2024 --config skip_children=true --check`, PASS on all four owned Rust
+files. Their current SHA-256 values match that packet exactly; no formatter rerun
+is needed for this task-record-only checkpoint.
+
+[CP D1122](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224930201)
+permits one coherent checkpoint push on the existing draft with this explicit
+NOT_FULLY_QUALIFIED / RED / NOT_RUN accounting and passing fmt/whitespace checks.
+The PR remains draft; no ready action, `@codex review` request or manual CI restart
+is authorized by this checkpoint. Full checks remain required before a frozen
+review candidate. No observed owned test RED exists; unexecuted cases stay NOT_RUN.
+
+## Goal
+
+Houses run as their own scope: loading the interior from 1a, entering and leaving through scope handoff, refusing HOUSE_CLOSED until the SCOPE-HANDOFF-1 exit gate lifts; measure HOUSERT0-RL-02 and RL-04.
+
+Children (allocate from the brief's child graph; the plan row is only the family entry gate; no child of a CANDIDATE brief is allocated before the brief is ACCEPTED):
+
+Second of HOUSE-RUNTIME-1a -> 1b -> 1c.
+
+## Dependencies (state on main@5742f30f3, 2026-10-15)
+
+| Dependency | State |
+|---|---|
+| HOUSE-RUNTIME-1a | BLOCKING (not merged) |
+| MAP-LOAD-1 | MERGED (archive MAP-LOAD-1) |
+| SCOPE-HANDOFF-1 exit gate | exit-dependent items stay open until it lifts (packet §1.5); entries refuse HOUSE_CLOSED |
+
+Rows marked BLOCKING must merge (or be accepted/decided) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
+
+## owned_paths (builder edits freely)
+
+- `apps/game-server/src/gameplay_transport/house_runtime.rs`
+- `apps/game-server/src/gameplay_transport/house_runtime_loading.rs`
+- `apps/game-server/src/gameplay_transport/house_runtime_tests.rs`
+- `apps/game-server/tests/house_runtime_postgres.rs` (D1421 focused strict thin wrapper)
+- `apps/game-server/tests/support/house_runtime_postgres_cases.rs` (D1421 original five cases and granted absent-URL routing)
+- `apps/game-server/tests/durability_postgres.rs` (D1421 one support mount, routing constant and actual existing HouseScope module mount only; preserve the complete current union)
+- `apps/game-server/Cargo.toml` (D1421 only the `house_runtime_postgres` entry with `test = false`)
+- `apps/game-server/src/house_scope/actor_placement.rs` (D1373 actual producer)
+- `apps/game-server/src/house_scope/mod.rs` (D1373 actual consumer)
+- `docs/agents/evidence/HOUSE-RUNTIME-1b-*.md`
+- `docs/agents/tasks/HOUSE-RUNTIME-1b.md` (this record: status and notes only)
+
+CP D1062 fixes the four original implementation paths. D1373 additionally assigns
+the two House scope paths above to the actual producer and consumer. D1421 grants only
+the precise canonical test-registration and routing changes listed above. Every other
+shared registration and lifecycle/carrier dependency hunk remains subject to its exact
+allocated slot; the embedded source backup does not apply those changes.
+
+## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
+
+- tools/content-migration/regenerate_content.py outputs
+- content/project.json
+- content/manifest.json, content/world/manifest.json
+- content/content.lock.json, content/world/content.lock.json
+- content/interactions/index.json
+- content/world/pins/*
+- Rust pins (pinned registries / fixtures regenerated from content)
+- docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json, GAME_EVENT_FOUNDATION_REGISTRY.json, RESOURCE_LIMITS_REGISTRY.json, OTERYN_GAME_ERROR_CODE_REGISTRY.json
+- apps/game-server/migrations/NNNN_*.sql number (next free on main at queue turn; main ends at 0087)
+- apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs wiring
+- crates/protocol-oteryn/src/lib.rs `pub mod` + registry constants
+- apps/game-server/src/durability/mod.rs, domain/mod.rs, lib.rs module registration
+
+## Wiring points (verified on origin/main 5742f30f3)
+
+- world_runtime.rs scope registration
+- durability/house_scope_handoff.rs (existing) entry/exit
+- map/boot.rs house scope load
+
+## Inseparable bundles (never split across PRs)
+
+- scope runtime + entry refusal HOUSE_CLOSED + measurements RL-02/RL-04
+
+## Acceptance criteria
+
+- [ ] Entering a house loads the 1a interior; leaving returns via scope handoff.
+- [ ] Entries refuse HOUSE_CLOSED until the exit gate lifts (packet §1.5).
+- [ ] HOUSERT0-RL-02 and RL-04 measured and recorded in evidence.
+- [ ] Restart leaves no Character stranded in a house scope.
+- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
+- [ ] Durable state sufficient to resume after restart / session-generation change.
+
+## Validation commands
+
+```bash
+cargo fmt --all -- --check
+cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D warnings
+cargo test -p oteryn-game-server house_runtime
+cargo test -p oteryn-game-server house_scope_handoff
+cargo test -p oteryn-protocol-oteryn && cargo test -p oteryn-game-server capabilities
+cargo test -p oteryn-game-server --test <task>_postgres   # needs DATABASE_URL
+```
+
+## Reference evidence pointers
+
+- docs/architecture/reviews/OTERYN_GAME_HOUSE_RUNTIME0_HOUSE_INTERIOR_RUNTIME_DECISION_2026-09-30.md
+- docs/architecture/reviews/OTERYN_GAME_HOUSE_RT_INBOX_PACKETS_2026-10-04.md §1.5, §2.2
+- docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4, §5 (Wave 3), §7
+- docs/agents/cp/CP_WAVES.md (branch claude/beautiful-franklin-1tp8kj), 'Model pracy równoległej'
+
+## Builder instructions
+
+- Work only in owned_paths until CP gives the queue-turn GO; then merge main, run regeneration/registry/migration numbering/wiring in ONE final slot commit.
+- Push rarely and batched: one push per fix round (heavy builds per push). No status-only commits.
+- Never mark the PR ready and never post `@codex review`; CP marks ready (Codex auto-reviews each push).
+- Max 2 repair rounds on the PR; then CP closes and splits.
+- A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+
+## Allocated native owner/integration packet (2026-10-15, card only)
+
+Exact draft base `169675ea76351e5745db6ac2fc3af5b7704a6826`, branch
+`skeleton/house-runtime-1b`; reference protected main
+`bda15eba7a84f65fcb963a86e8b2bf18d69c800a`, read only. This allocation owns **only this
+card**. Original plan, builder/CP rules and six unchecked acceptance items above remain
+unchanged. Historical shared registration permission does not expand this lease. All new
+paths and interfaces below are **proposals for CP/architect review, not allocated files**;
+no Rust/runtime implementation, source wiring, schema, grants or registry changes occur.
+
+HOUSE-RUNTIME0 is accepted (SOCIAL-MAP #1771; reference main reconciles its heading), the
+HOUSE-RT-INBOX packet remains the split/access/exit-gate authority, and effective
+ACCEPT-BATCH #2209 accepts ADMIT0/BED0. Acceptance of ADMIT0 does not lift its §3.2 transfer
+protocol gate. Runtime1a is a prepared local/draft subset, not a merged complete writer.
+HOUSE-RT-INBOX §0.2 and §1.5 (reference main, exact source path in this card's briefs)
+retain the historical integration dependency: HOUSE-1a waits for1b/1c acceptance with all
+exit-dependent items met; HOUSE-1b, HOUSE-ACL-1, HOUSE-WIRE-1 and GUILDHALL-1 depend on
+HOUSE-1a. That dependency is distinct from the current CP queue classification:
+`/workspace/oteryn-prep/QUEUE.json` records HOUSE-1b as `BLOCKED_DEPENDENCY`, whereas
+HOUSE-ACL-1, HOUSE-WIRE-1 and GUILDHALL-1 are explicit `HELD` rows (the owning explicit hold
+source is `OTERYN_GAME_SOCIAL_MAP_PACKETS_2026-10-04.md` §0.1). This packet proposes no
+lift, reclassification or status override and creates no allocation, GUI/kick wire or
+guildhall contract.
+
+### Native source findings and concrete deltas
+
+1. Native `HouseId` (`durability/house_scope_handoff.rs`) is already World-global and
+   revision-free: WorldId plus the qualified house content key; `scope_key` is tagged02,
+   `instance_id()` is its deterministic native runtime identity. Use those exact APIs.
+   A generic `RuntimeScopeRefV1::Instance`, same generation integer or caller-supplied
+   instance UUID is not a House or current assignment proof. WorldId and ChannelId stay
+   distinct; origin Channel is routing evidence, never a selectable home Channel.
+2. SCOPE-HANDOFF-1 already owns migration0074, assignment commands/history, handoff rows,
+   prepare/commit/abort/reconcile, tile reservations and stale-generation cleanup. Native
+   `prepare_house_entry` / `commit_house_entry` keep recovery/admission locks, exact source
+   session/connection/lease/Channel generation, node incarnation, destination House generation,
+   and re-read `game_house_access` in the commit. The committed destination gets a fresh
+   GameSessionId and advanced lease, awaiting its transport/actor. Do not duplicate this
+   journal, idempotency store, session writer or handoff state machine in the runtime.
+3. **Exit remains closed on reference main:** `house_scope::exit_into_channel()` returns
+   `ExitNotAdmitted`; `validate_request` rejects Exit/non-Channel source. ADMIT0 §3.2 still
+   requires destination capability support/selection before commit, scope-identifying
+   postcommit acknowledgement, lost-ack recovery, and no snapshot/gated message before
+   acknowledgement/recovery, under the transfer owner's protocol/security review.
+   Therefore1b's top-level runtime guard must refuse **every entry HOUSE_CLOSED**, including
+   login activation, while the exit gate is closed. A successful lower-level entry fixture,
+   accepted ADMIT0, or prepared ADMIT-CAP arithmetic never opens this gate. Test the shipped
+   exit refusal; no feature flag, boolean injection or alternate fallback may bypass it.
+4. Native prepare currently requires the proving node to hold BOTH source Channel and
+   destination House; another-node House returns Busy. HOUSE-RUNTIME0 §3 allows placement
+   on another node of the same World when the origin node is full. That alternative requires
+   an independently qualified native cross-node handoff/custody seam, not forwarding an
+   in-memory actor or forging a source proof. Until then, retain same-node restriction and
+   typed refusal; do not claim the full hosting/fallback acceptance item is delivered.
+5. `assign_house_scope` is an actual control-role command with exact-house grants,
+   OperationKey replay, shared assignment-writer high water, source revision, predecessor
+   checks and current node registration. Runtime activation may request existing assignment
+   ownership, but cannot mint ControlActor/role/grant or update assignment tables itself.
+   Assignment rows/generations survive unload; replacement increments generation and excludes
+   incompatible bare instance sessions. An old assignment receipt is history, not current
+   node/house liveness. Reuse native NodeIncarnationProof and current assignment validation.
+6. `map::boot` checks pinned WorldBase, map revision, item definitions, collision/doors;
+   BundleFacts already records house tiles and excludes house doors from Channel DoorBook.
+   `NativeMovementCollisionIndex` is a sealed owner port; `ChannelRuntimeV1` is concretely
+   ChannelRuntimeAssignmentBinding + single fixed-slot actor carrier, not a generic House
+   runtime constructor. `ComposedFreshAdmission` is also Channel-bound. The shared actor/
+   collision/content adapters must be owned explicitly in CP: do not instantiate a fake
+   Channel for a House, copy the carrier, add a second actor/session store or implement
+   another pathfinder. `world_runtime::ScopeContentGenerationFence` cannot be synthesized
+   from a HouseId/generation or a test constructor to grant active content.
+   Existing `content/project/native_house_tiles.rs` also supplies QualifiedHouseTiles /
+   QualifiedHousePlacement with typed definition identity, exact scope-bound cells, doors
+   and an outside `entry_cell`; omission is Unknown, the retained strict source region
+   proves no houses, and `house_at` checks its native scope. Reuse these qualification
+   rules where applicable, but this candidate map port is not an installed bundle House
+   catalogue: current BundleFacts records only generic house-tile positions, not the full
+   HouseId→tiles/entrance binding. Mapping that source to the active bundle and exposing
+   exact-key/current entrance metadata requires the owning content/map adapter. In
+   particular `entry_cell` is not an interior arrival tile. Removed-house fallback needs
+   accepted retained entrance metadata or the real admission owner's fallback; never
+   guess a coordinate or treat missing metadata as an empty/valid house.
+7. Prepared1a (`a9e0277...` source; verified exported RESULT) contains structural/provenance/
+   role/audit validation and real fixture/native-wrapper checks. Its `HouseInteriorLocation`
+   and generation fields are audit inputs, not current authority. It implements no complete
+   transactional SECURITY DEFINER shapes or generation-qualified interior loader. Native0025
+   already owns durable HouseInterior locations/provenance and closes runtime direct table
+   writes;0074 access function is still a fail-closed no-row stub.1b must request the actual
+   owning read/shape seam, not treat prepared1a as an installed service or bypass grants.
+8. Existing `house_spell_acl::house_access_for_character` reads native ownership and simple
+   guest/subowner lists, but returns no complete property/content-fence/ACL+guild revision
+   contract required by the packet. It is not a substitute for `game_house_access`.
+   HOUSE-1a owns the final composed body, HOUSE-ACL-1 the grant part and HOUSE-1b the fence
+   part. Preserve property→fence→grant locks and exact revisions, including granting guild
+   and membership rows. Missing final property lifecycle or guild facts means refusal, not
+   invented current flags. Tests may replace the stub only in the isolated operator test
+   World; no fixture authority can reach production.
+
+### Proposed exact paths and native interfaces (CP decision required)
+
+| Proposed new file | Narrow role and interface obligation |
+|---|---|
+| `apps/game-server/src/gameplay_transport/house_runtime.rs` | Private HouseRuntimeOwner lifecycle and serialized actor-command owner, plus a node-local bounded HouseId→owner directory. Owns load/ready/closing/idle state and placement reservations; holds native actor handles/carrier adapters, not a second actor/session truth. Publicly reachable construction only after actual current assignment/incarnation/content qualification; local state never grants DB authority. |
+| `apps/game-server/src/gameplay_transport/house_runtime_loading.rs` | Private activation adapter over native pinned WorldBase/BundleFacts/collision/door facts and the1a-owned generation-qualified HouseInterior read. Validates exact house tile membership, native coordinates and current item obstruction; no new map storage, pathfinder, content ID or property reader. |
+| `apps/game-server/src/gameplay_transport/house_runtime_tests.rs` | Focused native owner-command/generation/closed-gate/tile/lifecycle tests; source included once by the runtime owner. |
+| `apps/game-server/tests/house_runtime_postgres.rs` | Actual native handoff/assignment/access/current-session/restart integration tests and bounded load evidence driver; explicit Cargo/aggregate registration decided in the CP slot to avoid duplicated test-bearing sources. |
+
+Interface sketches describe **obligations**, not new authority tokens or allocated APIs:
+
+- Activation accepts native HouseId, an independently current native assignment/incarnation
+  result, and the actual active content generation/World bundle. Requests assignment through
+  the existing owner using its exact grants; waits for the single winner, then revalidates
+  before Ready. A capacity proposal does not authorize placement or assignment.
+- Loading calls a native1a read owned by `durability/house_interior.rs` (future hook, not an
+  existing method) in a fenced, consistent transaction; validates each actual0025 item
+  location/provenance and its World/House/generation binding. It obtains only this house's
+  tile/door subset from active native facts, preserving map-authored handles vs durable
+  ItemInstanceId entities. Do not infer tile membership from arbitrary spatial-position
+  bytes or a map item's bed/head coordinate; use actual qualified native encoding.
+- Owner command inputs reuse native GameSessionId/ExactActorRef/HouseId/handoff ID and
+  independently current connection, lease, scope generation and content binding. Commands
+  are serialized with native actor movement/combat and item placement; they return existing
+  typed handoff/refusal outcomes or retained operation identity. A prepared request/receipt
+  is never sufficient current proof for an actor mutation.
+- Select/reserve uses existing `house_scope::handoff::select_entry_tile` over candidates
+  qualified by native walkability/house membership and native ordered radius3 fallback,
+  then atomically reserves through the real handoff owner. This helper does not qualify
+  candidates or enforce current authority. Revalidate before placement/commit; no-room is
+  typed. All simultaneous actors/item moves/other placements see that reservation until
+  durable placement release; no new pathfinding engine or separate SQL reservation ledger.
+- Move/use/leave dispatch reuses native movement/collision/WorldUse and local-object owners
+  with a CP-qualified House binding. PZ/no attacks/no regeneration/no creatures and entry
+  summon dismissal come from real actor policy owners, not duplicated online tick/combat
+  engines. Map-authored doors/depot/beds remain nonpickupable; BED owner supplies its own
+  accepted reservation/wake hooks, not a1b bed implementation. Client item movement stays
+  blocked behind HOUSE-ITEM-WIRE-1; this packet adds no capability or wire.
+
+### Ordered activation, entry, exit and closure flow
+
+1. Before any load/session mutation, check the shipped exit-admission gate. Closed means
+   HOUSE_CLOSED and source actor remains unchanged. When independently lifted later, freeze
+   the source only as one native actor owner command serialized with combat/locks/trade/
+   pending operations, rechecking them at prepare. Preserve existing runtime-first native
+   lock order; never hold destination/source actor mutexes across each other or arbitrary
+   async database waits. A combat restriction landing before commit aborts/reconciles
+   source; a raw `HouseEntryPrecheck` boolean is only a precheck, never current DB proof.
+2. Coalesce first activation by exact HouseId/generation and bound node load. Origin Channel
+   node is preferred if it has measured capacity; qualified fallback must remain same World.
+   Assignment acquired/observed through native control owner, then content+interior loaded
+   and current property/content closure rechecked before Ready. Duplicate activators wait;
+   load failure never publishes readiness or creates another owner. An empty house still
+   needs valid current content/property/assignment, not invented empty defaults.
+3. Reserve the qualified door-adjacent tile or native same-house radius3 fallback. Native
+   prepare counts live/reconnectable House sessions **plus PREPARED handoffs** toward200;
+   committed awaiting-transport sessions already count as sessions, not a second resident.
+   Local occupancy and durable reservations must agree; local actor count alone cannot
+   admit201. Before the commit revalidate chosen tile, source actor restrictions, property
+   state/fence, exact ACL and guild revisions under owning locks. Use the actual native
+   handoff commit; source becomes terminal only at its durable commit point, destination
+   session is fresh and preserves origin Channel. No separate transfer writer.
+4. Unknown prepare/commit/abort outcome retains the same handoff ID and native owner state;
+   query/reconcile its durable outcome before lifting source freeze, creating destination,
+   dropping reservation or sending snapshot. Committed means only destination can install;
+   uncommitted/aborted means only source resumes. Bind destination through actual admission/
+   transport/guard owner and publish only after required acknowledgement. Release the tile
+   through `release_house_entry_tile` using its actual persisted placement proof; an actor
+   counter or caller `placed=true` cannot discharge it.
+5. Door exit, leave, authorized kick, revoked grant, disposition and shutdown all call the
+   native reverse handoff seam **after it is qualified**, targeting recorded origin Channel
+   first. Unavailable/draining origin uses normal same-World Channel admission selection,
+   never player choice. Entrance blocked/occupied uses existing native last-position
+   radius3/step4 fallback, never refuses solely for that obstruction.1c must clear house
+   columns and write actual destination tile under new session's order key in the same
+   commit;1b calls that owner hook and cannot claim1c work. Closed exit gate means no
+   fabricated exit, placement or unsafe deletion of the source actor.
+6. Current ACL/guild revision change schedules revalidation of every resident through actual
+   current grants; revoked residents exit through step5. Item mutations independently
+   revalidate at their1a commit, including session and House generations; a refreshed runtime
+   cache is not a write grant. Kick policy keeps OWNER any / SUBOWNER guests / GUEST none
+   and exact current target presence; no new kick GUI/wire is allocated here.
+7. Content fence/disposition enters Closing, blocks new prepares/activation and drains all
+   committed residents plus pending handoffs before reporting quiescent to HOUSE-1b. Freeze
+   item admissions and resolve unknown writes through their real owner; no success while
+   a retained mutation/reservation can still commit. A fenced house cannot become Ready
+   from an older cached property row. VACANT alone does not authorize entry: without a
+   current owner/access grant the composed function still returns no access.
+8. Idle unload uses native monotonic owner time: five minutes with zero residents, no
+   unbound committed destinations, unresolved/pending handoffs, reservations or owner work
+   that could install a character. New entry resets/cancels idle and serializes against
+   unload; revalidate before releasing the native assignment via its qualified owner.
+   Durable items/provenance survive. Do not delete assignment/history or consume new
+   generation locally. At node shutdown/reset/replacement, close admission, reconcile or
+   drain through native handoff/recovery, retire old owner and invalidate callbacks before
+   activating new content/generation; no live hot content swap under the old fence.
+
+### Concrete shared call sites / owner gates
+
+| Existing owner/path | Required CP delta, not authored here |
+|---|---|
+| `foundation/runtime_actor_carrier.rs`, `gameplay_transport/mod.rs` (`ComposedFreshAdmission`) | Small native House binding/carrier/admission adapter and single actor ownership/retirement; preserve runtime→spell/attack lock discipline and source freeze. Existing Channel constructor is not a House constructor. |
+| `map/boot.rs`, `map/facts.rs`, `content/native_cell_lookup.rs`, `world_runtime.rs` | Qualified house tile/door/collision subset over the same bundle and active content generation; keep Channel house blocking, native coordinates, handles and existing collision/fallback. Expose only owner-approved House binding rather than copy map boot/pathfinding. |
+| `durability/house_interior.rs` (prepared1a), native0025 | Actual generation-qualified consistent load and the complete accepted SECURITY DEFINER transfer shapes; no runtime table grants. Revision projection belongs HOUSE-VIEW-1, not1a/1b speculative storage. Dynamic interior changes must reach movement/item obstruction through the real single writer/read seam. |
+| `durability/house_scope_handoff.rs`, `house_scope/mod.rs` | Qualify reverse exit + ADMIT selection/ack/recovery conditions and cross-node seam;1b adds genuine runtime callers only. Preserve existing replay/fences/reservations/recovery journal and control assignment grants. |
+| `durability/character_last_position.rs`, `gameplay_transport/last_position.rs` (1c) | House saved-position/current access and fallback, atomic house-column clear on exit/recovery and actual destination write; current Channel-only projection is not sufficient. |
+| `game_house_access` / HOUSE-1a, HOUSE-ACL-1, HOUSE-1b | One composed owner body plus separate dependency-gated grant/fence children, current property/guild/member locks and revisions; no replacement by simple spell ACL reads or fixture function. |
+| gameplay connection/mod/capabilities, lib/module registration and RL registry | Wire only actual allocated call sites at CP slot; packet adds no capability/message. Exact runtime paths and RL04 measured allocation need explicit CP acceptance first. |
+
+### Failure / unknown / restart / retired-owner matrix
+
+| Boundary/operator | Required observation before acceptance |
+|---|---|
+| Closed gate, missing grant/property/interior/readiness or unsupported destination selection | Typed refusal; no source termination, new session, load-ready authority, reservation leak or snapshot. Exit gate refusal remains the real shipped behavior until reviewed lifting. |
+| Concurrent first activation / node full / assignment replacement | One owner and one assigned generation; waiter observes winner, overload typed; different World/House/node/incarnation/generation never substitutes. Remote-host path remains refused without native cross-node proof. |
+| ACL/guild/member/content-fence changes between precheck/prepare/commit | Exactly current commit locks decide; loser source remains admitted or reconciles its retained handoff; never stale access accepted. Test each independently with unrelated fences valid. |
+| Tile/item obstruction or capacity200 race | One reservation wins; item write/placement respects it,201st refuses NoRoom. Freed/released tile reused only after actual native proof; no committed destination stranded by early release. |
+| Timeout/lost response at prepare/commit/abort/tile release | Reuse operation ID, recover immutable history and independently current authority; no abort of committed handoff, duplicate actor/session or new reservation on retry. |
+| Crash/restart with PREPARED or COMMITTED handoff, destination unbound | Existing reconcile/recover_stale methods run before either actor resumes. Before commit source wins; after commit destination wins. Retain committed reservation until placement/terminal/stale-owner proof. |
+| Old node/lease/connection/scope generation callback after replacement or shutdown | Cannot mutate actors/items/sessions, publish readiness/snapshot or reacquire control from retained receipt. Reconcile durable finality under independently current incarnation; never replay old owner authority. |
+| Unrecoverable house / rejected saved tile / unavailable origin / blocked entrance | Actual1c+exit owner records fallback Channel and chosen tile/cleared house columns atomically; fresh retry cannot return to old interior. Until exit gate lifts this remains acceptance-pending, not simulated success. |
+| Disposition or idle/reset racing prepare/resident/unknown item mutation | Closing rejects new work; zero proven residents and unresolved installs before quiescence/release. New generation uses actual refreshed content; old owner never revives. Durable item state/history retained through reload. |
+
+### Boundedness and measurements required before activation
+
+RL01 remains five-minute idle; RL03 is200 total residents/reserved admissions as native prepare
+counts it. Include unbound and reconnectable sessions; active/inflight counters use checked
+arithmetic and release only on confirmed outcome. Bound per-house candidate selection by the
+native tile set/radius fallback and existing item bound (HOUSEOWN0-RL-14, prepared1a2000);
+validate that installed registry/owner bound rather than trusting a raw number. Share immutable
+WorldBase per node instead of reloading/copying a World per house. No unbounded activation
+waiter queue, global house scan per movement or second O(WorldTiles) pathfinder per request;
+precompute the qualified per-house tile subset at load under the current bundle. Existing
+limits remain controlling; new queue/memory bounds require measured CP registry selection.
+
+RL02 target is end-to-end door transition **p99<=500ms**, measured before activation: source
+owner command/prechecks, activation+interior I/O when cold, tile reservation, durable prepare/
+commit, destination binding, required scope acknowledgement and usable replacement snapshot.
+Report cold vs warm separately; do not hide cold load or acknowledgement/network delay in a
+server-only timer. Retain stage timings, error/refusal rates and commit/reconcile counts;
+refusals/timeouts are reported separately, not discarded to improve success latency.
+
+RL04 remains **unset until measured**; propose a maximum active houses per node only from
+recorded hardware/container limits, release build/artifact/content hashes, World/map and
+PostgreSQL versions/config, warmup, sample count, concurrency/rate/house-size/resident/item
+mix, and repeat runs. Exercise empty/typical/max200 residents and max admitted interior
+items, concurrent cold activation,199/200/201, node saturation, idle/reload churn, assignment
+replacement and closing/recovery. Measure peak/steady RSS, shared-vs-per-house allocations,
+CPU/owner-step p95/p99, runtime tick lag, DB pool/lock waits and end-to-end transition p99.
+Increase active houses until the first latency/resource/owner-bound breach, then propose
+headroom and repeat at the candidate cap with simultaneous Channel load. Register the chosen
+RL04 and enforce typed overload before assignment/readiness; do not hard-code an arbitrary
+cap or call synthetic helper timing the required measurement. Final native PG/current-fence,
+real protocol ack/lost-ack, actor conservation and retired-owner tests accompany that result.
+No measurements or runtime tests were executed in this card-only round.
+
+Local qualification is governance plus its tests, whitespace/scope checks, exact base/main
+native source hashes and prepared1a exported-file hash verification. Evidence:
+`/workspace/oteryn-prep/house-runtime-1b-evidence`. Full1a/1b/1c delivery, path allocation,
+exit lifting, CP/architect exact-head independent qualification and every original open
+acceptance item remain pending.
+
+## 2026-10-16 bounded closed-boundary authoring
+
+CP/architect [D1062–D1065](https://github.com/Oteryn/Oteryn-Game/pull/2165#issuecomment-6216594046)
+supersedes the historical card-only/path-unfixed allocation above. The owner also
+confirmed exclusive authorship of this existing draft in the current session; no
+additional CP lease number is required. This pass starts from exact branch head
+`b0abc4ceaad2ce905f5b11cc91d1bdd800c90bd0`. It writes only the four fixed files and
+this record, with no shared registration, migration, content, registry or wiring.
+
+The new runtime boundary accepts the native `HouseEntryRequest` by reference and
+returns `HousePrepareOutcome::Refused(HouseClosed)` before load, tile reservation,
+source freeze or durable PREPARE. Saved-house login activation also refuses
+`HouseClosed`. The loading sibling is explicitly a refusal, not a successful
+loader, empty interior or readiness/assignment proof. It has no open flag. The
+exit boundary delegates to the actual `house_scope::exit_into_channel`; leave,
+kick, revalidation and quiesce therefore retain `ExitNotAdmitted`. There is no
+HouseRuntimeOwner/Ready state or actor/session store fabricated to fill the
+missing native ports. These unregistered boundaries have no production caller yet.
+
+Four native-type cases cover a permissive actor precheck, independently
+changed invalid/stale request inputs with the exact request retained, saved-house
+activation, and the actual native exit refusal. The PostgreSQL case uses the
+real migrated PostgreSQL17.6 schema with a schema-valid Channel-session fixture and
+compares complete source-session, handoff and assignment rows before/after each
+boundary. It proves only closed refusal; it supplies no positive current authority,
+house placement/access/load or actor proof. The standalone target is active and
+mounts all five cases once, using the public production types rather than copying
+test-bearing Foundation/durability modules. The production source module has no
+second test mount. Missing or non-Unicode PG routing returns an error, so the
+database case cannot report success without execution. Canonical execution
+requires PostgreSQL17.6 and the case's actual QUALIFIED marker. These cases are
+authored, not executed. CP
+must retain one test-bearing mount when consolidating its aggregate at the slot.
+
+Authority-invariant applicability for this bounded component:
+
+| Boundary | Identity / current / temporal mutation operators |
+|---|---|
+| Door and saved-house activation | Refuse before all authority-consuming work. A permissive precheck, absent assignment, stale lease or missing tile cannot reach loading/PREPARE. No successful authority grant exists in this component. |
+| Exit | Delegates the actual native refusal, with no local fallback/session/position write. |
+| Recovery / restart | NOT_IMPLEMENTED: no persisted outcome is interpreted and no node-wide cleanup is invoked from a house-local call. The existing native reconciliation/release owners remain required. |
+
+D1064's wording about PREPARED handoffs does not narrow the native capacity rule:
+`durability/house_scope_handoff.rs` counts live/reconnectable House sessions **plus**
+PREPARED handoffs against200. This pass does not change that writer or add a weaker
+local occupancy count. Clarification of the wording remains a CP/architect item.
+
+Concrete remaining integration owners and acceptance gates:
+
+- 1a/durability owner: actual current-generation-qualified interior load, consistent
+  item locations/provenance and proper runtime read grant; no direct runtime SELECT
+  or admin pool substitute. This source base has no such loader.
+- Native actor/map owners: real House carrier, active Bundle exact House→tiles and
+  arrival/retained outside entrance binding, current content/assignment/incarnation
+  checks, shared actor policy and collision/door adapters. Generic house flags and
+  a forged Channel cannot fill these ports.
+- Native handoff/admission owners: actual reservation/current placement callers,
+  serialized lifecycle/idle unload/quiesce, restart and uncertain-outcome matrix,
+  real House guard rebind, capacity200 conservation and destination installation.
+- Architect D573/SCOPE-HANDOFF-2: transfer contract and independently qualified
+  ADMIT0 §3.2 selection/scope ack/lost-ack/no-snapshot lift. Until then every entry
+  remains `HOUSE_CLOSED`; D1063 prohibits merge before the transfer contract.
+- CP: #2163 merged prerequisite, shared registration/aggregate test slot, and real
+  integrated RL02 cold/warm p99≤500ms plus RL04 measurements/registry evidence.
+  Timing this refusal helper cannot satisfy either measurement.
+
+Validation is intentionally limited by D1011: no Cargo, rustc, heavy build or PG
+execution was attempted in this cloud environment. The initial formatter command
+was unavailable. The lead subsequently provided an official verified Rust1.94.0
+formatter outside the repository; all four owned Rust files were formatted and
+passed its parse/format check with child traversal disabled. This is not type
+checking or test execution. Governance validation and its124 tests passed; exact
+five-file scope and tracked/untracked whitespace checks passed.
+The external source-bound handoff is
+`/workspace/house-family-handoff/runtime.json`; it records the exact input/output
+hashes and actual static check dispositions. Every original acceptance box remains
+open. No commit, push, ready, review trigger, merge or runtime activation occurred.
