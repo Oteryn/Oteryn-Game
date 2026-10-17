@@ -21,6 +21,7 @@ pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
+pub(crate) use runtime_actor_carrier::ChannelRuntimeAssignmentBinding;
 pub(crate) use runtime_actor_carrier::npc_actor::{
     NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
 };

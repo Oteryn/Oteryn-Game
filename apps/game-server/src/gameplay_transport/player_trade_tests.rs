@@ -628,21 +628,51 @@ fn offered_item_query_rejects_foreign_binding_and_retired_runtime_before_empty_b
     let (_, _, mut runtime, _, _) = geometry_fixture();
     let owner = TradeOwner::new(&runtime, Instant::now()).unwrap();
     assert!(!owner.item_reserved_by_trade(&runtime, uuid(240)).unwrap());
-    let (_, _, foreign, _, _) = actual_runtime(
-        WorldId::decode(&uuid(50)).unwrap(),
-        ChannelId::decode(&uuid(53)).unwrap(),
-        crate::foundation::NodeId::decode(&uuid(52)).unwrap(),
-        [0_u8, 1].map(|side| {
-            (
-                GameSessionId::decode(&uuid(31 + side)).unwrap(),
-                crate::foundation::CharacterId::decode(&uuid(1 + side)).unwrap(),
-            )
-        }),
-    );
-    assert!(matches!(
-        owner.item_reserved_by_trade(&foreign, uuid(240)),
-        Err(OwnerError::Authority)
-    ));
+    let binding = runtime.binding();
+    let original_node = crate::foundation::NodeId::decode(&uuid(52)).unwrap();
+    // These are genuine native carriers with one assignment component changed.
+    // Node/incarnation cases retain the same scope, source revision and Content;
+    // an empty local book must not turn either mismatch into an unreserved answer.
+    for (changed, channel, node, registration_revision) in [
+        (
+            "channel",
+            ChannelId::decode(&uuid(53)).unwrap(),
+            original_node,
+            1,
+        ),
+        (
+            "node",
+            binding.channel_id(),
+            crate::foundation::NodeId::decode(&uuid(53)).unwrap(),
+            1,
+        ),
+        (
+            "node registration revision",
+            binding.channel_id(),
+            original_node,
+            2,
+        ),
+    ] {
+        let foreign = ChannelRuntimeV1::from_committed_assignment(
+            binding.world_id(),
+            channel,
+            node,
+            registration_revision,
+            binding.scope_generation().get(),
+            binding.source_revision(),
+            "runtime-scope-assignment:1",
+            runtime.actor_slot_capacity(),
+            runtime.content_pin().clone(),
+        )
+        .unwrap();
+        assert!(
+            matches!(
+                owner.item_reserved_by_trade(&foreign, uuid(240)),
+                Err(OwnerError::Authority)
+            ),
+            "changed {changed} must refuse before the empty-book answer"
+        );
+    }
     runtime.retire_owner_cycle();
     assert!(matches!(
         owner.item_reserved_by_trade(&runtime, uuid(240)),

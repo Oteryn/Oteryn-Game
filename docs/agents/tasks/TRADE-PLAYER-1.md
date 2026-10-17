@@ -420,3 +420,36 @@ Root independent source review and fmt/diff PASS; new native/PG cases **NOT_RUN*
 88a47e96 Rust/Clippy and S3-B are RED; concrete log request is #2131 comment6225250171.
 Preserve this successor locally in a verified bundle until the concrete compiler finding
 can be fixed in the same coherent push. No new runner, repeated suite, ready or merge.
+
+## Complete native assignment binding comparison (2026-10-17; proposed successor)
+
+Source reviewed: `57cb016f1e982ede4f51d4c731406f742aee9d61`. Its native
+`ChannelRuntimeAssignmentBinding` contains NodeId and node registration revision
+in addition to World/Channel, ownership generation and source revision. The prior
+TradeOwner key omitted both Node fields, so the offered-item observation port could
+return an empty-book `false` for a different native Node/incarnation with the same
+remaining key fields. The durable offer/accept reader already compared those
+fields against the independently current database assignment.
+
+The proposed correction retains the actual native assignment binding and uses its
+existing equality, together with the existing Content digest. The existing query
+test now independently varies Channel, NodeId and node registration revision;
+Node/incarnation controls preserve scope, source revision and Content. Valid-owner
+and retired-owner controls remain. These carriers use the real native constructor
+and the original activated Content pin. No replacement binding representation,
+authority constructor, physical reservation, writer or caller wiring is added.
+
+CP D1311, `#2131` comment `6232429005` (2026-10-17), grants the one-hunk
+`pub(crate)` re-export of the existing `ChannelRuntimeAssignmentBinding` in
+`foundation/mod.rs`. That explicit allocation covers the shared facade delta;
+no constructor, getter or public API is added. The new regression and candidate
+native compilation remain **NOT_RUN**; status remains NOT_FULLY_QUALIFIED.
+
+The source head's repository checks now show 15 success and one skipped World
+bundle check. Rust job `117219324696` (run `38973988492`) records 3,185 passed,
+0 failed and 29 ignored; S3-B job `117218884447` (run `38973988483`) succeeded.
+These results supersede the preceding historical RED note only for that source
+head, not this proposed successor. PostgreSQL fixture names reported as `ok` do
+not by themselves prove database execution because those fixtures can early-return.
+Original atomic swap, durable TRANSFERRING recovery and live integration criteria
+remain open.

@@ -275,7 +275,7 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::{DurabilityError, DurabilityRoot};
-use crate::foundation::{ChannelRuntimeV1, ExactActorRef, ScopeOwnershipGeneration};
+use crate::foundation::{ChannelRuntimeAssignmentBinding, ChannelRuntimeV1, ExactActorRef};
 use crate::movement::interest::{
     InterestEntity, InterestIndex, VisibilityPosition, VisibilitySettings,
 };
@@ -370,20 +370,15 @@ pub(crate) struct ReservationIntent {
 /// exactly one book in the Channel owner and route physical invalidations to it. No constructor
 /// can prove that uninstalled global composition. Runtime is borrowed only per operation.
 pub(crate) struct TradeOwner {
-    binding: (RuntimeScopeRefV1, ScopeOwnershipGeneration, u64, [u8; 32]),
+    binding: (ChannelRuntimeAssignmentBinding, [u8; 32]),
     origin: Instant,
     trades: BTreeMap<([u8; 16], u64), OwnedTrade>,
     by_actor: BTreeMap<[u8; 16], ([u8; 16], u64)>,
 }
 
-fn runtime_key(
-    runtime: &ChannelRuntimeV1,
-) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration, u64, [u8; 32]) {
-    let binding = runtime.binding();
+fn runtime_key(runtime: &ChannelRuntimeV1) -> (ChannelRuntimeAssignmentBinding, [u8; 32]) {
     (
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-        binding.scope_generation(),
-        binding.source_revision(),
+        runtime.binding(),
         runtime.content_pin().server_artifact_digest(),
     )
 }
