@@ -19,6 +19,7 @@ needs_migration: true
 needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
+checkpoint: BOUNDED (storage/query/selection components only; see last section)
 ```
 
 ## Goal
@@ -340,3 +341,28 @@ Bank/fee/Inbox/custody/conservation/audit integration, current Content and
 compatibility, depot/actor admission, jobs and wire remain undelivered. Shared
 changes belong to the owning control-plane slot. No runtime activation, ready,
 merge, full-family completion or new paid review is claimed.
+
+## CP bounded checkpoint — 2026-10-17
+
+`MERGE_AUTHORITY: CP_ONLY`. Status stays **NOT_FULLY_QUALIFIED** for the task as a
+whole. This PR is offered as a bounded checkpoint: it lands the checked offer domain
+rules and the private storage/query/selection components, nothing that commits value.
+
+- Merged current main (`f094e032`); the only conflict was the `domain/mod.rs`
+  registration line (kept both `mail` and `market`).
+- Compiled code: `domain::market` and `durability::market` are registered modules;
+  `tests/support/market_postgres_cases.rs` is mounted from
+  `tests/character_authority_postgres.rs`. No uncompiled Rust source is in the PR.
+- Validation on the merged tree (shared PostgreSQL 17.6 through `in-pg-netns.sh`):
+  `cargo fmt --all --check` PASS; `cargo clippy --locked -p oteryn-game-server
+  --all-targets -- -D warnings` PASS; `cargo test --locked -p oteryn-game-server --lib`
+  3,377 passed / 0 failed / 29 ignored (all five MARKET pure cases ok);
+  `cargo test --locked -p oteryn-game-server --test character_authority_postgres
+  market_postgres_cases:: -- --test-threads=1` 15 passed / 0 failed against
+  PostgreSQL 17.6 (73.8 s). Governance validator and `tools/agents/tests` PASS.
+
+Out of this checkpoint and still open (MARKET-2 and the owners named above): the
+atomic place/accept/cancel/expiry writer, production migration and privileges,
+Bank ledger/fee (`FeeBurnCause::MarketFee`), Inbox delivery/return, custody,
+audit/outbox, the ending-metadata producer, Content facts, admission, jobs and wire.
+The acceptance criteria above remain unchecked.
