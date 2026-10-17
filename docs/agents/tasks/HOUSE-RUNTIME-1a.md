@@ -520,3 +520,22 @@ Official Rustfmt1.94 and git diffcheck are source checks only. Compile/native/PG
 this successor remains NOT_RUN; no evidence is transferred from earlier source generations.
 Publication remains held by the existing CP main-merge requirement versus direct user noMerge;
 the local candidate is retained with a verified recovery bundle; no push, merge or rebase is performed.
+
+## CP final-review round 2 — D1305 decisions and fail-closed source facts
+
+CP D1305 (final review NOT READY on `66e47fdd`) decided for this PR:
+
+- Oneof tag 11 `house_transfer` in `OneItemTransactionV1` is reserved by CP D1305 for this PR.
+  `main` uses tags 2..10; later PRs take tag 12 or higher.
+- PostgreSQL House cases are evidenced only by the merge-group `durability_postgres` lane, by
+  design. No local or PR-head PG PASS is claimed.
+- Fixture-only placement is accepted for 1a: the `game_house_access_tile` stub returns false
+  (migration 0095, lines 80-82), so tile admission happens only through the test fixture.
+  Production placement stays blocked until architect acceptance (HOUSE-ACL).
+
+Repair: the character-side Place source in the signed audit message no longer defaults a
+missing or malformed `source_ordinal`/`source_slot` to 0. `character_source_location` checks
+the facts against the source kind (inventory: parent + ordinal, no slot; container slot: slot 9
+only; equipment: one slot in 1..=10 other than 9; the stored kind must equal the request kind)
+and otherwise returns `InvalidStoredState`. Unit tests cover the accepted forms and the
+refusals. Checks: rustfmt PASS; compile, clippy and tests NOT_RUN locally (CI).

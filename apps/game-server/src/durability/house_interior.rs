@@ -846,6 +846,41 @@ fn bytes_position(p: &Value, key: &str) -> DbResult<Vec<u8>> {
         })
         .collect()
 }
+// Character-side Place source facts are kind-exact and fail closed: inventory (kind 1)
+// carries parent + ordinal and no slot; container slot (kind 2) carries slot 9 only;
+// equipment (kind 3) carries one slot in 1..=10 other than 9. The stored kind must equal
+// the frozen request kind. A missing, extra, malformed or out-of-range fact is
+// InvalidStoredState, never a defaulted slot/ordinal 0 in the signed audit message.
+fn character_source_location(
+    request_source_kind: i16,
+    character_id: Vec<u8>,
+    p: &Value,
+) -> DbResult<event::OneItemHouseCharacterLocationV1> {
+    let stored_kind = number(p, "source_kind")?;
+    if u64::try_from(request_source_kind).ok() != Some(stored_kind) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let has_parent = !p["source_parent"].is_null();
+    let ordinal = optional_number(p, "source_ordinal")?;
+    let slot = optional_number(p, "source_slot")?;
+    let (parent_item_instance_id, placement_ordinal, equipment_slot) =
+        match (stored_kind, has_parent, ordinal, slot) {
+            (1, true, Some(ordinal), None) => (bytes_uuid(p, "source_parent")?, ordinal, 0),
+            (2, false, None, Some(9)) => (vec![], 0, 9),
+            (3, false, None, Some(slot @ 1..=10)) if slot != 9 => (
+                vec![],
+                0,
+                u32::try_from(slot).map_err(|_| DurabilityError::InvalidStoredState)?,
+            ),
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
+    Ok(event::OneItemHouseCharacterLocationV1 {
+        character_id,
+        parent_item_instance_id,
+        placement_ordinal,
+        equipment_slot,
+    })
+}
 fn message_from_facts(
     frozen: &FrozenHouseItem,
     p: &Value,
@@ -903,16 +938,11 @@ fn message_from_facts(
         })
     };
     let source = if frozen.request.action.shape() == 5 {
-        event::HouseTransferSourceV1::Character(event::OneItemHouseCharacterLocationV1 {
-            character_id: frozen.character.as_bytes().to_vec(),
-            parent_item_instance_id: if p["source_parent"].is_null() {
-                vec![]
-            } else {
-                bytes_uuid(p, "source_parent")?
-            },
-            placement_ordinal: optional_number(p, "source_ordinal")?.unwrap_or(0),
-            equipment_slot: optional_number(p, "source_slot")?.unwrap_or(0) as u32,
-        })
+        event::HouseTransferSourceV1::Character(character_source_location(
+            frozen.request.action.source_kind(),
+            frozen.character.as_bytes().to_vec(),
+            p,
+        )?)
     } else {
         event::HouseTransferSourceV1::House(house_location(true)?)
     };
@@ -1004,5 +1034,86 @@ async fn charge_retry_work(
         Ok(Ok(()))
     } else {
         Ok(Err(HouseWriterError::RetryBudgetExhausted))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PARENT: &str = "0190f0e2-7a4b-7c3d-8e5f-0a1b2c3d4e5f";
+
+    fn refused(kind: i16, facts: Value) -> bool {
+        matches!(
+            character_source_location(kind, vec![7; 16], &facts),
+            Err(DurabilityError::InvalidStoredState)
+        )
+    }
+
+    #[test]
+    fn character_source_facts_are_kind_exact() {
+        let inventory = character_source_location(
+            1,
+            vec![7; 16],
+            &json!({"source_kind": 1, "source_parent": PARENT, "source_ordinal": "4"}),
+        )
+        .expect("inventory source");
+        assert_eq!(
+            (inventory.placement_ordinal, inventory.equipment_slot),
+            (4, 0)
+        );
+        assert_eq!(inventory.parent_item_instance_id.len(), 16);
+        let container =
+            character_source_location(2, vec![7; 16], &json!({"source_kind": 2, "source_slot": 9}))
+                .expect("container-slot source");
+        assert_eq!(container.equipment_slot, 9);
+        assert!(container.parent_item_instance_id.is_empty());
+        let equipment =
+            character_source_location(3, vec![7; 16], &json!({"source_kind": 3, "source_slot": 4}))
+                .expect("equipment source");
+        assert_eq!(
+            (equipment.equipment_slot, equipment.placement_ordinal),
+            (4, 0)
+        );
+    }
+
+    #[test]
+    fn malformed_character_source_facts_refuse_instead_of_slot_zero() {
+        // Missing slot must never default to slot 0.
+        assert!(refused(3, json!({"source_kind": 3})));
+        assert!(refused(2, json!({"source_kind": 2})));
+        // Malformed or out-of-range slot.
+        assert!(refused(3, json!({"source_kind": 3, "source_slot": "x"})));
+        assert!(refused(3, json!({"source_kind": 3, "source_slot": 0})));
+        assert!(refused(3, json!({"source_kind": 3, "source_slot": 9})));
+        assert!(refused(3, json!({"source_kind": 3, "source_slot": 11})));
+        assert!(refused(2, json!({"source_kind": 2, "source_slot": 4})));
+        // Missing or malformed inventory ordinal/parent, or an extra slot.
+        assert!(refused(
+            1,
+            json!({"source_kind": 1, "source_parent": PARENT})
+        ));
+        assert!(refused(1, json!({"source_kind": 1, "source_ordinal": 4})));
+        assert!(refused(
+            1,
+            json!({"source_kind": 1, "source_parent": "not-a-uuid", "source_ordinal": 4})
+        ));
+        assert!(refused(
+            1,
+            json!({"source_kind": 1, "source_parent": PARENT, "source_ordinal": 4, "source_slot": 3})
+        ));
+        // Extra inventory fields on slot sources.
+        assert!(refused(
+            3,
+            json!({"source_kind": 3, "source_slot": 4, "source_ordinal": 1})
+        ));
+        assert!(refused(
+            2,
+            json!({"source_kind": 2, "source_slot": 9, "source_parent": PARENT})
+        ));
+        // Missing kind, kind mismatch with the frozen request, or a non-character kind.
+        assert!(refused(3, json!({"source_slot": 4})));
+        assert!(refused(2, json!({"source_kind": 3, "source_slot": 4})));
+        assert!(refused(4, json!({"source_kind": 4, "source_slot": 4})));
     }
 }
