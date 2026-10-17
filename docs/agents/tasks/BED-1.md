@@ -8,7 +8,7 @@ status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/bed-1
-base_sha: 5742f30f3
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -31,7 +31,69 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
-## 2026-10-16 D1122 checkpoint — NOT_FULLY_QUALIFIED
+## 2026-10-17 shared PostgreSQL fixture cleanup — AUTHORING
+
+Predecessor after CP's ordinary main merge:
+`b1375be27cf817df99c2e8d7781b6df88523f79b`. Owned authoring is released by
+[D1345](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418).
+
+This packet changes only the private native test fixture. Each case allocates a
+bounded `oteryn_bed_2147_<tag>_<pid>_<nonce>` database through the existing shared
+PostgreSQL17.6 helper route. All connection, migration, private-schema and test
+work after CREATE is covered by cleanup. Returned errors and assertion panics
+drop only that exact owned database before returning or resuming the panic; a
+failed DROP remains a failed case. The administrative connection is closed after
+cleanup. No PostgreSQL server/container lifecycle operation is introduced.
+
+All nine existing test bodies are preserved exactly: one pure case and eight real
+PostgreSQL cases. One additional real PostgreSQL regression injects a returned
+error and an assertion panic, checks that each original failure is preserved,
+then independently verifies that the owned database is absent from `pg_database`.
+The production `durability/bed_sleeper.rs` and `house_bed/sleeper.rs` remain
+unchanged. Their private schema, lifecycle triggers and row reads are still not
+a production sleep, wake, logout or settlement writer.
+
+Validation of this packet: focused native formatting and compilation PASS;
+the coordinator's Molehill run starting 2026-10-17 13:04:41 UTC on slot B passed
+all ten cases (`10 passed; 0 failed; 0 ignored; 3269 filtered out`, 19.60 seconds
+after a 1m59s build). This includes the original pure case, eight original real
+PostgreSQL cases and the new error/panic cleanup regression. The injected panic
+is caught and verified by the regression; it is not a skipped or failed case.
+
+The evidence is explicitly a SOURCE ASSEMBLY: main
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`, the three actual BED files and only
+their lib/durability module registration lines. The tested fixture SHA-256 is
+`5c4cae6da93e572fc6880afb32404fc00ead2750f776fa6abcb8884328e997d6`;
+the production files match the predecessor exactly. The run used D1342's native
+environment and slot target, `cargo fetch --locked` PASS, and D1329's existing
+`in-pg-netns.sh` against shared PostgreSQL17.6. No lifecycle action was run.
+
+The published branch has no BED module registration. This ten-case source
+assembly therefore does not qualify the published head or install production
+BED behavior. Canonical mounted-head tests, package Clippy and production
+sleep/wake/logout/settlement/restart qualification remain NOT_RUN or incomplete;
+the ordered integration criteria below remain open.
+
+[D1351](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418) and
+[D1355](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098)
+resolve the next producer boundaries:
+
+| Required implementation | Owner and remaining gate |
+|---|---|
+| Full active-bundle House placement and currentness | #2167 at `061c16a6f4ac5f337c56f1189421fa3ecb0cd127`, following #2156. D1355(a) explicitly amends that scope; scoped overlays alone are insufficient. BED resolver conversion waits for it. |
+| OFFLINE marker, logout and activation | #2174 at `b5576758e5309dffdd8993bd9956e3c798e985ad`; BED does not replace its transaction owner. |
+| Durable food, vitals and soul participant | #2196 at `6fbd70254f323d29a9bad15db74ea0adb9d55a92`; D1355(b) requires actual durable soul before-values in the same physical transaction. |
+| Caller-TX BED step | D1355(c) grants #2147 the hook in #2174's `apply_marker`, after its plan and fence locks and before `write_offline_marker`, only after #2174 and #2196 merge. |
+| House composition | D1349/D1235 order remains #2141 → #2137 → #2167 → #2147. Specific-cause freeing precedes ownership UPDATE in its owning transaction. |
+
+The granted caller hook is not implemented by this fixture packet. No new durable
+schema, copied producer, fake bed resolver or detached regen calculator is added.
+The PR remains draft and all production acceptance items remain open.
+
+## 2026-10-16 D1122 checkpoint — historical qualification
+
+This section and its receipts describe the earlier source generation. The
+current fixture packet and pending native execution are stated above.
 
 This checkpoint retains source head
 `1a9faa28b046a674c5da5a56c9ace6cd6c54267a` on existing draft #2147.

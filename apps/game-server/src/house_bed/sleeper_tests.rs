@@ -28,61 +28,82 @@ fn run_case(tag: &str, body: impl AsyncFnOnce(&mut PgConnection) -> TestResult) 
     })?;
     if !url.starts_with("postgresql://oteryn_test_admin:")
         || !url.ends_with("@127.0.0.1:5432/postgres")
+        || tag.is_empty()
         || !tag.bytes().all(|b| b.is_ascii_lowercase() || b == b'_')
     {
         return Err("unsafe private PostgreSQL route/tag".into());
     }
-    tokio::runtime::Builder::new_current_thread()
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(async {
-            let mut admin = PgConnection::connect(&url).await?;
-            let version: String = sqlx::query_scalar("SHOW server_version_num")
-                .fetch_one(&mut admin)
+        .build()?;
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    // D1329: only this case's own database on the shared PG17.6 helper route.
+    let name = format!("oteryn_bed_2147_{tag}_{}_{nonce}", std::process::id());
+    if name.len() > 63 {
+        return Err("private PostgreSQL case name exceeds the identifier bound".into());
+    }
+    let mut admin = runtime.block_on(async {
+        let mut admin = PgConnection::connect(&url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut admin)
+            .await?;
+        if version != "170006" {
+            return Err::<_, Box<dyn std::error::Error>>(
+                "canonical target is PostgreSQL 17.6".into(),
+            );
+        }
+        sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
+            .execute(&mut admin)
+            .await?;
+        Ok(admin)
+    })?;
+    eprintln!("CANONICAL PostgreSQL 17.6 private sleeper case: {tag}");
+    // Preserve assertion failures, but drop this case's database before resuming them.
+    // The catch also covers fixture/migration failures after the successful CREATE.
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        runtime.block_on(async {
+            let prefix = url.strip_suffix("/postgres").ok_or("invalid route")?;
+            let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
+            sqlx::migrate!("./migrations").run(&mut connection).await?;
+            sqlx::raw_sql(PRIVATE_SLEEPER_SCHEMA_SQL)
+                .execute(&mut connection)
                 .await?;
-            if version != "170006" {
-                return Err("canonical target is PostgreSQL 17.6".into());
+            // Native rows supplied only as migration-owner fixtures. This
+            // bypass does not qualify a creation/acquisition/session grant.
+            let mut tx = connection.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
+                .bind(id(50).as_slice()).execute(&mut *tx).await?;
+            for seed in 1..=4 {
+                sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'r1','r1','r1','r1',$4)")
+                    .bind(id(seed).as_slice()).bind(id(50).as_slice()).bind(id(if seed==4 {9}else{8}).as_slice()).bind(["Sleeper One","Sleeper Two","Sleeper Three","Sleeper Four"][usize::from(seed-1)]).execute(&mut *tx).await?;
             }
-            eprintln!("CANONICAL PostgreSQL 17.6 private sleeper case: {tag}");
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)?
-                .as_nanos();
-            let name = format!("bed_{tag}_{}_{nonce}", std::process::id());
-            sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
-                .execute(&mut admin)
-                .await?;
-            let result = async {
-                let prefix = url.strip_suffix("/postgres").ok_or("invalid route")?;
-                let mut connection = PgConnection::connect(&format!("{prefix}/{name}")).await?;
-                sqlx::migrate!("./migrations").run(&mut connection).await?;
-                sqlx::raw_sql(PRIVATE_SLEEPER_SCHEMA_SQL)
-                    .execute(&mut connection)
-                    .await?;
-                // Native rows supplied only as migration-owner fixtures. This
-                // bypass does not qualify a creation/acquisition/session grant.
-                let mut tx = connection.begin().await?;
-                sqlx::query("SET LOCAL session_replication_role=replica")
-                    .execute(&mut *tx)
-                    .await?;
-                sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
-                    .bind(id(50).as_slice()).execute(&mut *tx).await?;
-                for seed in 1..=4 {
-                    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,'r1','r1','r1','r1',$4)")
-                        .bind(id(seed).as_slice()).bind(id(50).as_slice()).bind(id(if seed==4 {9}else{8}).as_slice()).bind(["Sleeper One","Sleeper Two","Sleeper Three","Sleeper Four"][usize::from(seed-1)]).execute(&mut *tx).await?;
-                }
-                for (key,world,owner) in [("oteryn:content.house.a",8,1),("oteryn:content.house.b",8,2),("oteryn:content.house.c",9,4)] {
-                    sqlx::query("INSERT INTO game_house_ownership VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
-                        .bind(id(world).as_slice()).bind(key).bind(id(owner).as_slice()).bind(id(owner+20).as_slice()).execute(&mut *tx).await?;
-                }
-                tx.commit().await?;
-                let result = body(&mut connection).await;
-                connection.close().await?;
-                result
-            }.await;
-            sqlx::query(sqlx::AssertSqlSafe(format!("DROP DATABASE {name} WITH(FORCE)")))
-                .execute(&mut admin).await?;
+            for (key,world,owner) in [("oteryn:content.house.a",8,1),("oteryn:content.house.b",8,2),("oteryn:content.house.c",9,4)] {
+                sqlx::query("INSERT INTO game_house_ownership VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+                    .bind(id(world).as_slice()).bind(key).bind(id(owner).as_slice()).bind(id(owner+20).as_slice()).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+            let result = body(&mut connection).await;
+            connection.close().await?;
             result
         })
+    }));
+    runtime.block_on(async {
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "DROP DATABASE {name} WITH(FORCE)"
+        )))
+        .execute(&mut admin)
+        .await?;
+        admin.close().await
+    })?;
+    match result {
+        Ok(result) => result,
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
 }
 
 async fn insert(
@@ -93,6 +114,61 @@ async fn insert(
 ) -> Result<(), sqlx::Error> {
     sqlx::query("INSERT INTO game_house_bed_sleepers(world_id,house_key,bed_x,bed_y,bed_z,character_id,lease_generation,occupied_variant,slept_at) VALUES(encode($1,'hex')::uuid,$2,10,20,7,encode($3,'hex')::uuid,18446744073709551615,'female',100)")
         .bind(id(world).as_slice()).bind(house).bind(id(who).as_slice()).execute(connection).await?;
+    Ok(())
+}
+
+#[test]
+#[allow(
+    clippy::panic,
+    reason = "exercise panic cleanup with a real disposable PostgreSQL database"
+)]
+fn private_case_database_is_removed_after_error_and_assertion_panic() -> TestResult {
+    for should_panic in [false, true] {
+        let database = std::cell::RefCell::new(None);
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            run_case("cleanup", async |c| {
+                let name: String = sqlx::query_scalar("SELECT current_database()")
+                    .fetch_one(c)
+                    .await?;
+                *database.borrow_mut() = Some(name);
+                if should_panic {
+                    panic!("injected sleeper fixture panic");
+                }
+                Err("injected sleeper fixture error".into())
+            })
+        }));
+        match outcome {
+            Err(payload) if should_panic => {
+                assert_eq!(
+                    payload.downcast_ref::<&str>(),
+                    Some(&"injected sleeper fixture panic")
+                );
+            }
+            Ok(Err(error)) if !should_panic => {
+                assert_eq!(error.to_string(), "injected sleeper fixture error");
+            }
+            _ => return Err("fixture did not preserve its injected failure".into()),
+        }
+        let name = database
+            .into_inner()
+            .ok_or("fixture did not reach its own database")?;
+        assert!(name.starts_with("oteryn_bed_2147_cleanup_"));
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        let exists = runtime.block_on(async {
+            let url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+            let mut admin = PgConnection::connect(&url).await?;
+            let exists: bool =
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)")
+                    .bind(&name)
+                    .fetch_one(&mut admin)
+                    .await?;
+            admin.close().await?;
+            Ok::<_, Box<dyn std::error::Error>>(exists)
+        })?;
+        assert!(!exists, "the failing fixture left its own database behind");
+    }
     Ok(())
 }
 
