@@ -693,3 +693,135 @@ Final installed Depot proof/migration composition and actual current Locker,
 USE, session-bound view, Content and Premium admission remain explicit
 integration dependencies. Stash and writable-item children keep their accepted
 separate scope. These native tests do not establish those runtime producers.
+
+### 2026-10-17 — Ground composition and exact test-weight adapter qualification
+
+This receipt closes the earlier checkpoint's outstanding composition with
+pinned Ground input `ce7bccab973625d5d3d0d0c566426903229d2373`. It is the
+specific Ground input tested here, not a claim about the latest main. Later
+main successors require their own explicit integration. Published Depot
+`047d922583f4e1410ad0b9a3aa91b17c3f58547e` was composed with that complete
+Ground tree in private HEAD `b92a989e409583841e9cc55d09e2c3c287c59a91`,
+base tree `ab39a25d03bfec4d02fa117ba2668d877987c23a`, with ordered parents
+`[047d9225, ce7bccab]`.
+
+#### Preserved failed attempt and minimal repair
+
+The first complete Ground/Depot attempt failed strict all-target Clippy on ten
+compile errors in the existing Ground test fixtures: four missing optional
+`ItemDefinitionFacts.weight` fields, two missing request generation digests,
+and four missing native weight-lookup arguments in freeze/commit calls. Its
+source, failure summary and Clippy receipt remain immutable:
+
+- Source: `bec45ed835f8391b54a718a85f0ce009ed9120e624cf532596a63a303468d5dc`.
+- Failed summary: `88b2bee90dd1247f051f2522d64562a543c1fce4feb0a878093947a0be5988ef`.
+- Failed Clippy: `c6f8a7fdbc8c52a5e29e96ccbd5978cb2cdff08b3f13a52f6a9b563e32b5c059`.
+
+The separate repair changes only
+`apps/game-server/src/durability/ground_cell_limit_tests.rs`: original Git blob
+`9c9c8740ac45872f2a92d9d2afdbbc1f4fcd9f2a` becomes
+`3ff84e916a4d8c8c147cb8600e4e4a4679262489`, SHA-256
+`52d3668302893e428b66fcd1bafe74de6a73100c163badb329f0bec39cf3ebc3`.
+Its typed local fixture lookup resolves the existing Ground root fixture and
+delegates every other definition and the generation digest to the real native
+`TEST_WEIGHTS` fixture catalogue. The four facts, two requests and four native
+call sites use that consistent lookup. The same 28 case names, assertions and
+fixture identities remain. No production Content lookup, weight fallback,
+SQL, gameplay owner, shared catalogue, guard or test-ignore path was changed.
+
+The reviewed one-file manifest is
+`cd4275b313e30278f3c51a2a17faa79c085144dd846cca4114db544bef943e8f`;
+patch `eda376585ce4c9246597ea58e04d23f7ddcd5b5e212bca91b0c0a2de7a1ac478`.
+Application kept the existing detached worktree, real index and cache in
+place. Its source receipt is
+`40b959c7dfbd55a20ebcdd67b8e7f85c901be498716331614bc63d60872b2d4e`,
+with applied tree `9352731f0aaf95e40d53236bbc7dd3ff0b3ac4a9`.
+The historical failed attempt qualifies no stage of this successor.
+
+#### Fresh native completion
+
+All nine fresh gates below are bound to that exact repaired complete source.
+The helper pair is apply
+`b05bdfcce81034b2ecc32bada35914e2d8c4fa8f7351164a7d5c1573de3eb5a7`
+and qualifier
+`64eff50c4db763e33f1cfab77fbe2a5ab33fe56fa90f24cea52147684cf6fcdd`.
+The full composition, source inventory, Cargo.lock and real index remained
+unchanged across every stage. Rust 1.95.0 used two Cargo jobs, the existing
+core build lock and the existing separate `targets/feature2156` cache.
+
+The complete 18,922-path inventory stayed bound to
+`2a32eec0fe472039a037b8189f425b7e3063b6dc2a871985d48bbf8dcf2f0343`. Cargo.lock remained
+Git blob `eba8094c71724362b911f309d6fa13262b2b7279`, SHA-256
+`a3b9800ad3199130b2ddc363b6b3972b1ecf119d22e595c243701fcd00f5a35e`; the real index stayed
+`26dc92181288ccfc79cd1323e2df04d67e5b39132dddcecdb0bd95f7fa78817f`.
+
+| Repaired Ground/Depot stage | Actual result | Complete log SHA-256 |
+| --- | --- | --- |
+| Fresh locked fetch | PASS | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Full workspace fmt check | PASS; no source formatting mutation | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Repository governance | PASS on native source | `ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f` |
+| Strict all-target Clippy | PASS | `0398a22dedfe988eb8914998db242da003e53a8919034e302ddb85c41d0e195b` |
+| Actual Cargo dep-info duplicate-source guard | PASS; 57 units | `a70bce278550167d18c832ac3e36b222cd22f92e1e18e24ef5fea07531778d5e` |
+| Native whole-item Depot cases | 4 passed, 0 failed, 0 ignored; 4 actual PG 170006 creation markers | `72ed82847d25db685b50787d7dcc898e043cd8893b8f89779bccd49fe30bc941` |
+| Existing Storage target | 4 passed, 0 failed, 0 ignored: 3 pure + 1 actual PG case | `9f04e3c4af2ab07807e02fdaa9590e2227e06808e9c1952598f9a058892bb207` |
+| Ground canonical regression group | 28 passed, 0 failed, 0 ignored: 12 pure + 16 actual PG cases | `94327fc3a592e2bab379d935a31d984b805e6ff9e604fca8e34a81a8adab7216` |
+| Full normal game-server package | 10,331 passed, 0 failed, 37 ignored; 59 groups; 825.14 s | `2d3f8889de87598307971cdcbe213de98201b7ddc5b09d8d85e0d74a5d28f6d5` |
+
+The Depot group supplied the exact four expected names and per-case database/
+170006 markers. Ground supplied its exact 28 names and the expected tag plus
+170006 marker in each of its 16 PG bodies. The unchanged Storage target retains
+its actual PostgreSQL170006 assertion; its other three cases are pure. The
+normal package ran without a PG URL and does not add database coverage to these
+separately observed groups. The earlier root-order and custody-exclusivity RED
+receipts remain historical evidence for unchanged Depot logic; no new RED
+operator was required by this fixture-only adapter.
+
+D1329 locked fetch preceded the unchanged owner `in-pg-netns.sh`, using only the
+existing shared PostgreSQL 17.6 at real host 127.0.0.1:55432. No server/container
+was created and real host5432 was untouched. Actual cleanup results are:
+
+The Depot controller checked exactly the four database names printed in the
+current Depot test log. All four were already absent after native harness
+cleanup; no additional DROP was issued:
+
+- `it_depot_native_atomic_1792262138896174790`.
+- `it_depot_native_custody_1792262134647886136`.
+- `it_depot_native_root_1792262136708068640`.
+- `it_depot_native_roundtrip_1792262140994762967`.
+
+All three same-route controls reported server_version_num=170006, empty
+cleanup errors, no observed or remaining logged databases, and zero additional
+DROP operations. The unchanged Storage and Ground harnesses supplied no DB
+names to their logs and completed their own cleanup. Their controls did not
+infer ownership, query or delete unlogged databases; their empty logged-name
+inventories are not independent censuses of every created database.
+
+| Actual PG group | Database-control receipt SHA-256 |
+| --- | --- |
+| Depot 4 | `fb79be4770b6131ac9fe25406486c89a1cba585c98fa1c2788103f67d6d01871` |
+| Storage 1 PG within 4 cases | `066b5110cfdf5891d65acc6039f59fc6f2fdedcf34b6515e95ca78498c3ded08` |
+| Ground 16 PG within 28 cases | `83c43fb8f57943c999f6947aa03581580d1a87ec20e7dec3ce7cf7b5e94d1776` |
+
+The complete immutable native bundle is `78baca56f7cc8a076a22feba328c27ee7dd0e17220dde00874a9b1e678fabfe7`, containing
+17 records; summary `12d4033ce018be7f29358d69549b90ec0bd867e87facb1d2ba7e499e478165a1`; full-package receipt
+`341a4fa443908c79e1c2c70c839d33680e1fd9db9da027aad8c98375b49fe1e6`. The actual complete source export is
+`b98a4d226dae4d2ec6329afba6492115f4ae04f8a08ff56d05bc4d7a97605fe3`, and the subsequently captured native tree is
+`9352731f0aaf95e40d53236bbc7dd3ff0b3ac4a9`, capture receipt `76f0a6aecf1c4aae5cbd64131ce70a37c6fb624741cf90801bc562ae5431f6b3`.
+All prior failed and successful source records remain unchanged.
+
+#### Publication and retained boundaries
+
+Publication carries the complete pinned Ground/Depot tree plus this strict
+task-card append, preserving all 43,372 preceding card bytes as an exact prefix.
+The sole public parent is `047d9225`; that commit identity differs from the
+private two-parent native composition. Final-card diff/governance and exact
+new-head CI are separate publication evidence and are not asserted by this
+native receipt. Existing worktrees, caches and historical artifacts are kept.
+
+This fixture repair does not install or renumber the Depot proposal, allocate
+an operation tag or CP lease, or create current Locker, USE, session-bound view,
+Content, Premium or HouseExit admission. Whole-item withdrawal remains one new
+main-backpack entry within the accepted native TRANSFER operation3 scope.
+Stash and writable-item children retain their separate accepted boundaries.
+The draft is retained; these results do not claim full storage-family runtime
+integration or ready/merge status.
