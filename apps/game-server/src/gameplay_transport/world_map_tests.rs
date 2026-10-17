@@ -1700,3 +1700,6 @@ fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
         .is_none()
     );
 }
+
+#[path = "world_map_domain_tests.rs"]
+mod domain_selection;
