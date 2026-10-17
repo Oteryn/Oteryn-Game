@@ -102,7 +102,7 @@ message OneItemTransactionV1 {
   oneof operation {
     OneItemMintV1 mint = 2;
     OneItemTransferV1 transfer = 3; // B3 destinations only (see above)
-    OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 only (see above)
+    OneItemRewardClaimMintV1 reward_claim_mint = 4; // CHEST-1 or MAIL-owned Inbox (see below)
     OneItemDecayRetireV1 decay_retire = 5; // D3-6 corpse decay only (see above)
     OneItemFeeBurnV1 fee_burn = 6; // coin fee BURN only (see above)
     OneItemTimedExpiryV1 timed_expiry = 7; // timed expiry only (see above)
@@ -299,12 +299,33 @@ message OneItemRewardClaimCauseV1 {
 
 // One fresh live item placed in a new direct entry of the main backpack; the
 // destination carries container_entry only (never the container slot).
+// D1318 additive destination of the same reward_claim_mint operation. A full
+// source output plan is one type-2 event, not twenty independent transactions.
+message RewardClaimInboxMintOutputV1 {
+  OneItemStateV1 after = 1;
+  uint64 ordinal = 2; // permanent CharacterInbox ordinal; positive, increasing
+  uint32 source_line = 3; // source-owned claim line, including zero
+}
+message RewardClaimInboxMintV1 {
+  bytes character_id = 1; // UUIDv7
+  bytes world_id = 2; // UUIDv7; every output after-state has this World
+  uint64 expected_session_generation = 3; // actual native fence, positive
+  bytes source_binding = 4; // exact 32-byte source-owner claim binding
+  repeated RewardClaimInboxMintOutputV1 outputs = 5; // 1..20 distinct fresh items
+  bytes plan_binding = 6; // exact full MAIL output-plan SHA-256
+  bytes mint_intent_sha256 = 7; // exact persisted canonical mint specification
+  uint64 expected_character_lease_generation = 8; // actual native lease, positive
+}
+
 message OneItemRewardClaimMintV1 {
   OneItemStateV1 after = 1;
   OneItemInventoryV1 destination = 2;
   OneItemRewardClaimCauseV1 source = 3;
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
+  // Exactly this field or the legacy after/destination, never both. Source and
+  // before_semantically_absent=true are mandatory in either shape.
+  RewardClaimInboxMintV1 inbox = 5;
 }
 
 // D3-6 `CorpseDecay { corpse_item, deadline }` (DUR-03 §39.4): the only admitted
