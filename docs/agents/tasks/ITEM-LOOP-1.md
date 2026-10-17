@@ -75,6 +75,8 @@ The item loop works end to end on the bundle World: equip/unequip, drop/pickup (
 - `apps/game-server/src/gameplay_transport/equipment_move.rs`
 - `apps/game-server/src/gameplay_transport/container_view.rs`
 - `apps/game-server/src/durability/item_transfer.rs`
+- `apps/game-server/src/durability/character_equipment.rs` — CP D1141 native owner and swap receipt
+- `apps/game-server/tests/support/equipment_move_postgres_cases.rs` — existing registered owner cases
 - apps/game-server/src/durability/ (new item-loop writers)
 - apps/game-server/tests/item_loop_*.rs (new)
 
@@ -444,3 +446,47 @@ affected three real wrapper targets compiled PASS after that same projection
 change (exit0, logSHA85329ba3c28c03718c4ccdcdc0d78e96a2be7275b22e858ba54f79d9a1936554).
 The immutable producer8/8 and transport32/32 receipts remain valid for their
 unchanged source; they are not a claim of current full-package execution.
+
+
+### D1141 native whole-item equipment swap — local NOT_FULLY_QUALIFIED
+
+The existing equipment owner now prepares whole-item exchanges into occupied
+slots under its current Character/equipment/item/backpack locks. The incoming
+item replaces the target occupant; the occupant receives a fresh immutable main
+backpack entry. Count and quantities stay unchanged, both item revisions advance
+once, and one equipment revision/receipt/audit commits atomically without changing
+CharacterRevision or charging carried capacity again. Other hand/group conflicts,
+current fences, Content pins, slot requirements and plain/non-timed checks remain.
+
+Different definitions exchange as whole items. Same-definition exchange requires
+both actual quantities to be one and both classes Known NonStackable. The
+existing owned NativeGameplayState producer reuses generation_item_facts for
+exact inventory-admitted definition/class facts in the same active generation.
+Unknown-class same-definition exchanges and stack merge/top-up shapes remain
+refused; no synthetic class,
+new conversion, alternate Content authority or guessed wire ID is introduced.
+
+Only swaps use the v2 event with both exact item observations and four actual
+location lines. Its immutable resolved facts are SHA-bound before writes; terminal
+replay does not reconstruct the departed occupant as current. Existing v1 bytes,
+replay SELECT and non-swap SQL column lists remain unchanged.
+
+The real existing item_ref_production wrapper contains a new authored grouped PG
+case for full-backpack exchange, independent other-hand conflict, stale connection
+generation, quantities/revisions, immutable replacement ordinal, complete audit,
+replay/substitution, unknown same-definition refusal and known non-stackable
+same-definition exchange. The fixture never installs external SQL. Actual PG,
+fullpackage, strictalltargetClippy and runtime qualification are NOT_RUN for this
+increment; compilation/cheap receipts are recorded separately outside the checkout.
+Earlier native projection/producer/transport PASS retains its unchanged-source
+scope; it is not runtime proof for the new swap.
+
+Concrete CP prerequisites: an assigned additive migration and shared guard slot,
+plus accepted EQUIP-SWAP resource registration. A complete unnumbered proposal is
+kept in /workspace/oteryn-family/loop-global-d1163/equipment-swap-next/; no repository
+migration or registry is edited. It preserves full latest 0083 item guards, 0045
+slot guard, 0035 receipt guard and unchanged 0076 seven-location exclusivity.
+Stack class in the proposed event is a current Rust Content owner's observation
+bound to content_digest; the SQL guard checks receipt consistency and does not
+become an independently populated Content oracle. CP must accept the actual
+schema/guard proposal before activation. This is NOT_FULLY_QUALIFIED.
