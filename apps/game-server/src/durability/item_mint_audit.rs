@@ -1945,7 +1945,25 @@ pub(super) mod tests {
                 "src/durability/map_item_mint.rs",
                 "src/durability/npc_trade.rs",
                 "src/durability/reward_claim_mint.rs",
+                "src/durability/world_reset.rs",
             ]
+        );
+        // MAP-OVERLAY-1c: the world-reset retirement opens one `begin_type2_transaction` and
+        // binds that transaction's tuple: `tx.tuple()`, or its reservation's frozen one.
+        let reset = production("src/durability/world_reset.rs");
+        assert_eq!(
+            reset
+                .matches("begin_type2_transaction(holder, deadline)")
+                .count(),
+            1
+        );
+        assert_eq!(reset.matches("let tuple = ").count(), 1);
+        assert!(reset.contains(
+            "let tuple = if let Some(row)=&reserved { tx.frozen_tuple(&row.try_get::<Vec<u8>,_>(6)?)"
+        ));
+        assert!(
+            reset
+                .contains(".map_err(|_|DurabilityError::InvalidStoredState)? } else {tx.tuple()};")
         );
         // Every type-2 encoder writes the tuple it is given, never this module's compile-time
         // one (other modules reach it as `mint::` or `mint_audit::`).
