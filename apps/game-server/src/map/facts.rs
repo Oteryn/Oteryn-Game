@@ -74,6 +74,19 @@ struct Placement {
     bound: bool,
     count: u8,
     sub_type: u16,
+    depot_id: Option<u16>,
+}
+
+/// The observed depot attribute of one materialized top-level Item placement.
+///
+/// This is map data, not locker/container admission, custody or current authority. The caller
+/// must bind it to the active bundle generation; a placement key alone is not global identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DepotPlacementFacts {
+    pub placement_key: u64,
+    pub definition: NonZeroU32,
+    /// The exact bundle attribute, including zero; no legacy-ID conversion is implied.
+    pub depot_id: u16,
 }
 
 /// The production map facts of one bundle World.
@@ -199,12 +212,14 @@ impl BundleFacts {
                         .filter(|count| (1..=100).contains(count))
                         .unwrap_or(1),
                     sub_type: item.attrs.charges.unwrap_or(0),
+                    depot_id: if dropped { None } else { item.attrs.depot },
                 };
                 let plain = Placement {
                     palette: item.palette,
                     bound: false,
                     count: 1,
                     sub_type: 0,
+                    depot_id: None,
                 };
                 let ambiguous = self
                     .palette
@@ -228,6 +243,41 @@ impl BundleFacts {
         self.houses.dedup();
         self.houses.shrink_to_fit();
         self.doors.finish();
+    }
+
+    /// Resolves an explicit depot attribute against this bundle's qualified Item palette.
+    /// Missing, ambiguous, nested and non-materialized placements remain unknown. There is no
+    /// compact-ID fallback: the observed placement must name the requested Item definition.
+    pub fn depot_placement(
+        &self,
+        pos: TilePos,
+        ordinal: u8,
+        item_compact_id: u32,
+    ) -> Option<DepotPlacementFacts> {
+        let key = oteryn_world_bundle::bundle::placement_key(pos.floor, pos.x, pos.y, ordinal)?;
+        let index = self.placements.partition_point(|(found, _)| *found < key);
+        let (found, placement) = self.placements.get(index)?;
+        if *found != key
+            || self
+                .placements
+                .get(index + 1)
+                .is_some_and(|(next, _)| *next == key)
+        {
+            return None;
+        }
+        let depot_id = placement.depot_id?;
+        let entry = self.palette.get(placement.palette as usize)?;
+        if entry.family != Family::Item || entry.id != item_compact_id {
+            return None;
+        }
+        let MapDefinition::Item(definition) = entry.facts.definition else {
+            return None;
+        };
+        Some(DepotPlacementFacts {
+            placement_key: key,
+            definition,
+            depot_id,
+        })
     }
 
     /// The doors of the bundle and their current state.
@@ -260,6 +310,7 @@ impl BundleFacts {
                 bound: false,
                 count: 1,
                 sub_type: 0,
+                depot_id: None,
             },
         };
         let entry = self.palette.get(placement.palette as usize)?;
@@ -493,6 +544,150 @@ mod tests {
     use super::*;
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::boot::{boot, tests as fixture};
+
+    // Mutated decoded engineering bundles exercise the production visitor, not deployed
+    // locker/content admission. Only the observed map attribute is asserted here.
+    fn depot_fixture(edit: impl FnOnce(&mut oteryn_world_bundle::bundle::Bundle)) -> BundleFacts {
+        let (bytes, _) = fixture::bundle();
+        let mut bundle = oteryn_world_bundle::bundle::read(&bytes).expect("engineering bundle");
+        edit(&mut bundle);
+        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("palette");
+        let mut blocked = BTreeSet::new();
+        for sector in &bundle.sectors {
+            facts.push(&bundle.manifest, sector, &mut blocked);
+        }
+        facts.finish();
+        facts
+    }
+
+    fn depot_pos() -> TilePos {
+        TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        }
+    }
+
+    #[test]
+    fn depot_placement_preserves_attribute_and_qualified_item_binding() {
+        for depot_id in [0, 7, u16::MAX] {
+            let facts = depot_fixture(|bundle| {
+                let tile = bundle.sectors[0]
+                    .tiles
+                    .iter_mut()
+                    .find(|tile| tile.x == 6)
+                    .expect("tile");
+                tile.items[1].attrs.depot = Some(depot_id);
+                tile.items[1].attrs.count = Some(3);
+            });
+            assert_eq!(
+                facts.depot_placement(depot_pos(), 1, 0),
+                Some(DepotPlacementFacts {
+                    placement_key: oteryn_world_bundle::bundle::placement_key(-7, 6, 0, 1)
+                        .expect("key"),
+                    definition: NonZeroU32::MIN,
+                    depot_id,
+                })
+            );
+            let base = facts.entry(depot_pos(), 1, 0, None).expect("base entry");
+            assert!(base.bound);
+            assert_eq!(base.count, 3);
+            assert_eq!(base.definition, MapDefinition::Item(NonZeroU32::MIN));
+            assert_eq!(
+                facts.depot_placement(depot_pos(), 1, 1),
+                None,
+                "different Item"
+            );
+            assert_eq!(
+                facts.depot_placement(
+                    TilePos {
+                        x: 7,
+                        ..depot_pos()
+                    },
+                    1,
+                    0
+                ),
+                None,
+                "different placement"
+            );
+            assert_eq!(facts.depot_placement(depot_pos(), 64, 0), None);
+            assert_eq!(
+                facts.depot_placement(
+                    TilePos {
+                        floor: 1,
+                        ..depot_pos()
+                    },
+                    1,
+                    0
+                ),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn depot_placement_has_no_palette_terrain_or_nested_fallback() {
+        let absent = depot_fixture(|_| {});
+        assert_eq!(absent.depot_placement(depot_pos(), 1, 0), None);
+        let facts = depot_fixture(|bundle| {
+            let tile = bundle.sectors[0]
+                .tiles
+                .iter_mut()
+                .find(|tile| tile.x == 6)
+                .expect("tile");
+            // Terrain and Item share compact ID zero. The attribute cannot turn Terrain into Item.
+            tile.items[0].attrs.depot = Some(7);
+            tile.items[1].attrs.depot = Some(8);
+            tile.items[1].depth = 1;
+        });
+        assert_eq!(facts.depot_placement(depot_pos(), 0, 0), None, "Terrain");
+        assert_eq!(
+            facts.depot_placement(depot_pos(), 1, 0),
+            None,
+            "nested Item"
+        );
+    }
+
+    #[test]
+    fn depot_placement_refuses_dropped_teleport() {
+        let facts = depot_fixture(|bundle| {
+            let tile = bundle.sectors[0]
+                .tiles
+                .iter_mut()
+                .find(|tile| tile.x == 6)
+                .expect("tile");
+            tile.items[1].attrs.depot = Some(7);
+            bundle
+                .manifest
+                .dropped_teleports
+                .push(oteryn_world_bundle::bundle::placement_key(-7, 6, 0, 1).expect("key"));
+        });
+        assert_eq!(facts.depot_placement(depot_pos(), 1, 0), None);
+        assert!(
+            facts
+                .entry(depot_pos(), 1, 0, None)
+                .expect("bound entry")
+                .bound
+        );
+    }
+
+    #[test]
+    fn depot_placement_refuses_duplicate_observed_keys() {
+        let (bytes, _) = fixture::bundle();
+        let mut bundle = oteryn_world_bundle::bundle::read(&bytes).expect("engineering bundle");
+        let tile = bundle.sectors[0]
+            .tiles
+            .iter_mut()
+            .find(|tile| tile.x == 6)
+            .expect("tile");
+        tile.items[1].attrs.depot = Some(7);
+        let mut facts = BundleFacts::palette(&bundle.manifest, fixture::items).expect("palette");
+        let mut blocked = BTreeSet::new();
+        facts.push(&bundle.manifest, &bundle.sectors[0], &mut blocked);
+        facts.push(&bundle.manifest, &bundle.sectors[0], &mut blocked);
+        facts.finish();
+        assert_eq!(facts.depot_placement(depot_pos(), 1, 0), None);
+    }
 
     fn item_solid(key: &str) -> bool {
         let entry = PaletteEntry {

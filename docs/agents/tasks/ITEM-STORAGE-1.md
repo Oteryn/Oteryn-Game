@@ -56,11 +56,13 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/durability/character_depot_tests.rs`
 - `apps/game-server/src/gameplay_transport/depot.rs`
 - `apps/game-server/tests/item_storage_postgres.rs`
+- `apps/game-server/src/map/facts.rs` — CP D1142: exact depot attribute/placement/definition only
 - `docs/agents/tasks/ITEM-STORAGE-1.md`
 
-No item_text, stash, protocol, content or shared registration path is allocated.
-All module registration, migrations, native transfer/audit hooks and runtime wiring
-remain CP slot work. Worker publication/commit authority is absent.
+No item_text, stash, protocol or content path is allocated. D1147/D1160/D1182
+below grant only the listed target/module declarations and protected pin repair;
+D1122 permits the disclosed existing-draft checkpoint. Additional shared hunks,
+migrations, native transfer/audit hooks and runtime wiring remain CP slot work.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
 
@@ -464,3 +466,40 @@ policy/Atlas/World-bundle stages, then remains RED because this executor has no
 `pwsh` for WP1 native failure-propagation canaries. That stage and the following
 stages are not qualified; no complete workflow-regression PASS is claimed.
 Successful Rust fmt is retained against byte-identical Rust files from c40a5469.
+
+
+### D1142 depot placement facts — NOT_FULLY_QUALIFIED
+
+The existing qualified map visitor now preserves the exact top-level depot
+attribute as `Option<u16>`, including zero. `BundleFacts::depot_placement` resolves
+only an explicitly observed materialized Item placement: strict native placement
+key, actual Item palette family, exact compact ID and the already-qualified Item
+definition reference. Missing attributes, wrong placements/definitions, nested
+entries, Terrain attributes, dropped teleports and duplicate recorded keys refuse.
+Existing bound/count/subtype behavior remains unchanged; no palette-ID fallback
+creates a depot observation.
+
+This is raw immutable map data. Callers must bind it to the active bundle
+generation. It grants no locker/container admission, custody, session authority,
+view handle or durable transfer permission. Actual admitted locker/container
+content remains required, otherwise UNKNOWN. D1142 authorizes this exact
+`map/facts.rs` increment; no new shared slot or migration is used.
+
+Four new native-source unit tests exercise the actual map visitor with decoded
+engineering bundles. They cover observed attribute extrema and base behavior,
+wrong identity/position/bounds, Terrain/nested/missing attributes, dropped teleport
+and duplicate keys. These fixtures are not deployed-world or content parity
+proof. Independent source review, complete Rust fmt, diff and governance PASS.
+Actual normal native map-facts target validation is recorded separately in
+`/workspace/oteryn-family/storage-d1142/`; no new PG/runtime/fullpackage or
+strictalltarget qualification is claimed. Earlier RED receipts and their exact
+source scope remain preserved.
+
+
+Actual same-source native validation: `cargo test --locked --offline -p oteryn-game-server --lib map::facts::tests -- --nocapture` PASS: 9/9, zero failed/ignored, 3181 filtered. Four cases are
+new; five existing map-facts tests also pass. The actual normal server library
+test target compiled in this invocation, elapsed482.377s including tests;
+logSHA256 `82ca2d6c8d90c40d4aae0a698355376971e9f43fb4748144594ac310957ed76c`.
+Five existing unused depot declarations still warn; no lint suppression or
+visibility relaxation was added. This focused result is not a fullpackage,
+strictalltargetClippy, PostgreSQL or runtime PASS.
