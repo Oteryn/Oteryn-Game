@@ -28,7 +28,81 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
-## 2026-10-17 D1370 native producer handoff — preserved inert source
+## Current disposition — D1409 / D1422 native vitals handoff
+
+Regeneration remains **NOT_IMPLEMENTED**. The owned `regen.rs` and
+`regen_tests.rs` have not been introduced; the previously archived helper and
+caller proposal remains inert. This card checkpoint records the resolved
+producer allocation and exact next integration gate. It claims no new compile,
+runtime or PostgreSQL result.
+
+[D1409](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6238179653)
+resolved the historical migration question below: **0118 and the complete
+OFFLINE producer, its chain guards, native fixture and real FND clock port
+belong to #2174; 0120 is not #2174's.** The older unresolved-number discussion
+and source archive are historical evidence, not the current instruction.
+[D1418](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6239140775)
+separately assigns the bounded reset-month reader to #2167's follow-up; that
+reader is not a BED time source.
+
+The complete source audit and owner request are preserved in
+[CP 6240299437](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6240299437).
+[D1422](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6240319584)
+accepted that handoff under the existing D1355(b) allocation. **#2196 owns the
+next checkpoint:** a crate-private vitals participant borrowing the actual
+`apply_marker` transaction, with no own BEGIN/COMMIT, no separate semantic pass
+and no extra CharacterRevision. #2148 consumes it only after actual #2174 and
+#2196 merges; it does not author those owners' missing participants.
+
+### Exact current producer bindings
+
+The fresh PR read still found #2174 at
+`b5576758e5309dffdd8993bd9956e3c798e985ad` and #2196 at
+`6fbd70254f323d29a9bad15db74ea0adb9d55a92`, both open, draft and unmerged.
+These source references explain the handoff; they do not replace D1370's
+actual-merge requirement.
+
+| Existing owner or entrypoint | Current source and required composition |
+| --- | --- |
+| #2174 `commit_character_offline_marker` / `apply_marker` | The actual marker transaction already exists. It handles retained replay before current mutations, owns the root/fence locks and actual clock/predecessor, and writes the marker before COMMIT. Its complete producer allocation stays with #2174. |
+| #2196 `DurableVitalsResiduals` | Food milliseconds plus the two online regeneration fractional periods. These period fields are not current HP/mana pools. The existing public read/save methods start separate transactions and are not the required BED caller port. |
+| `character_last_position::LastPositionRecord.vitals` | Current HP/mana use the existing position record and its real order key. Missing vitals mean admission maxima, not zero. The #2196 participant must preserve the native position/write-sequence policy and expose its caller-TX composition. |
+| #2196 durable Soul | The current Soul source provides pure schedule/applied-kill helpers, not a durable current pool. D1422 assigns real current Soul and maximum provenance to the same #2196 checkpoint. |
+
+The independently read main LastPosition source was
+`5c0c60b01ec2b2ed144107f18b9377ea7cfeea68`, Git blob
+`3411797d8e5ae6bc8c3f915dc3774cf422e43b3d`. The future consumer must rebind to
+the actual merged owner ports. BED must not invent an order key, derive a pool
+from a residual period or invoke a second root transaction.
+
+### Required native evidence and next owned step
+
+The #2196 checkpoint must prove its real food/residual, HP/mana and Soul
+mutations roll back in the same physical transaction as a later OFFLINE marker
+failure. The BED consumer must then preserve the food millisecond remainder
+and online fractional periods, debit 30,000 ms per earned food-backed HP/mana
+point even at a capped pool, and apply Soul to its actual durable cap. It binds
+sleep to the actual Logout projection `slept_at == committed_at_us / 1000`.
+The real owner harness must also cover first-free behavior, the submillisecond
+Logout boundary, missing/corrupt participant refusal with zero footprint, and
+original-marker replay without reapplying an award or consuming a later sleeper.
+
+Only after both producer merges does the next owned #2148 step implement the
+complete consumer and these native tests against the actual types and borrowed
+transaction, alongside the existing #2147 settlement hook before marker write.
+Full active-bundle/currentness and legitimate sleeper/Logout provenance remain
+their existing owner gates. No partial food debit, detached calculator,
+synthetic Soul or replacement SQL authority is introduced by this checkpoint.
+
+[D1420](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6239666536)
+applies to every future Cargo command inside the canonical lease. D1329's
+existing PG17.6 service, locked fetch and network-namespace wrapper remain
+required. The current four-child native sequence is unchanged by this card.
+All earlier source archives, encoded patch bytes, hashes and historical test
+claims remain preserved below.
+
+
+## Historical checkpoint — 2026-10-17 D1370 native producer handoff
 
 This **card-only** checkpoint extends #2148
 `a19773fc99ad8dc5b2f18f636f7a7b4652111175`. The complete helper/caller source
