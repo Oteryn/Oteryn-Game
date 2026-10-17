@@ -484,3 +484,428 @@ fn text_retirement_cleanup_removes_only_the_retired_empty_text_tombstone() -> Te
 
 #[path = "character_inbox_reward_claim_mint_postgres_cases.rs"]
 mod reward_claim_inbox_mint;
+
+// D1377c: native history only. Each item below is minted/transferred by the
+// existing native harness; TEXT metadata is written by the real private storage
+// half under runtime role. This does not install the held TEXT ingress, provide
+// qualified letter Content, or turn a historical outcome into current authority.
+use crate::durability::DurabilityRoot;
+use crate::durability::item_text::{
+    FrozenItemTextWriteBinding, ItemTextWriteError, ItemTextWriteOutcome,
+};
+use std::future::{Future, poll_fn};
+use std::pin::{Pin, pin};
+use std::task::Poll;
+use std::time::Duration;
+
+fn text_history_request(
+    item: [u8; 16],
+    command: u64,
+    text: &str,
+) -> TestResult<ItemTextWriteRequest> {
+    Ok(ItemTextWriteRequest {
+        command: native_items::command(command)?,
+        item_instance_id: item,
+        definition: text_retirement_definition(),
+        text: text.into(),
+    })
+}
+
+fn text_history_binding(request: &ItemTextWriteRequest) -> TestResult<FrozenItemTextWriteBinding> {
+    Ok(request.freeze_receipt_binding(native_items::fence()?.character_id))
+}
+
+async fn text_history_runtime_root(root: &DurabilityRoot) -> TestResult {
+    let mut connection = root.try_acquire_ready().map_err(native_items::debug)?;
+    sqlx::query("SET ROLE oteryn_game_runtime")
+        .execute(&mut *connection)
+        .await?;
+    let role: String = sqlx::query_scalar("SELECT current_user")
+        .fetch_one(&mut *connection)
+        .await?;
+    assert_eq!(role, "oteryn_game_runtime");
+    reward_claim_inbox_mint::return_connection(connection).await
+}
+
+async fn text_history_snapshot_fixture(root: &DurabilityRoot, isolation: &str) -> TestResult {
+    let mut connection = root.try_acquire_ready().map_err(native_items::debug)?;
+    sqlx::query("SELECT set_config('default_transaction_isolation', $1, false)")
+        .bind(isolation)
+        .execute(&mut *connection)
+        .await?;
+    reward_claim_inbox_mint::return_connection(connection).await
+}
+
+fn run_text_history(
+    tag: &'static str,
+    case: impl AsyncFnOnce(&native_items::Harness, [u8; 16]) -> TestResult,
+) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = native_items::Harness::create(admin, tag).await?;
+        let result = async {
+            require_mail_migration(&h.pool).await?;
+            let version: String = sqlx::query_scalar("SHOW server_version_num")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(version, "170006", "native PostgreSQL 17.6 required");
+            text_history_runtime_root(&h.root).await?;
+            let item = mint_text_retirement_item(&h).await?;
+            case(&h, item).await
+        }
+        .await;
+        h.cleanup().await?;
+        result?;
+        eprintln!(
+            "native MAIL TEXT history migration0101 body + cleanup PASS: {tag}; storage metadata fixture, no ingress"
+        );
+        Ok(())
+    })
+}
+
+async fn stage_text_history(
+    h: &native_items::Harness,
+    request: ItemTextWriteRequest,
+) -> TestResult<(
+    sqlx::Transaction<'static, sqlx::Postgres>,
+    ItemTextWriteOutcome,
+)> {
+    crate::durability::item_text::tests::stage_history_fixture_request(
+        &h.pool,
+        &native_items::id(native_items::CHARACTER),
+        request,
+    )
+    .await
+}
+
+/// Observe the native reader waiting on this exact physical transaction's
+/// advisory key. Poll the real future while observing PostgreSQL; elapsed time
+/// alone, an unpolled future, or a lock in another database cannot pass this case.
+async fn wait_text_history_command_lock<F: Future>(
+    mut reading: Pin<&mut F>,
+    pool: &sqlx::PgPool,
+    blocker_pid: i32,
+) -> TestResult {
+    loop {
+        let mut blocked = pin!(
+            sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM pg_stat_activity a JOIN pg_locks l ON l.pid=a.pid \
+                 WHERE a.datname=current_database() AND a.wait_event_type='Lock' \
+                 AND l.locktype='advisory' AND NOT l.granted \
+                 AND $1=ANY(pg_blocking_pids(a.pid)))",
+            )
+            .bind(blocker_pid)
+            .fetch_one(pool)
+        );
+        let observed = poll_fn(|context| {
+            if reading.as_mut().poll(context).is_ready() {
+                return Poll::Ready(Err::<bool, Box<dyn std::error::Error>>(
+                    "TEXT history returned before the original transaction released its command lock"
+                        .into(),
+                ));
+            }
+            blocked
+                .as_mut()
+                .poll(context)
+                .map(|result| result.map_err(Into::into))
+        })
+        .await?;
+        if observed {
+            return Ok(());
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+#[test]
+fn text_history_distinguishes_absent_unchanged_and_conflicting_original_bindings() -> TestResult {
+    run_text_history("mail_text_history_binding", async |h, item| {
+        let seal = h.recovery.seal_current().map_err(native_items::debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native_items::debug)?;
+        let empty = text_history_request(item, 40, "")?;
+        let empty_binding = text_history_binding(&empty)?;
+        assert_eq!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &empty_binding)
+                .await?,
+            None
+        );
+        let (tx, unchanged) = stage_text_history(h, empty).await?;
+        assert_eq!(
+            unchanged,
+            ItemTextWriteOutcome {
+                text_revision: 0,
+                changed: false,
+                replayed: false,
+            }
+        );
+        tx.commit().await?;
+        assert_eq!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &empty_binding)
+                .await?,
+            Some(ItemTextWriteOutcome {
+                replayed: true,
+                ..unchanged
+            })
+        );
+        let original = text_history_request(item, 41, "original private metadata")?;
+        let frozen = text_history_binding(&original)?;
+        let (tx, written) = stage_text_history(h, original).await?;
+        assert_eq!(written.text_revision, 1);
+        assert!(written.changed);
+        tx.commit().await?;
+        let receipts = text_retirement_receipts(&h.pool).await?;
+        let footprint = text_retirement_footprint(&h.pool, item).await?;
+        assert_eq!(footprint, (1, 1, 2));
+        let mut changed_item = text_history_request(item, 41, "original private metadata")?;
+        changed_item.item_instance_id = native_items::id(249);
+        let mut changed_definition = text_history_request(item, 41, "original private metadata")?;
+        changed_definition.definition.revision_ref = "different-definition".into();
+        let foreign_character = crate::domain::CharacterId::from_bytes(native_items::id(250))
+            .map_err(native_items::debug)?;
+        for conflict in [
+            text_history_binding(&text_history_request(item, 41, "changed private metadata")?)?,
+            text_history_binding(&changed_item)?,
+            text_history_binding(&changed_definition)?,
+            text_history_request(item, 41, "original private metadata")?
+                .freeze_receipt_binding(foreign_character),
+        ] {
+            assert!(matches!(
+                h.root
+                    .reconcile_item_text_rewrite(&authority, &conflict)
+                    .await,
+                Err(ItemTextWriteError::ConflictingCommand)
+            ));
+        }
+        let other_command = text_history_binding(&text_history_request(item, 42, "later")?)?;
+        assert_eq!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &other_command)
+                .await?,
+            None
+        );
+        assert_eq!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &frozen)
+                .await?,
+            Some(ItemTextWriteOutcome {
+                replayed: true,
+                ..written
+            })
+        );
+        assert_eq!(text_retirement_receipts(&h.pool).await?, receipts);
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, footprint);
+        Ok(())
+    })
+}
+
+#[test]
+fn text_history_waits_for_the_original_command_commit_before_returning_receipt() -> TestResult {
+    run_text_history("mail_text_history_commit", async |h, item| {
+        let seal = h.recovery.seal_current().map_err(native_items::debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native_items::debug)?;
+        let original = text_history_request(item, 41, "pending commit metadata")?;
+        let frozen = text_history_binding(&original)?;
+        let (mut tx, written) = stage_text_history(h, original).await?;
+        let blocker: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut *tx)
+            .await?;
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (0, 0, 0));
+        // A real nondefault Root connection must refuse rather than interpret
+        // a snapshot taken before waiting on this transaction. Restore the
+        // ordinary profile on the same observed holder, then test the wait.
+        text_history_snapshot_fixture(&h.root, "repeatable read").await?;
+        assert!(matches!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &frozen)
+                .await,
+            Err(ItemTextWriteError::Unavailable(_))
+        ));
+        text_history_snapshot_fixture(&h.root, "read committed").await?;
+        let mut reading = Box::pin(h.root.reconcile_item_text_rewrite(&authority, &frozen));
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            wait_text_history_command_lock(reading.as_mut(), &h.pool, blocker),
+        )
+        .await??;
+        // The physical COMMIT is real. This test coordinates its completion;
+        // it does not claim to inject a lost network acknowledgement.
+        tx.commit().await?;
+        assert_eq!(
+            tokio::time::timeout(Duration::from_secs(5), reading).await??,
+            Some(ItemTextWriteOutcome {
+                replayed: true,
+                ..written
+            })
+        );
+        let receipts = text_retirement_receipts(&h.pool).await?;
+        assert_eq!(receipts.len(), 1);
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (1, 1, 1));
+        assert_eq!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &frozen)
+                .await?,
+            Some(ItemTextWriteOutcome {
+                replayed: true,
+                ..written
+            })
+        );
+        assert_eq!(text_retirement_receipts(&h.pool).await?, receipts);
+        Ok(())
+    })
+}
+
+#[test]
+fn text_history_waits_for_rollback_and_keeps_the_exact_request_retryable() -> TestResult {
+    run_text_history("mail_text_history_rollback", async |h, item| {
+        let seal = h.recovery.seal_current().map_err(native_items::debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native_items::debug)?;
+        let original = text_history_request(item, 41, "pending rollback metadata")?;
+        let frozen = text_history_binding(&original)?;
+        let (mut tx, rolled_back) = stage_text_history(h, original).await?;
+        assert!(rolled_back.changed);
+        let blocker: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut *tx)
+            .await?;
+        let mut reading = Box::pin(h.root.reconcile_item_text_rewrite(&authority, &frozen));
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            wait_text_history_command_lock(reading.as_mut(), &h.pool, blocker),
+        )
+        .await??;
+        tx.rollback().await?;
+        assert_eq!(
+            tokio::time::timeout(Duration::from_secs(5), reading).await??,
+            None
+        );
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (0, 0, 0));
+        let (tx, retry) = stage_text_history(
+            h,
+            text_history_request(item, 41, "pending rollback metadata")?,
+        )
+        .await?;
+        tx.commit().await?;
+        assert_eq!(retry, rolled_back);
+        assert_eq!(
+            h.root
+                .reconcile_item_text_rewrite(&authority, &frozen)
+                .await?,
+            Some(ItemTextWriteOutcome {
+                replayed: true,
+                ..retry
+            })
+        );
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (1, 1, 1));
+        Ok(())
+    })
+}
+
+#[test]
+fn text_history_survives_real_retirement_with_fresh_authority_on_a_new_root() -> TestResult {
+    run_text_history("mail_text_history_new_root", async |h, item| {
+        let original = text_history_request(item, 41, "retained history metadata")?;
+        let frozen = text_history_binding(&original)?;
+        let (tx, written) = stage_text_history(h, original).await?;
+        tx.commit().await?;
+        retire_text_item(h, item).await?;
+        let mut cleanup = text_runtime_tx(&h.pool).await?;
+        assert_eq!(
+            cleanup_retired_item_text(&mut cleanup, text_retirement_world()?, item).await?,
+            RetiredItemTextCleanup::Cleaned {
+                text_removed: true,
+                revision_removed: true,
+            }
+        );
+        cleanup.commit().await?;
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (0, 0, 1));
+        let receipts = text_retirement_receipts(&h.pool).await?;
+        let seal = h.recovery.seal_current().map_err(native_items::debug)?;
+        let old_root_authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native_items::debug)?;
+        let new_root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(new_root.maintain_ready_once().await?);
+        text_history_runtime_root(&new_root).await?;
+        // Even the same physical database does not make the old Root's issued
+        // capability valid on this new actual Root instance.
+        assert!(matches!(
+            new_root
+                .reconcile_item_text_rewrite(&old_root_authority, &frozen)
+                .await,
+            Err(ItemTextWriteError::AuthorityRejected)
+        ));
+        let new_root_authority = new_root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native_items::debug)?;
+        assert_eq!(
+            new_root
+                .reconcile_item_text_rewrite(&new_root_authority, &frozen)
+                .await?,
+            Some(ItemTextWriteOutcome {
+                replayed: true,
+                ..written
+            })
+        );
+        assert_eq!(text_retirement_receipts(&h.pool).await?, receipts);
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (0, 0, 1));
+        Ok(())
+    })
+}
+
+#[test]
+fn text_history_stale_database_recovery_exposes_neither_receipt_conflict_nor_absence() -> TestResult
+{
+    run_text_history("mail_text_history_recovery", async |h, item| {
+        let original = text_history_request(item, 41, "recovery protected metadata")?;
+        let committed = text_history_binding(&original)?;
+        let (tx, _) = stage_text_history(h, original).await?;
+        tx.commit().await?;
+        let conflicting = text_history_binding(&text_history_request(item, 41, "different")?)?;
+        let absent = text_history_binding(&text_history_request(item, 42, "new")?)?;
+        let receipts = text_retirement_receipts(&h.pool).await?;
+        let seal = h.recovery.seal_current().map_err(native_items::debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native_items::debug)?;
+        let predecessor = crate::character_recovery_fence::recovery_record_digest(seal.record())
+            .map_err(native_items::debug)?;
+        // Deliberate recovery mismatch only: the real external generation-one
+        // seal stays held while the test's administrative connection advances
+        // the database admission. This does not seed item value or TEXT history,
+        // disable a guard, or impersonate a production recovery publisher.
+        sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id,recovery_generation,recovery_event_id,predecessor_generation,predecessor_digest,issued_at,issuer_identity,reconciled_at) VALUES('character-primary',2,encode($1,'hex')::uuid,1,$2,200,'game-ops',200)")
+            .bind(native_items::id(12).as_slice()).bind(predecessor.as_slice())
+            .execute(&h.pool).await?;
+        for binding in [committed, conflicting, absent] {
+            assert!(matches!(
+                h.root
+                    .reconcile_item_text_rewrite(&authority, &binding)
+                    .await,
+                Err(ItemTextWriteError::Unavailable(_))
+            ));
+        }
+        assert_eq!(text_retirement_receipts(&h.pool).await?, receipts);
+        assert_eq!(text_retirement_footprint(&h.pool, item).await?, (1, 1, 1));
+        Ok(())
+    })
+}

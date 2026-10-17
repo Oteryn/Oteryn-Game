@@ -18,6 +18,7 @@ use super::item_mint_audit::check_uuid_v7;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::domain::CharacterId;
 use crate::domain::mail::{MailText, MailTextClass, MailTextRefusal};
 use crate::foundation::{CommandRef, WorldId};
 use sha2::{Digest, Sha256};
@@ -65,7 +66,7 @@ pub(crate) async fn cleanup_retired_item_text(
     let retired: bool = row.try_get("retired")?;
     let text_removed: bool = row.try_get("text_removed")?;
     let revision_removed: bool = row.try_get("revision_removed")?;
-    if (!retired && (text_removed || revision_removed)) || (text_removed && !revision_removed) {
+    if (!retired && revision_removed) || (text_removed && !revision_removed) {
         return Err(ItemTextWriteError::Unavailable(
             DurabilityError::InvalidStoredState,
         ));
@@ -86,6 +87,18 @@ pub(crate) struct ItemTextWriteRequest {
     pub(crate) item_instance_id: [u8; 16],
     pub(crate) definition: TypedDefinitionRef,
     pub(crate) text: String,
+}
+
+/// Immutable lookup DATA retained from the original request before the writer
+/// is awaited. This is not current Character/session/content/custody authority.
+/// Keep this value across an uncertain COMMIT; recreating it from later client
+/// input cannot reconcile the original request. No private text or fingerprint
+/// is exposed through Debug or an accessor.
+#[derive(Clone)]
+pub(crate) struct FrozenItemTextWriteBinding {
+    command: CommandRef,
+    character_id: CharacterId,
+    request_binding: [u8; 32],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -138,6 +151,20 @@ impl std::error::Error for ItemTextWriteError {}
 type Result<T> = std::result::Result<T, ItemTextWriteError>;
 
 impl ItemTextWriteRequest {
+    /// Capture the original native fence's Character identity as lookup DATA.
+    /// The writer independently validates its actual fence; this capture grants
+    /// no right to write and accepts no caller-supplied digest or outcome.
+    pub(crate) fn freeze_receipt_binding(
+        &self,
+        character_id: CharacterId,
+    ) -> FrozenItemTextWriteBinding {
+        FrozenItemTextWriteBinding {
+            command: self.command,
+            character_id,
+            request_binding: self.binding(character_id.as_bytes()),
+        }
+    }
+
     fn binding(&self, character: &[u8; 16]) -> [u8; 32] {
         let mut hash = Sha256::new();
         hash.update(b"OTERYN_ITEM_TEXT_REWRITE/v1");
@@ -219,6 +246,55 @@ fn next_revision(last: u64, previous: Option<&str>, next: &str) -> Result<(u64, 
 }
 
 impl DurabilityRoot {
+    /// Read only the historical outcome of the exact original TEXT request.
+    /// A current actor, item, Content pin or session fence is not a prerequisite
+    /// for history: its refusal cannot resolve a previous uncertain COMMIT.
+    ///
+    /// The real Root recovery capability and the writer's CommandRef lock are
+    /// mandatory. `None` means no receipt was committed when that lock was
+    /// acquired; it grants no permission to retry without fresh write authority.
+    /// Cancellation or any unavailable result leaves the attempt unresolved.
+    #[allow(
+        dead_code,
+        reason = "D1377c history prerequisite; the actual TEXT consumer remains separately gated"
+    )]
+    pub(crate) async fn reconcile_item_text_rewrite(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        binding: &FrozenItemTextWriteBinding,
+    ) -> Result<Option<ItemTextWriteOutcome>> {
+        let recovery = recovery
+            .record_for(self)
+            .map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+        let binding = binding.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    // The Root opener retains the connection's configured
+                    // isolation. A pre-lock repeatable snapshot cannot prove
+                    // historical absence after another writer commits.
+                    let isolation: String = sqlx::query_scalar("SHOW transaction_isolation")
+                        .fetch_one(&mut *tx)
+                        .await?;
+                    if isolation != "read committed" {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    lock_item_text_command(&mut tx, binding.command).await?;
+                    let outcome = match load_item_text_receipt(&mut tx, &binding).await {
+                        Ok(outcome) => Ok(outcome),
+                        Err(ItemTextWriteError::Unavailable(error)) => return Err(error),
+                        Err(error) => Err(error),
+                    };
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(outcome)
+                })
+            })
+            .await?
+    }
+
     /// Commit a bounded rewrite; exact terminal replay never reacquires item
     /// authority. Every new write independently proves the live content digest,
     /// recovery, node, session, admission, root and current direct custody.
@@ -274,31 +350,10 @@ async fn rewrite(
     request: &ItemTextWriteRequest,
 ) -> Result<ItemTextWriteOutcome> {
     let character = fence.character_id.as_bytes();
-    let session = request.command.game_session_id();
-    let command = request.command.command_id().get().to_string();
-    let binding = request.binding(character);
-    let mut key = session.as_bytes().to_vec();
-    key.extend_from_slice(&request.command.command_id().get().to_be_bytes());
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended('oteryn:item-text:' || encode($1,'hex'),0))",
-    )
-    .bind(key)
-    .execute(&mut **tx)
-    .await?;
-    if let Some(row) = sqlx::query("SELECT character_id=encode($3,'hex')::uuid AS same_character, request_binding, text_revision::text, changed FROM game_item_text_write_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
-        .bind(session.as_bytes().as_slice()).bind(&command).bind(character.as_slice())
-        .fetch_optional(&mut **tx).await?
-    {
-        if !row.try_get::<bool,_>("same_character")?
-            || row.try_get::<Vec<u8>,_>("request_binding")? != binding
-        {
-            return Err(ItemTextWriteError::ConflictingCommand);
-        }
-        return Ok(ItemTextWriteOutcome {
-            text_revision: numeric_u64(&row, "text_revision")?,
-            changed: row.try_get("changed")?,
-            replayed: true,
-        });
+    let binding = request.freeze_receipt_binding(fence.character_id);
+    lock_item_text_command(tx, request.command).await?;
+    if let Some(outcome) = load_item_text_receipt(tx, &binding).await? {
+        return Ok(outcome);
     }
     let (world, channel) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
     // Same lock used by game_content_record_activation and the equipment owner.
@@ -342,6 +397,51 @@ async fn rewrite(
         return Err(ItemTextWriteError::NotReachable);
     }
     persist_rewrite(tx, character, request, &text).await
+}
+
+/// The identical physical key is shared by the writer and historical reader.
+/// Take the lock in its own statement, then read a fresh READ COMMITTED
+/// snapshot; a reader must not decide absence from a pre-wait snapshot.
+async fn lock_item_text_command(
+    tx: &mut Transaction<'_, Postgres>,
+    command: CommandRef,
+) -> std::result::Result<(), DurabilityError> {
+    let mut key = command.game_session_id().as_bytes().to_vec();
+    key.extend_from_slice(&command.command_id().get().to_be_bytes());
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended('oteryn:item-text:' || encode($1,'hex'),0))",
+    )
+    .bind(key)
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
+/// Called only after the exact CommandRef lock. A foreign binding exposes only
+/// ConflictingCommand, never that request's Character, revision or private text.
+async fn load_item_text_receipt(
+    tx: &mut Transaction<'_, Postgres>,
+    binding: &FrozenItemTextWriteBinding,
+) -> Result<Option<ItemTextWriteOutcome>> {
+    let session = binding.command.game_session_id();
+    let command = binding.command.command_id().get().to_string();
+    let character = binding.character_id.as_bytes();
+    let Some(row) = sqlx::query("SELECT character_id=encode($3,'hex')::uuid AS same_character, request_binding, text_revision::text, changed FROM game_item_text_write_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+        .bind(session.as_bytes().as_slice()).bind(&command).bind(character.as_slice())
+        .fetch_optional(&mut **tx).await?
+    else {
+        return Ok(None);
+    };
+    if !row.try_get::<bool, _>("same_character")?
+        || row.try_get::<Vec<u8>, _>("request_binding")? != binding.request_binding
+    {
+        return Err(ItemTextWriteError::ConflictingCommand);
+    }
+    Ok(Some(ItemTextWriteOutcome {
+        text_revision: numeric_u64(&row, "text_revision")?,
+        changed: row.try_get("changed")?,
+        replayed: true,
+    }))
 }
 
 /// Storage half only, after the caller acquired the real owner/item locks and
@@ -541,6 +641,35 @@ pub(crate) mod tests {
         let outcome = persist_rewrite(&mut tx, character, &request, &text).await?;
         tx.commit().await?;
         Ok(outcome)
+    }
+
+    /// Deliberately stop the existing storage half before its physical COMMIT.
+    /// The history cases use a genuinely minted/transferred item and this exact
+    /// private persistence function, never a seeded receipt. Runtime role and
+    /// the production CommandRef/root/item locks are real; qualified Content,
+    /// current admission and the uninstalled TEXT ingress are not supplied here.
+    pub(crate) async fn stage_history_fixture_request(
+        pool: &sqlx::PgPool,
+        character: &[u8; 16],
+        request: ItemTextWriteRequest,
+    ) -> TestResult<(Transaction<'static, Postgres>, ItemTextWriteOutcome)> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let role: String = sqlx::query_scalar("SELECT current_user")
+            .fetch_one(&mut *tx)
+            .await?;
+        assert_eq!(role, "oteryn_game_runtime");
+        lock_item_text_command(&mut tx, request.command).await?;
+        sqlx::query("SELECT character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(character.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(request.item_instance_id.as_slice()).execute(&mut *tx).await?;
+        let text = MailText::parse(MailTextClass::Letter, &request.text)
+            .map_err(|_| "invalid fixture text")?;
+        let outcome = persist_rewrite(&mut tx, character, &request, &text).await?;
+        Ok((tx, outcome))
     }
 
     pub(crate) async fn text_runtime_storage_acl_keeps_receipts_and_live_revision_private(

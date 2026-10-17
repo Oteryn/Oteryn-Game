@@ -1045,3 +1045,112 @@ a competing fresh claim, exact recovery bindings and the narrow runtime proof AC
 DAILY source writes, zero-item claims and an actual PENDING delivery producer remain
 with their allocated owners. This checkpoint claims no full MAIL client flow or
 production activation; those prerequisites remain as recorded above.
+
+## D1377c owned TEXT history and exact118 lint repair — 2026-10-17
+
+Status **NOT_FULLY_QUALIFIED / source candidate, native execution NOT_RUN**.
+This three-file successor is based on the exact published draft
+`118f1c7966607e122730aede14833a92f58e9c48`, tree
+`986cda20eb93cb103060b6ec87625563c9f94fa2`. It changes only the already-owned
+`durability/item_text.rs`, canonical `tests/support/mail_postgres_cases.rs` and
+this task record. Migration0101, every shared owner/caller and the complete
+published six-file checkpoint remain intact. Prior evidence above is historical;
+its passing jobs do not qualify this successor.
+
+[D1377c](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234906472)
+requires a recovery-qualified, occurrence-locked receipt reader before the real
+TEXT consumer can advance. `ItemTextWriteRequest::freeze_receipt_binding`
+retains the original CommandRef, Character identity and existing SHA256 binding
+of the item, typed definition and exact private text. Its fields are private;
+it exposes neither text/fingerprint diagnostics nor an outcome constructor.
+The value is immutable lookup DATA, not session, Character, item or Content
+authority. A future consumer must retain it before awaiting the corresponding
+write and across an uncertain COMMIT, rather than reconstructing it from new
+client input.
+
+`DurabilityRoot::reconcile_item_text_rewrite` consumes the real
+`ReconciledCharacterAuthority` for that exact Root, rechecks the stored recovery
+admission, takes the existing admission relation locks and the identical
+`oteryn:item-text:` advisory transaction lock over GameSessionId bytes followed
+by big-endian CommandId. Writer and reader now share one private lock function
+and one private receipt lookup. The subsequent lookup statement compares the
+original Character and request binding before returning any revision/change
+result. Runtime already has the necessary SELECT grant in installed0101; no
+new SQL, grant, registry or shared API is introduced.
+
+The reader requires actual `READ COMMITTED` isolation because the existing Root
+transaction opener preserves the connection's default. A repeatable pre-lock
+snapshot cannot prove absence after a blocked writer commits. The reader refuses
+such a snapshot without interpreting history. Under the ordinary profile,
+`Some(outcome)` is a committed historical receipt, `ConflictingCommand` is a
+stored different binding, and `None` is absence established after waiting for
+the original transaction. Cancellation, unavailable storage, stale recovery or
+a foreign Root capability never become absence. None of these historical
+results grants permission for another physical write; any retry still needs
+fresh native admission and the actual future TEXT/TRADE serialization owner.
+
+The writer's complete admission/content/custody tail and private persistence
+function are unchanged. The historical lookup extraction preserves its SQL,
+key bytes, binding comparison and replay result. Exact118's
+[strict job117434933385 / run39045981860](https://github.com/Oteryn/Oteryn-Game/actions/runs/39045981860/job/117434933385)
+reported `clippy::nonminimal_bool` on the retired-cleanup outcome check at line68.
+The same successor replaces only that Boolean expression with its equivalent
+minimal form. All eight input combinations retain the same rejection; no lint
+suppression or mirror test is added. Candidate Clippy remains **NOT_RUN**.
+
+### Five real native history cases
+
+The complete MAIL PG inventory becomes **29**: the existing24 plus five below.
+The entire prior canonical MAIL test leaf is a byte-identical prefix; all three
+existing TEXT unit bodies, every old storage assertion and all prior Inbox
+bodies remain unchanged.
+
+- `text_history_distinguishes_absent_unchanged_and_conflicting_original_bindings`
+  distinguishes no receipt from a committed unchanged empty revision0, reads an
+  exact changed receipt, refuses different private text/item/definition/Character
+  bindings, and preserves the exact stored footprint through every read.
+- `text_history_waits_for_the_original_command_commit_before_returning_receipt`
+  refuses an actual nondefault Root snapshot, restores READ COMMITTED, then
+  observes the real reader waiting on this exact transaction's advisory lock
+  through PostgreSQL. Its physical COMMIT becomes one historical receipt and
+  replay leaves that receipt unchanged. This coordinates actual COMMIT; it does
+  not claim to inject a lost network acknowledgement.
+- `text_history_waits_for_rollback_and_keeps_the_exact_request_retryable` observes
+  the same native wait, resolves actual rollback as absence, and checks that a
+  later identical storage attempt yields the one receipt under the retained
+  original binding.
+- `text_history_survives_real_retirement_with_fresh_authority_on_a_new_root`
+  performs actual native last-unit ItemUse and owned retired cleanup, then
+  rejects an old Root capability on a newly opened real Root and reads the
+  retained receipt only after that new Root issues its own recovery capability.
+- `text_history_stale_database_recovery_exposes_neither_receipt_conflict_nor_absence`
+  uses an explicit administrative recovery-mismatch fault while the real external
+  seal remains held; all three possible historical branches remain unavailable.
+  It fabricates no item value or TEXT receipt and disables no guard.
+
+Each new case uses the existing canonical MINT/TRANSFER harness and genuine
+Root/runtime role, exact PostgreSQL17.6 and installed migration101 checksum.
+The item is actually minted and placed in the direct backpack. TEXT metadata
+uses the real private persistence code under the exact CommandRef/root/item
+locks; an owned test-only staging helper retains that transaction before its
+COMMIT or rollback. The existing backpack/death fixtures and the writable
+metadata attachment are explicitly storage fixtures, not admitted letter
+Content or an installed TEXT writer/transport path. No receipt/value rows are
+seeded by the new tests. Completion is printed only after the entire body and
+canonical database cleanup succeed; absent routing emits no success marker.
+
+Coordinator-only commands after binding the real successor and approved route:
+
+```bash
+cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases::text_history_ -- --list
+cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases::text_history_ -- --test-threads=1 --nocapture
+cargo test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --test-threads=1 --nocapture
+```
+
+Local source checks cover exact118 preimages, identical preserved writer/test
+bodies, current Root/recovery API binding, Rustfmt1.94 parse/check and isolated
+patch application/whitespace. No Cargo, Clippy, unit/PG execution, new CI or
+performance qualification has been performed for this successor. Root handles
+independent review, final current-head readback and any authorized publication.
+D1377/SESSION and the actual #2132 offered-item consumer remain required before
+physical TEXT activation; this reader installs no runtime consumer or peer hook.
