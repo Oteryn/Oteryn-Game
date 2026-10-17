@@ -1003,13 +1003,15 @@ mod tests {
             channel_id: "0199aabb-1234-7000-8000-000000000003".into(),
             scope_ownership_generation: 4,
         };
-        let mut before = DurableFamiliarState::default();
-        before.saved_expiry_unix = 100;
-        before.last_logout_unix = 1; // deliberately unrelated; never conversion provenance
-        before.cooldowns = vec![FamiliarCooldownSnapshot {
-            reference_spell_id: 197,
-            remaining_micros: 1234,
-        }];
+        let before = DurableFamiliarState {
+            saved_expiry_unix: 100,
+            last_logout_unix: 1, // deliberately unrelated; never conversion provenance
+            cooldowns: vec![FamiliarCooldownSnapshot {
+                reference_spell_id: 197,
+                remaining_micros: 1234,
+            }],
+            ..DurableFamiliarState::default()
+        };
         let bytes = encode_state(&before).unwrap();
         let after = before.for_next_write(Some(98_501), &writer).unwrap();
         assert_eq!(
