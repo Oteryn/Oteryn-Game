@@ -49,6 +49,24 @@ SOURCES = {
         'world_dir': 'data-global/world',
     },
 }
+# A bounded reviewed registered financial callback, not profession/name inference. This is
+# source-family candidate evidence only; accepted BANK0 and native admission own behavior.
+BANK_CALLBACK_SOURCES = {
+    ('opentibiabr/canary', '47dfd51f45280a59a1d3e50ba7edd573d7234446',
+     'data-otservbr-global/npc/paulie.lua',
+     'ca77d5451037ecbd704ed80a99684dbd42756ab5fd5d4ae9e5273367f7986aa1'):
+        {'kind': 'REGISTERED_FINANCIAL_CALLBACK', 'callback': 'CALLBACK_MESSAGE_DEFAULT'},
+}
+
+
+def bank_service(source, registered_handlers):
+    key = tuple(source.get(field) for field in ('repository', 'revision', 'path', 'sha256'))
+    proof = BANK_CALLBACK_SOURCES.get(key)
+    if proof and proof['callback'] in registered_handlers:
+        return {'provenance': {**source, **proof}, 'semantics_owner': 'BANK0'}
+    return None
+
+
 NPCLIB = 'data/npclib/npc_system'
 STRING_LIB = 'data/libs/functions/string.lua'
 SPAWN_INTERVAL_S = (1, 86400)  # spawn_npc.cpp MINSPAWN_INTERVAL / MAXSPAWN_INTERVAL; outside it the NPC never spawns
@@ -282,7 +300,7 @@ class Converter:
                              'speech_bubble': self.symbol(config.get('speechBubble'), 'SPEECHBUBBLE_'),
                              'light': config.get('light')},
             'movement': {'walk_interval_ms': config.get('walkInterval'), 'walk_radius': config.get('walkRadius'),
-                         'floor_change': flags.get('floorchange')},
+                         'floor_change': flags.get('floorchange'), 'base_speed': config.get('speed')},
             'vitals': {'health': config.get('health'), 'max_health': config.get('maxHealth')},
             'respawn': self.symbol(config.get('respawnType')),
         }
@@ -302,6 +320,7 @@ class Converter:
             if tree_index:
                 unresolved.append({'path': 'dialogue.keywords', 'reason': 'MULTIPLE_KEYWORD_HANDLERS', 'detail': str(tree_index + 1)})
         handlers = sorted({self.symbol(c.get('id')) for c in capture['callbacks'] if isinstance(c, dict)})
+        services['bank'] = bank_service(base['source'], handlers)
         for handler in handlers:
             unresolved.append({'path': 'dialogue.scripted_handlers', 'reason': 'LUA_CALLBACK', 'detail': handler})
         dialog_options = [c for c in capture['type_calls'] if c.get('name') == 'addDialogOptions']

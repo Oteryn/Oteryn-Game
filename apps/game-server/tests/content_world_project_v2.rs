@@ -104,6 +104,7 @@ fn candidate() -> ProjectV2Draft {
                     }],
                 },
                 ProjectV2Declaration::Service {
+                    bank: false,
                     identity: identity("service.courier"),
                     offers: vec![],
                     recipes: vec![],
@@ -758,6 +759,7 @@ fn item_candidate() -> ProjectV2Draft {
         .state
         .declarations
         .push(ProjectV2Declaration::Service {
+            bank: false,
             identity: identity("service.item-alpha"),
             offers: vec![ProjectV2ServiceOffer {
                 item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),

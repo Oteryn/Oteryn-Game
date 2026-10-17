@@ -78,6 +78,7 @@ fn batch(f: &Fixture, sequence: u64, effects: Vec<OwnerCombatEffect>) -> OwnerCo
         },
         binding: b"source-qualified:recipe-sha256".to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 100,
         effects,
         deferred: None,
@@ -1279,4 +1280,89 @@ fn cure_only_actor_on_a_reserved_slot_refuses_heal_and_cure() {
         .commit_spell_batch(staged)
         .expect("the batch installs");
     assert_eq!(health(&f, 0), 17);
+}
+
+#[test]
+fn original_microseconds_survive_retention_and_same_millisecond_substitution_refuses() {
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let mut f = fixture(1);
+    let mut original = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    original.now_us = Some(SemanticTimeMicros::from_micros(100_123));
+    let staged = f.runtime.stage_spell_batch(&original).expect("stage");
+    assert!(
+        f.runtime
+            .commit_spell_batch(staged)
+            .expect("commit")
+            .applied
+    );
+    let retained = f
+        .runtime
+        .retained_spell_batch(f.caster, original.attacker, 1, original.command)
+        .expect("retained read")
+        .expect("original");
+    assert_eq!(retained.now_us, original.now_us);
+    let mut changed = retained.clone();
+    changed.now_us = Some(SemanticTimeMicros::from_micros(100_124));
+    assert!(matches!(
+        f.runtime.stage_spell_batch(&changed),
+        Err(Error::CommandConflict)
+    ));
+    changed.now_us = None;
+    assert!(matches!(
+        f.runtime.stage_spell_batch(&changed),
+        Err(Error::CommandConflict)
+    ));
+    let replay = f
+        .runtime
+        .stage_spell_batch(&retained)
+        .expect("exact replay");
+    assert!(
+        !f.runtime
+            .commit_spell_batch(replay)
+            .expect("replay")
+            .applied
+    );
+}
+
+#[test]
+fn inconsistent_microseconds_refuse_before_any_physical_write() {
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let f = fixture(1);
+    let mut original = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    original.now_us = Some(SemanticTimeMicros::from_micros(101_000));
+    assert!(matches!(
+        f.runtime.stage_spell_batch(&original),
+        Err(Error::InvalidBatch)
+    ));
+    assert_eq!(health(&f, 0), 20);
+}
+
+#[test]
+fn due_authority_binds_submillisecond_time_and_presence() {
+    use super::super::runtime_actor_spell_types::DeferredCommitAuthority;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let mut f = fixture(1);
+    let mut due = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    due.now_us = Some(SemanticTimeMicros::from_micros(100_123));
+    let stamp = f.runtime.issue_owner_work().expect("owner work");
+    let binding = f.runtime.binding();
+    let scope =
+        super::super::super::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+    let token = DeferredCommitAuthority::from_due(
+        f.runtime.owner_fence().expect("current fence"),
+        scope,
+        binding.scope_generation(),
+        stamp,
+        1,
+        1,
+        due.binding.clone(),
+        &due,
+    )
+    .expect("due provenance");
+    assert!(token.matches(&due, scope, binding.scope_generation()));
+    let mut changed = due.clone();
+    changed.now_us = Some(SemanticTimeMicros::from_micros(100_124));
+    assert!(!token.matches(&changed, scope, binding.scope_generation()));
+    changed.now_us = None;
+    assert!(!token.matches(&changed, scope, binding.scope_generation()));
 }

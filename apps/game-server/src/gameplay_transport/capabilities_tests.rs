@@ -269,14 +269,14 @@ fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_cl
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 13, 17, 19][..])
+        Some(&[6, 7, 13, 17, 19, 21][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 13, 17, 19][..])
+        Some(&[4, 6, 7, 13, 17, 19, 21][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
@@ -313,7 +313,7 @@ fn commands_and_domains_follow_the_selection() {
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
     // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18. Capability 11: command 15.
-    // Capability 23: domains 19 and 20.
+    // Capability 21: command 23. Capability 23: domains 19 and 20.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
@@ -323,6 +323,7 @@ fn commands_and_domains_follow_the_selection() {
         (17, &[11, 12][..], &[10][..]),
         (19, &[][..], &[18][..]),
         (11, &[15][..], &[][..]),
+        (21, &[23][..], &[][..]),
         (23, &[][..], &[19, 20][..]),
     ] {
         let selected = selection(&[capability]);
@@ -342,6 +343,30 @@ fn commands_and_domains_follow_the_selection() {
     assert!(!selection(&[16]).command_selected(11));
     assert!(!selection(&[16]).command_selected(12));
     assert!(!selection(&[16]).domain_selected(10));
+    // MAP-WIRE-1 §3: one object domain per World. Capability 18 supersedes core domain 2.
+    assert!(!selection(&[4, 6, 18]).domain_selected(2));
+    assert!(selection(&[4, 6, 18]).domain_selected(17));
+    assert!(selection(&[4, 6]).domain_selected(2));
+}
+
+/// A superseding capability is offered only by a bundle World, never by the production or the
+/// fixture item-view set, so a fixture World session keeps the core domain it supersedes. A
+/// superseded domain is a core domain: no capability gates it.
+#[test]
+fn a_superseding_capability_is_bundle_only_and_supersedes_only_core_domains() {
+    let offers = |set: &[OfferedCapability], id: u32| set.iter().any(|offer| offer.id == id);
+    assert!(!SUPERSEDED.is_empty());
+    for (capability, domains) in SUPERSEDED {
+        assert!(offers(BUNDLE_WORLD_OFFERED_CAPABILITIES, *capability));
+        assert!(!offers(PRODUCTION_OFFERED_CAPABILITIES, *capability));
+        assert!(!offers(ITEM_VIEW_OFFERED_CAPABILITIES, *capability));
+        for domain in *domains {
+            assert!(
+                GATED.iter().all(|(_, _, gated)| !gated.contains(domain)),
+                "domain {domain}"
+            );
+        }
+    }
 }
 
 // The production connection path: `admit_frame` and `serve_admitted` with an injected offered
@@ -699,18 +724,22 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
     // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 18 before its
-    // last entry 19; 18's crate and registry `requires` stay [4, 6] and the registry keeps 18
-    // `offered: false`.
-    let (light, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    // last entries 19 and 21 (LOGOUT-WIRE-1); 18's crate and registry `requires` stay [4, 6] and
+    // the registry keeps 18 `offered: false`.
+    let (logout, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
+    let (light, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (last, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
-    let (item_light, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
+    let (item_logout, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty item view set")?;
+    let (item_light, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
     assert_eq!(light, item_light);
     assert_eq!(light.id, 19);
+    assert_eq!(logout, item_logout);
+    assert_eq!((logout.id, logout.requires), (21, &[][..]));
     assert_eq!(
         (npc.id, npc.requires),
         (
@@ -1560,6 +1589,9 @@ mod chat_wire {
             session: GameSessionId,
             intent: ChatIntent,
         ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+            if let Some(done) = self.chat.pre_gate(session, &intent, NOW) {
+                return done;
+            }
             chat_in_channel(
                 &self.chat,
                 &self.runtime.borrow(),
@@ -1577,6 +1609,10 @@ mod chat_wire {
 
         async fn chat_delivered(&self, session: GameSessionId) {
             self.chat.delivered(session);
+        }
+
+        async fn chat_rooms_changed(&self, session: GameSessionId) -> Option<ChatRoomSet> {
+            self.chat.take_rooms_change(session)
         }
     }
 
@@ -1752,6 +1788,69 @@ mod chat_wire {
         })
     }
 
+    #[test]
+    fn an_opened_room_follows_its_result_as_one_rooms_delta() -> Result<(), Box<dyn Error>> {
+        use crate::chat::relay::{RelayKey, RelayKeyRing};
+        use oteryn_protocol_oteryn::chat::{ChatRoom, DELTA_TYPE_CHAT_ROOMS_V1, decode_chat_rooms};
+        use std::str::FromStr as _;
+        run(async {
+            let (runtime, actor, session) = runtime_with_capacity(0x71, 3);
+            let authority = ChatAuthority {
+                runtime: RefCell::new(runtime),
+                chat: ChatRuntime::default(),
+                names: vec![(session, "Aela")],
+            };
+            // A configured relay that never connects: opening a room needs no listener.
+            let ring = RelayKeyRing::new(vec![RelayKey::new(1, 0, [1; 32])])
+                .map_err(|e| format!("{e:?}"))?;
+            let options =
+                sqlx::postgres::PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none")?;
+            let world = [0x01, 0x90, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+            let relay = super::super::super::chat_relay::ChatRelay::new(ring, world, options)
+                .map_err(|e| format!("{e:?}"))?;
+            authority.chat.install_relay(std::sync::Arc::new(relay));
+            let open = encode_chat_intent(&ChatIntent::OpenRoom(ChatRoom::Help))
+                .map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_lingering(
+                &authority,
+                admitted(actor, session)?,
+                &[command(1, 13, &open), command(2, 13, &open)],
+                Duration::from_millis(300),
+            )
+            .await?;
+            let mut rooms = Vec::new();
+            let mut results = Vec::new();
+            for frame in &frames {
+                let envelope = decode_wire_envelope(frame)?;
+                match envelope.message_type() {
+                    MessageType::StateDelta => {
+                        let delta = decode_state_delta(envelope.payload())?;
+                        if delta.domain_id == 12 && delta.delta_type == DELTA_TYPE_CHAT_ROOMS_V1 {
+                            rooms.push(
+                                decode_chat_rooms(delta.payload).map_err(|e| format!("{e:?}"))?,
+                            );
+                        }
+                    }
+                    MessageType::CommandResult => {
+                        let result = decode_command_result(envelope.payload())?;
+                        results.push(
+                            decode_chat_intent_result(result.payload)
+                                .map_err(|e| format!("{e:?}"))?
+                                .disposition,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            assert_eq!(results, vec![ChatDisposition::Ok, ChatDisposition::Ok]);
+            // The second open changes nothing, so it sends no delta.
+            assert_eq!(rooms.len(), 1, "{rooms:?}");
+            assert!(rooms[0].contains(ChatRoom::Help));
+            assert_eq!(end.continuity.chat_revision, 2);
+            Ok(())
+        })
+    }
+
     async fn join3<A: Future, B: Future, C: Future>(
         a: A,
         b: B,
@@ -1783,5 +1882,475 @@ mod chat_wire {
         })
         .await;
         (x.expect("first"), y.expect("second"), z.expect("third"))
+    }
+}
+
+// LOGOUT-WIRE-1 (ARCH-KILL-REWARD-LOGOUT-1 §1.6): command 23 on the connection, behind an
+// authority that answers each logout with a scripted reply.
+
+mod logout_wire {
+    use super::super::super::connection::LogoutReply;
+    use super::*;
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::logout::{
+        LogoutResult, decode_logout_result, encode_logout_intent,
+    };
+    use oteryn_protocol_oteryn::{decode_command_result, decode_protocol_error};
+    use std::time::Duration;
+
+    struct LogoutAuthority {
+        reply: Cell<LogoutReply>,
+        /// How long one logout takes; frames read meanwhile are held.
+        delay: Duration,
+        logouts: Cell<u32>,
+        steps: Cell<u32>,
+        /// SPEED-1: the pace each step records; zero leaves steps unpaced.
+        pace: Duration,
+    }
+
+    impl LogoutAuthority {
+        fn new(reply: LogoutReply) -> Self {
+            Self {
+                reply: Cell::new(reply),
+                delay: Duration::ZERO,
+                logouts: Cell::new(0),
+                steps: Cell::new(0),
+                pace: Duration::ZERO,
+            }
+        }
+    }
+
+    impl FreshAdmissionAuthority for LogoutAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn resume(
+            &self,
+            _attempt: ResumeAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(WorldSpatialObservation {
+                content_generation: [0x5c; 32],
+                actor_position: ActorPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 0,
+                },
+            })
+        }
+
+        async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+            self.steps.set(self.steps.get() + 1);
+            StepOutcome {
+                disposition: StepDisposition::Blocked,
+                moved_to: None,
+            }
+        }
+
+        async fn paced_step(
+            &self,
+            actor: ExactActorRef,
+            _session: GameSessionId,
+            direction: StepDirection,
+        ) -> (StepOutcome, Option<Duration>) {
+            let pace = (!self.pace.is_zero()).then_some(self.pace);
+            (self.step(actor, direction).await, pace)
+        }
+
+        async fn logout(&self, _admitted: AdmittedSession) -> LogoutReply {
+            self.logouts.set(self.logouts.get() + 1);
+            if !self.delay.is_zero() {
+                tokio::time::sleep(self.delay).await;
+            }
+            self.reply.get()
+        }
+    }
+
+    fn admitted(selected: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+        super::session(SessionContinuity {
+            selected_capabilities: super::selection(selected),
+            ..SessionContinuity::FRESH
+        })
+    }
+
+    /// Serves `admitted`; the client writes `frames`, stays open for `linger`, then closes.
+    async fn serve_open(
+        authority: &LogoutAuthority,
+        admitted: AdmittedSession,
+        frames: &[Vec<u8>],
+        linger: Duration,
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
+        let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+        for frame in frames {
+            let mut framed = (frame.len() as u32).to_be_bytes().to_vec();
+            framed.extend_from_slice(frame);
+            client.write_all(&framed).await?;
+        }
+        let closing = async {
+            tokio::time::sleep(linger).await;
+            client.shutdown().await?;
+            let mut output = Vec::new();
+            client.read_to_end(&mut output).await?;
+            Ok::<_, std::io::Error>(output)
+        };
+        let serving = async move {
+            let end = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let (mut serving, mut closing) = (std::pin::pin!(serving), std::pin::pin!(closing));
+        let (mut end, mut output) = (None, None);
+        std::future::poll_fn(|context| {
+            if end.is_none()
+                && let std::task::Poll::Ready(value) = serving.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if output.is_none()
+                && let std::task::Poll::Ready(value) = closing.as_mut().poll(context)
+            {
+                output = Some(value);
+            }
+            if end.is_some() && output.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        Ok((end.ok_or("end")?, split(&output.ok_or("output")??)?))
+    }
+
+    /// One written command result: (command id, status, payload).
+    type Written = (u64, CommandStatus, Vec<u8>);
+
+    /// The command results written.
+    fn results(frames: &[Vec<u8>]) -> Result<Vec<Written>, Box<dyn Error>> {
+        let mut results = Vec::new();
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload())?;
+                results.push((result.command_id, result.status, result.payload.to_vec()));
+            }
+        }
+        Ok(results)
+    }
+
+    fn logout_result(
+        results: &[Written],
+        id: u64,
+    ) -> Result<(CommandStatus, LogoutResult), Box<dyn Error>> {
+        let (_, status, payload) = results
+            .iter()
+            .find(|(command, _, _)| *command == id)
+            .ok_or("no logout result")?;
+        Ok((
+            *status,
+            decode_logout_result(payload).map_err(|e| format!("{e:?}"))?,
+        ))
+    }
+
+    fn step() -> Vec<u8> {
+        oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::North)
+    }
+
+    #[test]
+    fn without_capability_21_a_logout_is_refused_before_the_authority() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            let frames = [command(1, 23, &encode_logout_intent())];
+            let (end, written) =
+                serve_open(&authority, admitted(&[])?, &frames, Duration::ZERO).await?;
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            assert_eq!(
+                results(&written)?,
+                [(1, CommandStatus::Rejected, Vec::new())]
+            );
+            assert_eq!(authority.logouts.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_non_empty_intent_is_rejected_with_an_empty_payload() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            let frames = [command(1, 23, &[0x08, 0x01])];
+            let (_, written) =
+                serve_open(&authority, admitted(&[21])?, &frames, Duration::ZERO).await?;
+            assert_eq!(
+                results(&written)?,
+                [(1, CommandStatus::Rejected, Vec::new())]
+            );
+            assert_eq!(authority.logouts.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn accepted_is_written_then_the_connection_closes_without_reading_further()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Accepted, LogoutResult::Accepted)
+            );
+            assert_eq!(authority.steps.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn in_fight_is_rejected_with_its_retry_and_the_session_keeps_playing()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::InFight {
+                retry_after_ms: 1_500,
+            }));
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            let results = results(&written)?;
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (
+                    CommandStatus::Rejected,
+                    LogoutResult::InFight {
+                        retry_after_ms: 1_500
+                    }
+                )
+            );
+            assert!(results.iter().any(|(id, _, _)| *id == 2));
+            assert_eq!(authority.steps.get(), 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn busy_is_rejected_and_a_step_held_behind_the_logout_runs_after_it()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            let results = results(&written)?;
+            assert_eq!(
+                results.iter().map(|(id, _, _)| *id).collect::<Vec<_>>(),
+                [1, 2]
+            );
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
+            );
+            assert_eq!(authority.steps.get(), 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn an_unknown_outcome_writes_no_result_and_ends_as_a_disconnect() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Unknown);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 1, &step()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            assert!(results(&written)?.is_empty());
+            assert_eq!(authority.steps.get(), 0);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_before_the_first_result_is_a_protocol_error() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_before_an_accepted_result_is_a_protocol_error_after_the_logout()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
+            authority.delay = Duration::from_millis(30);
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (end, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                logout_result(&results, 1)?,
+                (CommandStatus::Accepted, LogoutResult::Accepted)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_held_behind_a_paced_step_is_a_protocol_error() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            // Both logouts are read and held while step 2 waits for its pace, so the first one
+            // starts with the second already held (#2127 Codex P2 4279788741).
+            let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            authority.pace = Duration::from_millis(30);
+            let frames = [
+                command(1, 1, &step()),
+                command(2, 1, &step()),
+                command(3, 23, &encode_logout_intent()),
+                command(4, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(100),
+            )
+            .await?;
+            assert_eq!(authority.steps.get(), 2);
+            assert_eq!(authority.logouts.get(), 1);
+            let results = results(&written)?;
+            assert_eq!(
+                results.iter().map(|(id, _, _)| *id).collect::<Vec<_>>(),
+                [1, 2, 3]
+            );
+            assert_eq!(
+                logout_result(&results, 3)?,
+                (CommandStatus::Rejected, LogoutResult::Busy)
+            );
+            let last = decode_wire_envelope(written.last().ok_or("no frame")?)?;
+            assert_eq!(last.message_type(), MessageType::ProtocolError);
+            assert_eq!(
+                decode_protocol_error(last.payload())?.error_code,
+                FoundationProtocolError::TooManyOutstandingCommands.code()
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_second_logout_after_the_first_result_is_an_ordinary_command() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+            let frames = [
+                command(1, 23, &encode_logout_intent()),
+                command(2, 23, &encode_logout_intent()),
+            ];
+            let (_, written) = serve_open(
+                &authority,
+                admitted(&[21])?,
+                &frames,
+                Duration::from_millis(50),
+            )
+            .await?;
+            assert_eq!(authority.logouts.get(), 2);
+            assert_eq!(results(&written)?.len(), 2);
+            Ok(())
+        })
     }
 }
