@@ -526,6 +526,8 @@ fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
                 platinum: def(c.platinum),
                 crystal: def(c.crystal),
                 backpack: ItemDefinitionFacts {
+                    // Bank never reads backpack weight; the frozen v1 record carries none.
+                    weight: None,
                     definition: def(c.backpack),
                     stack,
                     container_capacity: c.capacity,
