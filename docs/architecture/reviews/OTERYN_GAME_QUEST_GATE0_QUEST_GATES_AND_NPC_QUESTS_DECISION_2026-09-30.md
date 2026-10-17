@@ -1,7 +1,7 @@
 # QUEST-GATE-0 Quest gates, triggers, NPC quest dialogue and the quest log
 
 - Decision: `QUEST-GATE0-WORLD-GATES-AND-NPC-QUESTS-V1` (covers QUEST-GATE-0 and NPC-QUEST-0)
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol,
   persistence and security) and protected integration. Owner questions Q1 and Q2 (§12) are
   answered (2026-09-30, #162): gold hand-ins take coins, then the bank (§5.4); journal text is
   Tibia text 1:1 (§7).
