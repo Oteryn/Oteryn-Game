@@ -2313,6 +2313,11 @@ mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
 
+// LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
+// cases) on the CHARM-2 harness included above; its only test mount.
+#[path = "../src/durability/ground_cell_limit_tests.rs"]
+mod ground_cell_limit_tests;
+
 // ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
 // focused standalone target through the same protected lane, on the CHARM-2
 // harness included above.

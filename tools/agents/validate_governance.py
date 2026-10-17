@@ -373,6 +373,7 @@ def validate_active_task_packets(
 def validate_active_task_live_state(
     request: Callable[[str], object],
     packet_paths: set[str] | None = None,
+    warnings: list[str] | None = None,
 ) -> list[str]:
     """Reject selected active packets whose canonical GitHub authority is terminal.
 
@@ -380,6 +381,10 @@ def validate_active_task_live_state(
     health. A concrete set validates only candidate-touched packets, so an
     unrelated lifecycle transition cannot retroactively invalidate an immutable
     PR head. The caller owns authentication and transport.
+
+    When warnings is a list, a packet whose canonical PR merged (and its Issue
+    closed by that merge) is reported there instead: the work landed and the
+    packet only awaits archiving. A PR closed unmerged stays an error.
     """
     active_dir = ROOT / "docs/agents/tasks/active"
     if not active_dir.is_dir():
@@ -428,22 +433,29 @@ def validate_active_task_live_state(
     errors: list[str] = []
     for relative, issue, pr in packets:
         pr_open = False
+        findings = errors
         if pr is not None:
             payload = payloads[("pulls", pr)]
             if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
                 raise ValueError(f"invalid GitHub pull response for #{pr}")
             pr_open = payload["state"] == "open"
             if not pr_open:
-                disposition = "merged" if payload.get("merged_at") is not None else "closed"
-                errors.append(
-                    f"active task packet {relative} names terminal canonical PR #{pr} ({disposition})"
+                merged = payload.get("merged_at") is not None
+                if merged and warnings is not None:
+                    findings = warnings
+                findings.append(
+                    f"active task packet {relative} names terminal canonical PR #{pr} "
+                    f"({'merged' if merged else 'closed'})"
                 )
         if issue is not None:
             payload = payloads[("issues", issue)]
             if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
                 raise ValueError(f"invalid GitHub issue response for #{issue}")
             if payload["state"] == "closed" and not pr_open:
-                errors.append(
+                # Only a completed Issue lets a merged PR await archiving;
+                # any other closure stays an error the auto-archive won't fix.
+                target = findings if payload.get("state_reason") == "completed" else errors
+                target.append(
                     f"active task packet {relative} names closed Issue #{issue} without an open canonical PR"
                 )
     return errors
