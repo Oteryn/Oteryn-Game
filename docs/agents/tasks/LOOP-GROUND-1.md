@@ -52,9 +52,23 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/durability/item_decay_retire_audit.rs`
 - `apps/game-server/src/durability/ground_cell_limit.rs`
 - `apps/game-server/src/durability/ground_cell_limit_tests.rs`
-- `apps/game-server/tests/ground_decay_postgres.rs`
 - `docs/agents/evidence/LOOP-GROUND-1-*.md`
 - `docs/agents/tasks/LOOP-GROUND-1.md` (this record: status and notes only)
+
+### D1339 scope amendment
+
+D1339 grants the fixture repair of the 90 foreign `character_authority_postgres`
+failures caused by Ground64 admission: harnesses publish runtime readiness through
+`ground_native_readiness_enforcement::prepare` and opaque Ground positions become
+canonical 10-byte Ground64 addresses. No assertion, skip or production change.
+
+- `apps/game-server/tests/support/item_mint_postgres_cases.rs`
+- `apps/game-server/tests/support/item_transfer_postgres_cases.rs`
+- `apps/game-server/tests/support/reward_claim_mint_postgres_cases.rs`
+- `apps/game-server/tests/support/map_item_mint_postgres_cases.rs`
+- `apps/game-server/tests/support/corpse_transfer_postgres_cases.rs`
+- `apps/game-server/tests/support/combat_death_reward_postgres_cases.rs`
+- `apps/game-server/tests/support/type2_audit_activation_postgres_cases.rs`
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
