@@ -1023,6 +1023,11 @@ pub(crate) enum CreatureCadenceError {
     Movement(crate::movement::MovementError),
 }
 impl CreatureMovementCadence {
+    /// The owner time before which a further step waits, if a moved step was recorded.
+    #[cfg(test)]
+    pub(crate) fn waiting_until(&self, now: SemanticTimeMicros) -> Option<SemanticTimeMicros> {
+        self.pacer.wait_until(now)
+    }
     pub(crate) const fn actor(&self) -> ExactActorRef {
         self.actor
     }
@@ -1052,6 +1057,41 @@ impl CreatureMovementCadence {
         index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
         blocking: &[LogicalCell],
         direction: crate::movement::CardinalStep,
+    ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, CreatureCadenceError> {
+        self.step_near(
+            runtime,
+            current,
+            stamp,
+            source,
+            ground,
+            now,
+            scope,
+            index,
+            blocking,
+            direction,
+            &CreatureNearTarget::default(),
+            false,
+        )
+    }
+
+    /// [`Self::step`] with the owner's retained near-target state: the recorded duration is
+    /// `near.step_duration(canonical, fleeing, false)`. The caller is a regular creature here
+    /// (summons are refused), so `is_summon` is always false.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn step_near(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        current: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: &dyn CurrentCreatureSpeedReader,
+        ground: &dyn GroundSpeedSource,
+        now: SemanticTimeMicros,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+        index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
+        blocking: &[LogicalCell],
+        direction: crate::movement::CardinalStep,
+        near: &CreatureNearTarget,
+        fleeing: bool,
     ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, CreatureCadenceError> {
         use CreatureCadenceError as E;
         let b = runtime.binding();
@@ -1096,6 +1136,9 @@ impl CreatureMovementCadence {
         };
         let duration = creature_step_duration(runtime, self.actor, source, ground, onto, now)
             .ok_or(E::MissingSpeed)?;
+        let duration = near
+            .step_duration(duration, fleeing, false)
+            .ok_or(E::ClockOverflow)?;
         if self.pacer.wait_until(now).is_some() {
             return Ok(None);
         }

@@ -112,13 +112,25 @@ fn is_goal(at: MovementLocalPosition, target: MovementLocalPosition, goal: Searc
 /// when it is no path tile, else its extra cost ([`CREATURE_COST`] over an occupied tile).
 /// `Some(empty)` when `start` already is such a tile; `None` when no route is found within the
 /// bounds (a failed search).
+#[cfg(test)]
 pub(crate) fn route_next_to(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
     distance: i32,
     tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> Option<Vec<CardinalStep>> {
-    search(
+    route_next_to_counted(start, target, distance, tile_cost).0
+}
+
+/// [`route_next_to`] plus the search's actual expansion count (at most [`PATH_SEARCH_WORK`]),
+/// for debiting the shared chase window by work done.
+pub(crate) fn route_next_to_counted(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    distance: i32,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
+    search_counted(
         start,
         target,
         SearchGoal::Distance(1),
@@ -137,6 +149,7 @@ pub(crate) fn route_next_to(
 /// if `tile_cost` admits them. This avoids either stopping without sight or treating a sight
 /// obstruction as a Movement obstruction. Distance zero refuses without consulting callbacks.
 /// No path adoption, local goal selection or runtime authority is supplied here.
+#[cfg(test)]
 pub(crate) fn route_at_distance(
     start: MovementLocalPosition,
     target: MovementLocalPosition,
@@ -144,8 +157,19 @@ pub(crate) fn route_at_distance(
     tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
     can_hold: impl FnMut(MovementLocalPosition) -> bool,
 ) -> Option<Vec<CardinalStep>> {
+    route_at_distance_counted(start, target, target_distance, tile_cost, can_hold).0
+}
+
+/// [`route_at_distance`] plus the search's actual expansion count (at most [`PATH_SEARCH_WORK`]).
+pub(crate) fn route_at_distance_counted(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    target_distance: u16,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+    can_hold: impl FnMut(MovementLocalPosition) -> bool,
+) -> (Option<Vec<CardinalStep>>, usize) {
     if target_distance == 0 {
-        return None;
+        return (None, 0);
     }
     search_with_goal_admission(
         start,
@@ -191,6 +215,16 @@ fn search(
     bounds: SearchBounds,
     tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
 ) -> Option<Vec<CardinalStep>> {
+    search_counted(start, target, goal, bounds, tile_cost).0
+}
+
+fn search_counted(
+    start: MovementLocalPosition,
+    target: MovementLocalPosition,
+    goal: SearchGoal,
+    bounds: SearchBounds,
+    tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
+) -> (Option<Vec<CardinalStep>>, usize) {
     search_with_goal_admission(start, target, goal, bounds, tile_cost, |_| true)
 }
 
@@ -201,12 +235,12 @@ fn search_with_goal_admission(
     bounds: SearchBounds,
     mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
     mut can_hold: impl FnMut(MovementLocalPosition) -> bool,
-) -> Option<Vec<CardinalStep>> {
+) -> (Option<Vec<CardinalStep>>, usize) {
     if start.floor != target.floor {
-        return None;
+        return (None, 0);
     }
     if is_goal(start, target, goal) && can_hold(start) {
-        return Some(Vec::new());
+        return (Some(Vec::new()), 0);
     }
     // Open entries are ordered by (total, estimate, neighbour order, discovery order).
     let mut open = BinaryHeap::new();
@@ -251,11 +285,14 @@ fn search_with_goal_admission(
             floor: start.floor,
         };
         if is_goal(at, target, goal) && can_hold(at) {
-            return route_to(&best, (start.x, start.y, 0), (x, y, steps));
+            return (
+                route_to(&best, (start.x, start.y, 0), (x, y, steps)),
+                expansions,
+            );
         }
         expansions += 1;
         if expansions > bounds.work {
-            return None;
+            return (None, bounds.work);
         }
         if steps >= bounds.route_steps {
             continue;
@@ -307,7 +344,7 @@ fn search_with_goal_admission(
             )));
         }
     }
-    None
+    (None, expansions)
 }
 
 fn route_to(best: &Discovered, start: State, goal: State) -> Option<Vec<CardinalStep>> {

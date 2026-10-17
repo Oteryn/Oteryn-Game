@@ -929,7 +929,7 @@ impl ChannelAttackStates {
             {
                 break;
             }
-            let ran = entry.chase.search(now.get(), from, to, |cell| {
+            let work = entry.chase.search(now.get(), from, to, |cell| {
                 if cell == to || !path_tile(cell) {
                     return None;
                 }
@@ -939,7 +939,11 @@ impl ChannelAttackStates {
                     0
                 })
             });
-            if ran {
+            if let Some(work) = work {
+                // Admission reserved the per-search cap; keep only the actual expansions.
+                let used =
+                    u32::try_from(work).map_or(UNITS_PER_SEARCH, |w| w.min(UNITS_PER_SEARCH));
+                chase_searches.refund_player(now.get(), UNITS_PER_SEARCH - used);
                 searched += 1;
             }
             if let Some(next) = entry.chase.next_cell() {

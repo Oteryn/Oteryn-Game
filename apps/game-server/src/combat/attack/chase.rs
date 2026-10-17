@@ -12,7 +12,9 @@ use std::collections::VecDeque;
 
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
-use crate::movement::path_search::{CHASE_SEARCH_DISTANCE, chebyshev, delta, route_next_to};
+use crate::movement::path_search::{
+    CHASE_SEARCH_DISTANCE, chebyshev, delta, route_next_to_counted,
+};
 
 pub(crate) use crate::movement::path_search::CREATURE_COST;
 
@@ -136,23 +138,23 @@ impl ChaseState {
     }
 
     /// The Channel's drain runs this chase's search from `at` towards `target` at `now_us`
-    /// (`RANGED0-RL-03`); `false` when none ran (another floor or in reach). The route it adopts
-    /// starts at `at`.
+    /// (`RANGED0-RL-03`); `None` when none ran (another floor or in reach), else the search's
+    /// actual expansion count. The route it adopts starts at `at`.
     pub(crate) fn search(
         &mut self,
         now_us: u64,
         at: MovementLocalPosition,
         target: MovementLocalPosition,
         mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
-    ) -> bool {
+    ) -> Option<usize> {
         if at.floor != target.floor || chebyshev(at, target) <= 1 {
             self.hold();
-            return false;
+            return None;
         }
         self.waiting_since = None;
         self.refused.retain(|&(_, expires_us)| now_us < expires_us);
         let refused = &self.refused;
-        let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
+        let (route, work) = route_next_to_counted(at, target, CHASE_SEARCH_DISTANCE, |cell| {
             if refused.iter().any(|&(blocked, _)| blocked == cell) {
                 None
             } else {
@@ -173,7 +175,7 @@ impl ChaseState {
                 self.next_search_us = now_us.saturating_add(CHASE_FAILED_SEARCH_WAIT_MICROS);
             }
         }
-        true
+        Some(work)
     }
 
     /// The cell the route's next step enters, if a route is held.
@@ -291,6 +293,14 @@ impl ChaseSearchBudget {
         };
         self.player_units_used = after;
         true
+    }
+
+    /// Return `units` of an earlier [`Self::charge_player`] in the same window: admission
+    /// reserved the per-search cap, and only the work the search actually did stays debited.
+    pub(crate) fn refund_player(&mut self, now_us: u64, units: u32) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.player_units_used = self.player_units_used.saturating_sub(units);
+        }
     }
 
     #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
@@ -700,6 +710,25 @@ mod tests {
             !budget.open(49_999),
             "a late caller's earlier window never reopens a drained one"
         );
+    }
+
+    #[test]
+    fn many_trivial_searches_do_not_exhaust_the_window_early() {
+        let mut budget = ChaseSearchBudget::default();
+        let mut chase = ChaseState::default();
+        // Twice the fixed-charge capacity (64): each admission needs the 1,024 cap, but only
+        // the actual (tiny) expansion count stays debited.
+        for _ in 0..128 {
+            assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+            let work = chase.search(0, at(0, 0), at(3, 0), open).unwrap();
+            assert!(work < 8, "{work}");
+            budget.refund_player(0, UNITS_PER_SEARCH - u32::try_from(work).unwrap());
+            chase.next_search_us = 0;
+        }
+        assert!(budget.remaining(0) > WINDOW_UNITS - 128 * 8);
+        // Admission still needs the worst case: a nearly full window refuses another search.
+        assert!(budget.charge_player(0, WINDOW_UNITS - budget.player_units_used));
+        assert!(!budget.charge_player(0, 1));
     }
 
     #[test]

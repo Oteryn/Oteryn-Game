@@ -251,6 +251,7 @@ pub(crate) fn step_creature_chase(
     current: &crate::foundation::ScopeRuntimeFence,
     stamp: crate::foundation::RuntimeWorkStamp,
     cadence: &mut speed::CreatureMovementCadence,
+    near: &speed::CreatureNearTarget,
     expected: MovementPositionSnapshot,
     goal: CreatureChaseGoal,
     source: &dyn speed::CurrentCreatureSpeedReader,
@@ -309,8 +310,7 @@ pub(crate) fn step_creature_chase(
     {
         return Err(E::MissingMap);
     }
-    result.search_work_charged = path_search::PATH_SEARCH_WORK;
-    let route = path_search::route_at_distance(
+    let (route, work) = path_search::route_at_distance_counted(
         expected.position(),
         goal.expected_target.position(),
         goal.distance,
@@ -334,6 +334,8 @@ pub(crate) fn step_creature_chase(
         },
         can_hold,
     );
+    // Admission required the per-search cap; only the actual expansions are charged.
+    result.search_work_charged = work.min(path_search::PATH_SEARCH_WORK);
     let Some(route) = route else {
         result.outcome = CreatureChaseOutcome::NoRoute;
         return Ok(result);
@@ -343,8 +345,8 @@ pub(crate) fn step_creature_chase(
         result.outcome = CreatureChaseOutcome::AtGoal;
         return Ok(result);
     };
-    result.outcome = match cadence.step(
-        runtime, current, stamp, source, ground, now, scope, index, blocking, first,
+    result.outcome = match cadence.step_near(
+        runtime, current, stamp, source, ground, now, scope, index, blocking, first, near, false,
     )? {
         Some(after) => {
             result.route.remove(0);
@@ -726,6 +728,7 @@ mod tests {
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             expected,
             goal,
             &source,
@@ -748,12 +751,13 @@ mod tests {
         assert_eq!(first.searched_from, expected);
         assert_eq!(first.content_digest, scope.generation_digest);
         assert_eq!(first.route, vec![CardinalStep::East]);
-        assert_eq!(first.search_work_charged, path_search::PATH_SEARCH_WORK);
+        assert_eq!(first.search_work_charged, 2);
         let next = step_creature_chase(
             &mut runtime,
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             after,
             goal,
             &source,
@@ -775,6 +779,7 @@ mod tests {
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             expected,
             goal,
             &source,
@@ -794,6 +799,114 @@ mod tests {
             ))
         ));
         assert_eq!(runtime.read_actor_position(actor)?, after);
+        Ok(())
+    }
+
+    /// First moved step at owner time 0 with the given near-target state; the instant the next
+    /// step waits for is the recorded duration.
+    fn first_step_deadline(
+        near: &speed::CreatureNearTarget,
+    ) -> Result<oteryn_simulation_determinism::SemanticTimeMicros, Box<dyn Error>> {
+        let (mut runtime, mut fence, actor, target, scope, index) = chase_fixture()?;
+        let ordinal = fence.accept_input(runtime.binding().scope_generation())?;
+        let stamp = fence.stamp(ordinal);
+        let mut cadence = speed::CreatureMovementCadence::bind(&runtime, actor)
+            .ok_or("missing native cadence")?;
+        let source = ChaseSpeed {
+            actor,
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        let expected = runtime.read_actor_position(actor)?;
+        let goal = CreatureChaseGoal {
+            target,
+            expected_target: runtime.read_actor_position(target)?,
+            distance: 3,
+        };
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0);
+        let step = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            near,
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            now,
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(step.outcome, CreatureChaseOutcome::Moved(_)));
+        cadence
+            .waiting_until(now)
+            .ok_or_else(|| "no recorded deadline".into())
+    }
+
+    #[test]
+    fn creature_chase_cadence_records_the_doubled_duration_for_a_near_target()
+    -> Result<(), Box<dyn Error>> {
+        let far = first_step_deadline(&speed::CreatureNearTarget::default())?;
+        let mut near = speed::CreatureNearTarget::default();
+        let at = MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: 7,
+        };
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 6,
+                y: 5,
+                floor: 7,
+            },
+        );
+        assert_eq!(first_step_deadline(&near)?.get(), far.get() * 2);
+        Ok(())
+    }
+
+    #[test]
+    fn creature_chase_cadence_is_unchanged_when_the_near_counter_is_zero()
+    -> Result<(), Box<dyn Error>> {
+        let mut near = speed::CreatureNearTarget::default();
+        let at = MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: 7,
+        };
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 6,
+                y: 5,
+                floor: 7,
+            },
+        );
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 9,
+                y: 5,
+                floor: 7,
+            },
+        );
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 9,
+                y: 5,
+                floor: 7,
+            },
+        );
+        assert_eq!(
+            first_step_deadline(&near)?,
+            first_step_deadline(&speed::CreatureNearTarget::default())?
+        );
         Ok(())
     }
 
@@ -821,6 +934,7 @@ mod tests {
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             expected,
             goal,
             &source,
@@ -849,6 +963,7 @@ mod tests {
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             expected,
             goal,
             &source,
@@ -889,6 +1004,7 @@ mod tests {
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             expected,
             goal,
             &source,
@@ -915,6 +1031,7 @@ mod tests {
             &fence,
             stamp,
             &mut cadence,
+            &speed::CreatureNearTarget::default(),
             expected,
             goal,
             &source,
