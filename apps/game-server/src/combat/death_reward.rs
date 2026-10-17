@@ -405,7 +405,7 @@ fn ground_placement(
     corpse: MovementLocalPosition,
     ground: &DeathGroundContext,
 ) -> GroundPlacement {
-    let spatial_position = crate::content::encode_spatial_position(corpse);
+    let spatial_position = crate::foundation::encode_spatial_position(corpse);
     let mut corpse_ref = Vec::with_capacity(52);
     corpse_ref.extend_from_slice(death.world_id().as_bytes());
     corpse_ref.extend_from_slice(death.channel_id().as_bytes());

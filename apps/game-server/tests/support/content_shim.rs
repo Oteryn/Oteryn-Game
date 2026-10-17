@@ -34,7 +34,5 @@ pub use production::{
 };
 pub use reference_playable::*;
 
-// Same physical canonical encoder as production; the shim contains no adapter logic.
-#[path = "../../src/content/spatial_position.rs"]
-mod spatial_position;
-pub use spatial_position::encode_spatial_position;
+// Reuse the one physical encoder mounted by this crate's native Foundation.
+pub(crate) use crate::foundation::encode_spatial_position;
