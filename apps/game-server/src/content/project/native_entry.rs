@@ -337,6 +337,7 @@ pub struct NativeEntrySpawnSource {
     health: u64,
     initial_health: u64,
     speed: u32,
+    creature_profile: ProjectV2AuthoringProfile,
     behaviour_profile: ProjectV2BehaviorAuthoring,
 }
 
@@ -394,6 +395,12 @@ impl NativeEntrySpawnSource {
 
     pub fn behaviour_profile(&self) -> &ProjectV2BehaviorAuthoring {
         &self.behaviour_profile
+    }
+
+    /// The complete profile from this qualified project's authored bytes.
+    /// This is source data for policy compilation, not an installed runtime policy.
+    pub fn creature_profile(&self) -> &ProjectV2AuthoringProfile {
+        &self.creature_profile
     }
 }
 
@@ -2183,6 +2190,13 @@ fn qualified_spawn_source(
         health,
         initial_health,
         speed,
+        creature_profile: [first, second]
+            .into_iter()
+            .find(|profile| profile.target == spawn.creature)
+            .ok_or(ProjectError::InvalidProject(
+                "native entry creature profile missing",
+            ))?
+            .clone(),
         behaviour_profile: behavior.clone(),
     })
 }
@@ -2200,6 +2214,34 @@ mod tests {
         bytes[8] = 0x80;
         bytes[15] = 1;
         crate::foundation::WorldId::decode(&bytes).expect("valid UUIDv7 WorldId")
+    }
+
+    #[test]
+    fn qualified_room_preserves_the_entire_authored_spawn_creature_profile() {
+        let documents = native_entry_room_documents(test_world_id()).expect("entry source");
+        let snapshot = ProjectSnapshot::new(
+            documents.documents().clone(),
+            native_entry_first_slice_limits().project,
+        )
+        .expect("source snapshot");
+        let project = snapshot.parse_native_entry().expect("qualified project");
+        let spawn = project.spawn_source().expect("revision-2 spawn");
+        let authored = project
+            .project()
+            .v2()
+            .expect("v2 source")
+            .authoring_profiles
+            .iter()
+            .find(|profile| profile.target == *spawn.creature())
+            .expect("authored creature profile");
+        assert_eq!(spawn.creature_profile(), authored);
+
+        // The production room carrier must retain the full admitted profile,
+        // including details not represented by the legacy activation tuple.
+        let room = qualify_native_entry_room(test_world_id()).expect("qualified room");
+        let carried = room.spawn_source().expect("qualified room spawn");
+        assert_eq!(carried.creature_profile(), authored);
+        assert_eq!(carried.creature_profile().target, *carried.creature());
     }
 
     /// M2b (#162 5868482467): the door cell is a genuine, `Walkable` FirstProduction Terrain

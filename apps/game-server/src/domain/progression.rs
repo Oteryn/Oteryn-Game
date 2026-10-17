@@ -253,3 +253,45 @@ fn project_level<R, const N: usize>(
         .map(|entry| entry.level)
         .ok_or(ProgressionCalculationError::MissingThresholdOracle)
 }
+
+/// Concrete HP/mana projection data only. This neither selects a vocation curve nor proves
+/// provenance, current authority, current pool contents or the right to install these maxima.
+/// The native owner must supply level/maxima from the same qualified Character build state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LevelUpVitalMaxima {
+    pub level: u32,
+    pub max_health: u32,
+    pub max_mana: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LevelUpVitalChange {
+    pub health_maximum_gain: u32,
+    pub mana_maximum_gain: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LevelUpVitalError {
+    InvalidLevels,
+    RegressingMaximum,
+}
+
+/// Checked differences, without deriving curves, changing current pools or authorizing writes.
+pub fn calculate_level_up_vital_change(
+    before: LevelUpVitalMaxima,
+    after: LevelUpVitalMaxima,
+) -> Result<LevelUpVitalChange, LevelUpVitalError> {
+    if before.level == 0 || after.level <= before.level {
+        return Err(LevelUpVitalError::InvalidLevels);
+    }
+    Ok(LevelUpVitalChange {
+        health_maximum_gain: after
+            .max_health
+            .checked_sub(before.max_health)
+            .ok_or(LevelUpVitalError::RegressingMaximum)?,
+        mana_maximum_gain: after
+            .max_mana
+            .checked_sub(before.max_mana)
+            .ok_or(LevelUpVitalError::RegressingMaximum)?,
+    })
+}
