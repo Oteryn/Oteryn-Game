@@ -34,6 +34,10 @@ mod durability;
 pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+// The native source carrier uses this test root's actual Foundation identities.
+#[allow(dead_code)]
+#[path = "../src/ability/player_lethal.rs"]
+mod player_lethal;
 
 use admission_evidence::{Facts, Request, Response, decode_response, encode_request};
 use base64::Engine as _;
