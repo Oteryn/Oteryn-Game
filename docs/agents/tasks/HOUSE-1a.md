@@ -379,9 +379,22 @@ assignment and actual Guild spine. It stamps protected immutable authority evide
 after all those locks. Consumers recheck current facts and that same-transaction stamp;
 SAVEPOINT rollback losing any of the locks also removes the stamp. Raw node secrets are
 bound as a separate SQL parameter and are never serialized or retained. The Rust leaf
-requires the separately proposed D context reference getters and native-owned private
-secret accessor, neither of which is silently applied in these owned paths. Deferred Guild
+uses the real D context reference getters and existing native private
+`NodeIncarnationProof::sql_possession_secret` after the required upstream integration.
+No shared accessor is added or silently applied in these owned paths. Deferred Guild
 revision changes require the actual same-transaction D step and complete event successor.
 The protected Guild/world terminal SQL predicate supports D's deferred state3→4 check
 only with current physical-transaction marker and actual release/absence, never history.
 No migration installation, PC call, native execution, push or publication occurred.
+
+
+## Native possession adapter — LOCAL_CHECKPOINT / NOT_FULLY_QUALIFIED
+
+The House Guild release leaf now binds the existing native `sql_possession_secret()` byte
+slice directly to the same BYTEA parameter. The actual upstream method is in
+`durability/runtime_scope_assignment.rs`; the loader source at2163/e2a658ad already consumes
+it. The older proposed `house_release_secret` accessor is unnecessary and remains unapplied.
+No recovery/node JSON, public API, SQL authority checks, property/Inbox effects or lock order
+changes. The consumer stays a private descendant of durability, within the real accessor
+visibility. D1167/CP integration order (2163 before2137) remains; no mixed-source compilation
+or execution is claimed. Fmt/source review are cheap checks; native/PG are NOT_RUN.

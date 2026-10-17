@@ -3,8 +3,8 @@
 //! typed refusals explicitly roll back this participant and never commit a partial D step.
 //! The terminal D caller must roll back its whole physical transaction on Err.
 //! Activation still requires the accepted recipient-pin amendment and actual D ordering.
-//! The real D recovery/node getters and native NodeIncarnationProof::house_release_secret
-//! are explicit external compile dependencies until their owning proposals are applied.
+//! The real D recovery/node getters and native NodeIncarnationProof::sql_possession_secret
+//! are dependencies of the required upstream integration; this leaf adds no shared accessor.
 
 use super::super::guild::{GuildDisbandTransaction, GuildError};
 use crate::domain::guild::GuildId;
@@ -186,7 +186,7 @@ async fn advance(
         .bind(recovery.recovery_event_id.as_slice()).bind(recovery.predecessor_generation.to_string())
         .bind(predecessor_digest).bind(recovery.issued_at.to_string()).bind(&recovery.issuer_identity)
         .bind(node_id.as_bytes().as_slice()).bind(fact.registration_revision().to_string())
-        .bind(node.house_release_secret().as_slice()).execute(&mut **tx).await?;
+        .bind(node.sql_possession_secret()).execute(&mut **tx).await?;
     assert_context(tx, context, r).await?;
     // The real C definer checks native14 ABI1 and all enabled native fence hooks before
     // effects, takes property+anchor FOR UPDATE before freeze/items, and delegates to the
