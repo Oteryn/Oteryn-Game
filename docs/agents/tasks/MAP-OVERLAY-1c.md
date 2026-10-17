@@ -21,13 +21,15 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## Current authoring checkpoint — D1260/D1269/D1270/D1272
+## Current authoring checkpoint — D1260/D1269/D1270/D1272/D1283
 
 D1269 preserves exactly one root Area and admits only unique Houses referenced
 by explicit house_tiles, retaining all existing House identity/cell/entry/door
 qualification. Six actual-canonical positive/negative cases are authored.
 D1270 moves the single physical placement encoder to content/spatial_position.rs;
-the canonical module remains private and the native shim mounts that same leaf.
+D1283 mounts it privately through Foundation; Content and the standalone shim
+only re-export the crate-visible encoder, and the actual death caller uses
+Foundation. All three compiled crates have exactly one physical encoder input.
 There is no net map/boot change from the published 6b455ad8 checkpoint. Full-bundle
 House production remains OUT_OF_SCOPE; full-bundle metadata is explicitly Unknown.
 
@@ -48,16 +50,29 @@ refuses before locks; direct SQL independently takes the
 native durable fences. Retirement binding remains separate from target artifacts.
 Calendar is PG-clock Berlin10 with retained revision and PARITY_PENDING.
 
-Independent source reviews PASS after repaired SQL-name-resolution and NULL
-boundary findings. New execution is NOT_RUN. Historical exact e60b9b8f native
-packet compiled0 with10PASS/2House-qualifierFAIL; this qualifier is now repaired by
-D1269. Exact e60b9b8f native PostgreSQL17.6 packet compiled0 and all11 Reset cases
-PASS, including calendar/initializer/history and private-core42501 refusal. That
-packet does not qualify this newer schema/owner. Proofs/earlier RED are retained.
+Independent source and final qualification reviews PASS for source
+`c9b3ceefbdfc0a755e4cc29d7b6e314e908959ab`. The D1283 packet compiled the
+actual native library and both existing standalone Cargo targets
+`combat_death_reward_postgres` and `durability_postgres` (their original roots
+without Content). The standalone targets were compiled/listed only. Native
+execution passed 23 pure cases and 13 PostgreSQL cases, each on actual 170006.
+Four private cfg(test) registrations (Reset and three existing support modules)
+were disclosed; they are not published production integration. No wrapper,
+source substitution or second encoder was introduced. Sources remained frozen,
+all process groups closed, and the owned PostgreSQL service stopped.
+
+Evidence outside the product checkout: `evidence/2167-D1283-native/` contains
+source-plan.json, private-assembly.patch, compile-outcome.json, pure-outcome.json,
+outcome.json and independent-final-outcome-review.json. Native ELF SHA256:
+`e6e772c6010aa9bb5fe1e24c58c6aa9c86439c74f408bfbf01b7513253ed86b8`.
+The final publication adds only this documentation bridge to qualified c9b3ceef;
+its new SHA does not relabel the compiled artifact. Earlier compile failures and
+historical e60b9b8f 10PASS/2FAIL and PG11PASS remain retained under their exact
+sources; they do not replace this packet or establish broader qualification.
 
 Production I/#2187 sealed drain implementation/caller, final slot after C/#2163
 and B/#2197, migration installation, in-memory publication, positive composed
-activation/replay/concurrency/overflow/rollback, strict/full-package and final
+activation/replay/concurrency/overflow/rollback, strict/all-target/full-package and final
 repository gates remain unqualified. No fake positive drain certificate, shared
 caller, schema mount or readiness transition is added. The sections below retain
 history; these CP decisions supersede earlier dependency descriptions.
