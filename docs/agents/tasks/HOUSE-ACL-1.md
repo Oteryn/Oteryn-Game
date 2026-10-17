@@ -4,11 +4,11 @@
 task_id: HOUSE-ACL-1
 title: "HOUSE-ACL-1: house ACL tables and revisioned edits (skeleton)"
 mode: IMPLEMENT
-status: skeleton
+status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/house-acl-1
-base_sha: 5742f30f3
+base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -30,6 +30,60 @@ slot_only_paths:
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (only if Reg is confirmed)"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## 2026-10-17 nullable-owner correction — bounded source qualification
+
+This packet follows CP's ordinary main merge at
+`20b751c889936cb311ca61d0374512e83e374470`. The three changed preimages were
+read at that head and match the retained baseline. Root is the sole publisher
+under [D1345](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233992418).
+The PR remains draft and NOT_FULLY_QUALIFIED.
+
+The canonical property shape permits `owner_kind = NULL` for unowned states.
+The reader/writer previously decoded that valid database value as a required
+string, producing a SQLx decoding failure. They now decode `Option<String>` and
+return the existing typed `AclError::NotOwner` for an unowned property. Character
+and Guild owner checks, current session fencing, receipts, replay and revision CAS
+retain their existing behavior; no grant or current-authority source is added.
+
+The new native case
+`native_acl_unowned_property_returns_not_owner_without_receipt_or_decode_error`
+covers VACANT, AUCTION and RETIRED rows through both actual Root entrypoints. Each
+refusal leaves zero operation receipts, zero outbox rows and unchanged global ACL
+revision. Its prerequisite remains the already disclosed minimal uninstalled
+property/Guild fixture; this test does not qualify HOUSE-1a lifecycle or runtime
+property grants.
+
+Root executed the frozen formatted sources on Molehill-PC, slot B, beginning
+2026-10-17 13:20:10 UTC. The source assembly was native main
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`, this task's three real ACL leaves,
+four real #2145 WIRE leaves and literal own module registrations. The existing
+native `bestiary_postgres_harness` supplied the Root; no helper or authority was
+replaced. `cargo fetch --locked` passed before the shared PostgreSQL namespace
+run, with D1342 jobs=4 and MemAvailable about40GiB.
+
+**PASS, bounded:** all nine `durability::house_acl::tests::` cases passed
+(four pure and five native PG), zero failed or ignored, elapsed10.12s. This
+includes the new nullable regression. The unchanged rules source is a validation
+input, not a changed file in this publication packet.
+
+| Frozen source | SHA256 |
+|---|---|
+| `durability/house_acl.rs` | `2dd835a3b9873acb54008c478405c1090e81922d9ea3f2bb488967768f462b1c` |
+| `house/acl.rs` | `948735ef66be8456fdba602e5619c934db1e48652376e74eac9c93ea22a75b5a` |
+| `house/acl_tests.rs` | `7da6c7dc7c907309f593f5ea30a9cf08b87155fd9366bf7a609ccf521e6f0457` |
+
+This is source-assembly evidence, not an exact-published-head or production-wired
+qualification. Root must read back the successor's sources and requalify its
+identity; full package/Clippy and live House activation are not claimed here.
+
+D1348 holds `QualifiedHousePlacement::door_cell`, its real generation-qualified
+ACL consumer, and associated content tests until #2167 merges. None of those
+shared hunks or module/migration/dispatch mounts is in this nullable-only packet.
+The recovery archive below remains a held proposal, not applied source. Actual
+House-session fencing, active-bundle door qualification, legacy0038 compatibility,
+canonical property/Guild lifecycle, registered House events and definer-only runtime
+integration remain separate unfinished criteria.
 
 ## Goal
 

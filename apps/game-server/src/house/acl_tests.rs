@@ -302,6 +302,52 @@ async fn fixture_character(h: &Harness, seed: u8, owner: u8) -> TestResult {
 }
 
 #[test]
+fn native_acl_unowned_property_returns_not_owner_without_receipt_or_decode_error() -> TestResult {
+    run("houseaclunowned", async |h| {
+        // An unowned canonical property has a NULL owner kind as well as NULL owners.
+        // This fixture remains the explicitly uninstalled prerequisite schema above.
+        h.pool
+            .execute(sqlx::raw_sql(PROPERTY_PREREQUISITE_SCHEMA_PROPOSAL))
+            .await?;
+        h.pool
+            .execute(sqlx::raw_sql(HOUSE_ACL_SCHEMA_PROPOSAL))
+            .await?;
+        h.pool.execute(sqlx::raw_sql(GUILD_PREREQUISITE)).await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,revision,acl_revision,state) VALUES(encode($1,'hex')::uuid,$2,1,0,'VACANT')")
+            .bind(id(WORLD).as_slice()).bind(house().house_key()).execute(&h.pool).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        for state in ["VACANT", "AUCTION", "RETIRED"] {
+            sqlx::query("UPDATE game_house_properties SET state=$1 WHERE world_id=encode($2,'hex')::uuid AND house_key=$3")
+                .bind(state).bind(id(WORLD).as_slice()).bind(house().house_key()).execute(&h.pool).await?;
+            assert!(matches!(
+                h.root
+                    .read_current_house_acl(&authority, &h.node, item_fence()?, house(), None,)
+                    .await,
+                Err(AclError::NotOwner)
+            ));
+            assert!(matches!(
+                h.root
+                    .replace_house_acl(
+                        &authority,
+                        &h.node,
+                        item_fence()?,
+                        request(1, List::Guests, 0, vec![Entry::Character(cid(41))]),
+                    )
+                    .await,
+                Err(AclError::NotOwner)
+            ));
+            assert_eq!(counts(h).await?, (0, 0, "0".into()));
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn native_acl_revision_replay_rollback_and_evidence_are_atomic() -> TestResult {
     run("houseaclcas", async |h| {
         fixture(h).await?;

@@ -523,8 +523,11 @@ async fn locked_sources(
         .map(character)
         .transpose()?;
     let account = property.try_get::<Option<String>, _>("owner_account_id")?;
-    match property.try_get::<String, _>("owner_kind")?.as_str() {
-        "CHARACTER" if owner.is_some() && account.is_some() && owner_guild.is_none() => {
+    match property
+        .try_get::<Option<String>, _>("owner_kind")?
+        .as_deref()
+    {
+        Some("CHARACTER") if owner.is_some() && account.is_some() && owner_guild.is_none() => {
             let r=sqlx::query("SELECT account_id::text,world_id::text,lifecycle FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(owner.ok_or_else(corrupt)?.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or_else(corrupt)?;
             if Some(r.try_get::<String, _>("account_id")?) != account
                 || uuid_text(r.try_get("world_id")?)? != *house.world_id().as_bytes()
@@ -533,7 +536,7 @@ async fn locked_sources(
                 return Err(corrupt());
             }
         }
-        "GUILD" if owner.is_none() && account.is_none() && owner_guild.is_some() => {}
+        Some("GUILD") if owner.is_none() && account.is_none() && owner_guild.is_some() => {}
         _ => return Err(AclError::NotOwner),
     }
     if !matches!(
