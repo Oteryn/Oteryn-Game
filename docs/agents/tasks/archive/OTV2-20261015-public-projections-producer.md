@@ -4,7 +4,7 @@
 task_id: OTV2-20261015-public-projections-producer
 title: "GAME-PUBLIC-PROJ-PRODUCER-1: Game producer of highscores, character_profile and world_online public projections (disabled by default)"
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/public-projections-producer
@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: wave builder GAME-PUBLIC-PROJ-PRODUCER-1 (Claude Code)
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 migration_lease: "0091"
 owned_paths:
@@ -167,10 +167,18 @@ Architect-review fix head (2026-10-16):
 
 ```yaml
 last_progress: Codex P2 (online backoff) and control-plane hardening of #2224 fixed in one push
-status: waiting
+status: completed
 branch: feat/public-projections-producer
 pr: 2224
 owner_action_required: null
 blocker: null
 next_action: exact-head CI, Codex and architect review, then the slot commit at queue turn
 ```
+
+## Archive closeout
+
+- canonical PR #2224 merged on 2026-10-16 (`git log --grep "(#2224)"`); the record stayed in
+  `tasks/active/` and failed the protected-main live-state check, so #2163 archives it
+  as a ported `main` governance fix
+- merge commit/result: squash merge of #2224
+- ownership release: released with the merge of #2224

@@ -5,16 +5,36 @@ use sqlx::PgConnection;
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-pub async fn install(connection: &mut PgConnection) -> TestResult {
+/// A House case's own database: the stub case's `house_interior_<nanos>`
+/// (unless `harness_only`) or the native harness's `it_<tag>_<nanos>` for a
+/// `house_interior_*` or `house_loader_*` tag, as the canonical test admin on 17.6.
+async fn dedicated_database(connection: &mut PgConnection, harness_only: bool) -> TestResult<bool> {
     let (database, actor, version): (String, String, String) = sqlx::query_as(
         "SELECT current_database(), session_user::text, current_setting('server_version_num')",
     )
     .fetch_one(&mut *connection)
     .await?;
-    if !(database.starts_with("house_interior_") || database.starts_with("it_house_interior_"))
-        || actor != "oteryn_test_admin"
-        || version != "170006"
-    {
+    let Some((stem, nanos)) = database.rsplit_once('_') else {
+        return Ok(false);
+    };
+    let harness_tag = |prefix: &str| {
+        stem.strip_prefix(prefix).is_some_and(|tag| {
+            !tag.is_empty()
+                && tag
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+        })
+    };
+    let named = !nanos.is_empty()
+        && nanos.bytes().all(|b| b.is_ascii_digit())
+        && ((!harness_only && stem == "house_interior")
+            || harness_tag("it_house_interior_")
+            || harness_tag("it_house_loader_"));
+    Ok(named && actor == "oteryn_test_admin" && version == "170006")
+}
+
+pub async fn install(connection: &mut PgConnection) -> TestResult {
+    if !dedicated_database(connection, false).await? {
         return Err("house fixture requires a dedicated PostgreSQL 17.6 test database".into());
     }
     sqlx::raw_sql(
@@ -71,16 +91,7 @@ pub async fn seed_inactive_occupancy(
     count: i32,
 ) -> TestResult {
     use sqlx::Connection;
-    let (database, actor, version): (String, String, String) = sqlx::query_as(
-        "SELECT current_database(),session_user::text,current_setting('server_version_num')",
-    )
-    .fetch_one(&mut *connection)
-    .await?;
-    if !database.starts_with("it_house_interior_")
-        || actor != "oteryn_test_admin"
-        || version != "170006"
-        || !(0..=1999).contains(&count)
-    {
+    if !dedicated_database(connection, true).await? || !(0..=1999).contains(&count) {
         return Err("inactive occupancy fixture only".into());
     }
     let mut tx = connection.begin().await?;
@@ -118,15 +129,7 @@ pub async fn retained_audit_data_probe(
     replacement: Option<&[u8]>,
 ) -> TestResult {
     use sqlx::Connection;
-    let (database, actor, version): (String, String, String) = sqlx::query_as(
-        "SELECT current_database(),session_user::text,current_setting('server_version_num')",
-    )
-    .fetch_one(&mut *connection)
-    .await?;
-    if !database.starts_with("it_house_interior_")
-        || actor != "oteryn_test_admin"
-        || version != "170006"
-    {
+    if !dedicated_database(connection, true).await? {
         return Err("retained audit DATA fixture only".into());
     }
     let mut tx = connection.begin().await?;
@@ -162,15 +165,7 @@ pub async fn retained_audit_transaction_data_probe(
     transaction: &[u8],
 ) -> TestResult {
     use sqlx::Connection;
-    let (database, actor, version): (String, String, String) = sqlx::query_as(
-        "SELECT current_database(),session_user::text,current_setting('server_version_num')",
-    )
-    .fetch_one(&mut *connection)
-    .await?;
-    if !database.starts_with("it_house_interior_")
-        || actor != "oteryn_test_admin"
-        || version != "170006"
-    {
+    if !dedicated_database(connection, true).await? {
         return Err("retained audit DATA fixture only".into());
     }
     let mut tx = connection.begin().await?;
@@ -197,15 +192,7 @@ pub async fn seed_inactive_reclaim_subject(
     active_actor: &[u8],
 ) -> TestResult<Vec<u8>> {
     use sqlx::Connection;
-    let (database, actor, version): (String, String, String) = sqlx::query_as(
-        "SELECT current_database(),session_user::text,current_setting('server_version_num')",
-    )
-    .fetch_one(&mut *connection)
-    .await?;
-    if !database.starts_with("it_house_interior_")
-        || actor != "oteryn_test_admin"
-        || version != "170006"
-    {
+    if !dedicated_database(connection, true).await? {
         return Err("inactive reclaim-subject DATA fixture only".into());
     }
     let mut tx = connection.begin().await?;
