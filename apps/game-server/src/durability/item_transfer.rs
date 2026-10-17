@@ -1148,8 +1148,37 @@ pub(crate) async fn character_item_fence_is_current(
     reserved_world_id: [u8; 16],
     reserved_channel_id: [u8; 16],
 ) -> std::result::Result<bool, DurabilityError> {
-    let Ok((world_id, channel_id)) = scope_of(fence) else {
+    let Some(account) = character_item_fence_without_root_lock(
+        tx,
+        node,
+        fence,
+        command,
+        reserved_character_id,
+        reserved_world_id,
+        reserved_channel_id,
+    )
+    .await?
+    else {
         return Ok(false);
+    };
+    lock_character_item_root(tx, fence, &account).await
+}
+
+/// D1315: the same binding/session/assignment/incarnation/admission checks, before any
+/// Character root lock. A two-Character writer completes both checks first, then locks
+/// both roots in CharacterId order in this same transaction. The returned account name
+/// is expected DATA for the root comparison, not a transferable current-authority proof.
+pub(crate) async fn character_item_fence_without_root_lock(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    reserved_character_id: CharacterId,
+    reserved_world_id: [u8; 16],
+    reserved_channel_id: [u8; 16],
+) -> std::result::Result<Option<String>, DurabilityError> {
+    let Ok((world_id, channel_id)) = scope_of(fence) else {
+        return Ok(None);
     };
     // Binding: the CommandRef belongs to the fenced GameSession, the cause is
     // keyed to the fenced Character and the fenced scope is the reserved one.
@@ -1158,7 +1187,7 @@ pub(crate) async fn character_item_fence_is_current(
         || reserved_world_id != *world_id.as_bytes()
         || reserved_channel_id != *channel_id.as_bytes()
     {
-        return Ok(false);
+        return Ok(None);
     }
     let session = sqlx::query(
         "SELECT account_id::text FROM game_durability_reconnect_sessions \
@@ -1184,7 +1213,7 @@ pub(crate) async fn character_item_fence_is_current(
     .fetch_optional(&mut **tx)
     .await?;
     let Some(session) = session else {
-        return Ok(false);
+        return Ok(None);
     };
     let account_text: String = session.try_get("account_id")?;
 
@@ -1208,7 +1237,7 @@ pub(crate) async fn character_item_fence_is_current(
     .fetch_optional(&mut **tx)
     .await?;
     if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
-        return Ok(false);
+        return Ok(None);
     }
 
     let guards_ok: bool = sqlx::query_scalar(
@@ -1239,9 +1268,22 @@ pub(crate) async fn character_item_fence_is_current(
     .fetch_one(&mut **tx)
     .await?;
     if !guards_ok {
-        return Ok(false);
+        return Ok(None);
     }
+    Ok(Some(account_text))
+}
 
+/// D1315: the original root lock and account/World comparison. The enclosing writer must
+/// first complete the native fence checks in this transaction; account_text is only the
+/// expected account read there. This helper alone is not admission or swap authority.
+pub(crate) async fn lock_character_item_root(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: &CurrentCharacterItemFence,
+    account_text: &str,
+) -> std::result::Result<bool, DurabilityError> {
+    let Ok((world_id, _)) = scope_of(fence) else {
+        return Ok(false);
+    };
     // Per-Character serialization: a row lock, never an UPDATE, so the 0009
     // revision guard does not fire and CharacterRevision stays unchanged.
     let root = sqlx::query(

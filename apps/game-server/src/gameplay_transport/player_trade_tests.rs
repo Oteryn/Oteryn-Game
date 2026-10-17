@@ -724,6 +724,7 @@ fn owner_local_index_expiry_invalidation_and_ambiguity_preserve_physical_gap() {
             actors,
             session: ready(),
             intent: None,
+            issuance: None,
         },
     );
     for actor in actors {
@@ -743,6 +744,7 @@ fn owner_local_index_expiry_invalidation_and_ambiguity_preserve_physical_gap() {
             actors,
             session: transferring(),
             intent: None,
+            issuance: None,
         },
     );
     for actor in actors {
@@ -872,6 +874,17 @@ async fn native_inventory(
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     generation: &ActiveGeneration,
 ) -> TestResult<[[u8; 16]; 2]> {
+    native_inventory_with_ingress(h, recovery, generation, None).await
+}
+
+/// The issuer case uses actual FND reservations around the real fixture item writers,
+/// so its accept commands follow the committed pickup commands in the same ingress.
+async fn native_inventory_with_ingress(
+    h: &native::Harness,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    generation: &ActiveGeneration,
+    mut ingress: Option<&mut [CommandIngress; 2]>,
+) -> TestResult<[[u8; 16]; 2]> {
     let bag = source_item_facts(generation, 2854)?;
     let leaf = source_item_facts(generation, 3031)?;
     let mut leaves = Vec::new();
@@ -880,26 +893,149 @@ async fn native_inventory(
             .mint_definition(recovery, bag.definition.clone(), 1)
             .await?;
         let request = native::to_slot(native_command(side, 1), backpack, bag.clone());
+        if let Some(ingress) = ingress.as_mut() {
+            reserve_fixture_command(
+                &mut ingress[side],
+                native_command(side, 1),
+                "pickup",
+                backpack,
+            )?;
+        }
         assert!(matches!(
             h.transfer(recovery, native_fences()[side], request)
                 .await
                 .map_err(native::debug)?,
             crate::durability::item_transfer::ItemTransferOutcome::Committed(_)
         ));
+        if let Some(ingress) = ingress.as_mut() {
+            terminal_fixture_command(
+                &mut ingress[side],
+                native_command(side, 1),
+                "COMMITTED",
+                backpack,
+            )?;
+        }
         let item = h
             .mint_definition(recovery, leaf.definition.clone(), 1)
             .await?;
         let mut request = native::to_backpack(native_command(side, 2), item, leaf.clone());
         request.backpack = Some(bag.clone());
+        if let Some(ingress) = ingress.as_mut() {
+            reserve_fixture_command(&mut ingress[side], native_command(side, 2), "pickup", item)?;
+        }
         assert!(matches!(
             h.transfer(recovery, native_fences()[side], request)
                 .await
                 .map_err(native::debug)?,
             crate::durability::item_transfer::ItemTransferOutcome::Committed(_)
         ));
+        if let Some(ingress) = ingress.as_mut() {
+            terminal_fixture_command(
+                &mut ingress[side],
+                native_command(side, 2),
+                "COMMITTED",
+                item,
+            )?;
+        }
         leaves.push(item);
     }
     Ok(leaves.try_into().unwrap())
+}
+
+fn reserve_fixture_command(
+    ingress: &mut CommandIngress,
+    command: CommandRef,
+    family: &str,
+    item: [u8; 16],
+) -> TestResult {
+    let semantic = CommandSemanticIdentity::new(
+        NormalizedSemanticIntentIdentity::new(&trade_hex(&item), 1, family, 1)?,
+        RetainedBindingIdentity::new(
+            "native-trade-fixture",
+            &trade_hex(command.game_session_id().as_bytes()),
+        )?,
+    );
+    assert_eq!(
+        ingress.reserve(command.command_id(), semantic),
+        crate::foundation::IngressDecision::Reserved(command.command_id()),
+    );
+    Ok(())
+}
+
+/// Only called after the actual native operation has returned the named outcome.
+fn terminal_fixture_command(
+    ingress: &mut CommandIngress,
+    command: CommandRef,
+    disposition: &str,
+    item: [u8; 16],
+) -> TestResult {
+    ingress.terminalize(
+        command.command_id(),
+        TerminalSemanticOutcome::new(disposition, &trade_hex(&item), 1)?,
+        || {},
+    )?;
+    Ok(())
+}
+
+async fn native_ready_with_ingress(
+    context: &TradeReadContext<'_, '_, '_>,
+    actors: [TradeActor; 2],
+    items: [[u8; 16]; 2],
+    ingress: &mut [CommandIngress; 2],
+    now: Instant,
+) -> TestResult<TradeOwner> {
+    let mut owner = TradeOwner::new(context.runtime, now).map_err(native::debug)?;
+    for side in [0, 1] {
+        let command = CommandRef::new(
+            actors[side].fence.game_session_id,
+            ingress[side].next_command_id().unwrap(),
+        );
+        reserve_fixture_command(
+            &mut ingress[side],
+            command,
+            "player_trade_offer",
+            items[side],
+        )?;
+        assert_eq!(
+            owner
+                .offer(
+                    context,
+                    [actors[side], actors[1 - side]],
+                    items[side],
+                    command,
+                    now
+                )
+                .await
+                .map_err(native::debug)?,
+            if side == 0 {
+                Phase::Offered
+            } else {
+                Phase::Ready
+            },
+        );
+        terminal_fixture_command(&mut ingress[side], command, "OFFERED", items[side])?;
+    }
+    Ok(owner)
+}
+
+fn reserve_native_accept(
+    owner: &TradeOwner,
+    actor: TradeActor,
+    trade_id: [u8; 16],
+    ingress: &mut CommandIngress,
+) -> TestResult<CommandRef> {
+    let command = CommandRef::new(
+        actor.fence.game_session_id,
+        ingress.next_command_id().unwrap(),
+    );
+    let semantic = owner
+        .accept_semantic(command, trade_id)
+        .map_err(native::debug)?;
+    assert_eq!(
+        ingress.reserve(command.command_id(), semantic),
+        crate::foundation::IngressDecision::Reserved(command.command_id())
+    );
+    Ok(command)
 }
 async fn activate_native_content(
     h: &native::Harness,
@@ -1686,4 +1822,611 @@ fn current_native_visibility_cutoff_refuses_same_nearby_partner_without_a_flag()
     ));
     // Committed carrier placements exercise the real256result cutoff; this is no claim of
     //256 authentic client admissions or of production memory/latency qualification.
+}
+
+#[test]
+fn native_trade_id_and_occurrence_preserve_full_command_identity() {
+    let counter = command(Side::Second, 3);
+    let first = command(Side::First, 4);
+    let second = command(Side::Second, 4);
+    let id = issued_trade_id(counter);
+    let occurrence = command_identity(b"oteryn:player-trade-occurrence:v1", second);
+    assert_eq!(id.len(), 16);
+    assert_eq!(occurrence.len(), 16);
+    assert_eq!(id[6] >> 4, 7);
+    assert_eq!(occurrence[8] >> 6, 2);
+    assert_eq!(issued_trade_id(counter), id);
+    assert_ne!(occurrence, id);
+    assert_ne!(
+        command_identity(b"oteryn:player-trade-occurrence:v1", first),
+        occurrence
+    );
+    assert_ne!(
+        command_identity(
+            b"oteryn:player-trade-occurrence:v1",
+            command(Side::Second, 5)
+        ),
+        occurrence
+    );
+    assert_ne!(
+        issued_trade_id(command(Side::Second, u64::MAX)),
+        issued_trade_id(command(Side::Second, u32::MAX.into()))
+    );
+}
+
+#[test]
+fn native_pending_trade_accept_issues_once_after_terminal_partner() -> TestResult {
+    pg_trade("tradeissuer", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let now = Instant::now();
+        let mut owner =
+            native_ready_with_ingress(&context, actors, items, &mut ingress, now).await?;
+        let id = owner.trade_id(actors[0].actor).unwrap();
+        assert_eq!(owner.trade_id(actors[1].actor), Some(id));
+        let before = h.footprint().await?;
+
+        // Change only pending ingress: all native actors, fences, item state and id stay valid.
+        assert!(matches!(
+            owner
+                .accept_pending(
+                    &context,
+                    actors[0],
+                    id,
+                    native_command(0, 4),
+                    &mut ingress[0],
+                    now
+                )
+                .await,
+            Err(OwnerError::Ingress(TradeIngressRefusal::MissingPending)),
+        ));
+        let first = reserve_native_accept(&owner, actors[0], id, &mut ingress[0])?;
+        let later_first = reserve_native_accept(&owner, actors[0], id, &mut ingress[0])?;
+        // Real FND terminal preflight refuses the later command; no acceptance was installed.
+        assert!(matches!(
+            owner
+                .accept_pending(&context, actors[0], id, later_first, &mut ingress[0], now)
+                .await,
+            Err(OwnerError::CommandLifecycle(
+                CommandLifecycleError::TerminalOutOfOrder { .. }
+            )),
+        ));
+        assert_eq!(
+            owner.trades.values().next().unwrap().session.accepts,
+            [None, None]
+        );
+        assert!(owner.trades.values().next().unwrap().issuance.is_none());
+        assert_eq!(ingress[0].outstanding(), 2);
+
+        let mut changed_id = id;
+        changed_id[15] ^= 1;
+        assert!(matches!(
+            owner
+                .accept_pending(&context, actors[0], changed_id, first, &mut ingress[0], now)
+                .await,
+            Err(OwnerError::Ingress(
+                TradeIngressRefusal::ConflictChangedInput
+            )),
+        ));
+        let wrong_session = CommandRef::new(actors[1].fence.game_session_id, first.command_id());
+        assert!(matches!(
+            owner
+                .accept_pending(&context, actors[0], id, wrong_session, &mut ingress[0], now)
+                .await,
+            Err(OwnerError::Authority),
+        ));
+        assert!(
+            owner
+                .issued_transfer(&runtime, actors[0].actor)
+                .map_err(native::debug)?
+                .is_none()
+        );
+
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[0], id, first, &mut ingress[0], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::Accepted
+        );
+        assert_eq!(owner.phase(actors[0].actor), Some(Phase::Ready));
+        let first_semantic = owner.accept_semantic(first, id).map_err(native::debug)?;
+        assert!(matches!(
+            ingress[0].classify_duplicate(first.command_id(), &first_semantic),
+            DuplicateDisposition::ReplayRetainedOutcome(_)
+        ));
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[0], id, first, &mut ingress[0], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::ReplayedAccepted
+        );
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[0], id, later_first, &mut ingress[0], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::Accepted
+        );
+        // The original terminal accept survives native retained-record eviction in the book.
+        assert!(matches!(
+            ingress[0].classify_duplicate(first.command_id(), &first_semantic),
+            DuplicateDisposition::OutcomeExpired
+        ));
+
+        let second = reserve_native_accept(&owner, actors[1], id, &mut ingress[1])?;
+        let later_second = reserve_native_accept(&owner, actors[1], id, &mut ingress[1])?;
+        assert!(matches!(
+            owner
+                .accept_pending(&context, actors[1], id, later_second, &mut ingress[1], now)
+                .await,
+            Err(OwnerError::Ingress(TradeIngressRefusal::PendingOutOfOrder)),
+        ));
+        assert_eq!(owner.phase(actors[0].actor), Some(Phase::Ready));
+        assert!(
+            owner
+                .issued_transfer(&runtime, actors[0].actor)
+                .map_err(native::debug)?
+                .is_none()
+        );
+
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[1], id, second, &mut ingress[1], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::Transferring
+        );
+        let (issued, intent) = owner
+            .issued_transfer(&runtime, actors[0].actor)
+            .map_err(native::debug)?
+            .unwrap();
+        assert_eq!(*issued.trade_id(), id);
+        assert_eq!(issued.first_accept(), first);
+        assert_eq!(issued.first_fence(), actors[0].fence);
+        assert_eq!(issued.trigger(), second);
+        assert_eq!(intent.binding.accepts, [first, second]);
+        assert_eq!(
+            intent
+                .destinations
+                .map(|destination| destination.placement_ordinal),
+            [2, 2]
+        );
+        let occurrence = *issued.occurrence();
+        let issued_address: *const IssuedTradeOccurrence = issued;
+        let binding = intent.binding.clone();
+        let second_semantic = owner.accept_semantic(second, id).map_err(native::debug)?;
+        assert!(matches!(
+            ingress[1].classify_duplicate(second.command_id(), &second_semantic),
+            DuplicateDisposition::PendingOriginal
+        ));
+        owner
+            .note_ambiguous_outcome(actors[0].actor, &binding)
+            .map_err(native::debug)?;
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[1], id, second, &mut ingress[1], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::Transferring
+        );
+        owner
+            .expire(now + Duration::from_secs(121))
+            .map_err(native::debug)?;
+        let (same, _) = owner
+            .issued_transfer(&runtime, actors[1].actor)
+            .map_err(native::debug)?
+            .unwrap();
+        assert!(
+            std::ptr::eq(same, issued_address),
+            "retry must retain the issued record"
+        );
+        assert_eq!(*same.occurrence(), occurrence);
+        assert!(matches!(
+            owner.invalidate_item(items[0]),
+            Err(OwnerError::Policy(TradeRefusal::Transferring))
+        ));
+        assert!(matches!(
+            ingress[1].classify_duplicate(second.command_id(), &second_semantic),
+            DuplicateDisposition::PendingOriginal
+        ));
+        assert_eq!(
+            h.footprint().await?,
+            before,
+            "issuance is not a durable swap or reservation"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn native_issuer_refuses_data_accept_and_terminal_enum_as_consent() -> TestResult {
+    pg_trade("tradeconsent", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let now = Instant::now();
+        let mut owner =
+            native_ready_with_ingress(&context, actors, items, &mut ingress, now).await?;
+        let id = owner.trade_id(actors[0].actor).unwrap();
+        // A successful old DATA accept still did not pass through native terminalization.
+        assert_eq!(
+            owner
+                .accept(
+                    &context,
+                    actors[0],
+                    native_command(1, 3),
+                    native_command(0, 4),
+                    now
+                )
+                .await
+                .map_err(native::debug)?,
+            Phase::Ready
+        );
+        let second = reserve_native_accept(&owner, actors[1], id, &mut ingress[1])?;
+        assert!(matches!(
+            owner
+                .accept_pending(&context, actors[1], id, second, &mut ingress[1], now)
+                .await,
+            Err(OwnerError::Ingress(TradeIngressRefusal::UnissuedAcceptance))
+        ));
+        assert!(
+            owner
+                .issued_transfer(&runtime, actors[1].actor)
+                .map_err(native::debug)?
+                .is_none()
+        );
+        terminal_fixture_command(&mut ingress[1], second, "REJECTED", id)?;
+        owner.invalidate(actors[0].actor).map_err(native::debug)?;
+        drop(owner);
+
+        let mut owner =
+            native_ready_with_ingress(&context, actors, items, &mut ingress, now).await?;
+        let id = owner.trade_id(actors[0].actor).unwrap();
+        let first = reserve_native_accept(&owner, actors[0], id, &mut ingress[0])?;
+        // Deliberately terminalize outside the TradeOwner mutation. Even a real FND retained
+        // ACCEPTED outcome must not be promoted into the missing owner-issued consent marker.
+        terminal_fixture_command(&mut ingress[0], first, "ACCEPTED", id)?;
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[0], id, first, &mut ingress[0], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::ReplayedAccepted
+        );
+        assert!(owner.trades.values().next().unwrap().issuance.is_none());
+        let second = reserve_native_accept(&owner, actors[1], id, &mut ingress[1])?;
+        assert_eq!(
+            owner
+                .accept_pending(&context, actors[1], id, second, &mut ingress[1], now)
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::Accepted
+        );
+        assert_eq!(owner.phase(actors[1].actor), Some(Phase::Ready));
+        assert!(
+            owner
+                .issued_transfer(&runtime, actors[0].actor)
+                .map_err(native::debug)?
+                .is_none()
+        );
+        assert!(matches!(
+            owner.trades.values().next().unwrap().issuance,
+            Some(TradeIssuance::FirstAccepted(TerminalTradeAccept {
+                side: Side::Second,
+                ..
+            }))
+        ));
+        // The legacy adapter cannot change a lifecycle after a genuine native first accept.
+        let pair = owner.trades.values().next().unwrap().session.pair.unwrap();
+        assert!(matches!(
+            owner
+                .accept(&context, actors[0], pair, native_command(0, 6), now)
+                .await,
+            Err(OwnerError::Ingress(TradeIngressRefusal::UnissuedAcceptance))
+        ));
+        // Historical replay can outlive the closed book. Its separate outcome does not
+        // revalidate current actor/DB state, recreate consent or imply a current trade.
+        owner.invalidate(actors[0].actor).map_err(native::debug)?;
+        assert_eq!(owner.phase(actors[0].actor), None);
+        assert_eq!(
+            owner
+                .accept_pending(
+                    &context,
+                    actors[1],
+                    id,
+                    second,
+                    &mut ingress[1],
+                    now + Duration::from_secs(121)
+                )
+                .await
+                .map_err(native::debug)?,
+            NativeAcceptOutcome::ReplayedAccepted
+        );
+        assert!(owner.trades.is_empty());
+        assert!(
+            owner
+                .issued_transfer(&runtime, actors[1].actor)
+                .map_err(native::debug)?
+                .is_none()
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn native_issuer_rechecks_item_changed_by_actual_transfer() -> TestResult {
+    pg_trade("tradeissuerstale", async |h| {
+        seed_second_character_data(h).await?;
+        let (controller, pin, runtime, objects, actors) = pg_runtime();
+        let generation = controller.active().unwrap();
+        activate_native_content(h, &pin).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let mut ingress = [CommandIngress::new(), CommandIngress::new()];
+        let items =
+            native_inventory_with_ingress(h, &recovery, generation, Some(&mut ingress)).await?;
+        let context = TradeReadContext {
+            runtime: &runtime,
+            root: &h.root,
+            recovery: &recovery,
+            node: &h.node,
+            room: pin.qualified_room(),
+            objects: &objects,
+            generation,
+        };
+        let now = Instant::now();
+        let mut owner =
+            native_ready_with_ingress(&context, actors, items, &mut ingress, now).await?;
+        let id = owner.trade_id(actors[0].actor).unwrap();
+        let first = reserve_native_accept(&owner, actors[0], id, &mut ingress[0])?;
+        owner
+            .accept_pending(&context, actors[0], id, first, &mut ingress[0], now)
+            .await
+            .map_err(native::debug)?;
+        let leaf = source_item_facts(generation, 3031)?;
+        let extra = h
+            .mint_definition(&recovery, leaf.definition.clone(), 1)
+            .await?;
+        let pickup = CommandRef::new(
+            actors[0].fence.game_session_id,
+            ingress[0].next_command_id().unwrap(),
+        );
+        reserve_fixture_command(&mut ingress[0], pickup, "pickup", extra)?;
+        let mut request = native::to_backpack(pickup, extra, leaf);
+        request.backpack = Some(source_item_facts(generation, 2854)?);
+        assert!(matches!(
+            h.transfer(&recovery, actors[0].fence, request)
+                .await
+                .map_err(native::debug)?,
+            crate::durability::item_transfer::ItemTransferOutcome::Committed(_)
+        ));
+        terminal_fixture_command(&mut ingress[0], pickup, "COMMITTED", extra)?;
+        let before = h.footprint().await?;
+        let second = reserve_native_accept(&owner, actors[1], id, &mut ingress[1])?;
+        assert!(matches!(
+            owner
+                .accept_pending(&context, actors[1], id, second, &mut ingress[1], now)
+                .await,
+            Err(OwnerError::Policy(TradeRefusal::Stale))
+        ));
+        assert!(
+            owner
+                .issued_transfer(&runtime, actors[0].actor)
+                .map_err(native::debug)?
+                .is_none()
+        );
+        assert_eq!(
+            owner.phase(actors[0].actor),
+            Some(Phase::Closed(CloseReason::Stale))
+        );
+        assert_eq!(h.footprint().await?, before);
+        Ok(())
+    })
+}
+
+async fn root_lock_is_available(pool: &sqlx::PgPool, character: CharacterId) -> TestResult<bool> {
+    let mut observer = pool.begin().await?;
+    let result = sqlx::query_scalar::<_, i32>(
+        "SELECT 1 FROM game_character_roots \
+         WHERE character_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_one(&mut *observer)
+    .await;
+    observer.rollback().await?;
+    match result {
+        Ok(1) => Ok(true),
+        Err(error)
+            if error
+                .as_database_error()
+                .is_some_and(|error| error.code().as_deref() == Some("55P03")) =>
+        {
+            Ok(false)
+        }
+        Err(error) => Err(error.into()),
+        Ok(_) => Err("unexpected root-lock observation".into()),
+    }
+}
+
+#[test]
+fn native_trade_fence_phase_precedes_both_root_locks_and_preserves_wrapper() -> TestResult {
+    use crate::durability::item_transfer::{
+        character_item_fence_is_current, character_item_fence_without_root_lock,
+        lock_character_item_root,
+    };
+    pg_trade("tradefencelocks", async |h| {
+        seed_second_character_data(h).await?;
+        let seal = h.recovery.seal_current().map_err(native::debug)?;
+        let _recovery = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(native::debug)?;
+        let fences = native_fences();
+        let (world, channel) = (native::id(native::WORLD), native::id(native::CHANNEL));
+        let before = h.footprint().await?;
+        let revisions: Vec<(String, String)> = sqlx::query_as(
+            "SELECT character_id::text,character_revision::text \
+             FROM game_character_roots ORDER BY character_id",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        let mut transaction = h.pool.begin().await?;
+        let mut accounts = Vec::with_capacity(2);
+        for side in [0, 1] {
+            accounts.push(
+                character_item_fence_without_root_lock(
+                    &mut transaction,
+                    &h.node,
+                    &fences[side],
+                    native_command(side, 1),
+                    fences[side].character_id,
+                    world,
+                    channel,
+                )
+                .await
+                .map_err(native::debug)?
+                .ok_or("native fence rejected")?,
+            );
+            // Independent connection: after either native fence check, neither root
+            // is locked. NOWAIT bounds the observation without a timeout/sleep race.
+            for fence in fences {
+                assert!(root_lock_is_available(&h.pool, fence.character_id).await?);
+            }
+        }
+        let order = if fences[0].character_id.as_bytes() < fences[1].character_id.as_bytes() {
+            [0, 1]
+        } else {
+            [1, 0]
+        };
+        for side in order {
+            assert!(
+                lock_character_item_root(&mut transaction, &fences[side], &accounts[side])
+                    .await
+                    .map_err(native::debug)?
+            );
+            assert!(!root_lock_is_available(&h.pool, fences[side].character_id).await?);
+        }
+        transaction.rollback().await?;
+
+        // Legacy callers still validate and lock the one Character in the original order.
+        let mut legacy = h.pool.begin().await?;
+        assert!(
+            character_item_fence_is_current(
+                &mut legacy,
+                &h.node,
+                &fences[0],
+                native_command(0, 1),
+                fences[0].character_id,
+                world,
+                channel,
+            )
+            .await
+            .map_err(native::debug)?
+        );
+        assert!(!root_lock_is_available(&h.pool, fences[0].character_id).await?);
+        assert!(root_lock_is_available(&h.pool, fences[1].character_id).await?);
+        legacy.rollback().await?;
+
+        // Change only connection generation. Both entry points refuse before a root lock.
+        let mut stale = fences[0];
+        stale.connection_generation = ConnectionGeneration::new(2).map_err(native::debug)?;
+        let mut transaction = h.pool.begin().await?;
+        assert!(
+            character_item_fence_without_root_lock(
+                &mut transaction,
+                &h.node,
+                &stale,
+                native_command(0, 1),
+                stale.character_id,
+                world,
+                channel,
+            )
+            .await
+            .map_err(native::debug)?
+            .is_none()
+        );
+        assert!(
+            !character_item_fence_is_current(
+                &mut transaction,
+                &h.node,
+                &stale,
+                native_command(0, 1),
+                stale.character_id,
+                world,
+                channel,
+            )
+            .await
+            .map_err(native::debug)?
+        );
+        assert!(root_lock_is_available(&h.pool, fences[0].character_id).await?);
+        transaction.rollback().await?;
+
+        // The separate root phase retains the original account comparison.
+        let mut transaction = h.pool.begin().await?;
+        assert_ne!(accounts[0], accounts[1]);
+        assert!(
+            !lock_character_item_root(&mut transaction, &fences[0], &accounts[1])
+                .await
+                .map_err(native::debug)?
+        );
+        transaction.rollback().await?;
+        assert_eq!(h.footprint().await?, before);
+        let after: Vec<(String, String)> = sqlx::query_as(
+            "SELECT character_id::text,character_revision::text \
+             FROM game_character_roots ORDER BY character_id",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        assert_eq!(
+            after, revisions,
+            "root locks never increment CharacterRevision"
+        );
+        Ok(())
+    })
 }

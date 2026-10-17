@@ -453,3 +453,93 @@ head, not this proposed successor. PostgreSQL fixture names reported as `ok` do
 not by themselves prove database execution because those fixtures can early-return.
 Original atomic swap, durable TRANSFERRING recovery and live integration criteria
 remain open.
+
+## Native command-bound issuance (2026-10-17; owned source preparation)
+
+Base: `6f9379e8ffc977d8a006c3a55976a526bc025bbc`. That published draft includes
+the D1311 native assignment-binding fix. Its exact-head validation is recorded at
+[#2132 comment6232831422](https://github.com/Oteryn/Oteryn-Game/pull/2132#issuecomment-6232831422):
+Rust1.95 all-target Clippy with warnings denied; lib 3,185 passed, 0 failed,
+29 ignored; ops 6 passed. Those results qualify that predecessor, not this new
+issuance delta. Canonical PG execution remains unqualified.
+
+The accepted PLAYER-TRADE0 brief assigns the runtime issuer to TRADE-1 and the
+ID-bearing command/domain to TRADE-WIRE-1; this task owns both leaves. The earlier
+local handoff's claim that a preexisting external occurrence producer was needed
+is withdrawn. The producer is owned implementation work. D1315 now grants the
+bounded paired-fence/root-lock split described below. Actual Channel/session-owner
+installation, dispatch, capability and registry remain shared integration work.
+
+The owned gameplay leaf now has a private occurrence-issuance component.
+`accept_pending` borrows the real FND `CommandIngress` implementation and existing
+native Root/node/runtime/context. The ingress type has no session ownership
+field; this leaf does not prove that an arbitrary supplied book belongs to the
+admitted session. At this head, the live connection retains only a raw command
+counter in its Copy `SessionContinuity`, so the real shared owner installation
+is still absent. A wrapper around an arbitrary book and a supplied session id
+would not establish that provenance and is not added. The component record is
+not yet authenticated session consent or a complete writer proof.
+
+Each newly accepted command goes through the existing actor,
+visibility, Content and DB-current two-Character/item reads. Canonical semantic
+identity binds the accepted trade id, Content pin and full native CommandRef;
+there is no supplied current/pending/accepted flag or substitute authority.
+
+- The first successful accept is installed only inside native FND terminalization
+  after its preflight succeeds. The owner captures that terminal consent and its
+  fence; later FND terminal-record eviction cannot replace the captured accept.
+- A matching second pending command issues one occurrence and retains the
+  existing destination intent. It stays pending until the future durable outcome.
+  It must be the first command of the actual FND pending suffix; a later pending
+  command cannot issue a swap ahead of an earlier one.
+- Retrying that pending trigger observes the same issued record. An ambiguous
+  outcome and the idle timeout retain it. A terminal enum or an old DATA accept
+  cannot create this component's acceptance; the old DATA adapter cannot modify
+  its lifecycle after native acceptance starts. Historical terminal replay returns
+  a distinct `ReplayedAccepted` outcome. It can outlive a closed book and does not
+  revalidate actor/DB generation or recreate a current acceptance.
+- Trade ids and occurrences use distinct native command-derived identity tags
+  and the existing full 16-byte identity convention. D85 actor ids and item
+  handles keep their existing types. No wire opcode, capability or registry is
+  assigned by this leaf.
+
+The shared preparation step preserves the previous DATA accept behavior while
+allowing FND preflight to fail without installing acceptance. It clones only the
+expected next session state, not a runtime owner or an authority implementation.
+The occurrence has a private constructor path and immutable accessors; it is not
+a committed-swap receipt. The real writer must still consume recovery/node/current
+fences and recheck both sources and destinations in its atomic transaction.
+
+New qualification cases use actual FND reserve/terminalize operations around the
+existing real native MINT/TRANSFER fixture history and the native TradeOwner read
+path. They cover component issuance, independent missing/changed pending data and
+CommandRef-session mismatch (not ingress-owner provenance), first/second command
+order, first-accept retention, duplicate trigger,
+DATA/terminal-enum promotion refusal, and an offered item changed by a real native
+TRANSFER. PG cases still require canonical PostgreSQL17.6 and explicit execution
+evidence; an early-return test reported as `ok` is insufficient.
+
+CP D1315, [comment6232733238](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232733238),
+reaffirmed by [comment6232878773](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232878773),
+grants the narrow shared `durability/item_transfer.rs` split. The original
+`character_item_fence_is_current` wrapper now calls
+`character_item_fence_without_root_lock`, then `lock_character_item_root`.
+All original SQL predicates, strict current-generation equality, account/World
+comparison and single-Character caller order are preserved. The future TRADE
+writer can complete both native fence checks before either root, then acquire
+the roots in CharacterId order. The intermediate account string is expected DATA,
+not new authority; both phases must run in the same transaction.
+
+A native PG case observes root availability from independent transactions with
+`FOR UPDATE NOWAIT`: both fence phases leave both roots unlocked; the ordered
+root phase locks them; the legacy wrapper locks its original one root. Independent
+stale-generation and account-mismatch cases refuse, and the durable footprint and
+CharacterRevision remain unchanged. This qualifies the helper component only;
+the atomic writer and migration0100 remain open. That migration must preserve all
+latest0095 HOUSE guard arms as well as earlier proofs.
+
+Local Rust1.94 repo-config rustfmt and source/diff checks are recorded in the
+candidate audit. New Clippy, unit and native PG execution: **NOT_RUN**. Status is
+**NOT_FULLY_QUALIFIED**. This adds no migration, durable cause/receipt/event, atomic
+writer, physical cross-command reservation installation, wire dispatch or shared
+registry. Those remaining parts of TRADE-1/TRADE-WIRE are still open.

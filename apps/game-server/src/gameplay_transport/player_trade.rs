@@ -2,7 +2,11 @@
 //!
 //! Native TradeOwner re-reads actor/control/lease/visibility/range/map and durable inventory
 //! at every offer/accept. Durable inventory reads live in durability::player_trade;
-//! this gameplay child retains the owner-local book. The existing leaf remains policy DATA.
+//! this gameplay child retains the owner-local book. The original leaf remains policy DATA;
+//! accept_pending composes those reads with the real FND CommandIngress implementation and
+//! retains one occurrence after a terminal first accept and a still-pending second accept.
+//! CommandIngress does not bind itself to a GameSession. The shared session owner must supply
+//! and retain its actual ingress; that installation and provenance check are still absent.
 //! Physical cross-command reservations, sole-book installation and atomic swap are uninstalled.
 //! TRANSFERRING retains owner-local intent DATA on ambiguity, never a swap grant or custody.
 
@@ -12,7 +16,12 @@
 )]
 
 use crate::durability::player_trade::{TradeData, TradeReadError};
-use crate::foundation::{CommandRef, GameSessionId, RuntimeScopeRefV1};
+use crate::foundation::{
+    CommandIngress, CommandLifecycleError, CommandRef, CommandSemanticIdentity,
+    DuplicateDisposition, GameSessionId, NormalizedSemanticIntentIdentity, RetainedBindingIdentity,
+    RuntimeScopeRefV1, TerminalSemanticOutcome,
+};
+use sha2::{Digest, Sha256};
 
 const IDLE_MS: u64 = 120_000;
 
@@ -53,7 +62,8 @@ pub(crate) enum TradeRefusal {
 }
 
 /// Immutable native cause/binding data, not an issued occurrence, reservation or commit token.
-/// pair identifies the counter-offer internally; TRADE-WIRE owns the future wire trade_id map.
+/// pair identifies the counter-offer internally; TradeOwner exposes its issued 128-bit trade id.
+/// The wire codec and shared command installation remain integration work.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct TransferBinding {
     pub pair: CommandRef,
@@ -72,6 +82,7 @@ pub(crate) enum ObservedSwap {
     Rejected,
 }
 
+#[derive(Clone)]
 pub(crate) struct TradeSession {
     phase: Phase,
     data: TradeData,
@@ -287,6 +298,8 @@ use std::time::Instant;
 #[derive(Debug)]
 pub(crate) enum OwnerError {
     Policy(TradeRefusal),
+    Ingress(TradeIngressRefusal),
+    CommandLifecycle(CommandLifecycleError),
     Authority,
     TooFar,
     NotVisible,
@@ -307,6 +320,11 @@ impl std::fmt::Display for OwnerError {
     }
 }
 impl std::error::Error for OwnerError {}
+impl From<CommandLifecycleError> for OwnerError {
+    fn from(value: CommandLifecycleError) -> Self {
+        Self::CommandLifecycle(value)
+    }
+}
 impl From<DurabilityError> for OwnerError {
     fn from(value: DurabilityError) -> Self {
         Self::Storage(value)
@@ -357,6 +375,105 @@ struct OwnedTrade {
     actors: [TradeActor; 2],
     session: TradeSession,
     intent: Option<ReservationIntent>,
+    issuance: Option<TradeIssuance>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TradeIngressRefusal {
+    MissingPending,
+    ConflictChangedInput,
+    OutcomeExpired,
+    UnexpectedTerminal,
+    UnissuedAcceptance,
+    PendingOutOfOrder,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NativeAcceptOutcome {
+    Accepted,
+    /// Historical result only: no current actor/DB read or new consent is implied.
+    ReplayedAccepted,
+    Transferring,
+}
+
+/// Created only inside this component's successful native CommandIngress::terminalize mutation.
+/// It survives eviction of the FND retained terminal record while this trade remains open.
+/// Session-owner ingress provenance is an uninstalled caller responsibility.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TerminalTradeAccept {
+    side: Side,
+    command: CommandRef,
+    fence: CurrentCharacterItemFence,
+}
+
+/// A component-issued occurrence, not authenticated session consent or a committed-swap proof.
+/// The native ingress lifecycle is enforced here; its session-owner provenance must be
+/// enforced at the shared caller installation, which is not present in this component.
+/// The future writer must still consume native recovery/node/current fences and recheck
+/// both sources and destinations. There is no public constructor or decoding path.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct IssuedTradeOccurrence {
+    trade_id: [u8; 16],
+    occurrence: [u8; 16],
+    first: TerminalTradeAccept,
+    trigger: CommandRef,
+}
+impl IssuedTradeOccurrence {
+    pub(crate) fn trade_id(&self) -> &[u8; 16] {
+        &self.trade_id
+    }
+    pub(crate) fn occurrence(&self) -> &[u8; 16] {
+        &self.occurrence
+    }
+    pub(crate) fn first_accept(&self) -> CommandRef {
+        self.first.command
+    }
+    pub(crate) fn first_fence(&self) -> CurrentCharacterItemFence {
+        self.first.fence
+    }
+    pub(crate) fn trigger(&self) -> CommandRef {
+        self.trigger
+    }
+}
+
+enum TradeIssuance {
+    FirstAccepted(TerminalTradeAccept),
+    Transferring(IssuedTradeOccurrence),
+}
+
+struct PreparedAccept {
+    key: ([u8; 16], u64),
+    side: Side,
+    session: TradeSession,
+    intent: Option<ReservationIntent>,
+}
+
+/// Same full-width command-bound identity convention as native NPC trade. The tag
+/// separates the server trade id from the second-accept occurrence. Intent is bound
+/// separately: changing it must conflict under the same occurrence, not mint a new cause.
+fn command_identity(tag: &[u8], command: CommandRef) -> [u8; 16] {
+    let hash = Sha256::new()
+        .chain_update(tag)
+        .chain_update(command.game_session_id().as_bytes())
+        .chain_update(command.command_id().get().to_be_bytes())
+        .finalize();
+    let mut id = [0; 16];
+    id.copy_from_slice(&hash[..16]);
+    id[6] = (id[6] & 0x0f) | 0x70;
+    id[8] = (id[8] & 0x3f) | 0x80;
+    id
+}
+fn issued_trade_id(pair: CommandRef) -> [u8; 16] {
+    command_identity(b"oteryn:player-trade-id:v1", pair)
+}
+fn trade_hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        text.push(char::from(HEX[usize::from(byte >> 4)]));
+        text.push(char::from(HEX[usize::from(byte & 15)]));
+    }
+    text
 }
 
 /// Planned addresses only, never a reservation token or durable swap authorization.
@@ -625,6 +742,7 @@ impl TradeOwner {
                 actors,
                 session,
                 intent: None,
+                issuance: None,
             },
         );
         Ok(Phase::Offered)
@@ -637,6 +755,247 @@ impl TradeOwner {
         command: CommandRef,
         now: Instant,
     ) -> Result<Phase, OwnerError> {
+        // The original DATA adapter cannot mutate a lifecycle owned by native FND ingress.
+        if self
+            .by_actor
+            .get(&actor.actor.placement_identity())
+            .and_then(|key| self.trades.get(key))
+            .is_some_and(|trade| trade.issuance.is_some())
+        {
+            return Err(OwnerError::Ingress(TradeIngressRefusal::UnissuedAcceptance));
+        }
+        let prepared = self
+            .prepare_accept(context, actor, pair, command, now)
+            .await?;
+        let trade = self
+            .trades
+            .get_mut(&prepared.key)
+            .ok_or(OwnerError::Authority)?;
+        trade.session = prepared.session;
+        trade.intent = prepared.intent;
+        Ok(trade.session.phase())
+    }
+
+    /// Server-owned 128-bit id, issued when the second offer makes this trade READY.
+    /// Item handles and D85 actor identities retain their existing protocol types.
+    pub(crate) fn trade_id(&self, actor: ExactActorRef) -> Option<[u8; 16]> {
+        let key = self.by_actor.get(&actor.placement_identity())?;
+        let trade = self.trades.get(key)?;
+        if !trade.actors.iter().any(|trader| trader.actor == actor)
+            || !matches!(trade.session.phase(), Phase::Ready | Phase::Transferring)
+        {
+            return None;
+        }
+        trade.session.pair.map(issued_trade_id)
+    }
+
+    /// Canonical semantic DATA for the actual session owner's FND ingress reservation.
+    /// A new id denotes a new trade, so each id has one immutable incarnation/revision.
+    pub(crate) fn accept_semantic(
+        &self,
+        command: CommandRef,
+        trade_id: [u8; 16],
+    ) -> Result<CommandSemanticIdentity, OwnerError> {
+        Ok(CommandSemanticIdentity::new(
+            NormalizedSemanticIntentIdentity::new(
+                &trade_hex(&trade_id),
+                1,
+                "player_trade_accept",
+                1,
+            )?,
+            RetainedBindingIdentity::new(
+                &trade_hex(&self.binding.1),
+                &format!(
+                    "{}:{}",
+                    trade_hex(command.game_session_id().as_bytes()),
+                    command.command_id().get()
+                ),
+            )?,
+        ))
+    }
+
+    /// Borrow this component's issued record together with its captured intent. Neither
+    /// serialized identities nor a terminal outcome alone can construct it. This borrow
+    /// does not prove that the caller supplied the admitted session owner's actual ingress.
+    pub(crate) fn issued_transfer(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Result<Option<(&IssuedTradeOccurrence, &ReservationIntent)>, OwnerError> {
+        runtime.owner_fence().map_err(|_| OwnerError::Authority)?;
+        if runtime_key(runtime) != self.binding {
+            return Err(OwnerError::Authority);
+        }
+        let Some(trade) = self
+            .by_actor
+            .get(&actor.placement_identity())
+            .and_then(|key| self.trades.get(key))
+        else {
+            return Ok(None);
+        };
+        if !trade.actors.iter().any(|trader| trader.actor == actor) {
+            return Err(OwnerError::Authority);
+        }
+        match (&trade.issuance, &trade.intent) {
+            (Some(TradeIssuance::Transferring(issued)), Some(intent)) => Ok(Some((issued, intent))),
+            _ => Ok(None),
+        }
+    }
+
+    /// Consumes an already-pending command from the supplied native FND ingress. The first valid
+    /// accept is installed only inside terminalize's successful mutation; the second
+    /// remains pending and issues exactly once. Refusals leave command terminalization
+    /// to the caller. Unknown swap outcomes retain this record and the owner-local intent.
+    /// The borrowed Root/node/runtime context performs the existing native authority reads;
+    /// there is no supplied "current", "accepted" or "pending" boolean.
+    /// The installed caller must bind this ingress to the current admitted GameSession and
+    /// retain it across continuations. CommandIngress itself has no session ownership field;
+    /// an arbitrary replacement ingress would not establish native session consent.
+    /// ReplayedAccepted is historical output only and may outlive this book. That branch
+    /// checks the runtime key and command session but does not revalidate the current actor,
+    /// closed/expired trade or database generation, and never reinstalls an acceptance.
+    pub(crate) async fn accept_pending(
+        &mut self,
+        context: &TradeReadContext<'_, '_, '_>,
+        actor: TradeActor,
+        trade_id: [u8; 16],
+        command: CommandRef,
+        ingress: &mut CommandIngress,
+        now: Instant,
+    ) -> Result<NativeAcceptOutcome, OwnerError> {
+        context
+            .runtime
+            .owner_fence()
+            .map_err(|_| OwnerError::Authority)?;
+        if runtime_key(context.runtime) != self.binding
+            || command.game_session_id() != actor.fence.game_session_id
+        {
+            return Err(OwnerError::Authority);
+        }
+        let semantic = self.accept_semantic(command, trade_id)?;
+        match ingress.classify_duplicate(command.command_id(), &semantic) {
+            DuplicateDisposition::PendingOriginal => {}
+            DuplicateDisposition::ReplayRetainedOutcome(outcome)
+                if outcome.disposition() == "ACCEPTED"
+                    && outcome.state() == trade_hex(&trade_id) =>
+            {
+                // Replay is an outcome only. It never installs a terminal-accept marker.
+                return Ok(NativeAcceptOutcome::ReplayedAccepted);
+            }
+            DuplicateDisposition::ReplayRetainedOutcome(_) => {
+                return Err(OwnerError::Ingress(TradeIngressRefusal::UnexpectedTerminal));
+            }
+            DuplicateDisposition::ConflictChangedInput => {
+                return Err(OwnerError::Ingress(
+                    TradeIngressRefusal::ConflictChangedInput,
+                ));
+            }
+            DuplicateDisposition::OutcomeExpired => {
+                return Err(OwnerError::Ingress(TradeIngressRefusal::OutcomeExpired));
+            }
+            DuplicateDisposition::NotDuplicate => {
+                return Err(OwnerError::Ingress(TradeIngressRefusal::MissingPending));
+            }
+        }
+        let key = *self
+            .by_actor
+            .get(&actor.actor.placement_identity())
+            .ok_or(OwnerError::Policy(TradeRefusal::Stale))?;
+        let trade = self.trades.get(&key).ok_or(OwnerError::Authority)?;
+        if !trade.actors.contains(&actor) {
+            return Err(OwnerError::Authority);
+        }
+        let pair = trade
+            .session
+            .pair
+            .ok_or(OwnerError::Policy(TradeRefusal::NotReady))?;
+        if issued_trade_id(pair) != trade_id {
+            return Err(OwnerError::Policy(TradeRefusal::Stale));
+        }
+        let first = match &trade.issuance {
+            None if trade.session.accepts == [None, None] => None,
+            Some(TradeIssuance::FirstAccepted(first))
+                if trade.session.accepts[first.side.index()] == Some(first.command)
+                    && trade.session.accepts[1 - first.side.index()].is_none()
+                    && trade.actors[first.side.index()].fence == first.fence =>
+            {
+                Some(*first)
+            }
+            Some(TradeIssuance::Transferring(issued))
+                if issued.trigger == command
+                    && issued.trade_id == trade_id
+                    && trade.session.phase() == Phase::Transferring =>
+            {
+                // Same pending command observes the same occurrence; no fresh effect is issued.
+                return Ok(NativeAcceptOutcome::Transferring);
+            }
+            _ => return Err(OwnerError::Ingress(TradeIngressRefusal::UnissuedAcceptance)),
+        };
+        let prepared = self
+            .prepare_accept(context, actor, pair, command, now)
+            .await?;
+        let trade = self
+            .trades
+            .get_mut(&prepared.key)
+            .ok_or(OwnerError::Authority)?;
+        match prepared.session.phase() {
+            Phase::Ready => {
+                let outcome = TerminalSemanticOutcome::new("ACCEPTED", &trade_hex(&trade_id), 1)?;
+                ingress.terminalize(command.command_id(), outcome, || {
+                    let accepted = first.unwrap_or(TerminalTradeAccept {
+                        side: prepared.side,
+                        command,
+                        fence: actor.fence,
+                    });
+                    trade.session = prepared.session;
+                    trade.intent = prepared.intent;
+                    trade.issuance = Some(TradeIssuance::FirstAccepted(accepted));
+                })?;
+                Ok(NativeAcceptOutcome::Accepted)
+            }
+            Phase::Transferring => {
+                let first =
+                    first.ok_or(OwnerError::Ingress(TradeIngressRefusal::UnissuedAcceptance))?;
+                if first.side == prepared.side || prepared.intent.is_none() {
+                    return Err(OwnerError::Authority);
+                }
+                // FND pending commands are a contiguous suffix (including recovery).
+                // Unlike the first accept, this command must stay pending, so it cannot
+                // use terminalize's order check. Check the actual ingress suffix instead.
+                let pending_suffix = match ingress.next_command_id() {
+                    Some(next) => next.get().checked_sub(command.command_id().get()),
+                    None => u64::MAX
+                        .checked_sub(command.command_id().get())
+                        .and_then(|remaining| remaining.checked_add(1)),
+                };
+                let outstanding =
+                    u64::try_from(ingress.outstanding()).map_err(|_| OwnerError::Authority)?;
+                if pending_suffix != Some(outstanding) {
+                    return Err(OwnerError::Ingress(TradeIngressRefusal::PendingOutOfOrder));
+                }
+                let issued = IssuedTradeOccurrence {
+                    trade_id,
+                    occurrence: command_identity(b"oteryn:player-trade-occurrence:v1", command),
+                    first,
+                    trigger: command,
+                };
+                trade.session = prepared.session;
+                trade.intent = prepared.intent;
+                trade.issuance = Some(TradeIssuance::Transferring(issued));
+                Ok(NativeAcceptOutcome::Transferring)
+            }
+            _ => Err(OwnerError::Authority),
+        }
+    }
+
+    async fn prepare_accept(
+        &mut self,
+        context: &TradeReadContext<'_, '_, '_>,
+        actor: TradeActor,
+        pair: CommandRef,
+        command: CommandRef,
+        now: Instant,
+    ) -> Result<PreparedAccept, OwnerError> {
         self.expire(now)?;
         let key = *self
             .by_actor
@@ -688,28 +1047,39 @@ impl TradeOwner {
         };
         let ms = self.millis(now)?;
         let trade = self.trades.get_mut(&key).ok_or(OwnerError::Authority)?;
+        let mut session = trade.session.clone();
         match current {
-            Ok(current) => trade
-                .session
-                .record_revalidated_accept(side, pair, command, &current, ms)?,
+            Ok(current) => {
+                if let Err(error) =
+                    session.record_revalidated_accept(side, pair, command, &current, ms)
+                {
+                    if matches!(session.phase(), Phase::Closed(_)) {
+                        trade.session = session;
+                    }
+                    return Err(error.into());
+                }
+            }
             Err(error) => {
                 let _ = trade.session.invalidate();
                 self.prune_closed();
                 return Err(error);
             }
         }
-        if let Some(destinations) = destinations {
-            let binding = trade
-                .session
-                .transfer()
-                .ok_or(OwnerError::Authority)?
-                .clone();
-            trade.intent = Some(ReservationIntent {
+        let intent = if let Some(destinations) = destinations {
+            let binding = session.transfer().ok_or(OwnerError::Authority)?.clone();
+            Some(ReservationIntent {
                 binding,
                 destinations,
-            });
-        }
-        Ok(trade.session.phase())
+            })
+        } else {
+            None
+        };
+        Ok(PreparedAccept {
+            key,
+            side,
+            session,
+            intent,
+        })
     }
     fn destination_intent(
         context: &TradeReadContext<'_, '_, '_>,
