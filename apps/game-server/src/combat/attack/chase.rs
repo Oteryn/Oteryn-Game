@@ -220,6 +220,14 @@ impl ChaseState {
         }
     }
 
+    /// Whether a step already returned by [`Self::next_step`] this window from `at` may still
+    /// commit, whatever the target does meanwhile.
+    pub(crate) fn has_in_flight_step(&self, now_us: u64, at: MovementLocalPosition) -> bool {
+        self.in_flight.is_some_and(|(window, origin, _)| {
+            window == now_us / CHASE_WINDOW_MICROS && origin == at
+        })
+    }
+
     /// The step the chase takes now from `at`: the route's next step, if any.
     pub(crate) fn next_step(&mut self, at: MovementLocalPosition) -> ChaseDecision {
         if self.expected_at != Some(at) {
@@ -518,6 +526,16 @@ mod tests {
                 floor: at.floor,
             }
         })
+    }
+
+    #[test]
+    fn a_returned_step_stays_in_flight_for_its_window_and_cell() {
+        let mut chase = ChaseState::default();
+        let decision = chase.decide(0, at(0, 0), at(4, 0), || true, open);
+        assert_eq!(decision, ChaseDecision::Step(CardinalStep::East));
+        assert!(chase.has_in_flight_step(0, at(0, 0)));
+        assert!(!chase.has_in_flight_step(0, at(1, 0)));
+        assert!(!chase.has_in_flight_step(CHASE_WINDOW_MICROS, at(0, 0)));
     }
 
     #[test]

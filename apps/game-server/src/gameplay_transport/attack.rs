@@ -905,9 +905,13 @@ impl ChannelAttackStates {
                     .state
                     .target()
                     .filter(|_| entry.modes.chase == ChaseMode::Chase);
-                if let Some((from, to)) = held.and_then(|target| {
-                    chase_ends(runtime, room, entry.actor, entry.session, target, now)
-                }) && crate::movement::path_search::chebyshev(from, to) <= 1
+                // A returned step may still commit when the target turns adjacent, so only a
+                // stored (uncommitted) plan is dropped by adjacency.
+                if !entry.chase.has_in_flight_step(now.get(), from)
+                    && let Some((from, to)) = held.and_then(|target| {
+                        chase_ends(runtime, room, entry.actor, entry.session, target, now)
+                    })
+                    && crate::movement::path_search::chebyshev(from, to) <= 1
                 {
                     return None;
                 }
