@@ -6,7 +6,8 @@
 //! its continuity: a resume or channel transfer keeps it unchanged and never widens it, and a
 //! resume whose supported set lacks a selected capability is refused as resume-unavailable, so the
 //! client falls back to fresh admission. Dispatch and domain emission read the selection: a
-//! command or domain whose capability is not selected stays refused or unsent.
+//! command or domain whose capability is not selected stays refused or unsent. A core domain that
+//! a selected capability supersedes stays unsent too ([`SUPERSEDED`]).
 
 use oteryn_protocol_oteryn::achievement_notices::{
     CAPABILITY_ACHIEVEMENT_NOTICES_V1, STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
@@ -31,6 +32,7 @@ use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
+use oteryn_protocol_oteryn::logout::{CAPABILITY_LOGOUT_V1, COMMAND_TYPE_LOGOUT_INTENT};
 use oteryn_protocol_oteryn::npc_service::{
     CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT,
     STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW,
@@ -48,7 +50,9 @@ use oteryn_protocol_oteryn::world_interaction::{
 use oteryn_protocol_oteryn::world_map::{
     CAPABILITY_WORLD_MAP_VIEW_V1, STATE_DOMAIN_WORLD_MAP_VIEW,
 };
-use oteryn_protocol_oteryn::world_object::{CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1};
+use oteryn_protocol_oteryn::world_object::{
+    CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+};
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 
@@ -61,17 +65,24 @@ pub(crate) struct OfferedCapability {
 }
 
 /// CLOCK-1: capability 19 `WORLD_LIGHT_V1` (domain 18 and the VIS-2 `light` of domain 1), which
-/// requires 6. Every offered set ends with it.
+/// requires 6. Every offered set ends with it, then with 21.
 const WORLD_LIGHT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_LIGHT_V1,
     requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+};
+
+/// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. It is the
+/// highest offered ID, so every offered set ends with it.
+const LOGOUT: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_LOGOUT_V1,
+    requires: &[],
 };
 
 /// The production offered set for a generation without a non-empty Item key set: the registry's
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
 /// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; CLOCK-1 offers
-/// capability 19. A test keeps it equal to the registry and within
+/// capability 19 and LOGOUT-WIRE-1 capability 21. A test keeps it equal to the registry and within
 /// `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
@@ -91,12 +102,13 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
     },
     WORLD_LIGHT,
+    LOGOUT,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a): capability 3
 /// `NPC_SERVICE_V1` (a bundle World places the NPCs), then the Item view set (which offers 4
 /// `ITEM_VIEW_MOVE_V1`) up to 17, then capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6,
-/// then 19. A bundle
+/// then 19 and 21. A bundle
 /// World boots only against a generation whose Item key set names every bundle Item. Only a
 /// bundle World returns it; the registry entries of 3 and 18 stay `offered: false` and their
 /// `offer_gate` names this offer. 3 is below every other offered ID and 18 between the Item view
@@ -117,11 +129,12 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
     let mut set = [WORLD_MAP_VIEW; LEN];
     set[0] = NPC_SERVICE;
     let mut index = 0;
-    while index + 1 < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
+    while index + 2 < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
         set[index + 1] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
         index += 1;
     }
-    set[LEN - 1] = WORLD_LIGHT;
+    set[LEN - 2] = WORLD_LIGHT;
+    set[LEN - 1] = LOGOUT;
     set
 };
 
@@ -151,7 +164,13 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
     },
     WORLD_LIGHT,
+    LOGOUT,
 ];
+
+/// `ITEM_LOOK_V1`, registry capability 28.
+const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
+/// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
+const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
 
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
@@ -230,6 +249,7 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
     (CAPABILITY_WORLD_LIGHT_V1, &[], &[STATE_DOMAIN_WORLD_CLOCK]),
+    (CAPABILITY_LOGOUT_V1, &[COMMAND_TYPE_LOGOUT_INTENT], &[]),
     // RUNE-USE-0 §4: owns no command type or domain; it gates the USE position arm and
     // dispositions 18 and 19, and is not offered before RUNE-CAST-1.
     (CAPABILITY_RUNE_USE_V1, &[], &[]),
@@ -241,7 +261,28 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
     ),
+    // ITEM-LOOK-1: capability 28 `ITEM_LOOK_V1` gates command type 30 `ITEM_LOOK_INTENT` (CP
+    // D1268, D1292) and owns no domain. It is not offered and command 30 has no handler yet, so a
+    // session never selects 28 and command 30 is never dispatched.
+    (
+        CAPABILITY_ITEM_LOOK_V1,
+        &[COMMAND_TYPE_ITEM_LOOK_INTENT],
+        &[],
+    ),
 ];
+
+/// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3
+/// "One object domain per World" (`MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md`, accepted) with
+/// ARCH-MAP-WIRE-1 §1.5: a World booted from a bundle serves domain 17 and does not serve
+/// `WORLD_OBJECT_OVERLAY` (domain 2); its doors, levers and other object states reach the client
+/// as tile changes of domain 17. Capability 18 is selected exactly on a bundle World (only it
+/// offers 18, and it requires 18), so a session that selected 18 is never sent domain 2 on join,
+/// resume or delta, and a client that selected 18 refuses domain 2. A fixture World never offers
+/// 18 and keeps domain 2.
+const SUPERSEDED: &[(u32, &[u32])] = &[(
+    CAPABILITY_WORLD_MAP_VIEW_V1,
+    &[STATE_DOMAIN_WORLD_OBJECT_OVERLAY],
+)];
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
 pub(crate) const SELECTED_CAPACITY: usize = 32;
@@ -322,12 +363,16 @@ impl SelectedCapabilities {
     }
 
     /// Whether state `domain` may be sent: a domain owned by a capability only when that
-    /// capability is selected; a core domain always.
+    /// capability is selected; a core domain unless a selected capability supersedes it
+    /// ([`SUPERSEDED`]).
     pub(crate) fn domain_selected(&self, domain: u32) -> bool {
         GATED
             .iter()
             .filter(|(_, _, domains)| domains.contains(&domain))
             .all(|(capability, _, _)| self.contains(*capability))
+            && !SUPERSEDED.iter().any(|(capability, domains)| {
+                domains.contains(&domain) && self.contains(*capability)
+            })
     }
 }
 
