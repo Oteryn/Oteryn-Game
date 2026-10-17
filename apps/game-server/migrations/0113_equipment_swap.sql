@@ -20,6 +20,10 @@ ALTER TABLE game_character_equipment_receipts
 CREATE OR REPLACE FUNCTION game_item_instance_change_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
+    IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.transaction_id=NEW.last_transaction_id
+     AND p.item_instance_id=NEW.item_instance_id AND p.created_xact_id=pg_current_xact_id()) THEN
+     PERFORM game_house_shape_complete(NEW.last_transaction_id);RETURN NULL;END IF;
 
     -- Same physical transaction's second whole item in the equipment swap.
     IF EXISTS(SELECT 1 FROM game_character_equipment_receipts r
@@ -116,6 +120,12 @@ $$;
 
 CREATE OR REPLACE FUNCTION game_equipment_slot_proven() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
+    IF TG_OP='DELETE' THEN
+     IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.shape=5 AND p.source_kind=3
+      AND p.item_instance_id=OLD.item_instance_id AND p.world_id=OLD.world_id AND p.character_id=OLD.character_id
+      AND p.source_slot=OLD.slot AND p.created_xact_id=pg_current_xact_id()) THEN RETURN NULL;END IF;
+    END IF;
 
     IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_character_equipment_receipts r
        JOIN game_item_instances i ON i.item_instance_id=r.swap_item_instance_id
@@ -158,6 +168,13 @@ END $$;
 CREATE OR REPLACE FUNCTION game_item_placement_proven() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
+    -- 0095: exact owner-produced House shape evidence; all older arms below are unchanged.
+    IF TG_TABLE_NAME='game_item_container_entries' THEN
+     IF EXISTS(SELECT 1 FROM game_item_house_shape_proofs p WHERE p.shape=6 AND p.transaction_id=NEW.placed_transaction_id
+      AND p.item_instance_id=NEW.item_instance_id AND p.world_id=NEW.world_id AND p.character_id=NEW.character_id
+      AND p.destination_parent=NEW.parent_item_instance_id AND p.destination_ordinal=NEW.placement_ordinal
+      AND p.created_xact_id=pg_current_xact_id()) THEN RETURN NULL;END IF;
+    END IF;
 
     IF TG_TABLE_NAME='game_item_container_entries' AND EXISTS(
        SELECT 1 FROM game_character_equipment_receipts r
