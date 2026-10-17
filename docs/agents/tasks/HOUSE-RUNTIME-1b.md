@@ -22,7 +22,112 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## 2026-10-17 D1401b correction — current frozen source candidate
+## 2026-10-17 D1421 canonical test registration checkpoint
+
+[CP D1421](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6240084090)
+grants one coherent successor on #2165: the focused thin wrapper, shared case leaf,
+actual canonical aggregate mounts/routing, the one Cargo test entry and this owned
+record. The exact predecessor is `43b638341b479f1076f823b3bcca2a331cd1bfc3`, tree
+`d28cf056d529c4a817e7c822966cb18c9ff6296f`. The complete source proposal is retained in
+[the CP request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6240080882),
+patch SHA256 `d6691a459536a64007a51c1e24112ec25ece2c7982c581169b0e361e2204ad61`.
+The root rechecks the actual shared preimages and preserves the full current union
+immediately before its single fast-forward publication; this card does not declare
+that a future head, ref readback or CI run has already completed.
+
+### Concrete defect and granted change
+
+At the predecessor, the existing PG-COVERAGE-1 test failed because
+`house_runtime_postgres` contained inline tests and included no `support/*_cases.rs`
+file. Both affected jobs belong to the ordinary pull_request workflow
+[39058279023](https://github.com/Oteryn/Oteryn-Game/actions/runs/39058279023), despite
+their Merge Queue labels. The reported target completed 1579 cases and failed this
+one aggregation guard. The failure is not a result of the separate unpublished
+sixteen-case actor assembly.
+
+The focused target now has a literal support include and `test = false`; an explicit
+focused run still requires PostgreSQL. The new support leaf keeps the original four
+pure cases and the existing configured-PG closed-boundary case. It is mounted once
+in `durability_postgres`, which already composes native Foundation and Durability.
+The same aggregate now mounts the actual existing HouseScope source, Git blob
+`6ca2a8fd15d4d227032d2d89059268da2b6b076c`, so all request and native identity types
+belong to that same aggregate. No substitute types or held actor/stage source are
+introduced. The three existing HouseScope unit cases become visible through that
+source mount and are counted separately from the original five cases.
+
+D1421 explicitly accepts both the actual HouseScope mount and this routing split:
+
+| Target and configuration | Required behavior |
+| --- | --- |
+| Focused target, absent URL | Preserve the original strict refusal. |
+| Canonical aggregate, entirely absent URL | Emit PRE-ROUTING / NONCANONICAL and return before runtime/database construction; no PostgreSQL qualification. |
+| Either target, present empty, non-Unicode or unsafe URL | Reach the original validator and fail. |
+| Either target, valid configured URL | Execute the original PostgreSQL17.6 schema, SQL/assertions and cleanup path. |
+
+The four pure bodies remain in their unchanged source file, SHA256
+`582233ed04dbbfdb2a0d46584fee426ffe924af39b939ca5c581684396288feb`.
+The pre-format configured-PG body is preserved exactly, 2145 bytes from opening
+brace through closing brace and final LF, SHA256
+`99e6f23b5ee8bedeea6c08298febdc3f1b5d50c2f4b66adb712a47be66cc7308`.
+The original outer PG test name remains; its new routing wrapper delegates to that
+configured helper. This is an explicit routing change, not a claim that the entire
+old outer function is byte-identical. The existing cleanup on returned errors is
+retained. Its assertion-panic gap is also retained and disclosed: a panic can bypass
+the old DROP, so panic-safe cleanup is not claimed by this organization patch.
+A separate bounded cleanup successor is outside this exact D1421 publication.
+
+### Validation and preserved implementation evidence
+
+Independent source reviews verified all four preimage/output identities, exact
+configured-PG/pure preservation, coherent type identity and the unchanged aggregation
+and duplicate-source guard rules. Isolated forward/reverse patch application recovered
+every complete preimage. No audit, allowlist, workflow or native authority guard was
+weakened. The source-level aggregation predicates are satisfied; execution of the Rust
+aggregation test is a separate required result.
+
+Native STDIN Rust1.94 formatting PASS on the three Rust files; Cargo bytes unchanged. Full result SHA256 `03aa87ca68e05a2cd2361930d80d9d5a680e42b4bbf1bc53638f6a8154eca4f9` and all four returned file bytes were verified. No worktree source, Cargo command or PostgreSQL operation was used by the formatter.
+
+| Evidence group | Current disposition |
+| --- | --- |
+| D1421 source4 registration and routing | Independently reviewed source checkpoint. Native compilation/LIST/the five selected cases and actual aggregation execution are NOT_RUN for this successor at authoring. D1421 requires the actual aggregation test to pass and CI on the new head. |
+| Earlier D1362 claims assembly | Historical LIST11 and 11 pure PASS on the recorded six-file source. It lacked D1420's touch step and is not current D1420 native qualification. All old logs and identities remain archived. |
+| Actual D1401b actor/stage assembly | Sixteen native-formatted source files, raw manifest `aa36216617d90a91a0ba42c31cc8e4cda456e0f489b33e21532f9265043af95f`; formatter delta independently reviewed. LIST16/RUN16 remain NOT_RUN at this authoring checkpoint, fourth D1409 child only. |
+| Complete native House runtime and admission | NOT_FULLY_QUALIFIED. Entry/login remain HouseClosed and exit remains ExitNotAdmitted; placement, complete state transfer, native rollback/restart and actual caller integration remain open. |
+
+[CP D1420](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6239666536)
+requires touching the own changed crate's `apps/game-server/src/lib.rs` inside the
+canonical lease before every Cargo command, including locked fetch, LIST and test
+execution. Prior no-touch results require a repeat and remain historical. The same
+rule is present in the frozen sixteen-case runner; its source bytes and resource,
+HEAD/manifest and final integrity gates stay pinned. The four-child queue remains
+#2141 -> #2137 diagnostic -> BED13 -> #2165 pure16. D1421 adds no competing native job.
+D1329's existing shared PostgreSQL17.6 service, wrapper, own-database cleanup and
+D1415's separate lease per child remain mandatory.
+
+The previous evidence file
+`docs/agents/evidence/HOUSE-RUNTIME-1b-D1362-D1373-SOURCE-CHECKPOINT-2026-10-17.md`
+is unchanged, SHA256
+`ab14b67e88bc515ef1c8959ad95eb211f76c8fb2a89750e41b37a776654c3467`.
+Its complete 36-artifact source/review/manifest archive remains byte-identical;
+this checkpoint edits only the four granted source files and this card. The new test
+registration does not apply any inert lifecycle/carrier/source-assembly proposal.
+All other D1401 producer/export and actual PlayerSpellState owner gates remain.
+
+### Published source payload identities
+
+The following are the complete proposed file identities for the sole publisher's
+fresh-preimage/readback checks; a future commit identity is not guessed here.
+
+- `apps/game-server/tests/house_runtime_postgres.rs`: 346 bytes; Git blob `dfe0b80bfa65e2baf498cd91f0361e39f3d8d623`; SHA256 `7fd129f73cfc5c72db71a068e8e02ab15e9c1197978835dae8114722c767128b`.
+- `apps/game-server/tests/support/house_runtime_postgres_cases.rs`: 7808 bytes; Git blob `8e4b242738aa822d00832d35df0cb0d86e5814f4`; SHA256 `b81cb65a3ff048e754590c71a16fabe46cc270b265a5eb973c6c10e31da2d815`.
+- `apps/game-server/tests/durability_postgres.rs`: 367735 bytes; Git blob `287b3a81fc9247edac217b4fe0d82f6b0cefbd1b`; SHA256 `4395c5b29f53e669e47c25a0dba38e65d9745e44b3f2f531dc77884d83f8a3d7`.
+- `apps/game-server/Cargo.toml`: 4560 bytes; Git blob `6481c2e6fc17fd97af016ed06f1c72a27ac4773a`; SHA256 `2d8890d05a3a9f72f76f7fff66a3d40b634c870f8b1688c1c0fe8f5c94c57e9f`.
+
+Ready, review triggers, queue and merge remain CP-owned. The historical authoring
+sections below keep their original source and execution identities. Their old native
+statements do not supersede this current D1420 disposition.
+
+## Historical 2026-10-17 D1401b authoring checkpoint
 
 The source backup published at `291bd9dc748707b29e65ce7b51e40151ab98157f` is
 preserved below. This successor adds a concrete correction to that inert D1373
@@ -254,16 +359,20 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/gameplay_transport/house_runtime.rs`
 - `apps/game-server/src/gameplay_transport/house_runtime_loading.rs`
 - `apps/game-server/src/gameplay_transport/house_runtime_tests.rs`
-- `apps/game-server/tests/house_runtime_postgres.rs`
+- `apps/game-server/tests/house_runtime_postgres.rs` (D1421 focused strict thin wrapper)
+- `apps/game-server/tests/support/house_runtime_postgres_cases.rs` (D1421 original five cases and granted absent-URL routing)
+- `apps/game-server/tests/durability_postgres.rs` (D1421 one support mount, routing constant and actual existing HouseScope module mount only; preserve the complete current union)
+- `apps/game-server/Cargo.toml` (D1421 only the `house_runtime_postgres` entry with `test = false`)
 - `apps/game-server/src/house_scope/actor_placement.rs` (D1373 actual producer)
 - `apps/game-server/src/house_scope/mod.rs` (D1373 actual consumer)
 - `docs/agents/evidence/HOUSE-RUNTIME-1b-*.md`
 - `docs/agents/tasks/HOUSE-RUNTIME-1b.md` (this record: status and notes only)
 
 CP D1062 fixes the four original implementation paths. D1373 additionally assigns
-the two House scope paths above to the actual producer and consumer. Other shared
-registrations, lifecycle/carrier dependency hunks and the aggregate test target remain
-subject to their exact allocated slot; the embedded source backup does not apply them.
+the two House scope paths above to the actual producer and consumer. D1421 grants only
+the precise canonical test-registration and routing changes listed above. Every other
+shared registration and lifecycle/carrier dependency hunk remains subject to its exact
+allocated slot; the embedded source backup does not apply those changes.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
 

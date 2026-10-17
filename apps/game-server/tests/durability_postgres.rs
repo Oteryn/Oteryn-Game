@@ -14,6 +14,9 @@ pub use production_server::domain;
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 #[allow(dead_code, unused_imports)]
+#[path = "../src/house_scope/mod.rs"]
+pub mod house_scope;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
@@ -33,6 +36,11 @@ mod character_revision_sequencer_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
+// Configured PG runs execute the original strict case; ordinary runs report
+// explicit PRE-ROUTING without supplying a database or claiming qualification.
+const HOUSE_RUNTIME_POSTGRES_REQUIRED: bool = false;
+#[path = "support/house_runtime_postgres_cases.rs"]
+mod house_runtime_postgres_cases;
 #[path = "support/item_timed_postgres_cases.rs"]
 mod item_timed_postgres_cases;
 #[path = "support/item_timed_state_postgres_cases.rs"]
