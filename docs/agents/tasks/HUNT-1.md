@@ -536,3 +536,202 @@ strict Clippy, workspace Cargo fmt and runtime qualification remain NOT_RUN for
 this combined pending-DAILY source packet. Publication does not install the
 held migration/authority/module/registry bundle or the sequencer/sixth case.
 The actual DAILY schema and CP integration conditions above remain required.
+
+## D1398 audit source checkpoint; D1392 native blocked (2026-10-17)
+
+**Current status: HUNT remains `NOT_FULLY_QUALIFIED` and draft. The revised
+D1392 combined assembly has native qualification `NOT_RUN`.**
+
+[CP D1398](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236792716)
+permits one two-file draft checkpoint: the exact reviewed audit patch
+`5f5b810c…` and this append-only card. It keeps the physical disk guard at
+50,000,000,000 bytes, assigns space recovery to CP and the owner, and suspends
+new full PC Cargo/PG builds until CP announces another heavy window. This
+checkpoint makes no readiness or native-pass claim.
+
+
+This appendix preserves every byte of the prior task card at HUNT
+`0d4a1483fdb19327aae3803e6ae893575a7878dd`. The current source checkpoint changes
+only `apps/game-server/src/durability/prey_audit.rs`: the payload type and
+envelope decoder become public under
+[D1392](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235803221),
+and the oversized-payload codec assertion uses a fixed array slice instead of
+an unnecessary vector. Payload fields, encoded bytes, decoder behavior and
+the pending-DAILY writer are unchanged. The complete published `prey_tests.rs`
+and `prey.rs` remain intact in this checkpoint.
+
+The audit candidate has SHA256
+`ec3356e76f8d52feea7276c0730e737e9163d241fffb391d73ca921c6ae3460f`
+and Git blob `4ff62d6dbf78cb22eb243784e239c0ef9efc0441`. The source handoff is
+`77b69314d85624f9dd7afafc3c84c7116f4e316430a29313d748a7f25e5c01d1`;
+the audit-only publication projection is
+`5f5b810c77adca69fa0ba3cef2f4d4aaf00a3a168981820a74098fe48c043bee`.
+The whole extraction patch is separate local integration material.
+
+### Granted PG placement and source preservation
+
+D1392 moves the five existing PostgreSQL cases into
+`tests/support/prey_postgres_cases.rs`, consumed by a thin focused
+`tests/prey_postgres.rs` wrapper and the existing Character authority aggregate.
+Each consumer uses its canonical harness once. The support file declares no
+module or harness. Its complete 19,750-byte fixture/helper/case suffix is
+identical to the published original and the second native attempt; all five
+complete test bodies, SQL, assertions, cleanup and names remain unchanged.
+The thin wrapper preserves the exact 818-byte canonical Bestiary namespace
+and harness block. The four codec cases remain in `prey_audit.rs`.
+
+The separate registration packet adds the `test = false` focused Cargo target
+and one cases mount after Bestiary in the Character authority aggregate.
+The held durability module declaration becomes `pub mod prey_audit` under the
+same decision. No protected workflow or PG allowlist is changed. The previously
+proposed 17 root mounts were not executed. Root and an independent nonauthor
+reviewed the exact source and preservation maps with no open source blocker;
+those reviews do not supply native execution evidence.
+
+This full PG placement remains local until DAILY #2151 merges and current main
+is merged into HUNT. It is not part of the current audit-only source checkpoint.
+The native assembly consumes the actual DAILY owner sources at
+`6b75183305b53277d0ca0a3ab2d8bb8f12ff09e9`, the real migration 0115 and its
+SQLx checksum, and the two explicit DAILY validation registrations. It does
+not reconstruct the DAILY schema or replace the native writer/receipt/fence.
+Published HUNT alone still lacks the held integration and DAILY prerequisites.
+
+### Retained failed attempts
+
+Both earlier runs remain FAILED. Their selected test successes do not form a
+completed final qualification, and the later repair does not relabel them.
+
+| Native attempt | Selected PG and codec filters | Strict focused Clippy | Strict all-target Clippy | Workspace fmt and final artifact checkpoint |
+| --- | --- | --- | --- | --- |
+| D1365, finished 13:54:52 UTC | Original five PG and four codec cases passed | Failed: duplicate canonical harness load and unnecessary vector | Not reached | Not reached |
+| D1365-v2, finished 14:30:13 UTC | Original five PG and four codec cases passed | Passed | Failed: `crate::bestiary_postgres_harness` absent from other aggregate roots | Not reached |
+
+The first terminal receipt has SHA256
+`39ee94294c6d007a2e7cf256a977ee65ec7d3ff28900b2f2c46b7db4d57450c9`
+and its complete focused Clippy log
+`4516718543fd07876062edb3e74bc504adb7fb778806469323f6986efa2b04a5`.
+The second terminal receipt has SHA256
+`073dcfb469b67b704cd807c771deb423048a9c12618eecbc903bb83911df0b84`
+and its complete all-target Clippy log
+`9964d76bafe3e33017e6a28caf38d450a5a4af3fc4e10e8d01c2c94de448e856`.
+Both record unchanged source after execution. Their Cargo artifact/protocol
+checks completed before the failing Clippy stage; neither reached the final
+artifact rehash/checkpoint or produced a final qualified receipt.
+
+The initial D1392 invocation at 16:11:17 UTC stopped during environment
+preflight because `/root/oteryn-cache` did not yet exist. Its retained raw
+receipt, SHA256
+`6a7575d172cb5eb99e579700fcc94fe700eb25976b3152c9fdccddbdb0758cca`,
+records `commands: []` and `Unexpected D1396 heavy-lock path`. It acquired no
+slot and ran no Cargo or PostgreSQL command. The real prepared assembly was
+already bound by receipt
+`ee87465b4b9c8480a7ceda97b6cf7856e655df956d06da12ed941e36124c9dc6`.
+This was an environment refusal before any test or source check; it supplies
+no native qualification. D1397 subsequently identified the actual canonical
+lock in the other WSL distribution; D1397a grants an ordinary outer flock in
+Ubuntu/mole around the complete Ubuntu-24.04/root runner. The runner records
+that execution policy as static metadata, without claiming a measured outer
+FD or lease state.
+
+The first D1397a outer invocation at 16:33:00 UTC also stopped before the
+inner runner: the canonical lock was occupied, the outer process exited 1
+in 0.57 seconds, and the inner evidence directory did not exist. Root retained
+this actual observation as `77f231dbf67b3f134a2761c26185812fd1384ae7d9b451b704e62bf5e8e90ffb`.
+It is an outer busy refusal with native execution `NOT_RUN`; it is neither a
+fourth source attempt nor a failed native test run. The reviewed source
+attempt remains 3. D1397a requires no additional lease receipt.
+
+### Actual D1392 preparation and capacity refusal
+
+The real isolated assembly was prepared at
+`/root/oteryn-six-pr-20261017/hunt-daily-current-native-d1392`, with HUNT
+`0d4a1483fdb19327aae3803e6ae893575a7878dd` and actual DAILY
+`6b75183305b53277d0ca0a3ab2d8bb8f12ff09e9` inputs. Preparation completed at
+16:00:30.641798 UTC and verified all **31 source SHA256/Git-blob/size bindings,
+15 dirty paths and 16 preserved inputs**. The original five held integration
+files remain one bundle; D1392 contributes the audit/type visibility, PG test
+placement and registration described above. The two DAILY module lines are
+explicit local validation registrations. No substitute DAILY schema is used.
+
+The actual preparation receipt is
+`ee87465b4b9c8480a7ceda97b6cf7856e655df956d06da12ed941e36124c9dc6`,
+and its saved changed-source JSON is
+`e46d79e68637b2387e6309a3b2732066b5a21240d2caae22af38ecdef97583a3`.
+The preparation's direct rustfmt check exited zero, its recorded source was
+unchanged by that check, and the retained parent checkout was clean and
+unchanged. These are preparation facts, not results of Cargo tests or of the
+later full-workspace Cargo fmt stage.
+
+After the busy refusal, the same source attempt was invoked through the
+[D1397a outer command](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236550340)
+at 16:35:31 UTC. The reviewed driver was
+`f25e5460cfc15b130fab356236069f53a9c7e736f979a212cd0c4ba0345c42d1`.
+It obtained its own D1342 slot A and stopped at the existing physical disk
+capacity guard **before Cargo and before any native source snapshot**. The
+raw terminal file records `status: FAILED`, `commands: []`, and
+`PC disk capacity guard`; it finished at 16:35:32.651251 UTC and records slot
+A released at 16:35:32.651603 UTC.
+
+That raw capacity receipt has SHA256
+`028274cf9e30ee0a4467dc25ac0aa5205de7112c280eff893986f8b8e998008d`
+(5,637 bytes). It has no `driver_sha256`, `source_after`, source snapshot or
+qualified-checkpoint field, because the refusal occurred before those
+assignments. The driver identity belongs to the separately retained actual
+outer launch observation; no missing raw field is synthesized. In particular,
+this refusal does **not** establish a native `source_after: UNCHANGED` result.
+
+The separate outer launch/capacity observation is
+`6fc1508200bbf4bd025888ea9d98ec489b00fa6fd0c4a6292f386b06534052f9`
+(4,117 bytes). It records the actual outer exit 1 after 0.94 seconds and the
+physical Windows C: readout of **9,700,433,920 available bytes**. The WSL
+readout showed 747,142,721,536 available bytes, but Windows physical capacity
+was the binding condition. D1398 confirms that the 50 GB guard remains in
+force. These numerical readouts come from the outer observation and CP's
+decision, not from additional fields in the capacity terminal JSON. The
+observation is retained execution evidence, not a new lease protocol.
+
+| Revised D1392 stage | Actual result |
+| --- | --- |
+| Source assembly and direct preparation rustfmt check | Prepared with all 31 inputs bound; format check passed |
+| Canonical outer invocation | First refused a busy lock; later entered the runner and reached its capacity guard |
+| Fresh locked Cargo fetch | `NOT_RUN`; zero command records |
+| Five original PostgreSQL cases in the D1392 placement | `NOT_RUN` |
+| Four original codec cases under the D1392 target | `NOT_RUN` |
+| Explicit six-target and all-target strict Clippy | `NOT_RUN` |
+| Original duplicate-source checker on all-target JSON | `NOT_RUN` |
+| Full-workspace Cargo fmt and final artifact rehash | `NOT_RUN` |
+| Native before/after source snapshots and qualified receipt | Not produced |
+
+The raw capacity status `FAILED` denotes a pre-Cargo environment refusal. It
+does not count as a fourth source attempt or a failed PostgreSQL/codec case.
+The two earlier Clippy-failed source assemblies remain separately identified
+above; their selected five-plus-four successes do not qualify the revised
+D1392 assembly. No additional test run or relaxed guard is used for this
+source checkpoint.
+
+### Remaining publication and runtime gates
+
+Only the owned audit file and this card belong to the D1398 checkpoint. The
+published writer and all five cases in its original test leaf remain intact.
+The complete D1392 PG extraction, thin wrapper, support cases, Cargo target,
+Character authority mount and public durability module declaration stay local.
+Migration `0115_prey_daily_wildcard.sql`, the authority receipt UNION, shared
+durability registration and both event/resource registry hunks remain the
+original held integration bundle. They wait for DAILY #2151 to merge, then
+for current main to be merged into HUNT and shared preimages to be reread.
+The sequencer and sixth case retain the D1336b DAILY/current-main/#2193 order.
+
+The unexecuted five-case D1392 placement preserves coverage for capped pending
+DAILY delivery/replay, source/fence refusals, atomic PostgreSQL rollback,
+concurrent once-key delivery and immutable event/ledger storage. The earlier
+retention case covers early expiry returning zero and hold placement/release;
+it does not qualify real expired deletion, an active hold on an expired event,
+or operator access/export. The **191/500/64 resource rows remain CANDIDATE**;
+this checkpoint supplies no new native resource measurement or batch-deletion
+qualification.
+
+Production content/grade/draw admission, other earning/spend/unlock sources,
+slots and bonuses, Task Board, transport, runtime activation and full HUNT
+family qualification remain open. Space recovery and any future heavy build
+window belong to CP and the owner under D1398. Ready/merge authority remains
+with CP; the PR remains draft and `NOT_FULLY_QUALIFIED`.

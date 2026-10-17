@@ -34,7 +34,7 @@ const ENVELOPE_BYTES_MAX: usize = 500;
 /// unlock shapes require their own reviewed schema evolution; unknown fields
 /// and alternate kinds never pass the canonical decoder below.
 #[derive(Clone, PartialEq, Eq, Message)]
-pub(super) struct PreyWildcardChangedV1 {
+pub struct PreyWildcardChangedV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
     #[prost(bytes = "vec", tag = "2")]
@@ -119,7 +119,7 @@ fn decode_payload(wire: &[u8]) -> Result<PreyWildcardChangedV1, AuditError> {
     Ok(value)
 }
 
-pub(super) fn decode_wildcard_envelope(
+pub fn decode_wildcard_envelope(
     wire: &[u8],
 ) -> Result<(EventEnvelopeV1, PreyWildcardChangedV1), AuditError> {
     let (event_type, retention) = (EVENT_TYPE_ID, RETENTION_MILLIS);
@@ -334,7 +334,7 @@ mod tests {
         assert_eq!(value.encoded_len(), PAYLOAD_BYTES_MAX);
         assert_eq!(decode_payload(&value.encode_to_vec()), Ok(value));
         assert_eq!(
-            decode_payload(&vec![0; PAYLOAD_BYTES_MAX + 1]),
+            decode_payload(&[0; PAYLOAD_BYTES_MAX + 1]),
             Err(AuditError::CapacityExceeded)
         );
     }
