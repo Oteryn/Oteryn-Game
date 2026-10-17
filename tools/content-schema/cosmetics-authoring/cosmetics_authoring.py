@@ -105,7 +105,8 @@ def validate(authoring):
     seen = set()
     for promotion in authoring["promotions"]:
         path = promotion["path"]
-        if path not in expected or path in seen or promotion["value"] != pointer(document, path):
+        if (path not in expected or path in seen
+                or canonical(promotion["value"]) != canonical(pointer(document, path))):
             raise ValueError("missing, duplicated or mismatched cosmetic promotion")
         seen.add(path)
     if seen != expected:

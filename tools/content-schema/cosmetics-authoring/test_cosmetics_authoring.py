@@ -47,6 +47,23 @@ class CosmeticsAuthoring(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "mismatched"):
             c.validate(self.authoring)
 
+    def test_promoted_booleans_and_integers_are_not_interchangeable(self):
+        original = copy.deepcopy(self.authoring)
+        for path, document_value, promoted_value in [
+            ("/outfits/0/starter_female", True, 1),
+            ("/outfits/0/premium", False, 0),
+            ("/outfits/0/starter_addons_female", 1, True),
+            ("/outfits/0/starter_addons_female", 0, False),
+        ]:
+            with self.subTest(path=path, document=document_value, promoted=promoted_value):
+                self.authoring = copy.deepcopy(original)
+                self.replace(path, document_value)
+                c.validate(self.authoring)
+                promotion = next(p for p in self.authoring["promotions"] if p["path"] == path)
+                promotion["value"] = promoted_value
+                with self.assertRaisesRegex(ValueError, "mismatched"):
+                    c.validate(self.authoring)
+
     def test_unknown_and_observation_only_never_materialize(self):
         for field, value in [("state", "UNKNOWN"), ("source_kind", "OtsHypothesisOnly"),
                              ("source_kind", "SOURCE_OBSERVATIONS_ONLY")]:
