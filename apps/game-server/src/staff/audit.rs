@@ -2,6 +2,9 @@
 //! production construction fails closed until the CP registry slot is installed.
 use super::signature::{self, Error, Outcome, VerifiedRequest};
 use crate::durability::item_mint_audit::{EventEnvelopeV1, TransactionEventRefV1};
+use oteryn_protocol_oteryn::{
+    FoundationProtocolError, bounded_length_delimited, read_varint, skip_field,
+};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -337,6 +340,51 @@ pub fn encode(
     Ok(envelope)
 }
 
+#[derive(Clone, Copy)]
+enum AuditWireMessage {
+    Envelope,
+    Transaction,
+}
+
+// Prost discards unknown fields and merges duplicate singular fields. Refuse
+// both before decoding, without imposing a canonical field serialization order.
+fn validate_audit_wire(bytes: &[u8], message: AuditWireMessage) -> Result<(), Error> {
+    let mut cursor = 0;
+    let mut seen = 0_u32;
+    while cursor < bytes.len() {
+        let key = read_varint(bytes, &mut cursor).map_err(|_| Error::Invalid)?;
+        let field = key >> 3;
+        let wire = (key & 7) as u8;
+        let expected_wire = match (message, field) {
+            (AuditWireMessage::Envelope, 1 | 3..=6 | 8 | 14 | 16 | 22)
+            | (AuditWireMessage::Transaction, 2 | 3) => 0,
+            (AuditWireMessage::Envelope, 2 | 7 | 9..=13 | 15 | 17..=21 | 23..=27)
+            | (AuditWireMessage::Transaction, 1) => 2,
+            _ => return Err(Error::Invalid),
+        };
+        let bit = 1_u32 << field;
+        if wire != expected_wire || seen & bit != 0 {
+            return Err(Error::Invalid);
+        }
+        seen |= bit;
+        if matches!((message, field), (AuditWireMessage::Envelope, 18)) {
+            let transaction = bounded_length_delimited(
+                bytes,
+                &mut cursor,
+                MAX_ENVELOPE_BYTES,
+                FoundationProtocolError::MalformedEnvelope,
+            )
+            .map_err(|_| Error::Invalid)?;
+            validate_audit_wire(transaction, AuditWireMessage::Transaction)?;
+        } else {
+            // Other nested messages are absent from a STAFF_ACTION envelope;
+            // the regenerated value comparison below rejects their presence.
+            skip_field(bytes, &mut cursor, wire).map_err(|_| Error::Invalid)?;
+        }
+    }
+    Ok(())
+}
+
 /// A signature alone never proves execution. Compare the whole retained event
 /// with a regenerated event, not a subset of convenient signed fields.
 pub fn verify_event(
@@ -348,6 +396,7 @@ pub fn verify_event(
     if bytes.len() > MAX_ENVELOPE_BYTES {
         return Err(Error::Bounds);
     }
+    validate_audit_wire(bytes, AuditWireMessage::Envelope)?;
     let envelope = EventEnvelopeV1::decode(bytes).map_err(|_| Error::Invalid)?;
     let expected = encode(
         contract,
@@ -523,6 +572,96 @@ mod tests {
             }
             assert!(verify_stored_event(Contract::fixture(), &request, &outcome, &bad).is_err());
         }
+
+        // Protobuf field order is not semantic, including inside the transaction
+        // reference. The retained SQL hash must describe each actual byte string.
+        let decoded = EventEnvelopeV1::decode(row.envelope.as_slice()).expect("envelope");
+        let transaction = decoded
+            .transaction_event
+            .as_ref()
+            .expect("transaction reference")
+            .encode_to_vec();
+        let transaction_field = |bytes: &[u8]| {
+            assert!(bytes.len() < 128, "single-byte fixture length");
+            let mut field = vec![0x92, 0x01]; // TransactionEventRef, field 18.
+            field.push(u8::try_from(bytes.len()).expect("fixture length"));
+            field.extend_from_slice(bytes);
+            field
+        };
+        let with_transaction = |bytes: &[u8]| {
+            let mut envelope = decoded.clone();
+            envelope.transaction_event = None;
+            let mut wire = envelope.encode_to_vec();
+            wire.extend(transaction_field(bytes));
+            wire
+        };
+        let append = |bytes: &[u8], suffix: &[u8]| [bytes, suffix].concat();
+        assert_eq!(&row.envelope[..2], &[0x08, 0x01]);
+        assert_eq!(&transaction[..2], &[0x0a, 0x10]);
+        for reordered in [
+            append(&row.envelope[2..], &row.envelope[..2]),
+            with_transaction(&append(&transaction[18..], &transaction[..18])),
+        ] {
+            let mut control = row.clone();
+            control.envelope = reordered;
+            control.envelope_sha256 = signature::sha256(&control.envelope);
+            assert!(
+                verify_stored_event(Contract::fixture(), &request, &outcome, &control).is_ok(),
+                "field ordering must not change the event"
+            );
+        }
+
+        // A database owner can recompute the unsigned SQL mirror. Neither the
+        // top-level decoder nor its nested decoder may discard the altered fields.
+        let mut duplicate_event_id = vec![0x12, 0x10];
+        duplicate_event_id.extend_from_slice(&decoded.event_id);
+        let mutations = [
+            (
+                "unknown envelope varint",
+                append(&row.envelope, &[0xe0, 0x01, 0x01]),
+            ),
+            (
+                "unknown envelope bytes",
+                append(&row.envelope, &[0xe2, 0x01, 0x00]),
+            ),
+            (
+                "duplicate envelope scalar",
+                append(&row.envelope, &[0x08, 0x01]),
+            ),
+            (
+                "duplicate envelope bytes",
+                append(&row.envelope, &duplicate_event_id),
+            ),
+            (
+                "duplicate envelope transaction",
+                append(&row.envelope, &transaction_field(&transaction)),
+            ),
+            (
+                "unknown transaction field",
+                with_transaction(&append(&transaction, &[0x20, 0x01])),
+            ),
+            (
+                "duplicate transaction scalar",
+                with_transaction(&append(&transaction, &[0x10, 0x01])),
+            ),
+            (
+                "duplicate transaction bytes",
+                with_transaction(&append(&transaction, &transaction[..18])),
+            ),
+        ];
+        let mut accepted = Vec::new();
+        for (operator, envelope) in mutations {
+            let mut bad = row.clone();
+            bad.envelope = envelope;
+            bad.envelope_sha256 = signature::sha256(&bad.envelope);
+            if verify_stored_event(Contract::fixture(), &request, &outcome, &bad).is_ok() {
+                accepted.push(operator);
+            }
+        }
+        assert!(
+            accepted.is_empty(),
+            "accepted altered protobuf: {accepted:?}"
+        );
     }
     #[test]
     fn retained_operation_mirrors_verify_without_any_outbox_row() {

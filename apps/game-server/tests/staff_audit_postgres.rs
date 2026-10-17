@@ -550,6 +550,167 @@ fn staff_pg_runtime_cannot_edit_delete_or_truncate_retained_evidence() -> TestRe
 }
 
 #[test]
+fn staff_pg_member_logins_cannot_insert_activations() -> TestResult {
+    async fn activation_attempt(
+        connection: &mut sqlx::PgConnection,
+        request: &signature::VerifiedRequest,
+    ) -> Result<(), sqlx::Error> {
+        let signed = request.signed();
+        sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,link_sha256,previous_link_sha256,roster_sha256,link_kind,signed_bytes,principal,key_fingerprint,signature,created_xact_id) VALUES('alpha-test',2,$1,$2,$3,'ACTIVATION',$4,$5,$6,$7,txid_current())")
+            .bind(request.digest())
+            .bind(&request.request().previous_link_sha256)
+            .bind(&request.request().roster_sha256)
+            .bind(&signed.bytes)
+            .bind(&signed.principal)
+            .bind(request.fingerprint())
+            .bind(&signed.signature)
+            .execute(&mut *connection)
+            .await?;
+        let updated = sqlx::query("UPDATE game_staff_control_heads SET control_seq=2,link_sha256=$1 WHERE environment='alpha-test'")
+            .bind(request.digest())
+            .execute(&mut *connection)
+            .await?;
+        if updated.rows_affected() != 1 {
+            return Err(sqlx::Error::RowNotFound);
+        }
+        sqlx::query("SET CONSTRAINTS ALL IMMEDIATE")
+            .execute(connection)
+            .await?;
+        Ok(())
+    }
+
+    runtime()?.block_on(async {
+        let Some(f) = Fixture::create("member_login").await? else {
+            return Ok(());
+        };
+        let mut admin = sqlx::PgConnection::connect(&f.admin).await?;
+        let mut created_roles = Vec::new();
+        let result: TestResult<Vec<String>> = async {
+            let before = f.counts().await?;
+            let head_before: (String, String, String) = sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
+                .fetch_one(&f.pool).await?;
+            let mut activation = f.signer.request(2, 2, f.trust.activation_digest());
+            activation.reason = staff::audit::Reason::Roster;
+            activation.action = Action::RosterActivate {
+                roster_sha256: f.trust.roster_digest().into(),
+            };
+            let signed = f.signer.sign(
+                activation.canonical_bytes().map_err(debug)?,
+                REQUEST_NAMESPACE,
+            );
+            let checked = f.trust.verify_request(signed).map_err(debug)?;
+
+            // Independently provisioned owner activation remains legal. All
+            // signed fields and deferred constraints match the negative cases.
+            let mut owner_tx = f.pool.begin().await?;
+            activation_attempt(&mut owner_tx, &checked).await?;
+            owner_tx.rollback().await?;
+
+            let nonce = f.name.rsplit('_').next().ok_or("fixture name")?;
+            let mut accepted = Vec::new();
+            for (label, group, indirect) in [
+                ("runtime_direct", "oteryn_game_runtime", false),
+                ("control_direct", "oteryn_game_control", false),
+                ("runtime_indirect", "oteryn_game_runtime", true),
+                ("control_indirect", "oteryn_game_control", true),
+            ] {
+                let login = format!("oteryn_gm_2181_{label}_{nonce}");
+                let password = signature::sha256(&node::operator_files::random_bytes::<32>()?);
+                // All interpolated identifiers and the password are generated
+                // ASCII fixture values, never supplied by the admin URL.
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE ROLE {login} LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '{password}'"
+                )))
+                .execute(&mut admin)
+                .await?;
+                created_roles.push(login.clone());
+                let inherited = if indirect {
+                    let bridge = format!("{login}_bridge");
+                    sqlx::query(sqlx::AssertSqlSafe(format!(
+                        "CREATE ROLE {bridge} NOLOGIN INHERIT"
+                    )))
+                    .execute(&mut admin)
+                    .await?;
+                    created_roles.push(bridge.clone());
+                    sqlx::query(sqlx::AssertSqlSafe(format!(
+                        "GRANT {group} TO {bridge} WITH INHERIT TRUE"
+                    )))
+                    .execute(&mut admin)
+                    .await?;
+                    bridge
+                } else {
+                    group.into()
+                };
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "GRANT {inherited} TO {login} WITH INHERIT TRUE"
+                )))
+                .execute(&mut admin)
+                .await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "GRANT CONNECT ON DATABASE {} TO {login}",
+                    f.name
+                )))
+                .execute(&mut admin)
+                .await?;
+
+                let options = f
+                    .url
+                    .parse::<sqlx::postgres::PgConnectOptions>()?
+                    .username(&login)
+                    .password(&password);
+                let mut connection = sqlx::PgConnection::connect_with(&options).await?;
+                // A real LOGIN connection, with no SET ROLE: inherited INSERT
+                // and head UPDATE must be available before the guard is tried.
+                let identity: (String, String, bool, bool, bool, bool) = sqlx::query_as("SELECT current_user::text,session_user::text,pg_has_role(current_user,$1::name,'USAGE'),has_table_privilege(current_user,'game_staff_control_links','INSERT'),has_column_privilege(current_user,'game_staff_control_heads','control_seq','UPDATE'),has_column_privilege(current_user,'game_staff_control_heads','link_sha256','UPDATE')")
+                    .bind(group).fetch_one(&mut connection).await?;
+                if identity != (login.clone(), login, true, true, true, true) {
+                    return Err(format!("invalid LOGIN membership fixture: {label}").into());
+                }
+                let mut tx = connection.begin().await?;
+                let attempt = activation_attempt(&mut tx, &checked).await;
+                tx.rollback().await?;
+                connection.close().await?;
+                match attempt {
+                    Ok(()) => accepted.push(label.to_owned()),
+                    Err(error) => {
+                        let database = error.as_database_error().ok_or_else(|| debug(&error))?;
+                        if database.code().as_deref() != Some("23514")
+                            || database.message() != "runtime activation forbidden"
+                        {
+                            return Err(debug(error));
+                        }
+                    }
+                }
+                let head_after: (String, String, String) = sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
+                    .fetch_one(&f.pool).await?;
+                if f.counts().await? != before || head_after != head_before {
+                    return Err(format!("activation attempt changed retained state: {label}").into());
+                }
+            }
+            Ok(accepted)
+        }
+        .await;
+
+        // Roles are cluster-global. Drop only this fixture's database and
+        // successfully created random roles, including before the RED assert.
+        let database_cleanup = f.cleanup().await;
+        for role in created_roles.iter().rev() {
+            sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {role}")))
+                .execute(&mut admin)
+                .await?;
+        }
+        admin.close().await?;
+        database_cleanup?;
+        let accepted = result?;
+        assert!(
+            accepted.is_empty(),
+            "runtime/control member logins inserted activations: {accepted:?}"
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn staff_pg_forensic_scan_detects_orphan_outbox_after_owner_bypasses_foreign_keys() -> TestResult {
     runtime()?.block_on(async {
         let Some(f)=Fixture::create("orphan").await? else {return Ok(());};

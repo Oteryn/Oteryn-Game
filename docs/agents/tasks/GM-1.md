@@ -15,12 +15,12 @@ wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
 created_at: 2026-10-15
 updated_at: 2026-10-17
-owner: "chat I / root lead; gm_record prepared the record-only correction"
+owner: "chat I / root lead; admission_2187, gmaudit_2181 and sec_2188 collaborators"
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 6 row GM-1 (row 136); App. 7 GM-1; §5 Wave 5"
 class: "hard (child graph)"
 needs_migration: yes
 needs_registry: yes
-needs_content_regeneration: false
+needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/staff/{mod,audit,signature}.rs (new)"
@@ -32,19 +32,187 @@ owned_paths:
   - "docs/agents/tasks/GM-1.md"
   - "apps/game-server/src/{lib.rs,durability/mod.rs} (D1160: own module registration line only)"
   - "apps/game-server/tests/*.rs (D1161: 26 exact production node/staff forwarding lines only)"
+  - "content/world/pins/oteryn.json (D1328: compiler-derived inputs_digest correction only)"
 slot_only_paths:
   - "apps/game-server/src/node/serve.rs, apps/game-server/src/node/config.rs"
-  - "Cargo.toml, apps/game-server/Cargo.toml, Cargo.lock (sequentially after #1942)"
-  - "apps/game-server/migrations/0092_staff_audit.sql (reserved; proposal only before slot)"
+  - "Cargo.toml, apps/game-server/Cargo.toml (CP handwritten integration landed in 647053e9 under D1328)"
+  - "apps/game-server/migrations/0092_staff_audit.sql (historical proposal identifier; no current migration lease)"
   - "docs/contracts/game-events/v2/staff_action.proto and STAFF_ACTION registration"
   - "migrations: game_character_sanctions, game_staff_roles, game_player_reports"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (staff panel)"
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json (`staff_action`)"
   - "apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs, crates/protocol-oteryn/src/lib.rs"
-  - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
+  - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — activation-anchor repair, NOT_FULLY_QUALIFIED (2026-10-17)
+## Current checkpoint — D1328 review repairs and World pin, NOT_FULLY_QUALIFIED (2026-10-17)
+
+Current authoring base is published draft #2181 head
+`647053e929694a9dceb639bd42e4cdceb3ded479`, sole parent
+`3342d23605d817ca08506e29bdc33303a5d41afa`. [CP's D1328 integration](https://github.com/Oteryn/Oteryn-Game/pull/2181#issuecomment-6232918885)
+installed the root Cargo member, game-server dependency and lock entries for
+`crates/release-manifest`. The earlier #1942 Cargo hold is superseded. The old
+public 3342d236 member-count and five unresolved-import CI errors belong to
+that predecessor; CP reports locked metadata and architecture inventory PASS
+at 647053e9, with no build, Clippy or tests in its integration run.
+
+[The general D1328 decision](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232899745)
+removes the #1942 gate and exclusive slots for generated Cargo.lock, pins and
+registries. The second lander merges main and regenerates these outputs;
+handwritten ownership and ordering remain in force.
+
+[CP's follow-up assignment](https://github.com/Oteryn/Oteryn-Game/pull/2181#issuecomment-6233003106)
+requires P1 4302394369, P2 4302394370 and the compiler-derived World pin correction
+in **one non-force successor of 647053e9**. The root lead is the sole publisher.
+The earlier activation-anchor repair is already published in 3342d236 and
+retained unchanged here; its source SHA-256 is
+`833065648b8b37de987277c4177307f394630e370a352674669c329dbeedd6fe`.
+This checkpoint governs current evidence; the private native history below is
+not reassigned to the new candidate.
+
+### Review repairs — independent source review PASS
+
+- [P1 4302394369](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4302394369), accepted:
+  the proposed activation trigger now checks both session and effective
+  non-superuser membership in runtime/control, including indirect membership.
+  Explicit `SECURITY INVOKER` preserves the context; the superuser distinction
+  retains owner/bootstrap provisioning. A new regression uses four actual
+  LOGIN connections (runtime/control, direct/indirect), checks inherited
+  INSERT/head UPDATE, and compares the same signed activation against the
+  owner control. It rolls back attempts and removes only its database and six
+  random roles before asserting the result.
+- [P2 4302394370](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4302394370), fix prepared:
+  the audit verifier rejects unknown and duplicate envelope/transaction fields
+  before prost decoding while retaining ANL-01 field-order tolerance. The
+  regression has two reordered positive controls and eight wire mutations with
+  recomputed SQL hashes.
+
+Separate agents independently reviewed both source deltas and regression
+baselines. This is static review evidence, not a native test result. Current
+authoring bytes after the lead's final P2 assertion formatting:
+
+| File under `apps/game-server/` | SHA-256 |
+|---|---|
+| `src/durability/staff_action.rs` | `19c8e52352d6a6b127861b1a4f62aa1952fe7a7f40a7023934e6959c3c13da7a` |
+| `tests/staff_audit_postgres.rs` | `2a679d3d957ca601c170ccfab8865366da8ffdbd77fdfc17bcbe999f507c043b` |
+| `src/staff/audit.rs` | `2bfbc62f28b3f67f0360810b4e80dae40f8f398b67af7f39af82b2f858c7814d` |
+
+The original P2 review used pre-format SHA-256
+`298357ed9f9225847f6cfbb4dd511d2ef6ba0aa65dc0b3a74111808de3b48e1c`.
+An independent follow-up review also accepts final formatted `2bfbc62f…`;
+only the final assertion layout changed, without a logic or vector change.
+
+### World pin — PROVEN native execution
+
+Lead evidence `gm-d1328-pin-result.json`, also summarized in the
+[native slot request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233237407),
+binds execution to 647053e9 on Molehill-PC with Rust 1.95.0. After
+`cargo +1.95.0 fetch --locked` (exit 0), repository
+`cargo +1.95.0 run --locked --release --quiet -p oteryn-world-bundle-compiler -- pin-check <repo> <output>`
+first reported the stale input digest (exit 1). The compiler-derived update
+changes only `content/world/pins/oteryn.json`'s `inputs_digest`, from
+`0264c82e66279f2473a353a2bf8a2da22178586557d5f7304608ca112f139ce8`
+to `c1b0bbc004182f5c13bb4544b817b04451b8fbe7a21ebb94ba98d88837e0d2cd`.
+The final pin-check returned exit 0 and its `build_twice` check produced two
+identical **25,089,899-byte** World bundles with digest
+`03f64820d8584b9de2b388ac7db6b7e19af16d5da1e57e44b727a262390072f6`.
+Generated pin SHA-256:
+`e554e36a567cdf519833859d61b9e1ab63068e9d9365238c83c3db2bb73054b0`.
+The compiler input index was unchanged before/after, SHA-256
+`ad667faa0aa9810accd022023074e92146d17a6e41f4cb4b3be5587e8103c90d`;
+the assigned staff Rust repairs are outside those inputs.
+
+### Current native validation status
+
+As recorded in the slot request at `2026-10-17T11:14:58Z`, the regression runner
+stopped before source mutation, Cargo or PG: PID 102226 held `build-slot-A.lock`
+and `native-pg-runtime.lock`. That slot-A blockage is historical: [CP D1337](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233242761),
+at `2026-10-17T11:15:37Z`, grants a separate nonblocking `build-slot-I.lock`,
+`jobs = 2`, and a task-owned Cargo home and target. At least 8 GB of free RAM
+must be checked before each stage; lock or resource refusal stops execution
+without retry. D1337 does not require `native-pg-runtime.lock`. The lead is
+responsible for execution under this grant.
+
+The subsequent native attempt acquired slot I but the lead's stricter
+`min(MemFree, MemAvailable) >= 8 GiB` guard refused the start:
+`MemFree = 7384854528` bytes (about 6.88 GiB), while
+`MemAvailable = 42363576320` bytes (about 39.45 GiB). It stopped before Cargo,
+tests, source/cache or PG mutation and did not retry. [The clarification request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233298494)
+asks CP to confirm the MemAvailable interpretation and authorize a new start.
+[CP clarified the guard](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233326230)
+at 11:25:28Z: only `MemAvailable >= 8 GiB` counts, and one new guarded
+RED→GREEN attempt is authorized. The new run uses an independent evidence
+directory and the same slot I, with final P2 `2bfbc62f…` bound in its GREEN
+packet. Original production plus test-only bytes remains separately preserved
+for RED; a prepared expectation is never recorded as an executed result.
+
+| Current phase | Evidence at this checkpoint |
+|---|---|
+| P2 exact lib RED; P1 exact LOGIN/PG RED | **CONFIRMED**: each executed test returned 0 passed / 1 failed, Cargo exit 101, with all eight P2 and all four P1 negative vectors named in the expected final assertion. |
+| P2 exact lib GREEN | **PASS**: 1 passed / 0 failed, 0.02 s. |
+| P1 exact LOGIN/PG GREEN | **PASS**: 1 passed / 0 failed, 1.30 s; completed at 11:37:45Z. |
+| Repaired staff unit family | **PASS**: 12 passed / 0 failed / 0 ignored, 0.77 s. |
+| All 12 staff PG cases | **PASS**: 12 passed / 0 failed / 0 ignored, 14.43 s; completed at 11:38:01Z. |
+| Owned rustfmt check; whole-workspace `cargo +1.94.0 fmt --all -- --check` | **PASS** for both executed checks. |
+| Strict all-target Clippy | **PASS**, exit 0: game-server and release-manifest, `--all-targets -- -D warnings`; completed at 11:41:10Z. |
+| Authoring governance, diff check and agent suite | **PASS**: 22 required policy documents / 9 lanes, `git diff --check`, and 124 governance tests. The finalized five-file tree is checked again before publication and on the fetched API candidate. |
+
+The completed RED run on Molehill-PC used Rust 1.94.0 at 11:27:56–11:33:08Z.
+P2 accepted all eight altered envelopes under the original verifier; P1
+accepted all four real LOGIN member attempts under the original trigger.
+The expected P1 assertion occurred after cleanup of its own database and six
+roles. All **18,914** tracked source files were unchanged during execution;
+the before/after snapshot SHA-256 is
+`7dee471a97ffd0f38cad84f59e59bb51d2c20dc1faa51a9a3c28d5c145da524f`.
+GREEN began at 11:33:47Z as a separate run, requiring this successful RED
+evidence and matching source snapshot before installing the reviewed final
+bytes. The reported GREEN results above bind to base 647053e9 plus the three
+exact source hashes and generated pin recorded in this checkpoint. The native
+checkout contained the baseline task card during these runs. No API candidate
+existed at execution time; candidate-specific CI and publication verification
+are tracked separately on #2181. The complete GREEN runner returned exit 0.
+All **18,914** native tracked inputs were unchanged from before to after
+GREEN, snapshot SHA-256
+`f99f4f93bb532ef5d384ca85d0f3b5f943cc3ac7539206fd0f20c537b8b22fa4`.
+Strict Clippy completed at 11:41:10Z with exit 0; the unrelated existing
+vendored Tokio missing-documentation warning was visible in dependency output
+and did not fail the selected-package strict gate.
+
+D1329 permits only shared PostgreSQL 17.6 via the supplied
+`~/.oteryn/in-pg-netns.sh`, following `cargo +1.94.0 fetch --locked` for the
+repository-pinned native regression toolchain. No private server/container or
+host-5432 change is part of this route. Cleanup is restricted to the fixture's
+own database and randomized roles; skipped/unconfigured PG is not PASS.
+
+### Remaining shared contracts and canonical PG plan
+
+Production node config/control, migration, `staff_action.proto`, STAFF_ACTION
+event/retention registration and canonical PG aggregation remain held. D1328's
+source repairs and Cargo integration do not allocate these contracts. Historical
+0092 and D1188/event ID 5 references below remain recovery evidence, not current
+leases. The shared order remains `tests/wp5_s3b_composition.rs`: #2181 then A2,
+and `tests/durability_postgres.rs`: #2181 then #2187; CP writes Cargo/lock.
+
+Read-only analysis supports keeping canonical `production_server::staff`,
+which already supplies the staff types consumed by source-included durability.
+The proposed route moves the PG cases into one `support/*_cases.rs` file, with
+a canonical mount and a thin focused wrapper plus CP-written `test = false`.
+Independent OpenSSH fixtures use public trust-file loaders, without copying or
+exposing `Signer`. Public `Contract::registered()` requires the actual CP event
+allocation; it currently fails with `MissingMaterial`. The future cases must
+derive IDs from that contract instead of fixture ID 4 or hardcoded 4/5 mirrors.
+The existing checker exemption for canonical source modules means a staff
+source mount is not by itself a proven duplicate-check failure, but it would
+repeat the staff unit tests; the public-staff route avoids that duplication
+without a new allowlist. This plan is static analysis, not implemented or run.
+
+The earlier **11/11 PG PASS** below used private assembly
+`715041517515314e4e10c63a405281cd37e72d14`, explicit standalone execution and
+`Contract::fixture()` event ID **4**. It qualifies that participant fixture,
+not the registered contract, held node route or canonical aggregate. The
+private proposal's ID 5 does not change what those tests executed.
+
+## Historical execution checkpoint — activation-anchor repair, NOT_FULLY_QUALIFIED (2026-10-17)
 
 This checkpoint supersedes the validation statements below for the repaired
 signature verifier. Existing draft #2181 remains draft. The source repair is

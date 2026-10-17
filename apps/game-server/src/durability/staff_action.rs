@@ -614,11 +614,19 @@ BEGIN
  THEN RAISE EXCEPTION 'missing same-transaction staff link' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;
-CREATE FUNCTION game_staff_link_extends_head() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION game_staff_link_extends_head() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER AS $$
 DECLARE h game_staff_control_heads%ROWTYPE;
 BEGIN
  IF NEW.link_kind='ACTIVATION' THEN
-   IF current_user IN ('oteryn_game_runtime','oteryn_game_control') THEN
+   -- Check authenticated and effective identities, including indirect LOGIN
+   -- members. pg_has_role treats superusers as members of every group; retain
+   -- their existing owner/bootstrap authority instead of rejecting that path.
+   IF EXISTS (
+     SELECT 1 FROM pg_catalog.pg_roles r
+     WHERE r.rolname IN (session_user,current_user) AND NOT r.rolsuper
+       AND (pg_catalog.pg_has_role(r.oid,'oteryn_game_runtime','MEMBER')
+         OR pg_catalog.pg_has_role(r.oid,'oteryn_game_control','MEMBER'))
+   ) THEN
      RAISE EXCEPTION 'runtime activation forbidden' USING ERRCODE='23514';
    END IF;
    RETURN NEW;
