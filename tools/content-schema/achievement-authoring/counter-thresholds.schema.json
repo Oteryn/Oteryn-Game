@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:achievement-counter-thresholds:pending:1",
+  "title": "Pending Achievement counter thresholds (ACHIEVEMENT0 §3.4; CP D1331–D1332)",
+  "description": "Authoring-only pending bindings. The table contains one independently reviewed Reference threshold datum: Seasoned Adventurer, level 50 (CP capture 6233358050). Data qualification does not activate earning or grant authority. Other rows require evidence through the registered TibiaWiki MediaWiki API at a pinned revid. The native loader additionally binds each key to the real AchievementCatalogue and rejects absent or retired keys; the catalogue remains PENDING until separate runtime gates are met.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "rows"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "status": { "const": "PENDING" },
+    "rows": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["counter", "value", "achievement"],
+        "properties": {
+          "counter": {
+            "enum": ["level", "magic_level", "fist", "club", "sword", "axe", "distance", "shielding", "fishing"]
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 18446744073709551615,
+            "description": "Positive lossless u64 representation, not an additional gameplay limit."
+          },
+          "achievement": {
+            "type": "string",
+            "pattern": "^oteryn:achievement/[a-z0-9]+(_[a-z0-9]+)*$"
+          }
+        }
+      }
+    }
+  }
+}

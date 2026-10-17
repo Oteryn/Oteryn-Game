@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "status": "PENDING",
+  "rows": [
+    {
+      "counter": "level",
+      "value": 50,
+      "achievement": "oteryn:achievement/seasoned_adventurer"
+    }
+  ]
+}

@@ -5,8 +5,9 @@
 //! A granting domain (quest completion, reward claim, interaction child,
 //! counter owner) calls [`record_achievement_grant`] inside its own fenced
 //! Character transaction, after its complete fence and the `character_root`
-//! row lock. In that same transaction the call records the durable grant
-//! request and inserts the account's fact if the account lacks the key. A
+//! row lock. In that same transaction the call takes the account's
+//! achievement lock, records the durable grant request and inserts the
+//! account's fact if the account lacks the key. A
 //! duplicate leaves the first committed fact and its provenance unchanged; the
 //! new request stays as provenance of the grant. Neither write advances
 //! `CharacterRevision`.
@@ -161,29 +162,52 @@ impl FencedGrantingCharacter {
 
 type Pass<T> = std::result::Result<std::result::Result<T, AchievementGrantError>, DurabilityError>;
 
-/// Record one grant request and consume it into the account's fact, in the
-/// granter's transaction. On `Err(UnknownAchievement)` (or any other error)
-/// the granter must drop its transaction uncommitted.
+/// Record one request through the same bounded batch owner. The caller must
+/// drop its transaction uncommitted on any error.
 pub async fn record_achievement_grant(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     granter: FencedGrantingCharacter,
     request: &AchievementGrantRequest,
 ) -> Pass<AchievementGrantOutcome> {
-    if !valid_request(request) {
-        return Ok(Err(AchievementGrantError::InvalidInput));
-    }
-    let revision = match &request.catalogue {
-        AchievementCatalogueLookup::Earnable { revision } => revision,
-        AchievementCatalogueLookup::Retired => return Ok(Ok(AchievementGrantOutcome::Retired)),
-        AchievementCatalogueLookup::Absent => {
-            return Ok(Err(AchievementGrantError::UnknownAchievement));
-        }
+    let outcomes =
+        match record_achievement_grants(tx, granter, std::slice::from_ref(request)).await? {
+            Ok(outcomes) => outcomes,
+            Err(error) => return Ok(Err(error)),
+        };
+    let outcome = outcomes
+        .into_iter()
+        .next()
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(Ok(outcome))
+}
+
+/// ACHIEVEMENT0-RL-01: at most 64 requests in one earning transaction.
+pub const MAX_ACHIEVEMENT_GRANTS: usize = 64;
+
+/// Record every grant belonging to one fenced Character earning commit.
+/// Consumes and verifies the witness once, including an all-retired batch.
+/// Writes follow ascending (source event id, achievement key) order; equal
+/// pairs use source kind as a stable tie-break. Outcomes retain input order.
+/// Lock order: the granter's `character_root` lock, then this account's
+/// achievement lock, then the request and fact rows. The account lock is a
+/// leaf that only this writer takes, so two Characters of one account
+/// serialize here instead of locking overlapping fact keys in opposite
+/// orders (40P01).
+/// On any error the granter must drop its entire transaction uncommitted;
+/// this function neither commits nor opens an independent transaction.
+pub async fn record_achievement_grants(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    granter: FencedGrantingCharacter,
+    requests: &[AchievementGrantRequest],
+) -> Pass<Vec<AchievementGrantOutcome>> {
+    let order = match ordered_batch(requests) {
+        Ok(order) => order,
+        Err(error) => return Ok(Err(error)),
     };
     let character = granter.character_id.as_bytes().as_slice();
 
     // The granter's own row lock (re-entrant here), only in the transaction
-    // that checked the fence; the account comes from the locked root, never
-    // from the caller.
+    // that checked the complete fence; the account never comes from input.
     let account: Option<String> = sqlx::query_scalar(
         "SELECT account_id::text FROM game_character_roots \
           WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 \
@@ -195,6 +219,89 @@ pub async fn record_achievement_grant(
     .await?;
     let Some(account) = account else {
         return Ok(Err(AchievementGrantError::AuthorityRejected));
+    };
+    // Every writer of this account's facts serializes here, after its own
+    // root lock and before its first request or fact row.
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+           'oteryn:account-achievement:' || $1, 0))",
+    )
+    .bind(&account)
+    .execute(&mut **tx)
+    .await?;
+
+    let mut outcomes = Vec::with_capacity(requests.len());
+    for index in order {
+        match record_validated_grant(tx, character, &account, &requests[index]).await? {
+            Ok(outcome) => outcomes.push((index, outcome)),
+            Err(error) => return Ok(Err(error)),
+        }
+    }
+    outcomes.sort_unstable_by_key(|(index, _)| *index);
+    Ok(Ok(outcomes
+        .into_iter()
+        .map(|(_, outcome)| outcome)
+        .collect()))
+}
+
+/// Validate the complete input before any storage work. A source includes
+/// both its kind and event id, so distinct kinds may legitimately share bytes.
+fn ordered_batch(
+    requests: &[AchievementGrantRequest],
+) -> std::result::Result<Vec<usize>, AchievementGrantError> {
+    if !(1..=MAX_ACHIEVEMENT_GRANTS).contains(&requests.len())
+        || requests.iter().any(|request| !valid_request(request))
+    {
+        return Err(AchievementGrantError::InvalidInput);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for request in requests {
+        if !seen.insert((
+            &request.source.kind,
+            &request.source.event_id,
+            &request.achievement_key,
+        )) {
+            return Err(AchievementGrantError::InvalidInput);
+        }
+    }
+    if requests
+        .iter()
+        .any(|request| request.catalogue == AchievementCatalogueLookup::Absent)
+    {
+        return Err(AchievementGrantError::UnknownAchievement);
+    }
+    let mut order: Vec<_> = (0..requests.len()).collect();
+    order.sort_unstable_by(|left, right| {
+        let left = &requests[*left];
+        let right = &requests[*right];
+        (
+            &left.source.event_id,
+            &left.achievement_key,
+            &left.source.kind,
+        )
+            .cmp(&(
+                &right.source.event_id,
+                &right.achievement_key,
+                &right.source.kind,
+            ))
+    });
+    Ok(order)
+}
+
+/// The one owner of request/fact SQL, called only after batch validation and
+/// its one witness check. No witness can escape or be copied between requests.
+async fn record_validated_grant(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: &[u8],
+    account: &str,
+    request: &AchievementGrantRequest,
+) -> Pass<AchievementGrantOutcome> {
+    let revision = match &request.catalogue {
+        AchievementCatalogueLookup::Earnable { revision } => revision,
+        AchievementCatalogueLookup::Retired => return Ok(Ok(AchievementGrantOutcome::Retired)),
+        AchievementCatalogueLookup::Absent => {
+            return Ok(Err(AchievementGrantError::UnknownAchievement));
+        }
     };
 
     let inserted = sqlx::query(
@@ -209,7 +316,7 @@ pub async fn record_achievement_grant(
     .bind(&request.source.event_id)
     .bind(&request.achievement_key)
     .bind(revision)
-    .bind(&account)
+    .bind(account)
     .bind(character)
     .execute(&mut **tx)
     .await?;
@@ -224,7 +331,7 @@ pub async fn record_achievement_grant(
         .bind(&request.source.kind)
         .bind(&request.source.event_id)
         .bind(&request.achievement_key)
-        .bind(&account)
+        .bind(account)
         .bind(character)
         .bind(revision)
         .fetch_one(&mut **tx)
@@ -240,7 +347,7 @@ pub async fn record_achievement_grant(
          VALUES ($1::uuid, $2, $3, $4) \
          ON CONFLICT (account_id, achievement_key) DO NOTHING",
     )
-    .bind(&account)
+    .bind(account)
     .bind(&request.achievement_key)
     .bind(&request.source.kind)
     .bind(&request.source.event_id)
@@ -248,7 +355,7 @@ pub async fn record_achievement_grant(
     .await?
     .rows_affected()
         == 1;
-    let fact = load_fact(tx, &account, &request.achievement_key)
+    let fact = load_fact(tx, account, &request.achievement_key)
         .await?
         .ok_or(DurabilityError::InvalidStoredState)?;
     Ok(Ok(if created {
@@ -416,10 +523,10 @@ fn valid_request(request: &AchievementGrantRequest) -> bool {
 }
 
 /// Test-only granting transaction: the XP writer's complete gameplay fence,
-/// then each request in order, committed together or not at all. In
+/// then one batch call, committed together or not at all. In
 /// production the reward-claim MINT is the granter (contract §5 step 4).
 #[cfg(test)]
-mod granting_harness {
+pub(crate) mod granting_harness {
     use super::*;
     use crate::durability::DurabilityRoot;
     use crate::durability::character_authority::{
@@ -457,18 +564,14 @@ mod granting_harness {
                         {
                             return Ok(Err(AchievementGrantError::AuthorityRejected));
                         }
-                        let mut outcomes = Vec::with_capacity(requests.len());
-                        for request in &requests {
-                            let granter = FencedGrantingCharacter::in_transaction(
-                                &mut tx,
-                                fence.character_id,
-                            )
-                            .await?;
-                            match record_achievement_grant(&mut tx, granter, request).await? {
-                                Ok(outcome) => outcomes.push(outcome),
+                        let granter =
+                            FencedGrantingCharacter::in_transaction(&mut tx, fence.character_id)
+                                .await?;
+                        let outcomes =
+                            match record_achievement_grants(&mut tx, granter, &requests).await? {
+                                Ok(outcomes) => outcomes,
                                 Err(error) => return Ok(Err(error)),
-                            }
-                        }
+                            };
                         commit_semantic_transaction(tx, deadline).await?;
                         Ok(Ok(outcomes))
                     })
@@ -532,6 +635,34 @@ mod granting_harness {
                 .await?
         }
     }
+
+    /// Concurrency-only: a transaction on `pool` that takes the Character's
+    /// `character_root` lock (the part of the fence the witness checks) and
+    /// makes one batch call, returned open so the test orders the commits.
+    /// It skips the complete gameplay fence, so no authority case uses it.
+    pub(crate) async fn begin_test_root_locked_grants(
+        pool: &sqlx::PgPool,
+        character_id: CharacterId,
+        requests: &[AchievementGrantRequest],
+    ) -> std::result::Result<
+        (
+            sqlx::Transaction<'static, sqlx::Postgres>,
+            std::result::Result<Vec<AchievementGrantOutcome>, AchievementGrantError>,
+        ),
+        DurabilityError,
+    > {
+        let mut tx = pool.begin().await?;
+        sqlx::query(
+            "SELECT 1 FROM game_character_roots \
+              WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
+        )
+        .bind(character_id.as_bytes().as_slice())
+        .fetch_one(&mut *tx)
+        .await?;
+        let granter = FencedGrantingCharacter::in_transaction(&mut tx, character_id).await?;
+        let outcomes = record_achievement_grants(&mut tx, granter, requests).await?;
+        Ok((tx, outcomes))
+    }
 }
 
 #[cfg(test)]
@@ -553,6 +684,7 @@ mod tests {
     #[test]
     fn the_foreign_token_harness_is_linked() {
         let _ = crate::durability::DurabilityRoot::commit_test_achievement_grant_with_foreign_token;
+        let _ = super::granting_harness::begin_test_root_locked_grants;
     }
 
     #[test]
@@ -613,5 +745,73 @@ mod tests {
             bad_event.source.event_id = vec![1; length];
             assert!(!valid_request(&bad_event));
         }
+    }
+
+    #[test]
+    fn achievement_batch_rejects_empty_and_oversized_input() {
+        assert!(matches!(
+            ordered_batch(&[]),
+            Err(AchievementGrantError::InvalidInput)
+        ));
+        let request = request("oteryn:achievement/a", AchievementCatalogueLookup::Retired);
+        let requests: Vec<_> = (0..=MAX_ACHIEVEMENT_GRANTS)
+            .map(|index| {
+                let mut request = request.clone();
+                request.source.event_id = index.to_be_bytes().to_vec();
+                request
+            })
+            .collect();
+        assert!(ordered_batch(&requests[..MAX_ACHIEVEMENT_GRANTS]).is_ok());
+        assert!(matches!(
+            ordered_batch(&requests),
+            Err(AchievementGrantError::InvalidInput)
+        ));
+    }
+
+    #[test]
+    fn achievement_batch_duplicate_identity_includes_kind_but_not_revision() {
+        let first = request("oteryn:achievement/a", AchievementCatalogueLookup::Retired);
+        let mut other = first.clone();
+        other.catalogue = AchievementCatalogueLookup::Earnable {
+            revision: "r2".into(),
+        };
+        assert!(matches!(
+            ordered_batch(&[first.clone(), other.clone()]),
+            Err(AchievementGrantError::InvalidInput)
+        ));
+        other.source.kind = "oteryn:quest-transition".into();
+        assert!(ordered_batch(&[first, other]).is_ok());
+    }
+
+    #[test]
+    fn achievement_batch_order_uses_event_then_key_then_kind() {
+        let make = |event, key, kind: &str| {
+            let mut request = request(key, AchievementCatalogueLookup::Retired);
+            request.source.event_id = vec![event];
+            request.source.kind = kind.into();
+            request
+        };
+        let requests = [
+            make(2, "oteryn:achievement/a", "oteryn:counter-threshold"),
+            make(1, "oteryn:achievement/b", "oteryn:quest-transition"),
+            make(1, "oteryn:achievement/a", "oteryn:quest-transition"),
+            make(1, "oteryn:achievement/a", "oteryn:counter-threshold"),
+        ];
+        assert_eq!(ordered_batch(&requests).ok(), Some(vec![3, 2, 1, 0]));
+    }
+
+    #[test]
+    fn achievement_batch_checks_every_request_and_unknown_catalogue_entry() {
+        let first = request("oteryn:achievement/a", AchievementCatalogueLookup::Retired);
+        let mut other = request("oteryn:achievement/b", AchievementCatalogueLookup::Absent);
+        assert!(matches!(
+            ordered_batch(&[first.clone(), other.clone()]),
+            Err(AchievementGrantError::UnknownAchievement)
+        ));
+        other.achievement_key = "invalid".into();
+        assert!(matches!(
+            ordered_batch(&[first, other]),
+            Err(AchievementGrantError::InvalidInput)
+        ));
     }
 }
