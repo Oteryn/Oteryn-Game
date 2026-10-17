@@ -166,6 +166,8 @@ impl NpcVocationConversation {
 
 fn answer(npc: EntityRef, disposition: NpcIntentDisposition, line: &str) -> NpcTalkOutcome {
     NpcTalkOutcome {
+        unknown: false,
+        inventory_changed: false,
         disposition,
         conversation: Some(NpcConversation {
             open: Some((npc, NpcConversationState::Open)),
@@ -237,6 +239,8 @@ pub(crate) fn dawnport_choice_dialogue(
     }
     if chat.engaged(session) != Some(npc_actor) {
         return NpcTalkOutcome {
+            unknown: false,
+            inventory_changed: false,
             disposition: D::NoConversation,
             conversation: None,
             window: None,
@@ -246,6 +250,8 @@ pub(crate) fn dawnport_choice_dialogue(
         chat.end_engagement(session, npc_actor);
         *topic = None;
         return NpcTalkOutcome {
+            unknown: false,
+            inventory_changed: false,
             disposition: D::Ok,
             conversation: Some(NpcConversation {
                 open: None,
@@ -256,6 +262,8 @@ pub(crate) fn dawnport_choice_dialogue(
     }
     let Some(topic) = topic.as_mut() else {
         return NpcTalkOutcome {
+            unknown: false,
+            inventory_changed: false,
             disposition: D::NoConversation,
             conversation: None,
             window: None,

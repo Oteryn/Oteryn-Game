@@ -619,6 +619,8 @@ impl NpcConversations {
                 .is_none_or(|distance| distance > TALK_RANGE_TILES)
             {
                 return NpcTalkOutcome {
+                    unknown: false,
+                    inventory_changed: false,
                     disposition: Disposition::NotInRange,
                     conversation: end(chat, session, intent),
                     window: None,
