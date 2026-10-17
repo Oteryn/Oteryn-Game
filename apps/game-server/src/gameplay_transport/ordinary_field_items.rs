@@ -193,6 +193,11 @@ pub(super) async fn append_creations(
             QualifiedItemDefinition::from_native_policy(selected)
                 .map_err(SpellItemError::Rejected)?,
         )?;
+        if qualified.field_class != crate::durability::spell_items_abi::SpellFieldClass::Field {
+            return Err(SpellItemError::Rejected(
+                "ordinary field requires qualified MagicField",
+            ));
+        }
         let target =
             SpellGroundTarget::for_native_tile_read(room, runtime, cell(creation.position))
                 .map_err(SpellItemError::Rejected)?;

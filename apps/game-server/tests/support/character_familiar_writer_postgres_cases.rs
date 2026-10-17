@@ -1,5 +1,20 @@
 //! Candidate FAMILIAR-1 actual writer and restored-state admission cases on PostgreSQL17.6.
 #![allow(clippy::panic)]
+// D1208 test-only refusal: Familiar's proven empty Item-operation cost path must not call it.
+struct RefusingPlayerFieldCapabilities;
+impl crate::durability::field_capability_port::PlayerFieldCapabilityCheck
+    for RefusingPlayerFieldCapabilities
+{
+    fn check_player_field(
+        &self,
+        _: crate::foundation::RuntimeScopeRefV1,
+        _: u64,
+        _: &str,
+    ) -> Result<(), crate::durability::field_capability_port::FieldCapabilityRefused> {
+        Err(crate::durability::field_capability_port::FieldCapabilityRefused::refused())
+    }
+}
+
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime,
 };
@@ -701,7 +716,10 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
                     fence(1)?,
                     familiar.clone(),
                     cost.clone(),
-                    Some((training.clone(), BoundTrainingFormula))
+                    Some((training.clone(), BoundTrainingFormula)),
+                    crate::durability::spell_item_transaction::SpellFieldOrigin::Player(
+                        &RefusingPlayerFieldCapabilities
+                    ),
                 )
                 .await
                 .is_err()
@@ -727,6 +745,9 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
                 familiar.clone(),
                 cost.clone(),
                 Some((training.clone(), BoundTrainingFormula)),
+                crate::durability::spell_item_transaction::SpellFieldOrigin::Player(
+                    &RefusingPlayerFieldCapabilities,
+                ),
             )
             .await
             .map_err(debug)?;
@@ -749,6 +770,9 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
                 familiar.clone(),
                 cost.clone(),
                 Some((training.clone(), BoundTrainingFormula)),
+                crate::durability::spell_item_transaction::SpellFieldOrigin::Player(
+                    &RefusingPlayerFieldCapabilities,
+                ),
             )
             .await
             .map_err(debug)?;
@@ -773,7 +797,10 @@ fn familiar_cost_and_real_training_receipt_share_commit_and_legacy_null_proof_re
                     fence(1)?,
                     familiar,
                     cost,
-                    Some((training, BoundTrainingFormula))
+                    Some((training, BoundTrainingFormula)),
+                    crate::durability::spell_item_transaction::SpellFieldOrigin::Player(
+                        &RefusingPlayerFieldCapabilities
+                    ),
                 )
                 .await
                 .is_err()

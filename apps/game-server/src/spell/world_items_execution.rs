@@ -95,6 +95,38 @@ impl SpellGroundTarget {
         }
     }
 }
+fn qualified_field_class(
+    classification: &crate::content::ReferenceItemField<
+        crate::content::ReferenceItemClassification,
+    >,
+) -> Result<SpellFieldClass, &'static str> {
+    use crate::content::{ReferenceItemField as F, ReferenceItemType};
+    match classification {
+        F::Known(value) => match value.item_type {
+            F::Known(ReferenceItemType::MagicField) => Ok(SpellFieldClass::Field),
+            F::Known(_) | F::NotApplicable => Ok(SpellFieldClass::NotField),
+            _ => Err("unqualified spell Item field classification"),
+        },
+        _ => Err("unqualified spell Item field classification"),
+    }
+}
+
+/// The positive source is the actual typed Barrier preview, matched to the qualified Item.
+pub(crate) fn qualified_barrier_field_class(
+    item: &TypedDefinitionRef,
+    plan: &crate::spell::native_items::BarrierPlan,
+) -> Result<SpellFieldClass, &'static str> {
+    if item.family != "Item"
+        || item.production_key != plan.item.key
+        || item.revision_ref != plan.item.revision
+        || plan.count == 0
+        || plan.duration_ms == 0
+    {
+        return Err("unqualified Barrier Item source");
+    }
+    Ok(SpellFieldClass::Wall)
+}
+
 impl QualifiedItemDefinition {
     pub(crate) fn from_native_policy(
         policy: crate::content::native_gameplay::QualifiedItemPolicy<'_>,
@@ -181,6 +213,7 @@ impl QualifiedItemDefinition {
             _ => return Err("unknown native Item temporal capability"),
         };
         Ok(Self {
+            field_class: qualified_field_class(&record.semantics.classification)?,
             definition: crate::durability::item_mint::TypedDefinitionRef {
                 family: record.production_definition.family.clone(),
                 production_key: record.production_definition.production_key.clone(),
@@ -239,6 +272,7 @@ impl QualifiedItemDefinition {
             S::Unknown => return Err("unknown stack class"),
         };
         Ok(Self {
+            field_class: qualified_field_class(&item.semantics.classification)?,
             definition,
             content_generation_digest: digest,
             materializable: true,
@@ -345,6 +379,13 @@ pub(crate) fn qualify_source_field_chain(
     content: &crate::content::native_gameplay::NativeGameplayState,
     mut item: QualifiedItemDefinition,
 ) -> Result<QualifiedItemDefinition, crate::durability::spell_item_transaction::SpellItemError> {
+    if item.field_class != SpellFieldClass::Field {
+        return Err(
+            crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                "field chain requires qualified MagicField",
+            ),
+        );
+    }
     let mut current = item.definition.clone();
     let mut seen = std::collections::BTreeSet::new();
     let mut stages = Vec::new();
@@ -433,4 +474,62 @@ pub(crate) fn qualify_source_field_chain(
             "field decay chain bound",
         ),
     )
+}
+
+#[cfg(test)]
+mod field_class_tests {
+    use super::*;
+    use crate::content::{ReferenceItemClassification, ReferenceItemField as F, ReferenceItemType};
+
+    #[test]
+    fn actual_source_classification_distinguishes_field_and_nonfield_without_temporal_inference() {
+        let field = F::Known(ReferenceItemClassification {
+            item_type: F::Known(ReferenceItemType::MagicField),
+            capabilities: F::Unknown,
+        });
+        assert_eq!(qualified_field_class(&field), Ok(SpellFieldClass::Field));
+        // Decay is deliberately not an input: a source Rune/food stays NotField regardless
+        // of its temporal lifetime. Unknown source classification never supplies that fact.
+        let ordinary = F::Known(ReferenceItemClassification {
+            item_type: F::Known(ReferenceItemType::Rune),
+            capabilities: F::Unknown,
+        });
+        assert_eq!(
+            qualified_field_class(&ordinary),
+            Ok(SpellFieldClass::NotField)
+        );
+        assert!(qualified_field_class(&F::Unknown).is_err());
+        assert!(
+            qualified_field_class(&F::Known(ReferenceItemClassification {
+                item_type: F::Unknown,
+                capabilities: F::Unknown
+            }))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn typed_barrier_plan_must_match_the_actual_qualified_item() {
+        let item = TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: "source:wall".into(),
+            revision_ref: "r1".into(),
+        };
+        let mut plan = crate::spell::native_items::BarrierPlan {
+            item: crate::spell::native_items::NativeItemRef {
+                key: item.production_key.clone(),
+                revision: item.revision_ref.clone(),
+            },
+            count: 1,
+            duration_ms: 20_000,
+            description: "fixture".into(),
+            projectile_asset_binding: "fixture".into(),
+        };
+        assert_eq!(
+            qualified_barrier_field_class(&item, &plan),
+            Ok(SpellFieldClass::Wall)
+        );
+        plan.item.revision = "r2".into();
+        assert!(qualified_barrier_field_class(&item, &plan).is_err());
+    }
 }
