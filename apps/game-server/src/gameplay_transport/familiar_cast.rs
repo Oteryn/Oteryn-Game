@@ -54,7 +54,7 @@ pub(crate) struct FamiliarSourceSettings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FamiliarBenefitUse {
     CurrentEligibility,
-    NotApplicableDeath,
+    NotApplicableEnd,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct PreparedFamiliarCast {
@@ -193,6 +193,26 @@ pub(crate) fn restore_parked_familiar(
         kind: super::native_combat_cast::ParkedMarkerKind::Familiar,
         actor,
         session,
+    }
+}
+/// Drops stored familiar returns of actors this Channel no longer admits; their rows stay
+/// waiting for their next Login.
+pub(in crate::gameplay_transport) fn prune_familiar_returns(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+) {
+    let Some(timers) = states.spell_timers.as_ref() else {
+        return;
+    };
+    let gone: Vec<_> = timers
+        .familiar_return_actors()
+        .into_iter()
+        .filter(|(actor, session)| states.get(runtime, *actor, *session).is_none())
+        .collect();
+    if let Some(timers) = states.spell_timers.as_mut() {
+        for (actor, session) in gone {
+            timers.clear_familiar_return(actor, session);
+        }
     }
 }
 impl ChannelSpellStates {
@@ -382,17 +402,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             premium: access,
             administrative: &administrative,
         };
-        self.apply_familiar_owner_event(
-            actor,
-            session,
-            index,
-            FamiliarOwnerEvent::Login(admission),
-            content,
-            &owned,
-            &source,
-        )
-        .await
-        .map(Some)
+        let receipt = self
+            .apply_familiar_owner_event(
+                actor,
+                session,
+                index,
+                FamiliarOwnerEvent::Login(admission),
+                content,
+                &owned,
+                &source,
+            )
+            .await?;
+        // #2199 Codex P2 4302041461: no free tile kept the stored familiar waiting; the
+        // owner cadence returns it once a tile frees (`retry_waiting_familiar_return`).
+        if crate::spell::companion_lifecycle::login_left_familiar_waiting(
+            receipt.creature(),
+            receipt.owner_operations(),
+        ) {
+            let now = self.owner_now().get();
+            let runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            prune_familiar_returns(&runtime, &mut states);
+            if let Some(timers) = states.spell_timers.as_mut() {
+                // An unstored entry loses nothing: the row stays waiting for the next Login.
+                let _ = timers.schedule_familiar_return(actor, session, index, now);
+            }
+        }
+        Ok(Some(receipt))
     }
     /// One genuine full-fenced SQL producer followed by actual Channel/Player comparison.
     /// The returned data grants no current authority; the mutation independently checks it.
@@ -482,7 +518,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         end: FamiliarActorEnd,
     ) -> FamiliarLogoutSave {
-        use crate::durability::character_familiar::FamiliarStateOutcome;
+        use crate::durability::character_familiar::{FamiliarCleanEndProof, FamiliarStateOutcome};
         let Some(content) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return FamiliarLogoutSave::NotApplicable;
         };
@@ -546,13 +582,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(before) = states.get(&runtime, actor, session) else {
                 return FamiliarLogoutSave::NotApplicable;
             };
+            let Ok(writer) =
+                crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(&fence)
+            else {
+                return FamiliarLogoutSave::Unknown;
+            };
+            // F-I11 / FAMILIARS0 §5: once this session's clean end is durable (a lost response
+            // that did commit), it writes nothing more; the actor end has nothing to save.
+            if loaded
+                .state()
+                .lifecycle
+                .as_ref()
+                .and_then(|l| l.clean_end_game_session_id.as_ref())
+                == Some(&writer.game_session_id)
+            {
+                return FamiliarLogoutSave::NotApplicable;
+            }
+            let now = self.owner_now();
+            let Ok(owned) = runtime.owned_companions(actor, session) else {
+                return FamiliarLogoutSave::Unknown;
+            };
+            let mut familiars = owned
+                .iter()
+                .filter(|snapshot| snapshot.state.policy.is_familiar);
+            // `None`: no physical familiar. The close keeps a waiting clean row's stored time
+            // and stores zero only for an open row whose familiar already ended here.
+            let physical_remaining_ms = match familiars.next() {
+                None => None,
+                Some(snapshot) => {
+                    if familiars.next().is_some()
+                        || snapshot.state.lifecycle_epoch != loaded.state().lifecycle_epoch
+                    {
+                        return FamiliarLogoutSave::Unknown;
+                    }
+                    let Some(due) = states.spell_timers.as_ref().and_then(|timers| {
+                        timers.familiar_expiry_due(
+                            actor,
+                            session,
+                            snapshot.actor,
+                            snapshot.state.lifecycle_epoch,
+                        )
+                    }) else {
+                        return FamiliarLogoutSave::Unknown;
+                    };
+                    // Both real runtime/timer owner guards are held. Never persist their origin.
+                    Some(due.get().saturating_sub(now.get()) / 1000)
+                }
+            };
             let Ok(after) = crate::spell::companion_lifecycle::familiar_logout_snapshot(
                 loaded.state(),
                 before,
                 profile,
                 self.spells,
-                self.owner_now(),
+                now,
                 unix,
+                loaded.checkpoint_committed_at_ms(),
+                &writer,
+                physical_remaining_ms,
             ) else {
                 return FamiliarLogoutSave::Unknown;
             };
@@ -585,16 +671,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.pending_familiar_logouts.push(prepared.clone());
             prepared
         };
-        let committed = match self
+        // Both actor ends are clean ends (FAMILIARS0 §5): the transaction re-proves the logout's
+        // ACTIVE exact transport, or the grace expiry's RECONNECTABLE control-loss epoch past
+        // its deadline, before it writes the clean-end marker.
+        let proof = match end {
+            FamiliarActorEnd::Logout(transport, _) => FamiliarCleanEndProof::Logout(transport),
+            FamiliarActorEnd::GraceExpiry(epoch) => FamiliarCleanEndProof::GraceExpiry(epoch),
+        };
+        let outcome = self
             .root
-            .commit_character_familiar_state(
+            .commit_character_familiar_clean_end(
                 self.character,
                 self.holder,
                 prepared.fence,
                 prepared.request.clone(),
+                proof,
             )
-            .await
-        {
+            .await;
+        let committed = match outcome {
             Ok(
                 FamiliarStateOutcome::Committed(value)
                 | FamiliarStateOutcome::AlreadyCommitted(value),
@@ -864,6 +958,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 vip_reduction_minutes: value.vip_reduction_minutes,
                 cooldown_rate: value.cooldown_rate,
                 state: loaded.state().clone(),
+                checkpoint_committed_at_ms: loaded.checkpoint_committed_at_ms(),
+                lifecycle_writer:
+                    crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                        &fence,
+                    )
+                    .ok()?,
+                lever_boss_room:
+                    crate::spell::companion_lifecycle::LeverBossRoomMembership::of_current_scope(
+                        &fence.runtime_scope,
+                    ),
             };
             let Ok(mut familiar) = prepare_familiar(
                 &runtime,
@@ -1471,6 +1575,23 @@ pub(crate) enum FamiliarOwnerEvent<'a> {
     Login(&'a crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1),
     Advance(&'a crate::durability::character_progression::CommittedExperienceAward),
     Death(&'a crate::foundation::RuntimeCorpseProjection),
+    /// #2199 Codex P2 4302041461: the Channel owner's return of the familiar this session's
+    /// Login stored because no tile was free; its waiting row is re-proved under the fence.
+    Return,
+    /// #2199 Codex P2 4302737307: the due lifetime expiry of this live familiar, found in the
+    /// actual timer lane. The fenced lifecycle write closes its row before the despawn.
+    Expiry {
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
+    /// #2199 Codex P1 4303261095: the owner's settled death `occurrence` ends this live
+    /// familiar before the respawn. The fenced lifecycle write closes its row (remaining 0)
+    /// before the despawn.
+    OwnerDeath {
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
 }
 fn matches_owner_event(
     binding: &crate::spell::companion_lifecycle::FamiliarLifecycleBinding,
@@ -1494,6 +1615,35 @@ fn matches_owner_event(
         }
         (Origin::Death { occurrence }, FamiliarOwnerEvent::Death(value)) => {
             occurrence == value.occurrence()
+        }
+        (Origin::Return { session, .. }, FamiliarOwnerEvent::Return) => {
+            *session == binding.session()
+        }
+        (
+            Origin::Expiry {
+                creature,
+                lifecycle_epoch,
+            },
+            FamiliarOwnerEvent::Expiry {
+                creature: event_creature,
+                lifecycle_epoch: event_epoch,
+            },
+        ) => creature == event_creature && lifecycle_epoch == event_epoch,
+        (
+            Origin::OwnerDeath {
+                occurrence,
+                creature,
+                lifecycle_epoch,
+            },
+            FamiliarOwnerEvent::OwnerDeath {
+                occurrence: event_occurrence,
+                creature: event_creature,
+                lifecycle_epoch: event_epoch,
+            },
+        ) => {
+            occurrence == event_occurrence
+                && creature == event_creature
+                && lifecycle_epoch == event_epoch
         }
         _ => false,
     }
@@ -1524,6 +1674,32 @@ fn lifecycle_nonce(
             hash.update([2]);
             hash.update(occurrence.actor().placement_identity());
             hash.update(occurrence.commit_binding());
+        }
+        Origin::Return {
+            session,
+            waiting_epoch,
+        } => {
+            hash.update([3]);
+            hash.update(session.as_bytes());
+            hash.update(waiting_epoch.to_be_bytes());
+        }
+        Origin::Expiry {
+            creature,
+            lifecycle_epoch,
+        } => {
+            hash.update([4]);
+            hash.update(creature.placement_identity());
+            hash.update(lifecycle_epoch.to_be_bytes());
+        }
+        Origin::OwnerDeath {
+            occurrence,
+            creature,
+            lifecycle_epoch,
+        } => {
+            hash.update([5]);
+            hash.update(occurrence.as_bytes());
+            hash.update(creature.placement_identity());
+            hash.update(lifecycle_epoch.to_be_bytes());
         }
     }
     hash.update(
@@ -1613,8 +1789,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prepared
         } else {
             let state = states.get(&runtime, actor, session).ok_or(())?;
-            let is_death = matches!(event, FamiliarOwnerEvent::Death(_));
-            let caster = if is_death {
+            // A death, an expiry and the owner's death end the familiar; none reads a
+            // benefit (FAMILIARS0).
+            let is_end = matches!(
+                event,
+                FamiliarOwnerEvent::Death(_)
+                    | FamiliarOwnerEvent::Expiry { .. }
+                    | FamiliarOwnerEvent::OwnerDeath { .. }
+            );
+            let caster = if is_end {
                 None
             } else {
                 Some(
@@ -1633,16 +1816,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_current(owned.binding(), now.get())
                 .filter(|v| v.current(owned.binding(), now.get()))
                 .ok_or(())?;
-            if (is_death && settings.value.benefit_use != FamiliarBenefitUse::NotApplicableDeath)
-                || (!is_death
-                    && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
+            if (is_end && settings.value.benefit_use != FamiliarBenefitUse::NotApplicableEnd)
+                || (!is_end && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
                 || caster
                     .as_ref()
                     .is_some_and(|c| settings.value.premium != c.premium.is_current())
             {
                 return Err(());
             }
-            let equipment_speed = if is_death {
+            let equipment_speed = if is_end {
                 0
             } else {
                 owned.equipment_speed_bonus(content).map_err(|_| ())?
@@ -1651,8 +1833,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::spell::Vocation::from_key(owned.durable_build().vocation()).ok_or(())?;
             let facts = FamiliarOwnerFacts {
                 vocation: base_familiar_vocation(vocation).to_owned(),
-                // The explicit NotApplicableDeath mode reaches only the source's Death
-                // branch, which never reads benefit/level/speed/cooldown inputs. These
+                // The explicit NotApplicableEnd mode reaches only the source's Death and
+                // Expiry branches, which never read benefit/level/speed/cooldown inputs. These
                 // representation values grant no benefit; Cast/Login/Advance reject it.
                 premium: caster.as_ref().is_some_and(|c| c.premium.is_current()),
                 level: caster.as_ref().map_or(0, |c| c.level),
@@ -1667,6 +1849,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 vip_reduction_minutes: settings.value.vip_reduction_minutes,
                 cooldown_rate: settings.value.cooldown_rate,
                 state: loaded.state().clone(),
+                checkpoint_committed_at_ms: loaded.checkpoint_committed_at_ms(),
+                lifecycle_writer:
+                    crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                        &fence,
+                    )
+                    .map_err(|_| ())?,
+                // #2199 Codex P1 4302326064: the current session scope resolves lever boss
+                // room membership before the Login or delayed Return is prepared.
+                lever_boss_room:
+                    crate::spell::companion_lifecycle::LeverBossRoomMembership::of_current_scope(
+                        &fence.runtime_scope,
+                    ),
             };
             let stamp = runtime.issue_owner_work().map_err(|_| ())?;
             let at = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());
@@ -1698,6 +1892,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         stamp,
                         at,
                         value,
+                    )
+                }
+                FamiliarOwnerEvent::Return => FamiliarLifecycleBinding::from_waiting_return(
+                    &runtime,
+                    profile.clone(),
+                    actor,
+                    fence,
+                    stamp,
+                    at,
+                    loaded.state().lifecycle_epoch,
+                ),
+                FamiliarOwnerEvent::Expiry {
+                    creature,
+                    lifecycle_epoch,
+                } => FamiliarLifecycleBinding::from_due_expiry(
+                    &runtime,
+                    profile.clone(),
+                    actor,
+                    fence,
+                    stamp,
+                    at,
+                    *creature,
+                    *lifecycle_epoch,
+                ),
+                FamiliarOwnerEvent::OwnerDeath {
+                    occurrence,
+                    creature,
+                    lifecycle_epoch,
+                } => {
+                    // The owner is still dead of this occurrence under the held owner lock.
+                    if states
+                        .player_death(&runtime, actor, session)
+                        .map(|death| death.occurrence)
+                        != Some(*occurrence)
+                    {
+                        return Err(());
+                    }
+                    FamiliarLifecycleBinding::from_owner_death(
+                        &runtime,
+                        profile.clone(),
+                        actor,
+                        fence,
+                        stamp,
+                        at,
+                        *occurrence,
+                        *creature,
+                        *lifecycle_epoch,
                     )
                 }
             }
