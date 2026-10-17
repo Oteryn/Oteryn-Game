@@ -25,7 +25,7 @@ package oteryn.events.v1;
 // container expansion and the direct-root inventory typed_position. The one
 // admitted value line is the bank part of a fee, OneItemFeeBankDebitV1
 // (OneItemFeeBurnV1 field 13, GOLD-FEE-2); every other value line stays
-// excluded, on every operation.
+// excluded except the closed D1230 DustLimit arm proposed below.
 // TRANSFER is admitted only for the B3 destinations
 // (reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md
 // §4): the CharacterEquipment `container` slot, direct entries of the equipped
@@ -109,7 +109,45 @@ message OneItemTransactionV1 {
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
     OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
     OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
+    OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
+    // Private proposal only; root coordinates Imbue tag 12 and rechecks before publication.
+    OneItemForgeDustLimitV1 forge_dust_limit = 13; // material-free D1230 closed shape
   }
+}
+
+// World-scoped House custody. No ChannelId is present; reclaim is immutable placement
+// provenance, not a current access grant. Each House endpoint is bounded by RL-07.
+message OneItemHouseLocationV1 {
+  bytes world_id = 1;
+  string house_key = 2; // <= 512 bytes
+  bytes spatial_position = 3; // 1..128 bytes, source-owner-qualified tile
+  uint64 stack_ordinal = 4;
+  uint64 scope_ownership_generation = 5;
+  bytes placement_transaction_id = 6;
+  bytes reclaim_subject = 7;
+  uint64 provenance_revision = 8;
+}
+message OneItemHouseCharacterLocationV1 {
+  bytes character_id = 1;
+  bytes parent_item_instance_id = 2; // inventory only
+  uint64 placement_ordinal = 3; // inventory only
+  uint32 equipment_slot = 4; // equipment only, 1..10; 9 is the B3 container slot
+}
+message OneItemHouseTransferV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2; // same live item/quantity/definition, never split or merge
+  oneof source {
+    OneItemHouseLocationV1 source_house = 3;
+    OneItemHouseCharacterLocationV1 source_character = 4;
+  }
+  oneof destination {
+    OneItemHouseLocationV1 destination_house = 5;
+    OneItemHouseCharacterLocationV1 destination_inventory = 6;
+  }
+  OneItemTransferCauseV1 cause = 7;
+  bytes character_id = 8;
+  uint64 connection_generation = 9;
+  uint64 character_lease_generation = 10;
 }
 
 // Typed identity is carried in full; no numeric key substitutes for it.
@@ -513,4 +551,32 @@ message OneItemUseV1 {
   bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
   OneItemUseFlaskV1 flask = 11;
   bool flask_missing = 12;
+}
+
+// D1230 closed material-free ForgeCause::DustLimit. Exactly one Character dust debit
+// and one +20 limit transition, no ItemInstance, fee, conversion, RNG or recipe field.
+// Tag 13 is bound by the root coordinator for this private review packet, not a CP reservation.
+message OneForgeDustBalanceV1 {
+  uint32 balance = 1;
+  uint32 dust_limit = 2; // exactly 100+20*n, n=0..225
+}
+message OneItemForgeDustLimitV1 {
+  bytes character_id = 1;
+  bytes world_id = 2;
+  bytes channel_id = 3;
+  bytes occurrence_id = 4;
+  bytes entry_id = 5;
+  optional bytes previous_entry_id = 6; // required by the closed shape: a prior gain
+  OneForgeDustBalanceV1 before = 7;
+  OneForgeDustBalanceV1 after = 8;
+  uint32 dust_burned = 9; // 25+(before.dust_limit-100)/20, no caller-chosen price
+  bytes content_digest = 10; // exact current server artifact digest, 32 bytes
+  string ruleset_revision = 11; // D1230
+  uint32 simulation_profile_revision = 12;
+  bytes game_session_id = 13;
+  uint64 command_id = 14;
+  uint64 connection_generation = 15;
+  uint64 character_lease_generation = 16;
+  uint64 scope_ownership_generation = 17;
+  uint64 character_revision = 18; // observed unchanged
 }

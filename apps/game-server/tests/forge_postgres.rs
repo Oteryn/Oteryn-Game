@@ -4,6 +4,8 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::content;
+// The path-loaded Forge quote module delegates to the actual native dust policy.
+pub use production_server::domain::forge_dust;
 pub use production_server::durability::item_mint_audit;
 #[path = "../src/domain/forge.rs"]
 pub mod forge_domain;

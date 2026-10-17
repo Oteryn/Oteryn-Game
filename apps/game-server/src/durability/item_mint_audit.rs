@@ -338,13 +338,21 @@ pub enum OneItemOperationV1 {
     NpcTrade(super::npc_trade_audit::OneItemNpcTradeV1),
     #[prost(message, tag = "10")]
     ItemUse(super::item_use_audit::OneItemUseV1),
+    #[prost(message, tag = "11")]
+    HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    // Private continuation proposal: root coordinates final allocation and Imbue tag 12.
+    #[prost(message, tag = "13")]
+    ForgeDustLimit(super::character_forge_dust_audit::OneItemForgeDustLimitV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10")]
+    #[prost(
+        oneof = "OneItemOperationV1",
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13"
+    )]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -1936,6 +1944,8 @@ pub(super) mod tests {
         assert_eq!(
             sites,
             [
+                "src/durability/character_forge_dust.rs",
+                "src/durability/house_interior.rs",
                 "src/durability/item_decay_retire.rs",
                 "src/durability/item_fee_burn.rs",
                 "src/durability/item_mint.rs",

@@ -1,7 +1,7 @@
 # ECON-RET-0 and BANK-RET-0 economy and guild event retention
 
 - Decision: `ECONRET0-ECONOMY-GUILD-EVENT-RETENTION-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, the privacy review (Codex, final
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, the privacy review (Codex, final
   frozen head) and protected integration.
 - Packets: ECON-RET-0 (`OTV2-20261004-econ-ret-0`: GUILD-RET-0 and MARKET-RET-0, from
   `OTERYN_GAME_ARCH_BATCH_PREMIUM_SOCIAL_PACKETS_2026-10-04.md` §2.1) and BANK-RET-0

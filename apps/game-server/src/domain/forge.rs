@@ -165,7 +165,7 @@ pub enum ForgeDustError {
 impl ForgeDustLimit {
     pub const INITIAL: Self = Self { upgrades: 0 };
     // Accepted enforcement ceiling, PARITY_WIKI W1; not a UI display value.
-    const MAX_UPGRADES: u16 = 225;
+    const MAX_UPGRADES: u16 = super::forge_dust::DUST_LIMIT_UPGRADES_MAX;
 
     pub const fn new(upgrades: u16) -> Result<Self, ForgeDustError> {
         if upgrades <= Self::MAX_UPGRADES {
@@ -177,26 +177,24 @@ impl ForgeDustLimit {
 
     /// Current unlocked dust limit, not the wiki maximum or a carried balance.
     pub fn current_limit(self) -> Result<u32, ForgeDustError> {
-        u32::from(self.upgrades)
-            .checked_mul(20)
-            .and_then(|increase| 100_u32.checked_add(increase))
-            .ok_or(ForgeDustError::ArithmeticOverflow)
+        super::forge_dust::DustLimit::from_upgrade_count(self.upgrades)
+            .map(|limit| u32::from(limit.get()))
+            .map_err(|_| ForgeDustError::InvalidUpgradeCount)
     }
 
     /// Quote exactly the next accepted limit upgrade. This does not spend dust.
-    /// Recheck current state and debit atomically in the future writer after #2156.
+    /// The native DustLimit receipt owner rechecks the quoted stage and debits atomically;
+    /// this value-level API itself writes nothing.
     pub fn next_upgrade(self) -> Result<(u32, Self), ForgeDustError> {
         if self.upgrades == Self::MAX_UPGRADES {
             return Err(ForgeDustError::MaximumLimitReached);
         }
-        let cost = 25_u32
-            .checked_add(u32::from(self.upgrades))
-            .ok_or(ForgeDustError::ArithmeticOverflow)?;
-        let upgrades = self
-            .upgrades
-            .checked_add(1)
-            .ok_or(ForgeDustError::ArithmeticOverflow)?;
-        Ok((cost, Self::new(upgrades)?))
+        let current = super::forge_dust::DustLimit::from_upgrade_count(self.upgrades)
+            .map_err(|_| ForgeDustError::InvalidUpgradeCount)?;
+        let (cost, next) = current
+            .next_upgrade()
+            .map_err(|_| ForgeDustError::ArithmeticOverflow)?;
+        Ok((cost, Self::new(next.upgrade_count())?))
     }
 }
 

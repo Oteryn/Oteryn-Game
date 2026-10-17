@@ -511,3 +511,149 @@ The qualified changes repair test registration and canonical routing. They do
 not install the native dust LIMIT_RAISE proposal, atomic Forge recipes, current
 world-object admission or complete mechanic acceptance. This remains a D1122
 draft checkpoint, with no ready or merge claim.
+
+### 2026-10-17 — material-free native Dust LIMIT_RAISE, qualified v3 checkpoint
+
+This continuation implements the material-free D1230 dust-limit operation in
+the existing native FORGE-1a domain, ledger and audit owner. It adds the closed
+`ForgeDustLimit` receipt/event shape and its database proof proposal. The
+existing Forge test-registration repair remains present; no second dust asset
+or material recipe is introduced.
+
+The actual qualified input is the complete private Git composition
+`40d2cb77e4bee6e2ea86e79fc02aecdcfa323a15`, with parents
+`d992947c085133322a0b567fb70a0d654e1d9c30` and
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`. Its base tree is
+`96377f486048780aca9879f9507395acb30a3582`; the coordinator captured the exact
+16-file native input as tree `8a0f7d3a0b688ac1d277c0649f623427f016c1b7`.
+The source capture has SHA256
+`13e8d5f53b281e6a10c7334292238d11848f0eb9911f652515e6a5f332bd9e7e`,
+and the actual v3 formatted-source receipt has SHA256
+`c8a4aa7a3f613c2febb71e8df3c5074035a6af6a36c25d5d8116a2b890176db6`.
+This composition has no Items87e parent. This appended task-card receipt is a
+separate seventeenth file and does not change the 16 qualified source files.
+
+#### Implemented behavior
+
+[D1230](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153)
+defines the unlocked limit as `100 + 20*n`. For `n` in 0..224, a successful
+upgrade burns `25+n` dust and advances to stage `n+1`. There are at most 225
+paid upgrades, ending at a limit of 4,600. The base/increment and initial cost
+retain their GUI/CIPSOFT evidence; the general cost and maximum remain
+explicitly `PARITY_WIKI` under that decision. The pure suite and the native PG
+transition case cover every paid stage. This operation consumes no material
+ItemInstance, gold, recipe selection or RNG draw.
+
+The caller supplies the Character occurrence and expected stage. The owner
+validates actual recovery/fence evidence and reads active Content under the
+native activation lock. The caller cannot choose the debit, resulting limit,
+Content digest, formula revision or simulation revision. Commit takes the
+actual Character-root lock before the dust row, revalidates current native
+authority, and rejects a stale quote without charging the next stage's price.
+
+A successful physical transaction writes the dust ledger entry, guarded
+balance/limit update, closed type-2 audit/outbox event, immutable receipt and
+bounded history row together. Deferred proof requires their exact
+same-transaction counterparts and digest; an old or unrelated receipt cannot
+prove a new effect. CharacterRevision is read under the root lock and remains
+unchanged. Existing Gain still records credited/lost dust and respects the
+unlocked limit; Spend retains its overdraft and Proficiency receipt-pairing
+guards. Existing native audit arms, including HOUSE, remain intact.
+
+The same occurrence replays its retained Raised or terminal RevisionChanged
+receipt, including a new CommandRef under valid recovery evidence. Changed
+bound Content, formula or profile terminally refuses an uncommitted occurrence
+with no ledger, state, audit or history effect. Reactivating old Content cannot
+reactivate it. The existing three-work-unit retry budget and bounded
+reconciliation path remain explicit. The rollback case injects a known final
+receipt-trigger noncommit; it does not claim a network-ambiguous COMMIT test.
+
+The append proposal excludes writes and verifies the complete historical
+Gain/Spend chain, reachability and final balance agreement before changing
+constraints. Every old limit must be 100. An unexplained historical limit or a
+detached cycle aborts without inventing paid unlock history. These refusals
+were tested in the harness databases; no deployed-data preflight is claimed.
+
+#### Completed native v3 evidence
+
+The coordinator executed v3 on Molehill-PC using Rust 1.95.0, jobs 2 and the
+separate `targets/feature2146` directory. The complete terminal receipt bundle
+`native-receipts-v3.json` has SHA256
+`4d478fc6622c72f816bccac1676aa5809af8c0717d4e3937ba265e30be4b6a4e`.
+Governance, Clippy, the actual duplicate-source checker and every test stage
+carry the same complete 16-file formatted source mapping.
+
+| Executed gate | Terminal result | Actual log SHA256 |
+| --- | --- | --- |
+| `cargo +1.95.0 fetch --locked` | Completed, exit 0; before offline PG execution | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `cargo +1.95.0 fmt --all` | Completed, exit 0; resulting bytes bound by the formatted-source receipt above | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Native governance validator | PASS, exit 0 | `ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f` |
+| Strict package Clippy, all targets, `-D warnings` | PASS, exit 0, 47.48 seconds | `8983efcfd7271cbb9801e41e5087aefae29ed8508a1c51636ec51445d051f67d` |
+| Actual Cargo artifact/dep-info duplicate-source guard | PASS; 56 test-harness units, existing allowlist unchanged | `db5b5f4338644ceb286e11783c17465770d3b88c1b71c9d8362e456c0414f2f2` |
+| `--lib forge_dust_limit_audit_tests::` | 5 passed, 0 failed, 0 ignored | `8dabef3dcc7f00c0144cef76bf42cfc1de42b0f546f99da0a0129e6c134bcc15` |
+| `--test character_authority_postgres forge_dust_limit_postgres_cases::` | 11 passed, 0 failed, 0 ignored | `588102a3d33835a67d1f19a7501cb382153c2c6e76b7512f4f3a676e28b8dc67` |
+| `--test character_forge_dust_postgres character_forge_dust_postgres_cases::` | 8 passed, 0 failed, 0 ignored; 48.48 seconds | `31a56a163b2ddae27af89e173093cc07cceeaec1c2454b9308b37b4bbc14010d` |
+| Full normal `oteryn-game-server` package, PostgreSQL URL absent | 10,269 passed, 0 failed, 37 ignored; 58 groups; 547.82 seconds | `c038b77d73b77e11b0f57d2ac2acb11a4c51782e9f5f17a5c35cfee72396a42e` |
+
+Fetch and formatting record their pre-format input. The resulting native case
+file changes from blob `3fdf422ba0a1808bc7003e72fa85dad56e540b58` to
+`f16a644a1ead42edde2888ae9aea055be796dd70` through rustfmt; all subsequent gates
+are bound to the latter. The formatting result above is the actual formatting
+command, not a claim that a separate v3 `fmt --check` command ran.
+
+Both PG suites ran actual PostgreSQL 17.6 and enforce
+`server_version_num=170006`. Execution followed D1329: locked Cargo fetch first,
+then the unchanged owner `in-pg-netns.sh` routing namespace5432 to the existing
+shared PostgreSQL at host127.0.0.1:55432. The owner helper retains SHA256
+`368fd9867c97ca1d59aa8b9f7123b77f0e23fa8b6a16fbb5ace4d18b6e1bfd99`.
+No harness guard was relaxed and no private PG server/container was started for
+this qualification. The normal-package result and the two actual PG results
+remain separate evidence. Command logs and source maps are retained under
+`/home/mole/work/pr4-20261017-1135/logs/`.
+
+#### Retained failed attempts and fixture repairs
+
+The failed v1 qualification remains a failed attempt. Its negative audit test
+was repaired to use the registry's existing `SECURITY_SENSITIVE` literal 4
+instead of accessing the auditor's private constant. Production visibility,
+the privacy type and the closed decoder's rejection predicate were unchanged.
+
+The earlier v2 PG result also remains failed: 9 passed, 2 failed, exit 101,
+log SHA256
+`9bce58f1ce3072ae98d6cb73e78c6a8805d05d955cea6fead012836a48fce1ba`.
+One fixture attempted the schema-forbidden lifecycle 2. The other used one
+DurabilityRoot for both concurrent attempts and exercised local root admission
+instead of the intended database race. The v3 successor verifies the native
+rejection of the forbidden lifecycle mutation and unchanged stored row, and
+uses two genuine DurabilityRoots to prove database serialization and the losing
+stale quote. It disables or relaxes no production constraint. The other nine
+native cases retain their previous assertions. The earlier historical
+registration/package failures above keep their original source and scope;
+the v3 success does not rewrite them as passes.
+
+#### Checkpoint and installation boundary
+
+The native SQL remains an unnumbered append proposal mirrored in
+`tests/support/forge_dust_limit_migration.sql`. The new PG cases apply it only
+inside their own harness databases after the ordinary migrations. This
+checkpoint does not rewrite migration 0059 or claim historical slot 0102.
+The corresponding successor to the legacy dust CHECK-bound regression is
+retained with the eventual real numbered append; the current eight legacy
+cases correctly exercise their currently installed schema.
+
+The closed operation's proposed tag 13 and resource/documentation additions
+belong to this reviewed composed packet; they do not announce a new CP
+reservation. The existing event type, schema/retention tuples and native
+operations retain their meanings. The DUR-03 and CharacterRevision composition
+addenda state the dust burn, exact state proof and unchanged CharacterRevision
+model explicitly.
+
+Forge object USE/window admission, FORGE_V1 pending-command handling, material
+recipes, gold fees, conversions, fusion, transfer, tier effects and the combined
+Forge history API remain outside this continuation. Those families must
+compose their accepted current authority and common history budget. Final
+numbered installation and deployment-data preflight require their actual
+composed-tree binding. The v3 local evidence is bound to the native input tree
+above; it is not a ready/merge declaration or exact-successor CI receipt.
+Post-publication CI must be read on its actual published head. The task remains
+in authoring, with the family acceptance checkboxes unchanged.
