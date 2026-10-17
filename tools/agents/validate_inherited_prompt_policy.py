@@ -380,12 +380,18 @@ def validate() -> list[str]:
         ):
             if expected not in (ROOT / relative).read_text(encoding="utf-8"):
                 errors.append(f"{relative}: missing bound META source path {expected}")
+        live_warnings: list[str] = []
         errors.extend(
             game_governance.validate_active_task_live_state(
                 _request,
                 _active_task_live_scope(),
+                live_warnings,
             )
         )
+        for warning in live_warnings:
+            # A merged canonical PR only awaits archiving; see auto-archive-merged-tasks.yml.
+            safe = warning.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::warning title=Active task awaiting archive::{safe}")
         if not errors:
             print(
                 f"Validated META policy {binding['policy_version']} at {commit}: "

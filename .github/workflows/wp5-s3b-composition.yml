@@ -14,7 +14,6 @@ on:
       - apps/game-server/src/durability/fresh_admission_composition.rs
       - apps/game-server/src/durability/recovery_evidence_composition.rs
       - apps/game-server/src/durability/native_admission_source.rs
-      - apps/game-server/src/durability/mod.rs
       - apps/game-server/tests/native_admission_source_postgres.rs
   workflow_dispatch:
 
