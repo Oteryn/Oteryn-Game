@@ -472,3 +472,60 @@ not relabel that run as exact-new-head CI. New-head Cargo/PG/CI: NOT_RUN before 
 published predecessor CI: RED (E0432). Rustfmt/diff checks required before the one existing
 DRAFT push under D1122. No new runner, test suppression, visibility shim or production
 activation. Content/trade/migration/transport activation gates remain assigned to CP.
+
+## Documentation-only successor and predecessor CI — 2026-10-17
+
+Status remains **NOT_FULLY_QUALIFIED**. The predecessor GitHub read confirmed draft #2133 at
+`e13b2b4cb4eac29dc0c08e87360234371d26d0b6`, branch `skeleton/mail-1`.
+
+CP D1310 permits this documentation-only successor checkpoint on the existing
+draft branch. This increment changes only this task record; Rust implementation
+and test sources remain unchanged from the predecessor above. **New successor
+Cargo/PG/CI checks: NOT_RUN.** The recovered results below remain bound to the
+stated predecessor SHA and are not new-commit qualification. Publication permission
+does not grant runtime activation, readiness, merge or shared integration.
+
+The following evidence supersedes historical pending/RED statements only for the
+named validation scope; it does not grant runtime or shared-integration authority.
+
+The ordinary module registrations and six PostgreSQL wrappers are present. The
+wrappers live in `tests/support/mail_postgres_cases.rs`, mounted by
+`tests/character_authority_postgres.rs`. The owned text/recipient/Content adapter
+source was inspected in this continuation; no demonstrated product defect or
+reason to change its behavior was found.
+
+GitHub Actions Rust job
+[117222211787](https://github.com/Oteryn/Oteryn-Game/actions/runs/38974887773/job/117222211787)
+explicitly checked out the SHA above. Strict all-target Clippy passed. Its library
+run reported **3,162 passed / 0 failed / 29 ignored**, and the operations binary
+**6 passed**. All **12 MAIL pure/adapter cases** appear as `ok`: five domain
+text/address cases, three item-text revision/binding cases, and four native
+Content-profile validator cases. The exact-head check collection contains
+**16 success / one skipped** (World bundle), with no pending or failed check
+at the read.
+
+Canonical PostgreSQL on that implementation predecessor remains **NOT_RUN in this continuation**.
+The inspected Rust job ran unit/bin targets, and the S3-B job ran its selected
+composition case; neither log executed `character_authority_postgres`.
+The six MAIL SQLx wrappers therefore need their own recovered or fresh canonical
+PG result before qualification. Historical 18-case/full-package evidence remains
+bound to its recorded source and does not become a later-head result.
+
+Focused canonical command, after configuring the allocated disposable PG service:
+
+```bash
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases:: -- --test-threads=1
+```
+
+It requires `DATABASE_URL` for the SQLx administrative test pool, PostgreSQL 17.6
+(`server_version_num=170006`), native migrations, and the fixture-only privileges
+used by the existing cases. The expected inventory is exactly **six** cases:
+three recipient-resolution/root-lock tests and three text-storage tests.
+They do not exercise full current-authority text writing or mail delivery.
+
+Activation still needs current qualified Content, actual offered-trade exclusion,
+the numbered migration/grants/cleanup and admitted transport composition. The
+larger family still needs posting/stamping/Inbox/audit/wire and its dependent
+parcel/system-letter integrations. Historical dependency table rows must be
+reconciled against current protected main before the final integration slot.
+No ready, merge, full-family completion or new paid review is claimed.
