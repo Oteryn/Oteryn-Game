@@ -186,4 +186,3 @@ test = false
 [[test]]
 name = "house_runtime_position_postgres"
 test = false
-

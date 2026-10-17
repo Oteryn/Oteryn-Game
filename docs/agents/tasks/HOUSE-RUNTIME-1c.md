@@ -22,7 +22,71 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## 2026-10-17 integrated storage checkpoint — NOT_FULLY_QUALIFIED
+## 2026-10-17 D1366 NON-PG correction — current checkpoint
+
+The predecessor of this correction is the published and fully read-back source checkpoint
+`ca7e1c0ffea4a3c3ea27f63bc866770663ac04de`, tree
+`70796da031a4d4e2b73c6c17c0bccc9777d93b78`, sole parent
+`2a3af11041a8285d4572e935feff04bcb90d8725`.
+
+[CP D1366](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234335395)
+directs these eight cases to use the mixed-target repository convention. The common
+`run_house_position_case` now returns before runtime or harness construction when
+`configured_admin()` reports missing/non-Unicode `OTERYN_TEST_POSTGRES_ADMIN_URL`.
+That existing helper emits **PRE-ROUTING / NONCANONICAL**. This route executes no PG
+case body and creates no database; it must never be reported as PostgreSQL qualification.
+With a configured URL, all eight native case bodies, version enforcement, canonical mount,
+assertions, panic/error cleanup and post-cleanup `QUALIFIED PostgreSQL17.6` markers are
+unchanged. The complete source suffix beginning at runtime construction is byte-identical
+to the predecessor. The same successor removes one extra EOF blank line from Cargo,
+leaving `test = false` and exactly one newline.
+
+D1366 explicitly declines the four-file workflow/policy proposal and its Stage A gate-pin
+rotation. No workflow, policy, planner, protected audit or canonical PG command changes are
+included. The earlier proposal is not an allocated implementation or validation result.
+The two owned source edits and this card form one coherent successor. Merge/activation
+order remains **#2181 → #2166 → #2187**; this correction does not open any runtime gate.
+
+### Validation identities and limits
+
+The **previous exact head ca7e1c0f** was fetched into a clean native worktree on Molehill-PC
+and qualified on 2026-10-17 at 12:59:54 UTC: compile/link 1m55s, eight PG 17.6 cases in
+3.22s, **8 passed / 0 failed / 0 ignored**, and eight markers after owned-database removal.
+Source hashes and clean Git state were unchanged. The locked fetch and D1329 wrapper
+route passed in D1342 slot C. Native log SHA256:
+`61db8386db989250d8e2b17dfb69e18242a42ee4d7eb1091349678083b679bf8`.
+Before/after nine-file manifest SHA256:
+`9446a816408e6d67fbf6b71a044004aae76b3330588e77291478f71aae787a7c`.
+This preserves that exact-head receipt; it is not inherited by the D1366 successor.
+
+The predecessor also passed the [canonical GitHub PostgreSQL job 117401720983](https://github.com/Oteryn/Oteryn-Game/actions/runs/39034578891/job/117401720983),
+recorded in [the CP receipt](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234339125).
+The whole registered targets passed: `durability_postgres` 1274 cases in 131.82s,
+`character_authority_postgres` 1580 in 294.84s, `runtime_scope_assignment_postgres` 1151
+in 40.82s, and `native_admission_source_postgres` 1143 in 32.09s. All eight House-position
+cases executed successfully in the first target. This result belongs to ca7e1c0f;
+the contemporaneous NON-PG integration-rest failure is the routing defect D1366 repairs.
+
+| D1366 candidate check | Disposition before publication |
+| --- | --- |
+| Configured-PG branch preservation | Static byte comparison PASS: complete runtime/harness/case/cleanup suffix unchanged from ca7e1c0f; eight call sites still use the common runner. |
+| Cargo EOF | Static PASS: exactly one final newline; no manifest semantics changed. |
+| Controlled envless native execution | PENDING: require exactly eight PRE-ROUTING / NONCANONICAL messages, no QUALIFIED markers and no database construction. This run is never PG qualification. |
+| Configured PG 17.6 on the new source/head | PENDING: exact native source/head receipt required after formatting/publication. |
+| Exact new head and three-file readback | PENDING: root publishes one sole-parent successor and records its independently read-back identity. |
+| Full House runtime | NOT_FULLY_QUALIFIED: native placement, dirty capture, final House terminal write and ADMIT/lifecycle integration remain as described below. |
+
+Candidate source SHA256 values before native formatting:
+`support/house_runtime_position_postgres_cases.rs` =
+`f521f41d01008d6c2e69704cc39df03704d7ae7212ff1841e2a902fa786d042d`;
+`apps/game-server/Cargo.toml` =
+`559664be4f312bfed1fdae7b6683602af2ab67888c0604e21f32c4568204067b`.
+The parent publishes the final source manifest and native receipts after this authoring
+checkpoint. Earlier missing-configuration refusals and main-based assembly attempts below
+are historical records; D1366 supersedes their NON-PG routing disposition only.
+
+
+## Historical ca7e1c0f integrated storage checkpoint — source assembly record
 
 CP merged main `f010472bcb6794a2cbc56dfaf755bd122c10225e` into this draft by an ordinary
 merge. The verified predecessor is `2a3af11041a8285d4572e935feff04bcb90d8725`; its only
