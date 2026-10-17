@@ -13,6 +13,7 @@ pub mod forge_dust;
 pub(crate) mod imbuement;
 #[cfg(test)]
 pub(crate) mod imbuement_checkpoint;
+pub mod mail;
 pub mod premium;
 pub mod progression;
 pub mod timed_item;

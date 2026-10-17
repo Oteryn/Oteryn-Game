@@ -1,0 +1,184 @@
+# CHAT-2B
+
+```yaml
+task_id: CHAT-2B
+title: "CHAT-2B: World chat relay over LISTEN/NOTIFY, rooms and private messages (CHAT-0 sections 5 and 7)"
+mode: IMPLEMENT
+status: completed
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/chat-2b
+issue: 2074
+governing_issue: 1622
+pr: null
+supersedes_pr: 2128
+base_sha: bdca6d71
+head_sha: null
+final_head_sha: null
+owner: claude-code-session-013fCsCyaQjFiyBr4JFPBfrF
+control_plane: session_01XYC239givrMonrYoBwwECV
+created_at: 2026-10-15
+updated_at: 2026-10-17
+owned_paths:
+  - apps/game-server/migrations/0122_chat_relay_leases.sql
+  - apps/game-server/src/chat/relay/mod.rs
+  - apps/game-server/src/chat/spam.rs
+  - apps/game-server/src/chat/tests.rs
+  - apps/game-server/src/durability/db.rs
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/src/durability/character_chat_recipient.rs
+  - apps/game-server/src/gameplay_transport/chat_relay.rs
+  - apps/game-server/src/gameplay_transport/chat_relay/tests.rs
+  - apps/game-server/src/gameplay_transport/chat_intent.rs
+  - apps/game-server/src/gameplay_transport/connection.rs
+  - apps/game-server/src/gameplay_transport/mod.rs
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
+  - docs/agents/tasks/archive/CHAT-2B.md
+public_contracts: []
+external_repositories: []
+```
+
+## Outcome
+
+The second batch of CHAT-2 (#2074, parent #1622, plan row 129). It wires the sealed relay core of
+CHAT-2A (#2076) to a live World relay and serves rooms and private messages.
+
+- **Relay.** `gameplay_transport::chat_relay` gives each World one PostgreSQL `LISTEN`/`NOTIFY`
+  channel, `oteryn_chat_<hex>`. Lines are sealed with the World key ring and sent with
+  `pg_notify` in autocommit. Each listener opens a line through its `ReplayWindow` and hands it
+  to `ChatRuntime::deliver`. Delivery is at most once.
+- **Lease.** The listener keeps the per-World relay lease in the new table
+  `game_chat_relay_leases` (migration 0122; #2128 used 0088, which main has since taken). It is
+  stored as `GREATEST`, and a trigger refuses to lower it. On restart the stored lease is read
+  back into `ReplayWindow::resume`.
+- **Readiness.** The relay is ready only when all of these hold:
+  - it is listening;
+  - it has a database clock reading;
+  - `pg_notification_queue_usage()` is at most 0.5;
+  - every relay connection pinned logging off when it connected (CP decision D1400): one
+    simple query of session `SET`s, `log_parameter_max_length = 0`,
+    `log_parameter_max_length_on_error = 0`, `log_statement = 'none'` and
+    `log_min_duration_statement = -1`, read back before the connection carries anything. A
+    session value outranks the configuration file, so a later reload cannot reopen logging for
+    a relay session. The listener reads the pinned values every tick, and each `pg_notify`
+    statement notifies only while they hold, as a backstop.
+
+  The relay's login role needs `GRANT SET ON PARAMETER` on the four settings, granted by a
+  superuser; migration 0122 carries the provisioning note. If any `SET` is refused, the relay
+  refuses to start: it closes its pool, reports `chat_relay_disabled reason=log_pin_refused`
+  once, is never ready and does not retry. There is no fallback to operator-provisioned settings.
+
+  A relay that is not ready answers `CHAT_UNAVAILABLE`.
+- **Rooms.** World, English, Help and Advertising. Opening and closing a room is answered before
+  the Channel lock. A changed room set follows the result as one domain 12 delta type 2
+  (`DELTA_TYPE_CHAT_ROOMS_V1`). A line to a room that is not open is `ROOM_NOT_OPEN`. World,
+  English and Advertising need level 20 or Premium; Help needs neither. Advertising needs a
+  vocation and allows one line per 2 minutes.
+- **Private messages.** The recipient is found by `name_key` in the same World, using the
+  `find_person` join as a DurabilityRoot semantic pass. A recipient who is not online
+  (`session_state = 2`) gives `NOT_ONLINE`. A message to oneself is `REJECTED`. Sending needs
+  level 3. More than 20 distinct recipients in 10 minutes mutes the sender.
+- **Rate gate.** Room and private lines pass the same pre-gate as local speech, before the
+  Channel lock (#2026). A muted session cannot cast (#2003).
+- **Wire.** No new protocol numbers. The rooms delta and dispositions are those CHAT-0 already
+  fixed.
+
+## Architecture and source of truth
+
+- PROVEN: `docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md`
+  sections 5 and 7 (CHAT-0 ACCEPTED, #2088).
+- DERIVED (WP3 deviation, recorded here): the relay runs on its own small pool (4 connections),
+  outside the WP3 durability root. The root is one physical connection on its own runtime and
+  carries durability work only. A `LISTEN` connection that stays open would hold that connection
+  for good, and chat sends must not queue behind durability passes. The relay pool reuses the
+  root's verified endpoint and credentials. Its options are cloned before
+  `oteryn_wp3_resource_budget`, so they do not carry the WP3 root budget. Recipient resolution
+  still runs on the root as a semantic pass.
+- DERIVED: an Advertising line claims its 2-minute interval before the send. A send that then
+  fails still uses the interval, which fails closed against a flood.
+- DERIVED: the relay key file is an environment secret, named by `OTERYN_CHAT_RELAY_KEYS_FILE`.
+  It is read with the secret-file checks and holds one `<key_id> <activate_at_micros> <base64 32
+  bytes>` per line. No key material is in the repository; tests generate their own keys.
+  Provisioning keys for protected or production environments is out of scope.
+- No chat text, sender or recipient is logged or stored (FND-02 §20). Relay failures are
+  reported only as fixed reasons and counts (`chat_relay_disabled reason=...`,
+  `chat_relay_dropped lines=N`). No database error text is logged.
+
+## Excluded scope
+
+- CHAT-2C: the durable mute row `game_character_chat_mutes`, migration 0089, leased to CHAT-2C.
+  It opens after this PR merges.
+
+## Validation
+
+Restart head (D1400), in a cloud container against PostgreSQL 17.6 (`postgres:17.6-bookworm`,
+`OTERYN_TEST_POSTGRES_ADMIN_URL`):
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib -- chat_relay`: 10 passed, run 5 times
+- `cargo test --locked -p oteryn-game-server --lib -- chat migration schema capabilit`: 219 passed
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK (124 tests)
+- The whole package and the `tests/*_postgres.rs` targets are left to exact-head CI.
+
+#2128 (head 1536bfbf), for the record: fmt and clippy passed; `--lib -- chat migration schema`
+passed against PostgreSQL 17 (145, round 8 `--lib -- chat npc capabilit` 228); the whole package
+against 17.11 failed only on the `canonical target is PostgreSQL 17.6` harness assertion.
+
+## Self-review
+
+- method: the implementing agent read the whole diff against the owned paths.
+- material findings: none open.
+
+## Independent review
+
+- required: Codex review on the frozen head.
+- round 1 (P1): a reconnected listener kept its replay floor, so a line sent while it was down
+  could be republished and delivered. Fixed: the first tick after a reconnect moves the floor past
+  that reading (`ReplayWindow::reconnected`), keeping the de-duplication set and the lease; covered
+  by `a_reconnected_window_drops_what_was_sent_while_it_was_down_and_still_refuses_a_replay`.
+- round 2 (P1): the relay reported ready at once after a start or a reconnect, so a send returned
+  OK and was then dropped here as `BeforeStart`. Fixed: ready also needs the window to admit what
+  this node stamps now (`ReplayWindow::admits_from`); the reconnect floor follows the database
+  reading, not the raised clock, so quick reconnects do not compound it.
+- round 3 (P1): readiness used the raw reading, so after the database clock stepped back a send
+  was stamped behind the window's clock and dropped as `Stale`. Fixed: sends are stamped with the
+  window's monotonic clock and readiness needs the lease to cover it
+  (`ReplayWindow::admitting_clock`). (P2): `allows_room` inherited the yell-only level-1 ban, so a
+  Premium level-1 character was refused the World, English and Advertising rooms. Fixed: rooms
+  check level 20 or `premium_current` directly.
+- round 4 (P2): a Character without a vocation has no cast facts, so chat read it as level 1 and
+  refused private lines and rooms its level allows. Fixed: chat admission reads the Character's
+  progression level once, and room, private and yell gates use it when there are no cast facts.
+  (P2, same round on eefbb2dd): a failed progression read was cached as level 1. Fixed: a failed
+  read leaves the session unadmitted, as a failed name read does, so its next open reads again.
+- round 5 (P1): readiness and the send clock were published separately, so a send could pair
+  a stale ready flag with a clock its own node drops. Fixed: one value holds the send clock only
+  while ready. (P1): a reconnect floor came from the raw reading, so after a database clock
+  stepped back during an outage a line stamped near the old readings could be replayed. Fixed:
+  the floor follows the newest reading ever seen (`read_high`), which does not compound.
+- round 6 (P1): the bind-parameter logging precondition was checked only at connect, but a
+  configuration reload reaches open sessions. (P1, round 7): a check before `pg_notify` still
+  races a reload between the two statements. Fixed: each send checks both settings in the
+  `pg_notify` statement itself (`WHERE`, no row means `CHAT_UNAVAILABLE`); a reload applies
+  between statements only. Connect and every listener tick read them too.
+- round 8 (P1): pinning the settings with `SET` needs a parameter privilege the runtime role does
+  not have. Fixed (owner-approved round 3): the relay sets nothing and reads only; the ready path
+  is tested as a least-privilege `oteryn_game_runtime` member whose settings an operator
+  provisioned (`ALTER ROLE … IN DATABASE … SET`).
+- round 9 (P1 4280714487): the payload was bound to the checking statement, so a reload that
+  enabled parameter logging after the readiness check could log it even when the `WHERE` refused
+  the notify. #2128 closed under the max-rounds rule (comment 6187830778). CP decision D1400
+  (#2131 comment 6236981609) restarts the work as one PR on current main and decides the fix:
+  pin per session with `SET`, backed by `GRANT SET ON PARAMETER`, failing closed. Fixed as
+  described under Readiness. Tests: `every_new_relay_connection_pins_logging_off` (two pool
+  connections and the listener, each with the pinned values in session scope, over role
+  defaults that would log everything; the relay then becomes ready) and
+  `a_relay_role_without_the_set_grant_fails_closed` (no grant, and each grant missing one of the
+  four: refused, never ready, `CHAT_UNAVAILABLE`, pool closed, nothing notified).
+
+## PR and closeout
+
+- Refs #2074 (CHAT-2C follows). Restart of #2128 (closed unmerged) per CP decision D1400.
+- merge commit/result: squash merge of the CHAT-2B restart PR
