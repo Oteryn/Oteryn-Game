@@ -187,3 +187,174 @@ snapshot registration or PostgreSQL run is claimed. Durable source hashes and
 original reference/callsite outputs are in
 `/workspace/oteryn-prep/quest-rt-1-evidence/`. Full QUEST-RT-1 chest/capability
 acceptance remains open; this packet makes no playable/runtime readiness claim.
+
+
+## Native quest XP caller preparation (2026-10-17, draft #2198)
+
+This preparation starts from draft head `5e6513963c21796e768f9aa8dbe46810b6c99432`
+and was assembled for native validation on protected main
+`b1e90b421692289db3aac78a915629251ba80481`. The historical record above is preserved.
+The current allocation is [CP D1150](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224947337):
+this PR owns the `ComposedFreshAdmission::refresh_quest_session` call to the
+existing `request_pending_quest_experience` helper, in the ordered shared slot
+after #2197 and after merging then-current main. Accepted
+`ARCH_PROGRESSION_SOURCE_PACKETS` §2.3 remains the behavior contract.
+
+### Published owned leaf and held integration bundle
+
+The owned source leaf is `apps/game-server/src/quest/admission_tests.rs`, with
+this task amendment. It uses the existing actual `ComposedFreshAdmission` and
+native monk-save PostgreSQL fixture; it introduces no alternate quest loader,
+progression authority, XP writer, migration or content catalogue for production.
+The synthetic quest and progression inputs are explicitly test fixtures.
+
+The complete reviewed caller and test-mount proposal is retained in the PR
+description, bound to the main revision above. The shared
+`apps/game-server/src/gameplay_transport/mod.rs` hunk is held for D1150's slot.
+The four-line child registration in
+`apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` is necessary
+to reuse that native fixture and is validation-only until its integration
+allocation is confirmed. Neither shared file is part of this owned publication.
+Consequently, the owned test leaf alone is not a registered executable suite on
+the PR branch; native validation below applies to the explicitly assembled
+caller + mount + leaf candidate, not an assertion that the held integration has
+already landed. Existing aggregate quest-state/XP support is reused unchanged.
+
+The earlier prerequisite inspection used #2197 draft head
+`427fe6224d30557af4b70afb651768b90a07446d`, which was then conflicted; its relevant
+session binding and quest refresh APIs matched the pinned main baseline. That
+is a historical source observation, not a claim about a newer prerequisite head.
+The coordinator's fresh read at 2026-10-17T09:08Z found #2197 advanced to
+`6be32b062b741df8070d49d4e2c79dc197271ffe`, updated at 09:07:21Z: open, draft,
+unmerged and mergeable. The new prerequisite source has not been compared with
+this validated assembly. The gate is the required prior PR remaining unmerged
+and the ordered shared slot, not a current merge conflict. Re-read the exact
+prerequisite and then-current protected main at the slot.
+
+### Prepared caller behavior
+
+After a usable quest copy is loaded, the existing transport owner clones this
+session's immutable progression binding and releases the session-map lock. The
+existing XP helper receives that policy, the independently read current
+session/lease/scope fence, and the existing root, authority, node and sequencer.
+The sequencer supplies the current expected CharacterRevision for each award;
+quest content provenance is never substituted for the progression reward
+revision. No new XP path or retry loop is introduced.
+
+The helper's unknown-outcome retry result is ORed with the existing load/claim
+retry decision and uses the existing 60-second cadence. An unbound session keeps
+its XP obligations and logs deferral once per session, without adding retry
+solely for absence of a binding. Logging occurs after releasing the quest-session
+mutex. Existing unknown-fence read preservation, proven-terminal handling and
+`insert: false` removal behavior are retained.
+
+The full native policy contains its threshold table by value. In the assembled
+candidate, heap-pinning the existing XP-helper future reduced the measured
+refresh future from 202,504 to 8,376 bytes, following the existing
+`admit_progression_session` allocation precedent. This comparison concerns the
+prepared candidate before and after the allocation change; it is not a
+measurement of the unmodified main baseline. The native award calls and values
+are unchanged.
+
+The corresponding instrumented scenario shrank from 426,160 to 164,544 bytes.
+Execution then entered the scenario, completed the real admission fixture,
+initialized progression and committed the quest transition, but still overflowed
+inside the first quest admission. Each fixture initializer call is heap-pinned to
+remove its measured 71,736-byte future from the retained scenario state; the
+scenario itself is also heap-pinned before the shared executor receives it.
+The five-case run still overflowed at the default test stack after that placement
+change. Those default-stack failures are retained as evidence, not reported as
+successful qualification.
+
+The local test runner now uses a named thread with an explicit 64 MiB stack,
+following the existing native `kill_reward_postgres_e2e_tests.rs` scenario recipe.
+It creates the same fixture/runtime on that thread, forwards scenario errors and
+resumes the original panic payload on the calling test thread. This is an
+explicit debug-test execution policy: neither the production runtime stack nor
+the process-wide `RUST_MIN_STACK` setting is changed. The five functional scenarios
+passed on this runner; no default-stack or full runtime pass is claimed.
+The fixture's quest catalogue pin is the admitted `content-1` context, and its
+separate reward-revision inequality remains asserted.
+
+### Five native PostgreSQL scenarios
+
+1. Pending XP from a previous native owner pays once at bound quest admission;
+   repeated admission and subsequent transition refreshes do not pay twice.
+2. Repeated unbound admission preserves pending XP and the one-session deferral
+   marker without scheduling retry; attaching the valid binding later pays once.
+3. An injected failure in the XP-receipt transaction leaves the obligation
+   pending, schedules existing backoff, and pays once when the real cadence is
+   due after the store recovers.
+4. Replacing only the durable current connection generation after the native
+   current-fence read refuses the XP award, preserves the obligation, and adds
+   no retry for that definitive refusal.
+5. Removing only the local session and progression binding while a refresh is
+   paused prevents `insert: false` from recreating either entry.
+
+These cases execute the real quest admission/refresh methods and inspect durable
+XP, receipt and obligation rows. The transition-refresh scenario does not dispatch
+a literal chest-use command. Actual chest-use-to-refresh E2E, complete fresh
+admission/transport E2E, unknown-fence-read and terminal lifecycle regressions,
+and full QUEST-RT-1 runtime qualification remain open; existing lower-level
+chest/quest cases and source wiring are not relabeled as those new E2E passes.
+
+### Native validation checkpoint — 2026-10-17
+
+The assembled candidate used canonical PostgreSQL 17.6 and the real shared
+fixture with `OTERYN_TEST_POSTGRES_ADMIN_URL` set. The run used the explicit
+64 MiB scenario thread above; `RUST_MIN_STACK` was unset. The coordinator's native
+PC readback at 2026-10-17T09:02:47Z reports **5 passed, 0 failed, 0 ignored**, with
+3,267 other cases filtered out, in 8.34 seconds. Strict all-target Clippy and
+format checking completed successfully at 2026-10-17T09:05:59Z. The same three
+source hashes were unchanged after the tests and Clippy. Initial stack failures
+and diagnostic-only cases are not counted as passing regression cases.
+
+```sh
+cargo test --locked -p oteryn-game-server --lib quest_admission:: --quiet -- --test-threads=1
+cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo fmt --all -- --check
+```
+
+The exact validated assembly is main
+`b1e90b421692289db3aac78a915629251ba80481` plus these source bytes:
+
+| Source | SHA-256 |
+|---|---|
+| `apps/game-server/src/gameplay_transport/mod.rs` | `45631d837035110e5e77c870f8cf2d4074e9d74e871fa5cd82a7943769abdb4c` |
+| `apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` | `582e50fc7889e599d506d9c2560f8b63e4f7df856e516e207e9160a22862d399` |
+| `apps/game-server/src/quest/admission_tests.rs` (PC-formatted) | `c326744eb5dce32c218c342462d8fe747e68ec5fc6c6393cbf2df63e1dd30368` |
+
+| Check | Result |
+|---|---|
+| Five native quest PostgreSQL scenarios on the assembled candidate | PASS: 5/5, with the explicit 64 MiB debug-test thread |
+| Final future placement measurement | Refresh 8,376 bytes; cadence 8,448; admission 8,416; default-stack failures retained |
+| Strict game-server all-target Clippy on the same final source | PASS, exit 0; existing vendor Tokio `missing_docs` warning only |
+| `cargo fmt --all -- --check` | PASS |
+| Independent caller and fixture-delta source review | PASS; PC formatting changes no test values, assertions, hooks or runner behavior |
+| Owned-publication governance checks, tests and whitespace check | Required on the frozen owned commit; exact result is recorded in the PR description |
+
+The independently reviewed test leaf before PC formatting has SHA-256
+`00fb3a486f3a1f28cac9db42e974a4b90d5dcc7ffc9b7974f13b4b577d4fdadc`;
+only formatting changed to the validated leaf above. The frozen publication
+commit and its governance readback are recorded in the PR description so that
+this source checkpoint does not need a status-only follow-up commit.
+Full-package tests, production content qualification and runtime completion are
+not claimed by this focused packet.
+
+Native run evidence remains under
+`/root/oteryn-six-pr-20261017/evidence-quest/` on Molehill-PC:
+
+| Evidence log | SHA-256 |
+|---|---|
+| `native-scenario.log` | `a7e3f8bcf9e7c29595eaef8693b1935efb0f469be00a60990900572449ab1ed7` |
+| `clippy-scenario.log` | `984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1` |
+| `fmt-scenario.log` (empty, exit 0) | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+### Remaining integration and product gates
+
+D1150's shared caller slot follows #2197; the native fixture mount also needs its
+integration allocation. Merge main and revalidate the exact assembled source at
+that slot. Capability 16 remains **unoffered**. Journal text/wire ownership is the
+separate `QUEST-LOG-WIRE-1` task. Content/registry/capability activation, literal
+chest-use E2E and full QUEST-RT-1 acceptance remain unfinished. This draft is
+`NOT_FULLY_QUALIFIED`; only CP has integration/merge authority.
