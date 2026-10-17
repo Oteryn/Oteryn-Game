@@ -752,3 +752,69 @@ new owned continuation is implemented source, not a claim of installed dispatch,
 two-client operation, or process-restart qualification. Its fixed 2-item /
 4-location / 2-participant / 6-effect shape is unchanged; no pre-swap durable
 reservation or retry-counter row is introduced.
+
+## WRITER-ONLY boundary repair (successor of 78823c03d1, 2026-10-17)
+
+Current CP allocation D1369
+([comment6234490484](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234490484))
+narrows #2132 to **WRITER-ONLY**: complete the native module/privacy repair in one
+checkpoint, then qualify the native writer. Common ingress for all13 admitted
+command families belongs to `SESSION-INGRESS-1` after #2187. Wire IDs, capability,
+domain and consumer activation wait for that task. Physical exclusion hooks need
+one concrete actual owner guard and its consumer design before per-writer grants;
+this checkpoint does not install those hooks. The earlier broader family goal
+and integration notes are historical context, not extra authority for this PR.
+
+This checkpoint remains **NOT_FULLY_QUALIFIED**. Its exact predecessor is
+`78823c03d10bd70d548156ee1bdf6e86586a1505`. The predecessor's strict
+[job117403351357](https://github.com/Oteryn/Oteryn-Game/actions/runs/39035062937/job/117403351357)
+failed with15 compiler errors before execution; canonical PostgreSQL
+job117403103079 also failed before tests. The planned PC native run on788 was
+**NOT_STARTED**. The earlier whole-writer move crossed durability's private
+transaction/recovery boundary: `db`, `assert_recovery_fence`, `uuid_text`,
+`record_for`, `scope_key` and `load_assignment` were inaccessible from gameplay.
+The typed transaction errors cascaded from that boundary. The native read also
+lacked its existing `commit_semantic_transaction` import.
+
+The repaired boundary retains `FrozenPlayerTrade`, its actual Content checks and
+the private `IssuedTradeOccurrence` in the real gameplay owner. The public native
+`commit_player_trade` / `reconcile_player_trade` signatures are unchanged. A
+private `NativePlayerTradeStorageOwner` borrows that exact request and issued
+record for the full native pass. Its only adapter implementation checks all
+original issuance components and returns actual borrowed runtime/node/fence
+owners; no caller-supplied current/accepted boolean is introduced.
+
+The owned durability leaf now opens and commits the real canonical transaction,
+asserts the original Root-bound recovery, locks the occurrence and independently
+checks current assignment, both session fences, ordered roots/items/slots and all
+captured before-rows. It validates the complete DATA projection and retry hash
+before execution. Historical committed replay still precedes the current native
+issuance check. The existing `run_with_context` retains actual borrowed owner
+input through the pass and observed pool return. No DB/recovery internals become
+public, no Content or gameplay shim is added to standalone durability roots, and
+no blanket or synthetic test adapter is introduced.
+
+All18 native writer SQL literals, the type-2 tuple path, deferred0100 guards,
+same-transaction two-item swap, full0095 preservation and6-effect bound remain
+unchanged. The sole shared delta moves the D1158 outbox-source inventory entry
+back to its actual `src/durability/player_trade.rs` location in lexical order.
+The native FND issuer, retained TRANSFERRING continuation, unknown-COMMIT handling,
+reconcile-before-retry and cached terminal-output behavior are preserved.
+
+Validation for this successor is initially source-only: exact788 original blobs,
+Rust1.94 repo-config rustfmt, mechanical helper/message/hash preservation, SQL
+identity, unchanged test bodies, single real adapter and patch whitespace checks
+**PASS**. Strict Clippy/typecheck, ordinary execution and PostgreSQL execution
+remain **NOT_RUN** until the exact published successor is qualified. No prior
+green job qualifies this repair.
+
+The unchanged native test inventory is37 gameplay cases (18 ordinary,19 PG), plus6
+pure durability codec/continuity cases. The focused native filter
+`gameplay_transport::player_trade::tests::native_` selects23 cases (19 PG and4
+ordinary); `durability::player_trade::tests::` selects6. Native qualification must
+see all19 actual database-start markers and all19 post-cleanup `native Trade PG
+PASS` markers. An absent configured-admin early return is not native evidence.
+Use only D1329's existing PostgreSQL17.6 namespace route; harnesses and ports are
+unchanged. Common session ownership, dispatch, wire activation, cross-command
+physical exclusion and process-restart installation remain the explicitly held
+integration work described by D1369.

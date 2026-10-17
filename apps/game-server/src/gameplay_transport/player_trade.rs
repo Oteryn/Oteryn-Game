@@ -1609,42 +1609,24 @@ fn qualify_runtime_pair(
     Ok(())
 }
 
-// Real runtime issuance and Content are available only in this owning module.
-// These are the original native writer bodies, not a durability test-root shim.
+// Real runtime issuance and Content remain private to this owner. Canonical DB
+// transactions stay inside durability through its actual borrowed TRADE adapter.
 pub(crate) use native_writer::{FrozenPlayerTrade, PlayerTradeCommitAuthority};
 mod native_writer {
     use super::{IssuedTradeOccurrence, ReservationIntent};
     use crate::content::{ActiveGeneration, ReferenceItemField};
-    use crate::domain::CharacterId;
-    use crate::durability::character_authority::{
-        ReconciledCharacterAuthority, assert_recovery_fence, uuid_text,
-    };
-    use crate::durability::db::{
-        begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
-        lock_admission_relations,
-    };
-    use crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY;
+    use crate::durability::DurabilityRoot;
+    use crate::durability::character_authority::ReconciledCharacterAuthority;
     use crate::durability::item_mint_audit as audit;
-    use crate::durability::item_timed_state::load_timed_state;
-    use crate::durability::item_transfer::{
-        ContainerEntryPosition, CurrentCharacterItemFence, character_item_fence_without_root_lock,
-        load_entries, load_slot, lock_character_item_root,
-    };
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
     use crate::durability::player_trade::{
-        CommittedPlayerTrade, OneItemPlayerTradeLineV1, OneItemPlayerTradeLocationV1,
-        OneItemPlayerTradeParticipantV1, OneItemPlayerTradeV1, PLAYER_TRADE_CAUSE,
-        PlayerTradeError, PlayerTradeEventIdentity, PlayerTradeOutcome, PlayerTradeReceipt,
-        TradeData, audit_command, audit_timed, check_player_trade, encode_player_trade_event,
-        first_fence_continues,
+        CommittedPlayerTrade, PlayerTradeCurrentOwner, PlayerTradeError, PlayerTradeEventIdentity,
+        PlayerTradeOutcome, PlayerTradeStorageInput, PlayerTradeStorageOwner, check_player_trade,
     };
     use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
-    use crate::durability::{DurabilityError, DurabilityRoot};
     use crate::foundation::{
         ChannelRuntimeAssignmentBinding, ChannelRuntimeV1, CommandRef, RuntimeScopeRefV1,
     };
-    use prost::Message;
-    use sha2::{Digest, Sha256};
-    use sqlx::Row;
 
     /// Immutable retry input. Only a real private component issuance can supply the
     /// captured before-data; no constructor accepts an arbitrary ReservationIntent.
@@ -1662,16 +1644,6 @@ mod native_writer {
         content_digest: [u8; 32],
         capacities: [u16; 2],
         binding: [u8; 32],
-    }
-
-    fn ordered_characters(data: &TradeData) -> [usize; 2] {
-        if data.traders[0].fence.character_id.as_bytes()
-            < data.traders[1].fence.character_id.as_bytes()
-        {
-            [0, 1]
-        } else {
-            [1, 0]
-        }
     }
 
     impl FrozenPlayerTrade {
@@ -1833,151 +1805,32 @@ mod native_writer {
                 capacities,
                 binding: [0; 32],
             };
-            let message = frozen.message(frozen.first_fence.connection_generation.get())?;
+            let input = frozen.storage_input();
+            let message = input.message(frozen.first_fence.connection_generation.get())?;
             check_player_trade(&message)?;
-            frozen.binding = frozen.request_binding(&message);
+            frozen.binding = input.request_binding(&message);
             Ok(frozen)
         }
 
-        fn first_side(&self) -> Result<usize, PlayerTradeError> {
-            self.intent
-                .binding
-                .data
-                .traders
-                .iter()
-                .position(|p| p.fence == self.first_fence)
-                .ok_or(PlayerTradeError::InvalidInput)
-        }
-
-        fn message(
-            &self,
-            current_first_connection: u64,
-        ) -> Result<OneItemPlayerTradeV1, PlayerTradeError> {
-            let data = &self.intent.binding.data;
-            let first_side = self.first_side()?;
-            let mut participants = Vec::with_capacity(2);
-            for side in ordered_characters(data) {
-                let trader = data.traders[side];
-                participants.push(OneItemPlayerTradeParticipantV1 {
-                    character_id: trader.fence.character_id.as_bytes().to_vec(),
-                    account_id: trader.account_id.as_bytes().to_vec(),
-                    command: Some(audit_command(self.intent.binding.accepts[side])),
-                    accepted_connection_generation: trader.fence.connection_generation.get(),
-                    current_connection_generation: if side == first_side {
-                        current_first_connection
-                    } else {
-                        trader.fence.connection_generation.get()
-                    },
-                    character_lease_generation: trader.fence.character_lease_generation,
-                });
+        /// Projection only. Its fields cannot construct this private frozen native request,
+        /// and the storage bridge independently checks its complete shape and retry binding.
+        fn storage_input(&self) -> PlayerTradeStorageInput {
+            PlayerTradeStorageInput {
+                trade_id: self.trade_id,
+                occurrence: self.occurrence,
+                first_accept: self.first_accept,
+                first_fence: self.first_fence,
+                trigger: self.trigger,
+                pair: self.intent.binding.pair,
+                accepts: self.intent.binding.accepts,
+                data: self.intent.binding.data.clone(),
+                destinations: self.intent.destinations,
+                identity: self.identity,
+                runtime_binding: self.runtime_binding,
+                content_digest: self.content_digest,
+                capacities: self.capacities,
+                binding: self.binding,
             }
-            let mut lines = Vec::with_capacity(2);
-            for side in [0, 1] {
-                let offer = data.offers[side]
-                    .as_ref()
-                    .ok_or(PlayerTradeError::InvalidInput)?;
-                let destination = self.intent.destinations[1 - side];
-                lines.push(OneItemPlayerTradeLineV1 {
-                    before: Some(offer.state.clone()),
-                    after: Some(offer.state.clone()),
-                    state_revision_before: offer.state_revision,
-                    state_revision_after: offer
-                        .state_revision
-                        .checked_add(1)
-                        .ok_or(PlayerTradeError::Stale)?,
-                    source: Some(OneItemPlayerTradeLocationV1 {
-                        character_id: data.traders[side].fence.character_id.as_bytes().to_vec(),
-                        parent_item_instance_id: offer.position.parent_item_instance_id.to_vec(),
-                        placement_ordinal: offer.position.placement_ordinal,
-                        placed_transaction_id: offer.placed_transaction_id.to_vec(),
-                    }),
-                    destination: Some(OneItemPlayerTradeLocationV1 {
-                        character_id: data.traders[1 - side]
-                            .fence
-                            .character_id
-                            .as_bytes()
-                            .to_vec(),
-                        parent_item_instance_id: destination.parent_item_instance_id.to_vec(),
-                        placement_ordinal: destination.placement_ordinal,
-                        placed_transaction_id: self.identity.transaction_id.to_vec(),
-                    }),
-                    unchanged_timed_state: audit_timed(offer.timed),
-                });
-            }
-            lines.sort_by(|a, b| {
-                a.before
-                    .as_ref()
-                    .map(|s| &s.item_instance_id)
-                    .cmp(&b.before.as_ref().map(|s| &s.item_instance_id))
-            });
-            Ok(OneItemPlayerTradeV1 {
-                typed_cause: PLAYER_TRADE_CAUSE.into(),
-                trade_id: self.trade_id.to_vec(),
-                occurrence_id: self.occurrence.to_vec(),
-                first_accept: Some(audit_command(self.first_accept)),
-                trigger: Some(audit_command(self.trigger)),
-                world_id: self.runtime_binding.world_id().as_bytes().to_vec(),
-                channel_id: self.runtime_binding.channel_id().as_bytes().to_vec(),
-                runtime_scope_ownership_generation: self.runtime_binding.scope_generation().get(),
-                content_digest: self.content_digest.to_vec(),
-                participants,
-                lines,
-            })
-        }
-
-        fn request_binding(&self, baseline: &OneItemPlayerTradeV1) -> [u8; 32] {
-            fn part(hash: &mut Sha256, bytes: &[u8]) {
-                hash.update((bytes.len() as u64).to_be_bytes());
-                hash.update(bytes);
-            }
-            let mut hash = Sha256::new();
-            part(&mut hash, b"OTERYN_PLAYER_TRADE_REQUEST/v1");
-            part(&mut hash, &baseline.encode_to_vec());
-            part(
-                &mut hash,
-                self.intent.binding.pair.game_session_id().as_bytes(),
-            );
-            hash.update(self.intent.binding.pair.command_id().get().to_be_bytes());
-            hash.update(self.identity.transaction_id);
-            hash.update(self.identity.event_id);
-            hash.update(self.identity.occurred_at_unix_ms.to_be_bytes());
-            hash.update(self.runtime_binding.source_revision().to_be_bytes());
-            // All captured backpack state participates in the retry binding. An
-            // unrelated item/checkpoint change invalidates this open trade too.
-            for side in [0, 1] {
-                hash.update(self.capacities[side].to_be_bytes());
-                let bag = &self.intent.binding.data.backpacks[side];
-                hash.update((bag.entries.len() as u64).to_be_bytes());
-                hash.update(
-                    (self.intent.binding.data.backpack_versions[side].len() as u64).to_be_bytes(),
-                );
-                for member in
-                    std::iter::once(&bag.backpack).chain(bag.entries.iter().map(|e| &e.item))
-                {
-                    part(&mut hash, &member.item_instance_id);
-                    part(&mut hash, member.definition.family.as_bytes());
-                    part(&mut hash, member.definition.production_key.as_bytes());
-                    part(&mut hash, member.definition.revision_ref.as_bytes());
-                    hash.update(member.quantity.to_be_bytes());
-                }
-                for entry in &bag.entries {
-                    hash.update(entry.placement_ordinal.to_be_bytes());
-                }
-                for version in &self.intent.binding.data.backpack_versions[side] {
-                    hash.update(version.item);
-                    hash.update(version.state_revision.to_be_bytes());
-                    hash.update(version.placed_transaction_id);
-                    hash.update(version.key_number.to_be_bytes());
-                    match audit_timed(version.timed) {
-                        Some(timed) => {
-                            hash.update([1]);
-                            part(&mut hash, &timed.encode_to_vec());
-                        }
-                        None => hash.update([0]),
-                    }
-                }
-            }
-            hash.finalize().into()
         }
     }
 
@@ -1993,196 +1846,37 @@ mod native_writer {
         pub(crate) first_current_fence: CurrentCharacterItemFence,
     }
 
-    async fn lock_player_trade_cause(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        request: &FrozenPlayerTrade,
-    ) -> Result<(), DurabilityError> {
-        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:player-trade:' || encode($1,'hex'),0))")
-            .bind(request.occurrence.as_slice()).execute(&mut **tx).await?;
-        Ok(())
+    /// The sole storage adapter borrows the actual private issued record and frozen request.
+    /// No constructor accepts DATA instead of IssuedTradeOccurrence; historical replay may read
+    /// the frozen projection, but new storage effects require this exact native issuance check.
+    struct NativePlayerTradeStorageOwner<'r, 'a, 'f, 's> {
+        authority: PlayerTradeCommitAuthority<'a, 'f, 's>,
+        request: &'r FrozenPlayerTrade,
     }
 
-    fn number(row: &sqlx::postgres::PgRow, column: &str) -> Result<u64, DurabilityError> {
-        row.try_get::<String, _>(column)?
-            .parse::<u64>()
-            .map_err(|_| DurabilityError::InvalidStoredState)
-    }
+    impl PlayerTradeStorageOwner for NativePlayerTradeStorageOwner<'_, '_, '_, '_> {
+        fn frozen_input(&self) -> PlayerTradeStorageInput {
+            self.request.storage_input()
+        }
 
-    async fn load_player_trade(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        request: &FrozenPlayerTrade,
-    ) -> Result<Option<Result<CommittedPlayerTrade, PlayerTradeError>>, DurabilityError> {
-        let Some(row)=sqlx::query("SELECT trade_id::text,transaction_id::text,event_id::text,request_binding FROM game_player_trades WHERE occurrence_id=encode($1,'hex')::uuid")
-            .bind(request.occurrence.as_slice()).fetch_optional(&mut **tx).await? else{return Ok(None);};
-        if row.try_get::<Vec<u8>, _>("request_binding")? != request.binding {
-            return Ok(Some(Err(PlayerTradeError::ConflictingOccurrence)));
-        }
-        let lines=sqlx::query("SELECT item_instance_id::text,source_character_id::text,destination_character_id::text,destination_parent_item_instance_id::text,destination_ordinal::text FROM game_player_trade_receipts WHERE occurrence_id=encode($1,'hex')::uuid ORDER BY line_ordinal LIMIT 3")
-            .bind(request.occurrence.as_slice()).fetch_all(&mut **tx).await?;
-        if lines.len() != 2 {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        let receipts = lines
-            .iter()
-            .map(|line| {
-                Ok(PlayerTradeReceipt {
-                    item_instance_id: uuid_text(line.try_get("item_instance_id")?)?,
-                    source_character_id: CharacterId::from_bytes(uuid_text(
-                        line.try_get("source_character_id")?,
-                    )?)
-                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-                    destination_character_id: CharacterId::from_bytes(uuid_text(
-                        line.try_get("destination_character_id")?,
-                    )?)
-                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-                    destination: ContainerEntryPosition {
-                        parent_item_instance_id: uuid_text(
-                            line.try_get("destination_parent_item_instance_id")?,
-                        )?,
-                        placement_ordinal: number(line, "destination_ordinal")?,
-                    },
-                })
+        fn current_issuance(&self) -> Result<PlayerTradeCurrentOwner<'_>, PlayerTradeError> {
+            let issued = self.authority.issued;
+            let request = self.request;
+            if issued.trade_id() != &request.trade_id
+                || issued.occurrence() != &request.occurrence
+                || issued.first_accept() != request.first_accept
+                || issued.first_fence() != request.first_fence
+                || issued.trigger() != request.trigger
+                || issued.intent() != &request.intent
+            {
+                return Err(PlayerTradeError::AuthorityRejected);
+            }
+            Ok(PlayerTradeCurrentOwner {
+                node: self.authority.node,
+                runtime: self.authority.runtime,
+                first_current_fence: self.authority.first_current_fence,
             })
-            .collect::<Result<Vec<_>, DurabilityError>>()?;
-        let receipts: [PlayerTradeReceipt; 2] = receipts
-            .try_into()
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        if receipts[0].item_instance_id >= receipts[1].item_instance_id
-            || receipts.iter().any(|line| {
-                line.source_character_id == line.destination_character_id
-                    || line.destination.placement_ordinal == 0
-            })
-            || receipts[0].source_character_id != receipts[1].destination_character_id
-            || receipts[1].source_character_id != receipts[0].destination_character_id
-        {
-            return Err(DurabilityError::InvalidStoredState);
         }
-        Ok(Some(Ok(CommittedPlayerTrade {
-            occurrence: request.occurrence,
-            trade_id: uuid_text(row.try_get("trade_id")?)?,
-            transaction_id: uuid_text(row.try_get("transaction_id")?)?,
-            event_id: uuid_text(row.try_get("event_id")?)?,
-            receipts,
-        })))
-    }
-
-    async fn trade_identity_reused(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        request: &FrozenPlayerTrade,
-    ) -> Result<bool, DurabilityError> {
-        Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_player_trades WHERE transaction_id=encode($1,'hex')::uuid OR event_id=encode($2,'hex')::uuid OR trade_id=encode($3,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_player_trade_participants WHERE (game_session_id=encode($4,'hex')::uuid AND command_id=$5::text::numeric) OR (game_session_id=encode($6,'hex')::uuid AND command_id=$7::text::numeric)) OR EXISTS(SELECT 1 FROM game_item_audit_outbox WHERE transaction_id=encode($1,'hex')::uuid OR event_id=encode($2,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_instances WHERE minted_transaction_id=encode($1,'hex')::uuid)")
-            .bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice()).bind(request.trade_id.as_slice())
-            .bind(request.first_accept.game_session_id().as_bytes().as_slice()).bind(request.first_accept.command_id().get().to_string())
-            .bind(request.trigger.game_session_id().as_bytes().as_slice()).bind(request.trigger.command_id().get().to_string())
-            .fetch_one(&mut **tx).await?)
-    }
-
-    async fn current_trade_content_and_assignment(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        node: &NodeIncarnationProof,
-        request: &FrozenPlayerTrade,
-    ) -> Result<bool, DurabilityError> {
-        let binding = request.runtime_binding;
-        let world = binding.world_id();
-        let channel = binding.channel_id();
-        let key = crate::durability::runtime_scope_assignment::scope_key(world, channel);
-        let Some(assignment) =
-            crate::durability::runtime_scope_assignment::load_assignment(tx, &key, false).await?
-        else {
-            return Ok(false);
-        };
-        let Some(holder) = assignment.holder else {
-            return Ok(false);
-        };
-        let RuntimeScopeRefV1::Channel {
-            world_id: actual_world,
-            channel_id: actual_channel,
-        } = assignment.scope
-        else {
-            return Ok(false);
-        };
-        if assignment.state
-            != crate::durability::runtime_scope_assignment::AssignmentState::Assigned
-            || holder != node.fact()
-            || !binding.matches_committed_assignment(
-                actual_world,
-                actual_channel,
-                holder.node_id(),
-                holder.registration_revision(),
-                assignment.ownership_generation,
-                assignment.source_revision,
-                &assignment.decision_identity,
-            )
-        {
-            return Ok(false);
-        }
-        let digest:Option<Vec<u8>>=sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
-            .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-        Ok(digest.as_deref() == Some(request.content_digest.as_slice()))
-    }
-
-    /// Under both current Character roots, both offered item locks and both ordered
-    /// slot locks, re-read every captured member/version. No old read flag or client
-    /// location is accepted as the current physical source.
-    async fn trade_before_refusal(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        request: &FrozenPlayerTrade,
-    ) -> Result<Option<PlayerTradeError>, DurabilityError> {
-        let data = &request.intent.binding.data;
-        let world = request.runtime_binding.world_id();
-        for side in [0, 1] {
-            let Some(bag) = load_slot(tx, data.traders[side].fence.character_id).await? else {
-                return Ok(Some(PlayerTradeError::Stale));
-            };
-            if bag != data.backpacks[side].backpack {
-                return Ok(Some(PlayerTradeError::Stale));
-            }
-            let entries = load_entries(tx, bag.item_instance_id).await?;
-            if entries.len() >= usize::from(request.capacities[side]) {
-                return Ok(Some(PlayerTradeError::NoRoom));
-            }
-            if entries != data.backpacks[side].entries {
-                return Ok(Some(PlayerTradeError::Stale));
-            }
-            for version in &data.backpack_versions[side] {
-                let row=sqlx::query("SELECT i.world_id::text,i.lifecycle,i.state_revision::text,COALESCE(k.key_number,0)::integer AS key_number,COALESCE(s.placed_transaction_id,e.placed_transaction_id)::text AS placed_transaction_id,(s.item_instance_id IS NOT NULL) AS in_slot,(e.item_instance_id IS NOT NULL) AS in_entry FROM game_item_instances i LEFT JOIN game_item_keys k USING(item_instance_id) LEFT JOIN game_item_container_slots s ON s.item_instance_id=i.item_instance_id AND s.character_id=encode($2,'hex')::uuid LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid AND e.parent_item_instance_id=encode($3,'hex')::uuid WHERE i.item_instance_id=encode($1,'hex')::uuid")
-                    .bind(version.item.as_slice()).bind(data.traders[side].fence.character_id.as_bytes().as_slice()).bind(bag.item_instance_id.as_slice()).fetch_optional(&mut **tx).await?;
-                let Some(row) = row else {
-                    return Ok(Some(PlayerTradeError::Stale));
-                };
-                if row.try_get::<bool, _>("in_slot")? == row.try_get::<bool, _>("in_entry")?
-                    || row.try_get::<i16, _>("lifecycle")? != 1
-                    || uuid_text(row.try_get("world_id")?)? != *world.as_bytes()
-                    || number(&row, "state_revision")? != version.state_revision
-                    || uuid_text(row.try_get("placed_transaction_id")?)?
-                        != version.placed_transaction_id
-                    || u32::try_from(row.try_get::<i32, _>("key_number")?)
-                        .map_err(|_| DurabilityError::InvalidStoredState)?
-                        != version.key_number
-                    || load_timed_state(tx, &version.item)
-                        .await
-                        .map_err(|_| DurabilityError::Unavailable)?
-                        != version.timed
-                {
-                    return Ok(Some(PlayerTradeError::Stale));
-                }
-            }
-            let offer = data.offers[side]
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let item: [u8; 16] = offer
-                .state
-                .item_instance_id
-                .as_slice()
-                .try_into()
-                .map_err(|_| DurabilityError::InvalidStoredState)?;
-            let forbidden:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_mint_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND loot_purpose_key=$2) OR EXISTS(SELECT 1 FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid)")
-                .bind(item.as_slice()).bind(CORPSE_MATERIALIZATION_PURPOSE_KEY).fetch_one(&mut **tx).await?;
-            if forbidden {
-                return Ok(Some(PlayerTradeError::Stale));
-            }
-        }
-        Ok(None)
     }
 
     impl DurabilityRoot {
@@ -2191,243 +1885,21 @@ mod native_writer {
             recovery: &ReconciledCharacterAuthority<'_, '_>,
             request: &FrozenPlayerTrade,
         ) -> Result<Option<CommittedPlayerTrade>, PlayerTradeError> {
-            let recovery = recovery
-                .record_for(self)
-                .map_err(|_| PlayerTradeError::AuthorityRejected)?;
-            let request = request.clone();
-            self.try_issue_semantic_pass()?
-                .run(move |holder, deadline| {
-                    Box::pin(async move {
-                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                        assert_recovery_fence(&mut tx, &recovery).await?;
-                        lock_admission_relations(&mut tx).await?;
-                        lock_player_trade_cause(&mut tx, &request).await?;
-                        let outcome = match load_player_trade(&mut tx, &request).await? {
-                            None => Ok(None),
-                            Some(Ok(committed)) => Ok(Some(committed)),
-                            Some(Err(error)) => Err(error),
-                        };
-                        commit_semantic_transaction(tx, deadline).await?;
-                        Ok(outcome)
-                    })
-                })
-                .await?
+            self.reconcile_player_trade_storage(recovery, request.occurrence, request.binding)
+                .await
         }
 
-        /// One native item-only transaction: both whole source entries become new
-        /// reciprocal entries, never a merge and never using a just-freed source
-        /// slot to pass capacity. No CharacterRevision is advanced.
+        /// Keep the public native call bound to private gameplay issuance. The storage bridge
+        /// receives this actual borrowed owner, never a supplied permission/current boolean.
         pub(crate) async fn commit_player_trade(
             &self,
             authority: PlayerTradeCommitAuthority<'_, '_, '_>,
             request: &FrozenPlayerTrade,
         ) -> Result<PlayerTradeOutcome, PlayerTradeError> {
-            let recovery = authority
-                .recovery
-                .record_for(self)
-                .map_err(|_| PlayerTradeError::AuthorityRejected)?;
-            let node = authority.node.clone();
-            let first_current = authority.first_current_fence;
-            // Evaluated from the actual borrowed runtime, and applied only after
-            // historical outcome lookup. A replay requires recovery, not a live actor.
-            let runtime_matches = authority.runtime.owner_fence().is_ok()
-                && authority.runtime.binding() == request.runtime_binding
-                && authority.runtime.content_pin().server_artifact_digest()
-                    == request.content_digest;
-            let issuance_matches = authority.issued.trade_id() == &request.trade_id
-                && authority.issued.occurrence() == &request.occurrence
-                && authority.issued.first_accept() == request.first_accept
-                && authority.issued.first_fence() == request.first_fence
-                && authority.issued.trigger() == request.trigger
-                && authority.issued.intent() == &request.intent;
-            let request = request.clone();
-            self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
-                let mut tx=begin_type2_transaction(holder,deadline).await?;
-                assert_recovery_fence(&mut tx,&recovery).await?;
-                lock_admission_relations(&mut tx).await?;
-                lock_player_trade_cause(&mut tx,&request).await?;
-                if let Some(committed)=load_player_trade(&mut tx,&request).await? {
-                    let committed=match committed {Ok(value)=>value,Err(error)=>return Ok(Err(error))};
-                    tx.commit(deadline).await?;
-                    return Ok(Ok(PlayerTradeOutcome::AlreadyCommitted(committed)));
-                }
-                if trade_identity_reused(&mut tx,&request).await? {return Ok(Err(PlayerTradeError::ConflictingOccurrence));}
-                if !runtime_matches || !issuance_matches || !first_fence_continues(request.first_fence,first_current) {
-                    return Ok(Err(PlayerTradeError::AuthorityRejected));
-                }
-                let first_side=match request.first_side(){Ok(side)=>side,Err(error)=>return Ok(Err(error))};
-                let mut fences=request.intent.binding.data.traders.map(|p|p.fence);
-                fences[first_side]=first_current;
-                let order=ordered_characters(&request.intent.binding.data);
-                let world=request.runtime_binding.world_id();let channel=request.runtime_binding.channel_id();
-                // Same native Content activation owner lock as equipment. Acquire
-                // before any Character root; later independent digest reads stay pinned.
-                sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:content-activation:' || encode($1::bytea,'hex')::uuid::text || ':' || encode($2::bytea,'hex')::uuid::text,0))")
-                    .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).execute(&mut **tx).await?;
-                let mut accounts=[String::new(),String::new()];
-                for side in order {
-                    let Some(account)=character_item_fence_without_root_lock(&mut tx,&node,&fences[side],request.intent.binding.accepts[side],fences[side].character_id,*world.as_bytes(),*channel.as_bytes()).await?
-                        else{return Ok(Err(PlayerTradeError::AuthorityRejected));};
-                    if uuid_text(&account)?!=*request.intent.binding.data.traders[side].account_id.as_bytes() {
-                        return Ok(Err(PlayerTradeError::AuthorityRejected));
-                    }
-                    accounts[side]=account;
-                }
-                if accounts[0]==accounts[1] || !current_trade_content_and_assignment(&mut tx,&node,&request).await? {
-                    return Ok(Err(PlayerTradeError::AuthorityRejected));
-                }
-                let mut root_revisions=[0_u64;2];
-                for side in order {
-                    if !lock_character_item_root(&mut tx,&fences[side],&accounts[side]).await? {return Ok(Err(PlayerTradeError::AuthorityRejected));}
-                    let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-                        .bind(fences[side].character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-                    root_revisions[side]=revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?;
-                }
-                let message=match request.message(first_current.connection_generation.get()){Ok(message)=>message,Err(error)=>return Ok(Err(error))};
-                let item_ids=message.lines.iter().map(|line|line.before.as_ref().map(|s|s.item_instance_id.clone()).ok_or(DurabilityError::InvalidStoredState)).collect::<Result<Vec<_>,DurabilityError>>()?;
-                // Only the two offered instance rows, ordered by their native IDs.
-                let locked=sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid) ORDER BY item_instance_id FOR UPDATE")
-                    .bind(item_ids[0].as_slice()).bind(item_ids[1].as_slice()).fetch_all(&mut **tx).await?;
-                if locked.len()!=2{return Ok(Err(PlayerTradeError::Stale));}
-                // Runtime deliberately has no UPDATE grant on container slots.
-                // The owned bounded SQL function grants only these ordered locks.
-                let locked:i16=sqlx::query_scalar("SELECT game_player_trade_lock_slots(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
-                    .bind(fences[order[0]].character_id.as_bytes().as_slice()).bind(fences[order[1]].character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-                if locked!=2{return Ok(Err(PlayerTradeError::Stale));}
-                if let Some(refusal)=trade_before_refusal(&mut tx,&request).await? {return Ok(Err(refusal));}
-                let tuple=tx.tuple().tuple();
-                let envelope=match encode_player_trade_event(request.identity,message.clone(),tuple){Ok(bytes)=>bytes,Err(error)=>return Ok(Err(error.into()))};
-                apply_player_trade(&mut tx,&request,&message,&root_revisions,&envelope,tuple).await?;
-                // Native deferred SQL guards prove the entire two-line shape. Any
-                // failure before or during commit leaves no definitive success.
-                let Some(committed)=load_player_trade(&mut tx,&request).await? else{return Err(DurabilityError::InvalidStoredState);};
-                let committed=match committed {Ok(value)=>value,Err(error)=>return Ok(Err(error))};
-                tx.commit(deadline).await?;
-                Ok(Ok(PlayerTradeOutcome::Committed(committed)))
-            })).await?
+            let recovery = authority.recovery;
+            let owner = NativePlayerTradeStorageOwner { authority, request };
+            self.commit_player_trade_storage(recovery, &owner).await
         }
-    }
-
-    async fn apply_player_trade(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        request: &FrozenPlayerTrade,
-        message: &OneItemPlayerTradeV1,
-        root_revisions: &[u64; 2],
-        envelope: &[u8],
-        tuple: audit::Type2EventTuple,
-    ) -> Result<(), DurabilityError> {
-        sqlx::query("INSERT INTO game_player_trades(occurrence_id,trade_id,transaction_id,event_id,first_game_session_id,first_command_id,trigger_game_session_id,trigger_command_id,request_binding,world_id,channel_id,runtime_scope_ownership_generation,content_digest,occurred_at,envelope_sha256,committed_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,encode($7,'hex')::uuid,$8::text::numeric,$9,encode($10,'hex')::uuid,encode($11,'hex')::uuid,$12::text::numeric,$13,$14,sha256($15),floor(extract(epoch FROM clock_timestamp())*1000)::bigint)")
-            .bind(request.occurrence.as_slice()).bind(request.trade_id.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(request.identity.event_id.as_slice())
-            .bind(request.first_accept.game_session_id().as_bytes().as_slice()).bind(request.first_accept.command_id().get().to_string())
-            .bind(request.trigger.game_session_id().as_bytes().as_slice()).bind(request.trigger.command_id().get().to_string()).bind(request.binding.as_slice())
-            .bind(message.world_id.as_slice()).bind(message.channel_id.as_slice()).bind(message.runtime_scope_ownership_generation.to_string())
-            .bind(request.content_digest.as_slice()).bind(request.identity.occurred_at_unix_ms).bind(envelope).execute(&mut **tx).await?;
-        let data = &request.intent.binding.data;
-        for (ordinal, side) in ordered_characters(data).into_iter().enumerate() {
-            let participant = &message.participants[ordinal];
-            let trader = data.traders[side];
-            let bag = &data.backpacks[side];
-            let bag_version = data.backpack_versions[side]
-                .first()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let count = i16::try_from(bag.entries.len())
-                .map_err(|_| DurabilityError::InvalidStoredState)?;
-            let maximum = bag
-                .entries
-                .iter()
-                .map(|entry| entry.placement_ordinal)
-                .max()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            sqlx::query("INSERT INTO game_player_trade_participants(occurrence_id,participant_ordinal,character_id,account_id,game_session_id,command_id,connection_generation,current_connection_generation,character_lease_generation,character_revision,backpack_item_instance_id,backpack_placed_transaction_id,backpack_state_revision,backpack_capacity,entry_count_before,max_ordinal_before) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,$7::text::numeric,$8::text::numeric,$9::text::numeric,$10::text::numeric,encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13::text::numeric,$14,$15,$16::text::numeric)")
-                .bind(request.occurrence.as_slice()).bind(i16::try_from(ordinal+1).map_err(|_|DurabilityError::InvalidStoredState)?)
-                .bind(trader.fence.character_id.as_bytes().as_slice()).bind(trader.account_id.as_bytes().as_slice())
-                .bind(trader.fence.game_session_id.as_bytes().as_slice()).bind(request.intent.binding.accepts[side].command_id().get().to_string())
-                .bind(participant.accepted_connection_generation.to_string()).bind(participant.current_connection_generation.to_string())
-                .bind(trader.fence.character_lease_generation.to_string()).bind(root_revisions[side].to_string())
-                .bind(bag.backpack.item_instance_id.as_slice()).bind(bag_version.placed_transaction_id.as_slice()).bind(bag_version.state_revision.to_string())
-                .bind(i16::try_from(request.capacities[side]).map_err(|_|DurabilityError::InvalidStoredState)?).bind(count).bind(maximum.to_string())
-                .execute(&mut **tx).await?;
-        }
-        for (ordinal, line) in message.lines.iter().enumerate() {
-            let state = line
-                .before
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let definition = state
-                .definition
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let source = line
-                .source
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let destination = line
-                .destination
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let timed = line.unchanged_timed_state.as_ref();
-            let row = timed.and_then(|t| t.row.as_ref());
-            let remaining = row
-                .and_then(|r| r.remaining_ms)
-                .map(i64::try_from)
-                .transpose()
-                .map_err(|_| DurabilityError::InvalidStoredState)?;
-            sqlx::query("INSERT INTO game_player_trade_receipts(occurrence_id,line_ordinal,item_instance_id,source_character_id,source_parent_item_instance_id,source_placement_ordinal,source_placed_transaction_id,destination_character_id,destination_parent_item_instance_id,destination_ordinal,definition_family,definition_production_key,definition_revision_ref,quantity,key_number,state_revision_before,timed_revision,timed_charges,timed_remaining_ms,timed_deadline_at) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric,encode($7,'hex')::uuid,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12,$13,$14,$15,$16::text::numeric,$17::text::numeric,$18,$19,$20)")
-                .bind(request.occurrence.as_slice()).bind(i16::try_from(ordinal+1).map_err(|_|DurabilityError::InvalidStoredState)?)
-                .bind(state.item_instance_id.as_slice()).bind(source.character_id.as_slice()).bind(source.parent_item_instance_id.as_slice()).bind(source.placement_ordinal.to_string())
-                .bind(source.placed_transaction_id.as_slice()).bind(destination.character_id.as_slice()).bind(destination.parent_item_instance_id.as_slice()).bind(destination.placement_ordinal.to_string())
-                .bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(state.quantity)).bind(i32::try_from(state.key_number).map_err(|_|DurabilityError::InvalidStoredState)?)
-                .bind(line.state_revision_before.to_string()).bind(row.map(|r|r.revision.to_string())).bind(row.and_then(|r|r.charges).map(i64::from)).bind(remaining).bind(timed.and_then(|t|t.deadline_at))
-                .execute(&mut **tx).await?;
-        }
-        // Every before-row has been locked and independently re-read. Delete BOTH
-        // old locations before inserting either new location; never UPDATE an entry.
-        for line in &message.lines {
-            let state = line
-                .before
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let source = line
-                .source
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let removed=sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid AND placement_ordinal=$4::text::numeric AND placed_transaction_id=encode($5,'hex')::uuid")
-                .bind(state.item_instance_id.as_slice()).bind(source.character_id.as_slice()).bind(source.parent_item_instance_id.as_slice()).bind(source.placement_ordinal.to_string()).bind(source.placed_transaction_id.as_slice()).execute(&mut **tx).await?;
-            if removed.rows_affected() != 1 {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-        }
-        for line in &message.lines {
-            let state = line
-                .before
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let updated=sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 AND quantity=$3 AND state_revision=$4::text::numeric")
-                .bind(state.item_instance_id.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(i64::from(state.quantity)).bind(line.state_revision_before.to_string()).execute(&mut **tx).await?;
-            if updated.rows_affected() != 1 {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-        }
-        for line in &message.lines {
-            let state = line
-                .before
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            let destination = line
-                .destination
-                .as_ref()
-                .ok_or(DurabilityError::InvalidStoredState)?;
-            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
-                .bind(state.item_instance_id.as_slice()).bind(message.world_id.as_slice()).bind(destination.character_id.as_slice()).bind(destination.parent_item_instance_id.as_slice()).bind(destination.placement_ordinal.to_string()).bind(request.identity.transaction_id.as_slice()).execute(&mut **tx).await?;
-        }
-        let anchor = message
-            .lines
-            .first()
-            .and_then(|l| l.before.as_ref())
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state,published_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1,NULL)")
-            .bind(request.identity.event_id.as_slice()).bind(request.identity.transaction_id.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(anchor.item_instance_id.as_slice()).bind(request.identity.occurred_at_unix_ms).bind(audit::AUDIT_RETENTION_P90D_MS).bind(envelope).execute(&mut **tx).await?;
-        Ok(())
     }
 }
 

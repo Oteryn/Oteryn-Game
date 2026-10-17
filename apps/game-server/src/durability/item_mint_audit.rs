@@ -1952,8 +1952,8 @@ pub(super) mod tests {
                 "src/durability/item_use.rs",
                 "src/durability/map_item_mint.rs",
                 "src/durability/npc_trade.rs",
+                "src/durability/player_trade.rs",
                 "src/durability/reward_claim_mint.rs",
-                "src/gameplay_transport/player_trade.rs",
             ]
         );
         // Every type-2 encoder writes the tuple it is given, never this module's compile-time
