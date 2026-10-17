@@ -79,8 +79,8 @@ All dependencies merged; the task may start.
 - RESOURCE_LIMITS_REGISTRY.json (look rate row)
 - CP D1292 accepts the slot-only hunks already on this branch (`capabilities.rs`,
   `crates/protocol-oteryn/src/lib.rs`, `PROTOCOL_OTERYN_V1_REGISTRY.json`, and the module
-  mounts in `gameplay_transport/mod.rs` and `interaction/mod.rs`) as this task's merge-queue
-  turn; `connection.rs` dispatch and `RESOURCE_LIMITS_REGISTRY.json` remain untouched.
+  mount in `gameplay_transport/mod.rs`) as this task's merge-queue turn; `interaction/mod.rs`
+  is unchanged from main; `connection.rs` dispatch and `RESOURCE_LIMITS_REGISTRY.json` remain untouched.
 - Always slot-only, whether or not listed: regenerate_content.py outputs, `content/project.json`, `content/manifest.json`, `content/content.lock.json`, `content/interactions/index.json`, `content/world/pins/*`, Rust pins, `docs/contracts/*REGISTRY*.json`, migration numbers, wiring in `gameplay_transport/connection.rs`, `gameplay_transport/mod.rs`, `capabilities.rs`, `crates/protocol-oteryn/src/lib.rs`.
 
 ## Wiring points (verified on main@5742f30f3)
@@ -126,7 +126,7 @@ Reference look text format (Tibia 'You see ...'), item description promotion mod
 ## Context checkpoint
 
 ```yaml
-last_progress: CP final-review repair (2026-10-17) mounts the look modules and registers command 30 gated by capability 28
+last_progress: CI repair (2026-10-17) mounts look.rs from item_look.rs, so interaction/mod.rs is unchanged and the interaction_workflow test target compiles
 status: authoring
 branch: skeleton/item-look-1
 blocker: command 30 handler, look rate row and runtime Creature/name binding are not implemented; CI result on the repair head pending
@@ -458,9 +458,8 @@ CP final review on d6a72169 found three gaps, fixed in one push:
 
 1. The server look sources were never compiled. `gameplay_transport/mod.rs` now mounts
    `mod item_look;` under a reasoned `dead_code` allow (the helper has no caller until
-   command 30 dispatch), and `interaction/mod.rs` mounts `pub(crate) mod look;`.
-   `item_look.rs` now imports `crate::interaction::look` instead of including the same file a
-   second time with `#[path]` (which `clippy::duplicate_mod` rejects). Its tests stay in
+   command 30 dispatch). `look.rs` is mounted once, by `item_look.rs` (see the CI repair
+   below). Its tests stay in
    `item_look_tests.rs`, included by `item_look.rs` as `mod tests` (the `capabilities.rs`
    pattern), so `mod.rs` does not mount that file a second time.
 2. Command 30 is now in `PROTOCOL_OTERYN_V1_REGISTRY.json` as `ITEM_LOOK_INTENT`, gated by
@@ -477,3 +476,16 @@ Still not implemented: a command 30 handler in `connection.rs`, the look rate ro
 capability 28 offer and runtime Creature/name binding. Command 30 cannot be dispatched,
 because no session can select 28. No local cargo build or test ran (disk-limited worker);
 changed-file rustfmt passed, and exact-head CI is the qualification.
+
+### CI repair (2026-10-17)
+
+CI on 0de7da07 failed Clippy: `tests/interaction_workflow.rs` (and the
+`chest_use_postgres` and `character_authority_postgres` targets) recompile
+`interaction/mod.rs` with `#[path]` in a test crate that has no `crate::content`, so the
+`pub(crate) mod look;` mount broke them (E0432 in `look.rs`). The mount is removed, so
+`interaction/mod.rs` is again identical to main. `item_look.rs` now mounts the file once as
+`#[path = "../interaction/look.rs"] mod text;`, the pattern `item_view.rs` uses for
+`interaction/corpse_open.rs`; no test target includes `look.rs` or `item_look.rs`, so
+`clippy::duplicate_mod` does not apply and `text` inherits the `item_look` `dead_code` allow.
+No local cargo build ran (disk-limited worker); rustfmt passed, and exact-head CI is the
+qualification.

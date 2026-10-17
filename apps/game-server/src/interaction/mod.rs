@@ -8,7 +8,6 @@
 mod dispatch;
 mod identity;
 mod lifecycle;
-pub(crate) mod look;
 mod plan;
 
 pub use dispatch::{
