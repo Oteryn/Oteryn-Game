@@ -911,8 +911,96 @@ fn a_refused_equipment_move_answers_its_outcome_without_deltas() -> TestResult {
     })
 }
 
+/// ITEM-MOVE-2a: an equip into an occupied slot reaches the equipment owner, which swaps the
+/// whole items atomically; both items keep their handles across the domain 9 delta.
 #[test]
-fn an_occupied_slot_or_the_main_backpack_never_reaches_the_owner() -> TestResult {
+fn an_equip_into_an_occupied_slot_swaps_through_the_owner() -> TestResult {
+    run(async {
+        let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
+        let after = worn(&[1, 4], &[(EquipmentSlot::RightHand, 2)]);
+        let mut view = wearing(shown.clone());
+        let incoming = entry(&view, 2);
+        let occupant = entry(&view, 4);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown.clone(),
+            EquipmentMoveResult::Committed,
+            Some(after.clone()),
+        );
+        let moved = step(
+            &authority,
+            &mut view,
+            &into_slot(incoming, EquipmentSlot::RightHand),
+            EQUIP,
+        )
+        .await;
+        let mut mirror = wearing(shown);
+        let delta = mirror
+            .inventory_committed(after)
+            .map_err(fault)?
+            .expect("domain 9");
+        assert_eq!(
+            moved,
+            ItemMoveStep::Result(ItemMoveOutcome::Moved, vec![delta])
+        );
+        assert_eq!(
+            *authority.equip_moves.borrow(),
+            [(
+                1,
+                EquipmentMove::Equip {
+                    item: instance(2),
+                    to: EquipmentSlot::RightHand
+                }
+            )]
+        );
+        assert_eq!(
+            view.equipped_slot(&instance(2)),
+            Some(EquipmentSlot::RightHand)
+        );
+        assert_eq!(view.equipped_slot(&instance(4)), None);
+        assert!(view.is_backpack_entry(&instance(4)));
+        assert_eq!(view.table().handle(&instance(2)), Some(incoming));
+        assert_eq!(view.table().handle(&instance(4)), Some(occupant));
+        Ok(())
+    })
+}
+
+/// A swap the owner refuses (for example same-definition stack semantics) answers its outcome
+/// without deltas.
+#[test]
+fn a_refused_swap_answers_its_outcome_without_deltas() -> TestResult {
+    run(async {
+        for (refusal, outcome) in [
+            (EquipmentMoveRefusal::Rejected, ItemMoveOutcome::Rejected),
+            (
+                EquipmentMoveRefusal::SlotMismatch,
+                ItemMoveOutcome::SlotMismatch,
+            ),
+            (EquipmentMoveRefusal::Stale, ItemMoveOutcome::Stale),
+        ] {
+            let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
+            let mut view = wearing(shown.clone());
+            let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+                shown,
+                EquipmentMoveResult::Refused(refusal),
+                None,
+            );
+            let swap = into_slot(entry(&view, 2), EquipmentSlot::RightHand);
+            assert_eq!(
+                step(&authority, &mut view, &swap, EQUIP).await,
+                result(outcome)
+            );
+            assert_eq!(authority.equip_moves.borrow().len(), 1);
+            assert_eq!(
+                view.equipped_slot(&instance(4)),
+                Some(EquipmentSlot::RightHand)
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_slot_to_slot_move_or_the_main_backpack_never_reaches_the_owner() -> TestResult {
     run(async {
         let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
         let mut view = wearing(shown.clone());
@@ -920,12 +1008,6 @@ fn an_occupied_slot_or_the_main_backpack_never_reaches_the_owner() -> TestResult
             shown,
             EquipmentMoveResult::Committed,
             None,
-        );
-        // Swap is not in this slice.
-        let into_occupied = into_slot(entry(&view, 2), EquipmentSlot::RightHand);
-        assert_eq!(
-            step(&authority, &mut view, &into_occupied, EQUIP).await,
-            result(ItemMoveOutcome::NotSupported)
         );
         // The main backpack never enters a slot of its own.
         let backpack = into_slot(entry(&view, 0), EquipmentSlot::Armor);
