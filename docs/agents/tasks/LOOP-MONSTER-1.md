@@ -121,11 +121,11 @@ CREATURE_AI0 §; BUNDLE-MONSTER-AI-1 record. Plan: `docs/architecture/reviews/OT
 ## Context checkpoint
 
 ```yaml
-last_progress: native owner, current Item/Map and retained Movement composed; exact-source fmt, strict Clippy, full library and both shared PostgreSQL cases passed
+last_progress: session-free World respawn wake loop (MonsterRespawnJob::drive, MonotonicRespawnWake) with deterministic owner-window schedule and tests; main merged
 status: OPEN
 branch: skeleton/loop-monster-1
-blocker: node/serve startup after #2187; CP final integration and MQ
-next_action: CP completes dependency integration and MQ; node/serve startup follows #2187
+blocker: production install of the World wake loop (shared Channel clock origin and fence) after #2187; CP final integration and MQ
+next_action: CP allocates the install hunk (serve_gameplay slot-only mod.rs or node/serve per D1239) after #2187
 ```
 
 ## Historical bounded owner-schedule preparation — 2026-10-15
@@ -602,3 +602,30 @@ root (2026-10-17 13:42 UTC), #2187 remained draft, open and unmerged. Completed
 persistent owner, current Map, admission/rollback and live chase/walkback source
 are not listed again as unimplemented. The canonical published-head status and
 its CI/governance evidence are maintained in the PR description.
+
+## Bounded World respawn scheduler checkpoint — 2026-10-17
+
+Main merged into the branch. `monster_owner_cycle.rs` now holds the World wake
+loop for respawn, which needs no session:
+
+- `MonsterRespawnJob::drive(runtime, current, wake, shutdown)` runs one
+  `run` pass per wake under the runtime mutex. It then sleeps until the next
+  50 ms owner window (`next_owner_window`). It returns `RespawnDriveEnd`:
+  `Shutdown` (checked before every pass and raced against the sleep),
+  `StaleOwner` (a retired or replaced fence) or `ClockExhausted` (no further
+  window). A clock regression or carrier refusal keeps the last window and
+  does not end the loop.
+- `RespawnWake: OwnerClock` adds `sleep_until`. `MonotonicRespawnWake` is the
+  production clock: `Instant` elapsed since a given origin, tokio
+  `sleep_until`.
+- Inline tests (the job is `pub(crate)`, so there is no `tests/loop_monster_*.rs`)
+  drive a virtual wake with no session. They cover a kill being respawned at
+  its due window with a deterministic wake sequence, a retired owner, shutdown
+  before any pass, an exhausted clock, and the monotonic wake.
+
+Still open: installing `drive` in production. The World loop must share the
+Channel owner's clock origin (`ComposedFreshAdmission.clock_origin`, created in
+`serve_gameplay`) and an independent current `ScopeRuntimeFence`. Without them
+the session-driven `drive_owner_spawns` and the World job would advance the same
+runtime on two time lines. That hunk is in slot-only `gameplay_transport/mod.rs`
+or `node/serve` (D1239, after #2187), outside this record's owned paths.

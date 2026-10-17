@@ -19,6 +19,9 @@ use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::monster_summon::{
     NativeSummonCatalog, NativeSummonOwner, SummonError, SummonLocationPolicy, SummonReceipt,
 };
+use std::future::{Future, poll_fn};
+use std::pin::pin;
+use std::task::Poll;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MonsterProfileError {
@@ -110,7 +113,8 @@ pub(crate) fn resolve_monster_profile_summons(
 
 /// Session-free body for the World owner's per-Channel respawn job. Foundation
 /// remains the only owner of spawn points, occurrence deadlines and window budgets.
-/// Installation/wakeup by the World composition root is a separate integration step.
+/// [`MonsterRespawnJob::drive`] is its wake loop; installing that loop in the World
+/// composition root (`node/serve`, D1239) is a separate integration step.
 #[derive(Debug)]
 pub(crate) struct MonsterRespawnJob {
     scope: RuntimeScopeRefV1,
@@ -199,21 +203,128 @@ impl MonsterRespawnJob {
                 }
             })
             .map_err(RespawnJobError::Carrier)?;
-        // CREATURE-AI-0 §7 / native spawn::OWNER_WINDOW_MICROS: 50 ms.
-        // The composition root owns the actual wakeup; this job retains no timer.
-        let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
-        let next_wake = (now / window)
-            .checked_add(1)
-            .and_then(|next| next.checked_mul(window))
-            .map(SemanticTimeMicros::from_micros);
+        // The wake loop below owns the actual wakeup; this pass retains no timer.
         Ok(RespawnJobReport {
             warnings: report.warnings,
             admitted: report.admitted,
             blocked: report.blocked,
             retried: report.retried,
             skipped: report.skipped,
-            next_wake,
+            next_wake: next_owner_window(now),
         })
+    }
+
+    /// Session-free World wake loop for one Channel: one native pass per owner window,
+    /// each under one short runtime lock that is never held across a wait. Wakes are
+    /// deterministic owner-window boundaries of `wake`'s clock; a late wake runs once
+    /// at the observed time and never bursts. A refused native pass leaves its
+    /// occurrences pending and is retried at the next window. A stale scope, a replaced
+    /// generation or a retired runtime ends the loop; it never revives the owner.
+    pub(crate) async fn drive(
+        mut self,
+        runtime: &tokio::sync::Mutex<ChannelRuntimeV1>,
+        current: &ScopeRuntimeFence,
+        wake: &impl RespawnWake,
+        shutdown: &oteryn_foundation::CancellationToken,
+    ) -> RespawnDriveEnd {
+        loop {
+            if shutdown.is_cancelled() {
+                return RespawnDriveEnd::Shutdown;
+            }
+            let pass = {
+                let mut runtime = runtime.lock().await;
+                self.run(&mut runtime, current, wake)
+            };
+            let next = match pass {
+                Ok(report) => report.next_wake,
+                Err(RespawnJobError::StaleOwner) => return RespawnDriveEnd::StaleOwner,
+                // No catch-up: resume at the window after the latest observed owner time.
+                Err(RespawnJobError::ClockRegressed | RespawnJobError::Carrier(_)) => {
+                    self.last_observed_micros.and_then(next_owner_window)
+                }
+            };
+            let Some(next) = next else {
+                return RespawnDriveEnd::ClockExhausted;
+            };
+            let mut stopping = pin!(shutdown.cancelled());
+            let mut sleeping = pin!(wake.sleep_until(next));
+            let stopped = poll_fn(|context| {
+                if stopping.as_mut().poll(context).is_ready() {
+                    return Poll::Ready(true);
+                }
+                sleeping.as_mut().poll(context).map(|()| false)
+            })
+            .await;
+            if stopped {
+                return RespawnDriveEnd::Shutdown;
+            }
+        }
+    }
+}
+
+/// CREATURE-AI-0 §7 / native `spawn::OWNER_WINDOW_MICROS` (50 ms): the next complete
+/// owner-window boundary after `now`, or `None` when semantic time cannot represent it.
+fn next_owner_window(now: u64) -> Option<SemanticTimeMicros> {
+    let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+    (now / window)
+        .checked_add(1)
+        .and_then(|next| next.checked_mul(window))
+        .map(SemanticTimeMicros::from_micros)
+}
+
+/// Why [`MonsterRespawnJob::drive`] returned. None of these is retried by the loop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum RespawnDriveEnd {
+    /// Shutdown was requested; no further native pass starts.
+    Shutdown,
+    /// The scope, its generation or the runtime's owner cycle is no longer current.
+    StaleOwner,
+    /// The owner clock cannot represent another owner-window boundary.
+    ClockExhausted,
+}
+
+/// The Channel owner's clock together with its wakeup. The World composition root must
+/// supply the same clock origin the gameplay seam reads for this Channel: a second
+/// origin would put this loop's observations on another time line than the
+/// session-driven pass over the same runtime.
+pub(crate) trait RespawnWake: OwnerClock {
+    /// Completes once this clock has reached `at` or later.
+    fn sleep_until(&self, at: SemanticTimeMicros) -> impl Future<Output = ()>;
+}
+
+/// The production wake: a process-local monotonic origin, never a client or wall clock.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct MonotonicRespawnWake {
+    origin: std::time::Instant,
+}
+
+impl MonotonicRespawnWake {
+    pub(crate) const fn from_origin(origin: std::time::Instant) -> Self {
+        Self { origin }
+    }
+}
+
+impl OwnerClock for MonotonicRespawnWake {
+    fn now(&self) -> SemanticTimeMicros {
+        SemanticTimeMicros::from_micros(
+            u64::try_from(self.origin.elapsed().as_micros()).unwrap_or(u64::MAX),
+        )
+    }
+}
+
+impl RespawnWake for MonotonicRespawnWake {
+    fn sleep_until(&self, at: SemanticTimeMicros) -> impl Future<Output = ()> {
+        let deadline = self
+            .origin
+            .checked_add(std::time::Duration::from_micros(at.get()));
+        async move {
+            match deadline {
+                Some(deadline) => {
+                    tokio::time::sleep_until(tokio::time::Instant::from_std(deadline)).await;
+                }
+                None => std::future::pending().await,
+            }
+        }
     }
 }
 
@@ -1301,6 +1412,167 @@ mod loop_monster_respawns {
                 .len(),
             1
         );
+    }
+
+    /// A virtual owner clock whose wait completes at once at the requested boundary.
+    /// It requests shutdown on the first wait after `stop_at` has been observed and can
+    /// retire the runtime on its first wait, through the same lock the loop takes.
+    struct VirtualWake<'a> {
+        now: std::cell::Cell<u64>,
+        sleeps: std::cell::RefCell<Vec<u64>>,
+        stop_at: u64,
+        shutdown: &'a oteryn_foundation::CancellationToken,
+        retire: Option<&'a tokio::sync::Mutex<ChannelRuntimeV1>>,
+    }
+
+    impl<'a> VirtualWake<'a> {
+        fn new(
+            start: u64,
+            stop_at: u64,
+            shutdown: &'a oteryn_foundation::CancellationToken,
+        ) -> Self {
+            Self {
+                now: std::cell::Cell::new(start),
+                sleeps: std::cell::RefCell::default(),
+                stop_at,
+                shutdown,
+                retire: None,
+            }
+        }
+    }
+
+    impl OwnerClock for VirtualWake<'_> {
+        fn now(&self) -> SemanticTimeMicros {
+            SemanticTimeMicros::from_micros(self.now.get())
+        }
+    }
+
+    impl RespawnWake for VirtualWake<'_> {
+        fn sleep_until(&self, at: SemanticTimeMicros) -> impl Future<Output = ()> {
+            if let Some(runtime) = self.retire.filter(|_| self.sleeps.borrow().is_empty()) {
+                // The loop never holds the runtime across a wait.
+                runtime
+                    .try_lock()
+                    .expect("runtime is free while the loop waits")
+                    .retire_owner_cycle();
+            }
+            if self.now.get() >= self.stop_at {
+                self.shutdown.cancel();
+            }
+            self.sleeps.borrow_mut().push(at.get());
+            self.now.set(self.now.get().max(at.get()));
+            std::future::ready(())
+        }
+    }
+
+    fn block_on<F: Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("test runtime")
+            .block_on(future)
+    }
+
+    /// The native admission time of a rat killed at time 0, read from a separate setup.
+    fn admission_time() -> u64 {
+        let (mut runtime, current, mut job) = setup();
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        job.run(&mut runtime, &current, &at(0)).expect("gone");
+        runtime.pending_respawn(point).expect("due").due_micros + 4_200_000
+    }
+
+    #[test]
+    fn world_drive_respawns_without_a_session_on_owner_window_wakes() {
+        let admit_at = admission_time();
+        let drive = || {
+            let (mut runtime, current, job) = setup();
+            let (point, _, live) = runtime.spawn_point_creatures()[0];
+            let original = live.expect("live rat");
+            assert!(runtime.kill_creature_for_test(original));
+            let runtime = tokio::sync::Mutex::new(runtime);
+            let shutdown = oteryn_foundation::CancellationToken::new();
+            let wake = VirtualWake::new(0, admit_at, &shutdown);
+            let end = block_on(job.drive(&runtime, &current, &wake, &shutdown));
+            assert_eq!(end, RespawnDriveEnd::Shutdown);
+            let runtime = runtime.into_inner();
+            assert_eq!(runtime.pending_respawn(point), None);
+            let replacement = runtime.spawn_point_creatures()[0].2.expect("respawned");
+            assert_ne!(replacement, original);
+            (wake.sleeps.into_inner(), runtime.spawn_point_creatures())
+        };
+        let (sleeps, creatures) = drive();
+        let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+        // One wake per owner window up to and including the native admission pass.
+        assert_eq!(
+            sleeps,
+            (1..=admit_at / window + 1)
+                .map(|n| n * window)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!((sleeps, creatures), drive());
+    }
+
+    #[test]
+    fn world_drive_stops_on_a_retired_owner_and_on_shutdown_before_any_pass() {
+        let (mut runtime, current, job) = setup();
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        let runtime = tokio::sync::Mutex::new(runtime);
+        let shutdown = oteryn_foundation::CancellationToken::new();
+        let mut wake = VirtualWake::new(0, u64::MAX, &shutdown);
+        wake.retire = Some(&runtime);
+        assert_eq!(
+            block_on(job.drive(&runtime, &current, &wake, &shutdown)),
+            RespawnDriveEnd::StaleOwner
+        );
+        assert_eq!(wake.sleeps.into_inner(), vec![50_000]);
+        // The first pass observed the death; the retired owner never warned or admitted.
+        let runtime = runtime.into_inner();
+        assert!(
+            runtime
+                .pending_respawn(point)
+                .is_some_and(|p| p.due_micros > 50_000)
+        );
+        assert_eq!(runtime.spawn_point_creatures()[0].2, None);
+
+        let (mut runtime, current, job) = setup();
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        let runtime = tokio::sync::Mutex::new(runtime);
+        let shutdown = oteryn_foundation::CancellationToken::new();
+        shutdown.cancel();
+        let wake = VirtualWake::new(0, u64::MAX, &shutdown);
+        assert_eq!(
+            block_on(job.drive(&runtime, &current, &wake, &shutdown)),
+            RespawnDriveEnd::Shutdown
+        );
+        assert!(wake.sleeps.into_inner().is_empty());
+        assert_eq!(runtime.into_inner().pending_respawn(point), None);
+    }
+
+    #[test]
+    fn world_drive_ends_when_semantic_time_has_no_further_window() {
+        let (runtime, current, job) = setup();
+        let runtime = tokio::sync::Mutex::new(runtime);
+        let shutdown = oteryn_foundation::CancellationToken::new();
+        let wake = VirtualWake::new(u64::MAX, u64::MAX, &shutdown);
+        assert_eq!(
+            block_on(job.drive(&runtime, &current, &wake, &shutdown)),
+            RespawnDriveEnd::ClockExhausted
+        );
+        assert!(wake.sleeps.into_inner().is_empty());
+    }
+
+    #[test]
+    fn monotonic_wake_reads_its_origin_and_completes_past_deadlines() {
+        let origin = std::time::Instant::now();
+        let wake = MonotonicRespawnWake::from_origin(origin);
+        let first = wake.now();
+        assert!(wake.now() >= first);
+        block_on(wake.sleep_until(SemanticTimeMicros::from_micros(0)));
+        block_on(wake.sleep_until(first));
+        assert!(wake.now() >= first);
     }
 
     #[test]
