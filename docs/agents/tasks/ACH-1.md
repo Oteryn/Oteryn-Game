@@ -509,3 +509,130 @@ notices, full-package execution and gameplay/E2E retain their existing gates.
 Frozen-commit diff/governance checks and publication readback are required after
 this source freeze. Their actual outcomes belong to the separate publication
 record and PR evidence; this appendix contains no claim about a future commit.
+
+## 2026-10-17 — Existing ACH batch PostgreSQL tests in the non-PG CI lane
+
+This appendix preserves the complete task-card history at predecessor
+`a24c919b475bf88146faee320becbfc839073bdd` (SHA256
+`f9b44235259bed9869e13346b5f48a4a5a4a8179fe54c99c547ad9063359a1a6`).
+The current correction changes only the missing-configuration branch in
+`apps/game-server/src/achievement/grant_tests.rs`, an existing ACH-owned test file.
+It keeps the existing shared `configured_admin()` diagnostic and returns `Ok(())`
+after that helper reports `PRE-ROUTING / NONCANONICAL`.
+
+The original CI integration-rest job `117409280578` at the predecessor failed
+all eight batch cases before PostgreSQL routing because the URL was absent
+(aggregate result: 1,584 passed, eight failed, exit 101). The retained root-saved
+failure excerpt has SHA256
+`f2ca0bedecec5380befa5f05b8b8554bb16eaf42ef17618494ba1fc14f64c9e7`;
+it is an excerpt, not a full-job log. The separate canonical durability job
+`117409280834` passed but was not substituted for the selected eight-case result.
+The existing repository convention was described for HOUSE by CP D1366
+([decision](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234335395));
+this appendix applies the same convention within the already-owned ACH test file.
+
+### Source and scope
+
+The source preimage is Git blob `34f5188bb31c7069b2c65b08136394781621a1ef`.
+The reviewed repair is SHA256
+`25aabd1098e4936b984c04112bb39fb982a401b5882156e83bdc39f8cf3c18bf`
+and changes one branch by two added lines and one removed line. Its complete
+configured execution path, PostgreSQL 17.6 assertion, all eight case bodies and
+fixture cleanup are byte-identical to the predecessor. Present malformed URL
+values still reach and fail the original canonical harness guard.
+
+The original `account_achievement_postgres` Cargo target and its existing
+`achievement_batch_postgres_cases` mount are unchanged. No harness, fixture, test
+body, Cargo configuration, workflow, ignore/skip policy, counter source, threshold
+table, schema, writer or migration changed. No counter cases were selected for a
+repeat run. The existing protected pipeline and merge gates remain in force.
+
+### Source-bound qualification
+
+At `2026-10-17T14:32:59.059417+00:00`, the original eight batch cases completed through the shared
+canonical PostgreSQL 17.6 wrapper: **8 passed, 0 failed, 0 ignored, 0 measured,
+1163 filtered, 12.85 seconds**. The log contains exactly eight
+`ACHIEVEMENT-BATCH-NATIVE-PG server_version_num=170006` execution markers and no
+noncanonical marker.
+
+The same eight selected tests were then invoked through ordinary Cargo with
+inherited `OTERYN_TEST_POSTGRES_ADMIN_URL` and `DATABASE_URL` removed:
+**8 passed, 0 failed, 0 ignored, 0 measured, 1163 filtered,
+0.00 seconds**. This run records eight explicit
+`PRE-ROUTING / NONCANONICAL` early returns and zero PostgreSQL execution markers.
+It qualifies the missing-configuration behavior only and is not a PostgreSQL
+test pass. Both invocations are bound by their actual Cargo JSON to the same
+original test ELF and current-worktree dependency receipt.
+
+Fresh `cargo fetch --locked`, strict explicit-target Clippy, strict all-targets
+Clippy and workspace fmt check also passed. The explicit target check is retained
+because the existing focused target has `test = false`. All commands sourced the
+pinned D1342 build environment while the driver held slot `B` and target
+`/root/oteryn-target-B`; the minimum memory floor was 12 GiB. The shared sccache configuration
+remained unchanged. No cache purge, source-mtime or compiler-flag workaround,
+peer action, or outside-target ELF action was used. The native checkout and all
+15 bound source/build/card inputs were unchanged before and after qualification.
+
+The actual requested commands were:
+
+```sh
+cargo fetch --locked
+/root/.oteryn/in-pg-netns.sh cargo test --locked --offline -p oteryn-game-server --test account_achievement_postgres achievement_batch_postgres_cases:: --quiet --message-format=json-render-diagnostics -- --nocapture --test-threads=1
+cargo test --locked --offline -p oteryn-game-server --test account_achievement_postgres achievement_batch_postgres_cases:: --quiet --message-format=json-render-diagnostics -- --nocapture --test-threads=1
+/root/.oteryn/in-pg-netns.sh cargo clippy --locked --offline -p oteryn-game-server --test account_achievement_postgres --quiet -- -D warnings
+/root/.oteryn/in-pg-netns.sh cargo clippy --locked --offline -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo fmt --all -- --check
+```
+
+| Check | Result | Finished at UTC | Actual log SHA256 |
+|---|---|---|---|
+| ach-batch-fetch | PASS | 2026-10-17T14:27:39.331550+00:00 | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+| ach-batch-pg-eight | PASS | 2026-10-17T14:29:44.292135+00:00 | 26dec17e452b863028b998b65e46dce2df176ec9ab2c9978d046fd06c0621b26 |
+| ach-batch-nonpg-eight | PASS | 2026-10-17T14:29:48.332728+00:00 | 0fef987011ffb0e81f63894ac35eef3d88a4310c57fa71128c1df565f5566ca3 |
+| ach-batch-clippy-target | PASS | 2026-10-17T14:31:06.933811+00:00 | 984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1 |
+| ach-batch-clippy | PASS | 2026-10-17T14:32:22.410948+00:00 | 984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1 |
+| ach-batch-fmt | PASS | 2026-10-17T14:32:58.337747+00:00 | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+
+Native evidence is retained at
+`/root/oteryn-six-pr-20261017/evidence-ach-batch-ci-native-1017/`.
+The original CI excerpt and preparation are retained separately at
+`/root/oteryn-six-pr-20261017/evidence-ach-batch-ci-prep-1017/`.
+
+| Receipt or source binding | SHA256 |
+|---|---|
+| `ach-batch-qualified.json` | `583cd1575c29e694a05a6cc1a846ca44f9936f34b3b9fbc0cc3d570c7474a4f8` |
+| Terminal `results.json` | `74fe0d1931db5de78f240b9453f73b0e63c9f8b6fecdc2b998646a9b110ecc78` |
+| Actual exact-source `prep.json` | `6f4eabaff039fe3bd814d83aa36a14d3b64c82d8cab3e11bd294cebe06ef28e7` |
+| `fetch-qualified.json` | `648d8d9a51d086dabe1da8f66443553a11bd904f5ba6f6b30a8ce3ebba2201b2` |
+| Canonical PG Cargo artifact receipt | `7e951cf9449f404303063f568ffbe1264d6f667add7ebe7e78e42acea546ef18` |
+| Non-PG Cargo artifact receipt | `83a4621103db5c1f81320bdc42600f34781487c713fb38a60f3955f1af18f2d9` |
+| Protocol Cargo artifact receipt | `5e532fbb4b0477a898f2df9517d4158b204203ce3672863e274fe5da13a26894` |
+| Shared actual test ELF, checked while the native lease was held | `df8e3dec5bb7cca3e27cd8e61996af2e4cc89d1285724cf73534af5771f5ceb7` |
+| Shared actual test dependency file | `0ce0a7938ec72e4c1519600c545892c218bc4bedd819a389e8bcf1afb5c559e1` |
+| Retained current protocol dependency file | `32b503ac482cf65dd4952ee9be886f65800f2a468e4ce7fe5252452e57adee11` |
+| Native driver | `b296cdd8741874663add3086a84916db8f3d03990330df85392a0728358bcd2a` |
+| Shared slot helper | `851870ed67accd2f66bfb5f0ecce2a81662e908509cfe742daaebb7b0cacb3e3` |
+| Shared build environment | `afc2f04924c412b5965a1c4f6a2b30dfcd9e80ac0a185af737d070ebedbefd82` |
+
+The source receipts include the unchanged original test entry and canonical
+harness, the existing achievement writer and the corrected test file. Actual
+Cargo JSON records a newly built test artifact in the PG invocation (`fresh:
+false`) and reuse of that same artifact in the non-PG invocation (`fresh: true`).
+The protocol artifact also records `fresh: false`; its retained dependency text
+contains both current `lib.rs` and `logout.rs`.
+Publication rehashes saved receipts and logs without opening a later slot user's
+live ELF, library or dependency files.
+
+### Remaining gates
+
+This test-routing repair does not complete ACH-1. The predecessor's counter
+qualification remains historical evidence on its recorded source. D1363b still
+requires merge and production activation after #2181 and then-current main
+integration in the prescribed order. D1331/D1333/D1334, earning callers and
+receipts, XP/build hooks, the threshold catch-up interpretation, encounter/quest
+composition, notices, full-package execution and gameplay/E2E retain their
+previous gates. This selected qualification is not an aggregate CI rerun.
+
+The final source/card commit still requires frozen-commit diff/governance checks
+and remote publication readback. Their actual outcomes belong to the publication
+record and PR evidence; this appendix does not claim a future commit result.

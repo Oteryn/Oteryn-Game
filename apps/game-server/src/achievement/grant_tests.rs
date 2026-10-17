@@ -43,7 +43,8 @@ fn run(
     case: impl AsyncFnOnce(&Harness, &DurabilityRoot) -> TestResult,
 ) -> TestResult {
     let Some(admin) = configured_admin() else {
-        return Err("canonical PostgreSQL17.6 must be configured".into());
+        // The shared helper already reports PRE-ROUTING / NONCANONICAL.
+        return Ok(());
     };
     runtime()?.block_on(async move {
         let harness = Harness::create(admin, tag, false).await?;
