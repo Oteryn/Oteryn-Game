@@ -47,7 +47,7 @@ fn text_and_fact_free_refusal_round_trip() {
         Ok(vec![18, 0])
     );
     assert_eq!(ITEM_LOOK_CAPABILITY_ID, Some(28));
-    assert_eq!(ITEM_LOOK_COMMAND_ID, None);
+    assert_eq!(ITEM_LOOK_COMMAND_ID, Some(30));
 }
 
 #[test]
@@ -391,7 +391,7 @@ fn generation_zero_stays_wire_representable_but_is_never_current_admission() {
 #[test]
 fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is_unallocated() {
     assert_eq!(ITEM_LOOK_CAPABILITY_ID, Some(28));
-    assert_eq!(ITEM_LOOK_COMMAND_ID, None);
+    assert_eq!(ITEM_LOOK_COMMAND_ID, Some(30));
     // Actual acceptance validator used by native ServerAccepted/ServerResumeAccepted codecs.
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[28]), Ok(()));
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[]), Ok(()));

@@ -418,3 +418,16 @@ receipts remain attached to their exact older inputs. Current protocol payload
 review and cap28/next29 registry allocation are closed by D1240/D1240a. Actual
 command assignment, server negotiation/dispatch, rate owner and current native
 visibleActor/profile/name binding remain open; runtime is NOT_FULLY_QUALIFIED.
+
+### D1268 reserved command30 — local source checkpoint
+
+CP D1268 (#2131/6227075059; HOUSE_QUERY correction D1268a/6227265767)
+reserves command30 for ITEM_LOOK_V1 and keeps capability28. The owned protocol
+constant and its existing assertions now record that reservation. This metadata
+change installs no connection negotiation, capability offer, rate limiter or
+dispatch. The connection.rs/capabilities.rs/rate registry grant is slot-only at
+the final MQ turn after main integration; those paths are untouched. Actual
+current-actor visibility and admitted Creature name/profile production remain
+required. Earlier protocol255/strictClippy PASS is scoped to 8176aab1; current
+protocol execution is NOT_RUN until an available execution budget, not inferred
+from the constant or source review. No wire payload or selection-default change.

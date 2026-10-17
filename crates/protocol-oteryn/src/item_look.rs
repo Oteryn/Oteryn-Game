@@ -14,8 +14,8 @@ use std::num::NonZeroU64;
 
 /// CP D1240 assigns capability28; no offer or dispatcher is installed here.
 pub const ITEM_LOOK_CAPABILITY_ID: Option<u32> = Some(28);
-/// Command assignment remains pending.
-pub const ITEM_LOOK_COMMAND_ID: Option<u32> = None;
+/// CP D1268 reserves command30; activation waits for the final shared MQ slot.
+pub const ITEM_LOOK_COMMAND_ID: Option<u32> = Some(30);
 
 /// D1143's result text limit in UTF-8 bytes, excluding the existing wire envelope framing.
 pub const MAX_ITEM_LOOK_TEXT_BYTES: usize = 512;
