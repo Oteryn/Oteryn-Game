@@ -235,7 +235,7 @@ impl DurabilityRoot {
         if !(1..=11).contains(&category) {
             return Err(SnapshotError::NotSupported);
         }
-        if page == 0 {
+        if page == 0 || (page > 1 && snapshot_id == 0) {
             return Err(SnapshotError::InvalidQuery);
         }
         let filter = FILTERS

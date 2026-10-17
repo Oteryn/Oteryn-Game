@@ -277,20 +277,21 @@ fn filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap()
             .read_highscore_page(world(), 1, Some("paladin"), 1, 0, target)
             .await
             .map_err(debug)?;
+        let token = p.snapshot.snapshot_id;
         assert_eq!(p.rows.len(), 1);
         assert_eq!(p.rows[0].rank, 1002);
         assert_eq!(p.rows[0].vocation, "royal_paladin");
         assert_eq!(p.own_row.as_ref(), p.rows.first());
         let all = h
             .root
-            .read_highscore_page(world(), 1, None, 20, 0, target)
+            .read_highscore_page(world(), 1, None, 20, token, target)
             .await
             .map_err(debug)?;
         assert_eq!(all.rows.len(), 50);
         assert!(!all.has_more);
         assert!(all.own_row.is_none());
-        assert!(page(h, 1, None, 21, 0).await?.rows.is_empty());
-        assert!(page(h, 1, Some("knight"), 20, 0).await?.rows.len() == 50);
+        assert!(page(h, 1, None, 21, token).await?.rows.is_empty());
+        assert!(page(h, 1, Some("knight"), 20, token).await?.rows.len() == 50);
         assert_eq!(h.root_revision().await?, "2");
         Ok(())
     })
@@ -436,6 +437,12 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
         assert!(matches!(
             h.root
                 .read_highscore_page(world(), 1, None, 0, 0, asking())
+                .await,
+            Err(SnapshotError::InvalidQuery)
+        ));
+        assert!(matches!(
+            h.root
+                .read_highscore_page(world(), 1, None, 2, 0, asking())
                 .await,
             Err(SnapshotError::InvalidQuery)
         ));
