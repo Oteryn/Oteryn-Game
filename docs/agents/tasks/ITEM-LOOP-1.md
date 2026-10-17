@@ -481,12 +481,20 @@ increment; compilation/cheap receipts are recorded separately outside the checko
 Earlier native projection/producer/transport PASS retains its unchanged-source
 scope; it is not runtime proof for the new swap.
 
-Concrete CP prerequisites: an assigned additive migration and shared guard slot,
-plus accepted EQUIP-SWAP resource registration. A complete unnumbered proposal is
-kept in /workspace/oteryn-family/loop-global-d1163/equipment-swap-next/; no repository
-migration or registry is edited. It preserves full latest 0083 item guards, 0045
-slot guard, 0035 receipt guard and unchanged 0076 seven-location exclusivity.
-Stack class in the proposed event is a current Rust Content owner's observation
-bound to content_digest; the SQL guard checks receipt consistency and does not
-become an independently populated Content oracle. CP must accept the actual
-schema/guard proposal before activation. This is NOT_FULLY_QUALIFIED.
+CP D1282 (#2131/6227784667) assigns additive migration 0113 and the narrow
+shared guard/resource rows. The accepted proposal is now installed as
+0113_equipment_swap.sql; the fixture uses the canonical sqlx migration set,
+without external SQL injection. Full latest 0083 item guards, 0045 slot guard,
+0035 receipt guard and unchanged 0076 seven-location exclusivity are preserved.
+Stack classes are receipt-attested current Rust Content observations bound to
+content_digest; SQL checks receipt consistency, PARITY_PENDING for independent
+Content parity. No SQL Content oracle is claimed. EQUIP-SWAP touched=2,
+locations=4, participants=2/work=6 are registered; DUR03-RL-07 remains unchanged
+and worst-case measurement remains NOT_RUN. Stack merge/top-up is unfinished.
+
+The remote bb468ef9 candidate stays frozen for the already assigned D1267/D1271
+B qualification. Publication of this local swap plus 0113/fixture/registry waits
+for that run to finish, then one coherent push. The new head's targeted PG/native
+swap qualifier is queued on B after #2191, one start/no retry. This local increment
+remains NOT_FULLY_QUALIFIED; previous compilation receipts cover unchanged Rust
+bodies, not execution of migration 0113 or the new PG case.

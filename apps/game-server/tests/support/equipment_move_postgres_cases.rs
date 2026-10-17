@@ -6,7 +6,8 @@
 // shape the active NativeGameplayState lookup produces. A resent CommandRef replays its receipt
 // under a per-CommandRef lock that the replay read also takes, and a timed item never enters a
 // slot while the Game node hosts no timed lane. The new occupied-slot case below adds
-// the two-item/four-location whole-item swap; its additive migration is CP-gated and NOT_RUN.
+// the two-item/four-location whole-item swap. Harness uses the canonical sqlx migrator,
+// including CP-assigned 0113; actual PG execution of the new swap remains NOT_RUN.
 use crate::corpse_transfer_postgres_cases::{equip_backpack, locations, typed};
 use crate::domain::CharacterId;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -487,8 +488,8 @@ impl EquipmentMoveContent for KnownNonStackSwapProfile {
     }
 }
 
-// NOT_RUN until CP assigns/installs the additive swap migration through the native
-// migration path. This case never installs external SQL or bypasses a persisted guard.
+// Actual PG execution remains NOT_RUN. The canonical Harness migration set includes
+// CP-assigned 0113; this case never installs external SQL or bypasses a persisted guard.
 #[test]
 fn occupied_slot_swap_is_atomic_at_full_backpack_and_replay_bound() -> TestResult {
     use sqlx::Row;
