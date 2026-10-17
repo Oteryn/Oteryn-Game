@@ -1020,7 +1020,21 @@ Previous reviewable handoff: https://github.com/Oteryn/Oteryn-Game/pull/2147#iss
 
 ## Reproducible occupancy source checkpoint
 
-The following UTF-8 artifact is preserved verbatim as data within this owned card. Its embedded patch and review may be recovered without adding a repository evidence path. Artifact bytes: 32417; SHA-256: `26078095a20640dfce02e6126d3ae5f8537e1d84b4cc0c8b645529b56f398e7b`.
+The following UTF-8 artifact is preserved in the reversible text encoding described below within this owned card. Its embedded patch and review may be recovered without adding a repository evidence path. Artifact bytes: 32417; SHA-256: `26078095a20640dfce02e6126d3ae5f8537e1d84b4cc0c8b645529b56f398e7b`.
+
+### Reversible archive encoding
+
+The archived Markdown below uses one reversible escape to keep unified-diff context lines compatible with the repository whitespace gate. A standalone line `\x20` represents exactly one ASCII space followed by a newline. Decode those lines before checking the original archive or patch hashes, or recovering the held source. Every other archive byte, including the final newline, is unchanged. This encoding grants no permission to apply the archived runtime changes.
+
+For a UTF-8 string `card` containing this task card, the original artifact can be recovered with:
+
+```python
+archive = card.split("`````markdown\n", 1)[1].split("`````", 1)[0]
+archive = "".join(
+    " \n" if line == "\\x20\n" else line
+    for line in archive.splitlines(keepends=True)
+)
+```
 
 <!-- card-artifact:bed2147-occupancy-source-checkpoint.md -->
 `````markdown
@@ -1153,7 +1167,7 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 @@ -135,6 +135,82 @@
          .transpose()
  }
- 
+\x20
 +const READ_BED_OCCUPANCY: &str = "WITH wanted AS (SELECT encode($1,'hex')::uuid AS world_id, \
 +    $2::text AS house_key, $3::integer AS bed_x, $4::integer AS bed_y, $5::integer AS bed_z) \
 +    SELECT uuid_send(s.world_id) AS world_identity,s.house_key,s.bed_x,s.bed_y,s.bed_z, \
@@ -1238,7 +1252,7 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 @@ -57,6 +57,20 @@
      pub occupancy_revision: NonZeroU64,
  }
- 
+\x20
 +/// One raw storage snapshot for an exact bed key, including its House-wide
 +/// occupancy revision. This is not proof that the key names an active bed,
 +/// that the House exists, or that a character may use or wake it.
@@ -1267,7 +1281,7 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 +    read_sleeper_for_update,
  };
  use sqlx::{Connection, PgConnection};
- 
+\x20
 @@ -679,3 +680,193 @@
          Ok(())
      })
@@ -1473,7 +1487,7 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 @@ -681,7 +681,11 @@
      })
  }
- 
+\x20
 -fn stored_bed(world: u8, house: &str, head: LogicalCell) -> Result<StoredBedKey, Box<dyn std::error::Error>> {
 +fn stored_bed(
 +    world: u8,
@@ -1492,7 +1506,7 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 +            occupied.sleeper,
 +            read_sleeper(c, character(1)?).await.map_err(debug)?
 +        );
- 
+\x20
          for head in [
              LogicalCell { x: 11, y: 20, z: 7 },
 @@ -718,15 +725,23 @@
