@@ -30,6 +30,7 @@ owned_paths:
   - apps/game-server/src/node/config.rs (ReadinessConfig and its validation)
   - apps/game-server/src/node/serve.rs (boot validation and bound effective set only)
   - apps/game-server/tests/world_required_capabilities*.rs
+  - apps/game-server/tests/support/world_required_capabilities_postgres_cases.rs (D1324: extracted cases only)
   - tools/qualification/node_boot/run.sh
   - tools/qualification/login_local/run.sh
   - docs/architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md (D1083 map successor correction only)
@@ -43,7 +44,8 @@ public_contracts: []
 depends_on:
   - "ADMIT0 decision ACCEPTED: satisfied on main e2da9805 via ACCEPT-BATCH-2026-10-15"
   - "D1083 resolves map successor WORLD_MAP_VIEW_V1=18 and closed WORLD_INTERACTION_V1=11; FIELD has no ID and stays excluded until registered/offered"
-  - "A2 slot waits for #2197 and #2163 merged/closed; merge main only after #2208 merges"
+  - "D1322: A2 slot after #2197 and #2181 merge, reconciled against then-current main and shared-file order below"
+  - "D1324: canonical PostgreSQL aggregate mount after #2181 merges; CP alone writes the Cargo test=false entry"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -53,7 +55,63 @@ Skeleton task record (parallel work model, owner-approved 2026-10-15). The build
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
 CP and architect do the final review.
 
-## Continuation checkpoint — NOT_FULLY_QUALIFIED (2026-10-17)
+## D1322–D1324 checkpoint — partial / NOT_FULLY_QUALIFIED (2026-10-17)
+
+Authoring base: public #2187 head
+`0c4e6dfc0ff73b3fb39aa25b896c9f54c702958c`. The lead remains the sole publisher.
+The [current CP decision](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232842478)
+grants the two-file F3 extraction now and supersedes the earlier allocation
+requests; it does not release all shared integration paths.
+
+**D1324 — F3 extraction, first stage:** the existing
+`tests/world_required_capabilities_postgres.rs` wrapper now mounts
+`tests/support/world_required_capabilities_postgres_cases.rs`. The new module
+uses the harness crate root's same owners and fixtures. Its 566-line suffix from
+`require_postgres_17_6` through all three ADMIT0 cases is byte-identical to the
+public base, SHA256
+`824db05965fac778275a92c03ddb69e1790faf2d23bdb41542cf4f3cdd29cf44`.
+The wrapper's path-loaded production modules and reconnect fixture builders are
+unchanged. Module-root imports and the local `TestResult` alias move with the
+cases; the three test names acquire the module prefix
+`world_required_capabilities_postgres_cases::`.
+
+This is a partial checkpoint. The standalone integration target is still active;
+`tests/durability_postgres.rs` does not mount the cases yet, and no Cargo
+`test = false` entry is added. The canonical mount comes only after #2181 merges;
+CP is the sole Cargo writer. The duplicate-source failure remains unresolved,
+and this extraction claims no whole-guard PASS. The earlier native PostgreSQL
+PASS remains bound to recovered `d0a262f4`; it does not qualify the extracted
+module or a current-main composition.
+
+Source/byte preservation, changed-path and diff checks passed, as did governance
+validation (22 policy documents / 9 lanes) and the existing 124-test governance
+unit suite. Independent extraction review found no material issue. The lead
+also ran Rust 1.94.0 `rustfmt --check --edition 2024 --config skip_children=true`
+on exact copies of both changed Rust files on Molehill-PC: exit 0, with matching
+SHA256 before and after. The wrapper is
+`78b520f14149be27d077d9ff0b42a34913967f4f5812d8105c947c230fc190c8`;
+the support module is
+`dac39ff13885e97d2757dae683c701c4e7aa5127d44de124b7c7705c2a521993`.
+No native build, Clippy, PostgreSQL, duplicate-source guard or S3-B run is
+attributed to this checkpoint; the formatter check does not establish compilation.
+
+**D1322 — A2 remains a later integration slot:** reconcile the allocated hunks
+against then-current main after #2197 and #2181 merge, not against recovered
+`d0a262f4`. Shared-file order is binding:
+
+- `gameplay_transport/mod.rs`: #2197 → QUEST #2198 → A2 #2187.
+- `gameplay_transport/monk_save_postgres_tests.rs`: QUEST → A2.
+- `tests/wp5_s3b_composition.rs`: #2181 → A2.
+- `tests/durability_postgres.rs`: #2181 → #2187.
+- Registry JSONs wait for CP regeneration; CP alone writes Cargo manifests/lock.
+
+**D1323 — F2 deferred:** no `deploy/synology-game/*` hunk is authorized, including
+`deploy-ops.sh`. The infrastructure target is `oteryn-vps`; CP will identify the
+topology/declaration validation location. The previously reported declaration
+gap remains evidence only. No Synology implementation, pin change, installed
+configuration change or deployment is part of this checkpoint.
+
+## Historical continuation checkpoint — NOT_FULLY_QUALIFIED (2026-10-17, F1)
 
 Fresh-read public source: `c26d8a3150683539361202c94b08e3f82d89b8af`.
 The continuation is AUTHORING; this repair changes only the owned login-local
