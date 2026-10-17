@@ -666,6 +666,7 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
         contender.rollback().await?;
         // A missing node or revision is invalid data, not SQL UNKNOWN authority.
         // Refuse it before waiting on the held fence; the old missing guard timed out.
+        let node_id = *fact.node_id().as_bytes();
         for missing_node in [true, false] {
             let mut invalid = h.pool.begin().await?;
             sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *invalid).await?;
@@ -674,7 +675,7 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
                 .bind(id(WORLD).as_slice())
                 .bind(if missing_node { Some("1".to_owned()) } else { None })
                 .bind([7_u8;32].as_slice())
-                .bind(if missing_node { None } else { Some(fact.node_id().as_bytes().as_slice()) })
+                .bind(if missing_node { None } else { Some(node_id.as_slice()) })
                 .bind(fact.registration_revision().to_string())
                 .execute(&mut *invalid).await;
             assert!(matches!(refused,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("OTR03")));
