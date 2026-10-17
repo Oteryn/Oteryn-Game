@@ -26,6 +26,10 @@
 //! session or a lower key overwrites neither. A row without vitals (`None`: a respawn placement,
 //! an actor at its maxima, or a row written before migration 0084) restores the next actor at its
 //! maxima (SPELL-D2).
+//!
+//! HOUSE-RUNTIME-1c: every winning Channel projection clears both nullable House
+//! columns in this same upsert. Equal/lower keys, failed fences, pending respawns
+//! and rollback preserve the complete old projection, including its House binding.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -345,9 +349,9 @@ pub(super) async fn upsert_last_position(
         "INSERT INTO game_character_last_positions AS p \
             (character_id, world_id, tile_x, tile_y, tile_floor, coordinate_frame_digest, \
              map_revision_digest, server_artifact_digest, character_lease_generation, \
-             write_sequence, health, mana) \
+             write_sequence, health, mana, house_world_id, house_key) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3, $4, $5, $6, $7, $8, \
-                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12) \
+                 $9::text::numeric(20,0), $10::text::numeric(20,0), $11, $12, NULL, NULL) \
          ON CONFLICT (character_id) DO UPDATE SET \
              world_id = EXCLUDED.world_id, tile_x = EXCLUDED.tile_x, \
              tile_y = EXCLUDED.tile_y, tile_floor = EXCLUDED.tile_floor, \
@@ -356,7 +360,8 @@ pub(super) async fn upsert_last_position(
              server_artifact_digest = EXCLUDED.server_artifact_digest, \
              character_lease_generation = EXCLUDED.character_lease_generation, \
              write_sequence = EXCLUDED.write_sequence, \
-             health = EXCLUDED.health, mana = EXCLUDED.mana \
+             health = EXCLUDED.health, mana = EXCLUDED.mana, \
+             house_world_id = NULL, house_key = NULL \
          WHERE (p.character_lease_generation, p.write_sequence) \
              < (EXCLUDED.character_lease_generation, EXCLUDED.write_sequence)",
     )
