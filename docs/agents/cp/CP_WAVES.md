@@ -1,21 +1,23 @@
-# CP — wave'y mechanik (stan 2026-10-15 ~08:00Z)
+# CP — wave'y mechanik (ostatnia aktualizacja 2026-10-17 14:10Z)
+
+Rekord historyczny (draft, nie do merge). Stan bieżący: live PR/CI i datowane decyzje CP w komentarzach #2131. Sekcje niżej mają własne daty.
 
 Źródło kolejności: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md` §5.
 Wave = kolejność zależności, nie harmonogram: batch startuje, gdy jego zależności są zmergowane.
 Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagent u CP; ciężkie (persistence, protokół, regeneracja contentu, duży kod) → osobny chat.
 
-## Protokół seryjny (owner 2026-10-15)
+## Protokół seryjny (owner 2026-10-15) — ZAMKNIĘTY, historia
 - Kolejka merge: #2115 → #2122 → #2128 → #2130 → #2129 → #2127 → #2096. Następny merguje main i pushuje dopiero po „GO” od CP (raz).
 - Maks. 2 rundy napraw na PR; potem zamknięcie i podział zadania.
 - Codex P2 odroczone; Codex liczy się tylko na finalnym headzie.
 - Wspólny powtarzalny błąd CI → jedna poprawka na main.
-- Brak nowych zadań do zamknięcia kolejki (W2c2, W3a2 na hold).
+- Brak nowych zadań do zamknięcia kolejki (hold W2c2/W3a2 wygasł wraz z kolejką).
 
 ## Zrobione (zmergowane)
 | Wave | Batch | PR |
 |---|---|---|
 | 1 | PREMIUM-1 (PREM-WIRE-1) | #2110 |
-| 1 | MAGIC-CAST-1 (SPELL-RT-PREM-1) | #2112, #2119 |
+| 1 | MAGIC-CAST-1 — tylko dziecko SPELL-RT-PREM-1 (agregat NIE ukończony) | #2112, #2119 |
 | 1 | LOOP-COMBAT-MODES-1 | #2113, #2125 |
 | 1 | CLOCK-1 (light) | #2114 |
 | 1 | MAGIC-COND-1 | #2122 |
@@ -23,7 +25,6 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 | 1 | W2b training | #2109 |
 | 1 | CHAT-1b-2b | do potwierdzenia (W2h przeszedł na CHAT-2B) |
 | 1 | LOGOUT-WIRE-1 | #2127 (merged 2026-10-15) |
-| 2 | CHAT-2B | #2128 (zamknięty bez merge 2026-10-15) |
 | 2 | NPC-CONTENT-2 | #2129 (merged 2026-10-16) |
 | 2 | PRESENT-CONTENT-1 | #2130 (merged 2026-10-15) |
 | 2 | RANGED-CONTENT-1 PR1 | #2096 (merged 2026-10-15) |
@@ -34,6 +35,11 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 | – | CHAR-CMD-CONSUMER-1 (Game) | #2121 |
 | – | CHAR-CMD-WIRE-1 (Platform) | Platform #1622 |
 
+## Zamknięte bez merge (nie spełniają zależności)
+| Wave | Batch | PR |
+|---|---|---|
+| 2 | CHAT-2B | #2128 (zamknięty 2026-10-15; przejęte przez W2h) |
+
 ## W toku
 | Wave | Batch | PR | Worker (sesja) | Stan |
 |---|---|---|---|---|
@@ -41,7 +47,7 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 | 3 | MAP-VIEWPORT-OPT-1 | (nowy) | W3a2 0181Dg1m | opcja B (20% rdzenia, liczymy tylko graczy w ruchu; rewalidacja botami → MAP-VIEWPORT-BUDGET-REVAL) |
 
 ## Do zrobienia
-**Wave 1 (reszta):** ADMIT-CAP-1, CHAT-2 (po re-review CHAT-0), ITEM-LOOK-1, PREREQ-1 (dzieci w wave pierwszego konsumenta), SEC-1; sekwencyjnie (migracje): ITEM-LOOP-1, DAWNPORT-1, LOOP-PROGRESS-1, DEATH-ML-LOSS-1.
+**Wave 1 (reszta):** MAGIC-CAST-1 (pozostałe dzieci z planu §5 poza SPELL-RT-FIELDBUFF-1, w tym parametryczne rzucanie z MAGIC-CAST-1-BUNDLE.md; konsumenci jak MAGIC-SUMMON-1 nie mogą zakładać ukończonego agregatu), ADMIT-CAP-1, CHAT-2 (po re-review CHAT-0), ITEM-LOOK-1, PREREQ-1 (dzieci w wave pierwszego konsumenta), SEC-1; sekwencyjnie (migracje): ITEM-LOOP-1, DAWNPORT-1, LOOP-PROGRESS-1, DEATH-ML-LOSS-1.
 
 **Granica Game↔Platform (owner 2026-10-15, z opinii architekta o 2 bazach):**
 1. PLATFORM-RESTORE-RECONCILE-P1 (Platform; odblokowuje CHAR-CMD, U-CC7), najpilniejsze.
@@ -60,7 +66,8 @@ Zasada: lekkie zadania (docs, rejestr, flip statusu, małe poprawki) → subagen
 
 ## Model pracy równoległej (owner zaakceptował 2026-10-15, bez pilota)
 - Architekt zakłada draft-szkielety (`skeleton/<task>`, 1 commit: `docs/agents/tasks/<TASK>.md`) dla wszystkich niezrobionych zadań fal 1–5.
-- Wykonawca (inny agent) wypełnia tylko owned_paths, pushuje rzadko i paczkami (draft też odpala CI). Regeneracja, piny, rejestry, migracja i wiring w `connection.rs`/`mod.rs`/`capabilities.rs` dopiero w slocie kolejki, po merge main.
+- Jeden writer na gałąź w każdej chwili. Po commicie szkieletu architekt nie pisze już na gałąź; własność przechodzi na wykonawcę wyłącznie decyzją CP w #2131, która go nazywa (np. D1345, D1372). Bez takiej decyzji gałąź nie ma drugiego writera.
+- Wykonawca wypełnia tylko owned_paths, pushuje rzadko i paczkami (draft też odpala CI). Regeneracja, piny, rejestry, migracja i wiring w `connection.rs`/`mod.rs`/`capabilities.rs` dopiero w slocie kolejki, po merge main.
 - CP oznacza ready w slocie; 1 runda Codex. CP + architekt mają ostatnie słowo (poprawność i kod).
 - Pakiety nierozdzielne: wire, migracja, content+piny, mint/burn+ledger, pakiety „+”.
 - Osobno na main: przyspieszyć/zawęzić `quest-authoring-schema.yml` (limit 30 min).
