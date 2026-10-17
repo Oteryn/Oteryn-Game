@@ -529,3 +529,80 @@ larger family still needs posting/stamping/Inbox/audit/wire and its dependent
 parcel/system-letter integrations. Historical dependency table rows must be
 reconciled against current protected main before the final integration slot.
 No ready, merge, full-family completion or new paid review is claimed.
+
+## D1318 same-transaction reward Inbox writer — 2026-10-17
+
+Status remains **NOT_FULLY_QUALIFIED**. This implementation checkpoint is based
+on `25241039efba1f5a9dbd0ab3d3290986e40743c6`; that predecessor was the
+documentation-only successor described above. This increment changes Rust and
+test source, so no predecessor CI or historical PostgreSQL result qualifies it.
+**Candidate Cargo, Clippy, unit tests and native PostgreSQL: NOT_RUN.** Rustfmt
+1.94 parsed and formatted the five changed Rust leaves successfully.
+
+CP [D1318](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232842478)
+assigns the Inbox writer to MAIL #2133, extending
+[D1152](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224947337).
+The implementation reuses the existing `reward_claim_mint` typed cause. It does
+not add a new audit Cause or treat a caller plan/boolean as native authority.
+
+`DurabilityRoot::with_reward_claim_inbox_transaction` opens the native type-2
+transaction inside a real bounded semantic pass. It checks this Root's recovery
+proof, admission locks, and the actual Character/session/lease/scope/node fence.
+The source owner borrows the same transaction for claim, fresh mint, binding
+and audit writes. The private-constructible Inbox context returns actual
+Character/World/ordinal positions. MAIL commits only after every planned output
+has been delivered, the callback succeeds, physical transaction identity still
+matches and all deferred constraints pass. A caught delivery refusal poisons
+the context; an omission or refusal rolls back source and sink together.
+
+The complete frozen plan contains the full unsigned CommandRef, Character,
+World, Channel, TransactionId, source binding and ordered item identities. An
+indexed CommandRef lookup detects a changed plan even if every item identity
+changes on retry. Exact replay returns the original positions without calling
+the source again or reacquiring a current session fence. Reconciliation still
+requires this Root's actual current recovery proof. The output bound is the
+DAILY source's 20 items, not an Inbox capacity restriction.
+
+The adjacent `character_inbox_reward_claim.sql` is **uninstalled candidate
+material**, included for exact-source native tests and the eventual protected
+migration slot. It grants runtime EXECUTE only on narrow lookup/delivery
+functions, preserves the denial of the raw Inbox function and Inbox tables,
+locks the same full-u64 reward-mint CommandRef key, and checks fresh item
+identity, same-transaction audit presence and complete Inbox placement. It
+does not replace the shared MINT receipt or exact audit-payload guards.
+
+The real upstream fresh-mint/Inbox bridge is still required implementation.
+The existing `reward_claim_mint` writer and audit encoder accept a CHEST claim,
+one item and a backpack destination; its receipt requires a backpack parent.
+They cannot be followed by a second Inbox commit and called atomic. The
+post-#2197 integration must add the actual Inbox destination/receipt/audit
+encoding and its registered resource accounting, then qualify it with the
+source owner's claim and binding writes in this same context. No such bridge,
+shared guard change, migration number, production grant activation or DAILY
+claim implementation is claimed by this checkpoint.
+
+Two pure tests cover plan refusal and every replay-binding component. Eight
+new canonical native cases cover complete two-item delivery and full-u64
+replay, rollback with ordinal reuse, independently isolated omission and caught
+refusal, wrong World/old mint/other location, real session/node/Root and recovery
+refusals, SQL partial-plan/missing-audit refusal and runtime grant boundaries.
+They use the existing native Root/harness and execute the Inbox code normally;
+an explicitly test-owned seed function and nonproduction audit witness stand
+in for the upstream bridge. These are **sink/composition tests**, not full mint
+or DAILY qualification. Missing admin routing is an error, never early success.
+
+The canonical support mount adds only the new child module to the existing six
+MAIL wrappers; it does not create a standalone native test root. Expected
+inventory: **8 new cases**, or **14** with the unchanged MAIL wrappers. Under
+the D1329 approved PostgreSQL 17.6 namespace and its existing resource routing:
+
+```bash
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --lib character_inbox::reward_claim::tests::
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases::reward_claim_inbox:: -- --list
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres mail_postgres_cases::reward_claim_inbox:: -- --test-threads=1 --nocapture
+```
+
+Independent bounded source review corrected the callback's owned/static
+lifetime contract and isolated the caught-refusal test. It did not compile or
+execute the source. Publication, protected integration, exact-source native
+qualification, ready and merge remain separately controlled by the coordinator.

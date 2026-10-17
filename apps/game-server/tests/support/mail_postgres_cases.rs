@@ -49,3 +49,6 @@ async fn text_storage_rollback_loses_neither_atomicity_nor_command_retry(
 ) -> Result<(), Box<dyn std::error::Error>> {
     crate::durability::item_text::tests::text_storage_rollback_loses_neither_atomicity_nor_command_retry(pool).await
 }
+
+#[path = "character_inbox_reward_claim_postgres_cases.rs"]
+mod reward_claim_inbox;

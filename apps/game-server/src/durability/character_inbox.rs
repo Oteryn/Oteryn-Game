@@ -1,12 +1,15 @@
-//! The CharacterInbox read helpers and the typed delivery error (INBOX-1a, migration 0076;
-//! MARKET-0 §5, §7 and §8, SOCIAL-MAP-PACKETS-1 §1.12).
+//! CharacterInbox read helpers and the MAIL-owned reward-claim delivery seam.
 //!
-//! The Inbox is one item location per (Character, World), without a channel. Items arrive only
-//! through `game_character_inbox_deliver`, a SECURITY DEFINER function that no runtime role may
-//! execute: each caller (HOUSE-1b, MARKET-1) calls it from its own SECURITY DEFINER function and
-//! audits the delivery in its own event from the returned `(character_id, ordinal)`. The
-//! function raises one typed SQLSTATE per refusal, which [`CharacterInboxDeliveryError`]
-//! classifies for the callers and their tests. This module has no writer.
+//! The storage foundation is migration 0076 (INBOX-1a; MARKET-0 §5, §7, §8).
+//! Under CP D1152/D1318 MAIL owns the same-transaction reward Inbox boundary;
+//! see [`RewardClaimInboxTransaction`]. The source owner composes its claim,
+//! mint, binding and existing `reward_claim_mint` audit within that native Root
+//! transaction. The post-#2197 migration/audit integration remains a CP slot;
+//! the candidate SQL is never installed by runtime code.
+//!
+//! The underlying `game_character_inbox_deliver` function remains unavailable
+//! to runtime. Callers use their own narrow SECURITY DEFINER seam and audit the
+//! returned `(character_id, ordinal)`; no direct Inbox table grant is added.
 
 // The read helpers have no in-crate caller until HOUSE-1b and MARKET-1; test crates that include
 // `durability` by path would otherwise flag them.
@@ -16,6 +19,15 @@ use super::DurabilityError;
 use super::character_progression::{numeric_u64, uuid_text};
 use sqlx::Row;
 use sqlx::postgres::PgConnection;
+
+#[path = "character_inbox_reward_claim.rs"]
+mod reward_claim;
+
+pub use reward_claim::{
+    REWARD_CLAIM_INBOX_ITEMS_MAX, REWARD_CLAIM_INBOX_SCHEMA_CANDIDATE, RewardClaimInboxError,
+    RewardClaimInboxOutcome, RewardClaimInboxPlan, RewardClaimInboxPosition,
+    RewardClaimInboxTransaction,
+};
 
 /// The SQLSTATEs `game_character_inbox_deliver` and the Inbox guards raise (migration 0076).
 pub const SQLSTATE_ITEM_HAS_CONTENTS: &str = "OTI01";
