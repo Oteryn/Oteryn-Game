@@ -4,27 +4,35 @@
 task_id: LOOP-MONSTER-1
 title: "LOOP-MONSTER-1: world respawn scheduler; monster ranged, spell, summon AI (skeleton)"
 mode: IMPLEMENT
-status: waiting
+status: OPEN
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/loop-monster-1
 issue: 1622
-pr: null
+pr: 2200
 base_sha: 5742f30f3
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 1 LOOP-MONSTER-1 (rows 94, 96); wave 2"
 class: "hard (child graph)"
 migration: maybe
 registry: maybe
-owner: unassigned (builder)
+owner: family F
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/ai/
   - apps/game-server/src/ai_think/
   - apps/game-server/src/monster_owner_cycle.rs
   - apps/game-server/tests/loop_monster_*.rs (new)
+  - apps/game-server/src/ai_think.rs
+  - apps/game-server/src/ai_think/channel_owner.rs
+  - apps/game-server/src/ai_think/think_tests.rs
+  - apps/game-server/src/content/native_gameplay.rs
+  - apps/game-server/src/gameplay_transport/actor_spell.rs
+  - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
+  - apps/game-server/src/monster_summon.rs
+  - docs/agents/tasks/LOOP-MONSTER-1.md
 slot_only_paths:
   - mod.rs (scheduler composition)
   - RESOURCE_LIMITS_REGISTRY.json
@@ -245,3 +253,41 @@ The detached owned subset is prepared. Live activation, the shared single-pass
 think/report seam, evaluation accounting, actor registration/rollback and the
 remaining CP composition hooks above are still required; full task acceptance
 is not asserted.
+
+
+## Recovery checkpoint — OPEN / NOT_FULLY_QUALIFIED (2026-10-17)
+
+AUTHORING resumed after loss of the previous CLOUD workspace. The owner requested
+publication of all recoverable work; CP2131 comment6230877600 explicitly directs
+reconstruction from the published heads and an NFQ checkpoint. This is a new
+candidate, not recovery of commit identity `e7cbd428086bed0d21c0f993d78d97ae6f3f1e81`.
+
+One target-selection/schedule pass reports ability and summon proposals, and the native loader seals summon entries against its exact parent/child closure.
+
+Physical summon activation, persistent-owner/startup composition and the #2184 chase caller remain uncomposed; no fallback catalog or second scheduler is introduced.
+
+Sources were reconstructed from retained exact change literals and complete
+review diffs. The final catalog refinement is reconstructed with one exact-ref
+index and duplicate refusal, at most eight entries, max/count in 1..=16,
+positive intervals and chance at most 1,000,000. The existing catalog case also
+covers those refusals; these new-candidate cases remain NOT_RUN.
+No historical shell/build commands were replayed and no foreign files were adopted.
+
+New-candidate native tests, strict all-target Clippy and full-package qualification
+are NOT_RUN. Old PASS/cache results and lost job87870 are not claimed as proof
+for this reconstruction. Focused source review, Rust formatting, governance and
+diff-check results are reported with the publication receipt. Existing full
+RED/NOT_RUN and composition gates remain open; draft only, no readiness claim.
+
+The reconstructed delta is limited to these already allocated owned paths:
+
+- `apps/game-server/src/ai_think.rs`
+- `apps/game-server/src/ai_think/channel_owner.rs`
+- `apps/game-server/src/ai_think/think_tests.rs`
+- `apps/game-server/src/content/native_gameplay.rs`
+- `apps/game-server/src/gameplay_transport/actor_spell.rs`
+- `apps/game-server/src/gameplay_transport/monster_ai_cycle.rs`
+- `apps/game-server/src/monster_summon.rs`
+- `docs/agents/tasks/LOOP-MONSTER-1.md`
+
+Allocation remains the existing family-F assignment: D1123/D1239a; the exact loader/summon projection remains within this task.

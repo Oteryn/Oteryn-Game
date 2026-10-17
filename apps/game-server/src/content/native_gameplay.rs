@@ -258,6 +258,41 @@ pub(crate) struct CreatureProfilesDocument {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) source_definitions_sha256: Option<String>,
 }
+
+/// A summon entry resolved entirely from this loader's qualified profile closure.
+/// Private fields prevent detached caller data from becoming a qualified source.
+pub(crate) struct QualifiedSummonEntry {
+    parent: ProjectV2DefinitionRef,
+    child: ProjectV2DefinitionRef,
+    health: i64,
+    index: usize,
+    maximum: u32,
+    count: u32,
+    content: [u8; 32],
+}
+impl QualifiedSummonEntry {
+    pub(crate) fn parent(&self) -> &ProjectV2DefinitionRef {
+        &self.parent
+    }
+    pub(crate) fn child(&self) -> &ProjectV2DefinitionRef {
+        &self.child
+    }
+    pub(crate) fn health(&self) -> i64 {
+        self.health
+    }
+    pub(crate) fn index(&self) -> usize {
+        self.index
+    }
+    pub(crate) fn maximum(&self) -> u32 {
+        self.maximum
+    }
+    pub(crate) fn count(&self) -> u32 {
+        self.count
+    }
+    pub(crate) fn content(&self) -> [u8; 32] {
+        self.content
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct PresentationProfilesDocument {
@@ -352,6 +387,7 @@ pub(crate) struct NativeGameplayState {
     catalog: Arc<executable_catalog::CompiledCatalog>,
     policies: CompiledCreaturePolicies,
     creatures: CreatureProfilesDocument,
+    summon_catalogs: BTreeMap<ProjectV2DefinitionRef, crate::monster_summon::NativeSummonCatalog>,
     presentations: PresentationProfilesDocument,
     items: Option<ItemProfilesDocument>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
@@ -371,6 +407,13 @@ impl PartialEq for NativeGameplayState {
 }
 impl Eq for NativeGameplayState {}
 impl NativeGameplayState {
+    /// No declaration or incomplete child closure is Unknown, never an empty admitted catalog.
+    pub(crate) fn summon_catalog(
+        &self,
+        parent: &ProjectV2DefinitionRef,
+    ) -> Option<&crate::monster_summon::NativeSummonCatalog> {
+        self.summon_catalogs.get(parent)
+    }
     /// The Item definition index of the pinned Item key set (MAP-ITEM-REF-1); `None` when the
     /// artifact carries no key set, which leaves capability 4 unoffered.
     pub(crate) fn item_index(&self) -> Option<&Arc<super::item_ref::ItemDefinitionIndex>> {
@@ -1243,6 +1286,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     ));
     let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
+    let summon_catalogs = qualified_summon_catalogs(&creatures, source_digest)?;
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
@@ -1256,6 +1300,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
             catalog: Arc::new(catalog),
             policies,
             creatures,
+            summon_catalogs,
             presentations,
             items,
             appearances,
@@ -1266,6 +1311,89 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
             wheel_profile,
         },
     })
+}
+fn qualified_summon_catalogs(
+    creatures: &CreatureProfilesDocument,
+    content: [u8; 32],
+) -> Result<
+    BTreeMap<ProjectV2DefinitionRef, crate::monster_summon::NativeSummonCatalog>,
+    ContentError,
+> {
+    // Build one exact-definition index for the declared closure; duplicate identities
+    // cannot supply a deterministic qualified child or parent.
+    let mut profiles = BTreeMap::new();
+    for record in &creatures.records {
+        if profiles
+            .insert(record.profile.target.clone(), record)
+            .is_some()
+        {
+            return Err(invalid("native gameplay duplicate summon definition"));
+        }
+    }
+    let mut catalogs = BTreeMap::new();
+    for record in &creatures.records {
+        let Some(ProjectV2AuthoringProfile {
+            data: ProjectV2AuthoringProfileData::Behavior(behavior),
+            ..
+        }) = &record.behavior
+        else {
+            continue;
+        };
+        let Some(summons) = &behavior.summons else {
+            continue;
+        };
+        if summons.entries.len() > 8 || !(1..=16).contains(&summons.max_summons) {
+            return Err(invalid("native gameplay summon bounds"));
+        }
+        if summons.entries.is_empty() {
+            continue;
+        }
+        let mut entries = Vec::new();
+        for (index, entry) in summons.entries.iter().enumerate() {
+            if entry.interval_ms == 0
+                || entry.chance_ppm > 1_000_000
+                || !(1..=16).contains(&entry.count)
+            {
+                return Err(invalid("native gameplay summon entry bounds"));
+            }
+            let Some(child) = profiles.get(&entry.creature) else {
+                break;
+            };
+            let ProjectV2AuthoringProfileData::Creature(profile) = &child.profile.data else {
+                return Err(invalid("native gameplay summon child kind"));
+            };
+            let health = profile
+                .health
+                .and_then(|value| i64::try_from(value).ok())
+                .filter(|value| *value > 0)
+                .ok_or(invalid("native gameplay summon child health"))?;
+            entries.push(QualifiedSummonEntry {
+                parent: record.profile.target.clone(),
+                child: entry.creature.clone(),
+                health,
+                index,
+                maximum: summons.max_summons,
+                count: entry.count,
+                content,
+            });
+        }
+        // A digest alone cannot supply a missing child definition. Keep the entire parent Unknown.
+        if entries.len() != summons.entries.len() {
+            continue;
+        }
+        let catalog = crate::monster_summon::NativeSummonCatalog::from_source_closure(
+            &record.profile.target,
+            &entries,
+        )
+        .map_err(|_| invalid("native gameplay summon catalog qualification"))?;
+        if catalogs
+            .insert(record.profile.target.clone(), catalog)
+            .is_some()
+        {
+            return Err(invalid("native gameplay duplicate summon parent"));
+        }
+    }
+    Ok(catalogs)
 }
 fn exact(reference: &ProjectV2DefinitionRef, family: ProjectV2Family) -> Result<(), ContentError> {
     if reference.family != family {
@@ -1531,6 +1659,94 @@ pub(crate) mod tests {
         }
     }
     /// Explicit local qualification of the real composed input, without runtime activation.
+    fn summon_catalog_input() -> (NativeGameplayInput, ProjectV2DefinitionRef) {
+        let mut input = input();
+        let mut profiles: serde_json::Value =
+            serde_json::from_slice(&input.creature_profiles.bytes).unwrap();
+        let parent = profiles["records"][0]["profile"]["target"].clone();
+        profiles["records"][0]["behavior"]["data"]["profile"]["summons"] = serde_json::json!({
+            "max_summons": 2,
+            "entries": [{"creature": parent, "interval_ms": 1000, "chance_ppm": 1000000, "count": 2}]
+        });
+        input.creature_profiles = pinned(&serde_json::to_vec(&profiles).unwrap());
+        (input, serde_json::from_value(parent).unwrap())
+    }
+
+    fn decode_summon_input(input: &NativeGameplayInput) -> NativeGameplayState {
+        let source = test_source(3).unwrap();
+        let baseline = super::super::production::compile_first_production(
+            &source,
+            super::super::production::FirstProductionCompileTarget::OrdinaryRelease,
+        )
+        .unwrap();
+        let artifact = compile_native_gameplay(&baseline, input).unwrap();
+        decode(&artifact.server_artifact).unwrap().state
+    }
+
+    #[test]
+    fn decoded_summon_catalog_uses_only_exact_parent_and_artifact_entries() {
+        let (input, parent) = summon_catalog_input();
+        let native = decode_summon_input(&input);
+        assert!(native.summon_catalog(&parent).is_some());
+        let mut other = parent.clone();
+        other.revision.push_str("-other");
+        assert!(native.summon_catalog(&other).is_none());
+        assert_eq!(native.summon_catalogs.len(), 1);
+        // No project closure bytes or new document field were synthesized from its digest.
+        assert!(native.creatures.source_definitions_sha256.is_none());
+
+        let profiles: serde_json::Value =
+            serde_json::from_slice(&input.creature_profiles.bytes).unwrap();
+        for (field, value) in [("max_summons", 0), ("max_summons", 17)] {
+            let mut bad = profiles.clone();
+            bad["records"][0]["behavior"]["data"]["profile"]["summons"][field] =
+                serde_json::json!(value);
+            let bad: CreatureProfilesDocument = serde_json::from_value(bad).unwrap();
+            assert!(qualified_summon_catalogs(&bad, [1; 32]).is_err());
+        }
+        for (field, value) in [
+            ("count", 0),
+            ("count", 17),
+            ("interval_ms", 0),
+            ("chance_ppm", 1_000_001),
+        ] {
+            let mut bad = profiles.clone();
+            bad["records"][0]["behavior"]["data"]["profile"]["summons"]["entries"][0][field] =
+                serde_json::json!(value);
+            let bad: CreatureProfilesDocument = serde_json::from_value(bad).unwrap();
+            assert!(qualified_summon_catalogs(&bad, [1; 32]).is_err());
+        }
+        let mut bad = profiles.clone();
+        let entry =
+            bad["records"][0]["behavior"]["data"]["profile"]["summons"]["entries"][0].clone();
+        bad["records"][0]["behavior"]["data"]["profile"]["summons"]["entries"] =
+            serde_json::json!(vec![entry; 9]);
+        let bad: CreatureProfilesDocument = serde_json::from_value(bad).unwrap();
+        assert!(qualified_summon_catalogs(&bad, [1; 32]).is_err());
+        let mut duplicate = profiles;
+        let first = duplicate["records"][0].clone();
+        duplicate["records"].as_array_mut().unwrap().push(first);
+        let duplicate: CreatureProfilesDocument = serde_json::from_value(duplicate).unwrap();
+        assert!(qualified_summon_catalogs(&duplicate, [1; 32]).is_err());
+    }
+
+    #[test]
+    fn undeclared_or_incomplete_summon_closure_remains_unknown() {
+        let (mut input, parent) = summon_catalog_input();
+        let mut profiles: serde_json::Value =
+            serde_json::from_slice(&input.creature_profiles.bytes).unwrap();
+        profiles["records"][0]["behavior"]["data"]["profile"]["summons"]["entries"][0]["creature"]
+            ["revision"] = serde_json::json!("unavailable-revision");
+        input.creature_profiles = pinned(&serde_json::to_vec(&profiles).unwrap());
+        let native = decode_summon_input(&input);
+        assert!(native.summon_catalog(&parent).is_none());
+        assert!(
+            decode_summon_input(&self::input())
+                .summon_catalog(&parent)
+                .is_none()
+        );
+    }
+
     #[test]
     #[ignore = "requires OTERYN_FULL_SPELL_TEST_MANIFEST from the explicit source producer"]
     fn actual_full_manifest_qualifies_source_world_and_all_owner_profiles() {

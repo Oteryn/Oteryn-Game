@@ -126,6 +126,13 @@ pub(crate) struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_map_initialization_pass_us: u64,
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
+    /// D1239: one persistent replay/admission owner per Channel, shared by all think passes.
+    /// Physical activation still requires the loader-qualified catalog and current map policy.
+    #[allow(
+        dead_code,
+        reason = "D1239 catalog producer and production composition pending"
+    )]
+    pub(in crate::gameplay_transport) native_summons: crate::monster_summon::NativeSummonOwner,
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
@@ -259,6 +266,7 @@ impl Default for ChannelSpellStates {
             next_map_initialization_pass_us: Default::default(),
             next_party_deadline_pass_us: Default::default(),
             monster_melee: Default::default(),
+            native_summons: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),

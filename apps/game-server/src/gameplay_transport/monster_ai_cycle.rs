@@ -178,6 +178,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             self.door.lock().await.collision_cells().clone()
         };
+        // The real native root still admits targeting-only profiles: Ability authoring and
+        // a bound native summon catalog/location policy are not composed here. The think's
+        // new single-pass report seam must not be followed by a second schedule-only pass.
         let (_, next_think) = melee_owner.creature_ai.run_due_thinks_until_next(
             &mut runtime,
             now.get(),

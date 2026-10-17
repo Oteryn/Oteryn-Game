@@ -65,7 +65,7 @@ impl NativeSummonSpec {
     }
 }
 // Immutable source specs only; live facts and native admission remain independently owned.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct NativeSummonCatalog {
     parent: Ref,
     entries: Vec<Result<NativeSummonSpec, SummonError>>,
@@ -77,6 +77,63 @@ fn member(draft: &ProjectV2Draft, r: &Ref) -> bool {
  &&draft.state.source_identity_bindings.iter().any(|b|b.target==*r&&b.disposition==ProjectV2SourceIdentityDisposition::Exact&&draft.state.sources.iter().any(|s|s.key==b.source_key&&s.revision==b.source_revision))
 }
 impl NativeSummonCatalog {
+    /// Decode already resolved these entries from the actual pinned profile closure.
+    /// Channel identity, current parent/target and admission are checked only by execute.
+    pub(crate) fn from_source_closure(
+        parent: &Ref,
+        entries: &[crate::content::native_gameplay::QualifiedSummonEntry],
+    ) -> Result<Self, SummonError> {
+        let Some(first) = entries.first() else {
+            return Err(SummonError::InvalidSource);
+        };
+        let content = first.content();
+        if parent.family != ProjectV2Family::Creature || entries.len() > 8 {
+            return Err(SummonError::InvalidSource);
+        }
+        let mut specs = Vec::new();
+        let mut targets = Vec::new();
+        for (index, entry) in entries.iter().enumerate() {
+            if entry.parent() != parent
+                || entry.child().family != ProjectV2Family::Creature
+                || entry.index() != index
+                || entry.content() != content
+                || entry.maximum() != first.maximum()
+                || entry.maximum() == 0
+                || entry.maximum() > 16
+                || entry.count() == 0
+                || entry.count() > 16
+                || entry.health() <= 0
+            {
+                return Err(SummonError::InvalidSource);
+            }
+            specs.push(Ok(NativeSummonSpec {
+                parent: parent.clone(),
+                child: entry.child().clone(),
+                health: entry.health(),
+                index,
+                total: entry.maximum(),
+                count: entry.count(),
+                content,
+                admission: NativeSummonAdmissionSpec::qualified(
+                    &parent.key,
+                    &entry.child().key,
+                    entry.health(),
+                    index,
+                    entry.maximum(),
+                    entry.count(),
+                    content,
+                )
+                .map_err(SummonError::Carrier)?,
+            }));
+            targets.push(entry.child().clone());
+        }
+        Ok(Self {
+            parent: parent.clone(),
+            entries: specs,
+            targets,
+            content,
+        })
+    }
     pub(crate) fn from_project(
         runtime: &ChannelRuntimeV1,
         parent: &Ref,
@@ -227,12 +284,13 @@ pub(crate) struct SummonReceipt {
     pub(crate) newly_created: bool,
     pub(crate) position: MovementLocalPosition,
 }
+#[derive(Debug)]
 struct SummonMemo {
     sequence: u64,
     binding: [u8; 32],
     result: Result<SummonReceipt, SummonError>,
 }
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(crate) struct NativeSummonOwner {
     /// By parent and summon entry (Codex 4243039220).
     memos: ActorMemoTable<usize, SummonMemo>,

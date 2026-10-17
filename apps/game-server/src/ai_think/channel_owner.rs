@@ -9,7 +9,9 @@
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
 use super::behaviour_profile::{CreatureBehaviourProfile, OwnerProfileError, ProfileRefusal};
-use super::profile_schedule::{MonsterSummonFacts, ProfileScheduleInput, SchedulePlan};
+use super::profile_schedule::{
+    MonsterSummonFacts, ProfileScheduleInput, ScheduleError, SchedulePlan,
+};
 use super::targeting::{self, TargetCandidate};
 use super::{
     CREATUREAI0_THINK_WINDOW_MICROS, CREATUREAI0_THINKS_PER_WINDOW, CREATUREAI1_WAKE_CANDIDATES,
@@ -28,11 +30,11 @@ use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 impl CreatureAiState {
     /// Explicit schedule-only path, using this actor's one existing schedule state.
-    /// The live legacy `think` is unchanged. A caller must not run both paths for
+    /// The live think now has its single-pass optional-facts/report seam. A caller must not run both paths for
     /// one occurrence: native schedule replay/conflict checks remain authoritative.
     /// Inputs are proposals/facts, never permission to realize an actor or Ability.
-    /// The future single-pass think integration must supply its selected target and
-    /// projected profile here, then return both proposal lists without a second draw.
+    /// This retained schedule-only adapter is not a second stage after think; the
+    /// real think's think_with_summon_facts callback supplies facts before its sole schedule pass.
     pub(crate) fn prepare_owner_profile(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -272,9 +274,47 @@ impl CreatureAiTable {
         players: &[TargetCandidate],
         walkable: impl Fn(MovementLocalPosition) -> bool,
     ) -> (Vec<(ExactActorRef, ThinkReport)>, Option<u64>) {
+        self.run_due_thinks_with_profile_facts_until_next(
+            runtime,
+            now_us,
+            root,
+            revisions,
+            players,
+            walkable,
+            |_, _| Ok(None),
+        )
+    }
+
+    /// Same native due selection and one state/schedule pass. A real composed owner can read
+    /// its bound catalog/path facts against this current runtime AFTER target selection.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing native think inputs plus same-turn profile fact reader"
+    )]
+    pub(crate) fn run_due_thinks_with_profile_facts_until_next(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        walkable: impl Fn(MovementLocalPosition) -> bool,
+        summon_facts: impl FnMut(
+            &ChannelRuntimeV1,
+            ProfileScheduleInput<'_>,
+        ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
+    ) -> (Vec<(ExactActorRef, ThinkReport)>, Option<u64>) {
         let (taken, mut next) = self.take_due_bounded(now_us);
-        let reports =
-            self.run_taken_thinks(runtime, &taken, now_us, root, revisions, players, walkable);
+        let reports = self.run_taken_thinks(
+            runtime,
+            &taken,
+            now_us,
+            root,
+            revisions,
+            players,
+            walkable,
+            summon_facts,
+        );
         for actor in taken {
             if let Some(due) = self.due(actor) {
                 next = Some(next.map_or(due, |next| next.min(due)));
@@ -293,6 +333,10 @@ impl CreatureAiTable {
         revisions: &RevisionSet,
         players: &[TargetCandidate],
         walkable: impl Fn(MovementLocalPosition) -> bool,
+        mut summon_facts: impl FnMut(
+            &ChannelRuntimeV1,
+            ProfileScheduleInput<'_>,
+        ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
     ) -> Vec<(ExactActorRef, ThinkReport)> {
         let mut reports = Vec::new();
         for &actor in taken {
@@ -316,10 +360,15 @@ impl CreatureAiTable {
                 root,
                 revisions,
             };
-            let report = self.think(actor, &facts, |destination| {
-                walkable(destination)
-                    && runtime.position_occupied_by_other(actor, destination) == Ok(false)
-            });
+            let report = self.think_with_summon_facts(
+                actor,
+                &facts,
+                |destination| {
+                    walkable(destination)
+                        && runtime.position_occupied_by_other(actor, destination) == Ok(false)
+                },
+                |input| summon_facts(runtime, input),
+            );
             let Some(Ok(report)) = report else {
                 continue;
             };

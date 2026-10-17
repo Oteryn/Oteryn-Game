@@ -754,3 +754,132 @@ fn wander_steps_near_the_anchor_only_while_a_player_is_perceived() {
         assert!(report.idle && report.step.is_none());
     }
 }
+
+fn summon_think_profile() -> CreatureBehaviourProfile {
+    let mut value = serde_json::to_value(behavior(
+        rat_targeting(),
+        vec![entry("bolt", 1000, 3)],
+        vec![],
+        None,
+    ))
+    .expect("behavior");
+    value["summons"] = json!({"max_summons":2,"entries":[{"creature":{"family":"Creature","key":"oteryn:creature.rat","revision":"definition-r1"},"interval_ms":1000,"chance_ppm":1000000,"count":2}]});
+    let value = serde_json::from_value(value).expect("summon behavior");
+    CreatureBehaviourProfile::project_with_summons(Some(&value), &abilities())
+        .expect("summon projection")
+}
+
+#[test]
+fn one_think_selects_target_then_schedules_ability_and_summon_once_and_replays_both() {
+    let clock = Facts::new();
+    let players = [player(100, at(103, 101))];
+    let facts = clock.at(at(100, 100), 20, &players, 0);
+    let mut state = CreatureAiState::new(rat(), summon_think_profile(), at(100, 100));
+    let calls = std::cell::Cell::new(0);
+    let selected = std::cell::Cell::new(None);
+    let report = state
+        .think_with_summon_facts(
+            1,
+            &facts,
+            |_| true,
+            |input| {
+                calls.set(calls.get() + 1);
+                selected.set(input.target.map(|target| target.actor));
+                Ok(Some(MonsterSummonFacts {
+                    occurrence: input.occurrence,
+                    is_summon: false,
+                    target_with_path: input.target.map(|target| target.actor),
+                    total_count: 0,
+                    entry_counts: vec![profile_schedule::ObservedSummonCount {
+                        creature: input.behavior.summons.as_ref().expect("summons").entries[0]
+                            .creature
+                            .clone(),
+                        count: 0,
+                    }],
+                }))
+            },
+        )
+        .expect("think");
+    assert_eq!(calls.get(), 1);
+    assert_eq!(selected.get(), report.target);
+    assert_eq!(report.proposals.len(), 1);
+    assert_eq!(report.summon_proposals.len(), 1);
+    assert_eq!(
+        report.summon_proposals[0].occurrence,
+        ThinkOccurrence {
+            actor: rat(),
+            sequence: 1
+        }
+    );
+    assert_eq!(
+        report.summon_proposals[0].target_with_path,
+        report.target.expect("target")
+    );
+    assert_eq!(report.units, 5); // base + perceived + eligible + attack + summon
+    let replay = state
+        .think_with_summon_facts(
+            1,
+            &facts,
+            |_| false,
+            |_| {
+                calls.set(calls.get() + 1);
+                Err(ScheduleError::InvalidSummonFacts)
+            },
+        )
+        .expect("recorded replay");
+    assert_eq!(replay, report);
+    assert_eq!(
+        calls.get(),
+        1,
+        "replay reads no newer facts and schedules no second draw"
+    );
+}
+
+#[test]
+fn unwired_or_refused_summon_facts_report_no_partial_schedule_proposals() {
+    let clock = Facts::new();
+    let players = [player(100, at(103, 101))];
+    let facts = clock.at(at(100, 100), 20, &players, 0);
+    let mut missing = CreatureAiState::new(rat(), summon_think_profile(), at(100, 100));
+    let report = missing.think(1, &facts, |_| true).expect("think");
+    assert_eq!(report.refusal, Some(ScheduleError::SummonClockDependency));
+    assert!(report.proposals.is_empty() && report.summon_proposals.is_empty());
+    let mut refused = CreatureAiState::new(rat(), summon_think_profile(), at(100, 100));
+    let report = refused
+        .think_with_summon_facts(
+            1,
+            &facts,
+            |_| true,
+            |_| Err(ScheduleError::InvalidSummonFacts),
+        )
+        .expect("think");
+    assert_eq!(report.refusal, Some(ScheduleError::InvalidSummonFacts));
+    assert!(report.proposals.is_empty() && report.summon_proposals.is_empty());
+}
+
+#[test]
+fn summon_entry_evaluation_is_charged_before_reading_owner_facts() {
+    let clock = Facts::new();
+    let players = (0..63)
+        .map(|n| player(100 + n, at(103, 101)))
+        .collect::<Vec<_>>();
+    let facts = clock.at(at(100, 100), 20, &players, 0);
+    let mut state = CreatureAiState::new(rat(), summon_think_profile(), at(100, 100));
+    let read = std::cell::Cell::new(false);
+    let report = state
+        .think_with_summon_facts(
+            1,
+            &facts,
+            |_| true,
+            |_| {
+                read.set(true);
+                Ok(None)
+            },
+        )
+        .expect("overbudget");
+    assert!(report.over_budget);
+    assert_eq!(report.units, 129);
+    assert!(!read.get());
+    assert!(report.proposals.is_empty() && report.summon_proposals.is_empty());
+    assert_eq!(state.target(), None);
+}

@@ -57,7 +57,8 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 use profile_schedule::{
-    AttackTarget, ProfileAbilityProposal, ProfileScheduleState, ScheduleError, decision_occurrence,
+    AttackTarget, MonsterSummonFacts, ProfileAbilityProposal, ProfileScheduleInput,
+    ProfileScheduleState, ProfileSummonProposal, ScheduleError, decision_occurrence,
 };
 use targeting::{Strategy, TargetCandidate};
 
@@ -134,6 +135,8 @@ pub struct ThinkReport {
     pub step: Option<CreatureStep>,
     /// Due and drawn non-melee entries, at most `CREATUREAI0-RL-07`.
     pub proposals: Vec<ProfileAbilityProposal>,
+    /// Due summon requests from this same schedule pass; never actor-admission authority.
+    pub summon_proposals: Vec<ProfileSummonProposal>,
     pub refusal: Option<ScheduleError>,
     pub fleeing: bool,
     /// §2.1 item 1: nothing perceived, no target and no active condition; no next think.
@@ -237,6 +240,21 @@ impl CreatureAiState {
         facts: &CreatureThinkFacts<'_>,
         admits: impl Fn(MovementLocalPosition) -> bool,
     ) -> Result<ThinkReport, ThinkError> {
+        self.think_with_summon_facts(sequence, facts, admits, |_| Ok(None))
+    }
+
+    /// One target-selection and one schedule pass. The owning caller may read current native
+    /// summon counts/path after seeing this occurrence and its actually selected target.
+    /// Neither supplied facts nor returned proposals grant physical admission authority.
+    pub(crate) fn think_with_summon_facts(
+        &mut self,
+        sequence: u64,
+        facts: &CreatureThinkFacts<'_>,
+        admits: impl Fn(MovementLocalPosition) -> bool,
+        summon_facts: impl FnOnce(
+            ProfileScheduleInput<'_>,
+        ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
+    ) -> Result<ThinkReport, ThinkError> {
         if let Some(last) = &self.last {
             if sequence < last.sequence {
                 return Err(ThinkError::OccurrenceSuperseded);
@@ -253,7 +271,16 @@ impl CreatureAiState {
             .filter(|candidate| targeting::is_eligible(targeting, position, candidate))
             .copied()
             .collect::<Vec<_>>();
-        let units = 1 + perceived.len() + eligible.len() + self.profile.entry_count();
+        let units = 1
+            + perceived.len()
+            + eligible.len()
+            + self.profile.entry_count()
+            + self
+                .profile
+                .behavior()
+                .summons
+                .as_ref()
+                .map_or(0, |summons| summons.entries.len());
         if units > CREATUREAI0_EVALUATION_UNITS_PER_THINK {
             return Ok(ThinkReport {
                 sequence,
@@ -261,6 +288,7 @@ impl CreatureAiState {
                 target_changed: false,
                 step: None,
                 proposals: Vec::new(),
+                summon_proposals: Vec::new(),
                 refusal: None,
                 fleeing: false,
                 idle: false,
@@ -439,16 +467,19 @@ impl CreatureAiState {
                 u16::try_from(targeting::plane_distance(position, at)).unwrap_or(u16::MAX)
             }),
         });
-        let (proposals, refusal) = match self.schedule.prepare(
+        let input = ProfileScheduleInput {
             occurrence,
-            self.profile.behavior(),
-            self.profile.abilities(),
-            attack_target,
-            facts.revisions,
-            facts.root,
-        ) {
-            Ok(plan) => (plan.proposals, None),
-            Err(error) => (Vec::new(), Some(error)),
+            behavior: self.profile.behavior(),
+            abilities: self.profile.abilities(),
+            target: attack_target,
+            revisions: facts.revisions,
+            root: facts.root,
+        };
+        let plan = summon_facts(input)
+            .and_then(|current| self.schedule.prepare_with_summons(input, current.as_ref()));
+        let (proposals, summon_proposals, refusal) = match plan {
+            Ok(plan) => (plan.proposals, plan.summon_proposals, None),
+            Err(error) => (Vec::new(), Vec::new(), Some(error)),
         };
 
         let report = ThinkReport {
@@ -457,6 +488,7 @@ impl CreatureAiState {
             target_changed,
             step,
             proposals,
+            summon_proposals,
             refusal,
             fleeing,
             idle: perceived.is_empty() && target.is_none() && !facts.has_active_condition,
@@ -615,9 +647,23 @@ impl CreatureAiTable {
         facts: &CreatureThinkFacts<'_>,
         admits: impl Fn(MovementLocalPosition) -> bool,
     ) -> Option<Result<ThinkReport, ThinkError>> {
+        self.think_with_summon_facts(actor, facts, admits, |_| Ok(None))
+    }
+
+    pub(crate) fn think_with_summon_facts(
+        &mut self,
+        actor: ExactActorRef,
+        facts: &CreatureThinkFacts<'_>,
+        admits: impl Fn(MovementLocalPosition) -> bool,
+        summon_facts: impl FnOnce(
+            ProfileScheduleInput<'_>,
+        ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
+    ) -> Option<Result<ThinkReport, ThinkError>> {
         let entry = self.entry_mut(actor)?;
         let sequence = entry.sequence.saturating_add(1);
-        let report = entry.state.think(sequence, facts, admits);
+        let report = entry
+            .state
+            .think_with_summon_facts(sequence, facts, admits, summon_facts);
         let next = facts
             .now_us
             .saturating_add(CREATURE_THINK_INTERVAL_MILLIS.saturating_mul(1_000));
