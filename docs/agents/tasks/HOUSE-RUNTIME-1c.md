@@ -22,7 +22,96 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
-## 2026-10-17 D1366 NON-PG correction — current checkpoint
+## 2026-10-17 published storage receipt and D1420 rerun boundary
+
+The storage/source checkpoint is published at exact commit
+`80a7c5830b291b9fdda405c596706f90852fb5d1`, sole parent
+`ca7e1c0ffea4a3c3ea27f63bc866770663ac04de`, tree
+`a36b0925ece0373b0a37a51b6519bca5d2903e03`.
+The authoritative ref, parent/tree and complete three-file publication were read back.
+The two source files were independently fetched again from that pinned commit for this
+receipt and matched their Git blobs. This successor changes only this already-owned
+record. It does not modify Rust, Cargo, migrations, registry lines or runtime behavior.
+
+**Current native disposition: D1420 REQUALIFICATION_REQUIRED.**
+[CP D1420](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6239666536)
+requires a timestamp touch of each changed crate's own `src/lib.rs`, at minimum
+`apps/game-server/src/lib.rs`, inside the canonical heavy-lock lease before **every**
+Cargo command. Its rule requires a repeat of native results that lack that step.
+The earlier #2166 runner did not record the required touch. Its successful execution
+below is retained as historical evidence and is not counted as current D1420 native
+qualification. No D1420 repeat has been executed for this card successor.
+
+### Historical exact-head execution, preserved separately from the new gate
+
+The [previously recorded native receipt](https://github.com/Oteryn/Oteryn-Game/pull/2166)
+belongs to the clean, separately fetched `80a7c583` worktree on Molehill-PC,
+WSL Ubuntu-24.04, slot C, beginning 2026-10-17 at 13:26:50 UTC.
+The controlled envless run produced exactly **eight PRE-ROUTING / NONCANONICAL
+messages and zero PostgreSQL qualification markers**. It executed no PG case body;
+this routing result is never a PostgreSQL PASS. The following configured shared
+PostgreSQL17.6 run recorded **8 passed, 0 failed, 0 ignored**, with eight qualification
+markers after removal of the tests' own databases. Build/link took 1m45s and the
+configured cases took 15.55s. The root-recorded receipt confirmed unchanged source
+hashes, tracked files and clean HEAD after both runs.
+
+| Historical artifact | Recorded SHA256 |
+| --- | --- |
+| Controlled envless log | `4e61c6426392e027673695c0487724e2c257d104b43d47d90f02fe987e594dcf` |
+| Configured PG log | `d56a537849de3f1bc9e133978ff90e71c1c5ae9646b3b8952813ca4bddf18b12` |
+| Native result | `f38d10024fa50920398f239fe76b1bbc96093c2e76620834be2b7e1ad70d39d3` |
+
+These identities and results are preserved from the root's existing independently
+read-back receipt in the published PR description. This card update does not claim a
+new read of those raw logs, a new native run, or inherited qualification of a later
+commit. The source manifests have equal file hashes but different metadata fields;
+the receipt does not claim the two manifest files have identical raw bytes.
+
+### Current source and checks
+
+| Check | Disposition |
+| --- | --- |
+| Published D1366 source and three-file readback | PASS at exact `80a7c583`; sole parent/tree and complete file identities recorded above. |
+| D1366 configured branch and Cargo EOF | The native case/cleanup suffix stays unchanged by the envless routing fix; `test = false` and one final Cargo newline remain installed. This card does not change either file. |
+| Controlled envless execution | Historical eight PRE-ROUTING results retained; D1420 repeat required. Zero PG execution is never counted as PG qualification. |
+| Configured native PG17.6 execution | Historical eight cases/eight cleanup markers retained; current native qualification requires the D1420 repeat. |
+| GitHub checks at `80a7c583` | Fresh readback: 18 successful and 2 skipped latest checks by check name; zero failed or running. These are this source commit's checks, not a future card successor's CI. |
+| Complete House runtime | NOT_FULLY_QUALIFIED: actual placement, dirty capture, final House terminal write, fallback and admission/lifecycle ownership remain open. |
+
+The [canonical GitHub PostgreSQL job 117407375221](https://github.com/Oteryn/Oteryn-Game/actions/runs/39036511782/job/117407375221)
+is recorded as SUCCESS on `80a7c583`. Its prior receipt records all four registered
+targets (1274, 1580, 1151 and 1143 cases), including all eight House-position cases.
+The current check-state readback confirms that completed job and successful NON-PG
+integration/routing checks. No workflow or policy file changes are part of this card.
+
+Pinned source identities from the fresh full-content readback:
+
+- `apps/game-server/Cargo.toml`: 4569 bytes; Git blob `6024c23eb9e3e08874d25ba49549706c79c836ec`; SHA256 `559664be4f312bfed1fdae7b6683602af2ab67888c0604e21f32c4568204067b`.
+- `apps/game-server/tests/support/house_runtime_position_postgres_cases.rs`: 54645 bytes; Git blob `40b70a76197282403cf76218f5d7a7425ed41713`; SHA256 `f521f41d01008d6c2e69704cc39df03704d7ae7212ff1841e2a902fa786d042d`.
+
+### Dependency and next native work
+
+The actual order remains **#2181 → #2166 → #2187** under
+[D1405](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237275201).
+The fresh GitHub readback confirms #2181 is still **open and unmerged** at
+`cf0bf62ad333df8091b6c536f5829d96a124856d`. A merge of main into that PR is not its
+merge into main. After #2181 actually lands, CP must perform the prescribed ordinary
+main integration, resolve the owned aggregate line, and re-cite the new #2166 head
+and aggregate blob. No shared slot is opened by this documentation update.
+
+The D1420 native repeat must keep the existing exact-source/HEAD and resource guards,
+use one granted canonical Ubuntu/mole lock lease, touch the own crate entrypoint
+before each locked fetch/LIST/execution command, and keep the envless and configured
+runs distinct. D1329 still requires the existing shared PostgreSQL17.6 service and
+`in-pg-netns.sh`, locked fetch first, exact own-database cleanup and no server/container
+creation. The actual House runtime integration remains a separate acceptance gate.
+Ready, review triggers and merge remain CP-owned.
+
+The D1366 authoring checkpoint below is historical. Its PENDING entries describe the
+state before publication; the receipt above records what subsequently ran and the
+new D1420 boundary. All older source/recovery archives remain byte-identical.
+
+## Historical 2026-10-17 D1366 NON-PG authoring checkpoint
 
 The predecessor of this correction is the published and fully read-back source checkpoint
 `ca7e1c0ffea4a3c3ea27f63bc866770663ac04de`, tree
