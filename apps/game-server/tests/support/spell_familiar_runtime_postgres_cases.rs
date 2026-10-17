@@ -517,6 +517,25 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
 #[test]
 fn familiar_expiry_closes_the_durable_row_before_the_despawn() -> TestResult {
     run("familiar_expiry_close", async |h| {
+        familiar_end_closes_the_durable_row_before_the_despawn(h, false).await
+    })
+}
+
+/// #2199 Codex P1 4303261095 (FAMILIARS0 §7: owner dies, removed, 0): the owner's death ends
+/// its live familiar exactly as an expiry does, through the fenced lifecycle writer (row
+/// closed, remaining 0) before the despawn; the familiar stays present until that commit.
+#[test]
+fn familiar_owner_death_closes_the_durable_row_before_the_despawn() -> TestResult {
+    run("familiar_owner_death_close", async |h| {
+        familiar_end_closes_the_durable_row_before_the_despawn(h, true).await
+    })
+}
+
+async fn familiar_end_closes_the_durable_row_before_the_despawn(
+    h: &Harness,
+    owner_death: bool,
+) -> TestResult {
+    {
         use crate::durability::character_familiar::{FamiliarLifecycleV2, FamiliarLifecycleWriter};
         use crate::foundation::owner_timer::SemanticTimeMicros;
         use crate::spell::companion_lifecycle::{
@@ -584,31 +603,39 @@ fn familiar_expiry_closes_the_durable_row_before_the_despawn() -> TestResult {
         let familiar = physical.install_companion_spawn(spawn).map_err(debug)?;
         let at = SemanticTimeMicros::from_micros(900_000_000);
         let stamp = physical.issue_owner_work().map_err(debug)?;
-        // Another lifecycle epoch never issues this expiry.
-        assert!(
-            FamiliarLifecycleBinding::from_due_expiry(
-                &physical,
-                knight_familiar_spell(&profile)?,
-                actor,
-                fence(2)?,
-                stamp,
-                at,
-                familiar,
-                open.lifecycle_epoch + 1,
-            )
-            .is_err()
-        );
-        let binding = FamiliarLifecycleBinding::from_due_expiry(
-            &physical,
-            knight_familiar_spell(&profile)?,
-            actor,
-            fence(2)?,
-            stamp,
-            at,
-            familiar,
-            open.lifecycle_epoch,
-        )
-        .map_err(debug)?;
+        let death = crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(122))
+            .map_err(debug)?;
+        let issue = |epoch: u64| -> TestResult<FamiliarLifecycleBinding> {
+            let spell = knight_familiar_spell(&profile)?;
+            let issued = if owner_death {
+                FamiliarLifecycleBinding::from_owner_death(
+                    &physical,
+                    spell,
+                    actor,
+                    fence(2)?,
+                    stamp,
+                    at,
+                    death,
+                    familiar,
+                    epoch,
+                )
+            } else {
+                FamiliarLifecycleBinding::from_due_expiry(
+                    &physical,
+                    spell,
+                    actor,
+                    fence(2)?,
+                    stamp,
+                    at,
+                    familiar,
+                    epoch,
+                )
+            };
+            issued.map_err(|e| debug(e).into())
+        };
+        // Another lifecycle epoch never issues this end.
+        assert!(issue(open.lifecycle_epoch + 1).is_err());
+        let binding = issue(open.lifecycle_epoch)?;
         // An expiry reads no Premium/level/config benefit input, as a death does.
         let current = FamiliarOwnerFacts {
             vocation: "knight".into(),
@@ -710,5 +737,5 @@ fn familiar_expiry_closes_the_durable_row_before_the_despawn() -> TestResult {
         );
         assert_eq!(snapshot(h).await?.0, "3");
         Ok(())
-    })
+    }
 }

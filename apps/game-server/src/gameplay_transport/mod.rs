@@ -3629,6 +3629,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             states.player_death(&runtime, actor, game_session_id)
         };
         if let Some(death) = death {
+            // #2199 Codex P1 4303261095 (FAMILIARS0 §7): the owner's death ends its live
+            // familiar (remaining 0) through the fenced lifecycle writer before the respawn; a
+            // failed write keeps the actor dead and the familiar present for the next tick.
+            if self
+                .end_familiars_at_owner_death(actor, game_session_id, death.occurrence)
+                .await
+                .is_err()
+            {
+                return None;
+            }
             return self
                 .respawn_after_death(actor, game_session_id, death)
                 .await;

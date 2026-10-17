@@ -2245,6 +2245,15 @@ pub(crate) enum FamiliarLifecycleOrigin {
         creature: ExactActorRef,
         lifecycle_epoch: u64,
     },
+    /// #2199 Codex P1 4303261095 (FAMILIARS0 §7: owner dies, removed, 0): the owner's death
+    /// `occurrence` ends this live familiar at this lifecycle epoch. The owner cadence issues
+    /// it before the respawn; the fenced lifecycle writer closes the row (remaining 0) before
+    /// the familiar is despawned, as an expiry does.
+    OwnerDeath {
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FamiliarLifecycleBinding {
@@ -2255,6 +2264,27 @@ pub(crate) struct FamiliarLifecycleBinding {
     stamp: crate::foundation::RuntimeWorkStamp,
     at: SemanticTimeMicros,
     origin: FamiliarLifecycleOrigin,
+}
+/// The live `creature` is `owner`'s familiar in `session` at `lifecycle_epoch`.
+fn live_owned_familiar(
+    runtime: &ChannelRuntimeV1,
+    owner: ExactActorRef,
+    session: GameSessionId,
+    creature: ExactActorRef,
+    lifecycle_epoch: u64,
+) -> Result<(), CompanionExecutionError> {
+    let live = runtime.companion_snapshot(creature)?;
+    if live.state.master
+        != Some(CompanionMaster {
+            actor: owner,
+            session,
+        })
+        || !live.state.policy.is_familiar
+        || live.state.lifecycle_epoch != lifecycle_epoch
+    {
+        return Err(CompanionExecutionError::SnapshotMismatch);
+    }
+    Ok(())
 }
 impl FamiliarLifecycleBinding {
     fn issue(
@@ -2417,17 +2447,13 @@ impl FamiliarLifecycleBinding {
         creature: ExactActorRef,
         lifecycle_epoch: u64,
     ) -> Result<Self, CompanionExecutionError> {
-        let live = runtime.companion_snapshot(creature)?;
-        if live.state.master
-            != Some(CompanionMaster {
-                actor: owner,
-                session: fence.game_session_id,
-            })
-            || !live.state.policy.is_familiar
-            || live.state.lifecycle_epoch != lifecycle_epoch
-        {
-            return Err(CompanionExecutionError::SnapshotMismatch);
-        }
+        live_owned_familiar(
+            runtime,
+            owner,
+            fence.game_session_id,
+            creature,
+            lifecycle_epoch,
+        )?;
         Self::issue(
             runtime,
             spell,
@@ -2436,6 +2462,45 @@ impl FamiliarLifecycleBinding {
             stamp,
             at,
             FamiliarLifecycleOrigin::Expiry {
+                creature,
+                lifecycle_epoch,
+            },
+        )
+    }
+    /// #2199 Codex P1 4303261095: invoked by the owner cadence for the owner's settled death
+    /// `occurrence` (the caller re-proves it under the owner lock) before the respawn. The live
+    /// familiar must still be this session's familiar at that lifecycle epoch.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
+    pub(crate) fn from_owner_death(
+        runtime: &ChannelRuntimeV1,
+        spell: CompiledNativeSpell,
+        owner: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        at: SemanticTimeMicros,
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    ) -> Result<Self, CompanionExecutionError> {
+        live_owned_familiar(
+            runtime,
+            owner,
+            fence.game_session_id,
+            creature,
+            lifecycle_epoch,
+        )?;
+        Self::issue(
+            runtime,
+            spell,
+            owner,
+            fence,
+            stamp,
+            at,
+            FamiliarLifecycleOrigin::OwnerDeath {
+                occurrence,
                 creature,
                 lifecycle_epoch,
             },
@@ -2719,6 +2784,19 @@ pub(crate) fn prepare_lifecycle_familiar(
         FamiliarLifecycleOrigin::Expiry {
             creature,
             lifecycle_epoch,
+        } => {
+            if *lifecycle_epoch != current.state.lifecycle_epoch {
+                return Err(CompanionExecutionError::SnapshotMismatch);
+            }
+            (FamiliarEvent::Expiry, Some(*creature))
+        }
+        // The owner's death removes its live familiar with remaining 0 (FAMILIARS0 §7), the
+        // same removal and closed row as an expiry; the source OwnerRemoval callback invokes
+        // no familiar death.
+        FamiliarLifecycleOrigin::OwnerDeath {
+            creature,
+            lifecycle_epoch,
+            ..
         } => {
             if *lifecycle_epoch != current.state.lifecycle_epoch {
                 return Err(CompanionExecutionError::SnapshotMismatch);

@@ -1579,6 +1579,14 @@ pub(crate) enum FamiliarOwnerEvent<'a> {
         creature: ExactActorRef,
         lifecycle_epoch: u64,
     },
+    /// #2199 Codex P1 4303261095: the owner's settled death `occurrence` ends this live
+    /// familiar before the respawn. The fenced lifecycle write closes its row (remaining 0)
+    /// before the despawn.
+    OwnerDeath {
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
 }
 fn matches_owner_event(
     binding: &crate::spell::companion_lifecycle::FamiliarLifecycleBinding,
@@ -1616,6 +1624,22 @@ fn matches_owner_event(
                 lifecycle_epoch: event_epoch,
             },
         ) => creature == event_creature && lifecycle_epoch == event_epoch,
+        (
+            Origin::OwnerDeath {
+                occurrence,
+                creature,
+                lifecycle_epoch,
+            },
+            FamiliarOwnerEvent::OwnerDeath {
+                occurrence: event_occurrence,
+                creature: event_creature,
+                lifecycle_epoch: event_epoch,
+            },
+        ) => {
+            occurrence == event_occurrence
+                && creature == event_creature
+                && lifecycle_epoch == event_epoch
+        }
         _ => false,
     }
 }
@@ -1659,6 +1683,16 @@ fn lifecycle_nonce(
             lifecycle_epoch,
         } => {
             hash.update([4]);
+            hash.update(creature.placement_identity());
+            hash.update(lifecycle_epoch.to_be_bytes());
+        }
+        Origin::OwnerDeath {
+            occurrence,
+            creature,
+            lifecycle_epoch,
+        } => {
+            hash.update([5]);
+            hash.update(occurrence.as_bytes());
             hash.update(creature.placement_identity());
             hash.update(lifecycle_epoch.to_be_bytes());
         }
@@ -1750,10 +1784,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prepared
         } else {
             let state = states.get(&runtime, actor, session).ok_or(())?;
-            // A death and an expiry end the familiar; neither reads a benefit (FAMILIARS0).
+            // A death, an expiry and the owner's death end the familiar; none reads a
+            // benefit (FAMILIARS0).
             let is_end = matches!(
                 event,
-                FamiliarOwnerEvent::Death(_) | FamiliarOwnerEvent::Expiry { .. }
+                FamiliarOwnerEvent::Death(_)
+                    | FamiliarOwnerEvent::Expiry { .. }
+                    | FamiliarOwnerEvent::OwnerDeath { .. }
             );
             let caster = if is_end {
                 None
@@ -1874,6 +1911,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     *creature,
                     *lifecycle_epoch,
                 ),
+                FamiliarOwnerEvent::OwnerDeath {
+                    occurrence,
+                    creature,
+                    lifecycle_epoch,
+                } => {
+                    // The owner is still dead of this occurrence under the held owner lock.
+                    if states
+                        .player_death(&runtime, actor, session)
+                        .map(|death| death.occurrence)
+                        != Some(*occurrence)
+                    {
+                        return Err(());
+                    }
+                    FamiliarLifecycleBinding::from_owner_death(
+                        &runtime,
+                        profile.clone(),
+                        actor,
+                        fence,
+                        stamp,
+                        at,
+                        *occurrence,
+                        *creature,
+                        *lifecycle_epoch,
+                    )
+                }
             }
             .map_err(|_| ())?;
             let familiar = prepare_lifecycle_familiar(

@@ -71,6 +71,18 @@ fn matches_replayed_familiar_profile(
     &saved == profile.spell()
 }
 
+/// #2199 Codex P1 4303261095: the live familiars the owner's death ends, each at its own
+/// lifecycle epoch. An ordinary summon writes no familiar row (FAMILIARS0 F-I1).
+fn owner_death_familiar_ends(
+    owned: &[crate::foundation::CompanionSnapshot],
+) -> Vec<(ExactActorRef, u64)> {
+    owned
+        .iter()
+        .filter(|c| c.state.policy.is_familiar && c.health > 0)
+        .map(|c| (c.actor, c.state.lifecycle_epoch))
+        .collect()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Periodic real owner issuer of familiar ends: deaths, then due lifetime expiries
     /// (#2199 Codex P2 4302737307). Each one commits through the fenced lifecycle writer
@@ -88,6 +100,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .drain_due_familiar_expiries(actor, session, access)
             .await;
         Ok(deaths? + expiries?)
+    }
+    /// #2199 Codex P1 4303261095 (FAMILIARS0 §7: owner dies, removed, 0): before the owner's
+    /// respawn, end each live familiar of this session for the owner's death `occurrence`
+    /// through the fenced lifecycle writer (remaining 0, row closed) and despawn it only after
+    /// that commit. `Err` is a failed or unknown write: the familiar stays present and the
+    /// caller keeps the owner dead, so the next cadence tick resumes the retained original.
+    /// Another familiar write already in flight settles on its own path and does not hold
+    /// the respawn.
+    pub(in crate::gameplay_transport) async fn end_familiars_at_owner_death(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+    ) -> Result<usize, ()> {
+        use crate::spell::companion_lifecycle::FamiliarLifecycleOrigin;
+        let ends = {
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            let retained = states
+                .pending_familiar_lifecycle
+                .iter()
+                .find(|p| p.actor == actor && p.session == session);
+            match retained.map(|p| p.familiar.binding().origin()) {
+                Some(FamiliarLifecycleOrigin::OwnerDeath {
+                    occurrence: retained_occurrence,
+                    creature,
+                    lifecycle_epoch,
+                }) if *retained_occurrence == occurrence => vec![(*creature, *lifecycle_epoch)],
+                Some(_) => return Ok(0),
+                None if states.has_pending_familiar(actor, session) => return Ok(0),
+                None => owner_death_familiar_ends(
+                    &runtime.owned_companions(actor, session).map_err(|_| ())?,
+                ),
+            }
+        };
+        let mut completed = 0;
+        for (creature, lifecycle_epoch) in ends {
+            if self
+                .dispatch_familiar_owner_event(
+                    actor,
+                    session,
+                    FamiliarOwnerEvent::OwnerDeath {
+                        occurrence,
+                        creature,
+                        lifecycle_epoch,
+                    },
+                    &super::super::super::spell_access_facts::UnavailableAccessOwner,
+                )
+                .await?
+                .is_some()
+            {
+                completed += 1;
+            }
+        }
+        Ok(completed)
     }
     /// #2199 Codex P2 4302737307: the owner-cadence end of a familiar whose lifetime the
     /// actual timer lane found due. The lane never despawns it; this writes the closed row
@@ -669,7 +736,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if matches!(
             event,
-            FamiliarOwnerEvent::Death(_) | FamiliarOwnerEvent::Expiry { .. }
+            FamiliarOwnerEvent::Death(_)
+                | FamiliarOwnerEvent::Expiry { .. }
+                | FamiliarOwnerEvent::OwnerDeath { .. }
         ) {
             let owned = self
                 .read_familiar_lifecycle_inputs(
