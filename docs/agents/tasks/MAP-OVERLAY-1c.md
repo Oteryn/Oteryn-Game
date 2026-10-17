@@ -152,7 +152,7 @@ Third of MAP-OVERLAY-1a -> 1b -> 1c; releases MAP-CUTOVER-1c.
 | Dependency | State |
 |---|---|
 | MAP-OVERLAY-1b | MERGED (#1809) |
-| HOUSE-RUNTIME-1a | BLOCKING (not merged) |
+| HOUSE-RUNTIME-1a | MERGED (#2163, cecbfda3); real HouseInterior positive case waits for the CP slot that enables `world_reset_postgres` |
 
 Rows marked BLOCKING must merge (or be accepted/decided) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 

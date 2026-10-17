@@ -33,7 +33,7 @@ class AcceptedOverlayTests(unittest.TestCase):
     def test_registration_replays_all_current_outputs(self):
         import register_spell_families
         actual=register_spell_families.outputs(ROOT)
-        self.assertEqual(len(actual),33)
+        self.assertEqual(len(actual),36)
         for path,data in actual.items():
             self.assertEqual(data,(ROOT/path).read_bytes(),path)
     def test_adopted_qualification_tamper_is_refused(self):
