@@ -1,7 +1,7 @@
 # HOUSE-OWN-0 House ownership
 
 - Decision: `HOUSE-OWN0-PHYSICAL-HOUSE-OWNERSHIP-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) through the control plane (D551, owner answer 1a), recorded by the acceptance PR (`ACCEPT-SOCIAL-MAP-0`, `OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md`); status line reconciled 2026-10-15 (ACCEPT-BATCH-2026-10-15); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
   economy, security and protocol) and protected integration. It builds on BANK-0 and BANK-FEE-0
   (both on `main`), MARKET-0 (PR #1367, `CharacterInbox`) and HOUSE-CUSTODY-0, and integrates after
   #1367. Owner
