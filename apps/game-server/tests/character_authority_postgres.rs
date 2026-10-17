@@ -713,6 +713,17 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(facts.oldest_undelivered_ms, None);
 
+    // GAME-PUBLIC-PROJ-PRODUCER-1: the public projections' store reads over the same
+    // bootstrap and reconciled authority.
+    public_projections_postgres_cases::bootstrap_reads(
+        &root,
+        &authority,
+        &pool,
+        &uuid(*first.character_id.as_bytes()),
+        &uuid(id(90)),
+    )
+    .await?;
+
     // A superseded incarnation cannot mutate; its successor can.
     allow(&root, &node, 33).await?;
     let successor = register(&root, 2, Some(1)).await?;
@@ -2301,6 +2312,11 @@ mod bestiary_postgres_harness;
 #[path = "support/bestiary_progress_postgres_cases.rs"]
 mod bestiary_progress_postgres_cases;
 
+// LOOP-GROUND-1 Ground64 same-transaction admission (pure and native PostgreSQL
+// cases) on the CHARM-2 harness included above; its only test mount.
+#[path = "../src/durability/ground_cell_limit_tests.rs"]
+mod ground_cell_limit_tests;
+
 // ACHIEVEMENT step 3 account facts (migration 0021) share their cases with the
 // focused standalone target through the same protected lane, on the CHARM-2
 // harness included above.
@@ -2311,6 +2327,11 @@ mod account_achievement_postgres_cases;
 // share their cases with the protected PostgreSQL lane.
 #[path = "support/account_characters_projection_postgres_cases.rs"]
 mod account_characters_projection_postgres_cases;
+
+// GAME-PUBLIC-PROJ-PRODUCER-1 public projections (migration 0091): outboxes, epoch, guards,
+// resync and least privilege, plus the store reads `bootstrap_audit_flow` runs.
+#[path = "support/public_projections_postgres_cases.rs"]
+mod public_projections_postgres_cases;
 
 // PREM-1a Premium consumer fence (migration 0029) runs in the same protected lane, on the
 // CHARM-2 harness included above.
@@ -3053,6 +3074,11 @@ mod item_fee_burn_postgres_cases;
 mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
+
+#[path = "support/mail_postgres_cases.rs"]
+mod mail_postgres_cases;
 
 #[path = "support/market_postgres_cases.rs"]
 mod market_postgres_cases;
@@ -3383,3 +3409,19 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
+
+#[path = "support/familiar_versioned_lifecycle_postgres_cases.rs"]
+mod familiar_versioned_lifecycle_postgres_cases;
+#[path = "support/house_interior_postgres_cases.rs"]
+mod house_interior_postgres_cases;
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;
+#[path = "support/pvp_readmission_postgres_cases.rs"]
+mod pvp_readmission_postgres_cases;
+
+// D1112 APP-1 installed storage and native authority cases share their cases with the focused
+// standalone targets through the same protected lane, on the Bestiary harness included above.
+#[path = "support/character_appearance_native_postgres_cases.rs"]
+mod character_appearance_native_postgres_cases;
+#[path = "support/character_appearance_postgres_cases.rs"]
+mod character_appearance_postgres_cases;

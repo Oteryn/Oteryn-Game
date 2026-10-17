@@ -1,7 +1,7 @@
 # PREY-0 Prey and Hunting Tasks
 
 - Decision: `PREY0-PREY-AND-HUNTING-TASKS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
   economy, combat and protocol) and protected integration. R1-R4 (§14) are architect rulings;
   owner questions Y1-Y3 (§15) are answered and binding: Y1 a and Y3 a (owner, 2026-09-30, #162);
   Y2 c, Account-wide (owner, 2026-10-01, D251).
