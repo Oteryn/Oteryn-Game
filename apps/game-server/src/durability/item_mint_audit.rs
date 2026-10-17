@@ -338,13 +338,21 @@ pub enum OneItemOperationV1 {
     NpcTrade(super::npc_trade_audit::OneItemNpcTradeV1),
     #[prost(message, tag = "10")]
     ItemUse(super::item_use_audit::OneItemUseV1),
+    #[prost(message, tag = "11")]
+    HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
+    // Private Imbue continuation allocation; existing HOUSE operation 11 is unchanged.
+    #[prost(message, tag = "12")]
+    ImbuementExpiry(super::imbuement_expiry_audit::OneItemImbuementExpiryV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransactionV1 {
     #[prost(uint32, tag = "1")]
     pub interpretation_revision: u32,
-    #[prost(oneof = "OneItemOperationV1", tags = "2, 3, 4, 5, 6, 7, 8, 9, 10")]
+    #[prost(
+        oneof = "OneItemOperationV1",
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
+    )]
     pub operation: Option<OneItemOperationV1>,
 }
 
@@ -1936,6 +1944,8 @@ pub(super) mod tests {
         assert_eq!(
             sites,
             [
+                "src/durability/house_interior.rs",
+                "src/durability/imbuement_expiry.rs",
                 "src/durability/item_decay_retire.rs",
                 "src/durability/item_fee_burn.rs",
                 "src/durability/item_mint.rs",

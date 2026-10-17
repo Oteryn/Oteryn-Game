@@ -13,6 +13,10 @@ mod monster_lab;
 #[path = "durability/imbuement_tests.rs"]
 mod imbuement_tests;
 
+#[cfg(test)]
+#[path = "durability/imbuement_expiry_audit_tests.rs"]
+mod imbuement_expiry_audit_tests;
+
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
@@ -853,3 +857,7 @@ mod creature_icicle;
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]
 mod creature_source_items;
+
+// D1287: selection-source component tests, without a production runtime caller.
+#[cfg(test)]
+mod world_change;

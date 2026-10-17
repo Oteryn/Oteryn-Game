@@ -731,3 +731,7 @@ fn private_native_storage_current_owner_maximum_is_nine_equipped_items_not_a_fab
         Ok(())
     })
 }
+
+// Audited zero-row expiry cases use this same canonical native PostgreSQL harness.
+#[path = "../../tests/support/imbuement_expiry_postgres_cases.rs"]
+mod expiry;

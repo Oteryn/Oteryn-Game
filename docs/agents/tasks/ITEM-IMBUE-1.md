@@ -657,3 +657,115 @@ The separate native Expire implementation remains a reviewed continuation with
 its own unexecuted source packet. Its results are not included above. Apply,
 Clear, genuine elapsed provenance, Content and runtime admission and the final
 composed migration binding remain distinct completion dependencies.
+
+
+## 2026-10-17 private audited Expire continuation (native execution pending)
+
+Separate from the coordinator's frozen slot/registration repair on
+`4d0da90807c4a886008f738db221bc2aedfc7933`, the continuation now contains a native
+`expire_imbuement_in_transaction` compositor for exactly one already-zero retained
+slot. It obtains the actual recovery/root/node/session/lease/World/Channel/Content
+/equipment fences in a native `Type2Transaction`, compares every retained binding
+field, and uses a savepoint for receipt, real DELETE witness and one type-2 audit.
+The exact ItemInstance, equipment location/revision and CharacterRevision remain
+unchanged. Exact replay is read-only; changed binding/occurrence/identity conflicts.
+The proposed SQL preserves the checkpoint UPDATE predicate and admits only a
+fresh, witnessed deletion of the exact zero row. Bare deletion, forged witness
+and an old physical transaction's receipt reject.
+
+The private review packet proposes operation 12 `imbuement_expiry` under the
+current root single-writer binding, preserving HOUSE operation 11 on composition.
+Existing type-2 schema/retention tuples and P90D are unchanged. Three pure audit
+cases have a single library mount; eight native PG cases have a single mount in
+the existing canonical Character-authority target. All previous 14 pure and 10 PG
+cases and fixture bodies are preserved. No duplicate-source allowlist, workflow
+or Cargo target is widened. Proposed resource children bound one slot, three
+child evidence rows, four mutation work units and the inherited 7,936/9,216-byte
+encoding ceilings. Actual maximal Prost measurements remain pending.
+
+This is AUTHORING for an uninstalled native producer, with independent source
+review, Rustfmt, Clippy, Cargo dep-info registration check and native RED/GREEN
+all pending for the continuation until exact-source receipts are attached. The
+RED recipe restores only the old checkpoint DELETE refusal while retaining the
+same real new success test; no missing URL or zero-test execution counts as PASS.
+Root alone runs the authorized PC qualification under D1329's existing shared
+PostgreSQL17.6 namespace wrapper, without starting another server/container.
+
+The actual installation choice still to bind is the shared successor migration
+and its composition after the retained-row schema; this packet assigns no
+migration number, production grant, Root/transport entrypoint or runtime admission.
+Apply/Clear still need a true item-only fee producer; #2197's current visibility
+changes do not provide one. The merged #2155 timed planner does not provide
+Imbue-eligible elapsed-time authority. This Expire step consumes stored zero DATA
+and makes neither claim. Content/catalogue/Quest admission and gameplay activation
+remain governed by their existing accepted gates.
+
+## 2026-10-17 native audited Expire qualification on composed main
+
+This receipt supersedes the continuation's native-execution-pending checkpoint
+above for the exact qualified source. The existing draft head
+`f7fbfd8bc922cbb055dc6469005a5ad67a45ba60` was composed with main
+`f010472bcb6794a2cbc56dfaf755bd122c10225e` in private qualification commit
+`742a8b7df93b8da169878c5377b0f95331726ce9`; its base tree is
+`86666d65f24173d6fb573d05eb6c28cb655f15b7`. The actual PC export contains all
+14 formatted source files and the complete 11-entry main-to-private-base
+composition. Its uncompressed JSON SHA-256 is
+`959cc5abd1d6d9bbe112ffa45c05c74e41042f084d30e4c67869d280fa555ea7`.
+Root reconstructed that entire base tree through the repository API and
+confirmed the same tree identity before publication. Existing main/HOUSE
+operation 11, producer registration and contract entries are retained; the
+owned Expire operation 12 is additive.
+
+Rust 1.95.0 formatting, workspace fmt check, governance, strict all-target Clippy
+and the actual Cargo dep-info duplicate-source guard qualified this source.
+The guard observed 55 test-harness units without adding an exception. The
+3 new library audit cases and all 14 existing pure cases passed. Native testing
+also ran the eight new Expire and all ten retained checkpoint PostgreSQL cases
+with the actual PostgreSQL 17.6 setup (server_version_num=170006). The dedicated
+route is separate evidence from ordinary package cases that report an absent
+PostgreSQL URL; those cases do not establish database coverage.
+
+The SQL regression restored only the checkpoint's former DELETE refusal and
+ran the exact new success case
+`native_expiry_removes_only_zero_slot_and_preserves_item_character_and_other_bindings`.
+It failed as intended with exit 101 and SQLSTATE 23514. The runner then restored
+the complete GREEN SQL, Git blob `24dde656be3b53cfbcddfd5349cda723024ccb29`, before
+executing both successful actual PostgreSQL groups. No fake row, fee source,
+elapsed-time authority, relaxed guard or test-ignore path substitutes for the
+native compositor in these tests.
+
+| Qualified operation | Result | SHA-256 of complete log |
+| --- | --- | --- |
+| Strict native Clippy | PASS | `2f44fa1bb174930619cc9772a935f0743207f72a91411cf8065e161e71b0dc10` |
+| Actual dep-info duplicate-source guard | PASS, 55 harness units | `466c2037f51ba756d6b9e0f50a3b3d475bb97def0476b5ad19a99d8ef670b58e` |
+| New audit pure | 3 passed, 0 failed, 0 ignored | `8663a9c6fd1b5a5ba032fa6931f9e1ded3b7a15b742728f9c4cce7d097d21c94` |
+| Existing pure | 14 passed, 0 failed, 0 ignored | `d4343c105048f7dd7530cb30a4e20692bd14216cf08916882563adc55e2a3f9b` |
+| Actual SQL RED | One intended failure, exit 101, SQLSTATE 23514 | `47d2a999d0f7edb64831a7647fd8c0ff55f9a36ac27be5d35cf7b5a14a517247` |
+| New native PG | 8 passed, 0 failed, 0 ignored; PostgreSQL170006 | `0276c51167bb0c9b80f9351dc13c5045742a6376cf53d00e0ec4cd69b3d464e6` |
+| Existing native PG | 10 passed, 0 failed, 0 ignored; PostgreSQL170006 | `b0ddceca784896e9272d16dd7301824107f7d9c691f29d8eccccaba69f036b54` |
+| Full normal package | 10,275 passed, 0 failed, 37 ignored; 57 groups | `85d5da6515a61869f6be4bce43cb40cb4de772fb9af735aa66462eb469cd60b3` |
+
+The final attempt receipt bundle SHA-256 is `a6d4f70e3acfb23b0fd26791f19fe5263d74ee4eacd35ebff03cd4508b6b6352`. Root confirmed the
+qualified 14-file GREEN snapshot still matched this export at completion;
+that source receipt is `25320706bbc058d8a9f5c3bd90319a75ecab80d4dad776f061d624f792dcd3f0`. The captured qualified source
+tree is `bbccf6461bcfb84eb6ce6c2ec050387d66dbba81`. This documentation
+append is the sole change made after that source export: all 13 non-card source
+files are byte-identical to the qualified payload, and the prior card remains
+an exact prefix. The documentation delta requires its own governance result before publication;
+it does not rewrite native source receipts.
+
+D1329 execution used a locked dependency fetch before the exact owner-provided
+in-pg-netns.sh route to the existing shared PostgreSQL17.6 at host
+127.0.0.1:55432. This work started no PostgreSQL server or container. Each feature
+used its own Cargo target directory, and SQL RED restoration and qualification
+were serialized under the task's feature build lock.
+
+The accepted result here is the tested, auditable retained-zero-row Expire
+producer and its proposed SQL proof arm. Installation still requires the
+correct shared successor migration binding and the accepted production grants;
+no migration number, transport admission or runtime activation is assigned by
+this receipt. Apply/Clear still require the actual item-only fee producer, and
+the zero row consumed by Expire remains stored DATA rather than newly proven
+Imbue-eligible elapsed time. The existing Content and gameplay admission gates
+remain in force. Exact-head CI for the publication is reported separately from
+this qualified PC source.

@@ -109,7 +109,44 @@ message OneItemTransactionV1 {
     OneItemMapItemMintV1 map_item_mint = 8; // MAP-OVERLAY-1b only (see above)
     OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
     OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
+    OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
+    OneItemImbuementExpiryV1 imbuement_expiry = 12; // private ITEM-IMBUE-1 continuation
   }
+}
+
+// World-scoped House custody. No ChannelId is present; reclaim is immutable placement
+// provenance, not a current access grant. Each House endpoint is bounded by RL-07.
+message OneItemHouseLocationV1 {
+  bytes world_id = 1;
+  string house_key = 2; // <= 512 bytes
+  bytes spatial_position = 3; // 1..128 bytes, source-owner-qualified tile
+  uint64 stack_ordinal = 4;
+  uint64 scope_ownership_generation = 5;
+  bytes placement_transaction_id = 6;
+  bytes reclaim_subject = 7;
+  uint64 provenance_revision = 8;
+}
+message OneItemHouseCharacterLocationV1 {
+  bytes character_id = 1;
+  bytes parent_item_instance_id = 2; // inventory only
+  uint64 placement_ordinal = 3; // inventory only
+  uint32 equipment_slot = 4; // equipment only, 1..10; 9 is the B3 container slot
+}
+message OneItemHouseTransferV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2; // same live item/quantity/definition, never split or merge
+  oneof source {
+    OneItemHouseLocationV1 source_house = 3;
+    OneItemHouseCharacterLocationV1 source_character = 4;
+  }
+  oneof destination {
+    OneItemHouseLocationV1 destination_house = 5;
+    OneItemHouseCharacterLocationV1 destination_inventory = 6;
+  }
+  OneItemTransferCauseV1 cause = 7;
+  bytes character_id = 8;
+  uint64 connection_generation = 9;
+  uint64 character_lease_generation = 10;
 }
 
 // Typed identity is carried in full; no numeric key substitutes for it.
@@ -513,4 +550,30 @@ message OneItemUseV1 {
   bytes expected_game_session_id = 10; // equals cause.command_ref.game_session_id
   OneItemUseFlaskV1 flask = 11;
   bool flask_missing = 12;
+}
+
+// ITEM-IMBUE-1 private continuation proposal: non-caller ImbueCause::Expire only.
+// One retained zero-time slot is removed; item and CharacterRevision stay unchanged.
+// No Apply/Clear/fee/timer or runtime admission follows from this field registration.
+message OneItemImbuementSlotV1 {
+  uint32 slot = 1; // 0..2
+  string imbuement_key = 2;
+  string content_revision = 3; // retained applying revision, not a timed write counter
+  string category = 4;
+  uint32 tier = 5; // 1 Basic, 2 Intricate, 3 Powerful
+  uint64 remaining_ms = 6; // exactly 0 for Expire
+  bytes applying_occurrence = 7;
+  bytes applying_transaction_id = 8;
+}
+message OneItemImbuementExpiryV1 {
+  OneItemStateV1 item = 1; // preserved live state
+  OneItemImbuementSlotV1 row_before = 2; // removed, complete original binding
+  bytes character_id = 3;
+  bytes world_id = 4;
+  bytes channel_id = 5;
+  uint64 scope_ownership_generation = 6;
+  bytes expiry_occurrence = 7;
+  uint64 character_revision = 8; // unchanged
+  uint64 equipment_revision = 9; // unchanged
+  uint32 equipment_slot = 10; // actual native equipped location
 }
