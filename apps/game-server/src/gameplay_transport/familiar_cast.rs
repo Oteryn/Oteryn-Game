@@ -54,7 +54,7 @@ pub(crate) struct FamiliarSourceSettings {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FamiliarBenefitUse {
     CurrentEligibility,
-    NotApplicableDeath,
+    NotApplicableEnd,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct PreparedFamiliarCast {
@@ -1573,6 +1573,12 @@ pub(crate) enum FamiliarOwnerEvent<'a> {
     /// #2199 Codex P2 4302041461: the Channel owner's return of the familiar this session's
     /// Login stored because no tile was free; its waiting row is re-proved under the fence.
     Return,
+    /// #2199 Codex P2 4302737307: the due lifetime expiry of this live familiar, found in the
+    /// actual timer lane. The fenced lifecycle write closes its row before the despawn.
+    Expiry {
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
 }
 fn matches_owner_event(
     binding: &crate::spell::companion_lifecycle::FamiliarLifecycleBinding,
@@ -1600,6 +1606,16 @@ fn matches_owner_event(
         (Origin::Return { session, .. }, FamiliarOwnerEvent::Return) => {
             *session == binding.session()
         }
+        (
+            Origin::Expiry {
+                creature,
+                lifecycle_epoch,
+            },
+            FamiliarOwnerEvent::Expiry {
+                creature: event_creature,
+                lifecycle_epoch: event_epoch,
+            },
+        ) => creature == event_creature && lifecycle_epoch == event_epoch,
         _ => false,
     }
 }
@@ -1637,6 +1653,14 @@ fn lifecycle_nonce(
             hash.update([3]);
             hash.update(session.as_bytes());
             hash.update(waiting_epoch.to_be_bytes());
+        }
+        Origin::Expiry {
+            creature,
+            lifecycle_epoch,
+        } => {
+            hash.update([4]);
+            hash.update(creature.placement_identity());
+            hash.update(lifecycle_epoch.to_be_bytes());
         }
     }
     hash.update(
@@ -1726,8 +1750,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prepared
         } else {
             let state = states.get(&runtime, actor, session).ok_or(())?;
-            let is_death = matches!(event, FamiliarOwnerEvent::Death(_));
-            let caster = if is_death {
+            // A death and an expiry end the familiar; neither reads a benefit (FAMILIARS0).
+            let is_end = matches!(
+                event,
+                FamiliarOwnerEvent::Death(_) | FamiliarOwnerEvent::Expiry { .. }
+            );
+            let caster = if is_end {
                 None
             } else {
                 Some(
@@ -1746,16 +1774,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .read_current(owned.binding(), now.get())
                 .filter(|v| v.current(owned.binding(), now.get()))
                 .ok_or(())?;
-            if (is_death && settings.value.benefit_use != FamiliarBenefitUse::NotApplicableDeath)
-                || (!is_death
-                    && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
+            if (is_end && settings.value.benefit_use != FamiliarBenefitUse::NotApplicableEnd)
+                || (!is_end && settings.value.benefit_use != FamiliarBenefitUse::CurrentEligibility)
                 || caster
                     .as_ref()
                     .is_some_and(|c| settings.value.premium != c.premium.is_current())
             {
                 return Err(());
             }
-            let equipment_speed = if is_death {
+            let equipment_speed = if is_end {
                 0
             } else {
                 owned.equipment_speed_bonus(content).map_err(|_| ())?
@@ -1764,8 +1791,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::spell::Vocation::from_key(owned.durable_build().vocation()).ok_or(())?;
             let facts = FamiliarOwnerFacts {
                 vocation: base_familiar_vocation(vocation).to_owned(),
-                // The explicit NotApplicableDeath mode reaches only the source's Death
-                // branch, which never reads benefit/level/speed/cooldown inputs. These
+                // The explicit NotApplicableEnd mode reaches only the source's Death and
+                // Expiry branches, which never read benefit/level/speed/cooldown inputs. These
                 // representation values grant no benefit; Cast/Login/Advance reject it.
                 premium: caster.as_ref().is_some_and(|c| c.premium.is_current()),
                 level: caster.as_ref().map_or(0, |c| c.level),
@@ -1833,6 +1860,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     stamp,
                     at,
                     loaded.state().lifecycle_epoch,
+                ),
+                FamiliarOwnerEvent::Expiry {
+                    creature,
+                    lifecycle_epoch,
+                } => FamiliarLifecycleBinding::from_due_expiry(
+                    &runtime,
+                    profile.clone(),
+                    actor,
+                    fence,
+                    stamp,
+                    at,
+                    *creature,
+                    *lifecycle_epoch,
                 ),
             }
             .map_err(|_| ())?;

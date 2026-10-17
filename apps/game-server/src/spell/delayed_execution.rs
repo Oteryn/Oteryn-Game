@@ -531,6 +531,41 @@ impl SpellTimerOwner {
         let due = matches.next()?;
         matches.next().is_none().then_some(due)
     }
+    /// #2199 Codex P2 4302737307: the familiar expiries of this owner that are due at `now`,
+    /// as (creature, lifecycle epoch). The timer lane hands a current expiry here instead of
+    /// despawning it; the owner cadence ends each one through the fenced lifecycle writer,
+    /// and the lane drops the payload once the familiar is gone. Data only: the writer
+    /// re-proves the live familiar, its owner and its epoch.
+    pub(crate) fn due_familiar_expiries(
+        &self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        now: SemanticTimeMicros,
+    ) -> Vec<(ExactActorRef, u64)> {
+        use super::companion_lifecycle::FamiliarTimerEvent;
+        let cast = self.payloads.iter().filter_map(|pending| {
+            let TimerPayload::Familiar(saved) = &pending.payload else {
+                return None;
+            };
+            (saved.binding.caster == owner
+                && saved.binding.command.game_session_id() == session
+                && saved.event == FamiliarTimerEvent::Expiry
+                && pending.due <= now)
+                .then_some((saved.creature, saved.lifecycle_epoch))
+        });
+        let returned = self.lifecycle_payloads.iter().filter_map(|pending| {
+            let saved = &pending.saved;
+            (saved.binding.owner() == owner
+                && saved.binding.session() == session
+                && saved.event == FamiliarTimerEvent::Expiry
+                && pending.due <= now)
+                .then_some((saved.creature, saved.lifecycle_epoch))
+        });
+        let mut due: Vec<_> = cast.chain(returned).collect();
+        due.sort_unstable_by_key(|(creature, epoch)| (creature.placement_identity(), *epoch));
+        due.dedup();
+        due
+    }
     /// Actual lane metadata only; reading a deadline grants no callback authority.
     pub(crate) fn next_due_time(&self) -> Option<SemanticTimeMicros> {
         self.payloads
@@ -1247,6 +1282,16 @@ impl SpellTimerOwner {
                         runtime,
                         &pending.saved,
                     ) {
+                        // #2199 Codex P2 4302737307: a current expiry is handed to the owner
+                        // cadence (`due_familiar_expiries`), whose fenced lifecycle write
+                        // closes the row before the despawn. Its payload stays until then.
+                        Ok(Some(_))
+                            if pending.saved.event
+                                == super::companion_lifecycle::FamiliarTimerEvent::Expiry =>
+                        {
+                            self.ready.pop_front();
+                            continue;
+                        }
                         Ok(Some(staged)) => staged,
                         Ok(None) => {
                             self.ready.pop_front();
@@ -1287,6 +1332,14 @@ impl SpellTimerOwner {
             if let TimerPayload::Familiar(saved) = &pending.payload {
                 let staged = match super::companion_lifecycle::stage_familiar_timer(runtime, saved)
                 {
+                    // #2199 Codex P2 4302737307: as for a lifecycle expiry above.
+                    Ok(Some(_))
+                        if saved.event
+                            == super::companion_lifecycle::FamiliarTimerEvent::Expiry =>
+                    {
+                        self.ready.pop_front();
+                        continue;
+                    }
                     Ok(Some(staged)) => staged,
                     Ok(None) => {
                         self.ready.pop_front();

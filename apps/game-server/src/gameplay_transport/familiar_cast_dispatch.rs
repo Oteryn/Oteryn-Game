@@ -11,16 +11,17 @@ fn familiar_spell(spell: &crate::spell::SpellDefinition) -> bool {
     matches!(&spell.execution, Execution::NativeProfile(profile)
         if profile.spell()["execution"]["native_behavior"]["key"] == "familiar_summon")
 }
-/// Upstream FamiliarDeath has no commercial/config benefit reads. This private producer
-/// is usable only with the actual Death receipt; its explicit N/A mode is refused by casts
-/// and other lifecycle kinds. It neither grants nor denies an unknown Premium capability.
-struct DeathCleanupSource {
+/// Upstream FamiliarDeath and the familiar's lifetime expiry have no commercial/config
+/// benefit reads. This private producer is usable only with the actual Death receipt or a
+/// due expiry of the actual timer lane; its explicit N/A mode is refused by casts and other
+/// lifecycle kinds. It neither grants nor denies an unknown Premium capability.
+struct EndCleanupSource {
     actor: ExactActorRef,
     session: GameSessionId,
     digest: [u8; 32],
 }
-impl source_registration::Registered for DeathCleanupSource {}
-impl CurrentFamiliarSourceOwner for DeathCleanupSource {
+impl source_registration::Registered for EndCleanupSource {}
+impl CurrentFamiliarSourceOwner for EndCleanupSource {
     fn read_current(
         &self,
         binding: &CastFactsBinding,
@@ -37,7 +38,7 @@ impl CurrentFamiliarSourceOwner for DeathCleanupSource {
             authority_revision: binding.character_revision,
             valid_until_micros: u64::MAX,
             value: FamiliarSourceSettings {
-                benefit_use: FamiliarBenefitUse::NotApplicableDeath,
+                benefit_use: FamiliarBenefitUse::NotApplicableEnd,
                 premium: false,
                 premium_revision: 0,
                 account_at_least_god: false,
@@ -71,12 +72,109 @@ fn matches_replayed_familiar_profile(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Periodic real owner death issuer. The current physical health-zero slot yields
-    /// an opaque Combat lethal receipt, then the actual Combat projection; immutable
-    /// source history is still independently current-qualified by the lifecycle writer.
+    /// Periodic real owner issuer of familiar ends: deaths, then due lifetime expiries
+    /// (#2199 Codex P2 4302737307). Each one commits through the fenced lifecycle writer
+    /// before its familiar is removed.
     pub(in crate::gameplay_transport) async fn drain_familiar_deaths<
         A: CurrentSpellAccessOwner + Sync,
     >(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        access: &A,
+    ) -> Result<usize, ()> {
+        let deaths = self.drain_dead_familiars(actor, session, access).await;
+        let expiries = self
+            .drain_due_familiar_expiries(actor, session, access)
+            .await;
+        Ok(deaths? + expiries?)
+    }
+    /// #2199 Codex P2 4302737307: the owner-cadence end of a familiar whose lifetime the
+    /// actual timer lane found due. The lane never despawns it; this writes the closed row
+    /// (remaining 0, as a death) through the fenced lifecycle writer and despawns only after
+    /// that commit. A failed write leaves the familiar present and the lane payload kept,
+    /// so the next cadence tick retries; an unknown outcome resumes the retained original.
+    async fn drain_due_familiar_expiries<A: CurrentSpellAccessOwner + Sync>(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        access: &A,
+    ) -> Result<usize, ()> {
+        use crate::spell::companion_lifecycle::FamiliarLifecycleOrigin;
+        let now = self.owner_now();
+        let expiries = {
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            if states
+                .pending_familiars
+                .iter()
+                .any(|v| v.is_for(actor, session))
+                || states
+                    .pending_familiar_logouts
+                    .iter()
+                    .any(|v| v.actor == actor && v.session == session)
+            {
+                return Err(());
+            }
+            let retained = states
+                .pending_familiar_lifecycle
+                .iter()
+                .find(|p| p.actor == actor && p.session == session);
+            match retained.map(|p| p.familiar.binding().origin()) {
+                Some(FamiliarLifecycleOrigin::Expiry {
+                    creature,
+                    lifecycle_epoch,
+                }) => vec![(*creature, *lifecycle_epoch)],
+                Some(_) => return Err(()),
+                None => states
+                    .spell_timers
+                    .as_ref()
+                    .map(|timers| {
+                        timers.due_familiar_expiries(
+                            actor,
+                            session,
+                            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                                now.get(),
+                            ),
+                        )
+                    })
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|(creature, epoch)| {
+                        runtime.companion_snapshot(*creature).is_ok_and(|live| {
+                            live.state.master
+                                == Some(crate::foundation::CompanionMaster { actor, session })
+                                && live.state.policy.is_familiar
+                                && live.state.lifecycle_epoch == *epoch
+                        })
+                    })
+                    .collect(),
+            }
+        };
+        let mut completed = 0;
+        for (creature, lifecycle_epoch) in expiries {
+            let Some(_) = self
+                .dispatch_familiar_owner_event(
+                    actor,
+                    session,
+                    FamiliarOwnerEvent::Expiry {
+                        creature,
+                        lifecycle_epoch,
+                    },
+                    access,
+                )
+                .await?
+            else {
+                return Err(());
+            };
+            completed += 1;
+        }
+        Ok(completed)
+    }
+    /// The current physical health-zero slot yields an opaque Combat lethal receipt, then
+    /// the actual Combat projection; immutable source history is still independently
+    /// current-qualified by the lifecycle writer.
+    async fn drain_dead_familiars<A: CurrentSpellAccessOwner + Sync>(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
@@ -325,7 +423,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|a| a.native_gameplay())
             .ok_or(())?;
-        if original.settings.value.benefit_use == FamiliarBenefitUse::NotApplicableDeath {
+        if original.settings.value.benefit_use == FamiliarBenefitUse::NotApplicableEnd {
             let owned = self
                 .read_familiar_lifecycle_inputs(
                     actor,
@@ -334,7 +432,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &super::super::super::spell_access_facts::UnavailableAccessOwner,
                 )
                 .await?;
-            let source = DeathCleanupSource {
+            let source = EndCleanupSource {
                 actor,
                 session,
                 digest: content.source_digest(),
@@ -554,7 +652,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .await
     }
 
-    /// Advance and Death callers supply the real committed XP or lethal owner receipt.
+    /// Advance and Death callers supply the real committed XP or lethal owner receipt; an
+    /// Expiry caller, a due expiry of the actual timer lane.
     /// No client event, synthetic cast command or guessed commercial permission is accepted.
     pub(in crate::gameplay_transport) async fn dispatch_familiar_owner_event<
         A: CurrentSpellAccessOwner + Sync,
@@ -568,7 +667,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(content) = self.active_generation.and_then(|a| a.native_gameplay()) else {
             return Ok(None);
         };
-        if matches!(event, FamiliarOwnerEvent::Death(_)) {
+        if matches!(
+            event,
+            FamiliarOwnerEvent::Death(_) | FamiliarOwnerEvent::Expiry { .. }
+        ) {
             let owned = self
                 .read_familiar_lifecycle_inputs(
                     actor,
@@ -582,7 +684,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(index) = self.active_familiar_index(base_familiar_vocation(vocation)) else {
                 return Ok(None);
             };
-            let source = DeathCleanupSource {
+            let source = EndCleanupSource {
                 actor,
                 session,
                 digest: content.source_digest(),

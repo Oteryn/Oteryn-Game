@@ -60,23 +60,106 @@ async fn snapshot(h: &Harness) -> TestResult<(String, String, i64, i64, i64)> {
     Ok(sqlx::query_as("SELECT r.character_revision::text,p.character_revision::text,p.level,p.total_experience,(SELECT count(*) FROM game_character_familiar_receipts) FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid")
         .bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?)
 }
+/// The Channel runtime, its admitted player and the Knight familiar profile shared by the
+/// familiar lifecycle cases. Explicit test content pin: activation is not claimed here.
+fn knight_familiar_runtime(
+    h: &Harness,
+) -> TestResult<(
+    crate::foundation::ChannelRuntimeV1,
+    crate::foundation::ExactActorRef,
+    crate::foundation::GameSessionId,
+    serde_json::Value,
+)> {
+    use crate::foundation::{
+        ChannelContentPin, ChannelId, ChannelRuntimeV1, CompiledCreaturePolicies,
+        CompiledCreaturePolicy, CreatureFlags, GameSessionId, WorldId,
+    };
+    let world = WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+    let mut physical = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL)).map_err(debug)?,
+        crate::foundation::NodeId::decode(h.node.fact().node_id().as_bytes()).map_err(debug)?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        ChannelContentPin::test(world),
+    )
+    .map_err(debug)?;
+    let session = GameSessionId::decode(&id(SESSION)).map_err(debug)?;
+    let reservation = physical.reserve_fresh_session(session).map_err(debug)?;
+    let actor = physical.commit_fresh_session(reservation).map_err(debug)?;
+    physical
+        .initialize_first_entry_position(actor)
+        .map_err(debug)?;
+    physical
+        .install_companion_policies(
+            CompiledCreaturePolicies::from_active_artifact(
+                [1; 32],
+                vec![CompiledCreaturePolicy {
+                    definition_key: "creature:knight/familiar".into(),
+                    definition_revision: "r20".into(),
+                    display_name: "Knight familiar".into(),
+                    maximum_health: 812,
+                    base_speed: 220,
+                    outfit_look_type: 991,
+                    object_look_type: None,
+                    summonable: false,
+                    convinceable: false,
+                    mana_cost: None,
+                    is_familiar: true,
+                    condition_immunities: Vec::new(),
+                    preferred_distance: Some(1),
+                    reward_boss: Some(false),
+                    defense: Some(1),
+                    armor: Some(10),
+                    mitigation: None,
+                    resistances: Vec::new(),
+                    damage_immunities: Vec::new(),
+                    healing_from_damage: Vec::new(),
+                    flags: CreatureFlags {
+                        attackable: true,
+                        illusionable: false,
+                        health_hidden: false,
+                    },
+                }],
+            )
+            .map_err(debug)?,
+        )
+        .map_err(debug)?;
+    let catalog: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+    ))?;
+    let profile = catalog["profiles"]
+        .as_array()
+        .ok_or("profiles")?
+        .iter()
+        .find(|v| v["name"] == "Knight familiar")
+        .ok_or("Knight familiar")?;
+    Ok((physical, actor, session, profile.clone()))
+}
+fn knight_familiar_spell(
+    profile: &serde_json::Value,
+) -> TestResult<crate::spell::native::CompiledNativeSpell> {
+    Ok(crate::spell::native::spell_from_bundle(
+        &serde_json::json!({"spell":profile["spell"]}),
+        &profile["dependencies"],
+    )
+    .map_err(debug)?)
+}
 #[test]
 fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_receipts() -> TestResult
 {
     run("familiar_hook_receipt", async |h| {
         use crate::ability::{AbilityOccurrence, RevisionSet};
         use crate::foundation::owner_timer::SemanticTimeMicros;
-        use crate::foundation::{
-            ChannelContentPin, ChannelId, ChannelRuntimeV1, CommandId, CommandRef,
-            CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags, GameSessionId,
-            WorldId,
-        };
+        use crate::foundation::{CommandId, CommandRef};
         use crate::spell::chain::TilePosition;
         use crate::spell::companion_lifecycle::{
             FamiliarOwnerFacts, commit_familiar, prepare_familiar_hook,
         };
         use crate::spell::delayed_execution::CastBinding;
-        use crate::spell::native::spell_from_bundle;
         use crate::spell::native_companions::FamiliarEvent;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -89,75 +172,8 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             .read_familiar_unix_time(&authority)
             .await
             .map_err(debug)?;
-        let world = WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
-        let mut physical = ChannelRuntimeV1::from_committed_assignment(
-            world,
-            ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL)).map_err(debug)?,
-            crate::foundation::NodeId::decode(h.node.fact().node_id().as_bytes()).map_err(debug)?,
-            1,
-            1,
-            1,
-            "runtime-scope-assignment:1",
-            4,
-            ChannelContentPin::test(world),
-        )
-        .map_err(debug)?;
-        let session = GameSessionId::decode(&id(SESSION)).map_err(debug)?;
-        let reservation = physical.reserve_fresh_session(session).map_err(debug)?;
-        let actor = physical.commit_fresh_session(reservation).map_err(debug)?;
-        physical
-            .initialize_first_entry_position(actor)
-            .map_err(debug)?;
-        // Explicit test content pin: activation is not claimed by this Character-writer case.
-        physical
-            .install_companion_policies(
-                CompiledCreaturePolicies::from_active_artifact(
-                    [1; 32],
-                    vec![CompiledCreaturePolicy {
-                        definition_key: "creature:knight/familiar".into(),
-                        definition_revision: "r20".into(),
-                        display_name: "Knight familiar".into(),
-                        maximum_health: 812,
-                        base_speed: 220,
-                        outfit_look_type: 991,
-                        object_look_type: None,
-                        summonable: false,
-                        convinceable: false,
-                        mana_cost: None,
-                        is_familiar: true,
-                        condition_immunities: Vec::new(),
-                        preferred_distance: Some(1),
-                        reward_boss: Some(false),
-                        defense: Some(1),
-                        armor: Some(10),
-                        mitigation: None,
-                        resistances: Vec::new(),
-                        damage_immunities: Vec::new(),
-                        healing_from_damage: Vec::new(),
-                        flags: CreatureFlags {
-                            attackable: true,
-                            illusionable: false,
-                            health_hidden: false,
-                        },
-                    }],
-                )
-                .map_err(debug)?,
-            )
-            .map_err(debug)?;
-        let catalog: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
-        ))?;
-        let profile = catalog["profiles"]
-            .as_array()
-            .ok_or("profiles")?
-            .iter()
-            .find(|v| v["name"] == "Knight familiar")
-            .ok_or("Knight familiar")?;
-        let native = spell_from_bundle(
-            &serde_json::json!({"spell":profile["spell"]}),
-            &profile["dependencies"],
-        )
-        .map_err(debug)?;
+        let (mut physical, actor, session, profile) = knight_familiar_runtime(h)?;
+        let native = knight_familiar_spell(&profile)?;
         let cell = TilePosition {
             x: 0,
             y: 0,
@@ -360,11 +376,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             .project_committed_lethal(lethal)
             .map_err(debug)?
             .clone();
-        let native = spell_from_bundle(
-            &serde_json::json!({"spell":profile["spell"]}),
-            &profile["dependencies"],
-        )
-        .map_err(debug)?;
+        let native = knight_familiar_spell(&profile)?;
         let stamp = physical.issue_owner_work().map_err(debug)?;
         let binding =
             crate::spell::companion_lifecycle::FamiliarLifecycleBinding::from_committed_lethal(
@@ -495,6 +507,208 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             .is_err()
         );
         assert_eq!(snapshot(h).await?.0, "4");
+        Ok(())
+    })
+}
+
+/// #2199 Codex P2 4302737307: a due familiar expiry closes the durable row (remaining 0, as a
+/// death) through the fenced lifecycle writer before the live familiar is despawned. With no
+/// durable receipt, or a stale successor fence, the familiar stays present.
+#[test]
+fn familiar_expiry_closes_the_durable_row_before_the_despawn() -> TestResult {
+    run("familiar_expiry_close", async |h| {
+        use crate::durability::character_familiar::{FamiliarLifecycleV2, FamiliarLifecycleWriter};
+        use crate::foundation::owner_timer::SemanticTimeMicros;
+        use crate::spell::companion_lifecycle::{
+            FamiliarLifecycleBinding, FamiliarOwnerFacts, LeverBossRoomMembership,
+            commit_lifecycle_familiar, prepare_lifecycle_familiar,
+        };
+        use crate::spell::native_companions::FamiliarAction;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let now = h
+            .root
+            .read_familiar_unix_time(&authority)
+            .await
+            .map_err(debug)?;
+        let (mut physical, actor, session, profile) = knight_familiar_runtime(h)?;
+        let character = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+        // Explicit isolated setup: an open row of this session with 900 s left and its live
+        // familiar. This does not claim a live Cast producer.
+        let writer = FamiliarLifecycleWriter::from_fence(&fence(1)?).map_err(debug)?;
+        let mut open = state()?;
+        open.lifecycle = Some(FamiliarLifecycleV2 {
+            version: 2,
+            familiar_remaining_ms: 900_000,
+            open: true,
+            writer,
+            clean_end_game_session_id: None,
+        });
+        h.root
+            .commit_character_familiar_state(
+                &authority,
+                &h.node,
+                fence(1)?,
+                save(120, DurableFamiliarState::default(), open.clone())?,
+            )
+            .await
+            .map_err(debug)?;
+        let durable = h
+            .root
+            .read_character_familiar_state(&authority, character)
+            .await
+            .map_err(debug)?;
+        assert_eq!(durable.state(), &open);
+        let mut spawn = physical
+            .prepare_companion_spawn(
+                actor,
+                session,
+                "Knight familiar",
+                crate::foundation::MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                Some(open.saved_expiry_unix),
+                open.lifecycle_epoch,
+                0,
+                false,
+            )
+            .map_err(debug)?;
+        spawn.bind_semantic_creation(0).map_err(debug)?;
+        let familiar = physical.install_companion_spawn(spawn).map_err(debug)?;
+        let at = SemanticTimeMicros::from_micros(900_000_000);
+        let stamp = physical.issue_owner_work().map_err(debug)?;
+        // Another lifecycle epoch never issues this expiry.
+        assert!(
+            FamiliarLifecycleBinding::from_due_expiry(
+                &physical,
+                knight_familiar_spell(&profile)?,
+                actor,
+                fence(2)?,
+                stamp,
+                at,
+                familiar,
+                open.lifecycle_epoch + 1,
+            )
+            .is_err()
+        );
+        let binding = FamiliarLifecycleBinding::from_due_expiry(
+            &physical,
+            knight_familiar_spell(&profile)?,
+            actor,
+            fence(2)?,
+            stamp,
+            at,
+            familiar,
+            open.lifecycle_epoch,
+        )
+        .map_err(debug)?;
+        // An expiry reads no Premium/level/config benefit input, as a death does.
+        let current = FamiliarOwnerFacts {
+            vocation: "knight".into(),
+            premium: false,
+            level: 0,
+            account_at_least_god: false,
+            current_speed: 220,
+            familiar_minutes: 0,
+            vip: false,
+            vip_reduction_minutes: 0,
+            cooldown_rate: 0.0,
+            state: durable.state().clone(),
+            checkpoint_committed_at_ms: durable.checkpoint_committed_at_ms(),
+            lifecycle_writer: FamiliarLifecycleWriter::from_fence(&fence(2)?).map_err(debug)?,
+            lever_boss_room: LeverBossRoomMembership::Outside,
+        };
+        let prepared =
+            prepare_lifecycle_familiar(&physical, None, binding, &current, now).map_err(debug)?;
+        let request = prepared
+            .state_request(
+                FamiliarStateOccurrence::from_bytes(id(121)).map_err(debug)?,
+                "content-1".into(),
+                "policy-1".into(),
+                [1; 32],
+            )
+            .ok_or("expiry state request")?;
+        assert_eq!(
+            request.after.lifecycle,
+            Some(FamiliarLifecycleV2 {
+                familiar_remaining_ms: 0,
+                open: false,
+                ..open.lifecycle.clone().ok_or("open lifecycle")?
+            })
+        );
+        assert_eq!(request.after.lifecycle_epoch, open.lifecycle_epoch);
+        // No durable receipt: the familiar stays present and the row stays open.
+        assert!(
+            commit_lifecycle_familiar(
+                &mut physical,
+                prepared.clone(),
+                &current,
+                &fence(2)?,
+                Some(&request),
+                None,
+            )
+            .is_err()
+        );
+        assert!(physical.companion_snapshot(familiar).is_ok());
+        let outcome = h
+            .root
+            .commit_character_familiar_state(&authority, &h.node, fence(2)?, request.clone())
+            .await
+            .map_err(debug)?;
+        let FamiliarStateOutcome::Committed(receipt) = outcome else {
+            return Err("fresh expiry receipt".into());
+        };
+        // The independently current successor fence is mandatory even with the receipt.
+        assert!(
+            commit_lifecycle_familiar(
+                &mut physical,
+                prepared.clone(),
+                &current,
+                &fence(2)?,
+                Some(&request),
+                Some(&receipt),
+            )
+            .is_err()
+        );
+        assert!(physical.companion_snapshot(familiar).is_ok());
+        let applied = commit_lifecycle_familiar(
+            &mut physical,
+            prepared,
+            &current,
+            &fence(3)?,
+            Some(&request),
+            Some(&receipt),
+        )
+        .map_err(debug)?;
+        assert_eq!(applied.after(), &request.after);
+        assert_eq!(applied.creature(), None);
+        assert_eq!(
+            applied.owner_operations(),
+            &[FamiliarAction::ResetWarningHandles]
+        );
+        assert!(physical.companion_snapshot(familiar).is_err());
+        assert!(
+            physical
+                .owned_companions(actor, session)
+                .map_err(debug)?
+                .is_empty()
+        );
+        assert_eq!(
+            h.root
+                .read_character_familiar_state(&authority, character)
+                .await
+                .map_err(debug)?
+                .state(),
+            &request.after
+        );
+        assert_eq!(snapshot(h).await?.0, "3");
         Ok(())
     })
 }

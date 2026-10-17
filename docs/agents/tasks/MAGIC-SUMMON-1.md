@@ -146,7 +146,7 @@ CREATURE_AI0; FAMILIARS0; SPELL_NPC_MAP0 §2-§3. Plan: `docs/architecture/revie
 ## Context checkpoint
 
 ```yaml
-last_progress: round-seven repair (Codex P2 4302542011) on source head 72470cc338c8de86dfb794731c946e6e01d1fda4
+last_progress: round-eight repair (Codex P2 4302737307) on source head 454adf6bf3cb2312edf1876e08f871a2cf1e238d
 status: OPEN
 branch: skeleton/magic-summon-1
 blocker: CREATURE_AI0 ACCEPTED (summon children); FAMILIARS0 ACCEPTED; CREATURE-MOVE-1 residue (SUMMON-1); HOUSE-1b (`house_access`)
@@ -636,3 +636,23 @@ changed file passes; `cargo clippy --locked -p oteryn-game-server --all-targets 
 passes; `cargo test --locked -p oteryn-game-server --lib --bins` passes (lib 3,256 passed,
 29 ignored, 0 failed; bins 7 passed). PostgreSQL integration targets are NOT_RUN locally (no
 database). New-head GitHub CI must pass.
+
+### Round-eight repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. Lead-directed repair for Codex thread 4302737307 (P2) on
+source head `454adf6bf3cb2312edf1876e08f871a2cf1e238d`.
+
+- A 900 s familiar expiry only despawned in the synchronous timer lane, leaving the durable row
+  open with positive time. The lane now hands a current expiry to the owner cadence
+  (`due_familiar_expiries`, drained after familiar deaths) and keeps its payload. The fenced
+  lifecycle writer (`FamiliarOwnerEvent::Expiry`, no-benefit-read cleanup like a death) commits
+  remaining 0 / open=false, and removes the familiar only after the receipt and a fresh fence.
+  A failed or unknown commit leaves the familiar present; a retained expiry is retried by the
+  same drain or reconciled at control loss.
+
+Regression tests: `familiar_expiry_closes_the_open_lifecycle_like_death`,
+`due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn`, the extended
+`actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays`, and the PostgreSQL case
+`familiar_expiry_closes_the_durable_row_before_the_despawn` (NOT_RUN locally, no database).
+`rustfmt --check` and `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
+pass. New-head GitHub CI must pass.

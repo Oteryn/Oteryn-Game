@@ -635,7 +635,6 @@ pub(crate) struct StagedFamiliarOperation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FamiliarTimerReceipt {
     pub(crate) creature: ExactActorRef,
-    pub(crate) removed: bool,
     pub(crate) message: Option<String>,
 }
 
@@ -717,20 +716,22 @@ fn stage_familiar_timer_parts(
         message,
     }))
 }
+/// #2199 Codex P2 4302737307: only a warning commits in the timer lane. An expiry ends the
+/// durable lifecycle, so the lane never removes the familiar: the owner cadence hands it to
+/// the fenced lifecycle writer (`FamiliarLifecycleOrigin::Expiry`), which closes the row
+/// before the physical despawn, as a familiar death does.
 pub(crate) fn commit_familiar_timer(
     runtime: &mut ChannelRuntimeV1,
     staged: StagedFamiliarOperation,
 ) -> Result<FamiliarTimerReceipt, CompanionExecutionError> {
+    if staged.event == FamiliarTimerEvent::Expiry {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
     runtime.player_control_facts(staged.owner, staged.session)?;
     runtime.assert_actor_spell_unreserved(staged.expected.actor)?;
     runtime.validate_companion_snapshot(&staged.expected)?;
-    let removed = staged.event == FamiliarTimerEvent::Expiry;
-    if removed {
-        runtime.despawn_companion(staged.owner, staged.session, &staged.expected)?;
-    }
     Ok(FamiliarTimerReceipt {
         creature: staged.expected.actor,
-        removed,
         message: staged.message,
     })
 }
@@ -978,6 +979,10 @@ fn prepare_familiar_inner(
     unix: FamiliarUnixTime,
     death_actor: Option<ExactActorRef>,
 ) -> Result<PreparedFamiliar, CompanionExecutionError> {
+    // An expiry is a lifecycle event of the owner cadence only (`FamiliarLifecycleOrigin`).
+    if event == FamiliarEvent::Expiry {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
     let mut parts = prepare_familiar_parts(
         runtime,
         cells,
@@ -997,7 +1002,7 @@ fn prepare_familiar_inner(
         event: parts.event,
         owner_facts: parts.owner_facts,
         owned: parts.owned,
-        death: parts.death,
+        death: parts.removal,
         spawn: parts.spawn,
         actions: parts.actions,
         facts: parts.facts,
@@ -1010,7 +1015,9 @@ struct FamiliarParts {
     event: FamiliarEvent,
     owner_facts: FamiliarOwnerFacts,
     owned: Vec<CompanionSnapshot>,
-    death: Option<CompanionSnapshot>,
+    /// The familiar this event removes: the dead one of a death, or the live one whose
+    /// lifetime expired. It is despawned only after the durable lifecycle write.
+    removal: Option<CompanionSnapshot>,
     spawn: Option<PreparedCompanionSpawn>,
     actions: Vec<FamiliarAction>,
     facts: FamiliarFacts,
@@ -1119,7 +1126,8 @@ fn familiar_lifecycle_unreconciled(
 
 /// Settle the lifecycle of a non-actor-end familiar write under the current writer.
 /// A committed acquisition (cast or return) opens the row with its scheduled lifetime and
-/// clears any clean-end marker; a familiar death ends it. Any other write (a Login with no
+/// clears any clean-end marker; a familiar death or its expiry ends it (#2199 Codex P2
+/// 4302737307: an expired familiar never leaves an open row with positive time). Any other write (a Login with no
 /// free tile, Advance) carries the clean row, its stored waiting time and a closed foreign
 /// session's clean-end marker unchanged. F-I11: after this session's own clean end it writes
 /// nothing more.
@@ -1137,7 +1145,7 @@ fn settle_familiar_event_lifecycle(
         lifecycle.open = true;
         lifecycle.clean_end_game_session_id = None;
         lifecycle.familiar_remaining_ms = remaining;
-    } else if *event == FamiliarEvent::FamiliarDeath {
+    } else if matches!(event, FamiliarEvent::FamiliarDeath | FamiliarEvent::Expiry) {
         lifecycle.open = false;
         lifecycle.familiar_remaining_ms = 0;
     }
@@ -1258,7 +1266,7 @@ fn prepare_familiar_parts(
     event: FamiliarEvent,
     current: &FamiliarOwnerFacts,
     unix: FamiliarUnixTime,
-    death_actor: Option<ExactActorRef>,
+    ended_actor: Option<ExactActorRef>,
 ) -> Result<FamiliarParts, CompanionExecutionError> {
     if !matches!(
         event,
@@ -1266,6 +1274,7 @@ fn prepare_familiar_parts(
             | FamiliarEvent::Login
             | FamiliarEvent::Advance
             | FamiliarEvent::FamiliarDeath
+            | FamiliarEvent::Expiry
     ) || current.state.validate().is_err()
         || current.current_speed < 0
     {
@@ -1285,10 +1294,16 @@ fn prepare_familiar_parts(
         .as_u64()
         .and_then(|v| u32::try_from(v).ok())
         .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
-    let death = if event == FamiliarEvent::FamiliarDeath {
-        let actor = death_actor.ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
-        let snapshot = runtime.companion_snapshot_including_dead(actor)?;
-        if snapshot.health != 0
+    let removal = if matches!(event, FamiliarEvent::FamiliarDeath | FamiliarEvent::Expiry) {
+        let actor = ended_actor.ok_or(CompanionExecutionError::InvalidOwnerFacts)?;
+        let dying = event == FamiliarEvent::FamiliarDeath;
+        // A death removes the health-zero slot; an expiry removes the live familiar.
+        let snapshot = if dying {
+            runtime.companion_snapshot_including_dead(actor)?
+        } else {
+            runtime.companion_snapshot(actor)?
+        };
+        if (snapshot.health == 0) != dying
             || snapshot.state.master
                 != Some(CompanionMaster {
                     actor: owner,
@@ -1302,7 +1317,7 @@ fn prepare_familiar_parts(
         }
         Some(snapshot)
     } else {
-        if death_actor.is_some() {
+        if ended_actor.is_some() {
             return Err(CompanionExecutionError::InvalidOwnerFacts);
         }
         None
@@ -1395,7 +1410,7 @@ fn prepare_familiar_parts(
             current.state.last_logout_unix
         },
         owner_present: true,
-        creature_present: death.is_some(),
+        creature_present: removal.is_some(),
         creature_name: name.to_owned(),
         matching_summon_ids: Vec::new(),
         dx: 0,
@@ -1551,7 +1566,7 @@ fn prepare_familiar_parts(
         event,
         owner_facts: current.clone(),
         owned,
-        death,
+        removal,
         spawn,
         actions,
         facts,
@@ -2223,6 +2238,13 @@ pub(crate) enum FamiliarLifecycleOrigin {
         session: GameSessionId,
         waiting_epoch: u64,
     },
+    /// #2199 Codex P2 4302737307: the due expiry of this live familiar at this lifecycle
+    /// epoch. The owner cadence issues it from the actual timer lane deadline; the fenced
+    /// lifecycle writer closes the row (remaining 0) before the familiar is despawned.
+    Expiry {
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FamiliarLifecycleBinding {
@@ -2379,6 +2401,46 @@ impl FamiliarLifecycleBinding {
             },
         )
     }
+    /// Invoked by the owner cadence for a lifecycle expiry the timer lane found due. The live
+    /// familiar must still be this session's familiar at that lifecycle epoch.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the owner turn binds every independently resolved fact explicitly"
+    )]
+    pub(crate) fn from_due_expiry(
+        runtime: &ChannelRuntimeV1,
+        spell: CompiledNativeSpell,
+        owner: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        at: SemanticTimeMicros,
+        creature: ExactActorRef,
+        lifecycle_epoch: u64,
+    ) -> Result<Self, CompanionExecutionError> {
+        let live = runtime.companion_snapshot(creature)?;
+        if live.state.master
+            != Some(CompanionMaster {
+                actor: owner,
+                session: fence.game_session_id,
+            })
+            || !live.state.policy.is_familiar
+            || live.state.lifecycle_epoch != lifecycle_epoch
+        {
+            return Err(CompanionExecutionError::SnapshotMismatch);
+        }
+        Self::issue(
+            runtime,
+            spell,
+            owner,
+            fence,
+            stamp,
+            at,
+            FamiliarLifecycleOrigin::Expiry {
+                creature,
+                lifecycle_epoch,
+            },
+        )
+    }
     pub(crate) fn spell(&self) -> &CompiledNativeSpell {
         &self.spell
     }
@@ -2479,7 +2541,7 @@ impl PreparedLifecycleFamiliar {
             .owned
             .iter()
             .map(|s| s.actor)
-            .chain(self.parts.death.iter().map(|s| s.actor))
+            .chain(self.parts.removal.iter().map(|s| s.actor))
     }
     pub(crate) fn reserve_physical(
         &mut self,
@@ -2489,8 +2551,8 @@ impl PreparedLifecycleFamiliar {
         for owned in &self.parts.owned {
             runtime.assert_actor_spell_unreserved(owned.actor)?;
         }
-        if let Some(dead) = &self.parts.death {
-            runtime.assert_actor_spell_unreserved(dead.actor)?;
+        if let Some(ended) = &self.parts.removal {
+            runtime.assert_actor_spell_unreserved(ended.actor)?;
         }
         if let Some(spawn) = self.parts.spawn.as_mut() {
             runtime.reserve_companion_spawn(spawn)?;
@@ -2545,8 +2607,8 @@ impl PreparedLifecycleFamiliar {
             &self.parts.owned,
         )?;
         runtime.player_control_facts(self.binding.owner(), self.binding.session())?;
-        if let Some(dead) = &self.parts.death {
-            runtime.validate_companion_snapshot(dead)?;
+        if let Some(ended) = &self.parts.removal {
+            runtime.validate_companion_snapshot(ended)?;
         }
         if let Some(spawn) = &self.parts.spawn {
             runtime.validate_companion_spawn(spawn)?;
@@ -2654,6 +2716,15 @@ pub(crate) fn prepare_lifecycle_familiar(
         FamiliarLifecycleOrigin::Death { occurrence } => {
             (FamiliarEvent::FamiliarDeath, Some(occurrence.actor()))
         }
+        FamiliarLifecycleOrigin::Expiry {
+            creature,
+            lifecycle_epoch,
+        } => {
+            if *lifecycle_epoch != current.state.lifecycle_epoch {
+                return Err(CompanionExecutionError::SnapshotMismatch);
+            }
+            (FamiliarEvent::Expiry, Some(*creature))
+        }
     };
     let mut parts = prepare_familiar_parts(
         runtime,
@@ -2722,8 +2793,10 @@ pub(crate) fn commit_lifecycle_familiar(
     // checked above. Source death callbacks complete before the ordinary physical
     // creature removal; leaving the health-zero slot would repeat the callback and
     // retain its master indefinitely. The lethal projection remains replayable.
-    if let Some(dead) = &prepared.parts.death {
-        runtime.despawn_companion(prepared.binding.owner(), prepared.binding.session(), dead)?;
+    // #2199 Codex P2 4302737307: an expiry likewise removes its live familiar only after
+    // the closed row (remaining 0) is durable; a failed write leaves it present.
+    if let Some(ended) = &prepared.parts.removal {
+        runtime.despawn_companion(prepared.binding.owner(), prepared.binding.session(), ended)?;
     }
     let creature = prepared
         .parts
@@ -2731,10 +2804,12 @@ pub(crate) fn commit_lifecycle_familiar(
         .map(|spawn| runtime.install_companion_spawn(spawn))
         .transpose()?;
     let mut operations = prepared.parts.actions;
+    // The removal above performed an expiry's RemoveCreature.
     operations.retain(|a| {
         !matches!(
             a,
             FamiliarAction::Create { .. }
+                | FamiliarAction::RemoveCreature
                 | FamiliarAction::ChangeSpeed(_)
                 | FamiliarAction::StoreExpiry(_)
                 | FamiliarAction::SelectLook(_)
@@ -3745,6 +3820,24 @@ mod familiar_login_lifecycle_tests {
             settle_familiar_event_lifecycle(&mut own, &current, &FamiliarEvent::Login, None),
             Err(CompanionExecutionError::InvalidOwnerFacts)
         );
+        Ok(())
+    }
+
+    /// #2199 Codex P2 4302737307: a due expiry closes the open row with no time left, as a
+    /// familiar death does, so an expired familiar never leaves an open row with positive
+    /// time. A write that ends nothing (Advance) keeps the open row and its time.
+    #[test]
+    fn familiar_expiry_closes_the_open_lifecycle_like_death() -> Result<(), CompanionExecutionError>
+    {
+        let (_, current) = writers();
+        for event in [FamiliarEvent::Expiry, FamiliarEvent::FamiliarDeath] {
+            let mut row = lifecycle(&current, 900_000, true, None);
+            settle_familiar_event_lifecycle(&mut row, &current, &event, None)?;
+            assert_eq!(row, lifecycle(&current, 0, false, None));
+        }
+        let mut row = lifecycle(&current, 900_000, true, None);
+        settle_familiar_event_lifecycle(&mut row, &current, &FamiliarEvent::Advance, None)?;
+        assert_eq!(row, lifecycle(&current, 900_000, true, None));
         Ok(())
     }
 
