@@ -384,6 +384,7 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         generation_item_facts(native, &cheese).unwrap(),
         ItemDefinitionFacts {
             definition: cheese.clone(),
+            weight: Some(400),
             stack: ItemStackClass::Stackable {
                 proven_maximum: Some(100)
             },
@@ -396,10 +397,21 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         generation_item_facts(native, &backpack).unwrap(),
         ItemDefinitionFacts {
             definition: backpack.clone(),
+            weight: Some(1_800),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(20),
             container_slot_equip_pattern: true,
         }
+    );
+    assert_eq!(native.generation_digest(), native.source_digest());
+    assert_eq!(native.weight_of(&cheese), Ok(400));
+    assert_eq!(native.weight_of(&backpack), Ok(1_800));
+    assert_eq!(
+        native.weight_of(&TypedDefinitionRef {
+            revision_ref: "another-generation-revision".to_owned(),
+            ..cheese.clone()
+        }),
+        Err(ItemWeightRefused::DefinitionMismatch)
     );
     let not_found = |definition: TypedDefinitionRef| {
         generation_item_facts(native, &definition) == Err(PickupContentError::DefinitionNotFound)
@@ -411,6 +423,7 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
             generation_item_facts(native, &definition).unwrap(),
             ItemDefinitionFacts {
                 definition: definition.clone(),
+                weight: Some(10),
                 stack: ItemStackClass::Stackable {
                     proven_maximum: Some(COIN_STACK_MAXIMUM)
                 },
@@ -433,4 +446,30 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         production_key: "candidate:item/3607".to_owned(),
         revision_ref: "spell-p2-r21".to_owned(),
     }));
+}
+
+#[test]
+fn native_weight_normalization_never_guesses_unknown_physical_or_weight() {
+    use crate::content::ReferenceItemPhysical;
+    use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
+
+    for physical in [Unknown, Conflict, NotApplicable] {
+        assert_eq!(normalized_item_weight(&physical), None);
+    }
+    for weight in [Unknown, Conflict, NotApplicable] {
+        let physical = Known(ReferenceItemPhysical {
+            weight,
+            movable: Known(true),
+            pickupable: Known(true),
+        });
+        assert_eq!(normalized_item_weight(&physical), None);
+    }
+    for weight in [0, 10, 1_800, u32::MAX] {
+        let physical = Known(ReferenceItemPhysical {
+            weight: Known(weight),
+            movable: Known(true),
+            pickupable: Known(true),
+        });
+        assert_eq!(normalized_item_weight(&physical), Some(weight));
+    }
 }

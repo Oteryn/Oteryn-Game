@@ -3,7 +3,8 @@
 //! 3) in the normative ANL-01 `EventEnvelope`, for the B3 destinations
 //! (decision `B3-INVENTORY-DESTINATION-CAPACITY-STACKS-V1` §4): the
 //! CharacterEquipment `container` slot, a direct entry of the equipped main
-//! backpack, and the D83 full-merge and top-up shapes.
+//! backpack, and the D83 full-merge and top-up shapes. The private DEPOT0
+//! continuation adds World-scoped whole-item custody shapes without live admission.
 //!
 //! One live item A (on Ground, or in a live corpse's container entry, D3-4)
 //! moves in every shape. The optional receiver B is a
@@ -25,6 +26,8 @@ use sha2::{Digest, Sha256};
 
 /// Typed cause of a player-originated Ground pickup TRANSFER.
 pub const GROUND_PICKUP_TYPED_CAUSE: &str = "ground_pickup_transfer";
+/// Private DEPOT0 continuation binding; publication requires coordinator allocation.
+pub const CHARACTER_DEPOT_TYPED_CAUSE: &str = "character_depot_transfer";
 /// `OneItemStateV1.lifecycle` of a source retired by a full merge (DUR-03 §11.5).
 pub const ITEM_LIFECYCLE_RETIRED: u32 = 2;
 /// GAMEITEM01-STACK-QUANTITY-MAX: absolute stack ceiling (D82).
@@ -46,7 +49,7 @@ pub struct OneItemCommandRefV1 {
     pub command_id: u64,
 }
 
-/// Character-owned destination. The direct-root inventory `typed_position`
+/// Character-owned inventory location. The direct-root inventory `typed_position`
 /// (field 2) stays reserved; exactly one B3 destination is set, or none for a
 /// full merge (the source retires into the receiver).
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -107,6 +110,20 @@ pub struct OneItemCorpseSourceV1 {
     pub corpse_ground: Option<OneItemGroundV1>,
 }
 
+/// World-scoped CharacterDepot custody. Channel and locker admission are not
+/// immutable location fields; the live command owner must prove current access.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemCharacterDepotV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub character_id: Vec<u8>,
+    #[prost(uint32, tag = "2")]
+    pub box_index: u32,
+    #[prost(uint64, tag = "3")]
+    pub placement_ordinal: u64,
+    #[prost(bytes = "vec", tag = "4")]
+    pub world_id: Vec<u8>,
+}
+
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemTransferV1 {
     #[prost(message, optional, tag = "1")]
@@ -121,9 +138,17 @@ pub struct OneItemTransferV1 {
     pub cause: Option<OneItemTransferCauseV1>,
     #[prost(message, optional, tag = "6")]
     pub receiver: Option<OneItemReceiverV1>,
-    /// Exactly one of `source` (Ground) and `corpse_source` is present.
+    /// Ground/corpse shapes have exactly one of fields 3 and 7. DEPOT0 shapes
+    /// have exactly one of fields 8 and 9, and neither Ground source.
     #[prost(message, optional, tag = "7")]
     pub corpse_source: Option<Box<OneItemCorpseSourceV1>>,
+    /// Private additive binding: direct main-backpack entry source only.
+    #[prost(message, optional, tag = "8")]
+    pub inventory_source: Option<Box<OneItemInventoryV1>>,
+    #[prost(message, optional, tag = "9")]
+    pub depot_source: Option<Box<OneItemCharacterDepotV1>>,
+    #[prost(message, optional, tag = "10")]
+    pub depot_destination: Option<Box<OneItemCharacterDepotV1>>,
 }
 
 /// The one live Ground location that is the scope authority of the source:
@@ -140,7 +165,7 @@ fn source_ground(value: &OneItemTransferV1) -> Result<&OneItemGroundV1, AuditErr
     }
 }
 
-/// Closed TRANSFER shapes (B3 §4.4).
+/// Closed TRANSFER shapes (B3 §4.4 and the private DEPOT0 continuation).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TransferShape {
     /// An empty container moves into the empty CharacterEquipment `container` slot.
@@ -151,6 +176,10 @@ pub enum TransferShape {
     FullMerge,
     /// B grows to the stack maximum; A keeps the remainder in a new entry.
     TopUp,
+    /// Whole direct main-backpack entry into CharacterDepot; no stack merge.
+    DepotDeposit,
+    /// Whole CharacterDepot entry into a container slot or new backpack entry.
+    DepotWithdraw,
 }
 
 impl TransferShape {
@@ -159,7 +188,9 @@ impl TransferShape {
     pub const fn usage(self) -> TransactionResourceUsage {
         let (touched, lines, participants, work) = match self {
             // A: participant + Ground removal + placement.
-            Self::ContainerSlot | Self::NewEntry => (1, 2, 1, 3),
+            Self::ContainerSlot | Self::NewEntry | Self::DepotDeposit | Self::DepotWithdraw => {
+                (1, 2, 1, 3)
+            }
             // A: participant + Ground removal + retirement; B: participant + quantity.
             Self::FullMerge => (2, 1, 2, 5),
             // A: participant + Ground removal + placement + quantity; B: 2.
@@ -194,8 +225,75 @@ fn check_state(value: &OneItemStateV1) -> Result<(), AuditError> {
     check_key_number(value)
 }
 
+fn check_depot_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditError> {
+    let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
+    let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
+    let cause = value.cause.as_ref().ok_or(AuditError::InvalidInput)?;
+    let command = cause.command_ref.as_ref().ok_or(AuditError::InvalidInput)?;
+    let (shape, inventory, depot) = match (
+        value.inventory_source.as_deref(),
+        value.depot_source.as_deref(),
+        value.destination.as_ref(),
+        value.depot_destination.as_deref(),
+    ) {
+        (Some(inventory), None, None, Some(depot))
+            if !inventory.equipment_container_slot && inventory.container_entry.is_some() =>
+        {
+            (TransferShape::DepotDeposit, inventory, depot)
+        }
+        (None, Some(depot), Some(inventory), None)
+            if inventory.equipment_container_slot != inventory.container_entry.is_some() =>
+        {
+            (TransferShape::DepotWithdraw, inventory, depot)
+        }
+        _ => return Err(AuditError::InvalidInput),
+    };
+    check_state(before)?;
+    check_state(after)?;
+    check_uuid_v7(&depot.character_id)?;
+    check_uuid_v7(&depot.world_id)?;
+    check_uuid_v7(&inventory.character_id)?;
+    check_uuid_v7(&inventory.expected_game_session_id)?;
+    check_uuid_v7(&command.game_session_id)?;
+    check_content_key(&cause.content_revision)?;
+    check_content_key(&cause.ruleset_revision)?;
+    check_content_key(&cause.sim_revision)?;
+    if let Some(entry) = &inventory.container_entry {
+        check_entry(entry)?;
+        if entry.parent_item_instance_id == before.item_instance_id {
+            return Err(AuditError::InvalidInput);
+        }
+    }
+    if value.source.is_some()
+        || value.corpse_source.is_some()
+        || value.receiver.is_some()
+        || before != after
+        || before.lifecycle != ITEM_LIFECYCLE_LIVE
+        || !(1..=GAMEITEM01_STACK_QUANTITY_MAX).contains(&before.quantity)
+        || depot.world_id != before.world_id
+        || depot.character_id != inventory.character_id
+        || !(1..=17).contains(&depot.box_index)
+        || depot.placement_ordinal == 0
+        || cause.typed_cause != CHARACTER_DEPOT_TYPED_CAUSE
+        || command.command_id == 0
+        || command.game_session_id != inventory.expected_game_session_id
+        || inventory.expected_session_generation == 0
+        || inventory.expected_character_lease_generation == 0
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    shape.usage().check()?;
+    Ok(shape)
+}
+
 /// Complete closed TRANSFER shape, conservation and every registered bound.
 pub fn check_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditError> {
+    if value.inventory_source.is_some()
+        || value.depot_source.is_some()
+        || value.depot_destination.is_some()
+    {
+        return check_depot_transfer(value);
+    }
     let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
     let after = value.after.as_ref().ok_or(AuditError::InvalidInput)?;
     let ground = source_ground(value)?;
@@ -280,6 +378,9 @@ pub fn check_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditE
             }
             before.quantity - after.quantity
         }
+        TransferShape::DepotDeposit | TransferShape::DepotWithdraw => {
+            return Err(AuditError::InvalidInput);
+        }
     };
     if let Some(receiver) = value.receiver.as_ref() {
         check_uuid_v7(&receiver.item_instance_id)?;
@@ -303,6 +404,37 @@ pub fn check_transfer(value: &OneItemTransferV1) -> Result<TransferShape, AuditE
     }
     shape.usage().check()?;
     Ok(shape)
+}
+
+struct TransferEnvelopeScope<'a> {
+    world: &'a [u8],
+    channel: Option<&'a [u8]>,
+    connection_generation: u64,
+}
+
+fn transfer_envelope_scope(
+    value: &OneItemTransferV1,
+) -> Result<TransferEnvelopeScope<'_>, AuditError> {
+    let inventory = value
+        .inventory_source
+        .as_deref()
+        .or(value.destination.as_ref())
+        .ok_or(AuditError::InvalidInput)?;
+    let (world, channel) = if value.depot_source.is_some() || value.depot_destination.is_some() {
+        let before = value.before.as_ref().ok_or(AuditError::InvalidInput)?;
+        (before.world_id.as_slice(), None)
+    } else {
+        let ground = source_ground(value)?;
+        (
+            ground.world_id.as_slice(),
+            Some(ground.channel_id.as_slice()),
+        )
+    };
+    Ok(TransferEnvelopeScope {
+        world,
+        channel,
+        connection_generation: inventory.expected_session_generation,
+    })
 }
 
 /// RL-07 payload gate for TRANSFER: size before decode, canonical round trip,
@@ -331,15 +463,11 @@ pub fn decode_transfer_envelope(
 ) -> Result<(EventEnvelopeV1, OneItemTransferV1), AuditError> {
     let value = mint::decode_common_envelope(wire)?;
     let transfer = decode_transfer_payload(&value.payload)?;
-    let ground = source_ground(&transfer)?;
+    let scope = transfer_envelope_scope(&transfer)?;
     let command = transfer
         .cause
         .as_ref()
         .and_then(|cause| cause.command_ref.as_ref())
-        .ok_or(AuditError::InvalidInput)?;
-    let destination = transfer
-        .destination
-        .as_ref()
         .ok_or(AuditError::InvalidInput)?;
     let envelope_command = CausationRefV1 {
         cause: Some(CausationV1::Command(EnvelopeCommandRefV1 {
@@ -347,11 +475,11 @@ pub fn decode_transfer_envelope(
             command_id: command.command_id,
         })),
     };
-    if value.world_id.as_deref() != Some(ground.world_id.as_slice())
-        || value.channel_id.as_deref() != Some(ground.channel_id.as_slice())
+    if value.world_id.as_deref() != Some(scope.world)
+        || value.channel_id.as_deref() != scope.channel
         || value.game_session_id.as_deref() != Some(command.game_session_id.as_slice())
         || value.command_id != Some(command.command_id)
-        || value.connection_generation != Some(destination.expected_session_generation)
+        || value.connection_generation != Some(scope.connection_generation)
         || value.causation.as_ref() != Some(&envelope_command)
     {
         return Err(AuditError::InvalidInput);
@@ -382,17 +510,13 @@ pub fn encode_transfer_event(
         return Err(AuditError::InvalidInput);
     }
     check_transfer(&transfer)?;
-    let ground = source_ground(&transfer)?;
-    let (world_id, channel_id) = (ground.world_id.clone(), ground.channel_id.clone());
+    let scope = transfer_envelope_scope(&transfer)?;
+    let (world_id, channel_id) = (scope.world.to_vec(), scope.channel.map(<[u8]>::to_vec));
+    let connection_generation = scope.connection_generation;
     let command = transfer
         .cause
         .as_ref()
         .and_then(|cause| cause.command_ref.clone())
-        .ok_or(AuditError::InvalidInput)?;
-    let connection_generation = transfer
-        .destination
-        .as_ref()
-        .map(|destination| destination.expected_session_generation)
         .ok_or(AuditError::InvalidInput)?;
     let payload = encode_bounded(
         &OneItemTransactionV1 {
@@ -411,7 +535,7 @@ pub fn encode_transfer_event(
         retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
-        channel_id: Some(channel_id),
+        channel_id,
         game_session_id: Some(command.game_session_id.clone()),
         connection_generation: Some(connection_generation),
         command_id: Some(command.command_id),
@@ -492,6 +616,9 @@ mod tests {
                 false,
             ),
             TransferShape::TopUp => (state(20, 1), Some(entry(3)), Some((90, 100)), false),
+            TransferShape::DepotDeposit | TransferShape::DepotWithdraw => {
+                return depot_transfer(shape);
+            }
         };
         OneItemTransferV1 {
             before: Some(state(30, 1)),
@@ -514,6 +641,9 @@ mod tests {
                 runtime_scope_ownership_generation: 1,
             }),
             corpse_source: None,
+            inventory_source: None,
+            depot_source: None,
+            depot_destination: None,
             destination: Some(OneItemInventoryV1 {
                 character_id: uuid(41),
                 expected_session_generation: 1,
@@ -541,6 +671,30 @@ mod tests {
         }
     }
 
+    fn depot_transfer(shape: TransferShape) -> OneItemTransferV1 {
+        let mut value = transfer(TransferShape::NewEntry);
+        value.source = None;
+        value.cause.as_mut().unwrap().typed_cause = CHARACTER_DEPOT_TYPED_CAUSE.into();
+        let depot = OneItemCharacterDepotV1 {
+            character_id: uuid(41),
+            box_index: 17,
+            placement_ordinal: 11,
+            world_id: uuid(1),
+        };
+        if shape == TransferShape::DepotDeposit {
+            value.inventory_source = value.destination.take().map(Box::new);
+            value.depot_destination = Some(Box::new(depot));
+        } else {
+            assert_eq!(
+                shape,
+                TransferShape::DepotWithdraw,
+                "expected a Depot shape"
+            );
+            value.depot_source = Some(Box::new(depot));
+        }
+        value
+    }
+
     fn identity() -> TransferEventIdentity<'static> {
         let mut event_id = [0; 16];
         event_id.copy_from_slice(&uuid(30));
@@ -560,6 +714,158 @@ mod tests {
         TransferShape::FullMerge,
         TransferShape::TopUp,
     ];
+
+    #[test]
+    fn depot_shapes_round_trip_with_world_only_scope_and_exact_resources() {
+        for shape in [TransferShape::DepotDeposit, TransferShape::DepotWithdraw] {
+            let value = depot_transfer(shape);
+            let wire = encode_transfer_event(identity(), value.clone(), mint::Type2EventTuple::V1)
+                .unwrap();
+            let (envelope, decoded) = decode_transfer_envelope(&wire).unwrap();
+            assert_eq!(decoded, value);
+            assert_eq!(check_transfer(&decoded), Ok(shape));
+            assert_eq!(envelope.world_id, Some(uuid(1)));
+            assert_eq!(envelope.channel_id, None);
+            assert_eq!(envelope.connection_generation, Some(1));
+            assert_eq!(envelope.command_id, Some(7));
+            assert_eq!(shape.usage(), TransferShape::NewEntry.usage());
+            let mut foreign_channel = envelope.clone();
+            foreign_channel.channel_id = Some(uuid(2));
+            assert_eq!(
+                decode_transfer_envelope(&foreign_channel.encode_to_vec()),
+                Err(AuditError::InvalidInput)
+            );
+            let mut foreign_generation = envelope;
+            foreign_generation.connection_generation = Some(2);
+            assert_eq!(
+                decode_transfer_envelope(&foreign_generation.encode_to_vec()),
+                Err(AuditError::InvalidInput)
+            );
+        }
+        let mut slot = depot_transfer(TransferShape::DepotWithdraw);
+        let destination = slot.destination.as_mut().unwrap();
+        destination.container_entry = None;
+        destination.equipment_container_slot = true;
+        assert_eq!(check_transfer(&slot), Ok(TransferShape::DepotWithdraw));
+        let wire =
+            encode_transfer_event(identity(), slot.clone(), mint::Type2EventTuple::V1).unwrap();
+        assert_eq!(decode_transfer_envelope(&wire).unwrap().1, slot);
+    }
+
+    #[test]
+    fn depot_shape_rejects_each_changed_custody_and_command_invariant() {
+        for shape in [TransferShape::DepotDeposit, TransferShape::DepotWithdraw] {
+            for case in 0..21 {
+                let mut value = depot_transfer(shape);
+                let depot = value
+                    .depot_source
+                    .as_mut()
+                    .or(value.depot_destination.as_mut())
+                    .unwrap();
+                match case {
+                    0 => depot.box_index = 0,
+                    1 => depot.box_index = 18,
+                    2 => depot.placement_ordinal = 0,
+                    3 => depot.world_id = uuid(2),
+                    4 => depot.character_id = uuid(42),
+                    5 => depot.character_id = vec![0; 16],
+                    _ => {}
+                }
+                let inventory = value
+                    .inventory_source
+                    .as_deref_mut()
+                    .or(value.destination.as_mut())
+                    .unwrap();
+                match case {
+                    6 => inventory.expected_game_session_id = uuid(51),
+                    7 => inventory.expected_session_generation = 0,
+                    8 => inventory.expected_character_lease_generation = 0,
+                    9 => {
+                        inventory
+                            .container_entry
+                            .as_mut()
+                            .unwrap()
+                            .placement_ordinal = 0
+                    }
+                    10 => {
+                        inventory
+                            .container_entry
+                            .as_mut()
+                            .unwrap()
+                            .parent_item_instance_id = uuid(9)
+                    }
+                    11 => inventory.equipment_container_slot = true,
+                    12 => inventory.container_entry = None,
+                    13 => value.source = transfer(TransferShape::NewEntry).source,
+                    14 => value.receiver = transfer(TransferShape::FullMerge).receiver,
+                    15 => value.after.as_mut().unwrap().quantity -= 1,
+                    16 => value.after.as_mut().unwrap().lifecycle = ITEM_LIFECYCLE_RETIRED,
+                    17 => {
+                        value.cause.as_mut().unwrap().typed_cause = GROUND_PICKUP_TYPED_CAUSE.into()
+                    }
+                    18 => {
+                        value
+                            .cause
+                            .as_mut()
+                            .unwrap()
+                            .command_ref
+                            .as_mut()
+                            .unwrap()
+                            .command_id = 0
+                    }
+                    19 => {
+                        value.before.as_mut().unwrap().quantity = 0;
+                        value.after.as_mut().unwrap().quantity = 0;
+                    }
+                    20 => {
+                        value.before.as_mut().unwrap().quantity = 101;
+                        value.after.as_mut().unwrap().quantity = 101;
+                    }
+                    _ => {}
+                }
+                assert_eq!(
+                    check_transfer(&value),
+                    Err(AuditError::InvalidInput),
+                    "{shape:?} case {case}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn depot_unsigned_boundaries_and_closed_source_destination_pairing() {
+        for shape in [TransferShape::DepotDeposit, TransferShape::DepotWithdraw] {
+            let mut value = depot_transfer(shape);
+            let depot = value
+                .depot_source
+                .as_mut()
+                .or(value.depot_destination.as_mut())
+                .unwrap();
+            depot.placement_ordinal = u64::MAX;
+            let inventory = value
+                .inventory_source
+                .as_deref_mut()
+                .or(value.destination.as_mut())
+                .unwrap();
+            inventory
+                .container_entry
+                .as_mut()
+                .unwrap()
+                .placement_ordinal = u64::MAX;
+            inventory.expected_session_generation = u64::MAX;
+            inventory.expected_character_lease_generation = u64::MAX;
+            assert_eq!(check_transfer(&value), Ok(shape));
+            let wire = encode_transfer_event(identity(), value.clone(), mint::Type2EventTuple::V1)
+                .unwrap();
+            assert_eq!(decode_transfer_envelope(&wire).unwrap().1, value);
+            if shape == TransferShape::DepotDeposit {
+                value.destination = value.inventory_source.clone().map(|source| *source);
+            } else {
+                value.depot_destination = value.depot_source.clone();
+            }
+            assert_eq!(check_transfer(&value), Err(AuditError::InvalidInput));
+        }
+    }
 
     #[test]
     fn every_shape_round_trips_and_mint_gates_reject_it() {
@@ -821,6 +1127,9 @@ mod tests {
                     runtime_scope_ownership_generation: u64::MAX,
                 }),
                 corpse_source: None,
+                inventory_source: None,
+                depot_source: None,
+                depot_destination: None,
                 destination: Some(OneItemInventoryV1 {
                     character_id: uuid(0xee),
                     expected_session_generation: u64::MAX,

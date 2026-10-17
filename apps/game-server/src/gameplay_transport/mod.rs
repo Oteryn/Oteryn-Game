@@ -13,6 +13,7 @@ pub(crate) mod charm;
 mod chat_intent;
 mod connection;
 mod container_view;
+mod depot;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod input_gate;

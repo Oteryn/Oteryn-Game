@@ -144,7 +144,11 @@ pub(super) fn outcome_of(
                 Refusal::CorpseExclusiveWindow => ItemMoveOutcome::NotOwner,
                 Refusal::CorpseNotPickupable => ItemMoveOutcome::NotPickupable,
                 Refusal::ContainerNotEmpty => ItemMoveOutcome::NotSupported,
-                Refusal::DefinitionMismatch
+                Refusal::WeightUnknown
+                | Refusal::WeightGenerationMismatch
+                | Refusal::WeightDefinitionMismatch
+                | Refusal::Overweight
+                | Refusal::DefinitionMismatch
                 | Refusal::UnknownStackClass
                 | Refusal::UnsupportedStackMaximum
                 | Refusal::QuantityAboveStackMaximum

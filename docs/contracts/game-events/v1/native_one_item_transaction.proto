@@ -272,17 +272,34 @@ message OneItemCorpseSourceV1 {
   OneItemGroundV1 corpse_ground = 3;  // the corpse's own live Ground location
 }
 
+// PRIVATE DEPOT0 continuation: additive numbers below require the coordinator's
+// final allocation. World + Character custody; no Channel or admission witness.
+message OneItemCharacterDepotV1 {
+  bytes character_id = 1;        // exactly 16-byte non-nil UUIDv7
+  uint32 box_index = 2;          // 1..17
+  uint64 placement_ordinal = 3;  // 1..uint64 max; no renumbering
+  bytes world_id = 4;            // exactly 16-byte non-nil UUIDv7
+}
+
 message OneItemTransferV1 {
   OneItemStateV1 before = 1;
   OneItemStateV1 after = 2;
-  // Exactly one source: a live Ground location (`source`) or a corpse
-  // container entry (`corpse_source`, D3-4). Both present or both absent
-  // rejects.
+  // Existing Ground/corpse shapes use exactly one of fields 3 and 7.
+  // DEPOT0 shapes use exactly one of fields 8 and 9, with neither 3 nor 7.
   OneItemGroundV1 source = 3;
   OneItemInventoryV1 destination = 4;
   OneItemTransferCauseV1 cause = 5;
   OneItemReceiverV1 receiver = 6; // D83 full merge and top-up only
   OneItemCorpseSourceV1 corpse_source = 7; // D3-4 corpse-entry source only
+  // Whole item, unchanged quantity/identity, no receiver/merge. A deposit has
+  // inventory_source (direct main-backpack entry) + depot_destination only;
+  // a withdrawal has depot_source + destination (empty container slot or new
+  // main-backpack entry) only. The envelope has World and no Channel. Cause:
+  // character_depot_transfer; actual CommandRef/session generations bind the
+  // inventory side. These bytes never grant current locker/open-view access.
+  OneItemInventoryV1 inventory_source = 8;
+  OneItemCharacterDepotV1 depot_source = 9;
+  OneItemCharacterDepotV1 depot_destination = 10;
 }
 
 // Reward-claim MINT cause: typed_cause "reward_claim_mint", the revisions, the

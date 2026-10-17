@@ -1416,6 +1416,7 @@ mod tests {
 
     fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: definition(key),
             stack,
             container_capacity: None,
@@ -1425,6 +1426,7 @@ mod tests {
 
     fn backpack_facts(capacity: u32) -> ItemDefinitionFacts {
         ItemDefinitionFacts {
+            weight: None,
             definition: definition("fixture:b3.backpack"),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(capacity),
