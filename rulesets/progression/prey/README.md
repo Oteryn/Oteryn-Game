@@ -35,7 +35,9 @@ the improved-loot trigger therefore use at most 29 draws and 14 output entries
 under PREY0. Nested/alternate/unknown table shapes refuse; the checker never
 selects a smaller source table or discards unsupported leaves. Before projection,
 every used canonical Loot definition must have the closed table shape, so a
-table-level alternative cannot disappear from qualification. A pool below 27
+table-level alternative cannot disappear from qualification. That canonical
+shape includes exactly `identity`, `kind: "Loot"`, `algorithm` and `entries`;
+the native output retains its existing three-field table shape. A pool below 27
 refuses PREY compilation for that generation. Normal native type/item/byte
 qualification remains required, as do the remaining PREY content tables,
 independent review, migration, runtime writer and activation gates.

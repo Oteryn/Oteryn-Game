@@ -316,7 +316,7 @@ From `tools/content-schema/native-gameplay`:
 python -m unittest test_prey_loot_budget test_full_spell_artifact.LootTablesTests.test_null_binding_is_explicit_and_a_missing_item_refuses
 ```
 
-**20 passed, 0 failed**: 19 new synthetic-content regressions through the actual
+**21 passed, 0 failed**: 20 new synthetic-content regressions through the actual
 native producer and one existing producer regression. These cover the seven/eight
 entry boundary, complete-pool enforcement, exact source hashes and revisions,
 canonical/native eligibility disagreement, missing canonical authoring,
@@ -329,6 +329,22 @@ reran the predecessor's 19 cases successfully. Python AST, provider JSON syntax
 and whitespace checks pass.
 These results do not replace the historical Rust evidence or claim fresh native
 Cargo, PostgreSQL or production-content qualification.
+
+The positive fixture now includes the actual canonical Loot discriminator,
+`kind: "Loot"`, alongside `identity`, `algorithm` and `entries`. Independent
+source review caught the initial three-field canonical check rejecting this
+valid field. Its regression first failed on that valid canonical shape, then
+passed after accepting the exact discriminator while rejecting missing/wrong
+kinds and unknown/alternative fields. Native emitted tables retain their
+existing three-field shape.
+
+Root's first full-clone related-suite run of the predecessor returned 22 passes
+and one existing checked-in Loot-section mismatch. Root compared the exact base
+producer blob `49c460ae64ea883d1ce42daf3e81ddaeb9ebf6e5` with that candidate: both
+emitted SHA-256
+`01905f8e6b6cfb28118eb54fecb1274f3a0052c5631c2ecdbf33b021b31e5d3a`.
+The checked-in artifact differs in 86 Item `materializable` flags. This is
+inherited content drift; no shared artifact regeneration is included here.
 
 ### Remaining prerequisites
 

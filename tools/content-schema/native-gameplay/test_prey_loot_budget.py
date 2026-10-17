@@ -24,6 +24,7 @@ class PreyLootCompilation(unittest.TestCase):
             path.mkdir()
         self.item = ref('Item', 'synthetic:item')
         self.table = {'identity': ref('Loot', 'synthetic:loot'),
+                      'kind': 'Loot',
                       'algorithm': 'IndependentBernoulliPpm',
                       'entries': [self.entry() for _ in range(7)]}
         self.creatures = {'schema': 'OTERYN_NATIVE_CREATURE_PROFILES/v1', 'records': []}
@@ -213,6 +214,17 @@ class PreyLootCompilation(unittest.TestCase):
         self.assertEqual(self.ordinary(), ordinary)  # The ordinary producer retains its contract.
         with self.assertRaisesRegex(ValueError, 'PREY_LOOT_UNSUPPORTED.*canonical Loot table'):
             self.compile(provider)
+
+    def test_canonical_loot_kind_is_required_and_closed(self):
+        self.assertEqual(self.compile(), self.ordinary())
+        for kind in (None, 'Item', False):
+            with self.subTest(kind=kind):
+                if kind is None:
+                    self.table.pop('kind', None)
+                else:
+                    self.table['kind'] = kind
+                with self.assertRaisesRegex(ValueError, 'PREY_LOOT_UNSUPPORTED.*canonical Loot table'):
+                    self.compile()
 
     def test_unknown_algorithm_and_boolean_quantity_refuse(self):
         self.table['algorithm'] = 'Unknown'

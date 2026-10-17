@@ -425,7 +425,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
         bindings[target['key']] = {'creature': target, 'loot': loot}
     if prey_provider is not None:
         for table in used.values():
-            if set(table) != {'identity', 'algorithm', 'entries'}:
+            if set(table) != {'identity', 'kind', 'algorithm', 'entries'} or table['kind'] != 'Loot':
                 raise ValueError(f"PREY_LOOT_UNSUPPORTED: {table['identity']['key']} canonical Loot table shape")
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')
