@@ -1230,7 +1230,7 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        for (number, policy) in [(1, None), (2, Some(2)), (3, Some(1)), (4, Some(1))] {
+        for (number, policy) in [(1, Some(2)), (2, Some(2)), (3, Some(1)), (4, Some(1))] {
             if let Some(policy) = policy {
                 sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,$2,1,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT(character_id) DO UPDATE SET party_invites=EXCLUDED.party_invites")
                     .bind(target_character.as_slice()).bind(policy as i16).execute(&h.pool).await?;
