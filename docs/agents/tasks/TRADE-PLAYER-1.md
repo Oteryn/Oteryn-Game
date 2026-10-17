@@ -680,3 +680,75 @@ item handles, capability, command/domain and the generated registry/resource
 rows under the shared slot. Two-client/crash/concurrency qualification, exact-head
 CI and independent review are still required. The writer itself is owned TRADE
 implementation, not a prerequisite assigned to an unspecified external producer.
+
+## Native owner composition and standalone CI repair (successor of 106fc45d76, 2026-10-17)
+
+This checkpoint remains **NOT_FULLY_QUALIFIED**. Exact predecessor:
+`106fc45d76f5661a4143b10d1c71af3f0b970ba6`. The predecessor's strict Clippy
+job `117392246358` was RED, and native PostgreSQL job `117391997240` plus
+integration-rest job `117391997348` failed to compile their standalone durability
+roots. Those failures are not execution evidence for the new swap writer.
+
+The real writer now lives in a private inline `native_writer` module inside the
+owned `gameplay_transport/player_trade.rs`. Its immutable request consumes that
+owner's private issuance and actual Content. Native inventory reads, typed data,
+errors, receipt data and the pure bounded codec remain in
+`durability/player_trade.rs`, so the existing standalone durability roots no
+longer require a synthetic gameplay or Content module. The only crate-level
+re-exports are the frozen request and borrowed commit-authority input. The
+existing PostgreSQL test bodies keep their assertions and use the actual owner's
+type paths. The D1158 insert-site inventory follows the moved native outbox
+writer; operation tag12, protocol definitions and migration0100 are unchanged.
+
+The move preserves the native writer/reconciler statements, transaction ordering
+and every SQL literal. The only changes inside moved bodies are the qualified
+`crate::durability::runtime_scope_assignment` paths and Clippy's equivalent
+auto-deref correction. Captured issuance intent is boxed to remove the large
+enum layout, and the pure codec fixture uses `then_some`.
+
+The owned continuation now retains the exact frozen request before its first
+storage await. An unresolved drive first performs the real recovery-fenced,
+occurrence-locked lookup. Native committed history is outcome-only replay and
+does not require a newly admitted actor/session. If the lookup proves absence,
+the native writer may retry that identical request. Cancellation, unknown
+COMMIT, Root/pool errors and a failed recovery lookup keep TRANSFERRING and both
+actor indexes. A later pre-TX authority rejection cannot settle an earlier
+ambiguity. The explicit native `CommitRejected` result may close a rejected
+attempt only after that successful absence lookup; generic storage failure
+never proves rollback.
+
+The owner caches the actual committed receipt or definitive native refusal
+before attempting FND terminal output. Its phase and actor indexes close only
+after successful terminalization of the pending trigger. If output's native
+pending-ingress check refuses, the cache survives and the next output attempt
+performs no reader/writer call. The first accepter's historical ACCEPTED record
+is not terminalized again. No caller-supplied terminal enum installs a result.
+
+Five new PostgreSQL cases cover:
+
+- retained preparation, changed identity, missing pending input and trigger-only completion;
+- an actual committed transaction whose continuation was lost, followed by current-session changes;
+- an actual receipt cached before refused output, then successful output while another transaction holds the exact occurrence lock;
+- an initially deferred COMMIT rejection, independently observed by a nontransactional sequence and complete rollback snapshots;
+- dropping the real native future only after PostgreSQL reports active COMMIT blocked by a test gate, retaining the same request across foreign-Root refusal, then completing/reconciling exactly one swap and one event.
+
+The five cases use the existing real native fixture and PostgreSQL17.6 marker.
+Their fault triggers and sequence live only in the disposable test database.
+The existing optional configured-admin early return is not a native test pass.
+No test-root shim, visibility inflation, ignored test, harness edit or alternate
+database route is added.
+
+Validation for this source checkpoint: Rust1.94 repo-config rustfmt,
+exact-original Git blob checks, mechanical writer/codec preservation, prior
+test-assertion preservation, shared inventory minimality and patch whitespace
+checks **PASS**. Typecheck, strict Clippy, ordinary test execution and native
+PostgreSQL execution are **NOT_RUN** for this successor until its exact published
+head is qualified. The predecessor's other passing jobs do not qualify it.
+
+Actual shared GameSession ingress retention/provenance, sole live Channel trade
+book, cross-command physical exclusion, lifecycle/cancellation hooks and the
+coherent wire/capability/domain registry installation remain uninstalled. The
+new owned continuation is implemented source, not a claim of installed dispatch,
+two-client operation, or process-restart qualification. Its fixed 2-item /
+4-location / 2-participant / 6-effect shape is unchanged; no pre-swap durable
+reservation or retry-counter row is introduced.

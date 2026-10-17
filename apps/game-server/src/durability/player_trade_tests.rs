@@ -81,7 +81,7 @@ fn sample(maximum: bool) -> OneItemPlayerTradeV1 {
                         placement_ordinal: wide,
                         placed_transaction_id: id(80).to_vec(),
                     }),
-                    unchanged_timed_state: maximum.then(|| OneItemPlayerTradeTimedV1 {
+                    unchanged_timed_state: maximum.then_some(OneItemPlayerTradeTimedV1 {
                         row: Some(super::super::item_timed_state_audit::OneItemTimedRowV1 {
                             charges: Some(65535),
                             remaining_ms: Some(604800000),
