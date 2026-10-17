@@ -4,7 +4,7 @@
 task_id: CHAT-MUTE-CAST-1
 title: "CHAT-MUTE-CAST-1: a muted character cannot cast a spell (CHAT-0 section 6)"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/chat-0-impl-20261012
@@ -15,7 +15,7 @@ final_head_sha: null
 owner: claude-code-session-01CwP6d84eCPvpgoEuyci8Tx
 control_plane: claude-code-session-01CwP6d84eCPvpgoEuyci8Tx
 created_at: 2026-10-12
-updated_at: 2026-10-12
+updated_at: 2026-10-17
 owned_paths:
   - apps/game-server/src/gameplay_transport/chat_intent.rs
   - apps/game-server/src/gameplay_transport/mod.rs
@@ -70,4 +70,12 @@ Recorded in the PR checks of the frozen head.
 ## PR and closeout
 
 - changed-file review: within owned paths
-- merge commit/result: pending
+- merge commit/result: squash merge of #2003 (merged 2026-10-12)
+
+## Archive closeout
+
+- canonical PR #2003 merged on 2026-10-12 (`git log --grep "(#2003)"`); the record stayed in
+  `tasks/active/` and failed the protected-main live-state check, so #2163 archives it
+  as a ported `main` governance fix
+- merge commit/result: squash merge of #2003
+- ownership release: released with the merge of #2003

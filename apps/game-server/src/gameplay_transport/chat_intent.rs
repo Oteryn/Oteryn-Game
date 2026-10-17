@@ -1,10 +1,13 @@
-//! `CHAT_INTENT` for local speech (CHAT-WIRE-1, CHAT-0 §3 and §7).
+//! `CHAT_INTENT` for local speech, private messages and World rooms (CHAT-WIRE-1, CHAT-2B,
+//! CHAT-0 §3, §5 and §7).
 //!
 //! A thin runtime over the pure rules of `crate::chat`: one entry per admitted GameSession holds
-//! the speaker name, the spam limiter and the undelivered-line queue. A `say`, `whisper` or `yell`
-//! is admitted by the speaker's limiter and queued for every session of the Channel that hears
-//! it; each connection drains its own queue into domain 12 deltas. Private messages, rooms and
-//! the World relay are CHAT-2 and answer `CHAT_UNAVAILABLE`. Nothing here is durable.
+//! the speaker name, the spam limiter, the open rooms and the undelivered-line queue. A `say`,
+//! `whisper` or `yell` is admitted by the speaker's limiter and queued for every session of the
+//! Channel that hears it; each connection drains its own queue into domain 12 deltas. Private and
+//! room lines pass the same limiter before any lock, then go out over the World relay
+//! (`super::chat_relay`), which hands every line it receives to [`ChatRuntime::deliver`]. Without
+//! a configured, listening relay they answer `CHAT_UNAVAILABLE`. Nothing here is durable.
 
 use std::collections::HashMap;
 use std::num::NonZeroU64;
@@ -12,19 +15,22 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use oteryn_protocol_oteryn::chat::{
-    ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatSpeaker, ChatSpeechMode,
+    ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatRoom, ChatSpeaker, ChatSpeechMode,
 };
 use oteryn_protocol_oteryn::npc_service::{MAX_OPEN_CONVERSATIONS_PER_NPC, TALK_RANGE_TILES};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::actor_spell::ChannelSpellStates;
+use super::chat_relay::ChatRelay;
 use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
+use crate::chat::relay::{RelayDestination, RelayLine};
 use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
-    local_listeners,
+    local_listeners, private_line, room_line,
 };
 use crate::domain;
+use crate::domain::character_name::CharacterName;
 use crate::domain::premium::PremiumGate;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::chat::ChatRoomSet;
@@ -42,7 +48,14 @@ const fn result(disposition: ChatDisposition) -> ChatIntentResult {
 
 struct ChatSession {
     name: String,
+    /// The session's CharacterId, the key of the private lines it receives; `None` receives none.
+    character: Option<[u8; 16]>,
     limiter: ChatLimiter,
+    /// The Character's level, read at admission, for a speaker without cast facts.
+    level: u32,
+    /// The rooms the session has open, and the set its client was last told.
+    rooms: ChatRoomSet,
+    rooms_shown: ChatRoomSet,
     egress: ChatEgress,
     /// The NPC this session is in conversation with (NPC-TALK-1).
     engaged: Option<ExactActorRef>,
@@ -63,18 +76,37 @@ pub(crate) struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
     /// What the NPCs of the Channel say; unset until the boot wiring installs it.
     npc_talk: OnceLock<Arc<NpcTalkBook>>,
+    /// The World relay; unset on a node without one, which refuses room and private lines.
+    relay: OnceLock<Arc<ChatRelay>>,
     /// The last customer queue position handed out.
     joins: AtomicU64,
 }
 
 impl ChatRuntime {
-    /// Admission, reconnect or transfer of `session`: keeps its limiter (a mute survives a
-    /// reconnect), drops undelivered lines (a replacement snapshot drops lines, never replays).
+    /// [`Self::admit_as`] for a session that receives no private line.
+    #[cfg(test)]
     pub(crate) fn admit(&self, session: GameSessionId, name: &str, now: SemanticTimeMicros) {
+        self.admit_as(session, name, None, now);
+    }
+
+    /// Admission, reconnect or transfer of `session` playing `character`: keeps its limiter (a
+    /// mute survives a reconnect) and its open rooms, drops undelivered lines (a replacement
+    /// snapshot drops lines, never replays).
+    pub(crate) fn admit_as(
+        &self,
+        session: GameSessionId,
+        name: &str,
+        character: Option<[u8; 16]>,
+        now: SemanticTimeMicros,
+    ) {
         if let Ok(mut sessions) = self.sessions.lock() {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
                 name: name.to_owned(),
+                character,
                 limiter: ChatLimiter::new(now),
+                level: 1,
+                rooms: ChatRoomSet::default(),
+                rooms_shown: ChatRoomSet::default(),
                 egress: ChatEgress::new(),
                 engaged: None,
                 joined: 0,
@@ -82,10 +114,94 @@ impl ChatRuntime {
                 npc_service: false,
             });
             entry.name = name.to_owned();
+            entry.character = character;
             entry.egress.clear();
             entry.engaged = None;
             entry.walked_away.clear();
             entry.npc_service = false;
+        }
+    }
+
+    /// Installs the World relay once; a second install is ignored.
+    pub(crate) fn install_relay(&self, relay: Arc<ChatRelay>) {
+        let _ = self.relay.set(relay);
+    }
+
+    /// The World relay, once installed.
+    pub(crate) fn relay(&self) -> Option<&ChatRelay> {
+        self.relay.get().map(AsRef::as_ref)
+    }
+
+    fn relay_ready(&self) -> bool {
+        self.relay().is_some_and(ChatRelay::is_ready)
+    }
+
+    /// The open rooms of `session`, which its client is now shown (a snapshot).
+    pub(crate) fn show_rooms(&self, session: GameSessionId) -> ChatRoomSet {
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return ChatRoomSet::default();
+        };
+        let Some(entry) = sessions.get_mut(&session) else {
+            return ChatRoomSet::default();
+        };
+        entry.rooms_shown = entry.rooms;
+        entry.rooms
+    }
+
+    /// The open rooms of `session` when they differ from what its client was last shown; the
+    /// client is shown them from now on (a domain 12 delta type 2).
+    pub(crate) fn take_rooms_change(&self, session: GameSessionId) -> Option<ChatRoomSet> {
+        let mut sessions = self.sessions.lock().ok()?;
+        let entry = sessions.get_mut(&session)?;
+        (entry.rooms != entry.rooms_shown).then(|| {
+            entry.rooms_shown = entry.rooms;
+            entry.rooms
+        })
+    }
+
+    /// Opens or closes `room` for `session`: no Channel state, no line. Closing a room that is
+    /// not open is `OK`; without a configured relay no room can be opened.
+    fn set_room(&self, session: GameSessionId, room: ChatRoom, open: bool) -> ChatIntentResult {
+        if open && self.relay().is_none() {
+            return result(ChatDisposition::ChatUnavailable);
+        }
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return result(ChatDisposition::ChatUnavailable);
+        };
+        let Some(entry) = sessions.get_mut(&session) else {
+            return result(ChatDisposition::ChatUnavailable);
+        };
+        if open {
+            entry.rooms.insert(room);
+        } else {
+            entry.rooms.remove(room);
+        }
+        result(ChatDisposition::Ok)
+    }
+
+    /// Delivers one line received from the World relay to the sessions of this node it is for:
+    /// a private line to the session playing its recipient, a room line to every session that
+    /// has the room open. Nothing is written or logged.
+    pub(crate) fn deliver(&self, line: &RelayLine) {
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return;
+        };
+        let name = line.sender_name.as_str();
+        match line.destination {
+            RelayDestination::Private { recipient } => {
+                for entry in sessions.values_mut() {
+                    if entry.character.as_ref() == Some(recipient.as_bytes()) {
+                        entry.egress.push(private_line(name, &line.text));
+                    }
+                }
+            }
+            RelayDestination::Room { room } => {
+                for entry in sessions.values_mut() {
+                    if entry.rooms.contains(room) {
+                        entry.egress.push(room_line(room, name, &line.text));
+                    }
+                }
+            }
         }
     }
 
@@ -97,6 +213,24 @@ impl ChatRuntime {
     /// What the NPCs of the Channel say, once installed.
     pub(crate) fn npc_talk(&self) -> Option<&NpcTalkBook> {
         self.npc_talk.get().map(AsRef::as_ref)
+    }
+
+    /// Records the level `session`'s Character had at admission.
+    fn admit_level(&self, session: GameSessionId, level: u32) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(entry) = sessions.get_mut(&session)
+        {
+            entry.level = level;
+        }
+    }
+
+    /// The level `session`'s Character had at admission; 1 for an unknown session.
+    fn level(&self, session: GameSessionId) -> u32 {
+        self.sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session).map(|entry| entry.level))
+            .unwrap_or(1)
     }
 
     pub(crate) fn knows(&self, session: GameSessionId) -> bool {
@@ -127,6 +261,17 @@ impl ChatRuntime {
             entry.engaged = None;
             entry.walked_away.clear();
         }
+    }
+
+    /// The actual chat owner's engagement generation. Display-only binding data; this does
+    /// not qualify a session, current NPC, range, Content or durable mutation authority.
+    pub(crate) fn npc_conversation_generation(&self, session: GameSessionId) -> Option<u64> {
+        self.sessions
+            .lock()
+            .ok()?
+            .get(&session)
+            .map(|entry| entry.joined)
+            .filter(|joined| *joined != 0)
     }
 
     /// The NPC `session` is in conversation with.
@@ -305,18 +450,25 @@ impl ChatRuntime {
     /// The gate in front of the Channel lock (CHAT-0 §6): a line of a muted session or beyond its
     /// bucket (a yell included), a yell in its cooldown and a yell repeated soon after an
     /// under-level refusal (which takes its line) are refused here, before the runtime lock and
-    /// the entity clone, so a flood costs the Channel only this map lookup. An intent the runtime
-    /// does not serve yet (private messages and rooms, CHAT-2) is refused here too: it takes no
-    /// line, so letting it reach the locks would make it a free flood. `None` lets the intent go on.
+    /// the entity clone, so a flood costs the Channel only this map lookup. A private or room line
+    /// is gated here too ([`Self::pre_gate_relay`]), and opening or closing a room is answered here
+    /// outright. `None` lets the intent go on.
     pub(crate) fn pre_gate(
         &self,
         session: GameSessionId,
         intent: &ChatIntent,
         now: SemanticTimeMicros,
     ) -> Option<ChatIntentResult> {
-        let ChatIntent::Say { mode, text } = intent else {
-            // CHAT-2 gates these here when it implements them.
-            return Some(result(ChatDisposition::ChatUnavailable));
+        let (mode, text) = match intent {
+            ChatIntent::Say { mode, text } => (mode, text),
+            ChatIntent::OpenRoom(room) => return Some(self.set_room(session, *room, true)),
+            ChatIntent::CloseRoom(room) => return Some(self.set_room(session, *room, false)),
+            ChatIntent::Private { text, .. } => {
+                return self.pre_gate_relay(session, None, text, now);
+            }
+            ChatIntent::Room { room, text } => {
+                return self.pre_gate_relay(session, Some(*room), text, now);
+            }
         };
         // Unusable text is refused here too, without the Channel and without a line, so it
         // cannot be repeated against the locks for free.
@@ -337,6 +489,68 @@ impl ChatRuntime {
             .pre_gate(speech_mode(*mode), now)
             .err()
             .map(refusal)
+    }
+
+    /// The gate of a private line (`room` `None`) or a room line, before the Channel locks, the
+    /// recipient read and the relay: unusable text is `REJECTED`, an unknown session or a relay
+    /// that is not ready `CHAT_UNAVAILABLE`, a room that is not open `ROOM_NOT_OPEN`, all without
+    /// a line; then the limiter (mute, the Advertising interval, the bucket) takes its line.
+    fn pre_gate_relay(
+        &self,
+        session: GameSessionId,
+        room: Option<ChatRoom>,
+        text: &str,
+        now: SemanticTimeMicros,
+    ) -> Option<ChatIntentResult> {
+        if ChatText::parse(text).is_err() {
+            return Some(result(ChatDisposition::Rejected));
+        }
+        let unavailable = || Some(result(ChatDisposition::ChatUnavailable));
+        let Ok(mut sessions) = self.sessions.lock() else {
+            return unavailable();
+        };
+        let Some(entry) = sessions.get_mut(&session) else {
+            return unavailable();
+        };
+        if !self.relay_ready() {
+            return unavailable();
+        }
+        if room.is_some_and(|room| !entry.rooms.contains(room)) {
+            return Some(result(ChatDisposition::RoomNotOpen));
+        }
+        entry
+            .limiter
+            .pre_gate_relay(room == Some(ChatRoom::Advertising), now)
+            .err()
+            .map(refusal)
+    }
+
+    /// The name of a session about to send a relay line, after recording its recipient
+    /// (`CHAT0-RL-05`) or claiming the Advertising interval; a refusal when it cannot send.
+    fn relay_sender(
+        &self,
+        session: GameSessionId,
+        room: Option<ChatRoom>,
+        recipient: Option<[u8; 16]>,
+        now: SemanticTimeMicros,
+    ) -> Result<CharacterName, ChatIntentResult> {
+        let unavailable = result(ChatDisposition::ChatUnavailable);
+        let mut sessions = self.sessions.lock().map_err(|_| unavailable)?;
+        let entry = sessions.get_mut(&session).ok_or(unavailable)?;
+        let name = CharacterName::parse(&entry.name).map_err(|_| unavailable)?;
+        if let Some(recipient) = recipient {
+            if entry.character == Some(recipient) {
+                return Err(result(ChatDisposition::Rejected));
+            }
+            entry
+                .limiter
+                .admit_recipient(recipient, now)
+                .map_err(refusal)?;
+        }
+        if room == Some(ChatRoom::Advertising) {
+            entry.limiter.claim_advertising(now).map_err(refusal)?;
+        }
+        Ok(name)
     }
 
     /// Whether `session` is muted at `now`.
@@ -405,7 +619,7 @@ pub(crate) fn chat_in_premium_channel(
     now: SemanticTimeMicros,
 ) -> ChatIntentResult {
     let ChatIntent::Say { mode, text } = intent else {
-        // CHAT-2: private messages, rooms and the World relay.
+        // Private and room lines never take the Channel path (`ComposedFreshAdmission::chat_relay`).
         return result(ChatDisposition::ChatUnavailable);
     };
     let Ok(text) = ChatText::parse(text) else {
@@ -431,18 +645,18 @@ pub(crate) fn chat_in_premium_channel(
         identity: actor.placement_identity(),
         generation,
     };
-    // An actor without cast facts is level 1: it can talk but not yell.
-    let gate = YellGate {
-        level: states
-            .get(runtime, actor, session)
-            .map_or(1, |state| state.character_facts().level),
-        premium_current: premium.premium_current(),
-    };
     let Ok(mut sessions) = chat.sessions.lock() else {
         return result(ChatDisposition::ChatUnavailable);
     };
     let Some(speaking) = sessions.get_mut(&session) else {
         return result(ChatDisposition::ChatUnavailable);
+    };
+    // An actor without cast facts has the level read at its chat admission.
+    let gate = YellGate {
+        level: states
+            .get(runtime, actor, session)
+            .map_or(speaking.level, |state| state.character_facts().level),
+        premium_current: premium.premium_current(),
     };
     if let Err(why) = speaking.limiter.admit_local(mode, gate, now) {
         return refusal(why);
@@ -598,34 +812,45 @@ fn npc_answer(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// The speaker name of `session`'s Character from the durable root, read once per session.
-    async fn chat_speaker_name(&self, session: GameSessionId) -> Option<String> {
+    /// The speaker name, CharacterId and level of `session`'s Character from the durable root,
+    /// read once per session. A Character without a progression row is level 1; a failed read
+    /// leaves the session unadmitted, so its next open reads again.
+    async fn chat_speaker_name(&self, session: GameSessionId) -> Option<(String, [u8; 16], u32)> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let (current, _) = store.current_session_at(session).await.ok()?;
-        let character_id =
-            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes()).ok()?;
+        let character = *current.commit().character_id().as_bytes();
+        let character_id = domain::CharacterId::from_bytes(character).ok()?;
         let name = self
             .root
             .read_character_chat_name(self.character, character_id)
             .await
             .ok()??;
-        Some(name.as_str().to_owned())
+        let level = self
+            .root
+            .read_character_progression(self.character, character_id)
+            .await
+            .ok()?
+            .map_or(1, |progression| progression.level);
+        Some((name.as_str().to_owned(), character, level))
     }
 
-    /// Opens (or keeps) the chat state of `session`; no room is open before CHAT-2.
+    /// Opens (or keeps) the chat state of `session` and answers its open rooms (the snapshot).
     pub(super) async fn chat_open(&self, session: GameSessionId) -> ChatRoomSet {
         let name = if self.chat.knows(session) {
             None
         } else {
             self.chat_speaker_name(session).await
         };
-        // Without a readable name the session is not admitted: it neither speaks nor hears.
-        if let Some(name) = name {
-            self.chat.admit(session, &name, self.owner_now());
+        // Without a readable name and level the session is not admitted: it neither speaks nor
+        // hears.
+        if let Some((name, character, level)) = name {
+            self.chat
+                .admit_as(session, &name, Some(character), self.owner_now());
+            self.chat.admit_level(session, level);
         } else if self.chat.knows(session) {
             self.chat.refresh(session);
         }
-        ChatRoomSet::default()
+        self.chat.show_rooms(session)
     }
 
     pub(super) async fn chat_speak(
@@ -637,6 +862,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now = self.owner_now();
         if let Some(refused) = self.chat.pre_gate(session, intent, now) {
             return refused;
+        }
+        if matches!(intent, ChatIntent::Private { .. } | ChatIntent::Room { .. }) {
+            return self.chat_relay(actor, session, intent, now).await;
         }
         // Only a yell reads the Premium gate; say and whisper never open the latch transaction.
         let premium = match intent {
@@ -657,6 +885,101 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent,
             now,
         )
+    }
+
+    /// A private or room line that passed the gate: the sender's level (and vocation, for
+    /// Advertising) from its cast facts under a brief hold of the Channel locks, the recipient
+    /// from the durable root, then the relay. No lock is held across the recipient read, the
+    /// Premium read or the send.
+    async fn chat_relay(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &ChatIntent,
+        now: SemanticTimeMicros,
+    ) -> ChatIntentResult {
+        let (room, recipient_name, text) = match intent {
+            ChatIntent::Private {
+                recipient_name,
+                text,
+            } => (None, Some(recipient_name), text),
+            ChatIntent::Room { room, text } => (Some(*room), None, text),
+            _ => return result(ChatDisposition::ChatUnavailable),
+        };
+        let Ok(text) = ChatText::parse(text) else {
+            return result(ChatDisposition::Rejected);
+        };
+        let Some(relay) = self.chat.relay() else {
+            return result(ChatDisposition::ChatUnavailable);
+        };
+        // An actor without cast facts has no vocation; its level is the one read at admission.
+        let facts = {
+            let runtime = self.runtime.lock().await;
+            let states = self.spell_states.lock().await;
+            states
+                .get(&runtime, actor, session)
+                .map(|state| state.character_facts().level)
+        };
+        let level = facts.unwrap_or_else(|| self.chat.level(session));
+        let free = YellGate {
+            level,
+            premium_current: false,
+        };
+        let recipient = match (room, recipient_name) {
+            (Some(room), _) => {
+                // Only an under-level line to a room that needs it reads the Premium gate.
+                let allowed = free.allows_room(room)
+                    || YellGate {
+                        level,
+                        premium_current: self.session_premium_gate(session).await.premium_current(),
+                    }
+                    .allows_room(room);
+                if !allowed {
+                    return result(ChatDisposition::LevelTooLow);
+                }
+                if room == ChatRoom::Advertising && facts.is_none() {
+                    return result(ChatDisposition::NoVocation);
+                }
+                None
+            }
+            (None, Some(name)) => {
+                if !free.allows_private() {
+                    return result(ChatDisposition::LevelTooLow);
+                }
+                // A name that cannot be a Character name is no online Character either.
+                let Ok(name) = CharacterName::parse(name) else {
+                    return result(ChatDisposition::NotOnline);
+                };
+                match self
+                    .root
+                    .read_chat_recipient(self.character, *self.world_id.as_bytes(), &name)
+                    .await
+                {
+                    Ok(Some(recipient)) => Some(recipient),
+                    Ok(None) => return result(ChatDisposition::NotOnline),
+                    Err(_) => return result(ChatDisposition::ChatUnavailable),
+                }
+            }
+            (None, None) => return result(ChatDisposition::ChatUnavailable),
+        };
+        let name = match self.chat.relay_sender(session, room, recipient, now) {
+            Ok(sender) => sender,
+            Err(refused) => return refused,
+        };
+        let destination = match (room, recipient) {
+            (Some(room), _) => RelayDestination::Room { room },
+            (None, Some(recipient)) => {
+                let Ok(recipient) = oteryn_protocol_oteryn::CharacterId::decode(&recipient) else {
+                    return result(ChatDisposition::ChatUnavailable);
+                };
+                RelayDestination::Private { recipient }
+            }
+            (None, None) => return result(ChatDisposition::ChatUnavailable),
+        };
+        match relay.send(destination, name, text).await {
+            Ok(()) => result(ChatDisposition::Ok),
+            Err(disposition) => result(disposition),
+        }
     }
 }
 
@@ -775,7 +1098,7 @@ mod tests {
     }
 
     #[test]
-    fn rooms_and_private_messages_wait_for_chat_two() {
+    fn the_channel_path_never_sends_a_relay_line() {
         let (runtime, chat, first, second) = two_players(0);
         let private = ChatIntent::Private {
             recipient_name: "Bryn".to_owned(),
@@ -812,6 +1135,14 @@ mod tests {
             result(ChatDisposition::LevelTooLow)
         );
         assert!(chat.drain(second.1).is_empty());
+        // A speaker without cast facts yells at the level read at its admission.
+        chat.admit_level(first.1, 20);
+        assert_eq!(chat.level(first.1), 20);
+        assert_eq!(
+            speak(&chat, &runtime, first, &yell, BASE),
+            result(ChatDisposition::Ok)
+        );
+        assert_eq!(chat.drain(second.1).len(), 1);
     }
 
     #[test]
@@ -864,7 +1195,7 @@ mod tests {
     }
 
     #[test]
-    fn the_pre_gate_refuses_unserved_intents_without_the_channel() {
+    fn without_a_relay_room_and_private_lines_are_unavailable() {
         let (_runtime, chat, first, _) = two_players(0);
         let unserved = [
             ChatIntent::Private {
@@ -876,7 +1207,6 @@ mod tests {
                 text: "x".to_owned(),
             },
             ChatIntent::OpenRoom(ChatRoom::Help),
-            ChatIntent::CloseRoom(ChatRoom::Help),
         ];
         for intent in &unserved {
             for session in [first.1, session_of(0x7f)] {
@@ -889,8 +1219,241 @@ mod tests {
                 );
             }
         }
+        // Closing a room is answered outright; an unknown session has no rooms.
+        let close = ChatIntent::CloseRoom(ChatRoom::Help);
+        assert_eq!(
+            chat.pre_gate(first.1, &close, BASE).map(|r| r.disposition),
+            Some(ChatDisposition::Ok)
+        );
+        assert_eq!(
+            chat.pre_gate(session_of(0x7f), &close, BASE)
+                .map(|r| r.disposition),
+            Some(ChatDisposition::ChatUnavailable)
+        );
+        assert_eq!(chat.take_rooms_change(first.1), None);
         // No line was taken: a say still passes the gate.
         assert!(chat.pre_gate(first.1, &say("x"), BASE).is_none());
+    }
+
+    /// Runs `test` with a relay installed in `chat` (ready when `ready`), inside a Tokio runtime
+    /// for the relay's lazy pool. The pool never connects.
+    fn with_relay(chat: &ChatRuntime, ready: bool, test: impl FnOnce()) {
+        use std::str::FromStr as _;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        let _context = runtime.enter();
+        let ring = crate::chat::relay::RelayKeyRing::new(vec![crate::chat::relay::RelayKey::new(
+            1, 0, [1; 32],
+        )])
+        .expect("ring");
+        let options =
+            sqlx::postgres::PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none")
+                .expect("options");
+        let relay = ChatRelay::new(ring, character(0x01), options).expect("relay");
+        if ready {
+            relay.force_ready(1_000_000);
+        }
+        chat.install_relay(Arc::new(relay));
+        test();
+    }
+
+    fn room_intent(room: ChatRoom, text: &str) -> ChatIntent {
+        ChatIntent::Room {
+            room,
+            text: text.to_owned(),
+        }
+    }
+
+    fn character(marker: u8) -> [u8; 16] {
+        let mut bytes = [marker; 16];
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes
+    }
+
+    fn relayed(destination: RelayDestination, sender: &str, text: &str) -> RelayLine {
+        RelayLine {
+            message_id: [9; 16],
+            sent_at_micros: 1,
+            destination,
+            sender_name: CharacterName::parse(sender).expect("name"),
+            text: ChatText::parse(text).expect("text"),
+        }
+    }
+
+    #[test]
+    fn rooms_open_and_close_and_their_client_view_follows() {
+        let (_runtime, chat, first, _) = two_players(0);
+        with_relay(&chat, false, || {
+            assert_eq!(chat.show_rooms(first.1), ChatRoomSet::default());
+            let open = ChatIntent::OpenRoom(ChatRoom::Help);
+            assert_eq!(
+                chat.pre_gate(first.1, &open, BASE).map(|r| r.disposition),
+                Some(ChatDisposition::Ok)
+            );
+            let changed = chat.take_rooms_change(first.1).expect("changed");
+            assert!(changed.contains(ChatRoom::Help));
+            assert_eq!(chat.take_rooms_change(first.1), None);
+            // Opening again changes nothing.
+            chat.pre_gate(first.1, &open, BASE);
+            assert_eq!(chat.take_rooms_change(first.1), None);
+            chat.pre_gate(first.1, &ChatIntent::CloseRoom(ChatRoom::Help), BASE);
+            assert_eq!(
+                chat.take_rooms_change(first.1),
+                Some(ChatRoomSet::default())
+            );
+            // A reconnect keeps the open rooms.
+            chat.pre_gate(first.1, &open, BASE);
+            chat.admit(first.1, "Aela", BASE);
+            assert!(chat.show_rooms(first.1).contains(ChatRoom::Help));
+        });
+    }
+
+    #[test]
+    fn the_relay_pre_gate_refuses_before_the_channel() {
+        let (_runtime, chat, first, _) = two_players(0);
+        // Not ready: unavailable, even for an open room.
+        with_relay(&chat, false, || {
+            chat.pre_gate(first.1, &ChatIntent::OpenRoom(ChatRoom::Help), BASE);
+            assert_eq!(
+                chat.pre_gate(first.1, &room_intent(ChatRoom::Help, "x"), BASE)
+                    .map(|r| r.disposition),
+                Some(ChatDisposition::ChatUnavailable)
+            );
+        });
+        let (_runtime, chat, first, _) = two_players(0);
+        with_relay(&chat, true, || {
+            assert_eq!(
+                chat.pre_gate(first.1, &room_intent(ChatRoom::Help, "   "), BASE)
+                    .map(|r| r.disposition),
+                Some(ChatDisposition::Rejected)
+            );
+            assert_eq!(
+                chat.pre_gate(first.1, &room_intent(ChatRoom::Help, "x"), BASE)
+                    .map(|r| r.disposition),
+                Some(ChatDisposition::RoomNotOpen)
+            );
+            chat.pre_gate(first.1, &ChatIntent::OpenRoom(ChatRoom::Help), BASE);
+            assert!(
+                chat.pre_gate(first.1, &room_intent(ChatRoom::Help, "x"), BASE)
+                    .is_none()
+            );
+            let private = ChatIntent::Private {
+                recipient_name: "Bryn".to_owned(),
+                text: "x".to_owned(),
+            };
+            // The relay lines share the bucket: a flood ends in a mute before the Channel.
+            let mut refused = None;
+            for _ in 0..8 {
+                refused = chat.pre_gate(first.1, &private, BASE);
+                if refused.is_some() {
+                    break;
+                }
+            }
+            assert_eq!(refused.map(|r| r.disposition), Some(ChatDisposition::Muted));
+            assert!(chat.muted_cast(first.1, BASE).is_some());
+        });
+    }
+
+    #[test]
+    fn a_private_line_to_oneself_is_rejected_and_recipients_are_limited() {
+        let (_runtime, chat, first, _) = two_players(0);
+        chat.admit_as(first.1, "Aela", Some(character(0x31)), BASE);
+        assert_eq!(
+            chat.relay_sender(first.1, None, Some(character(0x31)), BASE)
+                .err()
+                .map(|r| r.disposition),
+            Some(ChatDisposition::Rejected)
+        );
+        for marker in 0..20 {
+            assert!(
+                chat.relay_sender(first.1, None, Some(character(0x40 + marker)), BASE)
+                    .is_ok()
+            );
+        }
+        // An earlier recipient is no new one.
+        assert!(
+            chat.relay_sender(first.1, None, Some(character(0x40)), BASE)
+                .is_ok()
+        );
+        assert_eq!(
+            chat.relay_sender(first.1, None, Some(character(0x60)), BASE)
+                .err()
+                .map(|r| r.disposition),
+            Some(ChatDisposition::Muted)
+        );
+        assert_eq!(
+            chat.relay_sender(session_of(0x7f), None, None, BASE)
+                .err()
+                .map(|r| r.disposition),
+            Some(ChatDisposition::ChatUnavailable)
+        );
+    }
+
+    #[test]
+    fn one_advertising_line_per_interval() {
+        let (_runtime, chat, first, _) = two_players(0);
+        let advertising = Some(ChatRoom::Advertising);
+        let name = chat
+            .relay_sender(first.1, advertising, None, BASE)
+            .expect("first line");
+        assert_eq!(name.as_str(), "Aela");
+        assert_eq!(
+            chat.relay_sender(first.1, advertising, None, BASE)
+                .err()
+                .map(|r| r.disposition),
+            Some(ChatDisposition::Exhausted)
+        );
+        let later = SemanticTimeMicros::from_micros(BASE.get() + 120_000_000);
+        assert!(chat.relay_sender(first.1, advertising, None, later).is_ok());
+        // Other rooms have no interval.
+        assert!(
+            chat.relay_sender(first.1, Some(ChatRoom::Help), None, BASE)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn relayed_lines_reach_the_recipient_and_the_open_rooms_only() {
+        let (_runtime, chat, first, second) = two_players(0);
+        chat.admit_as(first.1, "Aela", Some(character(0x31)), BASE);
+        chat.admit_as(second.1, "Bryn", Some(character(0x32)), BASE);
+        let recipient =
+            oteryn_protocol_oteryn::CharacterId::decode(&character(0x32)).expect("character");
+        chat.deliver(&relayed(
+            RelayDestination::Private { recipient },
+            "Cora",
+            "psst",
+        ));
+        assert_eq!(
+            chat.drain(second.1),
+            vec![ChatLine::Private {
+                speaker_name: "Cora".to_owned(),
+                text: "psst".to_owned(),
+            }]
+        );
+        assert!(chat.drain(first.1).is_empty());
+        with_relay(&chat, false, || {
+            chat.pre_gate(first.1, &ChatIntent::OpenRoom(ChatRoom::English), BASE);
+        });
+        chat.deliver(&relayed(
+            RelayDestination::Room {
+                room: ChatRoom::English,
+            },
+            "Cora",
+            "sell",
+        ));
+        assert_eq!(
+            chat.drain(first.1),
+            vec![ChatLine::Room {
+                room: ChatRoom::English,
+                speaker_name: "Cora".to_owned(),
+                text: "sell".to_owned(),
+            }]
+        );
+        assert!(chat.drain(second.1).is_empty());
     }
 
     /// `chat_speak` without the async locks: the pre-gate, then the full Channel path, counting

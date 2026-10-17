@@ -40,6 +40,14 @@ pub enum Operation {
     ReadCharacterCommandIntentV1,
     /// Character command receipt publication (same contract, §4.3).
     PublishCharacterCommandReceiptV1,
+    /// World highscores snapshot (`oteryn-game-public-projections-v1` §4.1).
+    PublishWorldHighscoresV1,
+    /// Character profile snapshot (same contract, §4.2).
+    PublishCharacterProfileV1,
+    /// World online snapshot (same contract, §4.6).
+    PublishWorldOnlineV1,
+    /// Public projection liveness watermark (same contract, §5.1).
+    PublishPublicProjectionWatermarkV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -64,12 +72,18 @@ impl Operation {
             Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
             Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
             Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
+            Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_PATH,
+            Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
+            Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
+            Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_PATH,
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
     /// for the runtime-status report, `LCA-REQUEST-BYTES` and
     /// `LCA-WATERMARK-BYTES` for the account-characters projection, and the
-    /// `CHARCMD-*-REQUEST-BYTES` bounds for the Character commands.
+    /// `CHARCMD-*-REQUEST-BYTES` bounds for the Character commands, and the
+    /// `PUBPROJ-*-REQUEST-BYTES` and `PUBPROJ-WATERMARK-BYTES` bounds for the
+    /// public projections.
     pub const fn request_bytes_max(self) -> usize {
         match self {
             Self::ReadPremiumSnapshotV1 => 256,
@@ -84,6 +98,10 @@ impl Operation {
             Self::PublishCharacterCommandReceiptV1 => {
                 super::character_commands::RECEIPT_REQUEST_BYTES
             }
+            Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_BYTES,
+            Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
+            Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
+            Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2
