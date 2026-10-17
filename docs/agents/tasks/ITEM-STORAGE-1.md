@@ -503,3 +503,17 @@ logSHA256 `82ca2d6c8d90c40d4aae0a698355376971e9f43fb4748144594ac310957ed76c`.
 Five existing unused depot declarations still warn; no lint suppression or
 visibility relaxation was added. This focused result is not a fullpackage,
 strictalltargetClippy, PostgreSQL or runtime PASS.
+
+### Exact-head Clippy repair (2026-10-17)
+
+CI Clippy at `2db7e6529` was RED only on `dead_code` (`-D warnings`) for the
+unwired DEPOT0 declarations in `durability/character_depot.rs` and
+`gameplay_transport/depot.rs`; the aggregate merge-gate and game-gate REDs
+followed from it. Both owned modules now carry a module-level
+`#![allow(dead_code, reason = ...)]` naming the pending CP-composed TRANSFER
+caller, matching the existing `ability/condition_spell.rs` precedent. No
+visibility, logic or test change. This supersedes the "no lint suppression"
+note above; the protected-base merge-authority audit RED (protected main still
+pins merge-group gate blob `d7cfbf90…` against this PR's CP-approved
+`50d0ff3c…`) needs an owner-authorized audit rotation on main and is not
+changed here.

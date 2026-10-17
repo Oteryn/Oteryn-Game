@@ -1,6 +1,10 @@
 //! DEPOT0 §§3,6,8: raw custody/read/capacity preparation, not a TRANSFER writer.
 //! The proposed SQL is never installed here. CP must compose native placement/removal,
 //! exclusivity, receipt/audit and current session/locker authority before value can move.
+#![allow(
+    dead_code,
+    reason = "DEPOT0 read/capacity preparation; awaits its CP-composed depot TRANSFER caller"
+)]
 
 use crate::domain::premium::PremiumGate;
 use crate::domain::{CharacterId, ItemInstanceId, WorldId};

@@ -1,5 +1,9 @@
 //! DEPOT0 §5 raw no-merge shape planning. These inputs are not current locker/view,
 //! admitted content, session, item ownership or lock evidence. No function commits a move.
+#![allow(
+    dead_code,
+    reason = "DEPOT0 shape planning; awaits its CP-composed depot TRANSFER wiring"
+)]
 
 use crate::domain::premium::PremiumGate;
 use crate::durability::character_depot::{DepotBox, insertion_fits, next_ordinal};
