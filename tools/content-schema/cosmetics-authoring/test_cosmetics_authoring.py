@@ -225,6 +225,36 @@ class CosmeticsAuthoring(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "digest"):
                     self.build_unvalidated(authoring, root)
 
+    def test_staged_observations_must_have_the_exact_rust_decoder_shape(self):
+        def sound(manifest, pin, shard):
+            pin["records"] = len(shard["records"])
+            manifest["record_count"] = len(shard["records"])
+
+        def mutated(change):
+            def mutate(manifest, pin, shard):
+                sound(manifest, pin, shard)
+                change(shard)
+            return mutate
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            authoring = self.stage_truncated(root, 2, sound)
+            self.assertEqual(c.parse(self.build_unvalidated(authoring, root))["availability"], "authored")
+        cases = {
+            "shard unknown member": lambda s: s.update(extra=1),
+            "shard missing schema": lambda s: s.pop("schema"),
+            "record unknown member": lambda s: s["records"][1].update(extra=1),
+            "record missing flags": lambda s: s["records"][1].pop("flags"),
+            "record missing frame_groups": lambda s: s["records"][0].pop("frame_groups"),
+            "record not an object": lambda s: s["records"].__setitem__(1, 7),
+        }
+        for label, change in cases.items():
+            with self.subTest(label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                authoring = self.stage_truncated(root, 2, mutated(change))
+                with self.assertRaisesRegex(ValueError, "observation shape"):
+                    self.build_unvalidated(authoring, root)
+
     def test_definition_source_citations_require_their_own_promotion(self):
         for path in ["/outfits/0/source", "/mounts/0/source"]:
             with self.subTest(path=path):

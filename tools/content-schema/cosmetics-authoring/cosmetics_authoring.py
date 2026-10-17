@@ -161,6 +161,16 @@ def manifest_shape(manifest):
         raise ValueError("cosmetics source manifest shape")
 
 
+def observation_shape(observation):
+    """The exact staged shard shape the Rust `Observations`/`Observation` decoders require."""
+    record_keys = {"source_id", "source_index", "source_record_sha256", "flags", "frame_groups"}
+    if (not isinstance(observation, dict) or set(observation) != {"schema", "family", "records"}
+            or type(observation["schema"]) is not str or type(observation["family"]) is not str
+            or not isinstance(observation["records"], list)
+            or any(not isinstance(r, dict) or set(r) != record_keys for r in observation["records"])):
+        raise ValueError("cosmetics source observation shape")
+
+
 def build(authoring, manifest_path: Path) -> bytes:
     """Materialize exact source bytes with the authored facts; no filesystem output."""
     validate(authoring)
@@ -192,6 +202,7 @@ def build(authoring, manifest_path: Path) -> bytes:
         if total > MAX_SOURCE or sha(data) != pin["sha256"]:
             raise ValueError("cosmetics source shard digest/bounds")
         observation = parse(data)
+        observation_shape(observation)
         if (observation["schema"] != "OTERYN_CIPSOFT_APPEARANCE_OUTFIT_SOURCE_OBSERVATIONS/v1"
                 or observation["family"] != "Outfit" or type(pin["records"]) is not int
                 or len(observation["records"]) != pin["records"]):
