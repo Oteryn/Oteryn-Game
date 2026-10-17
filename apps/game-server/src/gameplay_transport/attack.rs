@@ -2057,10 +2057,10 @@ impl ChannelAttackStates {
                                     && runtime
                                         .bound_attacker_lease(actor, target_session)
                                         .is_ok_and(|target| {
-                                            source.members.iter().any(|member| {
-                                                member.character
-                                                    == *target.character_id().as_bytes()
-                                            })
+                                            heal_credits_party_member(
+                                                source,
+                                                target.character_id().as_bytes(),
+                                            )
                                         })
                             })
                 }
@@ -2083,11 +2083,56 @@ impl ChannelAttackStates {
     }
 }
 
+/// Shared experience credits a heal only when it heals ANOTHER member of the caster's
+/// captured party. A self-heal never counts, including an area heal such as Mass Healing
+/// that reaches only the caster.
+fn heal_credits_party_member(
+    source: &crate::foundation::PartySnapshot,
+    target_character: &[u8; 16],
+) -> bool {
+    *target_character != source.character
+        && source
+            .members
+            .iter()
+            .any(|member| member.character == *target_character)
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod shared_experience_activity_tests {
     use super::*;
     use crate::foundation::{CharacterId, CharacterLease};
+
+    /// LOOP-PROGRESS-1 (Codex P2): a Mass Healing that heals only the caster earns no
+    /// activity; healing another member of the same party still does.
+    #[test]
+    fn heal_credits_only_another_party_member_never_the_caster() {
+        use crate::foundation::{PartyMemberSnapshot, PartyPresence, PartySnapshot};
+        let member = |character: [u8; 16], invitation_order| PartyMemberSnapshot {
+            character,
+            invitation_order,
+            presence_revision: 1,
+            presence: PartyPresence::Channel,
+            channel: Some([9; 16]),
+        };
+        let (caster, ally, stranger) = ([1; 16], [2; 16], [3; 16]);
+        let source = PartySnapshot {
+            world: [7; 16],
+            character: caster,
+            party_id: Some([5; 16]),
+            revision: Some(1),
+            leader: Some(caster),
+            shared_xp_enabled: true,
+            members: vec![member(caster, 0), member(ally, 1)],
+            observed_database_micros: 0,
+        };
+        assert!(
+            !heal_credits_party_member(&source, &caster),
+            "a self-heal earns no shared-experience activity"
+        );
+        assert!(heal_credits_party_member(&source, &ally));
+        assert!(!heal_credits_party_member(&source, &stranger));
+    }
 
     #[test]
     fn activity_uses_current_native_lease_and_two_minute_window_without_future_credit() {
