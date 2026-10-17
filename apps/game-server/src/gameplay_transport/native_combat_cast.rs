@@ -1157,7 +1157,7 @@ async fn prepare_source_self_from_owners(
             );
         }
         Ok(OwnerCombatBatch { caster:b.actor,attacker,current_lease_generation:b.lease_generation,command,
-            occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1_000,
+            occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1_000,
             effects,deferred:None,binding:serde_json::to_vec(&json!({"intent":source_cast_intent(intent,rune),
                 "source_definition":format!("{profile:?}"),"capture_format":"owner-debug-r21",
                 "equipment_facts":format!("{:?}",owned.equipment()),"character_revision":b.character_revision,
@@ -2080,6 +2080,7 @@ pub(crate) async fn prepare_from_owners(
         occurrence: occurrence.clone().into(),
         binding: binding.clone(),
         anchor: Some(preview.anchor.clone()),
+        now_us: Some(now),
         now_ms: facts.now_ms,
         effects: Vec::new(),
         deferred: None,
@@ -2211,6 +2212,7 @@ pub(crate) async fn prepare_from_owners(
         occurrence: occurrence.clone().into(),
         binding,
         anchor: Some(paid.anchor.clone()),
+        now_us: Some(now),
         now_ms: facts.now_ms,
         effects: Vec::new(),
         deferred: None,
@@ -2543,6 +2545,7 @@ async fn prepare_named_failure(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let batch=OwnerCombatBatch{caster:actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.into(),anchor:Some(paid.anchor),
+        now_us: Some(now),
         now_ms:now.get()/1000,effects:Vec::new(),deferred:None,
         binding:serde_json::to_vec(&json!({"intent":source_parameter_intent(&parameter.intent,parameter)?,"parameter_result":result_bytes,
             "spell":format!("{spell:?}"),"before":format!("{before:?}"),"paid":format!("{:?}",paid.next),"owned":format!("{owned:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
@@ -3034,6 +3037,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
         let attack_target = {
             let mut attack = self.attack.lock().await;
+            // Best-effort allocation before SQL/installation; failure grants no activity.
+            attack.prepare_shared_experience_record(&runtime, actor, session);
             // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
             attack.settle_pacified_target(&runtime, &states, actor, session);
             attack.combat_state(actor, session, self.owner_now()).target
@@ -3361,10 +3366,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
-            let attack=owner.attack.lock().await;
+            let mut attack=owner.attack.lock().await;
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            // Only this actual applied receipt can credit a positive attack/heal. The
+            // retained original batch supplies event time; a retry never renews it.
+            attack.record_committed_shared_experience_batch(&runtime,content,
+                attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             // §1.4: the committed batch's kills, under the same runtime turn, after installation.
             owner.record_spell_kills_locked(&attack,&mut runtime,std::iter::once(&batch));
             drop(attack);

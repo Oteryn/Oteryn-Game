@@ -232,6 +232,14 @@ struct SharedExperienceActivity {
     at: SemanticTimeMicros,
 }
 
+/// Retained committed event time observed under current native actor/session/lease guards.
+/// Neither timestamp establishes current party membership or kill-settlement authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct SharedExperienceActivityObservation {
+    pub(crate) original_event_at: SemanticTimeMicros,
+    pub(crate) observed_at: SemanticTimeMicros,
+}
+
 /// The attack state of one player actor in one session.
 #[derive(Debug, Clone)]
 struct ActorAttack {
@@ -1944,28 +1952,46 @@ impl ChannelAttackStates {
         session: GameSessionId,
         now: SemanticTimeMicros,
     ) -> bool {
-        let Some(entry) = self.index(actor, session).map(|index| &self.entries[index]) else {
-            return false;
-        };
-        let Some(activity) = entry.shared_experience_activity else {
-            return false;
-        };
+        self.committed_shared_experience_activity(runtime, actor, session, now)
+            .is_some_and(|activity| {
+                activity
+                    .observed_at
+                    .elapsed_since(activity.original_event_at)
+                    .is_ok_and(|age| age <= SHARED_EXPERIENCE_ACTIVITY_MICROS)
+            })
+    }
+
+    /// Read retained native data without renewing the event time. The caller supplies
+    /// its independently observed semantic clock; future events refuse this observation.
+    pub(crate) fn committed_shared_experience_activity(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        observed_at: SemanticTimeMicros,
+    ) -> Option<SharedExperienceActivityObservation> {
+        let entry = self
+            .index(actor, session)
+            .map(|index| &self.entries[index])?;
+        let activity = entry.shared_experience_activity?;
         if runtime.owner_fence().is_err()
             || !runtime
                 .player_control_facts(actor, session)
                 .is_ok_and(|control| control.control_loss.is_none())
         {
-            return false;
+            return None;
         }
-        runtime
-            .bound_attacker_lease(actor, session)
-            .is_ok_and(|lease| {
-                lease.character_id().as_bytes() == &activity.character
-                    && lease.generation() == activity.lease_generation
-                    && now
-                        .elapsed_since(activity.at)
-                        .is_ok_and(|age| age <= SHARED_EXPERIENCE_ACTIVITY_MICROS)
-            })
+        let lease = runtime.bound_attacker_lease(actor, session).ok()?;
+        if lease.character_id().as_bytes() != &activity.character
+            || lease.generation() != activity.lease_generation
+            || observed_at.elapsed_since(activity.at).is_err()
+        {
+            return None;
+        }
+        Some(SharedExperienceActivityObservation {
+            original_event_at: activity.at,
+            observed_at,
+        })
     }
 
     /// Call under the SAME runtime -> states -> attack guards after successful native owner
@@ -2044,14 +2070,16 @@ impl ChannelAttackStates {
         if !eligible {
             return false;
         }
-        let Some(micros) = batch.now_ms.checked_mul(1_000) else {
+        let Some(original_event_at) = batch.now_us else {
             return false;
         };
+        if original_event_at.get() / 1000 != batch.now_ms {
+            return false;
+        }
         let Some(index) = self.index(batch.caster, session) else {
             return false;
         };
-        self.entries[index]
-            .record_shared_experience_activity(runtime, SemanticTimeMicros::from_micros(micros))
+        self.entries[index].record_shared_experience_activity(runtime, original_event_at)
     }
 }
 
@@ -2148,6 +2176,30 @@ mod shared_experience_activity_tests {
             actor,
             session,
             SemanticTimeMicros::from_micros(20)
+        ));
+        for observed in [21, 22, 120_000_021] {
+            let activity = states
+                .committed_shared_experience_activity(
+                    &runtime,
+                    actor,
+                    session,
+                    SemanticTimeMicros::from_micros(observed),
+                )
+                .expect("current native observation");
+            assert_eq!(
+                activity.original_event_at,
+                SemanticTimeMicros::from_micros(20)
+            );
+            assert_eq!(
+                activity.observed_at,
+                SemanticTimeMicros::from_micros(observed)
+            );
+        }
+        assert!(!states.shared_experience_active(
+            &runtime,
+            actor,
+            session,
+            SemanticTimeMicros::from_micros(120_000_021),
         ));
     }
 }

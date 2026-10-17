@@ -1297,7 +1297,7 @@ fn lower(
         None
     };
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
-        current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_ms:now.get()/1000,
+        current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
             "capture_format":"ordinary-owner-r21","source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
             "magnitude_facts":format!("{:?}",owned.magnitude()),"selected_variant":format!("{:?}",paid.resolution.ability_variant),
@@ -2078,6 +2078,7 @@ mod tests {
             .into(),
             binding: b"{\"canonical_cms_condition_consumer\":true}".to_vec(),
             anchor: Some(paid.anchor.clone()),
+            now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now)),
             now_ms: now / 1000,
             deferred: None,
             effects: vec![OwnerCombatEffect {
@@ -2401,6 +2402,7 @@ mod tests {
             occurrence: occurrence.into(),
             binding: b"builder-current-owner-boundary".to_vec(),
             anchor: Some(paid.anchor.clone()),
+            now_us: None,
             now_ms: 100,
             deferred: None,
             effects: vec![OwnerCombatEffect {

@@ -951,6 +951,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             occurrence: binding.occurrence.clone().into(),
             binding: binding.parent_binding.clone(),
             anchor: Some(prepared.anchor.clone()),
+            now_us: Some(binding.cast_at),
             now_ms: binding.cast_at.get() / 1000,
             effects: Vec::new(),
             deferred: None,

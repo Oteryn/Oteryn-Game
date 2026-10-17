@@ -228,3 +228,49 @@ Native independent-candidate qualification and the exact published head are reco
 the handoff on PR2192 after checks. Two exact native activity tests cover native lease/session
 turnover, the120-second boundary, future refusal and out-of-order events. They do not claim
 a complete E–D gameplay/combat/heal or whole-kill settlement qualification.
+
+## Recovery rebuild for draft backup (2026-10-17)
+
+CP #6230877600 authorizes rebuilding the missing Family E activity increment from
+this draft's current GitHub head, `8b79b5d31b20d8143705785838786bfcc1d8340a`,
+after confirming that the original source copies no longer exist. The owner
+explicitly requested backup to this existing draft. This increment is new source,
+**NFQ / unqualified WIP**. It does not reproduce the lost 25 postimages or claim
+tree `baa19543958c9cf8d55c51f5c5c67ed77178f868`. The recovered R6 archive contains
+recipe metadata only; its historical tests, approvals and PASS evidence do not
+qualify this rebuild. Earlier observations above remain historical evidence only.
+
+The rebuilt `OwnerCombatBatch.now_us` carries an optional original native semantic
+time captured before millisecond conversion. Native producer paths and due timer
+callbacks supply their actual semantic event clock; clone/retry paths preserve it.
+Physical canonical command identity and deferred provenance bind its presence and
+exact value. A supplied value inconsistent with `now_ms` refuses staging; absence
+remains compatible with existing physical callers but grants no shared-XP activity.
+Native paid-cast finalization checks the exact semantic time as well as milliseconds.
+
+The player-vitals preflight records each actual heal's staged before/after HP,
+including capped/zero transitions. The sealed proof copies these facts into the
+applied physical receipt and its retained replay record before installation, with
+no new allocation in phase 2. The native cast path preallocates attack state before
+SQL and records activity from the actual applied installation receipt under its
+existing runtime/player/attack guards, using its retained batch and qualified party
+capture. Replay receipts remain unapplied and cannot renew event time. Positive
+actual HP gain, rather than requested magnitude, determines heal eligibility.
+
+The typed activity observation exposes `original_event_at` and `observed_at` only
+after current runtime, exact actor/session, control and Character lease checks.
+Reading never renews the event. Future observations refuse; the existing 120-second
+activity predicate uses the retained microsecond event. This data gives no current
+party membership, kill eligibility, whole-kill producer or settlement authority.
+No missing D producer, whole-kill transaction, migrations, shared registration,
+contracts, unrelated Family code or private source/fixture overlays are added.
+
+New focused tests cover submillisecond command substitution, missing timestamp
+substitution, retained exact replay, inconsistent millisecond binding and deferred
+provenance substitution. Existing native activity tests additionally assert repeated
+observations retain the event time after expiration; player-owner tests assert
+actual HP receipt facts survive unapplied replay. These tests are authored but
+**not executed**. Only the isolated official Rust 1.94 `rustfmt` parser/format check
+and `git diff --check` have run locally. No Cargo, native, PostgreSQL or heavy gate
+execution is claimed. Independent review and all required exact-head native
+qualification remain pending; the PR must remain draft and must not merge.
