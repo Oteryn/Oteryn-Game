@@ -1592,7 +1592,11 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         );
         if suspend {
             assert_eq!(steps[1], None, "the second search stopped on the budget");
-            assert!(owner.attack.chase_search_waiting(chasers[1].0, chasers[1].1));
+            assert!(
+                owner
+                    .attack
+                    .chase_search_waiting(chasers[1].0, chasers[1].1)
+            );
             let budget = &mut owner.attack.chase_searches;
             for _ in 0..48 {
                 assert!(budget.charge_creature(now, UNITS_PER_SEARCH, true));
@@ -1639,8 +1643,16 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         "the second route avoids the first chaser's planned destination"
     );
     assert_eq!(routes(false, 0), uninterrupted);
-    assert_eq!(routes(true, 1), uninterrupted, "the first step is still stored");
-    assert_eq!(routes(true, 0), uninterrupted, "the first step awaits Movement");
+    assert_eq!(
+        routes(true, 1),
+        uninterrupted,
+        "the first step is still stored"
+    );
+    assert_eq!(
+        routes(true, 0),
+        uninterrupted,
+        "the first step awaits Movement"
+    );
 }
 
 #[test]
