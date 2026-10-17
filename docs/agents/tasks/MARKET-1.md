@@ -282,3 +282,61 @@ composition of standalone roots: their Content/private-domain ABI compatibility 
 unqualified until real Cargo checks run. New own reads/four PG tests: NOT_RUN; fmt/diff
 PASS and static review only. D1122 comment6224930201 supersedes the earlier publication
 hold for one coherent existing-draft checkpoint; it does not grant ready/merge or full PASS.
+
+## Documentation-only successor and predecessor CI — 2026-10-17
+
+Status remains **NOT_FULLY_QUALIFIED**. The predecessor GitHub read confirmed draft #2134 at
+`3e061eb9784d307cb73d4e69b59c17c6bf1d0d82`, branch `skeleton/market-1`.
+
+CP D1310 permits this documentation-only successor checkpoint on the existing
+draft branch. This increment changes only this task record; Rust implementation
+and test sources remain unchanged from the predecessor above. **New successor
+Cargo/PG/CI checks: NOT_RUN.** The recovered results below remain bound to the
+stated predecessor SHA and are not new-commit qualification. Publication permission
+does not grant runtime activation, readiness, merge or shared integration.
+
+The current source supersedes the historical statement that the last-600-ended
+reader is absent: `ended_character_offers` is implemented using stored ending
+time and sequence, and three ending-history cases are present. This is a private
+reader over a proposed schema, not an installed ending writer.
+
+The current canonical registration mounts
+`tests/support/market_postgres_cases.rs` from
+`tests/character_authority_postgres.rs`. Its inventory is **15 PostgreSQL cases**:
+two own-open-offer, two book-page, three ended-history, seven original native
+storage/lock/selection/operation/escrow/schema cases, and one persisted-definition
+validation case. Five pure cases remain in the ordinary domain module.
+The owned source was inspected once in this continuation; no demonstrated product
+defect or reason to alter the read components was found.
+
+GitHub Actions Rust job
+[117216200836](https://github.com/Oteryn/Oteryn-Game/actions/runs/38973020053/job/117216200836)
+explicitly checked out the SHA above. Strict all-target Clippy passed. Its library
+run reported **3,155 passed / 0 failed / 29 ignored**, and the operations binary
+**6 passed**. All **five MARKET pure cases** appear as `ok`.
+The exact-head check collection contains **15 success / one skipped** (World
+bundle), with no pending or failed check at the read.
+
+Canonical PostgreSQL on that implementation predecessor remains **NOT_RUN in this continuation**.
+The inspected Rust job ran unit/bin targets; the successful S3-B job ran only its
+selected composition case. Neither executes `character_authority_postgres`.
+Earlier native component evidence does not qualify these later query and private
+schema-fixture additions.
+
+Focused canonical command, after configuring the allocated disposable PG service:
+
+```bash
+cargo +1.94.0 test --locked --offline -p oteryn-game-server --test character_authority_postgres market_postgres_cases:: -- --test-threads=1
+```
+
+The existing harness requires `OTERYN_TEST_POSTGRES_ADMIN_URL` ending exactly in
+`/postgres`, PostgreSQL 17.6 (`server_version_num=170006`), and privileges to
+create/drop isolated test databases, apply native migrations and seed the disclosed
+administrative fixtures. Without that variable the harness reports noncanonical
+execution and returns early; that outcome is not PG qualification.
+
+The production Market writer, migration/privileges, ending metadata producer,
+Bank/fee/Inbox/custody/conservation/audit integration, current Content and
+compatibility, depot/actor admission, jobs and wire remain undelivered. Shared
+changes belong to the owning control-plane slot. No runtime activation, ready,
+merge, full-family completion or new paid review is claimed.
