@@ -8,7 +8,7 @@ status: NOT_FULLY_QUALIFIED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/bed-regen-1
-base_sha: f010472bcb6794a2cbc56dfaf755bd122c10225e
+base_sha: f094e0320289975a220852ff60ca7baf6d234ff4
 issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
@@ -27,6 +27,24 @@ slot_only_paths:
   - "none expected (no migration, no registry)"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## Bounded checkpoint — 2026-10-17 (card only)
+
+MERGE_AUTHORITY: CP_ONLY. Only CP marks this PR ready, queues it or merges it.
+
+This PR is a bounded, card-only checkpoint. It changes only this task record.
+It records the D1409 producer allocation, the D1422 #2196 vitals-participant
+handoff and the exact consumer gates below. A merge closes this checkpoint
+only. It does not close BED-REGEN-1, and the card stays active (not archived).
+
+- Delivered: the current disposition, the producer bindings, the required
+  native evidence list and the preserved historical source appendix.
+- Not delivered: `regen.rs`, `regen_tests.rs`, any caller, schema or test.
+  Regeneration remains **NOT_IMPLEMENTED**. Compile, PostgreSQL and restart
+  qualification remain **NOT_RUN**.
+- Next owned step: after #2147, #2174 and #2196 actually merge, a follow-up
+  PR on this card implements the consumer and its native tests against the
+  merged owner ports. It may also need a CP slot for a migration or wiring.
 
 ## Current disposition — D1409 / D1422 native vitals handoff
 
