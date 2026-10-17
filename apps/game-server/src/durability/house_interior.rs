@@ -270,7 +270,7 @@ pub async fn load_house_interior_in_transaction(
     for row in rows {
         let uuid = |name| -> Result<[u8; 16], HouseInteriorLoadError> {
             let bytes: Vec<u8> = row.try_get(name)?;
-            let value = bytes
+            let value: [u8; 16] = bytes
                 .try_into()
                 .map_err(|_| HouseInteriorLoadError::InvalidStoredState)?;
             audit::check_uuid_v7(&value).map_err(|_| HouseInteriorLoadError::InvalidStoredState)?;
