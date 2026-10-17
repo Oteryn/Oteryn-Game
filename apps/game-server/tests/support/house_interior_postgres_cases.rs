@@ -2616,3 +2616,241 @@ fn house_loader_retains_registration_and_assignment_locks_in_callers_transaction
         Ok(())
     })
 }
+
+// Loader negative fixtures below use a genuine native placement and independently registered
+// current node/House assignment. Only isolated item rows are then corrupted by the admin TX;
+// SET LOCAL replica never changes production DDL, role grants or authority records.
+async fn loader_place_actual_item(
+    h: &native::Harness,
+    backpack: [u8; 16],
+    item: [u8; 16],
+) -> TestResult {
+    let seal = h.recovery.seal_current().map_err(native::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(native::debug)?;
+    let request = item_request(
+        item,
+        391,
+        HouseItemAction::Place {
+            source: HouseCharacterSource::Inventory {
+                parent: backpack,
+                ordinal: 1,
+            },
+            position: vec![1, 2, 3],
+        },
+    )?;
+    let frozen = h
+        .root
+        .freeze_house_item(&authority, &h.node, house_fence()?, request)
+        .await
+        .map_err(native::debug)?;
+    committed(
+        h.root
+            .commit_house_item(&authority, &h.node, house_fence()?, &frozen)
+            .await
+            .map_err(native::debug)?,
+    )?;
+    Ok(())
+}
+
+async fn loader_runtime_item_count(h: &native::Harness) -> TestResult<usize> {
+    use crate::durability::house_interior::load_house_interior_in_transaction;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    let snapshot = load_house_interior_in_transaction(&mut tx, &current_house()?, 1, &h.node)
+        .await
+        .map_err(native::debug)?;
+    let count = snapshot.items.len();
+    tx.rollback().await?;
+    Ok(count)
+}
+
+async fn loader_seed_overflow_copies(
+    h: &native::Harness,
+    item: [u8; 16],
+    first: i32,
+    last: i32,
+) -> TestResult {
+    assert!(1 <= first && first <= last && last <= 2000);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    // Explicit corrupt-storage fixture: copies real item/location/provenance columns while
+    // supplying distinct UUIDv7 item/minted-TX/placement IDs. No minted history or authority is invented
+    // for production use; the read port must handle this actual stored cardinality fail closed.
+    for query in [
+        "INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id,state_revision) \
+         SELECT ('91000000-0000-7000-8000-'||lpad(to_hex(s.n),12,'0'))::uuid,i.world_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.lifecycle,('90000000-0000-7000-8000-'||lpad(to_hex(s.n),12,'0'))::uuid,i.state_revision \
+         FROM game_item_instances i CROSS JOIN generate_series($2::integer,$3::integer) AS s(n) WHERE i.item_instance_id=encode($1,'hex')::uuid",
+        "INSERT INTO game_item_house_interior_locations(item_instance_id,world_id,house_key,spatial_position,stack_ordinal,placed_transaction_id) \
+         SELECT ('91000000-0000-7000-8000-'||lpad(to_hex(s.n),12,'0'))::uuid,h.world_id,h.house_key,h.spatial_position,s.n+1,('92000000-0000-7000-8000-'||lpad(to_hex(s.n),12,'0'))::uuid \
+         FROM game_item_house_interior_locations h CROSS JOIN generate_series($2::integer,$3::integer) AS s(n) WHERE h.item_instance_id=encode($1,'hex')::uuid",
+        "INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) \
+         SELECT ('91000000-0000-7000-8000-'||lpad(to_hex(s.n),12,'0'))::uuid,p.world_id,p.house_key,p.reclaim_subject_character_id,('92000000-0000-7000-8000-'||lpad(to_hex(s.n),12,'0'))::uuid,p.provenance_revision \
+         FROM game_item_house_reclaim_provenance p CROSS JOIN generate_series($2::integer,$3::integer) AS s(n) WHERE p.item_instance_id=encode($1,'hex')::uuid",
+    ] {
+        let inserted = sqlx::query(query)
+            .bind(item.as_slice())
+            .bind(first)
+            .bind(last)
+            .execute(&mut *tx)
+            .await?
+            .rows_affected();
+        assert_eq!(inserted, (last - first + 1) as u64);
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+#[test]
+fn house_loader_refuses_all_2001_rows_after_exact_2000_snapshot_control() -> TestResult {
+    use crate::durability::house_interior::{
+        HouseInteriorLoadError, load_house_interior_in_transaction,
+    };
+    run_native("house_loader_overflow", async |h, backpack, item| {
+        loader_place_actual_item(h, backpack, item).await?;
+        assert_eq!(loader_runtime_item_count(h).await?, 1);
+        loader_seed_overflow_copies(h, item, 1, 1999).await?;
+        assert_eq!(
+            loader_runtime_item_count(h).await?,
+            2000,
+            "the maximum is accepted without truncation"
+        );
+        loader_seed_overflow_copies(h, item, 2000, 2000).await?;
+        let count: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_item_house_interior_locations WHERE house_key=$1",
+        )
+        .bind(HOUSE)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(count, 2001, "physical overflow row must exist");
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        assert!(
+            matches!(
+                load_house_interior_in_transaction(&mut tx, &current_house()?, 1, &h.node).await,
+                Err(HouseInteriorLoadError::StorageFull)
+            ),
+            "overflow must return an error, never a partial snapshot"
+        );
+        tx.rollback().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn house_loader_refuses_missing_or_mismatched_native_provenance() -> TestResult {
+    use crate::durability::house_interior::{
+        HouseInteriorLoadError, load_house_interior_in_transaction,
+    };
+    for (tag, corruption) in [
+        (
+            "house_loader_missing_provenance",
+            "DELETE FROM game_item_house_reclaim_provenance WHERE item_instance_id=encode($1,'hex')::uuid",
+        ),
+        (
+            "house_loader_mismatch_provenance",
+            "UPDATE game_item_house_reclaim_provenance SET placement_transaction_id='93000000-0000-7000-8000-000000000001'::uuid WHERE item_instance_id=encode($1,'hex')::uuid",
+        ),
+    ] {
+        run_native(tag, async |h, backpack, item| {
+            loader_place_actual_item(h, backpack, item).await?;
+            assert_eq!(
+                loader_runtime_item_count(h).await?,
+                1,
+                "native authority and stored control are valid before the one corruption"
+            );
+            let mut admin = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *admin)
+                .await?;
+            assert_eq!(
+                sqlx::query(corruption)
+                    .bind(item.as_slice())
+                    .execute(&mut *admin)
+                    .await?
+                    .rows_affected(),
+                1
+            );
+            admin.commit().await?;
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            assert!(
+                matches!(
+                    load_house_interior_in_transaction(&mut tx, &current_house()?, 1, &h.node)
+                        .await,
+                    Err(HouseInteriorLoadError::InvalidStoredState)
+                ),
+                "LEFT JOIN must not silently hide a native location with absent/mismatched provenance"
+            );
+            tx.rollback().await?;
+            Ok(())
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn house_loader_refuses_ordinary_and_corpse_container_contents() -> TestResult {
+    use crate::durability::house_interior::{
+        HouseInteriorLoadError, load_house_interior_in_transaction,
+    };
+    for (tag, corruption) in [
+        (
+            "house_loader_ordinary_contents",
+            "INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) \
+         SELECT encode($2,'hex')::uuid,h.world_id,p.reclaim_subject_character_id,h.item_instance_id,1,'94000000-0000-7000-8000-000000000001'::uuid FROM game_item_house_interior_locations h JOIN game_item_house_reclaim_provenance p USING(item_instance_id) WHERE h.item_instance_id=encode($1,'hex')::uuid",
+        ),
+        (
+            "house_loader_corpse_contents",
+            "INSERT INTO game_item_corpse_container_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) \
+         SELECT encode($2,'hex')::uuid,h.world_id,h.item_instance_id,1,'94000000-0000-7000-8000-000000000001'::uuid FROM game_item_house_interior_locations h WHERE h.item_instance_id=encode($1,'hex')::uuid",
+        ),
+    ] {
+        run_native(tag, async |h, backpack, item| {
+            loader_place_actual_item(h, backpack, item).await?;
+            assert_eq!(loader_runtime_item_count(h).await?, 1);
+            let mut admin = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *admin)
+                .await?;
+            // The real existing backpack is a child under the placed item only in this isolated
+            // corrupt-storage fixture. No production custody guard or FK is changed.
+            assert_eq!(
+                sqlx::query(corruption)
+                    .bind(item.as_slice())
+                    .bind(backpack.as_slice())
+                    .execute(&mut *admin)
+                    .await?
+                    .rows_affected(),
+                1
+            );
+            admin.commit().await?;
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            assert!(
+                matches!(
+                    load_house_interior_in_transaction(&mut tx, &current_house()?, 1, &h.node)
+                        .await,
+                    Err(HouseInteriorLoadError::InvalidStoredState)
+                ),
+                "both actual content tables must refuse the snapshot"
+            );
+            tx.rollback().await?;
+            Ok(())
+        })?;
+    }
+    Ok(())
+}

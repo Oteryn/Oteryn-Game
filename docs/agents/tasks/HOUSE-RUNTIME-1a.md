@@ -494,3 +494,29 @@ D1122 checkpoint state: numbering/JSON/whitespace checks PASS; the renamed0095
 full-package/PG qualification is NOT_RUN. Historical native component evidence
 remains bound to its original source generation; no fresh executable PASS,
 ready or merge/rebase is claimed.
+
+## Loader stored-state negative coverage successor — LOCAL_CHECKPOINT / NOT_FULLY_QUALIFIED
+
+The `b8303ef9` production loader,0095 migration and caller-TX API remain byte-identical.
+Added three real-PG tests (five isolated database scenarios), all authored NOT_RUN:
+
+- A real native placement provides the source item/location/provenance. Explicit privileged
+  stored-state fixture copies grow the physical snapshot to exactly2000 rows, which must load;
+  the2001st row must yield StorageFull, never a truncated/partial snapshot.
+- After a real one-item control, deleting its provenance or changing only its placement-TX
+  binding must yield InvalidStoredState rather than silently omit the physical location.
+- After a real one-item control, an actual row in ordinary container entries or corpse
+  container entries under the placed item must yield InvalidStoredState.
+
+All scenarios keep the independently registered current node and actual House assignment from
+`run_native`; no boolean/mock authority or recovered matching authority is substituted.
+`SET LOCAL session_replication_role=replica` is used only inside explicit admin fixture
+transactions in each isolated test DB to create otherwise-prohibited stored corruption. It
+changes no production DDL, grants, loader checks or authority records; it restores at TX end.
+The cloned overflow rows use distinct UUIDv7 item, minted-transaction and placement IDs;
+they are negative stored-data fixtures, not claimed committed mint history.
+
+Official Rustfmt1.94 and git diffcheck are source checks only. Compile/native/PG execution of
+this successor remains NOT_RUN; no evidence is transferred from earlier source generations.
+Publication remains held by the existing CP main-merge requirement versus direct user noMerge;
+the local candidate is retained with a verified recovery bundle; no push, merge or rebase is performed.
