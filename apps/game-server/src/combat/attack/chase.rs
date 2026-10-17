@@ -44,6 +44,8 @@ pub(crate) struct ChaseState {
     /// The adopted route and the position the attacker must hold to take its next step.
     route: VecDeque<CardinalStep>,
     expected_at: Option<MovementLocalPosition>,
+    /// The window and starting cell of the adopted search, while its first step awaits Movement.
+    search_origin: Option<(u64, MovementLocalPosition)>,
     /// The target position the route was searched for.
     goal: Option<MovementLocalPosition>,
     /// No search before this owner time.
@@ -85,6 +87,7 @@ impl ChaseState {
     pub(crate) fn hold(&mut self) {
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
         self.waiting_since = None;
     }
@@ -94,6 +97,7 @@ impl ChaseState {
     pub(crate) fn yield_to_client(&mut self, now_us: u64) {
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
         self.waiting_since = None;
         self.next_search_us = self
@@ -127,6 +131,7 @@ impl ChaseState {
         if self.expected_at != Some(at) {
             self.route.clear();
             self.expected_at = None;
+            self.search_origin = None;
             self.goal = None;
         }
         let stale = self.route.is_empty() || self.goal != Some(target);
@@ -165,12 +170,14 @@ impl ChaseState {
             Some(route) if !route.is_empty() => {
                 self.route = route.into();
                 self.expected_at = Some(at);
+                self.search_origin = Some((now_us / CHASE_WINDOW_MICROS, at));
                 self.goal = Some(target);
                 self.next_search_us = now_us.saturating_add(CHASE_SEARCH_INTERVAL_MICROS);
             }
             _ => {
                 self.route.clear();
                 self.expected_at = None;
+                self.search_origin = None;
                 self.goal = None;
                 self.next_search_us = now_us.saturating_add(CHASE_FAILED_SEARCH_WAIT_MICROS);
             }
@@ -184,15 +191,39 @@ impl ChaseState {
         Some(stepped(at, *step))
     }
 
+    /// The first destination selected by this window's earlier drain, before Movement commits.
+    /// After the first step is consumed, `expected_at` is that in-flight destination, never the
+    /// route's following step. A changed current position uses standing occupancy instead.
+    pub(crate) fn planned_search_cell(
+        &self,
+        now_us: u64,
+        at: MovementLocalPosition,
+    ) -> Option<MovementLocalPosition> {
+        if self.search_origin != Some((now_us / CHASE_WINDOW_MICROS, at)) {
+            return None;
+        }
+        let expected = self.expected_at?;
+        if expected == at {
+            self.next_cell()
+        } else {
+            Some(expected)
+        }
+    }
+
     /// The step the chase takes now from `at`: the route's next step, if any.
     pub(crate) fn next_step(&mut self, at: MovementLocalPosition) -> ChaseDecision {
         if self.expected_at != Some(at) {
             self.route.clear();
+            self.search_origin = None;
         }
         let Some(step) = self.route.pop_front() else {
             self.expected_at = None;
+            self.search_origin = None;
             return ChaseDecision::Hold;
         };
+        if self.search_origin.is_some_and(|(_, origin)| origin != at) {
+            self.search_origin = None;
+        }
         self.expected_at = Some(stepped(at, step));
         ChaseDecision::Step(step)
     }
@@ -223,6 +254,7 @@ impl ChaseState {
     pub(crate) fn step_refused(&mut self) {
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
     }
 
@@ -242,6 +274,7 @@ impl ChaseState {
         }
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
     }
 }
