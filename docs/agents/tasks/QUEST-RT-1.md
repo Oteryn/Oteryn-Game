@@ -526,3 +526,46 @@ index e4aad206000477a3ad6dee50ae2fa8ab39dde30c..c10df78a15369372ffb7f43a827ed219
  use super::{ComposedFreshAdmission, MonkSave};
  use crate::durability::character_authority::ReconciledCharacterAuthority;
 ```
+
+## 2026-10-17 — sixth admission regression qualified on the publication base (D1329 / D1342)
+
+The added native case covers refresh after a real expired-loss release in FreshAdmissionStore. It first verifies that the independently current fence is `Ok(None)`; two actual refreshes discard the previously usable copy and retry state while durable XP, XP receipts and pending obligations remain exactly `(0,0,1)`. All earlier 481 test lines remain unchanged; the addition is 79 lines after repository formatting.
+
+**Six selected original Cargo cases PASS**, zero failed/ignored. Strict game-server all-target Clippy and workspace fmt PASS. The new test leaf SHA256 is `262a6d7a36e63cb8626f2d4528d4ea469cdada133a2eddaf920f5fc2d2136bbc` (Git blob `9944b0e357c93ed4a3e92381816dde2732c2020f`). These results belong to the v5 receipt below and its exact publication-base assembly.
+
+### Exact composition and earlier qualification
+
+This normal native assembly uses the actual PR predecessor `b568c1d75eef8bd800965efceb66574ca8e33eae` plus exactly the owned leaf and these held integration files:
+
+| Path under `apps/game-server/src/` | SHA256 |
+| --- | --- |
+| `gameplay_transport/mod.rs` | `79738c21e8091b907435a875e538bb71ba34768ad55bffb93d8033c786143fd9` |
+| `gameplay_transport/monk_save_postgres_tests.rs` | `d21fdabee882b75acb672f446d6dc169d65f43ebe6715389600d378ee120c8e8` |
+
+The caller preserves the previously reviewed QUEST additions/deletions, and the fixture receives exactly the four assigned lines. The rest of the b568 source is preserved. The earlier b1 assembly's unrelated LOGOUT/ITEM-LOOK integrations and fixture registrations are not copied. The test leaf is byte-identical to the reviewed six-case leaf.
+
+The preceding five-case and v3 six-case results on `b1e90b421692289db3aac78a915629251ba80481` remain historical evidence for that assembly. The first publication preparation correctly stopped before edits because its server Cargo manifest differed from this PR's manifest. Those passing results are not carried across the base change. V4 was prepared but never executed. V5 repeats all six native cases, strict all-target Clippy and fmt on the actual composition above, using D1342 slot `B` and its reusable `/root/oteryn-target-B` target. It does not transfer previous qualification across the source or build-policy change.
+
+Before/after source and Cargo/toolchain inputs are unchanged. The server manifest SHA256 is `2897fb004ceea0b578c444650b457e484d8466b78e89e114d9d0621aba3c691c`, equal to this publication base. The existing 64 MiB test-only thread remains intact and `RUST_MIN_STACK` is unset. Original native owner, fixture, current-state guards and all test attributes are preserved.
+
+### Fresh fetch and native evidence
+
+[CP D1329](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233047791) execution used the existing shared PostgreSQL 17.6 and official `/root/.oteryn/in-pg-netns.sh` (SHA256 `368fd9867c97ca1d59aa8b9f7123b77f0e23fa8b6a16fbb5ace4d18b6e1bfd99`). Fresh `cargo fetch --locked` ran outside the offline namespace first, on the exact b568 composition, with source/build checks before and after. The namespace wrapper supplies the fixture's canonical 5432 route to the existing shared 55432 service. No guard or host PostgreSQL listener is rewritten.
+
+[CP D1342](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233555077) and its [retention clarification](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233732824) govern the build: one nonblocking A/B/C/I slot lock held for the complete run; at least 12 GiB MemAvailable before each Cargo start; the exact `molehill-build-env.sh` (`afc2f04924c412b5965a1c4f6a2b30dfcd9e80ac0a185af737d070ebedbefd82`) sourced before every fetch/test/Clippy/fmt command, with sccache, incremental=0 and jobs=4. Slot targets are reused under their own lock. Ordinary parallel tests do not acquire the PG lifecycle or ELF retention lock; this packet performs neither operation.
+
+The one ordinary test command adds `--message-format=json-render-diagnostics`. Its saved `source_artifact` record binds the Cargo-reported test executable and `src_path` to the exact current worktree through normalized dependency membership and the real `.d` `env-dep:CARGO_MANIFEST_DIR`, including the current absolute proficiency index input. ELF SHA256: `bc09ae36095065b4ca30fa23c3e93e3ee3257016d31d7188cae8f82eab638997`; dependency-file SHA256: `02060065b6c5ad845f9345965d879ac1791b2b049b9ec37d2eaf3241ea9ddc4e`. Both were read while the slot was owned. No ELF was copied or separately executed. The exact outer source-and-exec argv and inner `requested_command` are recorded separately, so the source policy and actual Cargo invocation remain reviewable after slot reuse.
+
+Final QUEST v5 checkpoint receipt SHA256: `29b7996d05cb24813d54374fd117633d3f3df39f54bacf98a46777455602130a`.
+Fresh fetch receipt SHA256: `e51e8eb7a715b56848958c23e8bd53a125b5725de91b64e9397adb3ae36e84f8`.
+
+| Command | Qualification | Finished UTC | Log SHA256 |
+| --- | --- | --- | --- |
+| `quest-fetch` | PASS | `2026-10-17T12:34:45.710400+00:00` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `quest-six` | PASS | `2026-10-17T12:38:00.197984+00:00` | `1cc3e24169acf3f2a69cfe0e91a595ab2cbb9ffb89b219754bfc188eca5292b3` |
+| `quest-clippy` | PASS | `2026-10-17T12:40:58.256789+00:00` | `984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1` |
+| `quest-fmt` | PASS | `2026-10-17T12:41:35.379762+00:00` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+Evidence, exact commands, source/build snapshots and the composed patch are retained under `/root/oteryn-six-pr-20261017/evidence-quest-current-native-v5-1017/` on Molehill-PC. The fresh fetch receipt is linked by hash from the final checkpoint. Previous evidence remains in its original location.
+
+[CP D1316](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232842478) grants the actual four-line monk fixture mount, atomically with the D1150 caller after #2197 on then-current main. Both shared files remain held outside this owned two-file publication. Capability 16 remains unoffered; journal text/wire remain with QUEST-LOG-WIRE-1. Literal chest-command and complete transport E2E, unknown-fence-read coverage, and full runtime acceptance remain open. This draft remains NOT_FULLY_QUALIFIED with CP merge authority.

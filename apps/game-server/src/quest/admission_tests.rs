@@ -479,3 +479,82 @@ fn native_quest_refresh_does_not_recreate_a_removed_session() -> TestResult {
         harness.cleanup().await
     })
 }
+
+#[test]
+fn native_terminal_quest_session_discards_copy_and_retry_without_paying_pending_xp() -> TestResult {
+    use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
+
+    run(async |admin| {
+        let harness =
+            Harness::create_with_admission_seed(admin, "quest_native_terminal", false, false)
+                .await?;
+        prepare_current_session(&harness).await?;
+        {
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let dependencies = Dependencies::new()?;
+            let mut owner = dependencies.owner(&harness, &authority);
+            owner.quest_catalogue = Some(catalogue());
+            let binding = Box::pin(initialize_progression(&owner)).await?;
+            commit_pending(&owner, "begin", 1).await?;
+            // Load the real pending copy without paying it, then attach its valid binding.
+            owner.admit_quest_session(&dependencies.admitted).await;
+            assert_eq!(durable(&harness).await?, (0, 0, 1));
+            {
+                let mut sessions = owner.quest_sessions.lock().expect("quest sessions");
+                let entry = sessions.get_mut(&session()).expect("admitted copy");
+                assert_eq!(
+                    entry
+                        .copy
+                        .as_ref()
+                        .expect("usable copy")
+                        .xp_obligations()
+                        .len(),
+                    1
+                );
+                // Make both cleanup assertions observable before ending current authority.
+                entry.retry_at =
+                    Some(Instant::now() + crate::gameplay_transport::QUEST_OBLIGATION_RETRY);
+            }
+            bind(&owner, binding);
+
+            // The same native loss/release path as the existing terminal-save regression.
+            // Its store transition, not a supplied or reconstructed fence, ends the session.
+            dependencies.loss(&harness, -1).await?;
+            assert!(matches!(
+                FreshAdmissionStore::from_root(harness.root.clone())
+                    .release_expired_loss(
+                        session(),
+                        &crate::gameplay_transport::canonical_uuid(&id(40)),
+                    )
+                    .await
+                    .map_err(debug)?,
+                ExpiredLossReleaseV1::Released { .. }
+            ));
+            assert!(matches!(
+                owner.current_quest_fence(session()).await,
+                Ok(None)
+            ));
+
+            for _ in 0..2 {
+                owner.refresh_quest_session(session(), false).await;
+                {
+                    let sessions = owner.quest_sessions.lock().expect("quest sessions");
+                    if let Some(entry) = sessions.get(&session()) {
+                        assert!(
+                            entry.copy.is_none(),
+                            "terminal sessions have no usable copy"
+                        );
+                        assert!(entry.retry_at.is_none(), "terminal sessions do not retry");
+                    }
+                }
+                assert_eq!(durable(&harness).await?, (0, 0, 1));
+            }
+        }
+        harness.cleanup().await
+    })
+}
