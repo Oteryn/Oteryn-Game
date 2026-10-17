@@ -1,5 +1,5 @@
 //! DAILY_REWARD0 §3.3 stored lane/streak arithmetic. These values are data, never
-//! evidence of a current World reset, UTC grant month, shrine reach or Premium.
+//! evidence of a current World reset, grant month, shrine reach or Premium.
 
 pub const STREAK_CEILING: u32 = 100_000;
 pub const JOKER_CEILING: u8 = 3;
@@ -52,7 +52,8 @@ pub struct ClaimArithmetic {
 /// Calculate only; this neither claims an epoch nor spends/grants a joker.
 /// `epoch` must eventually come from the independently current World reset owner.
 /// `jokers_after_grants` is already-granted, locked Account+World storage data;
-/// lazy UTC-month grants are deliberately not inferred from epoch numbers/time.
+/// Lazy grants consume the World-reset owner's committed-month port (CP D1317,
+/// D1257 Berlin10); they are not inferred from raw epoch numbers or local time.
 pub fn plan_claim_arithmetic(
     before: RewardState,
     epoch: u64,

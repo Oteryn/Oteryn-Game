@@ -46,6 +46,67 @@ CREATE TABLE game_account_daily_reward_joker_entries (
  PRIMARY KEY(account_id,world_id,entry_id),
  FOREIGN KEY(account_id,world_id) REFERENCES game_account_daily_reward_jokers ON DELETE RESTRICT
 );
+-- Check the final transaction state, including several grants/spends and either
+-- state/entry write order. Each check reads one state, its indexed tip and at
+-- most one predecessor; it never rescans the Account+World ledger history.
+CREATE FUNCTION game_daily_reward_joker_chain_guard() RETURNS trigger LANGUAGE plpgsql VOLATILE AS $$
+DECLARE
+ v_jokers SMALLINT; v_last NUMERIC; v_tip NUMERIC; v_after SMALLINT; v_before SMALLINT;
+BEGIN
+ SELECT jokers,last_entry_id INTO v_jokers,v_last
+ FROM game_account_daily_reward_jokers
+ WHERE account_id=NEW.account_id AND world_id=NEW.world_id FOR NO KEY UPDATE;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION 'daily joker state is missing' USING ERRCODE='23514';
+ END IF;
+ SELECT entry_id,balance_after INTO v_tip,v_after
+ FROM game_account_daily_reward_joker_entries
+ WHERE account_id=NEW.account_id AND world_id=NEW.world_id
+ ORDER BY entry_id DESC LIMIT 1;
+ IF NOT FOUND THEN
+  IF v_jokers<>0 OR v_last<>0 THEN
+   RAISE EXCEPTION 'daily joker state has no ledger' USING ERRCODE='23514';
+  END IF;
+ ELSIF v_last<>v_tip OR v_jokers<>v_after THEN
+  RAISE EXCEPTION 'daily joker state differs from ledger tip' USING ERRCODE='23514';
+ END IF;
+ IF TG_TABLE_NAME='game_account_daily_reward_joker_entries' THEN
+  v_before:=0;
+  IF NEW.entry_id>1 THEN
+   SELECT balance_after INTO v_before FROM game_account_daily_reward_joker_entries
+   WHERE account_id=NEW.account_id AND world_id=NEW.world_id AND entry_id=NEW.entry_id-1;
+   IF NOT FOUND THEN
+    RAISE EXCEPTION 'daily joker ledger predecessor is missing' USING ERRCODE='23514';
+   END IF;
+  END IF;
+  IF (CASE NEW.kind WHEN 'GRANT' THEN v_before+NEW.amount ELSE v_before-NEW.amount END)
+     <>NEW.balance_after THEN
+   RAISE EXCEPTION 'daily joker entry arithmetic differs' USING ERRCODE='23514';
+  END IF;
+ END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_daily_reward_joker_state_chain
+ AFTER INSERT OR UPDATE ON game_account_daily_reward_jokers
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_daily_reward_joker_chain_guard();
+CREATE CONSTRAINT TRIGGER game_daily_reward_joker_entry_chain
+ AFTER INSERT ON game_account_daily_reward_joker_entries
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_daily_reward_joker_chain_guard();
+CREATE FUNCTION game_daily_reward_joker_entry_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ RAISE EXCEPTION 'daily joker entries are immutable' USING ERRCODE='23514';
+END $$;
+CREATE TRIGGER game_daily_reward_joker_entry_immutable
+ BEFORE UPDATE OR DELETE ON game_account_daily_reward_joker_entries
+ FOR EACH ROW EXECUTE FUNCTION game_daily_reward_joker_entry_immutable();
+CREATE TRIGGER game_daily_reward_joker_entry_no_truncate
+ BEFORE TRUNCATE ON game_account_daily_reward_joker_entries
+ FOR EACH STATEMENT EXECUTE FUNCTION game_daily_reward_joker_entry_immutable();
+-- Resolve the installed tables even if the caller has a different search_path
+-- or same-named temporary tables. This is an invoker-rights constraint function.
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_daily_reward_joker_chain_guard() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
 CREATE TABLE game_character_daily_reward_claims (
  character_id UUID NOT NULL REFERENCES game_character_roots(character_id) ON DELETE RESTRICT,
  world_id UUID NOT NULL,
@@ -109,7 +170,8 @@ pub struct ClaimKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JokerState {
     pub jokers: u8,
-    /// Stored UTC calendar month, `YYYY-MM-DD` (first day), not a grant proof.
+    /// Stored grant-month key, `YYYY-MM-DD` (first day), not a grant proof.
+    /// CP D1317 binds the #2167 port to D1257 Berlin10, superseding UTC.
     pub last_grant_month: Option<String>,
     pub last_entry_id: u64,
 }

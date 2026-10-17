@@ -304,3 +304,239 @@ async fn daily_schema_bounds_and_runtime_immutable_columns(pool: PgPool) -> Test
     }
     Ok(())
 }
+
+async fn seed_joker_chain(
+    pool: &PgPool,
+    key: ClaimKey,
+    account: AccountId,
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    sqlx::query("INSERT INTO game_account_daily_reward_jokers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,3,'2026-10-01',1)")
+        .bind(account.as_bytes().as_slice()).bind(key.world_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+    append_joker_entry(&mut tx, key, account, (1, "GRANT", 3, 3)).await?;
+    tx.commit().await
+}
+
+async fn update_joker_head(
+    connection: &mut PgConnection,
+    key: ClaimKey,
+    account: AccountId,
+    balance: i16,
+    entry: u64,
+) -> Result<(), sqlx::Error> {
+    let changed = sqlx::query("UPDATE game_account_daily_reward_jokers SET jokers=$3,last_entry_id=$4::text::numeric WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(account.as_bytes().as_slice()).bind(key.world_id.as_bytes().as_slice())
+        .bind(balance).bind(entry.to_string()).execute(connection).await?;
+    assert_eq!(changed.rows_affected(), 1);
+    Ok(())
+}
+
+async fn append_joker_entry(
+    connection: &mut PgConnection,
+    key: ClaimKey,
+    account: AccountId,
+    (entry, kind, amount, after): (u64, &str, i16, i16),
+) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO game_account_daily_reward_joker_entries VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,game_character_uuid_v7(),$4,$5,$6)")
+        .bind(account.as_bytes().as_slice()).bind(key.world_id.as_bytes().as_slice())
+        .bind(entry.to_string()).bind(kind).bind(amount).bind(after).execute(connection).await?;
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn daily_joker_ledger_final_state_multi_entry_and_rollback(pool: PgPool) -> TestResult {
+    let (key, account) = fixture(&pool).await?;
+    // Both orderings must see the final transaction, not an earlier trigger's NEW row.
+    for (state_first, world) in [
+        (true, key.world_id),
+        (false, WorldId::from_bytes(*account.as_bytes())?),
+    ] {
+        let key = ClaimKey {
+            world_id: world,
+            ..key
+        };
+        let mut tx = pool.begin().await?;
+        tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+        sqlx::query("INSERT INTO game_account_daily_reward_jokers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,0,NULL,0)")
+            .bind(account.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let mut tx = pool.begin().await?;
+        tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+        if state_first {
+            update_joker_head(&mut tx, key, account, 3, 1).await?;
+            update_joker_head(&mut tx, key, account, 3, 3).await?;
+        }
+        // Physical INSERT order differs from ledger order. All rows must validate at COMMIT.
+        sqlx::query("INSERT INTO game_account_daily_reward_joker_entries VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,3,game_character_uuid_v7(),'GRANT',1,3),(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,game_character_uuid_v7(),'GRANT',3,3),(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,game_character_uuid_v7(),'SPEND',1,2)")
+            .bind(account.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+        if !state_first {
+            update_joker_head(&mut tx, key, account, 3, 3).await?;
+        }
+        tx.commit().await?;
+        let mut rollback = pool.begin().await?;
+        rollback
+            .execute("SET LOCAL ROLE oteryn_game_runtime")
+            .await?;
+        update_joker_head(&mut rollback, key, account, 2, 4).await?;
+        append_joker_entry(&mut rollback, key, account, (4, "SPEND", 1, 2)).await?;
+        rollback.rollback().await?;
+        let mut fresh = pool.begin().await?;
+        let stored = lock_joker_state(&mut fresh, account, world)
+            .await?
+            .ok_or("missing jokers")?;
+        assert_eq!((stored.jokers, stored.last_entry_id), (3, 3));
+        let entries: i64 = sqlx::query_scalar("SELECT count(*) FROM game_account_daily_reward_joker_entries WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+            .bind(account.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_one(&mut *fresh).await?;
+        assert_eq!(entries, 3);
+        fresh.rollback().await?;
+    }
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn daily_joker_ledger_rejects_broken_head_chain_and_scope(pool: PgPool) -> TestResult {
+    let (key, account) = fixture(&pool).await?;
+    seed_joker_chain(&pool, key, account).await?;
+    for (label, balance, cursor, entry, amount) in [
+        ("balance differs from latest entry", 1, 2, 2, 1),
+        ("cursor is not the latest entry", 2, 1, 2, 1),
+        ("entry arithmetic is false", 2, 2, 2, 2),
+        ("entry sequence has a gap", 2, 3, 3, 1),
+        ("balance changes without an entry", 2, 2, 0, 1),
+    ] {
+        let mut tx = pool.begin().await?;
+        tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+        update_joker_head(&mut tx, key, account, balance, cursor).await?;
+        if entry != 0 {
+            append_joker_entry(&mut tx, key, account, (entry, "SPEND", amount, 2)).await?;
+        }
+        let result = tx.commit().await;
+        assert!(
+            matches!(result, Err(ref error) if sqlstate(error).as_deref() == Some("23514")),
+            "{label}: {result:?}"
+        );
+        let mut fresh = pool.begin().await?;
+        let stored = lock_joker_state(&mut fresh, account, key.world_id)
+            .await?
+            .ok_or("missing jokers")?;
+        assert_eq!((stored.jokers, stored.last_entry_id), (3, 1));
+        fresh.rollback().await?;
+    }
+
+    // A same-named temporary state must not substitute for the installed ledger's head.
+    let mut shadowed = pool.begin().await?;
+    update_joker_head(&mut shadowed, key, account, 1, 2).await?;
+    append_joker_entry(&mut shadowed, key, account, (2, "SPEND", 1, 2)).await?;
+    shadowed.execute("CREATE TEMP TABLE game_account_daily_reward_jokers (LIKE game_account_daily_reward_jokers INCLUDING ALL) ON COMMIT DROP").await?;
+    sqlx::query("INSERT INTO game_account_daily_reward_jokers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,2,'2026-10-01',2)")
+        .bind(account.as_bytes().as_slice()).bind(key.world_id.as_bytes().as_slice()).execute(&mut *shadowed).await?;
+    let result = shadowed.commit().await;
+    assert!(matches!(result, Err(ref error) if sqlstate(error).as_deref() == Some("23514")));
+
+    // An entry in either another World or another Account cannot supply the predecessor.
+    for (other_account, world) in [
+        (account, WorldId::from_bytes(*account.as_bytes())?),
+        (
+            AccountId::from_bytes(*key.character_id.as_bytes())?,
+            key.world_id,
+        ),
+    ] {
+        let other_key = ClaimKey {
+            world_id: world,
+            ..key
+        };
+        let mut tx = pool.begin().await?;
+        sqlx::query("INSERT INTO game_account_daily_reward_jokers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,0,NULL,0)")
+            .bind(other_account.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let mut tx = pool.begin().await?;
+        tx.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+        update_joker_head(&mut tx, other_key, other_account, 2, 2).await?;
+        append_joker_entry(&mut tx, other_key, other_account, (2, "SPEND", 1, 2)).await?;
+        let result = tx.commit().await;
+        assert!(matches!(result, Err(ref error) if sqlstate(error).as_deref() == Some("23514")));
+        let mut fresh = pool.begin().await?;
+        let stored = lock_joker_state(&mut fresh, other_account, world)
+            .await?
+            .ok_or("missing scope")?;
+        assert_eq!((stored.jokers, stored.last_entry_id), (0, 0));
+        fresh.rollback().await?;
+    }
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn daily_joker_ledger_entries_cannot_be_rewritten_or_erased(pool: PgPool) -> TestResult {
+    let (key, account) = fixture(&pool).await?;
+    seed_joker_chain(&pool, key, account).await?;
+    // The table owner can issue these statements: immutable history must also be a DB invariant.
+    for statement in [
+        "UPDATE game_account_daily_reward_joker_entries SET amount=1",
+        "UPDATE game_account_daily_reward_joker_entries SET transaction_id=game_character_uuid_v7()",
+        "DELETE FROM game_account_daily_reward_joker_entries",
+        "TRUNCATE game_account_daily_reward_joker_entries",
+    ] {
+        let mut tx = pool.begin().await?;
+        let result = sqlx::query(statement).execute(&mut *tx).await;
+        assert!(
+            matches!(result, Err(ref error) if sqlstate(error).as_deref() == Some("23514")),
+            "{statement}: {result:?}"
+        );
+        tx.rollback().await?;
+    }
+    let mut fresh = pool.begin().await?;
+    let stored = lock_joker_state(&mut fresh, account, key.world_id)
+        .await?
+        .ok_or("missing jokers")?;
+    assert_eq!((stored.jokers, stored.last_entry_id), (3, 1));
+    fresh.rollback().await?;
+    Ok(())
+}
+
+#[sqlx::test(migrations = "./migrations")]
+async fn daily_joker_ledger_serializes_writers_and_rejects_stale_debit(pool: PgPool) -> TestResult {
+    let (key, account) = fixture(&pool).await?;
+    seed_joker_chain(&pool, key, account).await?;
+    let mut first = pool.begin().await?;
+    first.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+    let before = lock_joker_state(&mut first, account, key.world_id)
+        .await?
+        .ok_or("missing jokers")?;
+    assert_eq!(before.jokers, 3);
+    let mut second = pool.begin().await?;
+    second.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+    second.execute("SET LOCAL lock_timeout='50ms'").await?;
+    // Observe the real helper's row lock before DurabilityError intentionally
+    // discards unregistered PostgreSQL states such as 55P03.
+    let blocked = sqlx::query(
+        "SELECT 1 FROM game_account_daily_reward_jokers \
+         WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR UPDATE",
+    )
+    .bind(account.as_bytes().as_slice())
+    .bind(key.world_id.as_bytes().as_slice())
+    .fetch_optional(&mut *second)
+    .await;
+    assert!(matches!(blocked, Err(ref error) if sqlstate(error).as_deref() == Some("55P03")));
+    second.rollback().await?;
+    update_joker_head(&mut first, key, account, 2, 2).await?;
+    append_joker_entry(&mut first, key, account, (2, "SPEND", 1, 2)).await?;
+    first.commit().await?;
+    let mut second = pool.begin().await?;
+    second.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+    let current = lock_joker_state(&mut second, account, key.world_id)
+        .await?
+        .ok_or("missing jokers")?;
+    assert_eq!((current.jokers, current.last_entry_id), (2, 2));
+    // A stale debit planned from three jokers cannot consume the two left after the winner.
+    update_joker_head(&mut second, key, account, 0, 3).await?;
+    append_joker_entry(&mut second, key, account, (3, "SPEND", 3, 0)).await?;
+    let result = second.commit().await;
+    assert!(matches!(result, Err(ref error) if sqlstate(error).as_deref() == Some("23514")));
+    let mut fresh = pool.begin().await?;
+    let stored = lock_joker_state(&mut fresh, account, key.world_id)
+        .await?
+        .ok_or("missing jokers")?;
+    assert_eq!((stored.jokers, stored.last_entry_id), (2, 2));
+    fresh.rollback().await?;
+    Ok(())
+}
