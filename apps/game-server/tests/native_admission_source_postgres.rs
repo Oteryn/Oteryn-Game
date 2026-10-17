@@ -20,6 +20,10 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+// The native source carrier uses this test root's actual Foundation identities.
+#[allow(dead_code)]
+#[path = "../src/ability/player_lethal.rs"]
+mod player_lethal;
 
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use durability::native_admission_source::{
