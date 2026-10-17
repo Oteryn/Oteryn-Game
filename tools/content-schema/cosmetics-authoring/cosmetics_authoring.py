@@ -165,17 +165,20 @@ def build(authoring, manifest_path: Path) -> bytes:
             raise ValueError("cosmetics source shard digest/bounds")
         observation = parse(data)
         if (observation["schema"] != "OTERYN_CIPSOFT_APPEARANCE_OUTFIT_SOURCE_OBSERVATIONS/v1"
-                or observation["family"] != "Outfit" or len(observation["records"]) != pin["records"]):
+                or observation["family"] != "Outfit" or type(pin["records"]) is not int
+                or len(observation["records"]) != pin["records"]):
             raise ValueError("cosmetics source record count/family")
         for record in observation["records"]:
             identity = record["source_id"]
             if (type(identity) is not int or not 1 <= identity <= 65535
-                    or identity in looks or record["source_index"] != ordinal):
+                    or identity in looks or type(record["source_index"]) is not int
+                    or record["source_index"] != ordinal):
                 raise ValueError("duplicate, invalid or reordered cosmetics source ID")
             looks[identity] = record["source_record_sha256"]
             ordinal += 1
         shards.append({"path": name, "json": data.decode("utf-8")})
-    if not names or not 1 <= ordinal == manifest["record_count"] <= 65535:
+    if (not names or type(manifest["record_count"]) is not int
+            or not 1 <= ordinal == manifest["record_count"] <= 65535):
         raise ValueError("cosmetics source manifest total")
     refs = [row[sex] for row in document["outfits"] for sex in ["female", "male"]]
     refs += [row["look"] for row in document["mounts"]]

@@ -1,9 +1,11 @@
 """Synthetic authored facts against real pinned source bytes; no product source promotion."""
 import copy
+import json
 from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 from jsonschema import ValidationError
 
 import cosmetics_authoring as c
@@ -133,6 +135,71 @@ class CosmeticsAuthoring(unittest.TestCase):
         self.authoring["document"]["outfits"][0]["key"] = "oteryn:outfit.synthetic"
         with self.assertRaisesRegex(ValueError, "nonproduction"):
             c.validate(self.authoring)
+
+    def stage_truncated(self, root, count, mutate):
+        """Stage the real source cut to `count` records, re-pinned, then apply `mutate`."""
+        authoring = copy.deepcopy(self.authoring)
+        staged = (root / c.MANIFEST).parent
+        shutil.copytree((c.ROOT / c.MANIFEST).parent, staged)
+        manifest = c.parse((root / c.MANIFEST).read_bytes())
+        pin = manifest["files"][0]
+        manifest["files"] = [pin]
+        shard_path = staged / pin["path"]
+        shard = c.parse(shard_path.read_bytes())
+        shard["records"] = shard["records"][:count]
+        mutate(manifest, pin, shard)
+        first = shard["records"][0]
+        document = authoring["document"]
+        refs = [row[sex] for row in document["outfits"] for sex in ["female", "male"]]
+        for ref in refs + [row["look"] for row in document["mounts"]]:
+            ref["id"], ref["source_record_sha256"] = first["source_id"], first["source_record_sha256"]
+        data = json.dumps(shard).encode()
+        shard_path.write_bytes(data)
+        pin["sha256"] = c.sha(data)
+        raw = json.dumps(manifest).encode()
+        (root / c.MANIFEST).write_bytes(raw)
+        authoring["document"]["source_manifest_sha256"] = c.sha(raw)
+        for promotion in authoring["promotions"]:
+            if promotion["path"] == "/source_manifest_sha256":
+                promotion["value"] = c.sha(raw)
+        return authoring
+
+    def build_unvalidated(self, authoring, root):
+        # The truncated fixture repeats one look for every reference; only the source loop is under test.
+        with mock.patch.object(c, "validate"):
+            return c.build(authoring, root / c.MANIFEST)
+
+    def test_source_ordinals_and_counts_reject_json_booleans(self):
+        def sound(manifest, pin, shard):
+            pin["records"] = len(shard["records"])
+            manifest["record_count"] = len(shard["records"])
+
+        def index_bool(index):
+            def mutate(manifest, pin, shard):
+                sound(manifest, pin, shard)
+                shard["records"][index]["source_index"] = bool(index)
+            return mutate
+
+        def count_bool(field):
+            def mutate(manifest, pin, shard):
+                sound(manifest, pin, shard)
+                (pin if field == "pin" else manifest)["records" if field == "pin" else "record_count"] = True
+            return mutate
+
+        cases = [("source_index false for 0", 1, index_bool(0)),
+                 ("source_index true for 1", 2, index_bool(1)),
+                 ("pin records true for 1", 1, count_bool("pin")),
+                 ("manifest record_count true for 1", 1, count_bool("manifest"))]
+        for label, count, mutate in cases:
+            with self.subTest(label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                authoring = self.stage_truncated(root, count, sound)
+                self.assertEqual(c.parse(self.build_unvalidated(authoring, root))["availability"], "authored")
+            with self.subTest(label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                authoring = self.stage_truncated(root, count, mutate)
+                with self.assertRaises(ValueError):
+                    self.build_unvalidated(authoring, root)
 
     def test_missing_authoring_produces_no_population_and_stale_output_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
