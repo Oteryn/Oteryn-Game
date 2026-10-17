@@ -970,7 +970,12 @@ async fn verify_character_integrity(
                   level_before, level_after, experience_before, experience_after, \
                   profile_revision, ruleset_revision, content_revision, simulation_revision, \
                   evidence_revision, declaration_revision, policy_revision, reward_revision \
-              FROM game_character_quest_receipts) \
+              FROM game_character_quest_receipts \
+           UNION ALL SELECT character_id, original_character_revision, committed_character_revision, \
+                  level_before, level_after, experience_before, experience_after, \
+                  profile_revision, ruleset_revision, content_revision, simulation_revision, \
+                  evidence_revision, declaration_revision, policy_revision, reward_revision \
+              FROM game_character_appearance_receipts) \
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_progression_state s USING (character_id) \
           WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
@@ -1028,6 +1033,14 @@ async fn verify_character_integrity(
     .fetch_optional(&mut **tx)
     .await?
     .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
+    super::character_appearance::verify_character_appearance_integrity(tx)
+        .await
+        .map_err(|error| match error {
+            super::character_appearance::AppearanceReadError::InvalidStoredState => {
+                DurabilityError::InvalidStoredState
+            }
+            super::character_appearance::AppearanceReadError::Storage(error) => error.into(),
+        })?;
     verify_character_build_chain(tx).await?;
     verify_all_character_proficiency_histories(tx, definitions).await?;
     super::character_familiar::verify_familiar_chain(tx).await?;
