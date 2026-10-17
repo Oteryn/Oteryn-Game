@@ -3673,6 +3673,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let _ = self
             .drain_familiar_deaths(actor, game_session_id, &cleanup_access)
             .await;
+        // #2199 Codex P2 4302041461: a familiar Login stored for lack of a free tile returns
+        // on this cadence once a tile frees.
+        let _ = self
+            .retry_waiting_familiar_return(actor, game_session_id, &cleanup_access)
+            .await;
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
         result.or(party_vitals)
@@ -4918,9 +4923,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let access = self
                 .refresh_and_apply_spell_access(actor, game_session_id)
                 .await;
-            let _ = self
+            // #2199: a familiar Login that did not complete restored neither the stored familiar
+            // nor its cooldowns, so the entry fails closed like the other post-position owners.
+            let initialized = self
                 .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
-                .await;
+                .await
+                .is_ok();
+            let outcome = familiar_login_first_entry(outcome, initialized);
+            if outcome == FirstEntryOutcome::RefusedByChannel {
+                return (outcome, None, None);
+            }
         }
         (outcome, item_fence, Some(decided))
     }
@@ -5168,6 +5180,20 @@ const fn writes_after_progression(positioned: bool, first_entry: FirstEntryOutco
 /// connection holds the actor input-ineligible.
 const fn respawned_first_entry(first_entry: FirstEntryOutcome, settled: bool) -> FirstEntryOutcome {
     if settled {
+        first_entry
+    } else {
+        FirstEntryOutcome::RefusedByChannel
+    }
+}
+
+/// #2199: a first entry whose familiar Login did not complete (an unknown or refused lifecycle
+/// write, with the stored familiar and its cooldowns unrestored) refuses its playable entry, so
+/// the connection holds the actor input-ineligible instead of playing without them.
+const fn familiar_login_first_entry(
+    first_entry: FirstEntryOutcome,
+    initialized: bool,
+) -> FirstEntryOutcome {
+    if initialized {
         first_entry
     } else {
         FirstEntryOutcome::RefusedByChannel
@@ -6897,6 +6923,19 @@ mod tests {
             assert_eq!(respawned_first_entry(entry, true), entry);
             assert_eq!(
                 respawned_first_entry(entry, false),
+                FirstEntryOutcome::RefusedByChannel
+            );
+        }
+    }
+
+    /// #2199: a familiar Login that did not complete refuses the playable first entry, so the
+    /// stored familiar and its cooldowns are never silently left unrestored.
+    #[test]
+    fn an_incomplete_familiar_login_refuses_the_playable_first_entry() {
+        for entry in [FirstEntryOutcome::Positioned, FirstEntryOutcome::Reconciled] {
+            assert_eq!(familiar_login_first_entry(entry, true), entry);
+            assert_eq!(
+                familiar_login_first_entry(entry, false),
                 FirstEntryOutcome::RefusedByChannel
             );
         }

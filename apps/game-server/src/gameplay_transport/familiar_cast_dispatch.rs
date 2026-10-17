@@ -622,7 +622,122 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map(Some)
     }
+
+    /// #2199 Codex P2 4302041461: the owner-cadence return of a familiar this session's Login
+    /// stored because no tile was free. Each due attempt first checks for a free tile under
+    /// the held owner, then replays the source Login recreation through the fenced lifecycle
+    /// writer with the stored remaining lifetime: it creates only from the waiting row of this
+    /// lifecycle at its epoch, never doubles a present familiar and restores no cooldown
+    /// again. A failed attempt leaves the row waiting (an unknown outcome resumes the retained
+    /// original) and retries after a backoff; the next Login still returns it.
+    pub(in crate::gameplay_transport) async fn retry_waiting_familiar_return<
+        A: CurrentSpellAccessOwner + Sync,
+    >(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        access: &A,
+    ) -> Result<bool, ()> {
+        use crate::spell::companion_lifecycle::{
+            FamiliarLifecycleOrigin, familiar_return_admissible,
+            familiar_return_placement_available,
+        };
+        let now = self.owner_now().get();
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            prune_familiar_returns(&runtime, &mut states);
+            let Some(index) = states
+                .spell_timers
+                .as_ref()
+                .and_then(|t| t.familiar_return_due(actor, session, now))
+            else {
+                return Ok(false);
+            };
+            let retained = states.pending_familiar_lifecycle.iter().any(|p| {
+                p.actor == actor
+                    && p.session == session
+                    && matches!(
+                        p.familiar.binding().origin(),
+                        FamiliarLifecycleOrigin::Return { .. }
+                    )
+            });
+            if !retained {
+                let Some((spell, true)) = self.spells.source_indexed(index) else {
+                    return Ok(false);
+                };
+                let Execution::NativeProfile(profile) = &spell.execution else {
+                    return Ok(false);
+                };
+                if states.has_pending_familiar(actor, session)
+                    || !familiar_return_placement_available(
+                        &runtime,
+                        self.movement_cells,
+                        profile,
+                        actor,
+                    )
+                {
+                    return Ok(false);
+                }
+            }
+        }
+        let result = self
+            .dispatch_familiar_owner_event(actor, session, FamiliarOwnerEvent::Return, access)
+            .await;
+        let returned = matches!(&result, Ok(Some(receipt)) if receipt.creature().is_some());
+        // A row no longer waiting for this lifecycle (returned, replaced or ended) ends the
+        // retry; any other failure keeps it for the backoff.
+        let waiting = !returned
+            && match self.familiar_fence(session).await {
+                Some(fence) => {
+                    let writer =
+                        crate::durability::character_familiar::FamiliarLifecycleWriter::from_fence(
+                            &fence,
+                        );
+                    match (
+                        writer,
+                        self.root
+                            .read_character_familiar_state(self.character, fence.character_id)
+                            .await,
+                    ) {
+                        (Ok(writer), Ok(loaded)) => familiar_return_admissible(
+                            loaded.state(),
+                            loaded.checkpoint_committed_at_ms(),
+                            &writer,
+                            loaded.state().lifecycle_epoch,
+                        ),
+                        _ => true,
+                    }
+                }
+                None => true,
+            };
+        {
+            let _runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            let retained = states
+                .pending_familiar_lifecycle
+                .iter()
+                .any(|p| p.actor == actor && p.session == session);
+            if let Some(timers) = states.spell_timers.as_mut() {
+                if !waiting && !retained {
+                    timers.clear_familiar_return(actor, session);
+                } else if let Some(index) = timers.familiar_return_due(actor, session, now) {
+                    let _ = timers.schedule_familiar_return(
+                        actor,
+                        session,
+                        index,
+                        now.saturating_add(FAMILIAR_RETURN_RETRY_MICROS),
+                    );
+                }
+            }
+        }
+        result.map(|_| returned)
+    }
 }
+
+/// Backoff between failed returns of one stored familiar, so an unavailable owner or store is
+/// not re-read on every 1000 ms cadence tick.
+const FAMILIAR_RETURN_RETRY_MICROS: u64 = 10_000_000;
 
 #[cfg(test)]
 mod tests {

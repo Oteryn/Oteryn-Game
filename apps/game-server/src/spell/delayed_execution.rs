@@ -468,6 +468,17 @@ pub(crate) struct SpellTimerOwner {
     // retry must never reroll damage or manufacture a newer admission sequence.
     prepared_due: Option<(SpellTimerOccurrence, OwnerCombatBatch)>,
     revision: u64,
+    // #2199 Codex P2 4302041461: actors whose Login stored a familiar for lack of a free tile,
+    // each with the earliest owner time of its next return attempt. Data only: every attempt
+    // re-proves the stored row, current owner and placement, and an entry creates nothing.
+    familiar_returns: Vec<FamiliarReturnWait>,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FamiliarReturnWait {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    spell_index: std::num::NonZeroU32,
+    not_before_us: u64,
 }
 #[derive(Debug)]
 pub(crate) struct FireReceipt {
@@ -778,7 +789,61 @@ impl SpellTimerOwner {
             ready: VecDeque::new(),
             prepared_due: None,
             revision: 0,
+            familiar_returns: Vec::new(),
         })
+    }
+    /// Record (or move) the next return attempt of a stored familiar. False when the entry
+    /// cannot be stored; the stored row is then returned at the next Login, never lost.
+    pub(crate) fn schedule_familiar_return(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        spell_index: std::num::NonZeroU32,
+        not_before_us: u64,
+    ) -> bool {
+        if let Some(wait) = self
+            .familiar_returns
+            .iter_mut()
+            .find(|w| w.actor == actor && w.session == session)
+        {
+            wait.spell_index = spell_index;
+            wait.not_before_us = not_before_us;
+            return true;
+        }
+        if self.familiar_returns.try_reserve(1).is_err() {
+            return false;
+        }
+        self.familiar_returns.push(FamiliarReturnWait {
+            actor,
+            session,
+            spell_index,
+            not_before_us,
+        });
+        true
+    }
+    /// The familiar spell of this exact actor/session's stored return when it is due at
+    /// `now_us`; None when no return waits or its next attempt is later.
+    pub(crate) fn familiar_return_due(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+    ) -> Option<std::num::NonZeroU32> {
+        self.familiar_returns
+            .iter()
+            .find(|w| w.actor == actor && w.session == session && w.not_before_us <= now_us)
+            .map(|w| w.spell_index)
+    }
+    pub(crate) fn clear_familiar_return(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.familiar_returns
+            .retain(|w| w.actor != actor || w.session != session);
+    }
+    /// Every actor/session with a stored return, so ended sessions can be pruned.
+    pub(crate) fn familiar_return_actors(&self) -> Vec<(ExactActorRef, GameSessionId)> {
+        self.familiar_returns
+            .iter()
+            .map(|w| (w.actor, w.session))
+            .collect()
     }
     fn current(&self, fence: &ScopeRuntimeFence, stamp: RuntimeWorkStamp) -> bool {
         fence.is_current_for_scope(self.lane.scope(), self.lane.generation())

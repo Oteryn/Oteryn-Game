@@ -365,3 +365,64 @@ fn actual_owner_due_applies_ai_lifetime_at_callback_and_never_replays() {
     assert!(stale.blocked.is_none());
     assert_eq!(owner.pending_len(), 0);
 }
+
+/// #2199 Codex P2 4302041461: a stored familiar return is one entry per actor/session, due
+/// from its scheduled owner time, moved (not duplicated) by a retry backoff and gone once
+/// cleared; it never touches another actor's entry.
+#[allow(clippy::expect_used, clippy::unwrap_used)]
+#[test]
+fn stored_familiar_return_is_one_due_entry_per_actor() {
+    let id = |n| [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n];
+    let world = crate::foundation::WorldId::decode(&id(60)).unwrap();
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        crate::foundation::ChannelId::decode(&id(61)).unwrap(),
+        crate::foundation::NodeId::decode(&id(62)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        3,
+        crate::foundation::ChannelContentPin::test(world),
+    )
+    .unwrap();
+    let session = GameSessionId::decode(&id(91)).unwrap();
+    let admission = runtime.reserve_fresh_session(session).unwrap();
+    let actor = runtime.commit_fresh_session(admission).unwrap();
+    let other_session = GameSessionId::decode(&id(93)).unwrap();
+    let admission = runtime.reserve_fresh_session(other_session).unwrap();
+    let other = runtime.commit_fresh_session(admission).unwrap();
+    let mut owner = SpellTimerOwner::new(
+        RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id()),
+        runtime.binding().scope_generation(),
+    )
+    .unwrap();
+    let spell = std::num::NonZeroU32::new(4).unwrap();
+    assert_eq!(owner.familiar_return_due(actor, session, u64::MAX), None);
+    assert!(owner.schedule_familiar_return(actor, session, spell, 1_000));
+    assert_eq!(owner.familiar_return_due(actor, session, 999), None);
+    assert_eq!(
+        owner.familiar_return_due(actor, session, 1_000),
+        Some(spell)
+    );
+    // Only the exact actor/session owns the entry.
+    assert_eq!(owner.familiar_return_due(other, other_session, 1_000), None);
+    assert_eq!(owner.familiar_return_due(actor, other_session, 1_000), None);
+    // A failed attempt moves the same entry later; it is never doubled.
+    assert!(owner.schedule_familiar_return(actor, session, spell, 11_000));
+    assert_eq!(owner.familiar_return_due(actor, session, 10_999), None);
+    assert_eq!(
+        owner.familiar_return_due(actor, session, 11_000),
+        Some(spell)
+    );
+    assert!(owner.schedule_familiar_return(other, other_session, spell, 0));
+    let mut actors = owner.familiar_return_actors();
+    actors.sort_unstable_by_key(|(a, _)| a.placement_identity());
+    let mut expected = vec![(actor, session), (other, other_session)];
+    expected.sort_unstable_by_key(|(a, _)| a.placement_identity());
+    assert_eq!(actors, expected);
+    // A completed (or no longer admissible) return clears only its own entry.
+    owner.clear_familiar_return(actor, session);
+    assert_eq!(owner.familiar_return_due(actor, session, u64::MAX), None);
+    assert_eq!(owner.familiar_return_actors(), vec![(other, other_session)]);
+}

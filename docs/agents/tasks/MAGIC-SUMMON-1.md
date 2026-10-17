@@ -556,3 +556,32 @@ OPEN / DRAFT / NOT_FULLY_QUALIFIED. The owner approved this round for Codex thre
 
 Regression tests: two pure lifecycle tests next to the round-three tests. Local Rust build,
 Clippy and tests are NOT_RUN (no cargo); `rustfmt --check` passes. New-head GitHub CI must pass.
+
+### Round-five repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. The owner approved this round for Codex thread 4302041461
+(P2) and the ignored first-entry familiar init. Branch merged with `main` first (merge commit).
+
+- A Login that keeps a positive `familiar_remaining_ms` but finds no free tile (the source
+  spawn-room `CreationRefusal`) now records a stored return for that actor/session in the
+  Channel `SpellTimerOwner` (data only). The 1000 ms owner cadence (`tick_vitals`, after the
+  death drain) checks for a free tile under the held owner without any SQL read, then replays
+  the source Login recreation through the fenced lifecycle writer as a new
+  `FamiliarLifecycleOrigin::Return`, keyed by the waiting row's lifecycle epoch. It creates the
+  familiar with the fenced stored lifetime only from the waiting row of this lifecycle at that
+  epoch (`familiar_return_admissible`), never with a familiar present, and restores no cooldown
+  again. A failed attempt leaves the row waiting and retries after 10 s; an unknown COMMIT
+  resumes the retained original. A row no longer waiting ends the retry; the next Login still
+  returns it. The Cast guard is unchanged, so it frees once the return commits.
+- A first entry whose familiar Login did not complete now refuses its playable entry
+  (`RefusedByChannel`, input-ineligible), like the other post-position owners, so the actor
+  never plays with the stored familiar and its cooldowns unrestored. `gameplay_transport/mod.rs`
+  is slot-only for this packet; the lead directed these two edits there for this round.
+
+Regression tests: `stored_return_admits_only_this_lifecycles_waiting_row` and
+`only_a_no_room_login_leaves_a_return_waiting` (lifecycle),
+`stored_familiar_return_is_one_due_entry_per_actor` (timer owner) and
+`an_incomplete_familiar_login_refuses_the_playable_first_entry` (transport). On a scratch
+build of this tree, `cargo clippy -p oteryn-game-server --all-targets -- -D warnings` passes; the
+game-server lib tests ran to about 2,600 of 3,281 with no failure before the build host went
+offline, so the rest are NOT_RUN locally. `rustfmt --check` passes. New-head GitHub CI must pass.

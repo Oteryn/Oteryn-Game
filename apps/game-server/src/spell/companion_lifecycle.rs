@@ -991,6 +991,65 @@ pub(crate) fn familiar_waits_to_return(
     !lifecycle.open && lifecycle.familiar_remaining_ms > 0
 }
 
+/// #2199 Codex P2 4302041461: a Login that created no familiar because no tile was free (the
+/// source spawn-room refusal) leaves its stored familiar to a later runtime return.
+pub(crate) fn login_left_familiar_waiting(
+    creature: Option<ExactActorRef>,
+    operations: &[FamiliarAction],
+) -> bool {
+    creature.is_none()
+        && operations
+            .iter()
+            .any(|a| matches!(a, FamiliarAction::CreationRefusal { .. }))
+}
+
+/// #2199 Codex P2 4302041461: a runtime return restores only the row this session's Login
+/// already reconciled and left waiting: a clean row (after the D1126 conversion of the next
+/// write) with stored time, written by this lifecycle, at the epoch the return was issued for,
+/// before this session's clean end. An open, foreign or newer row is never adopted, so the
+/// stored familiar is created at most once with its fenced remaining lifetime.
+pub(crate) fn familiar_return_admissible(
+    state: &DurableFamiliarState,
+    checkpoint_committed_at_ms: Option<i64>,
+    current_writer: &FamiliarLifecycleWriter,
+    waiting_epoch: u64,
+) -> bool {
+    state.lifecycle_epoch == waiting_epoch
+        && state
+            .for_next_write(checkpoint_committed_at_ms, current_writer)
+            .ok()
+            .and_then(|next| next.lifecycle)
+            .is_some_and(|lifecycle| {
+                familiar_waits_to_return(&lifecycle)
+                    && lifecycle.writer.same_lifecycle(current_writer)
+                    && lifecycle.clean_end_game_session_id.as_ref()
+                        != Some(&current_writer.game_session_id)
+            })
+}
+
+/// Owner-turn precheck for a stored return: whether the owner's current cell has a free
+/// familiar tile now. It reserves and writes nothing; the prepared return proves it again.
+pub(crate) fn familiar_return_placement_available(
+    runtime: &ChannelRuntimeV1,
+    cells: &NativeEntryMovementCells,
+    spell: &CompiledNativeSpell,
+    owner: ExactActorRef,
+) -> bool {
+    let Some(extended) = parameters(spell, "familiar_summon")
+        .ok()
+        .and_then(|p| p["spawn"]["extended"].as_bool())
+    else {
+        return false;
+    };
+    let Ok(position) = runtime.read_actor_position(owner) else {
+        return false;
+    };
+    matches!(
+        placement(runtime, cells, position.position(), extended),
+        Ok(Some(_))
+    )
+}
+
 /// #2199 Codex P1 4301955863: an open row another session or runtime wrote is a committed
 /// acquisition only Login crash classification (D1296) may reconcile. Until that reconciliation
 /// commits, its lifetime and the cooldown it restores at Login are unaccounted for here, so a
@@ -2043,6 +2102,14 @@ pub(crate) enum FamiliarLifecycleOrigin {
     Death {
         occurrence: crate::foundation::CreatureDeathOccurrenceRef,
     },
+    /// #2199 Codex P2 4302041461: the Channel owner's later return of the familiar this
+    /// session's Login stored because no tile was free. `waiting_epoch` is the stored row's
+    /// lifecycle epoch, so one waiting row has one occurrence and its committed return (a new
+    /// epoch, an open row) ends it.
+    Return {
+        session: GameSessionId,
+        waiting_epoch: u64,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct FamiliarLifecycleBinding {
@@ -2172,6 +2239,30 @@ impl FamiliarLifecycleBinding {
             at,
             FamiliarLifecycleOrigin::Death {
                 occurrence: corpse.occurrence().clone(),
+            },
+        )
+    }
+    /// Invoked by the owner-cadence retry for a stored return of this session. The stored row
+    /// is re-proved against current owner facts in `prepare_lifecycle_familiar`.
+    pub(crate) fn from_waiting_return(
+        runtime: &ChannelRuntimeV1,
+        spell: CompiledNativeSpell,
+        owner: ExactActorRef,
+        fence: CurrentCharacterGameplayFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        at: SemanticTimeMicros,
+        waiting_epoch: u64,
+    ) -> Result<Self, CompanionExecutionError> {
+        Self::issue(
+            runtime,
+            spell,
+            owner,
+            fence,
+            stamp,
+            at,
+            FamiliarLifecycleOrigin::Return {
+                session: fence.game_session_id,
+                waiting_epoch,
             },
         )
     }
@@ -2428,8 +2519,23 @@ pub(crate) fn prepare_lifecycle_familiar(
     {
         return Err(CompanionExecutionError::SnapshotMismatch);
     }
+    let returning = matches!(binding.origin(), FamiliarLifecycleOrigin::Return { .. });
+    if let FamiliarLifecycleOrigin::Return { waiting_epoch, .. } = binding.origin()
+        && !familiar_return_admissible(
+            &current.state,
+            current.checkpoint_committed_at_ms,
+            &current.lifecycle_writer,
+            *waiting_epoch,
+        )
+    {
+        return Err(CompanionExecutionError::InvalidOwnerFacts);
+    }
+    // A stored return replays the source Login recreation with the stored remaining
+    // lifetime; the cooldown was restored by that Login and is never restored again.
     let (event, dead) = match binding.origin() {
-        FamiliarLifecycleOrigin::Login { .. } => (FamiliarEvent::Login, None),
+        FamiliarLifecycleOrigin::Login { .. } | FamiliarLifecycleOrigin::Return { .. } => {
+            (FamiliarEvent::Login, None)
+        }
         FamiliarLifecycleOrigin::Advance { .. } => (FamiliarEvent::Advance, None),
         FamiliarLifecycleOrigin::Death { occurrence } => {
             (FamiliarEvent::FamiliarDeath, Some(occurrence.actor()))
@@ -2446,6 +2552,16 @@ pub(crate) fn prepare_lifecycle_familiar(
         unix,
         dead,
     )?;
+    // A return writes only its creation: no free tile (or no current benefit) leaves the row
+    // waiting unwritten, and a familiar already present is never doubled.
+    if returning {
+        if parts.owned.iter().any(|s| s.state.policy.is_familiar) {
+            return Err(CompanionExecutionError::SnapshotMismatch);
+        }
+        if parts.spawn.is_none() {
+            return Err(CompanionExecutionError::PlacementUnavailable);
+        }
+    }
     if let Some(spawn) = parts.spawn.as_mut() {
         spawn.bind_semantic_creation(binding.at().get())?;
     }
@@ -3400,5 +3516,85 @@ mod familiar_login_lifecycle_tests {
             false,
             Some(&old_writer)
         )));
+    }
+
+    /// #2199 Codex P2 4302041461: a runtime return admits only the row this session's Login
+    /// left waiting, at its epoch, so the stored familiar returns once and is never doubled
+    /// or adopted from another lifecycle.
+    #[test]
+    fn stored_return_admits_only_this_lifecycles_waiting_row() {
+        let (old_writer, current) = writers();
+        let row = |lifecycle: Option<FamiliarLifecycleV2>, epoch: u64| DurableFamiliarState {
+            lifecycle,
+            lifecycle_epoch: epoch,
+            ..DurableFamiliarState::default()
+        };
+        // Login left it waiting: clean, stored time, this writer, the previous session's marker.
+        let waiting = row(
+            Some(lifecycle(&current, 90_000, false, Some(&old_writer))),
+            3,
+        );
+        assert!(familiar_return_admissible(&waiting, None, &current, 3));
+        // A reconnect of the same lifecycle at another connection generation still returns it.
+        let reconnect = FamiliarLifecycleWriter {
+            connection_generation: 2,
+            ..current.clone()
+        };
+        assert!(familiar_return_admissible(&waiting, None, &reconnect, 3));
+        // A different epoch: the return already committed (or another row replaced it).
+        assert!(!familiar_return_admissible(&waiting, None, &current, 2));
+        assert!(!familiar_return_admissible(&waiting, None, &current, 4));
+        // The return committed: the row is open with its scheduled lifetime.
+        let open = row(Some(lifecycle(&current, 90_000, true, None)), 4);
+        assert!(!familiar_return_admissible(&open, None, &current, 4));
+        // No stored time, a row Login has not reconciled, or this session's own clean end.
+        let empty = row(Some(lifecycle(&current, 0, false, None)), 3);
+        assert!(!familiar_return_admissible(&empty, None, &current, 3));
+        let foreign = row(
+            Some(lifecycle(&old_writer, 90_000, false, Some(&old_writer))),
+            3,
+        );
+        assert!(!familiar_return_admissible(&foreign, None, &current, 3));
+        let ended = row(Some(lifecycle(&current, 90_000, false, Some(&current))), 3);
+        assert!(!familiar_return_admissible(&ended, None, &current, 3));
+        // A legacy row that Login kept unconverted returns through the same D1126 conversion
+        // as its next write; without its checkpoint it is unknown and refused.
+        let legacy = DurableFamiliarState {
+            saved_expiry_unix: 2_000,
+            lifecycle_epoch: 3,
+            ..DurableFamiliarState::default()
+        };
+        assert!(familiar_return_admissible(
+            &legacy,
+            Some(1_000_000),
+            &current,
+            3
+        ));
+        assert!(!familiar_return_admissible(&legacy, None, &current, 3));
+        assert!(!familiar_return_admissible(
+            &legacy,
+            Some(2_000_000),
+            &current,
+            3
+        ));
+    }
+
+    /// #2199 Codex P2 4302041461: only a Login stopped by the source spawn-room refusal leaves
+    /// a return waiting; a created familiar or a Login without that refusal does not.
+    #[test]
+    fn only_a_no_room_login_leaves_a_return_waiting() {
+        let refusal = FamiliarAction::CreationRefusal {
+            message: "no room".into(),
+            poff: true,
+        };
+        assert!(login_left_familiar_waiting(
+            None,
+            &[FamiliarAction::RegisterAdvance, refusal]
+        ));
+        assert!(!login_left_familiar_waiting(
+            None,
+            &[FamiliarAction::RegisterAdvance]
+        ));
+        assert!(!login_left_familiar_waiting(None, &[]));
     }
 }

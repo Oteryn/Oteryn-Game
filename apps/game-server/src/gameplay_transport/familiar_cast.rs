@@ -195,6 +195,26 @@ pub(crate) fn restore_parked_familiar(
         session,
     }
 }
+/// Drops stored familiar returns of actors this Channel no longer admits; their rows stay
+/// waiting for their next Login.
+pub(in crate::gameplay_transport) fn prune_familiar_returns(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+) {
+    let Some(timers) = states.spell_timers.as_ref() else {
+        return;
+    };
+    let gone: Vec<_> = timers
+        .familiar_return_actors()
+        .into_iter()
+        .filter(|(actor, session)| states.get(runtime, *actor, *session).is_none())
+        .collect();
+    if let Some(timers) = states.spell_timers.as_mut() {
+        for (actor, session) in gone {
+            timers.clear_familiar_return(actor, session);
+        }
+    }
+}
 impl ChannelSpellStates {
     pub(crate) fn has_pending_familiar(
         &self,
@@ -382,17 +402,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             premium: access,
             administrative: &administrative,
         };
-        self.apply_familiar_owner_event(
-            actor,
-            session,
-            index,
-            FamiliarOwnerEvent::Login(admission),
-            content,
-            &owned,
-            &source,
-        )
-        .await
-        .map(Some)
+        let receipt = self
+            .apply_familiar_owner_event(
+                actor,
+                session,
+                index,
+                FamiliarOwnerEvent::Login(admission),
+                content,
+                &owned,
+                &source,
+            )
+            .await?;
+        // #2199 Codex P2 4302041461: no free tile kept the stored familiar waiting; the
+        // owner cadence returns it once a tile frees (`retry_waiting_familiar_return`).
+        if crate::spell::companion_lifecycle::login_left_familiar_waiting(
+            receipt.creature(),
+            receipt.owner_operations(),
+        ) {
+            let now = self.owner_now().get();
+            let runtime = self.runtime.lock().await;
+            let mut states = self.spell_states.lock().await;
+            prune_familiar_returns(&runtime, &mut states);
+            if let Some(timers) = states.spell_timers.as_mut() {
+                // An unstored entry loses nothing: the row stays waiting for the next Login.
+                let _ = timers.schedule_familiar_return(actor, session, index, now);
+            }
+        }
+        Ok(Some(receipt))
     }
     /// One genuine full-fenced SQL producer followed by actual Channel/Player comparison.
     /// The returned data grants no current authority; the mutation independently checks it.
@@ -1530,6 +1566,9 @@ pub(crate) enum FamiliarOwnerEvent<'a> {
     Login(&'a crate::foundation::fresh_admission_durability::FreshAdmissionCommitRequestV1),
     Advance(&'a crate::durability::character_progression::CommittedExperienceAward),
     Death(&'a crate::foundation::RuntimeCorpseProjection),
+    /// #2199 Codex P2 4302041461: the Channel owner's return of the familiar this session's
+    /// Login stored because no tile was free; its waiting row is re-proved under the fence.
+    Return,
 }
 fn matches_owner_event(
     binding: &crate::spell::companion_lifecycle::FamiliarLifecycleBinding,
@@ -1553,6 +1592,9 @@ fn matches_owner_event(
         }
         (Origin::Death { occurrence }, FamiliarOwnerEvent::Death(value)) => {
             occurrence == value.occurrence()
+        }
+        (Origin::Return { session, .. }, FamiliarOwnerEvent::Return) => {
+            *session == binding.session()
         }
         _ => false,
     }
@@ -1583,6 +1625,14 @@ fn lifecycle_nonce(
             hash.update([2]);
             hash.update(occurrence.actor().placement_identity());
             hash.update(occurrence.commit_binding());
+        }
+        Origin::Return {
+            session,
+            waiting_epoch,
+        } => {
+            hash.update([3]);
+            hash.update(session.as_bytes());
+            hash.update(waiting_epoch.to_be_bytes());
         }
     }
     hash.update(
@@ -1765,6 +1815,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         value,
                     )
                 }
+                FamiliarOwnerEvent::Return => FamiliarLifecycleBinding::from_waiting_return(
+                    &runtime,
+                    profile.clone(),
+                    actor,
+                    fence,
+                    stamp,
+                    at,
+                    loaded.state().lifecycle_epoch,
+                ),
             }
             .map_err(|_| ())?;
             let familiar = prepare_lifecycle_familiar(
