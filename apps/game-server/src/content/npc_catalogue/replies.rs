@@ -7,6 +7,7 @@ use crate::content::ProjectV2DefinitionRef;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum NpcReplyTemplate {
     Greeting,
+    Bank,
     Farewell,
     Trade,
     Travel,
@@ -83,6 +84,21 @@ pub(super) fn generate<'a>(
                 NpcReplyTemplate::Idle,
                 format!("{name} has nothing to offer right now."),
             ),
+        };
+        let (template, text) = if entry.bank {
+            let bank = format!(
+                "{name} can help with account balances, deposits, withdrawals and transfers."
+            );
+            (
+                NpcReplyTemplate::Bank,
+                if entry.offers.is_empty() && entry.routes.is_empty() {
+                    bank
+                } else {
+                    format!("{bank} {text}")
+                },
+            )
+        } else {
+            (template, text)
         };
         lines.push((reference.clone(), NpcReplyLine { template, text }));
     }

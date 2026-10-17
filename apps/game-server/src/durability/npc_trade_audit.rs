@@ -42,7 +42,7 @@ pub const NPC_TRADE_RL07_PAYLOAD_BYTES_MAX: usize = 27_094;
 pub const NPC_TRADE_RL07_ENVELOPE_BYTES_MAX: usize = 27_408;
 
 /// The largest BUY price: what 20 stacks of 100 crystal coins hold (NPC-0 §5.3).
-pub const NPC_TRADE_BUY_GOLD_UNITS_MAX: u64 = 20_000_000;
+pub const NPC_TRADE_BUY_GOLD_UNITS_MAX: u64 = 20_000_000 + super::bank_audit::BANK_BALANCE_MAX;
 /// The largest SELL value: 100 crystal, 99 platinum and 99 gold coins (NPC-0 §5.4).
 pub const NPC_TRADE_SELL_GOLD_UNITS_MAX: u64 = 1_009_999;
 /// Units of one trade: at most one stack (D82).
@@ -121,6 +121,9 @@ pub struct OneItemNpcTradeV1 {
     pub minted_gold_units: u64,
     #[prost(message, repeated, tag = "13")]
     pub lines: Vec<OneItemNpcTradeLineV1>,
+    /// BANK_FEE0§5: one FEE_DEBIT BURN value line, admitted only under the V2 tuple.
+    #[prost(message, optional, tag = "14")]
+    pub bank_debit: Option<super::item_fee_burn_audit::OneItemFeeBankDebitV1>,
 }
 
 /// Resource usage of one trade: each line is a participant; a whole burn adds its location
@@ -139,11 +142,14 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
     TransactionResourceUsage {
         touched_item_instances: count,
         location_custody_lines: whole + minted,
-        value_lines: 0,
+        value_lines: u64::from(value.bank_debit.is_some()),
         transform_lines: 0,
         container_expansion: 0,
-        participants: count,
-        effect_work_units: 3 * whole + 2 * (burns - whole) + 2 * minted,
+        participants: count + u64::from(value.bank_debit.is_some()),
+        effect_work_units: 3 * whole
+            + 2 * (burns - whole)
+            + 2 * minted
+            + 2 * u64::from(value.bank_debit.is_some()),
         events: 1,
     }
 }
@@ -164,7 +170,10 @@ fn check_npc_trade_usage(side: u32, usage: &TransactionResourceUsage) -> Result<
             SELL_RL06_EFFECT_WORK_UNITS_MAX,
         )
     };
-    if usage.value_lines != 0 || usage.transform_lines != 0 || usage.container_expansion != 0 {
+    if usage.value_lines > u64::from(side == SIDE_BUY)
+        || usage.transform_lines != 0
+        || usage.container_expansion != 0
+    {
         return Err(AuditError::InvalidInput);
     }
     if usage.touched_item_instances > touched
@@ -396,15 +405,34 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     let Some(units) = item_units else {
         return Err(AuditError::InvalidInput);
     };
-    if item_definition.is_none() || units == 0 {
+    // Quantity counts purchase units; a stackable offer contains `count` item units per
+    // purchase (NPC0 §3.4/§5.3/§5.4). The bound catalogue/writer owns exact count;
+    // this payload carries only its revision/index, so validate the integral bundle shape.
+    if item_definition.is_none() || units == 0 || !units.is_multiple_of(value.quantity) {
         return Err(AuditError::InvalidInput);
     }
 
+    let bank = if let Some(debit) = &value.bank_debit {
+        super::item_fee_burn_audit::check_bank_debit(debit, &value.world_id)?;
+        if side != SIDE_BUY
+            || minted != 0
+            || burn_lines
+                .iter()
+                .any(|line| line.after.as_ref().is_none_or(|after| after.quantity != 0))
+        {
+            return Err(AuditError::InvalidInput);
+        }
+        debit.debit_gold_units
+    } else {
+        0
+    };
     // Conservation and the exact coin outputs.
     let expected = if side == SIDE_BUY {
         // The change is below the last burned coin's worth: no unit burned beyond the plan.
         let change_bound = previous.map_or(1, |(worth, _)| worth);
-        let change = burned.checked_sub(value.total_gold_units);
+        let change = burned
+            .checked_add(bank)
+            .and_then(|paid| paid.checked_sub(value.total_gold_units));
         if change.is_none_or(|change| change >= change_bound) {
             return Err(AuditError::InvalidInput);
         }
@@ -459,8 +487,11 @@ pub fn decode_npc_trade_envelope(
 ) -> Result<(EventEnvelopeV1, OneItemNpcTradeV1), AuditError> {
     let value = mint::decode_common_envelope_within(wire, NPC_TRADE_RL07_ENVELOPE_BYTES_MAX)?;
     let trade = decode_npc_trade_payload(&value.payload)?;
-    Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
+    let tuple = Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
         .ok_or(AuditError::InvalidInput)?;
+    if tuple == Type2EventTuple::V1 && trade.bank_debit.is_some() {
+        return Err(AuditError::InvalidInput);
+    }
     if value.world_id.as_deref() != Some(trade.world_id.as_slice())
         || value.channel_id.as_deref() != Some(trade.channel_id.as_slice())
         || value.game_session_id.is_some()
@@ -496,6 +527,9 @@ pub fn encode_npc_trade_event(
         return Err(AuditError::InvalidInput);
     }
     check_npc_trade(&trade)?;
+    if tuple == Type2EventTuple::V1 && trade.bank_debit.is_some() {
+        return Err(AuditError::InvalidInput);
+    }
     let (world_id, channel_id) = (trade.world_id.clone(), trade.channel_id.clone());
     let payload = encode_bounded(
         &OneItemTransactionV1 {

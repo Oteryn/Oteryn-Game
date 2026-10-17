@@ -1850,6 +1850,34 @@ balance is checked under that lock before any write (`INSUFFICIENT_DUST`), and a
 location line or §39.1 audit event is involved; rows `DUR03-RL-03-PROF` (1 value line) and
 `DUR03-RL-06-PROF` (1 participant, 4 work units). The orb burn shape is not admitted yet.
 
+**Amendment (CRAFT-1, 2026-10-15; `reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md` C3a and C8,
+`CRAFT1-ITEM-CONVERSIONS-V1`, accepted by the owner in ACCEPT-BATCH-2026-10-15 §8).** Effective
+on protected integration of that acceptance, in its CRAFT-RT-1 and CRAFT-NPC-1 children and for
+these shapes only:
+
+- **Conversion.** One bounded item conversion under the closed cause `ConversionCause {row,
+  occurrence}` (the occurrence bound 1:1 to the command's CommandRef, §14): DECREMENT, RETIRE and
+  SPLIT lines of the operands, TRANSFORM_PRESERVE or TRANSFORM_REPLACE of the used item and of one
+  carried target or C4b corpse, and MINT of fresh outputs straight into new direct entries of the
+  actor's containers, with the CRAFT1 C3a participant set, records and revision rules. One audit
+  event per transaction carries the closed `CONVERSION` aggregate. For this shape only it
+  supersedes the §39.1 exclusion of burn and of multiple touched items and the statement above that
+  a MINT first establishes Ground custody. Rows `DUR03-RL-01-CRAFT` (9 ItemInstances),
+  `DUR03-RL-02-CRAFT` (9 location/custody lines), `DUR03-RL-04-CRAFT` (4 transform inputs/outputs),
+  `DUR03-RL-06-CRAFT-PARTICIPANTS` (12) and `DUR03-RL-06-CRAFT-EFFECT-WORK-UNITS` (36) (the C3a
+  `DUR03-RL-06-CRAFT` row, registered as its two halves), `DUR03-RL-07-CRAFT-EVENTS` (1),
+  `DUR03-RL-07-CRAFT-PAYLOAD-BYTES` (42,138 B) and `DUR03-RL-07-CRAFT-ENVELOPE-BYTES` (42,452 B);
+  `DUR03-RL-03` and `DUR03-RL-05` stay 0.
+- **NPC exchange.** One item-only transaction on the NPC service amendment's trade writer, side
+  `EXCHANGE` under `NpcTradeCause {npc, offer, side: EXCHANGE, occurrence}`: up to 3 take BURN lines
+  from direct entries of the main backpack (§11.1, §11.5) and up to 3 give MINTs into new direct
+  entries, no gold and no `CharacterRevision` advance. Rows `DUR03-RL-01-NPC-TRADE-EXCHANGE` (6),
+  `DUR03-RL-02-NPC-TRADE-EXCHANGE` (6), `DUR03-RL-06-NPC-TRADE-EXCHANGE-PARTICIPANTS` (6) and
+  `DUR03-RL-06-NPC-TRADE-EXCHANGE-EFFECT-WORK-UNITS` (15); the audit event stays under
+  `DUR03-RL-07-NPC-TRADE-*`.
+
+Every other §39 obligation (fences, idempotency, current authority, conservation) is unchanged.
+
 ## 40. Durable acknowledgement
 
 For a durable DUR-03 mutation:

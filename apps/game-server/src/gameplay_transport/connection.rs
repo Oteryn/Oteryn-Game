@@ -37,6 +37,7 @@ use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
     ItemViewDelta, OpenDecision, SessionItemView, ViewItem,
 };
+pub(crate) use super::logout::LogoutReply;
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
@@ -85,8 +86,8 @@ use oteryn_protocol_oteryn::attack::{
 };
 use oteryn_protocol_oteryn::chat::{
     COMMAND_TYPE_CHAT_INTENT, ChatIntent, ChatIntentResult, ChatLine, ChatRoomSet,
-    DELTA_TYPE_CHAT_LINE_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT, decode_chat_intent,
-    encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
+    DELTA_TYPE_CHAT_LINE_V1, DELTA_TYPE_CHAT_ROOMS_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT,
+    decode_chat_intent, encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
 };
 use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
 use oteryn_protocol_oteryn::container_tree::{
@@ -97,6 +98,9 @@ use oteryn_protocol_oteryn::encode_command_error_result;
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot, ItemMoveOutcome,
     ItemMoveSelection, STATE_DOMAIN_CHARACTER_INVENTORY, encode_item_move_result_for,
+};
+use oteryn_protocol_oteryn::logout::{
+    COMMAND_TYPE_LOGOUT_INTENT, LogoutResult, decode_logout_intent, encode_logout_result,
 };
 use oteryn_protocol_oteryn::npc_service::{
     COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT, DELTA_TYPE_NPC_CONVERSATION_V1,
@@ -279,6 +283,9 @@ pub(crate) enum ControlLossResult {
     /// could not be recorded (resumed history unproven or refused); the session is
     /// released instead of staying ACTIVE on a dead transport.
     ResumedHistory,
+    /// LOGOUT-WIRE-1 (§1.6): the current row is TERMINAL. A release committed but its
+    /// acknowledgement was lost; the lifecycle reconciles the session (`reconcile_terminal`).
+    Terminal,
 }
 
 /// Outcome of the FND-04B §6 grace-expiry release of a recorded control loss.
@@ -640,7 +647,7 @@ pub(crate) trait FreshAdmissionAuthority {
     }
 
     /// CHAT-WIRE-1: a session with capability 7 starts chatting. Returns the rooms it has open
-    /// (none before CHAT-2); the authority loads the speaker name and drops undelivered lines.
+    /// (CHAT-2B); the authority loads the speaker name and drops undelivered lines.
     fn chat_admit(
         &self,
         _actor: ExactActorRef,
@@ -662,6 +669,15 @@ pub(crate) trait FreshAdmissionAuthority {
                 wait_seconds: 0,
             }
         }
+    }
+
+    /// CHAT-2B: the open rooms of the session when an intent changed them since its client was
+    /// last shown them (a domain 12 delta type 2); `None` when unchanged.
+    fn chat_rooms_changed(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<ChatRoomSet>> {
+        async { None }
     }
 
     /// CHAT-WIRE-1: the oldest line queued for the session, if any.
@@ -706,15 +722,27 @@ pub(crate) trait FreshAdmissionAuthority {
         }
     }
 
+    /// Reconcile only the original pending CommandRef at connection entry. Replacement wire
+    /// bytes cannot cancel accepted Bank work. This is not dispatch of a new client command.
+    fn resume_npc_bank(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> impl Future<Output = Option<NpcTalkOutcome>> {
+        async { None }
+    }
+
     /// NPC-CMD-1a: one `NPC_TALK_INTENT` (command 7) of the admitted actor.
     fn npc_talk(
         &self,
         _actor: ExactActorRef,
-        _session: GameSessionId,
+        _command: UseCommand,
         _intent: NpcTalkIntent,
     ) -> impl Future<Output = NpcTalkOutcome> {
         async {
             NpcTalkOutcome {
+                unknown: false,
+                inventory_changed: false,
                 disposition: NpcIntentDisposition::Rejected,
                 conversation: None,
                 window: None,
@@ -862,6 +890,21 @@ pub(crate) trait FreshAdmissionAuthority {
         async { GraceExpiryResult::NotApplicable }
     }
 
+    /// LOGOUT-WIRE-1 (§1.6): retire the Channel actor of a session whose current row is
+    /// TERMINAL. `Unknown` when the row cannot be read; the lifecycle runs it again.
+    fn reconcile_terminal(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = GraceExpiryResult> {
+        async { GraceExpiryResult::NotApplicable }
+    }
+
+    /// LOGOUT-WIRE-1 (§1.6): one `LOGOUT_INTENT` of the admitted session. Authorities that end
+    /// no session refuse it as `BUSY`, with no effect.
+    fn logout(&self, _admitted: AdmittedSession) -> impl Future<Output = LogoutReply> {
+        async { LogoutReply::Result(LogoutResult::Busy) }
+    }
+
     /// Once the original grace deadline of the recorded loss passes without resumed
     /// control, terminally release the session and remove its Channel actor (FND-04B §6).
     fn expire_control_loss(
@@ -993,6 +1036,9 @@ pub(crate) enum ConnectionEnd {
     /// Admitted, then the authenticated liveness cadence proved playable control lost
     /// (`DISCONNECT-PROTECTION-V1` §1). No durable session state is changed here.
     AdmittedThenControlLost(AdmittedSession),
+    /// LOGOUT-WIRE-1 (§1.6): admitted, then logged out. The terminal release committed before
+    /// `ACCEPTED` was written, so no control loss follows.
+    AdmittedThenLoggedOut(AdmittedSession),
     /// The transport failed before admission.
     TransportFailed,
 }
@@ -1420,14 +1466,28 @@ where
     // that its objects carry their item handles under capability 4.
     let spatial: (u32, Vec<u8>);
     let mut domains = Vec::new();
-    // USE-WIRE-V1 (#162 5868482467): the join/resync snapshot also carries the door's current
+    // USE-WIRE-V1 (#162 5868482467): for a session served domain 2 (a fixture World session,
+    // without capability 18), the join/resync snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
     // connection gets the door's current overlay exactly as a fresh join does.
+    // MAP-WIRE-1 contract §3: a session that selected capability 18 is served by a bundle World,
+    // which carries its object states in domain 17 and never serves domain 2.
+    let overlay_served = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_WORLD_OBJECT_OVERLAY);
     let overlay = authority.observe_world_object_overlay().await;
-    // Absence qualifies the initial empty domain, not a reset of an overlay
-    // revision already delivered on this session. Refuse an unavailable owner.
-    if overlay.is_none() && admitted.continuity.overlay_revision != 0 {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    match (&overlay, admitted.continuity.overlay_revision) {
+        // Overlay state for a session with 18 has no domain 17 form: fail closed rather than
+        // send domain 2 or drop the state.
+        (Some(_), _) if !overlay_served => {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        // Absence qualifies the initial empty domain, not a reset of an overlay revision already
+        // delivered on this session: refuse an unavailable owner. A session with 18 never holds
+        // a revision above 0.
+        (None, 1..) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+        _ => {}
     }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
     let vitals = authority
@@ -1465,20 +1525,24 @@ where
             ))
         }
     };
-    // An empty overlay is still the registered domain's complete snapshot.
-    // Source-qualified maps have no legacy entry-room door; publish no invented
-    // placement, while allowing the client to distinguish empty from missing.
-    let entries = overlay.as_slice();
-    let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
-        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-    };
+    let overlay_payload;
     let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
-    domains.push(DomainSnapshot {
-        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-        revision: overlay_revision,
-        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-        payload: &overlay_payload,
-    });
+    if overlay_served {
+        // A session served domain 2 (without capability 18): an empty overlay is still the
+        // registered domain's complete snapshot. Source-qualified maps have no legacy entry-room
+        // door; publish no invented placement, while allowing the client to distinguish empty
+        // from missing.
+        let Ok(bytes) = encode_world_object_overlay_snapshot(overlay.as_slice()) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        overlay_payload = bytes;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: overlay_revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &overlay_payload,
+        });
+    }
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -1815,6 +1879,14 @@ where
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
+    // NPC-ECON-1: only a connection that continues an earlier one of this GameSession can carry
+    // an accepted original Bank command. A fresh admission (generation 1 at CommandId 1, FND-02)
+    // is the session's first connection, so its first command never touches the Bank journal;
+    // a same-session resume (FND-04B §16: a strictly newer generation) or any other carried
+    // continuity reconciles it before replacement input.
+    let mut reconcile_original_bank = admitted.continuity.connection_generation
+        != ADMITTED_GENERATION
+        || admitted.continuity.next_command_id != 1;
     let mut frames = FrameReader::default();
     let mut liveness = Liveness::new(policy);
     let mut cadence = tokio::time::interval_at(
@@ -1886,7 +1958,9 @@ where
     // STEP-PACE-WIRE-1: fixed for the connection; off, every step result keeps its former bytes.
     let step_wait_receipts = authority.step_wait_receipts();
     let mut buffered: Option<BufferedStep> = None;
-    let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
+    // Each held frame carries whether it arrived behind a buffered step (SPEED-1) rather than
+    // behind a running logout (LOGOUT-RL-01).
+    let mut held: std::collections::VecDeque<(Vec<u8>, bool)> = std::collections::VecDeque::new();
     // CHASE-1 (RANGED-0 §8): when the next chase step is checked, on the same pacing clock as a
     // client step; at most one is pending. Armed by a combat tick that holds a chasing target
     // and by a chase step that moved.
@@ -1897,8 +1971,8 @@ where
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
-            /// A frame read while a step waited in the buffer.
-            Held(Vec<u8>),
+            /// A frame read while a step waited in the buffer, or while a logout ran.
+            Held(Vec<u8>, bool),
             StepDue,
             Probe,
             Serene,
@@ -1917,8 +1991,8 @@ where
         } else {
             None
         };
-        let next = if let Some(frame) = held_frame {
-            Next::Held(frame)
+        let next = if let Some((frame, behind_step)) = held_frame {
+            Next::Held(frame, behind_step)
         } else {
             let due = buffered.as_ref().map(|step| step.due);
             let reading = held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
@@ -2022,7 +2096,7 @@ where
                 Some(step) => (step.frame, false),
                 None => continue,
             },
-            Next::Held(frame) => (frame, true),
+            Next::Held(frame, behind_step) => (frame, behind_step),
             Next::Serene => {
                 let changed = authority.tick_vitals(actor, admitted.game_session_id).await;
                 let current = authority
@@ -2300,7 +2374,7 @@ where
                         && envelope.message_type() == MessageType::LivenessAck
                 );
                 if !ack {
-                    held.push_back(frame);
+                    held.push_back((frame, true));
                     continue;
                 }
                 match decode_wire_envelope(&frame)
@@ -2416,18 +2490,57 @@ where
             /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
             Chat(ChatIntentResult),
             /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
-            Npc(NpcIntentDisposition, NpcUpdate),
+            Npc(NpcIntentDisposition, NpcUpdate, bool),
             /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
             /// 7 and 8 payloads.
             NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
+            /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
+            Logout(LogoutResult),
             Unregistered,
         }
+        // LOGOUT-RL-01: a second logout read before the first one's result.
+        let mut second_logout = false;
+        // A read that failed while a logout ran: the peer is gone once the result is written.
+        let mut lost_while_logging_out = false;
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
         // like an unregistered one, before any decode or authority call.
         // OPS-SAVE-2: the permit is held while the command runs, not while its result is
         // written, so the shutdown snapshot waits for the effect only.
         let input_permit = authority.enter_input().await;
-        let mut dispatch = if input_permit.is_none()
+        if input_permit.is_none() && reconcile_original_bank {
+            // No current input grant: do not run money work, and do not falsely terminate an
+            // accepted original command whose retained Bank status has not been classified.
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        let retained_bank = if input_permit.is_some() && reconcile_original_bank {
+            let outcome = authority
+                .resume_npc_bank(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                )
+                .await;
+            if outcome.as_ref().is_some_and(|outcome| outcome.unknown) {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
+            reconcile_original_bank = false;
+            outcome
+        } else {
+            None
+        };
+        let mut dispatch = if let Some(outcome) = retained_bank {
+            Dispatch::Npc(
+                outcome.disposition,
+                NpcUpdate {
+                    conversation: outcome.conversation,
+                    window: outcome.window,
+                },
+                outcome.inventory_changed,
+            )
+        } else if input_permit.is_none()
             || !admitted
                 .continuity
                 .selected_capabilities
@@ -2754,14 +2867,26 @@ where
                 text: String::new(),
             });
             let outcome = authority
-                .npc_talk(actor, admitted.game_session_id, intent)
+                .npc_talk(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    intent,
+                )
                 .await;
+            if outcome.unknown {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
             Dispatch::Npc(
                 outcome.disposition,
                 NpcUpdate {
                     conversation: outcome.conversation,
                     window: outcome.window,
                 },
+                outcome.inventory_changed,
             )
         } else if command.command_type == COMMAND_TYPE_NPC_TRADE_INTENT {
             // NPC-TRADE-2: a malformed intent is REJECTED. A committed trade answers OK and the
@@ -2843,6 +2968,52 @@ where
                 ),
                 _ => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_LOGOUT_INTENT {
+            // LOGOUT-WIRE-1 (§1.6): a non-empty intent is REJECTED with an empty payload before
+            // any authority call. While the logout runs, frames are read and held, in order, for
+            // after its result (LOGOUT-RL-01): a second logout among them is a protocol error.
+            if decode_logout_intent(command.payload).is_err() {
+                Dispatch::Unregistered
+            } else {
+                // A paced step can already have held the frames that follow this logout; a
+                // second logout among them was read before this result too (#2127 Codex P2
+                // 4279788741).
+                second_logout = held
+                    .iter()
+                    .any(|(frame, _)| is_logout_command(frame, generation));
+                let mut logout = std::pin::pin!(authority.logout(admitted));
+                let reply = loop {
+                    let reading = !lost_while_logging_out
+                        && held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;
+                    let mut read = std::pin::pin!(frames.next(stream));
+                    let next = std::future::poll_fn(|context| {
+                        if let std::task::Poll::Ready(reply) = logout.as_mut().poll(context) {
+                            return std::task::Poll::Ready(Ok(reply));
+                        }
+                        if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context)
+                        {
+                            return std::task::Poll::Ready(Err(read));
+                        }
+                        std::task::Poll::Pending
+                    })
+                    .await;
+                    match next {
+                        Ok(reply) => break reply,
+                        Err(Ok(frame)) => {
+                            second_logout |= is_logout_command(&frame, generation);
+                            held.push_back((frame, false));
+                        }
+                        Err(Err(_)) => lost_while_logging_out = true,
+                    }
+                };
+                match reply {
+                    LogoutReply::Result(result) => Dispatch::Logout(result),
+                    // §1.6 unknown outcome: no result; the loss lifecycle reconciles the row.
+                    LogoutReply::Unknown => {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
         } else if command.command_type == COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY {
             match (
                 decode_account_achievements_query(command.payload),
@@ -2862,6 +3033,32 @@ where
             }
         } else {
             Dispatch::Unregistered
+        };
+        // Native deposit/withdraw custody changes use the same inventory refresh as a trade.
+        // Typed refusals and balance-only transfers do not manufacture an inventory mutation.
+        dispatch = match dispatch {
+            Dispatch::Npc(disposition, update, true) => {
+                let mut deltas = Vec::new();
+                if let Some(view) = item_view.as_mut() {
+                    let Some(inventory) = item_move::observe_inventory(
+                        authority,
+                        actor,
+                        admitted.game_session_id,
+                        view,
+                    )
+                    .await
+                    else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    let Ok(delta) = view.inventory_committed(inventory) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    admitted.continuity.item_view = view.continuity();
+                    deltas.extend(delta);
+                }
+                Dispatch::NpcTrade(disposition, update, deltas)
+            }
+            other => other,
         };
         drop(input_permit);
         let (Some(result_sequence), Some(following)) =
@@ -2962,7 +3159,7 @@ where
                     payload,
                 )
             }
-            Dispatch::Npc(disposition, _) | Dispatch::NpcTrade(disposition, _, _) => (
+            Dispatch::Npc(disposition, _, _) | Dispatch::NpcTrade(disposition, _, _) => (
                 if *disposition == NpcIntentDisposition::Rejected {
                     CommandStatus::Rejected
                 } else {
@@ -2978,6 +3175,19 @@ where
                 },
                 encode_attack_intent_result(*disposition),
             ),
+            Dispatch::Logout(result) => {
+                let Ok(payload) = encode_logout_result(*result) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (
+                    if result.is_rejected() {
+                        CommandStatus::Rejected
+                    } else {
+                        CommandStatus::Accepted
+                    },
+                    payload,
+                )
+            }
             Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
                 // The page is written once; move it out instead of copying up to 32 KiB.
                 (CommandStatus::Accepted, std::mem::take(payload))
@@ -3004,8 +3214,44 @@ where
         let Ok(result) = result else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
+        if let Dispatch::Logout(LogoutResult::Accepted) = dispatch {
+            // §1.6: the release committed before this result. No command is read any more and
+            // the transport closes cleanly; a failed write is no control loss either. A second
+            // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
+            // committed release keeps this a logout end.
+            if write_frame(stream, &result).await.is_ok()
+                && (!second_logout
+                    || send_error(
+                        stream,
+                        FoundationProtocolError::TooManyOutstandingCommands,
+                        admitted.continuity.connection_generation,
+                    )
+                    .await
+                    .is_ok())
+            {
+                let _ = tokio::time::timeout(
+                    policy.interval,
+                    tokio::io::AsyncWriteExt::shutdown(stream),
+                )
+                .await;
+            }
+            return ConnectionEnd::AdmittedThenLoggedOut(admitted);
+        }
         if write_frame(stream, &result).await.is_err() {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        if matches!(dispatch, Dispatch::Logout(_)) {
+            if second_logout {
+                return close_admitted(
+                    stream,
+                    admitted,
+                    FoundationProtocolError::TooManyOutstandingCommands,
+                )
+                .await;
+            }
+            if lost_while_logging_out {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
         }
         match dispatch {
             Dispatch::Step(outcome, _) => {
@@ -3094,6 +3340,13 @@ where
                 // revision minus one, since `LocalObjectRuntime::attempt_use` only ever commits
                 // by advancing its revision by exactly one.
                 if let Some(entry) = outcome.committed {
+                    // MAP-WIRE-1 contract §3: a bundle World's object states are tile changes
+                    // of domain 17 and it commits no domain 2 entry. One committed for a session
+                    // that selected capability 18 has no domain 17 form: fail closed, never send
+                    // domain 2 or drop the state.
+                    if !overlay_served {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                     let (Some(delta_sequence), Some(prior_revision)) =
                         (sequence.checked_add(1), entry.revision.checked_sub(1))
                     else {
@@ -3232,8 +3485,27 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
-            // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks.
-            Dispatch::Chat(_) => {}
+            // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks. CHAT-2B: an
+            // opened or closed room follows the result as one domain 12 delta type 2.
+            Dispatch::Chat(_) => {
+                if let Some(rooms) = authority.chat_rooms_changed(admitted.game_session_id).await {
+                    let Some((delta_sequence, frame, revision)) = chat_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.chat_revision,
+                        DELTA_TYPE_CHAT_ROOMS_V1,
+                        &encode_chat_rooms(rooms),
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.chat_revision = revision;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
             // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
             // follow the result, to the speaker alone.
             Dispatch::NpcTrade(_, update, deltas) => {
@@ -3265,7 +3537,7 @@ where
                     }
                 }
             }
-            Dispatch::Npc(_, update) => {
+            Dispatch::Npc(_, update, _) => {
                 let Some(frames) = npc_update_frames(
                     generation,
                     &mut sequence,
@@ -3308,6 +3580,7 @@ where
             Dispatch::UseItem(_, None)
             | Dispatch::ContainerView(_, None)
             | Dispatch::Achievements(_)
+            | Dispatch::Logout(_)
             | Dispatch::Unregistered => {}
         }
     }
@@ -3598,17 +3871,35 @@ fn chat_line_delta(
     revision: u64,
     line: &ChatLine,
 ) -> Option<(u64, Vec<u8>, u64)> {
+    let payload = encode_chat_line(line).ok()?;
+    chat_delta(
+        generation,
+        sequence,
+        revision,
+        DELTA_TYPE_CHAT_LINE_V1,
+        &payload,
+    )
+}
+
+/// One domain 12 delta of `delta_type` from the sequence after `sequence` and the revision
+/// after `revision`: `(sequence, frame, revision)` of the delta, `None` on an encoding fault.
+fn chat_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    delta_type: u32,
+    payload: &[u8],
+) -> Option<(u64, Vec<u8>, u64)> {
     let delta_sequence = sequence.checked_add(1)?;
     let to = revision.checked_add(1)?;
-    let payload = encode_chat_line(line).ok()?;
     let frame = encode_state_delta(
         generation,
         delta_sequence,
         STATE_DOMAIN_CHAT,
         revision,
         to,
-        DELTA_TYPE_CHAT_LINE_V1,
-        &payload,
+        delta_type,
+        payload,
     )
     .ok()?;
     Some((delta_sequence, frame, to))
@@ -3681,6 +3972,16 @@ fn npc_conversation_delta(
     )
     .ok()?;
     Some((delta_sequence, frame, to))
+}
+
+/// LOGOUT-RL-01: whether `frame` is a `LOGOUT_INTENT` of this connection generation.
+fn is_logout_command(frame: &[u8], generation: u64) -> bool {
+    decode_wire_envelope(frame).is_ok_and(|envelope| {
+        envelope.message_type() == MessageType::ClientCommand
+            && envelope
+                .client_command(generation)
+                .is_ok_and(|command| command.command_type == COMMAND_TYPE_LOGOUT_INTENT)
+    })
 }
 
 async fn close_admitted<S: AsyncWrite + Unpin>(
@@ -4075,6 +4376,209 @@ mod tests {
         encode_protocol_error(error, generation).expect("error frame")
     }
 
+    /// Historical result fixture only: it supplies no NPC/current-fence or money authority.
+    /// Actual continuation admission/drain authority is qualified separately with native Root/PG.
+    struct RetainedBankOutcomeFixture {
+        commands: RefCell<Vec<UseCommand>>,
+        replacement_steps: RefCell<usize>,
+        unknown: bool,
+        closed_gate: bool,
+    }
+    impl FreshAdmissionAuthority for RetainedBankOutcomeFixture {
+        async fn enter_input(&self) -> Option<InputPermit<'_>> {
+            if self.closed_gate {
+                None
+            } else {
+                Some(InputPermit::ungated())
+            }
+        }
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+        async fn step(&self, _: ExactActorRef, _: StepDirection) -> StepOutcome {
+            *self.replacement_steps.borrow_mut() += 1;
+            StepOutcome::rejected()
+        }
+        async fn resume_npc_bank(
+            &self,
+            _: ExactActorRef,
+            command: UseCommand,
+        ) -> Option<NpcTalkOutcome> {
+            self.commands.borrow_mut().push(command);
+            Some(NpcTalkOutcome {
+                unknown: self.unknown,
+                inventory_changed: false,
+                disposition: NpcIntentDisposition::Ok,
+                conversation: None,
+                window: None,
+            })
+        }
+    }
+
+    #[test]
+    fn original_bank_command_precedes_replacement_text_npc_and_command_type()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            // All replacements keep the original sequenced CommandId. Neither decoding a new
+            // talk nor a different/unselected command may orphan its accepted original work.
+            for (kind, payload) in [
+                (COMMAND_TYPE_NPC_TALK_INTENT, b"no".as_slice()),
+                (
+                    COMMAND_TYPE_NPC_TALK_INTENT,
+                    b"different NPC bytes".as_slice(),
+                ),
+                (
+                    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                    b"replacement step".as_slice(),
+                ),
+                (999, b"".as_slice()),
+            ] {
+                let authority = RetainedBankOutcomeFixture {
+                    commands: RefCell::new(Vec::new()),
+                    replacement_steps: RefCell::new(0),
+                    unknown: false,
+                    closed_gate: false,
+                };
+                let mut command = Vec::new();
+                scalar(&mut command, 1, 1);
+                scalar(&mut command, 2, u64::from(kind));
+                bytes(&mut command, 4, payload);
+                let (end, frames) = drive_session(
+                    &authority,
+                    resumed_positioned()?,
+                    &[envelope(7, RESUMED_GENERATION, &command)],
+                )
+                .await?;
+                assert_eq!(*authority.replacement_steps.borrow(), 0);
+                assert_eq!(authority.commands.borrow().len(), 1);
+                assert_eq!(authority.commands.borrow()[0].command_id, 1);
+                assert_eq!(
+                    authority.commands.borrow()[0].game_session_id,
+                    GameSessionId::decode(&SESSION)?
+                );
+                let mut expected = baseline_at(RESUMED_GENERATION);
+                expected.push(encode_command_result(
+                    RESUMED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &encode_npc_intent_result(NpcIntentDisposition::Ok),
+                )?);
+                assert_eq!(frames, expected);
+                assert!(
+                    matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
+                );
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn unresolved_original_bank_work_never_sequences_a_replacement_command()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = RetainedBankOutcomeFixture {
+                commands: RefCell::new(Vec::new()),
+                replacement_steps: RefCell::new(0),
+                unknown: true,
+                closed_gate: false,
+            };
+            let (end, frames) = drive_session(
+                &authority,
+                resumed_positioned()?,
+                &[command(
+                    RESUMED_GENERATION,
+                    1,
+                    u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                    StepDirection::East,
+                )],
+            )
+            .await?;
+            assert_eq!(frames, baseline_at(RESUMED_GENERATION));
+            assert_eq!(*authority.replacement_steps.borrow(), 0);
+            assert!(
+                matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==1)
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn closed_input_gate_holds_unclassified_original_bank_command() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = RetainedBankOutcomeFixture {
+                commands: RefCell::new(Vec::new()),
+                replacement_steps: RefCell::new(0),
+                unknown: false,
+                closed_gate: true,
+            };
+            let (end, frames) = drive_session(
+                &authority,
+                resumed_positioned()?,
+                &[command(
+                    RESUMED_GENERATION,
+                    1,
+                    u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                    StepDirection::East,
+                )],
+            )
+            .await?;
+            assert_eq!(frames, baseline_at(RESUMED_GENERATION));
+            assert!(authority.commands.borrow().is_empty());
+            assert_eq!(*authority.replacement_steps.borrow(), 0);
+            assert!(
+                matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==1)
+            );
+            Ok(())
+        })
+    }
+
+    /// NPC-ECON-1: a fresh admission is the GameSession's first connection, so no original Bank
+    /// command can be retained. Its first command dispatches without a Bank journal lookup, even
+    /// when that lookup would be unknown (Bank storage unavailable), and a closed input gate
+    /// refuses it as usual instead of holding it.
+    #[test]
+    fn fresh_session_first_command_skips_retained_bank_lookup() -> Result<(), Box<dyn Error>> {
+        run(async {
+            for closed_gate in [false, true] {
+                let authority = RetainedBankOutcomeFixture {
+                    commands: RefCell::new(Vec::new()),
+                    replacement_steps: RefCell::new(0),
+                    unknown: true,
+                    closed_gate,
+                };
+                let (end, frames) = drive_session(
+                    &authority,
+                    positioned()?,
+                    &[command(
+                        ADMITTED_GENERATION,
+                        1,
+                        u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                        StepDirection::East,
+                    )],
+                )
+                .await?;
+                assert!(authority.commands.borrow().is_empty());
+                assert_eq!(
+                    *authority.replacement_steps.borrow(),
+                    usize::from(!closed_gate)
+                );
+                assert_eq!(frames.len(), baseline().len() + 1);
+                assert_eq!(frames[..baseline().len()], baseline()[..]);
+                assert!(
+                    matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
+                );
+            }
+            Ok(())
+        })
+    }
+
     /// A positioned actor on a one-row room: east of the start is walkable, every other
     /// direction is blocked.
     struct StepAuthority {
@@ -4252,8 +4756,12 @@ mod tests {
     }
 
     fn baseline() -> Vec<Vec<u8>> {
+        baseline_at(ADMITTED_GENERATION)
+    }
+
+    fn baseline_at(generation: u64) -> Vec<Vec<u8>> {
         encode_single_chunk_snapshot(
-            ADMITTED_GENERATION,
+            generation,
             1,
             0,
             &[
@@ -4294,6 +4802,17 @@ mod tests {
             continuity: SessionContinuity::FRESH,
             item_fence: None,
         })
+    }
+
+    /// The first successor generation of a same-session resume (FND-04B §16).
+    const RESUMED_GENERATION: u64 = ADMITTED_GENERATION + 1;
+
+    /// `positioned` resumed on the next connection generation before any result of its first
+    /// CommandId was delivered: the continuity an accepted original Bank command is retained in.
+    fn resumed_positioned() -> Result<AdmittedSession, Box<dyn Error>> {
+        let mut resumed = positioned()?;
+        resumed.continuity.connection_generation = RESUMED_GENERATION;
+        Ok(resumed)
     }
 
     fn split_frames(output: &[u8]) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
