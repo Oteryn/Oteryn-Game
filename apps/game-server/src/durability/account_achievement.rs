@@ -5,8 +5,9 @@
 //! A granting domain (quest completion, reward claim, interaction child,
 //! counter owner) calls [`record_achievement_grant`] inside its own fenced
 //! Character transaction, after its complete fence and the `character_root`
-//! row lock. In that same transaction the call records the durable grant
-//! request and inserts the account's fact if the account lacks the key. A
+//! row lock. In that same transaction the call takes the account's
+//! achievement lock, records the durable grant request and inserts the
+//! account's fact if the account lacks the key. A
 //! duplicate leaves the first committed fact and its provenance unchanged; the
 //! new request stays as provenance of the grant. Neither write advances
 //! `CharacterRevision`.
@@ -187,6 +188,11 @@ pub const MAX_ACHIEVEMENT_GRANTS: usize = 64;
 /// Consumes and verifies the witness once, including an all-retired batch.
 /// Writes follow ascending (source event id, achievement key) order; equal
 /// pairs use source kind as a stable tie-break. Outcomes retain input order.
+/// Lock order: the granter's `character_root` lock, then this account's
+/// achievement lock, then the request and fact rows. The account lock is a
+/// leaf that only this writer takes, so two Characters of one account
+/// serialize here instead of locking overlapping fact keys in opposite
+/// orders (40P01).
 /// On any error the granter must drop its entire transaction uncommitted;
 /// this function neither commits nor opens an independent transaction.
 pub async fn record_achievement_grants(
@@ -214,6 +220,15 @@ pub async fn record_achievement_grants(
     let Some(account) = account else {
         return Ok(Err(AchievementGrantError::AuthorityRejected));
     };
+    // Every writer of this account's facts serializes here, after its own
+    // root lock and before its first request or fact row.
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(\
+           'oteryn:account-achievement:' || $1, 0))",
+    )
+    .bind(&account)
+    .execute(&mut **tx)
+    .await?;
 
     let mut outcomes = Vec::with_capacity(requests.len());
     for index in order {
@@ -511,7 +526,7 @@ fn valid_request(request: &AchievementGrantRequest) -> bool {
 /// then one batch call, committed together or not at all. In
 /// production the reward-claim MINT is the granter (contract §5 step 4).
 #[cfg(test)]
-mod granting_harness {
+pub(crate) mod granting_harness {
     use super::*;
     use crate::durability::DurabilityRoot;
     use crate::durability::character_authority::{
@@ -620,6 +635,34 @@ mod granting_harness {
                 .await?
         }
     }
+
+    /// Concurrency-only: a transaction on `pool` that takes the Character's
+    /// `character_root` lock (the part of the fence the witness checks) and
+    /// makes one batch call, returned open so the test orders the commits.
+    /// It skips the complete gameplay fence, so no authority case uses it.
+    pub(crate) async fn begin_test_root_locked_grants(
+        pool: &sqlx::PgPool,
+        character_id: CharacterId,
+        requests: &[AchievementGrantRequest],
+    ) -> std::result::Result<
+        (
+            sqlx::Transaction<'static, sqlx::Postgres>,
+            std::result::Result<Vec<AchievementGrantOutcome>, AchievementGrantError>,
+        ),
+        DurabilityError,
+    > {
+        let mut tx = pool.begin().await?;
+        sqlx::query(
+            "SELECT 1 FROM game_character_roots \
+              WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
+        )
+        .bind(character_id.as_bytes().as_slice())
+        .fetch_one(&mut *tx)
+        .await?;
+        let granter = FencedGrantingCharacter::in_transaction(&mut tx, character_id).await?;
+        let outcomes = record_achievement_grants(&mut tx, granter, requests).await?;
+        Ok((tx, outcomes))
+    }
 }
 
 #[cfg(test)]
@@ -641,6 +684,7 @@ mod tests {
     #[test]
     fn the_foreign_token_harness_is_linked() {
         let _ = crate::durability::DurabilityRoot::commit_test_achievement_grant_with_foreign_token;
+        let _ = super::granting_harness::begin_test_root_locked_grants;
     }
 
     #[test]

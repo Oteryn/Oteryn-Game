@@ -3,9 +3,11 @@
 #![allow(clippy::expect_used)]
 
 use crate::bestiary_postgres_harness::{
-    Harness, TestResult, configured_admin, debug, fence, runtime,
+    CHARACTER, Harness, TestResult, configured_admin, debug, fence, id, runtime,
 };
+use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
+use crate::durability::account_achievement::granting_harness::begin_test_root_locked_grants;
 use crate::durability::account_achievement::{
     AchievementCatalogueLookup, AchievementGrantError, AchievementGrantOutcome,
     AchievementGrantRequest, AchievementSourceEvent, MAX_ACHIEVEMENT_GRANTS,
@@ -291,6 +293,91 @@ fn achievement_batch_concurrent_reversed_inputs_keep_one_fact_per_key() -> TestR
             2
         );
         assert_eq!(counts(harness).await?, (2, 2));
+        Ok(())
+    })
+}
+
+/// Codex P1 on #2154: two Characters of one account whose batches would
+/// insert overlapping fact keys in opposite orders. The second batch must
+/// wait on the account's achievement lock before any request or fact row,
+/// never on a fact row the first holds (the 40P01 cycle).
+#[test]
+fn achievement_batch_two_characters_of_one_account_serialize_on_the_account_lock() -> TestResult {
+    run("ach_batch_account", async |harness, _root| {
+        let first = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+        let second = CharacterId::from_bytes(id(51)).map_err(debug)?;
+        sqlx::query(
+            "INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, \
+               character_revision, profile_revision, ruleset_revision, content_revision, \
+               starter_template_revision, name) \
+             SELECT encode($1,'hex')::uuid, account_id, world_id, 1, 1, profile_revision, \
+                    ruleset_revision, content_revision, starter_template_revision, 'Fixture Second' \
+               FROM game_character_roots WHERE character_id = encode($2,'hex')::uuid",
+        )
+        .bind(second.as_bytes().as_slice())
+        .bind(first.as_bytes().as_slice())
+        .execute(&harness.pool)
+        .await?;
+
+        // Source order writes NUT then COOKIES for the first Character ...
+        let (held, outcomes) = begin_test_root_locked_grants(
+            &harness.pool,
+            first,
+            &[grant(NUT, 1), grant(COOKIES, 2)],
+        )
+        .await
+        .map_err(debug)?;
+        let outcomes = outcomes.map_err(debug)?;
+        assert!(
+            outcomes
+                .iter()
+                .all(|outcome| matches!(outcome, AchievementGrantOutcome::Granted(_))),
+            "{outcomes:?}"
+        );
+        // ... and COOKIES then NUT for the second.
+        let pool = harness.pool.clone();
+        let competing = tokio::spawn(async move {
+            let requests = [grant(NUT, 4), grant(COOKIES, 3)];
+            let (tx, outcomes) = begin_test_root_locked_grants(&pool, second, &requests).await?;
+            tx.commit().await?;
+            Ok::<_, crate::durability::DurabilityError>(outcomes)
+        });
+
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            let waiting: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM pg_locks \
+                  WHERE NOT granted AND database = \
+                        (SELECT oid FROM pg_database WHERE datname = current_database()) \
+                    AND locktype = 'advisory'",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
+            if waiting == 1 {
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline || competing.is_finished() {
+                return Err("second Character did not wait on the account lock".into());
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+        held.commit().await?;
+
+        let outcomes = tokio::time::timeout(std::time::Duration::from_secs(10), competing)
+            .await?
+            .map_err(debug)?
+            .map_err(debug)?
+            .map_err(debug)?;
+        let [
+            AchievementGrantOutcome::AlreadyHeld(nut),
+            AchievementGrantOutcome::AlreadyHeld(cookies),
+        ] = outcomes.as_slice()
+        else {
+            return Err(format!("unexpected outcomes: {outcomes:?}").into());
+        };
+        assert_eq!(nut.character_id, first);
+        assert_eq!(cookies.character_id, first);
+        assert_eq!(counts(harness).await?, (4, 2));
         Ok(())
     })
 }
