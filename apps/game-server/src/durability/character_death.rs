@@ -2128,9 +2128,14 @@ mod death_build_postgres {
 
     // Real shared native harness; local mount also works when another approved
     // PostgreSQL target compiles the durability source into its own crate.
+    // Many targets that mount this source have no root harness, so the copy
+    // stays local. Its nested `ground_native_readiness_enforcement` file is
+    // then mounted a second time in crates that also mount the harness at root.
     #[allow(
         dead_code,
-        reason = "shared real PostgreSQL harness; this mount uses a subset"
+        clippy::duplicate_mod,
+        reason = "shared real PostgreSQL harness; this mount uses a subset and \
+                  may coexist with a root mount of the same support file"
     )]
     mod harness {
         include!(concat!(
