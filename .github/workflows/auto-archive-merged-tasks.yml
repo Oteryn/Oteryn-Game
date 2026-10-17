@@ -77,6 +77,10 @@ jobs:
               merged_at = pull.get('merged_at')
               if pull.get('state') != 'closed' or not merged_at:
                   continue
+              base = pull.get('base') or {}
+              if base.get('ref') != 'main' or (base.get('repo') or {}).get('full_name') != repository:
+                  print(f'{path.name}: PR #{number} merged outside {repository}@main; left active.')
+                  continue
               issue_match = re.search(r'(?m)^issue:\s*([1-9][0-9]*)\s*$', text)
               if issue_match is None:
                   print(f'{path.name}: PR #{number} merged but no linked Issue proves completion; left active.')
