@@ -1186,6 +1186,65 @@ fn keep_unconverted_projection_on_no_op(
     }
 }
 
+/// #2199 Codex P2 4302542011 (FAMILIARS0 §5, §7): a stored familiar returns through the
+/// return checks only (the lever boss room, the aggregate summon cap and placement), never
+/// through the fresh-cast eligibility of §4 check 1. The source Login gate (Premium and its
+/// minimum level) still decides the vocation-look grants and removals, but a lapsed Premium
+/// or a lower level never drops a stored return: a clean row with positive time would then
+/// neither return nor admit a replacement cast. The return plan contributes only the
+/// creation (or its placement refusal, which keeps the row waiting); the looks stay the
+/// source Login's.
+fn plan_familiar_event_actions(
+    spell: &CompiledNativeSpell,
+    facts: &FamiliarFacts,
+    stored_return: bool,
+) -> Result<Vec<FamiliarAction>, CompanionExecutionError> {
+    let plan = |facts: &FamiliarFacts| -> Result<Vec<FamiliarAction>, CompanionExecutionError> {
+        match spell
+            .plan(
+                Facts::Companion(&CompanionFacts::Familiar(facts.clone())),
+                &mut |min, _| min,
+            )
+            .map_err(|e| CompanionExecutionError::Refused(e.0))?
+        {
+            Plan::Companion(plan) => match *plan {
+                super::native_companions::CompanionPlan::Familiar(actions) => Ok(actions),
+                _ => Err(CompanionExecutionError::UnqualifiedProfile),
+            },
+            _ => Err(CompanionExecutionError::UnqualifiedProfile),
+        }
+    };
+    let mut actions = plan(facts)?;
+    let creation_decided = actions.iter().any(|a| {
+        matches!(
+            a,
+            FamiliarAction::Create { .. } | FamiliarAction::CreationRefusal { .. }
+        )
+    });
+    if !stored_return || facts.event != FamiliarEvent::Login || creation_decided {
+        return Ok(actions);
+    }
+    let minimum_level = parameters(spell, "familiar_summon")?["login"]["minimum_level"]
+        .as_u64()
+        .and_then(|v| u32::try_from(v).ok())
+        .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+    let returning = FamiliarFacts {
+        premium: true,
+        level: facts.level.max(minimum_level),
+        ..facts.clone()
+    };
+    actions.extend(plan(&returning)?.into_iter().filter(|a| {
+        !matches!(
+            a,
+            FamiliarAction::RegisterAdvance
+                | FamiliarAction::SelectLook(_)
+                | FamiliarAction::GrantVocationLook(_)
+                | FamiliarAction::RemoveVocationLook(_)
+        )
+    }));
+    Ok(actions)
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the owner turn binds every independently resolved fact explicitly"
@@ -1344,19 +1403,8 @@ fn prepare_familiar_parts(
         dz: 0,
         owner_tile_is_teleport: false,
     };
-    let mut actions = match spell
-        .plan(
-            Facts::Companion(&CompanionFacts::Familiar(facts.clone())),
-            &mut |min, _| min,
-        )
-        .map_err(|e| CompanionExecutionError::Refused(e.0))?
-    {
-        Plan::Companion(plan) => match *plan {
-            super::native_companions::CompanionPlan::Familiar(actions) => actions,
-            _ => return Err(CompanionExecutionError::UnqualifiedProfile),
-        },
-        _ => return Err(CompanionExecutionError::UnqualifiedProfile),
-    };
+    let mut actions =
+        plan_familiar_event_actions(spell, &facts, return_ms.is_some_and(|ms| ms > 0))?;
     if let Some(ms) = return_ms {
         let exact = i64::try_from(ms).map_err(|_| CompanionExecutionError::ArithmeticBounds)?;
         let rounded = return_seconds
@@ -2596,7 +2644,8 @@ pub(crate) fn prepare_lifecycle_familiar(
         return Err(CompanionExecutionError::InvalidOwnerFacts);
     }
     // A stored return replays the source Login recreation with the stored remaining
-    // lifetime; the cooldown was restored by that Login and is never restored again.
+    // lifetime; the cooldown was restored by that Login and is never restored again. The
+    // fresh-cast eligibility (Premium, level) never drops it (`plan_familiar_event_actions`).
     let (event, dead) = match binding.origin() {
         FamiliarLifecycleOrigin::Login { .. } | FamiliarLifecycleOrigin::Return { .. } => {
             (FamiliarEvent::Login, None)
@@ -2618,7 +2667,7 @@ pub(crate) fn prepare_lifecycle_familiar(
         dead,
     )?;
     // A return writes only its creation, or its end inside a lever boss room: no free tile,
-    // a full owned-summon census (or no current benefit) leaves the row waiting unwritten,
+    // or a full owned-summon census leaves the row waiting unwritten,
     // and a familiar already present is never doubled.
     if returning {
         if parts.owned.iter().any(|s| s.state.policy.is_familiar) {
@@ -3403,6 +3452,153 @@ mod familiar_login_lifecycle_tests {
             CREATUREAI0_PLAYER_SUMMONS_PER_CHARACTER_MAX
         ));
         assert!(!familiar_return_within_summon_cap(3));
+    }
+
+    fn knight_familiar_profile() -> Result<CompiledNativeSpell, CompanionExecutionError> {
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json"
+        ))
+        .map_err(|_| CompanionExecutionError::UnqualifiedProfile)?;
+        let row = document["profiles"]
+            .as_array()
+            .and_then(|rows| {
+                rows.iter().find(|r| {
+                    let behavior = &r["spell"]["execution"]["native_behavior"];
+                    behavior["key"] == "familiar_summon"
+                        && behavior["parameters"]["vocation"] == "knight"
+                        && behavior["parameters"]["login"]["lifetime_basis"] == "current_unix_time"
+                })
+            })
+            .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+        super::super::native::spell_from_bundle(
+            &serde_json::json!({"spell": row["spell"]}),
+            &row["dependencies"],
+        )
+        .map_err(|_| CompanionExecutionError::UnqualifiedProfile)
+    }
+
+    /// #2199 Codex P2 4302542011 (FAMILIARS0 §5, §7): a clean stored familiar returns at login
+    /// after Premium lapsed or the level dropped, because a return passes only the lever boss
+    /// room, the summon cap and placement. Without a free tile it reports the placement refusal
+    /// that keeps the row waiting for the in-session retry. The source Login look handling
+    /// (removing the vocation look without Premium) is kept, no cooldown is restarted, and a
+    /// login without stored time still follows the source Premium gate.
+    #[test]
+    fn stored_familiar_returns_at_login_without_fresh_cast_eligibility()
+    -> Result<(), CompanionExecutionError> {
+        let spell = knight_familiar_profile()?;
+        let p = parameters(&spell, "familiar_summon")?;
+        let look = p["default_look_type"]
+            .as_u64()
+            .and_then(|v| u32::try_from(v).ok())
+            .ok_or(CompanionExecutionError::UnqualifiedProfile)?;
+        let lapsed = FamiliarFacts {
+            event: FamiliarEvent::Login,
+            vocation: "knight".into(),
+            premium: false,
+            level: 250,
+            account_at_least_god: false,
+            owned_summons: 0,
+            spawn_room: true,
+            chosen_look: 0,
+            has_vocation_look: true,
+            owner_current_speed: 220,
+            familiar_base_speed: 200,
+            familiar_minutes: 30,
+            vip: false,
+            vip_reduction_minutes: 0,
+            cooldown_rate: 1.0,
+            now_unix: 10_000,
+            saved_expiry_unix: 10_090,
+            last_logout_unix: 10_000,
+            owner_present: true,
+            creature_present: false,
+            creature_name: p["creature_name"]
+                .as_str()
+                .ok_or(CompanionExecutionError::UnqualifiedProfile)?
+                .to_owned(),
+            matching_summon_ids: Vec::new(),
+            dx: 0,
+            dy: 0,
+            dz: 0,
+            owner_tile_is_teleport: false,
+        };
+        let creates = |actions: &[FamiliarAction]| {
+            actions
+                .iter()
+                .filter(|a| matches!(a, FamiliarAction::Create { .. }))
+                .count()
+        };
+
+        // The source Login alone drops the creation without Premium: the stuck row.
+        let source = plan_familiar_event_actions(&spell, &lapsed, false)?;
+        assert_eq!(creates(&source), 0);
+        assert!(source.contains(&FamiliarAction::RemoveVocationLook(look)));
+
+        // A stored return comes back with its stored lifetime and keeps the source looks.
+        let restored = plan_familiar_event_actions(&spell, &lapsed, true)?;
+        assert_eq!(creates(&restored), 1);
+        assert!(restored.iter().any(|a| matches!(
+            a,
+            FamiliarAction::Create { name, look: created, owned: true, .. }
+                if *name == lapsed.creature_name && *created == look
+        )));
+        assert!(restored.contains(&FamiliarAction::StoreExpiry(10_090)));
+        assert!(
+            restored
+                .iter()
+                .any(|a| matches!(a, FamiliarAction::ScheduleExpiry { .. }))
+        );
+        assert!(restored.contains(&FamiliarAction::RemoveVocationLook(look)));
+        assert!(!restored.iter().any(|a| matches!(
+            a,
+            FamiliarAction::SelectLook(_)
+                | FamiliarAction::GrantVocationLook(_)
+                | FamiliarAction::Cooldown { .. }
+        )));
+        assert_eq!(
+            restored
+                .iter()
+                .filter(|a| **a == FamiliarAction::RegisterAdvance)
+                .count(),
+            1
+        );
+
+        // Below the source login level the stored familiar returns the same way.
+        let low_level = FamiliarFacts {
+            premium: true,
+            level: 120,
+            ..lapsed.clone()
+        };
+        assert_eq!(
+            creates(&plan_familiar_event_actions(&spell, &low_level, false)?),
+            0
+        );
+        assert_eq!(
+            creates(&plan_familiar_event_actions(&spell, &low_level, true)?),
+            1
+        );
+
+        // No free tile: the placement refusal keeps the row waiting for the in-session retry.
+        let no_tile = FamiliarFacts {
+            spawn_room: false,
+            ..lapsed.clone()
+        };
+        let waiting = plan_familiar_event_actions(&spell, &no_tile, true)?;
+        assert_eq!(creates(&waiting), 0);
+        assert!(login_left_familiar_waiting(None, &waiting));
+
+        // An eligible owner's plan is exactly the source Login's.
+        let eligible = FamiliarFacts {
+            premium: true,
+            has_vocation_look: false,
+            ..lapsed.clone()
+        };
+        assert_eq!(
+            plan_familiar_event_actions(&spell, &eligible, true)?,
+            plan_familiar_event_actions(&spell, &eligible, false)?
+        );
+        Ok(())
     }
 
     fn writers() -> (FamiliarLifecycleWriter, FamiliarLifecycleWriter) {

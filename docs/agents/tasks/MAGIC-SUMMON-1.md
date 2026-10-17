@@ -146,7 +146,7 @@ CREATURE_AI0; FAMILIARS0; SPELL_NPC_MAP0 §2-§3. Plan: `docs/architecture/revie
 ## Context checkpoint
 
 ```yaml
-last_progress: D1296 scoped repair after CP D1299 main integration
+last_progress: round-seven repair (Codex P2 4302542011) on source head 72470cc338c8de86dfb794731c946e6e01d1fda4
 status: OPEN
 branch: skeleton/magic-summon-1
 blocker: CREATURE_AI0 ACCEPTED (summon children); FAMILIARS0 ACCEPTED; CREATURE-MOVE-1 residue (SUMMON-1); HOUSE-1b (`house_access`)
@@ -614,3 +614,25 @@ passes; `cargo test --locked -p oteryn-game-server --lib --bins` passes (lib 3,2
 29 ignored, 0 failed; bins 7 passed), built without debuginfo to fit the disk. `rustfmt --check`
 passes. PostgreSQL integration targets are NOT_RUN locally (no database). New-head GitHub CI
 must pass.
+
+### Round-seven repair
+
+OPEN / DRAFT / NOT_FULLY_QUALIFIED. Lead-directed repair for Codex thread 4302542011 (P2) on
+source head `72470cc338c8de86dfb794731c946e6e01d1fda4`.
+
+- FAMILIARS0 §5 and §7: a clean stored familiar returns through the return checks only (lever
+  boss room, the aggregate summon cap and placement), never through §4 check 1. The source
+  Login planner gates recreation on Premium and its minimum level, so a lapsed Premium left a
+  closed row with positive time that neither returned nor admitted a replacement cast, and
+  scheduled no retry. `plan_familiar_event_actions` now keeps the source Login's look grants
+  and removals, and when a stored return reached neither a creation nor a placement refusal it
+  adds only the creation part of the source Login planned with the return eligibility. The
+  stored lifetime, no cooldown restart, the no-tile waiting retry and the boss-room end are
+  unchanged; an immediate (Login) and a delayed (Return) return share the path.
+
+Regression test: `stored_familiar_returns_at_login_without_fresh_cast_eligibility`
+(lifecycle; real knight familiar profile). Molehill toolchain 1.94.0: `rustfmt --check` on the
+changed file passes; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
+passes; `cargo test --locked -p oteryn-game-server --lib --bins` passes (lib 3,256 passed,
+29 ignored, 0 failed; bins 7 passed). PostgreSQL integration targets are NOT_RUN locally (no
+database). New-head GitHub CI must pass.
