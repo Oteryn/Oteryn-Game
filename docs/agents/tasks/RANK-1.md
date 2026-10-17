@@ -595,3 +595,78 @@ must consume the existing receipts under capability 10.
 Current-head all-target Clippy, full package tests and complete native
 runtime/E2E qualification remain open. This evidence correction leaves
 `NOT_FULLY_QUALIFIED` and CP-only integration/merge authority unchanged.
+
+
+## HS-WIRE-1 owned codec and native Rust qualification — 2026-10-17
+
+This authoring batch starts at draft head
+`14babd8f0ae95c55dd0395d63a3bbb5dd82d31d7`. It supplies the concrete layout and
+tags owned by RANK under CP D1155 and accepted HIGHSCORES0 §6. The earlier
+statements that the owned layout itself was blocked describe the historical
+checkpoint; shared activation still requires the integration slot.
+
+The two new owned files are `crates/protocol-oteryn/src/highscores.rs` and
+`highscores_tests.rs`. The query carries category, base-vocation filter,
+one-based page and opaque snapshot ID. The result carries category, snapshot
+ID, persisted computation time, page, continuation flag, at most 50 rows and an
+optional own row. A row carries global rank, Character name, the actual durable
+vocation key, level and primary value. World and asking Character remain
+session-derived. Skill/magic progress used to break ties stays private.
+
+The codec validates the same semantic and size bounds on encoding and decoding,
+including malformed/duplicate/unknown fields, numeric overflow, bounded strings,
+and the page > 1/token 0 refusal. A filtered list is capped at 1,000 members;
+global ranks and an own row outside the current page are retained. The owning
+handler will return NOT_SUPPORTED and SNAPSHOT_EXPIRED through the existing
+FND-02 error result, without a duplicate status field inside a success payload.
+
+### Exact tested assembly
+
+Normal Cargo qualification used an isolated checkout of the base above plus
+the two owned files and one validation-only `pub mod highscores;` line in the
+canonical protocol crate. That shared registration is held; it is not part of
+this draft source publication. Original dependency sources, Cargo manifests,
+`Cargo.lock`, test attributes and the ordinary crate test runner were retained.
+No process-wide stack override was used.
+
+| Tested source | SHA-256 |
+|---|---|
+| Owned codec | `4ff4acb418918648e0b1402f8364d9d68dfe0120404f18bef1a66e9bcf40e679` |
+| Owned test leaf | `db618bd384884aaeed4256fcbc092f6bd865280e9b4600d50bd74fad83b4008e` |
+| Validation-only protocol module root | `632ea8bda27a1503b5b6a97cd8852ee4956ce93eac590a84ab31da86238571d8` |
+| Unchanged Cargo.lock | `a3b9800ad3199130b2ddc363b6b3972b1ecf119d22e595c243701fcd00f5a35e` |
+
+```sh
+cargo test --locked -p oteryn-protocol-oteryn --lib highscores::tests --quiet -- --test-threads=1
+cargo clippy --locked -p oteryn-protocol-oteryn --all-targets --quiet -- -D warnings
+cargo fmt --all -- --check
+```
+
+All **12 selected original Rust tests passed**, with zero failed/ignored and
+242 unrelated cases filtered, at **2026-10-17T10:49:27Z**. Strict all-target
+Clippy for the protocol package passed at **10:49:34Z**; workspace format check
+passed at **10:50:05Z**. Source/build-input hashes matched before and after.
+The tests include independent literal protobuf byte vectors, default and field
+order equivalence, rejection paths, own-row/global-rank behavior and the maximum
+constructed 9,874-byte result within the 9,878-byte leaf bound.
+
+Evidence is retained on Molehill-PC under
+`/root/oteryn-six-pr-20261017/evidence-continuation-reviewed-1017/`:
+`results.json`, `rank-source-before.json`, `rank-source-after.json`,
+`rank-wire-tests.log`, `rank-wire-clippy.log` and `rank-wire-fmt.log`.
+The test log SHA-256 is
+`df90274bb74ec76c20d4cfc7c7b9ff6080219af2088ec2f1ac6be4212d7886ef`.
+Independent source review accepted the concrete codec and byte vectors before
+execution. Formatting was the only subsequent source transformation.
+
+### Integration still required
+
+The matching `highscores_v1.proto` proposal and module mount remain an explicit
+held integration packet. CP owns the shared IDL/registry/error/capability rows
+and authenticated session handler slot under capability 9 / command 14. The
+existing database qualification, migration 0097, projection-role grants,
+snapshot spawn and reset notifications retain their separate gates. The
+protocol checks above do not qualify the game-server all-target graph, every
+ranking/PostgreSQL case or complete runtime/E2E delivery.
+
+This draft remains partial, with no ready or merge action requested.
