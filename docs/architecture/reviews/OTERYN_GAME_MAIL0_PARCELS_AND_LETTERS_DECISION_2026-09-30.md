@@ -1,7 +1,7 @@
 # MAIL-0 Parcels and letters
 
 - Decision: `MAIL0-PARCELS-AND-LETTERS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
   protocol, security and privacy) and protected integration. It builds on DEPOT-0, MARKET-0
   (`CharacterInbox`), HOUSE-OWN-0, CHAT-0, ITEM-MOVE-WIRE-0 and -1 and MAP-WIRE-1, and integrates
   after them. Owner questions Q1 to Q3 (§14) are answered (2026-09-30, #162): system letters are
