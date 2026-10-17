@@ -368,17 +368,23 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS) -> dict:
 
 
 def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
-                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
+                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS,
+                *, prey_provider: bytes | None = None) -> bytes:
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
     facts of every Item those tables and the pinned corpses name. A named Item missing from the
     Item definitions refuses the section."""
     definitions = {}
+    prey_canonical = []
     for path in sorted(creature_definitions.glob('creatures-*.json')):
         _, shard = read(path)
         for record in shard['records']:
+            if prey_provider is not None and record['definition']['identity']['key'] in definitions:
+                raise ValueError('PREY_PROVIDER_INVALID: duplicate canonical Creature definition')
             definitions[record['definition']['identity']['key']] = record['definition']
+            if prey_provider is not None:
+                prey_canonical.append(record)
     tables = {}
     for path in sorted(loot_definitions.glob('loot-*.json')):
         _, shard = read(path)
@@ -417,6 +423,10 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 for entry in table['entries']:
                     name(entry['item'])
         bindings[target['key']] = {'creature': target, 'loot': loot}
+    if prey_provider is not None:
+        for table in used.values():
+            if set(table) != {'identity', 'kind', 'algorithm', 'entries'} or table['kind'] != 'Loot':
+                raise ValueError(f"PREY_LOOT_UNSUPPORTED: {table['identity']['key']} canonical Loot table shape")
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')
     order = lambda rows: [rows[key] for key in sorted(rows, key=lambda key: key.encode('utf-8'))]
@@ -425,7 +435,11 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
              'tables': [{key: table[key] for key in ('identity', 'algorithm', 'entries')} for table in order(used)],
              'items': order(named)}
     body = ',\n'.join(f'"{key}":[\n' + ',\n'.join(line(row) for row in rows) + '\n]' for key, rows in lists.items())
-    return ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
+    raw = ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
+    if prey_provider is not None:
+        from prey_loot_budget import validate_prey_loot_provider
+        validate_prey_loot_provider(prey_provider, encoded(creatures), raw, prey_canonical)
+    return raw
 
 
 def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
@@ -440,6 +454,10 @@ def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
 
 
 def build(args) -> dict:
+    prey_path = getattr(args, 'prey_provider', None)
+    if prey_path is not None and not getattr(args, 'progression', None):
+        raise ValueError('PREY provider requires the progression/loot path')
+    prey_provider = prey_path.read_bytes() if prey_path is not None else None
     output = args.out
     output.mkdir(parents=True, exist_ok=True)
     catalog_raw, catalog = read(args.catalog)
@@ -485,7 +503,15 @@ def build(args) -> dict:
             payloads[key] = raw
     if 'progression' in payloads:
         payloads['item_keys'] = item_keys()  # OTNGP07: the Item key set rides only with progression
-        payloads['loot_tables'] = loot_tables(creatures)  # OTNGP08: the loot section rides with the key set
+        payloads['loot_tables'] = loot_tables(creatures, prey_provider=prey_provider)
+    if prey_provider is not None:
+        # Qualification is mandatory above, before a native manifest/artifact is written.
+        # This source sidecar is not an unrecognized runtime manifest provider.
+        closure['prey_loot_budget'] = {'provider_sha256': digest(prey_provider),
+            'creature_profiles_sha256': digest(payloads['creature_profiles']),
+            'loot_tables_sha256': digest(payloads['loot_tables']),
+            'qualification': 'PREY0-RL-16_BUDGET_ONLY', 'runtime_activation': False}
+        (output / 'prey-loot-provider.json').write_bytes(prey_provider)
     appearance_source = getattr(args, 'appearance_source', None)
     if appearance_source:
         import build_spell_appearances
@@ -593,6 +619,8 @@ def main():
     parser.add_argument('--source-world', type=Path)
     parser.add_argument('--progression', type=Path,
                         help='canonical progression section (build_progression.py --section-out); selects OTNGP06')
+    parser.add_argument('--prey-provider', type=Path,
+                        help='exact authored PREY pool/source pins; requires progression and mandatory loot-budget qualification')
     parser.add_argument('--native-map-profile', choices=('accepted-entry-r1', 'source-qualified-spell-entry-r2'), default='accepted-entry-r1')
     args = parser.parse_args()
     if args.source_world and args.native_map_profile != 'accepted-entry-r1':

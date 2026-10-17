@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:prey-loot-provider:v1",
+  "title": "PREY0 exact pool and loot-budget compilation input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "creature_profiles_sha256", "loot_tables_sha256", "preyable_creatures"],
+  "properties": {
+    "schema": {"const": "OTERYN_PREY_LOOT_PROVIDER/v1"},
+    "creature_profiles_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "loot_tables_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "preyable_creatures": {
+      "type": "array",
+      "minItems": 27,
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "description": "Complete pool in UTF-8 Creature-key order; native and canonical eligibility must agree. The compiler separately rejects duplicate keys across revisions.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["family", "key", "revision"],
+        "properties": {
+          "family": {"const": "Creature"},
+          "key": {"type": "string", "minLength": 1},
+          "revision": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package oteryn.events.v1;
+
+// PREY0 §10, DAILY_REWARD0 §4.5, CP D1338. First closed payload: one
+// positive DAILY_REWARD Account+World ledger entry. Native receipt and
+// TransactionEventRef bind the complete delivery; zero credit emits no event.
+// All bytes identities are exactly UUIDv7/16 bytes. Unknown fields/kinds,
+// noncanonical encodings and quantities outside the source BIGINT range fail.
+// Payload ceiling 191 bytes; bounded ANL envelope ceiling 500 bytes.
+message PreyWildcardChangedV1 {
+  uint32 interpretation_revision = 1; // exactly 1
+  bytes acting_character_id = 2;
+  bytes account_id = 3;
+  bytes world_id = 4;
+  bytes channel_id = 5;
+  uint64 runtime_scope_ownership_generation = 6; // nonzero
+  bytes entry_id = 7;
+  string kind = 8; // exactly DAILY_REWARD
+  uint32 amount = 9; // 1..52, min(quantity,52-balance_before)
+  uint32 balance_before = 10; // 0..51
+  uint32 balance_after = 11; // before+amount, <=52
+  bytes daily_claim_transaction_id = 12;
+  uint32 daily_line = 13; // 0..i32::MAX
+  uint64 quantity = 14; // 1..i64::MAX, read from the retained DAILY line
+  uint64 uncredited_excess = 15; // quantity-amount
+  uint64 original_character_revision = 16; // nonzero, cannot overflow
+  uint64 committed_character_revision = 17; // original+1
+}
