@@ -169,10 +169,13 @@ pub fn check_decay_retire(value: &OneItemDecayRetireV1) -> Result<DecayRetireSha
         return Err(AuditError::InvalidInput);
     }
     if let Some(reset) = &value.world_reset {
+        // The job epoch is a predecessor epoch: activation creates N+1, so the
+        // jobs, reservations and receipts cap it at u64::MAX - 1.
         if value.cause.is_some()
             || value.corpse_entry.is_some()
             || reset.world_id != before.world_id
             || reset.item_instance_id != before.item_instance_id
+            || reset.reset_epoch == u64::MAX
         {
             return Err(AuditError::InvalidInput);
         }
@@ -815,5 +818,44 @@ mod tests {
                 .is_err()
             );
         }
+    }
+
+    #[test]
+    fn world_reset_epoch_is_bounded_by_the_predecessor_ceiling() {
+        let mut value = corpse_step();
+        value.cause = None;
+        let reset_at = |value: &mut OneItemDecayRetireV1, epoch: u64| {
+            value.world_reset = Some(OneItemWorldResetV1 {
+                world_id: value.before.as_ref().unwrap().world_id.clone(),
+                reset_epoch: epoch,
+                item_instance_id: value.before.as_ref().unwrap().item_instance_id.clone(),
+            });
+            value.clone()
+        };
+        let wire = |value: &OneItemDecayRetireV1| {
+            OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::DecayRetire(value.clone())),
+            }
+            .encode_to_vec()
+        };
+        for epoch in [0, u64::MAX - 1] {
+            let accepted = reset_at(&mut value, epoch);
+            assert_eq!(
+                check_decay_retire(&accepted),
+                Ok(DecayRetireShape::WorldResetGround)
+            );
+            assert_eq!(
+                decode_decay_retire_payload(&wire(&accepted)).unwrap(),
+                accepted
+            );
+        }
+        let refused = reset_at(&mut value, u64::MAX);
+        assert_eq!(check_decay_retire(&refused), Err(AuditError::InvalidInput));
+        assert!(decode_decay_retire_payload(&wire(&refused)).is_err());
+        assert!(
+            encode_decay_retire_event(identity(AT_DEADLINE), refused, mint::Type2EventTuple::V1)
+                .is_err()
+        );
     }
 }
