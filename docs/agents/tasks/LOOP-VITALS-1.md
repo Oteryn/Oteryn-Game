@@ -18,9 +18,10 @@ registry: no
 owner: /root/vitals (family E; D1107 source authoring)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
+  - apps/game-server/src/durability/character_vitals_soul.rs
   - apps/game-server/src/durability/character_vitals_stamina.rs
   - apps/game-server/src/durability/character_vitals_stamina_math.rs
   - apps/game-server/tests/loop_vitals_stamina.rs
@@ -61,6 +62,7 @@ Durable regeneration accumulator, food-time ingress, soul regen and soul orb, st
 
 ## Owned paths (builder edits freely)
 
+- apps/game-server/src/durability/character_vitals_soul.rs (CP-authorized bounded rebuild below)
 - apps/game-server/src/durability/character_vitals_stamina.rs
 - apps/game-server/src/durability/character_vitals_stamina_math.rs
 - apps/game-server/tests/loop_vitals_stamina.rs
@@ -252,3 +254,39 @@ as validation of the new durable owner. External evidence and exact frozen
 working-tree manifest: `/workspace/oteryn-family/evidence/d1107-vitals/canonical-generation-2/`.
 
 No commit, push, ready, merge, migration installation or complete-task claim.
+
+## Lost Soul R5 payload rebuild — 2026-10-17 (NFQ / NOT RUN)
+
+CP [6230877600](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6230877600)
+authorizes rebuilding the missing unpublished Soul increment on existing draft
+#2196. Base head is `9659ed8b4b0a9a5687e4ad5db1e9993f8da471f2`.
+The lost source generation `72ed…` and its unexecuted native 18/15 recipe are
+unavailable; no PASS for that generation is claimed. The existing published component's 11 PASS
+results remain historical evidence of that component only.
+
+New owned leaf `character_vitals_soul.rs` rebuilds only the bounded pure policy
+and typed semantic kill-receipt participant. D1251 cap uses the real current
+`PremiumGate` exclusively (100/200); the regeneration interval is 15 seconds
+only with stored promotion and an open current gate, otherwise 120 seconds.
+The accepted applied-kill facts produce no hook for zero XP, close the window
+for positive XP below the calculation's level, and replace the window with 240
+seconds for applied XP at least that level. Invalid level/negative XP are refused.
+Facts and the resulting hook travel together as receipt participant data; neither
+is a kill proof, current fence, Character binding or permission to write.
+
+Five focused inline tests cover the premium/promotion combinations, expiry,
+zero/sublevel/threshold/large XP and invalid inputs. They are **NOT RUN**;
+this new leaf is deliberately unregistered, and no source qualification, native
+compile, Clippy, PostgreSQL or runtime validation is claimed. No Cargo/heavy/native
+or host work was run for this rebuild. Isolated Rust 1.94 leaf formatting/syntax,
+diff whitespace and governance validation were checked; inline tests remain NOT RUN.
+
+The full durable Soul window writer/schema, receipt integration, kill caller,
+promotion caller, clock/scheduling, replay enforcement and runtime registration
+remain explicitly **unrebuilt** and with CP's final shared slots. A historical
+receipt must never reapply a window; the future owning transaction must bind and
+enforce occurrence/Character/revision and independently prove current authority.
+No new columns, migrations, clock producer or fake current-authority facts are
+introduced. D1264 live stamina remains **NotWired x1**; no active hunting time is
+invented. This source proposal is **NFQ**, not complete-task or runtime delivery.
+Root reviews/publishes to the existing draft; worker made no commit or push.
