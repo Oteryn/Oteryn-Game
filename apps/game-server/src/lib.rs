@@ -849,6 +849,7 @@ mod creature_icicle;
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]
 mod creature_source_items;
+mod raid;
 
 // D1287: selection-source component tests, without a production runtime caller.
 #[cfg(test)]
