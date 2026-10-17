@@ -18,10 +18,13 @@ registry: false
 owner: family_F
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-17
+merge_authority: CP_ONLY (builder never marks ready)
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/LOOP-DAMAGE-1.md
+  - apps/game-server/src/gameplay_transport/spell_magnitude_facts.rs  # CP D1125
+  - apps/game-server/src/spell/actor_conditions.rs  # CP D1125
 public_contracts: []
 blocks: []
 cross_repository_coordination_id: null
@@ -61,7 +64,7 @@ Paths below are relative to this repository. Decision files are under `docs/arch
 | EQUIP-RT-1 | Typed `content/item_abilities.rs::item_ability_profile` exists; the architect's §2.10 `domain/equipment_effects.rs` active-set owner is absent in both inspected trees. Existing movement/cast reads do not establish the complete accepted current-active-set policy. No duplicate generic modifier engine is justified. |
 | COND-1 absent / mana shield must be written | Obsolete: `ability/condition.rs`, `condition_spell.rs`, `spell/actor_conditions.rs` and owner consumers exist, including §3.5 gates and Agony. CONDITIONS0 acceptance describes earlier merged families; source, not its historical remaining-work prose, determines current residue. Reuse these stores/transitions. |
 | FOOD-REGEN-1 not merged blocks any damage work | Too broad: `spell/food_regeneration.rs`, owner food application and periodic consumers exist. CONDITIONS0 §6.3 durable remaining food time is a separate release/restart obligation; no dedicated food durability module was found. This is not proof all possible save paths are absent, nor a reason to duplicate shield/damage code. CP must qualify the actual lifecycle writer before claiming COND-DUR-1 complete. |
-| Crit/leech globally specified by generic Ability baseline | False: `GAME-ABILITY-01_EFFECT_COMPOSITION_DAMAGE_HEAL_OWNER_BASELINE.md` requires typed stages and descendants, but explicitly leaves exact crit/lifesteal formulas and ordering to owning decisions. Accepted IMBUE-FORGE0 §5 supplies stage ownership; its single-`crit` amendment is conditional on PROF-EFFECT0, whose inspected main header is still CANDIDATE. Do not silently activate that amendment. |
+| Crit/leech globally specified by generic Ability baseline | False: `GAME-ABILITY-01_EFFECT_COMPOSITION_DAMAGE_HEAL_OWNER_BASELINE.md` requires typed stages and descendants, but explicitly leaves exact crit/lifesteal formulas and ordering to owning decisions. Accepted IMBUE-FORGE0 §5 supplies stage ownership; its single-`crit` amendment is conditional on PROF-EFFECT0, which is now ACCEPTED on main (ACCEPT-BATCH-2026-10-15 §6). CP D1411 supplies the formula source (see *D1411 crit/leech source* below). |
 
 EQUIP0 §3.2's 2026-10-14 amendment makes **every Extra-slot item LIGHT-only**, even an item whose
 own designated slot is Extra. The older architect §2.10 acceptance row says an own-slot Extra item
@@ -129,8 +132,8 @@ re-run the trace in the integration slot; retain existing native types and priva
    publish one correlated vitals/conditions/death result through the existing physical owner.
 4. **Crit/leech source owners.** Obtain an accepted scope/formula/RNG descriptor and admitted
    chance/share/units before enabling a new source. IMBUE-FORGE0 §5 owns imbuement stage inputs;
-   EQUIP0 does not authorize equipment special skills. PROF-EFFECT0 is still candidate in the
-   inspected main, so its combined `crit` purpose/other perk rules cannot be assumed. Charm
+   EQUIP0 does not authorize equipment special skills. PROF-EFFECT0 is ACCEPTED on main and owns
+   the stacking order; CP D1411 gives the formula source (below). Charm
    critical/leech consumers still name missing systems in `combat/charm_effects.rs`; registering
    those outcomes without a live consumer is insufficient. Leech is a bounded typed descendant
    of the committed applied damage result, not requested damage or a second primary calculation;
@@ -296,3 +299,34 @@ the owned delta; source-before/after equal. Clippy and full package remain NOT_R
 no earlier family test result is imported as this delta's qualification. No production activation or full LOOP-DAMAGE completion is claimed.
 
 Current checkpoint governance validation and all124 governance unit tests PASS.
+
+## D1411 crit/leech source (2026-10-17)
+
+CP D1411 (#2195 comment 6238304439) lifts the "no accepted source" blocker. PROF-EFFECT0 is
+ACCEPTED and owns the stacking order. Source revisions: TibiaWiki `Critical_Hit` rev 1113308,
+`Imbuing` rev 1194750, `Formulae` rev 1205374 §Mana Leech, and manual §5.3.5.
+
+- Base critical: 5% chance, +10% damage. Strike: 5%/+5%, 5%/+15%, 5%/+40%.
+- Vampirism: 5/10/25%. Void: 3/5/8%.
+- Area leech per creature: `ceil(Dmg × Leech × (0.1N + 0.9) / N)`. Critical damage raises
+  leech, overkill counts, Prey does not affect it.
+
+No crit/leech code lands in this checkpoint; the formulas apply to the future owner work.
+
+## Bounded checkpoint (2026-10-17)
+
+MERGE_AUTHORITY: CP_ONLY. The builder never marks the PR ready; CP alone decides integration.
+
+**Lands in this PR:** the inert D1125 current build/condition skill provider
+(`spell_magnitude_facts.rs::project_current_attack_skills`,
+`PlayerSpellState::owned_effective_skills`), its native unit regression, the shared
+`validate_current_binding` helper used by the existing `project`, and this card. No caller,
+wire, registry, capability offer, migration, content or activation changes.
+
+**Stays open (task not closed):** `attack.rs` caller (after #2192), `monster_ai_cycle.rs`
+pre-hit composition (after #2200), EQUIP-0 protections and the equipment active set
+(EQUIP-RT-1), CHARM4 incoming order, crit/leech owners per D1411, `tests/loop_damage_*.rs`,
+cap 12 and all slot work. Remaining blockers: ITEM-MOVE-2a residue, EQUIP-RT-1 owner,
+CHARM-DEF-1 delivery.
+
+Validation for this checkpoint is in the PR status comment for its exact head.
