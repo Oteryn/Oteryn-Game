@@ -97,3 +97,38 @@ cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn --all-targets -- -D
 - Max 2 fix rounds; after that CP closes and splits the task.
 - Confirm every BLOCKING dependency on main before starting code that needs it.
 - A required edit outside owned_paths is a `cross_domain_finding` (REPORT_ONLY), not an edit.
+
+
+## CP D1156 allocation clarification — 2026-10-17
+
+This appendix preserves the historical skeleton and makes the reviewed current
+allocation explicit in the repository. The source checkpoint read for this
+correction is `c580e630f0c8099580727265086e0fb0977ac802`; it contains only this
+task record, with no tutorial runtime, content or behavioral test implementation.
+
+[CP D1156](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6224947337)
+retains TUTORIAL-1 behind Wave 4 and requires a concrete CP scenario brief for the
+**Thais start**. The historical tutorial-island/Newhaven/Rookgaard label is a
+plan label, not authorization to invent an island, route, reward or completion
+criterion. Thais remains the start.
+
+The reviewed allocation has not supplied the required concrete scenario brief,
+acceptance assertions or recovery/reconnect expectations. Those missing product
+facts prevent a meaningful tutorial implementation or behavioral test from
+being asserted complete. No synthetic scenario is substituted for the brief.
+
+| Prerequisite | Current reviewed boundary |
+|---|---|
+| Qualified Wave 4 interfaces | Required before the dependent tutorial integration |
+| Concrete CP Thais-start brief | Required; not supplied in the reviewed allocation |
+| Scenario assertions and recovery/reconnect expectations | Must come from that packet |
+| Content regeneration and pins | Remain in the shared slot with their owning author |
+
+After the packet is released, the allocated tutorial source inputs and
+`apps/game-server/tests/tutorial_*.rs` can be implemented against the qualified
+Wave 4 interfaces. The inseparable content/regeneration/pin bundle and all shared
+wiring restrictions remain applicable.
+
+This amendment persists the allocation boundary only. It records no runtime
+test result, content activation or playable tutorial completion. The task remains
+a draft behind the stated prerequisites; CP retains integration/merge authority.
