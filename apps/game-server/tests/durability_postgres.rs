@@ -37,6 +37,8 @@ mod character_revision_sequencer_postgres_cases;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[path = "support/item_timed_postgres_cases.rs"]
+mod item_timed_postgres_cases;
 #[path = "support/item_timed_state_postgres_cases.rs"]
 mod item_timed_state_postgres_cases;
 #[path = "support/postgres.rs"]

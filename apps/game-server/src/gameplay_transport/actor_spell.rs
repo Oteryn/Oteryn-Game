@@ -31,7 +31,11 @@ mod actor_movement;
 mod familiar_cast;
 #[path = "movement_equipment.rs"]
 mod movement_equipment;
-pub(in crate::gameplay_transport) use familiar_cast::FamiliarLogoutSave;
+pub(in crate::gameplay_transport) use familiar_cast::{FamiliarActorEnd, FamiliarLogoutSave};
+#[cfg(test)]
+pub(in crate::gameplay_transport) use familiar_cast::{
+    FamiliarFenceRead, familiar_end_proven, familiar_end_read,
+};
 #[path = "familiar_defense.rs"]
 mod familiar_defense;
 #[path = "field_step_ingress.rs"]
