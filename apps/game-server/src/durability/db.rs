@@ -1048,6 +1048,30 @@ impl DurabilityRoot {
             deadline: Instant::now() + self.pass_deadline(),
         })
     }
+
+    /// [`Self::try_issue_semantic_pass`] for work owed to an outer operation
+    /// budget: the pass deadline is the earlier of the ordinary one and
+    /// `deadline`, and an already expired budget issues nothing.
+    pub(crate) fn try_issue_semantic_pass_by(
+        &self,
+        deadline: Instant,
+    ) -> Result<IssuedSemanticPass, DurabilityError> {
+        let now = Instant::now();
+        if deadline <= now {
+            return Err(DurabilityError::RootPassDeadlineExceeded);
+        }
+        let holder = self.try_acquire_ready()?;
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: bounded_pass_deadline(now, self.pass_deadline(), deadline),
+        })
+    }
+}
+
+/// The earlier of the ordinary pass deadline from `now` and an outer `budget`.
+fn bounded_pass_deadline(now: Instant, pass: Duration, budget: Instant) -> Instant {
+    (now + pass).min(budget)
 }
 
 pub(crate) async fn await_root_task<T>(
@@ -1623,6 +1647,29 @@ mod wp3_root_contract_tests {
             Ok::<(), DurabilityError>(())
         })?;
         drop(root);
+        Ok(())
+    }
+
+    #[test]
+    fn budgeted_pass_never_outlives_its_outer_budget() -> Result<(), Box<dyn std::error::Error>> {
+        let now = Instant::now();
+        let pass = DB_PASS_DEADLINE;
+        assert_eq!(
+            bounded_pass_deadline(now, pass, now + Duration::from_millis(700)),
+            now + Duration::from_millis(700)
+        );
+        assert_eq!(
+            bounded_pass_deadline(now, pass, now + Duration::from_secs(9)),
+            now + pass
+        );
+        // An expired budget issues no pass and records no ready demand.
+        let root = DurabilityRoot::new(config()?)?;
+        root.ready_demand.store(false, Ordering::Release);
+        assert!(matches!(
+            root.try_issue_semantic_pass_by(Instant::now()),
+            Err(DurabilityError::RootPassDeadlineExceeded)
+        ));
+        assert!(!root.ready_demand.load(Ordering::Acquire));
         Ok(())
     }
 

@@ -1,0 +1,3002 @@
+{
+  "client_version": "15.30",
+  "decision": "SPELL-PRESENT-0 §3",
+  "dynamic_keys": [
+    "canary.appearance:missile/weapontype"
+  ],
+  "records": [
+    {
+      "client_id": 244,
+      "key": "appearance:effect/avatar_appear",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_AVATAR_APPEAR"
+    },
+    {
+      "client_id": 219,
+      "key": "appearance:effect/chivalrious_challenge",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CHIVALRIOUS_CHALLENGE"
+    },
+    {
+      "client_id": 220,
+      "key": "appearance:effect/divine_dazzle",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DIVINE_DAZZLE"
+    },
+    {
+      "client_id": 38,
+      "key": "appearance:effect/energyarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ENERGYAREA"
+    },
+    {
+      "client_id": 12,
+      "key": "appearance:effect/energyhit",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ENERGYHIT"
+    },
+    {
+      "client_id": 10,
+      "key": "appearance:effect/hitarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HITAREA"
+    },
+    {
+      "client_id": 42,
+      "key": "appearance:effect/icearea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ICEAREA"
+    },
+    {
+      "client_id": 44,
+      "key": "appearance:effect/iceattack",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ICEATTACK"
+    },
+    {
+      "client_id": 13,
+      "key": "appearance:effect/magic_blue",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MAGIC_BLUE"
+    },
+    {
+      "client_id": 3,
+      "key": "appearance:effect/poff",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_POFF"
+    },
+    {
+      "client_id": 46,
+      "key": "appearance:effect/smallplants",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SMALLPLANTS"
+    },
+    {
+      "client_id": 249,
+      "key": "canary.appearance:effect/agony",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_AGONY"
+    },
+    {
+      "client_id": 244,
+      "key": "canary.appearance:effect/avatar_appear",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_AVATAR_APPEAR"
+    },
+    {
+      "client_id": 318,
+      "key": "canary.appearance:effect/bash",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BASH"
+    },
+    {
+      "client_id": 67,
+      "key": "canary.appearance:effect/bats",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BATS"
+    },
+    {
+      "client_id": 215,
+      "key": "canary.appearance:effect/big_scratch",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BIG_SCRATCH"
+    },
+    {
+      "client_id": 41,
+      "key": "canary.appearance:effect/bigclouds",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BIGCLOUDS"
+    },
+    {
+      "client_id": 51,
+      "key": "canary.appearance:effect/bigplants",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BIGPLANTS"
+    },
+    {
+      "client_id": 217,
+      "key": "canary.appearance:effect/bite",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BITE"
+    },
+    {
+      "client_id": 202,
+      "key": "canary.appearance:effect/black_blood",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLACK_BLOOD"
+    },
+    {
+      "client_id": 158,
+      "key": "canary.appearance:effect/blacksmoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLACKSMOKE"
+    },
+    {
+      "client_id": 4,
+      "key": "canary.appearance:effect/blockhit",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLOCKHIT"
+    },
+    {
+      "client_id": 295,
+      "key": "canary.appearance:effect/blood_rain",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_BLOOD_RAIN"
+    },
+    {
+      "client_id": 287,
+      "key": "canary.appearance:effect/blow_blue",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLOW_BLUE"
+    },
+    {
+      "client_id": 286,
+      "key": "canary.appearance:effect/blow_green",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLOW_GREEN"
+    },
+    {
+      "client_id": 288,
+      "key": "canary.appearance:effect/blow_pink",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLOW_PINK"
+    },
+    {
+      "client_id": 285,
+      "key": "canary.appearance:effect/blow_white",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLOW_WHITE"
+    },
+    {
+      "client_id": 176,
+      "key": "canary.appearance:effect/blue_energy_spark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLUE_ENERGY_SPARK"
+    },
+    {
+      "client_id": 191,
+      "key": "canary.appearance:effect/blue_ghost",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BLUE_GHOST"
+    },
+    {
+      "client_id": 26,
+      "key": "canary.appearance:effect/bubbles",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_BUBBLES"
+    },
+    {
+      "client_id": 270,
+      "key": "canary.appearance:effect/cacao",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CACAO"
+    },
+    {
+      "client_id": 52,
+      "key": "canary.appearance:effect/cake",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CAKE"
+    },
+    {
+      "client_id": 47,
+      "key": "canary.appearance:effect/carniphila",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CARNIPHILA"
+    },
+    {
+      "client_id": 219,
+      "key": "canary.appearance:effect/chivalrious_challenge",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CHIVALRIOUS_CHALLENGE"
+    },
+    {
+      "client_id": 282,
+      "key": "canary.appearance:effect/claw_white",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CLAW_WHITE"
+    },
+    {
+      "client_id": 27,
+      "key": "canary.appearance:effect/craps",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CRAPS"
+    },
+    {
+      "client_id": 266,
+      "key": "canary.appearance:effect/cream",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_CREAM"
+    },
+    {
+      "client_id": 321,
+      "key": "canary.appearance:effect/death_echo",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DEATH_ECHO"
+    },
+    {
+      "client_id": 319,
+      "key": "canary.appearance:effect/divine_barrage",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DIVINE_BARRAGE"
+    },
+    {
+      "client_id": 220,
+      "key": "canary.appearance:effect/divine_dazzle",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DIVINE_DAZZLE"
+    },
+    {
+      "client_id": 245,
+      "key": "canary.appearance:effect/divine_grenade",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DIVINE_GRENADE"
+    },
+    {
+      "client_id": 1,
+      "key": "canary.appearance:effect/drawblood",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_DRAWBLOOD"
+    },
+    {
+      "client_id": 221,
+      "key": "canary.appearance:effect/electricalspark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ELECTRICALSPARK"
+    },
+    {
+      "client_id": 38,
+      "key": "canary.appearance:effect/energyarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ENERGYAREA"
+    },
+    {
+      "client_id": 12,
+      "key": "canary.appearance:effect/energyhit",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ENERGYHIT"
+    },
+    {
+      "client_id": 320,
+      "key": "canary.appearance:effect/ethereal_barrage",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ETHEREAL_BARRAGE"
+    },
+    {
+      "client_id": 5,
+      "key": "canary.appearance:effect/explosionarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_EXPLOSIONAREA"
+    },
+    {
+      "client_id": 6,
+      "key": "canary.appearance:effect/explosionhit",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_EXPLOSIONHIT"
+    },
+    {
+      "client_id": 240,
+      "key": "canary.appearance:effect/ferumbras_2",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FERUMBRAS_2"
+    },
+    {
+      "client_id": 7,
+      "key": "canary.appearance:effect/firearea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FIREAREA"
+    },
+    {
+      "client_id": 37,
+      "key": "canary.appearance:effect/fireattack",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FIREATTACK"
+    },
+    {
+      "client_id": 30,
+      "key": "canary.appearance:effect/firework_red",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FIREWORK_RED"
+    },
+    {
+      "client_id": 29,
+      "key": "canary.appearance:effect/firework_yellow",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FIREWORK_YELLOW"
+    },
+    {
+      "client_id": 324,
+      "key": "canary.appearance:effect/forked_glacier",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FORKED_GLACIER"
+    },
+    {
+      "client_id": 325,
+      "key": "canary.appearance:effect/forked_thorns",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_FORKED_THORNS"
+    },
+    {
+      "client_id": 236,
+      "key": "canary.appearance:effect/gazharagoth",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GAZHARAGOTH"
+    },
+    {
+      "client_id": 206,
+      "key": "canary.appearance:effect/ghost_smoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GHOST_SMOKE"
+    },
+    {
+      "client_id": 214,
+      "key": "canary.appearance:effect/ghostly_bite",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GHOSTLY_BITE"
+    },
+    {
+      "client_id": 53,
+      "key": "canary.appearance:effect/giantice",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GIANTICE"
+    },
+    {
+      "client_id": 178,
+      "key": "canary.appearance:effect/green_energy_spark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GREEN_ENERGY_SPARK"
+    },
+    {
+      "client_id": 280,
+      "key": "canary.appearance:effect/green_energypulse",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_GREEN_ENERGYPULSE"
+    },
+    {
+      "client_id": 290,
+      "key": "canary.appearance:effect/green_energyshock",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_GREEN_ENERGYSHOCK"
+    },
+    {
+      "client_id": 286,
+      "key": "canary.appearance:effect/green_explosionhit",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_GREEN_EXPLOSIONHIT"
+    },
+    {
+      "client_id": 277,
+      "key": "canary.appearance:effect/green_flurryofblows",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_GREEN_FLURRYOFBLOWS"
+    },
+    {
+      "client_id": 9,
+      "key": "canary.appearance:effect/green_rings",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GREEN_RINGS"
+    },
+    {
+      "client_id": 283,
+      "key": "canary.appearance:effect/green_tigerclash",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_GREEN_TIGERCLASH"
+    },
+    {
+      "client_id": 169,
+      "key": "canary.appearance:effect/greensmoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GREENSMOKE"
+    },
+    {
+      "client_id": 225,
+      "key": "canary.appearance:effect/greyteleport",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GREYTELEPORT"
+    },
+    {
+      "client_id": 35,
+      "key": "canary.appearance:effect/groundshaker",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_GROUNDSHAKER"
+    },
+    {
+      "client_id": 36,
+      "key": "canary.appearance:effect/hearts",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HEARTS"
+    },
+    {
+      "client_id": 10,
+      "key": "canary.appearance:effect/hitarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HITAREA"
+    },
+    {
+      "client_id": 16,
+      "key": "canary.appearance:effect/hitbyfire",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HITBYFIRE"
+    },
+    {
+      "client_id": 17,
+      "key": "canary.appearance:effect/hitbypoison",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HITBYPOISON"
+    },
+    {
+      "client_id": 50,
+      "key": "canary.appearance:effect/holyarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HOLYAREA"
+    },
+    {
+      "client_id": 40,
+      "key": "canary.appearance:effect/holydamage",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_HOLYDAMAGE"
+    },
+    {
+      "client_id": 42,
+      "key": "canary.appearance:effect/icearea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ICEAREA"
+    },
+    {
+      "client_id": 44,
+      "key": "canary.appearance:effect/iceattack",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ICEATTACK"
+    },
+    {
+      "client_id": 43,
+      "key": "canary.appearance:effect/icetornado",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ICETORNADO"
+    },
+    {
+      "client_id": null,
+      "key": "canary.appearance:effect/id-248",
+      "kind": "effect",
+      "note": "murcion.lua sets effect = 248; no source member has that value and appearances.dat has no effect 248, so the client shows no effect",
+      "source_member": null
+    },
+    {
+      "client_id": 69,
+      "key": "canary.appearance:effect/insects",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_INSECTS"
+    },
+    {
+      "client_id": 252,
+      "key": "canary.appearance:effect/loot_highlight",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_LOOT_HIGHLIGHT"
+    },
+    {
+      "client_id": 2,
+      "key": "canary.appearance:effect/loseenergy",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_LOSEENERGY"
+    },
+    {
+      "client_id": 13,
+      "key": "canary.appearance:effect/magic_blue",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MAGIC_BLUE"
+    },
+    {
+      "client_id": 15,
+      "key": "canary.appearance:effect/magic_green",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MAGIC_GREEN"
+    },
+    {
+      "client_id": 14,
+      "key": "canary.appearance:effect/magic_red",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MAGIC_RED"
+    },
+    {
+      "client_id": 263,
+      "key": "canary.appearance:effect/melting_cream",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MELTING_CREAM"
+    },
+    {
+      "client_id": 18,
+      "key": "canary.appearance:effect/mortarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_MORTAREA"
+    },
+    {
+      "client_id": 0,
+      "key": "canary.appearance:effect/none",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_NONE"
+    },
+    {
+      "client_id": 177,
+      "key": "canary.appearance:effect/orange_energy_spark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ORANGE_ENERGY_SPARK"
+    },
+    {
+      "client_id": 195,
+      "key": "canary.appearance:effect/pink_beam",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PINK_BEAM"
+    },
+    {
+      "client_id": 179,
+      "key": "canary.appearance:effect/pink_energy_spark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PINK_ENERGY_SPARK"
+    },
+    {
+      "client_id": 281,
+      "key": "canary.appearance:effect/pink_energypulse",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_PINK_ENERGYPULSE"
+    },
+    {
+      "client_id": 288,
+      "key": "canary.appearance:effect/pink_explosionhit",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_PINK_EXPLOSIONHIT"
+    },
+    {
+      "client_id": 278,
+      "key": "canary.appearance:effect/pink_flurryofblows",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_PINK_FLURRYOFBLOWS"
+    },
+    {
+      "client_id": 284,
+      "key": "canary.appearance:effect/pink_tigerclash",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_PINK_TIGERCLASH"
+    },
+    {
+      "client_id": 193,
+      "key": "canary.appearance:effect/pink_vortex",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PINK_VORTEX"
+    },
+    {
+      "client_id": 184,
+      "key": "canary.appearance:effect/pixie_explosion",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PIXIE_EXPLOSION"
+    },
+    {
+      "client_id": 55,
+      "key": "canary.appearance:effect/plantattack",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PLANTATTACK"
+    },
+    {
+      "client_id": 3,
+      "key": "canary.appearance:effect/poff",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_POFF"
+    },
+    {
+      "client_id": null,
+      "key": "canary.appearance:effect/poison",
+      "kind": "effect",
+      "note": "CONST_ME_POISON is undefined in both sources; harpy.lua shows no effect",
+      "source_member": null
+    },
+    {
+      "client_id": 21,
+      "key": "canary.appearance:effect/poisonarea",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_POISONAREA"
+    },
+    {
+      "client_id": 265,
+      "key": "canary.appearance:effect/powerful_hearts",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_POWERFUL_HEARTS"
+    },
+    {
+      "client_id": 48,
+      "key": "canary.appearance:effect/purpleenergy",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PURPLEENERGY"
+    },
+    {
+      "client_id": 170,
+      "key": "canary.appearance:effect/purplesmoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_PURPLESMOKE"
+    },
+    {
+      "client_id": 264,
+      "key": "canary.appearance:effect/reaper",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_REAPER"
+    },
+    {
+      "client_id": 167,
+      "key": "canary.appearance:effect/redsmoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_REDSMOKE"
+    },
+    {
+      "client_id": null,
+      "key": "canary.appearance:effect/redspark",
+      "kind": "effect",
+      "note": "CONST_ME_REDSPARK is undefined in both sources; izcandar_champion_of_summer.lua shows no effect",
+      "source_member": null
+    },
+    {
+      "client_id": 210,
+      "key": "canary.appearance:effect/roots",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_ROOTS"
+    },
+    {
+      "client_id": 269,
+      "key": "canary.appearance:effect/sirup",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SIRUP"
+    },
+    {
+      "client_id": 216,
+      "key": "canary.appearance:effect/slash",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SLASH"
+    },
+    {
+      "client_id": 33,
+      "key": "canary.appearance:effect/sleep",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SLEEP"
+    },
+    {
+      "client_id": 298,
+      "key": "canary.appearance:effect/small_white_energyshock",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_SMALL_WHITE_ENERGYSHOCK"
+    },
+    {
+      "client_id": 39,
+      "key": "canary.appearance:effect/smallclouds",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SMALLCLOUDS"
+    },
+    {
+      "client_id": 46,
+      "key": "canary.appearance:effect/smallplants",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SMALLPLANTS"
+    },
+    {
+      "client_id": 68,
+      "key": "canary.appearance:effect/smoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SMOKE"
+    },
+    {
+      "client_id": 24,
+      "key": "canary.appearance:effect/sound_blue",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SOUND_BLUE"
+    },
+    {
+      "client_id": 19,
+      "key": "canary.appearance:effect/sound_green",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SOUND_GREEN"
+    },
+    {
+      "client_id": 23,
+      "key": "canary.appearance:effect/sound_purple",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SOUND_PURPLE"
+    },
+    {
+      "client_id": 20,
+      "key": "canary.appearance:effect/sound_red",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SOUND_RED"
+    },
+    {
+      "client_id": 25,
+      "key": "canary.appearance:effect/sound_white",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SOUND_WHITE"
+    },
+    {
+      "client_id": 22,
+      "key": "canary.appearance:effect/sound_yellow",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_SOUND_YELLOW"
+    },
+    {
+      "client_id": 294,
+      "key": "canary.appearance:effect/spikes",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_SPIKES"
+    },
+    {
+      "client_id": 268,
+      "key": "canary.appearance:effect/starburst",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_STARBURST"
+    },
+    {
+      "client_id": 189,
+      "key": "canary.appearance:effect/stone_storm",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_STONE_STORM"
+    },
+    {
+      "client_id": 45,
+      "key": "canary.appearance:effect/stones",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_STONES"
+    },
+    {
+      "client_id": 188,
+      "key": "canary.appearance:effect/storm",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_STORM"
+    },
+    {
+      "client_id": 32,
+      "key": "canary.appearance:effect/stun",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_STUN"
+    },
+    {
+      "client_id": 11,
+      "key": "canary.appearance:effect/teleport",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_TELEPORT"
+    },
+    {
+      "client_id": 326,
+      "key": "canary.appearance:effect/thousand_fist_blows",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_THOUSAND_FIST_BLOWS"
+    },
+    {
+      "client_id": 73,
+      "key": "canary.appearance:effect/thunder",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_THUNDER"
+    },
+    {
+      "client_id": 243,
+      "key": "canary.appearance:effect/water_drop",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_WATER_DROP"
+    },
+    {
+      "client_id": 34,
+      "key": "canary.appearance:effect/watercreature",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_WATERCREATURE"
+    },
+    {
+      "client_id": 54,
+      "key": "canary.appearance:effect/watersplash",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_WATERSPLASH"
+    },
+    {
+      "client_id": 276,
+      "key": "canary.appearance:effect/whirlwind_blow_white",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_WHIRLWIND_BLOW_WHITE"
+    },
+    {
+      "client_id": 180,
+      "key": "canary.appearance:effect/white_energy_spark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_WHITE_ENERGY_SPARK"
+    },
+    {
+      "client_id": 279,
+      "key": "canary.appearance:effect/white_energypulse",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_WHITE_ENERGYPULSE"
+    },
+    {
+      "client_id": 289,
+      "key": "canary.appearance:effect/white_energyshock",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_WHITE_ENERGYSHOCK"
+    },
+    {
+      "client_id": 285,
+      "key": "canary.appearance:effect/white_explosionhit",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_WHITE_EXPLOSIONHIT"
+    },
+    {
+      "client_id": 276,
+      "key": "canary.appearance:effect/white_flurryofblows",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_WHITE_FLURRYOFBLOWS"
+    },
+    {
+      "client_id": 241,
+      "key": "canary.appearance:effect/white_smoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_WHITE_SMOKE"
+    },
+    {
+      "client_id": 282,
+      "key": "canary.appearance:effect/white_tigerclash",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_WHITE_TIGERCLASH"
+    },
+    {
+      "client_id": 66,
+      "key": "canary.appearance:effect/yalaharighost",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_YALAHARIGHOST"
+    },
+    {
+      "client_id": 181,
+      "key": "canary.appearance:effect/yellow_energy_spark",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_YELLOW_ENERGY_SPARK"
+    },
+    {
+      "client_id": 291,
+      "key": "canary.appearance:effect/yellow_energyshock",
+      "kind": "effect",
+      "source": "zimbadev/crystalserver",
+      "source_member": "CONST_ME_YELLOW_ENERGYSHOCK"
+    },
+    {
+      "client_id": 8,
+      "key": "canary.appearance:effect/yellow_rings",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_YELLOW_RINGS"
+    },
+    {
+      "client_id": 49,
+      "key": "canary.appearance:effect/yellowenergy",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_YELLOWENERGY"
+    },
+    {
+      "client_id": 168,
+      "key": "canary.appearance:effect/yellowsmoke",
+      "kind": "effect",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ME_YELLOWSMOKE"
+    },
+    {
+      "client_id": 3,
+      "key": "canary.appearance:missile/arrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ARROW"
+    },
+    {
+      "client_id": 2,
+      "key": "canary.appearance:missile/bolt",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_BOLT"
+    },
+    {
+      "client_id": 7,
+      "key": "canary.appearance:missile/burstarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_BURSTARROW"
+    },
+    {
+      "client_id": 62,
+      "key": "canary.appearance:missile/cherrybomb",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_CHERRYBOMB"
+    },
+    {
+      "client_id": 11,
+      "key": "canary.appearance:missile/death",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_DEATH"
+    },
+    {
+      "client_id": 30,
+      "key": "canary.appearance:missile/earth",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_EARTH"
+    },
+    {
+      "client_id": 40,
+      "key": "canary.appearance:missile/eartharrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_EARTHARROW"
+    },
+    {
+      "client_id": 18,
+      "key": "canary.appearance:missile/enchantedspear",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ENCHANTEDSPEAR"
+    },
+    {
+      "client_id": 5,
+      "key": "canary.appearance:missile/energy",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ENERGY"
+    },
+    {
+      "client_id": 36,
+      "key": "canary.appearance:missile/energyball",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ENERGYBALL"
+    },
+    {
+      "client_id": 51,
+      "key": "canary.appearance:missile/envenomedarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ENVENOMEDARROW"
+    },
+    {
+      "client_id": 28,
+      "key": "canary.appearance:missile/etherealspear",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ETHEREALSPEAR"
+    },
+    {
+      "client_id": 41,
+      "key": "canary.appearance:missile/explosion",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_EXPLOSION"
+    },
+    {
+      "client_id": 4,
+      "key": "canary.appearance:missile/fire",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_FIRE"
+    },
+    {
+      "client_id": 34,
+      "key": "canary.appearance:missile/flammingarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_FLAMMINGARROW"
+    },
+    {
+      "client_id": 33,
+      "key": "canary.appearance:missile/flasharrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_FLASHARROW"
+    },
+    {
+      "client_id": 53,
+      "key": "canary.appearance:missile/gloothspear",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_GLOOTHSPEAR"
+    },
+    {
+      "client_id": 20,
+      "key": "canary.appearance:missile/greenstar",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_GREENSTAR"
+    },
+    {
+      "client_id": 31,
+      "key": "canary.appearance:missile/holy",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_HOLY"
+    },
+    {
+      "client_id": 17,
+      "key": "canary.appearance:missile/huntingspear",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_HUNTINGSPEAR"
+    },
+    {
+      "client_id": 29,
+      "key": "canary.appearance:missile/ice",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ICE"
+    },
+    {
+      "client_id": 16,
+      "key": "canary.appearance:missile/infernalbolt",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_INFERNALBOLT"
+    },
+    {
+      "client_id": 12,
+      "key": "canary.appearance:missile/largerock",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_LARGEROCK"
+    },
+    {
+      "client_id": 56,
+      "key": "canary.appearance:missile/leafstar",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_LEAFSTAR"
+    },
+    {
+      "client_id": 23,
+      "key": "canary.appearance:missile/onyxarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ONYXARROW"
+    },
+    {
+      "client_id": 24,
+      "key": "canary.appearance:missile/piercingbolt",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_PIERCINGBOLT"
+    },
+    {
+      "client_id": 15,
+      "key": "canary.appearance:missile/poison",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_POISON"
+    },
+    {
+      "client_id": 6,
+      "key": "canary.appearance:missile/poisonarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_POISONARROW"
+    },
+    {
+      "client_id": 14,
+      "key": "canary.appearance:missile/powerbolt",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_POWERBOLT"
+    },
+    {
+      "client_id": 21,
+      "key": "canary.appearance:missile/royalspear",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_ROYALSPEAR"
+    },
+    {
+      "client_id": 35,
+      "key": "canary.appearance:missile/shiverarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SHIVERARROW"
+    },
+    {
+      "client_id": 39,
+      "key": "canary.appearance:missile/smallearth",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SMALLEARTH"
+    },
+    {
+      "client_id": 38,
+      "key": "canary.appearance:missile/smallholy",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SMALLHOLY"
+    },
+    {
+      "client_id": 37,
+      "key": "canary.appearance:missile/smallice",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SMALLICE"
+    },
+    {
+      "client_id": 10,
+      "key": "canary.appearance:missile/smallstone",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SMALLSTONE"
+    },
+    {
+      "client_id": 22,
+      "key": "canary.appearance:missile/sniperarrow",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SNIPERARROW"
+    },
+    {
+      "client_id": 13,
+      "key": "canary.appearance:missile/snowball",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SNOWBALL"
+    },
+    {
+      "client_id": 1,
+      "key": "canary.appearance:missile/spear",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SPEAR"
+    },
+    {
+      "client_id": 58,
+      "key": "canary.appearance:missile/spectralbolt",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SPECTRALBOLT"
+    },
+    {
+      "client_id": 32,
+      "key": "canary.appearance:missile/suddendeath",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_SUDDENDEATH"
+    },
+    {
+      "client_id": 9,
+      "key": "canary.appearance:missile/throwingknife",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_THROWINGKNIFE"
+    },
+    {
+      "client_id": 8,
+      "key": "canary.appearance:missile/throwingstar",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_THROWINGSTAR"
+    },
+    {
+      "client_id": 45,
+      "key": "canary.appearance:missile/vortexbolt",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_VORTEXBOLT"
+    },
+    {
+      "client_id": 26,
+      "key": "canary.appearance:missile/whirlwindaxe",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_WHIRLWINDAXE"
+    },
+    {
+      "client_id": 27,
+      "key": "canary.appearance:missile/whirlwindclub",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_WHIRLWINDCLUB"
+    },
+    {
+      "client_id": 25,
+      "key": "canary.appearance:missile/whirlwindsword",
+      "kind": "missile",
+      "source": "opentibiabr/canary",
+      "source_member": "CONST_ANI_WHIRLWINDSWORD"
+    },
+    {
+      "client_id": 10,
+      "key": "canary.sound:effect/10",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_OR_RUNE"
+    },
+    {
+      "client_id": 100,
+      "key": "canary.sound:effect/100",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_MELEE_ATK_FIST"
+    },
+    {
+      "client_id": 1003,
+      "key": "canary.sound:effect/1003",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_HEALING"
+    },
+    {
+      "client_id": 1006,
+      "key": "canary.sound:effect/1006",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HASTE"
+    },
+    {
+      "client_id": 101,
+      "key": "canary.sound:effect/101",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_MELEE_ATK_CLAW"
+    },
+    {
+      "client_id": 1013,
+      "key": "canary.sound:effect/1013",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_WAVE"
+    },
+    {
+      "client_id": 1015,
+      "key": "canary.sound:effect/1015",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIREBALL_RUNE"
+    },
+    {
+      "client_id": 1018,
+      "key": "canary.sound:effect/1018",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_EXPLOSION_RUNE"
+    },
+    {
+      "client_id": 1019,
+      "key": "canary.sound:effect/1019",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIRE_WAVE"
+    },
+    {
+      "client_id": 102,
+      "key": "canary.sound:effect/102",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_MELEE_ATK_BITE"
+    },
+    {
+      "client_id": 1021,
+      "key": "canary.sound:effect/1021",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUDDENDEATH_RUNE"
+    },
+    {
+      "client_id": 1025,
+      "key": "canary.sound:effect/1025",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIRE_FIELD_RUNE"
+    },
+    {
+      "client_id": 1026,
+      "key": "canary.sound:effect/1026",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_POISON_FIELD_RUNE"
+    },
+    {
+      "client_id": 1027,
+      "key": "canary.sound:effect/1027",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_FIELD_RUNE"
+    },
+    {
+      "client_id": 103,
+      "key": "canary.sound:effect/103",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_MELEE_ATK_RIP"
+    },
+    {
+      "client_id": 105,
+      "key": "canary.sound:effect/105",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_MELEE_ATK_MAGIC"
+    },
+    {
+      "client_id": 1050,
+      "key": "canary.sound:effect/1050",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SOUL_FIRE_RUNE"
+    },
+    {
+      "client_id": 1077,
+      "key": "canary.sound:effect/1077",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STALAGMITE_RUNE"
+    },
+    {
+      "client_id": 1080,
+      "key": "canary.sound:effect/1080",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_BERSERK"
+    },
+    {
+      "client_id": 1088,
+      "key": "canary.sound:effect/1088",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_STRIKE"
+    },
+    {
+      "client_id": 1112,
+      "key": "canary.sound:effect/1112",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ICE_STRIKE"
+    },
+    {
+      "client_id": 1116,
+      "key": "canary.sound:effect/1116",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STONE_SHOWER_RUNE"
+    },
+    {
+      "client_id": 1117,
+      "key": "canary.sound:effect/1117",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_THUNDERSTORM_RUNE"
+    },
+    {
+      "client_id": 1122,
+      "key": "canary.sound:effect/1122",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DIVINE_MISSILE"
+    },
+    {
+      "client_id": 1138,
+      "key": "canary.sound:effect/1138",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_IGNITE"
+    },
+    {
+      "client_id": 1167,
+      "key": "canary.sound:effect/1167",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_PRACTISE_FIRE_WAVE"
+    },
+    {
+      "client_id": 1194,
+      "key": "canary.sound:effect/1194",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_KNIGHT_FAMILIAR"
+    },
+    {
+      "client_id": 1195,
+      "key": "canary.sound:effect/1195",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_PALADIN_FAMILIAR"
+    },
+    {
+      "client_id": 1196,
+      "key": "canary.sound:effect/1196",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_SORCERER_FAMILIAR"
+    },
+    {
+      "client_id": 1197,
+      "key": "canary.sound:effect/1197",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_DRUID_FAMILIAR"
+    },
+    {
+      "client_id": 2002,
+      "key": "canary.sound:effect/2002",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_FIRE"
+    },
+    {
+      "client_id": 2003,
+      "key": "canary.sound:effect/2003",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_ENERGY"
+    },
+    {
+      "client_id": 2004,
+      "key": "canary.sound:effect/2004",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_EARTH"
+    },
+    {
+      "client_id": 2005,
+      "key": "canary.sound:effect/2005",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_ICE"
+    },
+    {
+      "client_id": 2006,
+      "key": "canary.sound:effect/2006",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_DEATH"
+    },
+    {
+      "client_id": 2007,
+      "key": "canary.sound:effect/2007",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_HOLY"
+    },
+    {
+      "client_id": 2008,
+      "key": "canary.sound:effect/2008",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_HIT"
+    },
+    {
+      "client_id": 2009,
+      "key": "canary.sound:effect/2009",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_LIFEDRAIN"
+    },
+    {
+      "client_id": 2010,
+      "key": "canary.sound:effect/2010",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_MANADRAIN"
+    },
+    {
+      "client_id": 2011,
+      "key": "canary.sound:effect/2011",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_DROWNING"
+    },
+    {
+      "client_id": 2013,
+      "key": "canary.sound:effect/2013",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SINGLE_TARGET_HEALING"
+    },
+    {
+      "client_id": 2015,
+      "key": "canary.sound:effect/2015",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_FIRE"
+    },
+    {
+      "client_id": 2016,
+      "key": "canary.sound:effect/2016",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_ENERGY"
+    },
+    {
+      "client_id": 2017,
+      "key": "canary.sound:effect/2017",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_EARTH"
+    },
+    {
+      "client_id": 2018,
+      "key": "canary.sound:effect/2018",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_ICE"
+    },
+    {
+      "client_id": 2019,
+      "key": "canary.sound:effect/2019",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_DEATH"
+    },
+    {
+      "client_id": 2020,
+      "key": "canary.sound:effect/2020",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_HOLY"
+    },
+    {
+      "client_id": 2021,
+      "key": "canary.sound:effect/2021",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_HIT"
+    },
+    {
+      "client_id": 2022,
+      "key": "canary.sound:effect/2022",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_LIFEDRAIN"
+    },
+    {
+      "client_id": 2023,
+      "key": "canary.sound:effect/2023",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_MANADRAIN"
+    },
+    {
+      "client_id": 2024,
+      "key": "canary.sound:effect/2024",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SMALL_AREA_DROWNING"
+    },
+    {
+      "client_id": 2028,
+      "key": "canary.sound:effect/2028",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_FIRE"
+    },
+    {
+      "client_id": 2029,
+      "key": "canary.sound:effect/2029",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_ENERGY"
+    },
+    {
+      "client_id": 2030,
+      "key": "canary.sound:effect/2030",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_EARTH"
+    },
+    {
+      "client_id": 2031,
+      "key": "canary.sound:effect/2031",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_ICE"
+    },
+    {
+      "client_id": 2032,
+      "key": "canary.sound:effect/2032",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_DEATH"
+    },
+    {
+      "client_id": 2033,
+      "key": "canary.sound:effect/2033",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_HOLY"
+    },
+    {
+      "client_id": 2034,
+      "key": "canary.sound:effect/2034",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_HIT"
+    },
+    {
+      "client_id": 2035,
+      "key": "canary.sound:effect/2035",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_LIFEDRAIN"
+    },
+    {
+      "client_id": 2036,
+      "key": "canary.sound:effect/2036",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_MANADRAIN"
+    },
+    {
+      "client_id": 2037,
+      "key": "canary.sound:effect/2037",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_DROWNING"
+    },
+    {
+      "client_id": 2039,
+      "key": "canary.sound:effect/2039",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_LARGE_AREA_HEALING"
+    },
+    {
+      "client_id": 2041,
+      "key": "canary.sound:effect/2041",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_FIRE"
+    },
+    {
+      "client_id": 2042,
+      "key": "canary.sound:effect/2042",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_ENERGY"
+    },
+    {
+      "client_id": 2043,
+      "key": "canary.sound:effect/2043",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_EARTH"
+    },
+    {
+      "client_id": 2044,
+      "key": "canary.sound:effect/2044",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_ICE"
+    },
+    {
+      "client_id": 2045,
+      "key": "canary.sound:effect/2045",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_DEATH"
+    },
+    {
+      "client_id": 2046,
+      "key": "canary.sound:effect/2046",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_HOLY"
+    },
+    {
+      "client_id": 2047,
+      "key": "canary.sound:effect/2047",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_HIT"
+    },
+    {
+      "client_id": 2048,
+      "key": "canary.sound:effect/2048",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_LIFEDRAIN"
+    },
+    {
+      "client_id": 2049,
+      "key": "canary.sound:effect/2049",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_MANADRAIN"
+    },
+    {
+      "client_id": 2050,
+      "key": "canary.sound:effect/2050",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_WAVE_DROWNING"
+    },
+    {
+      "client_id": 2056,
+      "key": "canary.sound:effect/2056",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SPEED"
+    },
+    {
+      "client_id": 2057,
+      "key": "canary.sound:effect/2057",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_DRUNKEN"
+    },
+    {
+      "client_id": 2058,
+      "key": "canary.sound:effect/2058",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_STRENGTH"
+    },
+    {
+      "client_id": 2059,
+      "key": "canary.sound:effect/2059",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_OUTFIT"
+    },
+    {
+      "client_id": 2064,
+      "key": "canary.sound:effect/2064",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MONSTER_SPELL_SUPER_DRUNKEN"
+    },
+    {
+      "client_id": 6,
+      "key": "canary.sound:effect/6",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "DIST_ATK_BOW"
+    },
+    {
+      "client_id": 7,
+      "key": "canary.sound:effect/7",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "DIST_ATK_CROSSBOW"
+    },
+    {
+      "client_id": 8,
+      "key": "canary.sound:effect/8",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "DIST_ATK_THROW"
+    },
+    {
+      "client_id": 9,
+      "key": "canary.sound:effect/9",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "MAGICAL_RANGE_ATK"
+    },
+    {
+      "client_id": 1083,
+      "key": "canary.sound:spell_animate_dead_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ANIMATE_DEAD_RUNE"
+    },
+    {
+      "client_id": 1062,
+      "key": "canary.sound:spell_annihilation",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ANNIHILATION"
+    },
+    {
+      "client_id": 1176,
+      "key": "canary.sound:spell_arrow_call",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ARROW_CALL"
+    },
+    {
+      "client_id": 1115,
+      "key": "canary.sound:spell_avalanche_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_AVALANCHE_RUNE"
+    },
+    {
+      "client_id": 1080,
+      "key": "canary.sound:spell_berserk",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_BERSERK"
+    },
+    {
+      "client_id": 1133,
+      "key": "canary.sound:spell_blood_rage",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_BLOOD_RAGE"
+    },
+    {
+      "client_id": 1175,
+      "key": "canary.sound:spell_bruise_bane",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_BRUISE_BANE"
+    },
+    {
+      "client_id": 1061,
+      "key": "canary.sound:spell_brutal_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_BRUTAL_STRIKE"
+    },
+    {
+      "client_id": 1177,
+      "key": "canary.sound:spell_buzz",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_BUZZ"
+    },
+    {
+      "client_id": 1090,
+      "key": "canary.sound:spell_cancel_invisibility",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CANCEL_INVISIBILITY"
+    },
+    {
+      "client_id": 1245,
+      "key": "canary.sound:spell_cancel_magic_shield",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CANCEL_MAGIC_SHIELD"
+    },
+    {
+      "client_id": 1093,
+      "key": "canary.sound:spell_challenge",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CHALLENGE"
+    },
+    {
+      "client_id": 1014,
+      "key": "canary.sound:spell_chameleon_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CHAMELEON_RUNE"
+    },
+    {
+      "client_id": 1131,
+      "key": "canary.sound:spell_charge",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CHARGE"
+    },
+    {
+      "client_id": 1173,
+      "key": "canary.sound:spell_chill_out",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CHILL_OUT"
+    },
+    {
+      "client_id": 1237,
+      "key": "canary.sound:spell_chivalrous_challenge",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CHIVALROUS_CHALLENGE"
+    },
+    {
+      "client_id": 1051,
+      "key": "canary.sound:spell_conjure_arrow",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CONJURE_ARROW"
+    },
+    {
+      "client_id": 1049,
+      "key": "canary.sound:spell_conjure_explosive_arrow",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CONJURE_EXPLOSIVE_ARROW"
+    },
+    {
+      "client_id": 1092,
+      "key": "canary.sound:spell_conjure_wand_of_darkness",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CONJURE_WAND_OF_DARKNESS"
+    },
+    {
+      "client_id": 1012,
+      "key": "canary.sound:spell_convince_creature_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CONVINCE_CREATURE_RUNE"
+    },
+    {
+      "client_id": 1038,
+      "key": "canary.sound:spell_creature_illusion",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CREATURE_ILLUSION"
+    },
+    {
+      "client_id": 1144,
+      "key": "canary.sound:spell_cure_bleeding",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURE_BLEEDING"
+    },
+    {
+      "client_id": 1145,
+      "key": "canary.sound:spell_cure_burning",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURE_BURNING"
+    },
+    {
+      "client_id": 1147,
+      "key": "canary.sound:spell_cure_curse",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURE_CURSE"
+    },
+    {
+      "client_id": 1146,
+      "key": "canary.sound:spell_cure_electrification",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURE_ELECTRIFICATION"
+    },
+    {
+      "client_id": 1029,
+      "key": "canary.sound:spell_cure_poison",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURE_POISON"
+    },
+    {
+      "client_id": 1031,
+      "key": "canary.sound:spell_cure_poison_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURE_POISON_RUNE"
+    },
+    {
+      "client_id": 1139,
+      "key": "canary.sound:spell_curse",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_CURSE"
+    },
+    {
+      "client_id": 1087,
+      "key": "canary.sound:spell_death_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DEATH_STRIKE"
+    },
+    {
+      "client_id": 1030,
+      "key": "canary.sound:spell_destroy_field_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DESTROY_FIELD_RUNE"
+    },
+    {
+      "client_id": 1078,
+      "key": "canary.sound:spell_disintegrate_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DISINTEGRATE_RUNE"
+    },
+    {
+      "client_id": 1124,
+      "key": "canary.sound:spell_divine_caldera",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DIVINE_CALDERA"
+    },
+    {
+      "client_id": 1238,
+      "key": "canary.sound:spell_divine_dazzle",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DIVINE_DAZZLE"
+    },
+    {
+      "client_id": 1125,
+      "key": "canary.sound:spell_divine_healing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DIVINE_HEALING"
+    },
+    {
+      "client_id": 1122,
+      "key": "canary.sound:spell_divine_missile",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_DIVINE_MISSILE"
+    },
+    {
+      "client_id": 1074,
+      "key": "canary.sound:spell_edit_door",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_EDIT_DOOR"
+    },
+    {
+      "client_id": 1140,
+      "key": "canary.sound:spell_electrify",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ELECTRIFY"
+    },
+    {
+      "client_id": 1129,
+      "key": "canary.sound:spell_enchant_party",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENCHANT_PARTY"
+    },
+    {
+      "client_id": 1110,
+      "key": "canary.sound:spell_enchant_spear",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENCHANT_SPEAR"
+    },
+    {
+      "client_id": 1022,
+      "key": "canary.sound:spell_energy_beam",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_BEAM"
+    },
+    {
+      "client_id": 1055,
+      "key": "canary.sound:spell_energy_bomb_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_BOMB_RUNE"
+    },
+    {
+      "client_id": 1027,
+      "key": "canary.sound:spell_energy_field_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_FIELD_RUNE"
+    },
+    {
+      "client_id": 1088,
+      "key": "canary.sound:spell_energy_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_STRIKE"
+    },
+    {
+      "client_id": 1033,
+      "key": "canary.sound:spell_energy_wall_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_WALL_RUNE"
+    },
+    {
+      "client_id": 1013,
+      "key": "canary.sound:spell_energy_wave",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENERGY_WAVE"
+    },
+    {
+      "client_id": 1142,
+      "key": "canary.sound:spell_envenom",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ENVENOM"
+    },
+    {
+      "client_id": 1118,
+      "key": "canary.sound:spell_eternal_winter",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ETERNAL_WINTER"
+    },
+    {
+      "client_id": 1111,
+      "key": "canary.sound:spell_ethereal_spear",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ETHEREAL_SPEAR"
+    },
+    {
+      "client_id": 1018,
+      "key": "canary.sound:spell_explosion_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_EXPLOSION_RUNE"
+    },
+    {
+      "client_id": 1243,
+      "key": "canary.sound:spell_expose_weakness",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_EXPOSE_WEAKNESS"
+    },
+    {
+      "client_id": 1239,
+      "key": "canary.sound:spell_fair_wound_cleansing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FAIR_WOUND_CLEANSING"
+    },
+    {
+      "client_id": 1105,
+      "key": "canary.sound:spell_fierce_berserk",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIERCE_BERSERK"
+    },
+    {
+      "client_id": 1020,
+      "key": "canary.sound:spell_find_person",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIND_PERSON"
+    },
+    {
+      "client_id": 1017,
+      "key": "canary.sound:spell_fire_bomb_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIRE_BOMB_RUNE"
+    },
+    {
+      "client_id": 1025,
+      "key": "canary.sound:spell_fire_field_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIRE_FIELD_RUNE"
+    },
+    {
+      "client_id": 1028,
+      "key": "canary.sound:spell_fire_wall_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIRE_WALL_RUNE"
+    },
+    {
+      "client_id": 1019,
+      "key": "canary.sound:spell_fire_wave",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIRE_WAVE"
+    },
+    {
+      "client_id": 1015,
+      "key": "canary.sound:spell_fireball_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FIREBALL_RUNE"
+    },
+    {
+      "client_id": 1089,
+      "key": "canary.sound:spell_flame_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FLAME_STRIKE"
+    },
+    {
+      "client_id": 1042,
+      "key": "canary.sound:spell_food",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FOOD"
+    },
+    {
+      "client_id": 1059,
+      "key": "canary.sound:spell_front_sweep",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_FRONT_SWEEP"
+    },
+    {
+      "client_id": 1023,
+      "key": "canary.sound:spell_great_energy_beam",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_GREAT_ENERGY_BEAM"
+    },
+    {
+      "client_id": 1240,
+      "key": "canary.sound:spell_great_fire_wave",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_GREAT_FIRE_WAVE"
+    },
+    {
+      "client_id": 1016,
+      "key": "canary.sound:spell_great_fireball_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_GREAT_FIREBALL_RUNE"
+    },
+    {
+      "client_id": 1011,
+      "key": "canary.sound:spell_great_light",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_GREAT_LIGHT"
+    },
+    {
+      "client_id": 1106,
+      "key": "canary.sound:spell_groundshaker",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_GROUNDSHAKER"
+    },
+    {
+      "client_id": 1006,
+      "key": "canary.sound:spell_haste",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HASTE"
+    },
+    {
+      "client_id": 1084,
+      "key": "canary.sound:spell_heal_friend",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HEAL_FRIEND"
+    },
+    {
+      "client_id": 1128,
+      "key": "canary.sound:spell_heal_party",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HEAL_PARTY"
+    },
+    {
+      "client_id": 1008,
+      "key": "canary.sound:spell_heavy_magic_missile_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HEAVY_MAGIC_MISSILE_RUNE"
+    },
+    {
+      "client_id": 1024,
+      "key": "canary.sound:spell_hell_score",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HELL_SCORE"
+    },
+    {
+      "client_id": 1143,
+      "key": "canary.sound:spell_holy_flash",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HOLY_FLASH"
+    },
+    {
+      "client_id": 1130,
+      "key": "canary.sound:spell_holy_missile_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_HOLY_MISSILE_RUNE"
+    },
+    {
+      "client_id": 1112,
+      "key": "canary.sound:spell_ice_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ICE_STRIKE"
+    },
+    {
+      "client_id": 1121,
+      "key": "canary.sound:spell_ice_wave",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ICE_WAVE"
+    },
+    {
+      "client_id": 1114,
+      "key": "canary.sound:spell_icicle_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ICICLE_RUNE"
+    },
+    {
+      "client_id": 1138,
+      "key": "canary.sound:spell_ignite",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_IGNITE"
+    },
+    {
+      "client_id": 1141,
+      "key": "canary.sound:spell_inflict_wound",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INFLICT_WOUND"
+    },
+    {
+      "client_id": 1002,
+      "key": "canary.sound:spell_intense_healing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INTENSE_HEALING"
+    },
+    {
+      "client_id": 1004,
+      "key": "canary.sound:spell_intense_healing_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INTENSE_HEALING_RUNE"
+    },
+    {
+      "client_id": 1160,
+      "key": "canary.sound:spell_intense_recovery",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INTENSE_RECOVERY"
+    },
+    {
+      "client_id": 1158,
+      "key": "canary.sound:spell_intense_wound_cleansing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INTENSE_WOUND_CLEANSING"
+    },
+    {
+      "client_id": 1045,
+      "key": "canary.sound:spell_invisible",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INVISIBLE"
+    },
+    {
+      "client_id": 1071,
+      "key": "canary.sound:spell_invite_guests",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INVITE_GUESTS"
+    },
+    {
+      "client_id": 1072,
+      "key": "canary.sound:spell_invite_subowners",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_INVITE_SUBOWNERS"
+    },
+    {
+      "client_id": 1073,
+      "key": "canary.sound:spell_kick_guest",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_KICK_GUEST"
+    },
+    {
+      "client_id": 1081,
+      "key": "canary.sound:spell_levitate",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LEVITATE"
+    },
+    {
+      "client_id": 1010,
+      "key": "canary.sound:spell_light",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LIGHT"
+    },
+    {
+      "client_id": 1001,
+      "key": "canary.sound:spell_light_healing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LIGHT_HEALING"
+    },
+    {
+      "client_id": 1007,
+      "key": "canary.sound:spell_light_magic_missile_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LIGHT_MAGIC_MISSILE_RUNE"
+    },
+    {
+      "client_id": 1180,
+      "key": "canary.sound:spell_light_stone_shower_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LIGHT_STONE_SHOWER_RUNE"
+    },
+    {
+      "client_id": 1179,
+      "key": "canary.sound:spell_lightest_missile_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LIGHTEST_MISSILE_RUNE"
+    },
+    {
+      "client_id": 1149,
+      "key": "canary.sound:spell_lightning",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_LIGHTNING"
+    },
+    {
+      "client_id": 1174,
+      "key": "canary.sound:spell_magic_patch",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_MAGIC_PATCH"
+    },
+    {
+      "client_id": 1076,
+      "key": "canary.sound:spell_magic_rope",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_MAGIC_ROPE"
+    },
+    {
+      "client_id": 1044,
+      "key": "canary.sound:spell_magic_shield",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_MAGIC_SHIELD"
+    },
+    {
+      "client_id": 1086,
+      "key": "canary.sound:spell_magic_wall_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_MAGIC_WALL_RUNE"
+    },
+    {
+      "client_id": 1082,
+      "key": "canary.sound:spell_mass_healing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_MASS_HEALING"
+    },
+    {
+      "client_id": 1172,
+      "key": "canary.sound:spell_mud_attack",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_MUD_ATTACK"
+    },
+    {
+      "client_id": 1242,
+      "key": "canary.sound:spell_natures_embrace",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_NATURES_EMBRACE"
+    },
+    {
+      "client_id": 10,
+      "key": "canary.sound:spell_or_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_OR_RUNE"
+    },
+    {
+      "client_id": 1054,
+      "key": "canary.sound:spell_paralyse_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_PARALYSE_RUNE"
+    },
+    {
+      "client_id": 1148,
+      "key": "canary.sound:spell_physical_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_PHYSICAL_STRIKE"
+    },
+    {
+      "client_id": 1091,
+      "key": "canary.sound:spell_poison_bomb_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_POISON_BOMB_RUNE"
+    },
+    {
+      "client_id": 1026,
+      "key": "canary.sound:spell_poison_field_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_POISON_FIELD_RUNE"
+    },
+    {
+      "client_id": 1032,
+      "key": "canary.sound:spell_poison_wall_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_POISON_WALL_RUNE"
+    },
+    {
+      "client_id": 1168,
+      "key": "canary.sound:spell_practise_magic_missile_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_PRACTISE_MAGIC_MISSILE_RUNE"
+    },
+    {
+      "client_id": 1127,
+      "key": "canary.sound:spell_protect_party",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_PROTECT_PARTY"
+    },
+    {
+      "client_id": 1132,
+      "key": "canary.sound:spell_protector",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_PROTECTOR"
+    },
+    {
+      "client_id": 1119,
+      "key": "canary.sound:spell_rage_of_the_skies",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_RAGE_OF_THE_SKIES"
+    },
+    {
+      "client_id": 1159,
+      "key": "canary.sound:spell_recovery",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_RECOVERY"
+    },
+    {
+      "client_id": 1241,
+      "key": "canary.sound:spell_restoration",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_RESTORATION"
+    },
+    {
+      "client_id": 1036,
+      "key": "canary.sound:spell_salvation",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SALVATION"
+    },
+    {
+      "client_id": 1244,
+      "key": "canary.sound:spell_sap_strength",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SAP_STRENGTH"
+    },
+    {
+      "client_id": 1178,
+      "key": "canary.sound:spell_scorch",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SCORCH"
+    },
+    {
+      "client_id": 1135,
+      "key": "canary.sound:spell_sharpshooter",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SHARPSHOOTER"
+    },
+    {
+      "client_id": 1050,
+      "key": "canary.sound:spell_soul_fire_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SOUL_FIRE_RUNE"
+    },
+    {
+      "client_id": 1077,
+      "key": "canary.sound:spell_stalagmite_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STALAGMITE_RUNE"
+    },
+    {
+      "client_id": 1116,
+      "key": "canary.sound:spell_stone_shower_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STONE_SHOWER_RUNE"
+    },
+    {
+      "client_id": 1151,
+      "key": "canary.sound:spell_strong_energy_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_ENERGY_STRIKE"
+    },
+    {
+      "client_id": 1057,
+      "key": "canary.sound:spell_strong_ethereal_spear",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_ETHEREAL_SPEAR"
+    },
+    {
+      "client_id": 1150,
+      "key": "canary.sound:spell_strong_flame_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_FLAME_STRIKE"
+    },
+    {
+      "client_id": 1039,
+      "key": "canary.sound:spell_strong_haste",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_HASTE"
+    },
+    {
+      "client_id": 1152,
+      "key": "canary.sound:spell_strong_ice_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_ICE_STRIKE"
+    },
+    {
+      "client_id": 1043,
+      "key": "canary.sound:spell_strong_ice_wave",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_ICE_WAVE"
+    },
+    {
+      "client_id": 1153,
+      "key": "canary.sound:spell_strong_terra_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_STRONG_TERRA_STRIKE"
+    },
+    {
+      "client_id": 1021,
+      "key": "canary.sound:spell_suddendeath_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUDDENDEATH_RUNE"
+    },
+    {
+      "client_id": 1009,
+      "key": "canary.sound:spell_summon_creature",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_CREATURE"
+    },
+    {
+      "client_id": 1197,
+      "key": "canary.sound:spell_summon_druid_familiar",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_DRUID_FAMILIAR"
+    },
+    {
+      "client_id": 1194,
+      "key": "canary.sound:spell_summon_knight_familiar",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_KNIGHT_FAMILIAR"
+    },
+    {
+      "client_id": 1195,
+      "key": "canary.sound:spell_summon_paladin_familiar",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_PALADIN_FAMILIAR"
+    },
+    {
+      "client_id": 1196,
+      "key": "canary.sound:spell_summon_sorcerer_familiar",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SUMMON_SORCERER_FAMILIAR"
+    },
+    {
+      "client_id": 1134,
+      "key": "canary.sound:spell_swift_foot",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_SWIFT_FOOT"
+    },
+    {
+      "client_id": 1113,
+      "key": "canary.sound:spell_terra_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_TERRA_STRIKE"
+    },
+    {
+      "client_id": 1120,
+      "key": "canary.sound:spell_terra_wave",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_TERRA_WAVE"
+    },
+    {
+      "client_id": 1117,
+      "key": "canary.sound:spell_thunderstorm_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_THUNDERSTORM_RUNE"
+    },
+    {
+      "client_id": 1126,
+      "key": "canary.sound:spell_train_party",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_TRAIN_PARTY"
+    },
+    {
+      "client_id": 1155,
+      "key": "canary.sound:spell_ultimate_energy_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_ENERGY_STRIKE"
+    },
+    {
+      "client_id": 1154,
+      "key": "canary.sound:spell_ultimate_flame_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_FLAME_STRIKE"
+    },
+    {
+      "client_id": 1003,
+      "key": "canary.sound:spell_ultimate_healing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_HEALING"
+    },
+    {
+      "client_id": 1005,
+      "key": "canary.sound:spell_ultimate_healing_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_HEALING_RUNE"
+    },
+    {
+      "client_id": 1156,
+      "key": "canary.sound:spell_ultimate_ice_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_ICE_STRIKE"
+    },
+    {
+      "client_id": 1075,
+      "key": "canary.sound:spell_ultimate_light",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_LIGHT"
+    },
+    {
+      "client_id": 1157,
+      "key": "canary.sound:spell_ultimate_terra_strike",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_ULTIMATE_TERRA_STRIKE"
+    },
+    {
+      "client_id": 1107,
+      "key": "canary.sound:spell_whirlwind_throw",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_WHIRLWIND_THROW"
+    },
+    {
+      "client_id": 1094,
+      "key": "canary.sound:spell_wild_growth_rune",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_WILD_GROWTH_RUNE"
+    },
+    {
+      "client_id": 1123,
+      "key": "canary.sound:spell_wound_cleansing",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_WOUND_CLEANSING"
+    },
+    {
+      "client_id": 1056,
+      "key": "canary.sound:spell_wrath_of_nature",
+      "kind": "sound",
+      "source": "opentibiabr/canary",
+      "source_member": "SPELL_WRATH_OF_NATURE"
+    }
+  ],
+  "schema": "OTERYN_PRESENTATION_CLIENT_IDS/v1",
+  "sources": [
+    {
+      "files": [
+        {
+          "path": "src/utils/utils_definitions.hpp",
+          "sha256": "b66a1389bfecfe11d93338208f7e2e3f8efc14fb0941d6d12dc0d9e62ed4abac"
+        },
+        {
+          "path": "src/creatures/creatures_definitions.hpp",
+          "sha256": "dd403b4c2291b66bd5df49d1a59b45667698d8a916ecfb8fa87801688e1ca622"
+        },
+        {
+          "path": "src/lua/functions/core/game/lua_enums.cpp",
+          "sha256": "d1bda8dd89dab75f41dfa68d33c6221868382e10e3efdce046f84e56789b6aa1"
+        }
+      ],
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "files": [
+        {
+          "path": "src/utils/utils_definitions.hpp",
+          "sha256": "03ebfc0da66b01cdef46dca4195c4f1a0132a0fce058d6c670cb401bcc35ae7d"
+        },
+        {
+          "path": "src/creatures/creatures_definitions.hpp",
+          "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+        },
+        {
+          "path": "src/lua/functions/core/game/lua_enums.cpp",
+          "sha256": "206ebbb26959a8bd64e88fca6eacac3cc22e500250ffc45ae698a26f8d4bf8d7"
+        }
+      ],
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  ]
+}

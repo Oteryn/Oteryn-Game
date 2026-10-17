@@ -4,7 +4,7 @@
 task_id: OTV2-20261013-char-vitals-1
 title: "CHAR-VITALS-1: durable health and mana in the last-position projection, restored on admission"
 mode: IMPLEMENT
-status: validating
+status: completed
 status_note: "the CHAR-POSITION-1 HP/mana part (owner decision 2026-10-13); CHAR-VITALS-0 ACCEPTED by the owner (ACCEPT-CHAR-VITALS-0, #2087), status flipped and pin amended here"
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -13,7 +13,7 @@ issue: none
 pr: 2045
 head_sha: "the PR head; the control plane records the frozen SHA"
 created_at: 2026-10-13
-updated_at: 2026-10-14
+updated_at: 2026-10-17
 migration_lease: "0084"   # apps/game-server/migrations/0084_character_last_vitals.sql; 0081/0082/0083 are leased by #2032/#2040/#2039
 decisions:
   - docs/architecture/reviews/OTERYN_GAME_CHAR_VITALS0_DURABLE_VITALS_DECISION_2026-10-13.md
@@ -88,6 +88,11 @@ Candidate: this branch merged with `origin/main` (af85035f5).
     vitals; a release that fails after the write leaves no row and the session reconnectable
     (atomicity); a replay after the terminal state changes nothing.
 
+Archive candidate (#2163, after the merge of #2045):
+
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: OK
+
 ## Open questions
 
 1. Resolved: CHAR-VITALS-0 accepted by the owner (`ACCEPT-CHAR-VITALS-0`, #2087); this PR flips its
@@ -95,3 +100,11 @@ Candidate: this branch merged with `origin/main` (af85035f5).
 2. Instance actors are not saved (no instance-scope write, CHAR-POSITION-0); their vitals restore
    from the last row written outside the instance.
 3. Crash loss is at most 300 s of vitals changes, the same bound as the cell.
+
+## Archive closeout
+
+- canonical PR #2045 merged on 2026-10-14 (`git log --grep "(#2045)"`); the record stayed in
+  `tasks/active/` and failed the protected-main live-state check, so #2163 archives it
+  as a ported `main` governance fix
+- merge commit/result: squash merge of #2045
+- ownership release: released with the merge of #2045

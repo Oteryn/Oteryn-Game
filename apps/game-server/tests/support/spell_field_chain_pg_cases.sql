@@ -68,4 +68,22 @@ DO $$ DECLARE i UUID:=(SELECT item_instance_id FROM game_spell_item_lines l JOIN
  BEGIN PERFORM fixture_chain_drain(i,1,FALSE);SET CONSTRAINTS ALL IMMEDIATE;RAISE EXCEPTION 'unaudited chain stage accepted';EXCEPTION WHEN check_violation THEN NULL;END;
  IF EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts WHERE item_instance_id=i) OR (SELECT state_revision FROM game_item_instances WHERE item_instance_id=i)<>1 THEN RAISE EXCEPTION 'failed chain audit did not rollback';END IF;
 END $$;
+SET ROLE oteryn_game_runtime;
+DO $$ BEGIN
+ PERFORM item_instance_id FROM game_spell_field_temporal_schedules LIMIT 1 FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'row-lock control needs a real field schedule'; END IF;
+ BEGIN UPDATE game_spell_field_temporal_schedules SET item_instance_id=item_instance_id;
+  RAISE EXCEPTION 'runtime changed an immutable field schedule';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ BEGIN UPDATE game_spell_field_temporal_schedules SET duration_millis=duration_millis+1;
+  RAISE EXCEPTION 'runtime can update field schedule payload';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ BEGIN DELETE FROM game_spell_field_temporal_schedules;
+  RAISE EXCEPTION 'runtime can delete field schedules';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ BEGIN TRUNCATE game_spell_field_temporal_schedules;
+  RAISE EXCEPTION 'runtime can truncate field schedules';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+RESET ROLE;
 SELECT 'SPELL_FIELD_CHAIN_REAL_SOURCE_GUARDS_PASS';
