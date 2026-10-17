@@ -444,7 +444,21 @@ acceptance checkboxes and CP/architect production gates remain open.
 
 ## Reproducible BED/OFFLINE source checkpoint
 
-This complete UTF-8 source checkpoint is retained as data inside the owned task card. Its exact length is 32286 bytes and SHA-256 is `217ffb4b5b7c66cfc6d1fbae3415d7c7e2e49a1570b7c08560447b480d08ec5a`. The source inventory, complete patch and analysis/review can be recovered from it; the recovery instructions do not authorize applying a held runtime change.
+This complete UTF-8 source checkpoint is retained in the reversible text encoding described below inside the owned task card. Its exact length is 32286 bytes and SHA-256 is `217ffb4b5b7c66cfc6d1fbae3415d7c7e2e49a1570b7c08560447b480d08ec5a`. The source inventory, complete patch and analysis/review can be recovered from it; the recovery instructions do not authorize applying a held runtime change.
+
+### Reversible archive encoding
+
+The archived Markdown below uses one reversible escape to keep unified-diff context lines compatible with the repository whitespace gate. A standalone line `\x20` represents exactly one ASCII space followed by a newline. Decode those lines before checking the original archive or patch hashes, or recovering the held source. Every other archive byte, including the final newline, is unchanged. This encoding grants no permission to apply the archived runtime changes.
+
+For a UTF-8 string `card` containing this task card, the original artifact can be recovered with:
+
+```python
+archive = card.split("`````markdown\n", 1)[1].split("`````", 1)[0]
+archive = "".join(
+    " \n" if line == "\\x20\n" else line
+    for line in archive.splitlines(keepends=True)
+)
+```
 
 <!-- card-artifact:bed2148-offline-source-checkpoint.md -->
 `````markdown
@@ -589,13 +603,13 @@ Recover each artifact from the matching section below. Preserve its exact UTF-8 
 +use crate::training::offline::{
 +    LatestBuildReceipt, MarkerKind, OfflineLeaseClockRead, SettlementPlan,
 +};
- 
+\x20
  /// Delegated private design, qualified only in isolated migration-owner fixtures.
  /// No independently executable insert/free/delete API is supplied. The guards
 @@ -154,6 +162,159 @@
      .transpose()
  }
- 
+\x20
 +/// Errors abort the actual OFFLINE marker transaction. They must never be
 +/// converted to an absent sleeper or an acknowledged settlement.
 +#[derive(Debug)]
