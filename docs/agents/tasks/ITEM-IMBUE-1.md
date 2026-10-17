@@ -769,3 +769,108 @@ the zero row consumed by Expire remains stored DATA rather than newly proven
 Imbue-eligible elapsed time. The existing Content and gameplay admission gates
 remain in force. Exact-head CI for the publication is reported separately from
 this qualified PC source.
+
+
+### 2026-10-17 — native operation collision correction (private successor of 3258a330)
+
+The published checkpoint `3258a3303021bb2cfab70106689a12bef53d985f` and all its
+recorded native results above are preserved as history. Its proposed Imbue operation
+12 collides with the current D1158 TRADE `player_trade` operation. Fresh #2132 head
+`78823c03d10bd70d548156ee1bdf6e86586a1505` carries that arm in native proto blob
+`0f386e637edba3d1ac1033eee224c4a3480953db`; TRADE's publication receipt is
+#2132 comment 6233705590 and the standing assignment is #2131 comment 6224955056.
+
+Under the user's continuing draft-completion instruction, the root single writer
+directed a separate, reviewable Imbue correction. It proposes operation **14** after
+checking current main/HOUSE 11, TRADE 12, Forge 13, MAIL, NPC, MARKET and bounded
+live CP allocation evidence through D1366 (#2131 comment 6234335395). No other
+concrete tag-14 lease was found in those sources. This is a **private proposal**,
+not a CP reservation, and changes no other draft or migration number.
+
+The codec and matching proto use field 14. The existing tuple/slot/tier round-trip
+test checks the real length-delimited key 114; the existing closed-wire test now
+also rejects foreign HOUSE 11, TRADE/old private Imbue 12 and Forge 13, while keeping
+its timed-expiry 7 refusal and all other boundary cases. The same three pure test
+names remain registered once. The full SQL, native transaction compositor, all
+eight Expire PG bodies, ten checkpoint PG bodies, fourteen checkpoint pure bodies,
+fences, resource ceilings and runtime-admission boundaries are unchanged. Own
+event/resource notes and the DUR-03 proposal record the corrected identity.
+
+The prior tag-12 native PASS receipts do **not** qualify these changed codec bytes.
+At this source freeze, successor Rustfmt, governance, strict Clippy, real dep-info,
+three Expire pure cases, fourteen checkpoint pure cases, eight Expire PG cases,
+ten checkpoint PG cases and the normal package are **NOT_RUN**. The packet includes
+an exact two-attribute codec RED overlay for the existing round-trip test: it
+restores only old operation 12 while retaining the new expected field-14 test.
+The root will qualify and restore the actual GREEN source on every exit, under the
+existing shared D1329 route and a source-bound new attempt. No exact-new-head CI
+result, schema installation, runtime clock, Apply/Clear fee or command admission
+is claimed by this correction.
+
+### 2026-10-17 — tag14 successor native completion
+
+This receipt supersedes the preceding NOT_RUN statuses for the separately
+authored tag14 packet. Its manifest
+`106277af373321ba757eddd8d472537d357226a172b07431f057fd9a656bc4d2`
+and patch `b2eae1fcbe5dc0b4172bcc606bd8a0ab2519549219425b71cad55b5648db3158`
+remain immutable. The eight changed paths were applied only after the complete
+14-file published3258 source reconstructed exact tree
+`e76390329cffc2dedb45c1a1f8446fea49fcedac` from the actual private worktree.
+
+The successor source receipt is
+`e9fe31ec1baebb8ed3d0665e71736d9aac8b9cb5abac28643ce29374aa81081f`.
+It binds all14 actual feature files on private HEAD
+`742a8b7df93b8da169878c5377b0f95331726ce9`. Actual formatting changed no file.
+The final native tree is `ab3f2cb214f95c286fe06cfd2c18db7be02787f6`;
+GitHub reconstruction from published3258 and the exact eight-file successor
+matched that tree. The prior feature source receipts and native attempts
+remain unchanged.
+
+Independent source and apply/qualification-helper reviews passed. Rust1.95.0
+execution on Molehill-PC used the existing core build lock, two Cargo jobs and
+the separate Imbue target. Locked fetch, actual edition discovery, owned
+formatting/full workspace fmt check, governance and strict all-target Clippy
+passed. The unchanged duplicate-source guard consumed actual Cargo artifact/
+dep-info output:55 native test-harness units and11 existing exceptions.
+
+| Tag14 qualification stage | Observed result | Complete log SHA-256 |
+| --- | --- | --- |
+| Strict all-target Clippy | PASS | `f84498647682092e50780118741815b22ccf20313afaf91a0506c5c0d6c21875` |
+| Actual dep-info duplicate-source guard | PASS,55 units | `466c2037f51ba756d6b9e0f50a3b3d475bb97def0476b5ad19a99d8ef670b58e` |
+| Isolated old-tag codec RED | Intended round-trip case failed, exit101 | `6713fa67acec5ee27950fec2bbf008d56ab2439e4b3d82b0ae0afb1407b4129d` |
+| Restored Expire pure cases | 3 passed,0 failed,0 ignored | `4d381da5caa9320fc0ec7f48bed405017bb06f20527086fdc2f7a6f187758803` |
+| Existing checkpoint pure cases | 14 passed,0 failed,0 ignored | `ee14bb3c6edc45be9ef5cfc375ab23aa531444de3eea1a577884015101ad95a0` |
+| Actual Expire PostgreSQL cases | 8 passed,0 failed,0 ignored;8 actual170006 markers | `e0840c0211f2b4e01de46b4a255be5020605f9614f4561c606e1277fe42b7361` |
+| Actual checkpoint PostgreSQL cases | 10 passed,0 failed,0 ignored;10 actual170006 markers | `223ab3fe9d0708a7ff3b9bc970bc98ebbd103ac49a69a2c1448559afb6649f77` |
+| Full normal game-server package | 10,275 passed,0 failed,37 ignored;57 groups;461.21s | `73235657cc518b72bab94dae4c66f2c67282ce02a07e22d358473194736eff06` |
+
+The RED changes only the two codec attributes back to12, leaving the field14
+round-trip assertion in place. It reached that exact failure rather than a
+compiler or infrastructure error. The exact GREEN codec was restored before
+all subsequent stages and the complete14-file inventory matched at completion.
+The tests prove field14 roundtrip and rejection of the foreign/stale operation
+arms; they do not make14 a CP reservation.
+
+The complete15-record native evidence bundle is SHA-256
+`6f0c34a142c320fa21dc5ce0d9b37e48f207669879e48b0ac30dbab7186f0ef8`.
+The immutable actual summary is
+`9658907fa7f1ae77912b8d61d1fb4a2620e1733c5f58d36a53c8ac2f52cce982`;
+stage/log receipts are retained at
+`/home/mole/work/pr4-20261017-1135/logs/feature2144-*-v3.*`.
+This final documentation append preserves the full preceding card as a prefix
+and all13 other native files byte-for-byte. It receives separate diff and
+governance checks, with a distinct publication source receipt.
+
+D1329 applies to every executed PG case: locked fetch preceded the unchanged
+owner `in-pg-netns.sh`, routing to the existing shared PG17.6 on real host
+127.0.0.1:55432. No PG server/container was created and real host5432 was
+untouched. Normal-package counts do not replace the separately observed
+actual18-case PG qualification.
+
+Publication keeps the same draft and uses3258 as its parent. Exact new-head
+CI is pending observation. The later main Ground successor
+`ce7bccab973625d5d3d0d0c566426903229d2373` arrived after this candidate's
+inputs were frozen and needs its own explicit composition/qualification.
+Numbered migration installation, runtime elapsed-time authority, actual
+Apply/Clear item-only fee and gameplay admission remain with their real
+producers; neither stored zero rows nor this codec correction fabricate them.

@@ -82,8 +82,8 @@ fn expiry_round_trip_keeps_complete_retained_binding_and_both_native_tuples() ->
                 assert_eq!(expected, decoded);
                 assert_eq!(envelope.event_schema_revision, tuple.schema_revision());
                 assert_eq!(envelope.retention_profile_id, tuple.retention_profile_id());
-                // Interpretation revision 1, operation tag 12.
-                assert_eq!(&envelope.payload[..3], &[8, 1, 98]);
+                // Interpretation revision 1, proposed operation tag 14 (length-delimited key 114).
+                assert_eq!(&envelope.payload[..3], &[8, 1, 114]);
                 assert!(envelope.game_session_id.is_none() && envelope.command_id.is_none());
             }
         }
@@ -177,10 +177,15 @@ fn expiry_bounds_are_checked_before_decode_and_closed_wire_rejects_substitution(
         decode_imbuement_expiry_envelope(&vec![0; mint::RL07_ENVELOPE_BYTES_MAX + 1]),
         Err(AuditError::CapacityExceeded)
     );
-    // Operation tag 7 is timed expiry, never Imbuement expiry.
-    envelope.payload[2] = 58;
-    envelope.payload_sha256 = Sha256::digest(&envelope.payload).to_vec();
-    assert!(decode_imbuement_expiry_envelope(&envelope.encode_to_vec()).is_err());
+    // Timed expiry, HOUSE, TRADE (the old private Imbue tag) and Forge are foreign arms.
+    for operation_tag in [7_u8, 11, 12, 13] {
+        envelope.payload[2] = (operation_tag << 3) | 2;
+        envelope.payload_sha256 = Sha256::digest(&envelope.payload).to_vec();
+        assert!(
+            decode_imbuement_expiry_envelope(&envelope.encode_to_vec()).is_err(),
+            "foreign operation tag {operation_tag}"
+        );
+    }
     let mut unknown = wire.clone();
     unknown.extend([0xf8, 0x07, 0x01]);
     assert!(decode_imbuement_expiry_envelope(&unknown).is_err());

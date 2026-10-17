@@ -340,8 +340,8 @@ pub enum OneItemOperationV1 {
     ItemUse(super::item_use_audit::OneItemUseV1),
     #[prost(message, tag = "11")]
     HouseTransfer(super::house_interior_audit::OneItemHouseTransferV1),
-    // Private Imbue continuation allocation; existing HOUSE operation 11 is unchanged.
-    #[prost(message, tag = "12")]
+    // Private root proposal 14 avoids TRADE 12 and Forge 13; HOUSE 11 is unchanged.
+    #[prost(message, tag = "14")]
     ImbuementExpiry(super::imbuement_expiry_audit::OneItemImbuementExpiryV1),
 }
 
@@ -351,7 +351,7 @@ pub struct OneItemTransactionV1 {
     pub interpretation_revision: u32,
     #[prost(
         oneof = "OneItemOperationV1",
-        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
+        tags = "2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14"
     )]
     pub operation: Option<OneItemOperationV1>,
 }

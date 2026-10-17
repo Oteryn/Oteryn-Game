@@ -1,5 +1,5 @@
 //! IMBUE-FORGE-0 §§4.1,4.3,6: one non-caller `ImbueCause::Expire` state mutation.
-//! The private continuation packet proposes operation tag 12, preserving HOUSE tag 11.
+//! The private collision repair proposes tag 14; HOUSE 11, TRADE 12 and Forge 13 stay distinct.
 //! It deletes one zero-time slot; it never burns/transforms an item, charges a fee or binds
 //! a new active revision. Registration supplies no runtime or schema admission.
 

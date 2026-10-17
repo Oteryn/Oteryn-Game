@@ -11911,7 +11911,7 @@
     {
       "id": "DUR03-RL-07-IMBUE-EXPIRY-PAYLOAD-BYTES",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
-      "resource": "Encoded native OneItemTransactionV1 ImbuementExpiry payload",
+      "resource": "Encoded native OneItemTransactionV1 ImbuementExpiry payload (private proposed operation tag 14)",
       "unit": "bytes",
       "hard_maximum": 7936,
       "configurable_range": {
@@ -11924,7 +11924,8 @@
       "boundary_tests": [
         "maximal accepted keys/revisions/integers encode within the inherited ceiling",
         "ceiling plus one byte rejects before decoding",
-        "513-byte content/category keys reject"
+        "513-byte content/category keys reject",
+        "foreign operation tags 7, 11, 12 and 13 reject as ImbuementExpiry, including the superseded private tag 12"
       ],
       "consumers": [
         "apps/game-server/src/durability/imbuement_expiry_audit.rs decode_imbuement_expiry_payload"

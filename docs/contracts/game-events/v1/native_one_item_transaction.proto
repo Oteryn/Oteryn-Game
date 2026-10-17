@@ -110,7 +110,7 @@ message OneItemTransactionV1 {
     OneItemNpcTradeV1 npc_trade = 9; // NPC-TRADE-1 only (see above)
     OneItemUseV1 item_use = 10; // ITEM-USE-1 only (see above)
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
-    OneItemImbuementExpiryV1 imbuement_expiry = 12; // private ITEM-IMBUE-1 continuation
+    OneItemImbuementExpiryV1 imbuement_expiry = 14; // private collision repair; TRADE owns 12
   }
 }
 
