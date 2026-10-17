@@ -18,7 +18,7 @@ registry: no
 owner: "Codex family lead: Rozwój postaci i trening; D1105 source writer /root/death_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_death.rs
@@ -105,13 +105,12 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: D1105 exact-source native validation passed; runtime capture/drain integration remains partial
+last_progress: "CP D1372 takeover: main ce7bccab merged into the branch; owned writer/domain/sequencer complete; merge conditions recorded below"
 status: waiting
 branch: skeleton/death-ml-loss-1
-blocker: LOOP-PROGRESS-1 integration order; actual runtime capture/drain and mod.rs caller slot
-next_action: freeze final validation record for lead publication; integrate runtime capture/drain only in its allocated slot
+blocker: "LOOP-PROGRESS-1 not merged; actor build rebase after death and pre-death training drain are unowned (training_save.rs, spell/mana_training.rs); mod.rs caller is slot-only"
+next_action: "CP allocates the training-owner rebase hunk and the mod.rs slot; then apply the recorded mod.rs proposal in this PR's final commit"
 ```
-
 
 ## Local choreography preparation (2026-10-15, draft #2193)
 
@@ -336,3 +335,52 @@ allocated slot. This increment supplies a typed prepared-checkpoint seam, not
 independent proof of actor drain. Production training is not enabled. LOOP-PROGRESS
 ordering, final CP/CI and ready/queue/merge remain separate conditions. This task
 is not archived or declared complete; no ready, merge or deployment is authorized.
+
+## CP D1372 takeover checkpoint (2026-10-17)
+
+CP took this draft over in D1372 (#2131 comment `6234726328`). The CP worker
+merged protected main `ce7bccab973625d5d3d0d0c566426903229d2373` into the
+branch with a merge commit (no rebase or force). Main changed no owned path, and
+the merge had no conflicts. The PR had no review threads and no Codex review.
+This checkpoint changes only this record. No Rust source changed after the D1105
+validation.
+
+**Owned-path state.** The writer, domain calculation, V2 binding, decode and
+reconcile, the sequencer hunk and the inline PostgreSQL cases are done. No new
+`tests/death_ml_loss_*.rs` target was added. The inline
+`death_build_postgres` cases compile into the registered
+`durability_postgres` target, which mounts `src/durability/mod.rs`. The
+merge-queue PostgreSQL 17.6 lane runs that target with a database URL. A new
+`tests/` target would run there only after it is registered in
+`.github/workflows/merge-group-gate.yml`, which is not an owned path.
+
+**Merge conditions found in review (not fixable in owned paths):**
+
+1. *Legacy caller refuses trained deaths.* `prepare_death_build_loss` refuses
+   (`InvalidInput`) a new death with no formula when XP loss is non-zero and the
+   build is above the seed. Main's `gameplay_transport/mod.rs::commit_death`
+   still calls `settle_player_death` without a formula. Main also enables owned
+   training whenever the native generation has a `build_training` pin, and
+   `content/spells.manifest.json` has one. After this PR merges, such a death
+   maps to `DeathCommit::Unavailable`, then `SessionDeath::Retry`, and the
+   player stays dead. The guard is deliberate: it fails closed instead of
+   skipping loss. So the `mod.rs` caller must land in this PR's final slot
+   commit, not later. The exact hunk is a PR comment titled "Shared-file
+   proposal (NOT APPLIED)".
+2. *Stale actor build after death.* A death that lowers the durable build leaves
+   the actor's `LiveManaTraining` baseline (and its magic-level fact) at the
+   pre-death values. The next prepared or retained checkpoint then carries a
+   stale `before`. `save_spell_training` returns `Unknown`, and the actor-end
+   release retries for ever. The training owner must re-base the live actor
+   state from `CommittedCharacterDeath::build_loss.after`, and retire any
+   pre-death checkpoint, before the caller in condition 1 is enabled. The files
+   involved are `spell/mana_training.rs`, `gameplay_transport/training_save.rs`
+   and the death caller. None of them is owned here.
+3. *Drain before death.* The interim caller passes `training: None`. The
+   runtime must force-save pending training (`save_spell_training(.., true)`
+   not `Unknown`) before it settles the death. A single-slot drain plus death
+   remains LOOP-PROGRESS-1 integration.
+
+Acceptance criterion 1 is met at the writer level only (PostgreSQL cases). It
+stays open until conditions 1-3 are integrated. Status stays `waiting`. This
+record is not archived, and no ready, queue or merge action is taken.
