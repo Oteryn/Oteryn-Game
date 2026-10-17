@@ -99,6 +99,7 @@ pub mod map;
 mod movement;
 pub mod node;
 pub mod premium;
+mod spectate;
 #[allow(
     dead_code,
     reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
