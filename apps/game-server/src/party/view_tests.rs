@@ -96,8 +96,11 @@ fn lost_hint_is_caught_by_revision_and_presence_batch() -> Result<(), ViewError>
 #[test]
 fn hint_invalidation_never_applies_hinted_data() -> Result<(), ViewError> {
     let mut views = ready()?;
-    assert!(!views.observe_hint(id(2), 1)?);
     assert!(!views.observe_hint(id(99), 100)?);
+    // Same-revision hint (presence-only change) still forces a durable reread.
+    assert!(views.observe_hint(id(2), 1)?);
+    assert_eq!(views.membership(id(3), at(1)), Err(ViewError::Unavailable));
+    let mut views = ready()?;
     assert!(views.observe_hint(id(2), 2)?);
     assert_eq!(views.membership(id(3), at(1)), Err(ViewError::Unavailable));
     Ok(())

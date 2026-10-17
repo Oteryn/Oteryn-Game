@@ -114,12 +114,11 @@ impl PartyViews {
         })
     }
 
-    /// A hint carries no view or presence DATA. An unobserved revision requires a full read.
-    pub(crate) fn observe_hint(&mut self, party: Id, revision: u64) -> Result<bool, ViewError> {
-        let changed = self
-            .views
-            .get(&party)
-            .is_some_and(|view| revision > view.revision);
+    /// A hint carries no view or presence DATA. Any hint for a cached party requires a full
+    /// read: presence writes advance only `presence_revision`, so the party revision in the
+    /// hint can equal the cached one. Hints for unknown parties are ignored.
+    pub(crate) fn observe_hint(&mut self, party: Id, _revision: u64) -> Result<bool, ViewError> {
+        let changed = self.views.contains_key(&party);
         if changed {
             self.begin_refresh()?;
         }
