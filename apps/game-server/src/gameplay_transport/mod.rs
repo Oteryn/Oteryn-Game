@@ -13,6 +13,7 @@ mod character_progression_binding;
 mod character_progression_binding_tests;
 pub(crate) mod charm;
 mod chat_intent;
+mod combat_lock_fact;
 mod connection;
 mod container_view;
 mod equipment_move;
