@@ -24,6 +24,7 @@ struct Replacement {
 pub(crate) struct PlayerBatchPreflight {
     batch: OwnerCombatBatch,
     replacements: Vec<Replacement>,
+    health_receipts: Vec<crate::foundation::runtime_actor_spell_types::EffectReceipt>,
 }
 
 impl crate::foundation::runtime_actor_spell_types::player_proof_seal::Sealed
@@ -34,6 +35,16 @@ impl crate::foundation::runtime_actor_spell_types::player_proof_seal::Sealed
 impl crate::foundation::runtime_actor_spell_types::PlayerBatchProof for PlayerBatchPreflight {
     fn matches_batch(&self, batch: &OwnerCombatBatch) -> bool {
         self.matches_batch(batch)
+    }
+    fn health_receipt(
+        &self,
+        target: ExactActorRef,
+        sub_ordinal: u16,
+    ) -> Option<crate::foundation::OwnerDamageResult> {
+        self.health_receipts
+            .iter()
+            .find(|effect| effect.target == target && effect.sub_ordinal == sub_ordinal)
+            .and_then(|effect| effect.health)
     }
 }
 
@@ -131,6 +142,10 @@ pub(crate) fn stage_player_batch(
     batch: &OwnerCombatBatch,
     caster_successor: Option<PlayerSpellState>,
 ) -> Result<PlayerBatchPreflight, SpellCastDisposition> {
+    let mut health_receipts = Vec::new();
+    health_receipts
+        .try_reserve(batch.effects.len())
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     let mut replacements: Vec<Replacement> = Vec::new();
     replacements
         .try_reserve(batch.effects.len().saturating_add(1))
@@ -192,7 +207,19 @@ pub(crate) fn stage_player_batch(
                 if *target_atom != crate::spell::combat_execution::actor_atom(*actor) {
                     return Err(SpellCastDisposition::Rejected);
                 }
+                let health_before = replacement.next.vitals().health;
                 replacement.next.apply_batch_heal(*magnitude)?;
+                health_receipts.push(
+                    crate::foundation::runtime_actor_spell_types::EffectReceipt {
+                        target: *actor,
+                        sub_ordinal: effect.sub_ordinal,
+                        health: Some(crate::foundation::OwnerDamageResult {
+                            applied: true,
+                            health_before: i64::from(health_before),
+                            health_after: i64::from(replacement.next.vitals().health),
+                        }),
+                    },
+                );
             }
             OwnerCombatChange::PlayerConditions { expected, next } => {
                 replacement.next.apply_batch_conditions(expected, next)?;
@@ -212,6 +239,7 @@ pub(crate) fn stage_player_batch(
     let preflight = PlayerBatchPreflight {
         batch: batch.clone(),
         replacements,
+        health_receipts,
     };
     preflight.validate_current(runtime, states)?;
     Ok(preflight)

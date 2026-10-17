@@ -520,6 +520,7 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
         },
         binding: b"test:time-return-reservation".to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 30000,
         effects: vec![OwnerCombatEffect {
             target: a,
