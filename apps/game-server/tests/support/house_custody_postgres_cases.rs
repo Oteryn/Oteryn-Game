@@ -45,6 +45,7 @@ impl Database {
             .await?;
         assert_eq!(version, "170006", "canonical target is PostgreSQL 17.6");
         sqlx::migrate!("./migrations").run(&mut connection).await?;
+        isolate_storage_from_shape_gate(&mut connection).await?;
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -64,6 +65,43 @@ impl Database {
         admin.close().await?;
         Ok(())
     }
+}
+
+/// Migration 0095 lets a House location row change only beside the same
+/// transaction's own physical shape proof, which only the native writer can
+/// produce (HOUSE-RUNTIME-1a; covered by `house_interior_postgres_cases`).
+/// First prove that gate refuses this file's raw owner writes, then disable
+/// only that one trigger in this throwaway database, so the 0025 storage
+/// guards below still run with every other trigger and constraint on.
+async fn isolate_storage_from_shape_gate(connection: &mut PgConnection) -> TestResult {
+    let mut tx = connection.begin().await?;
+    tx.execute("SET LOCAL session_replication_role = replica")
+        .await?;
+    let (world, item): (String, String) = sqlx::query_as(
+        "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+           definition_production_key, definition_revision_ref, quantity, lifecycle, \
+           minted_transaction_id) \
+         VALUES (game_character_uuid_v7(), game_character_uuid_v7(), 'Item', \
+           'oteryn:content.item.vase', 'r1', 1, 1, game_character_uuid_v7()) \
+         RETURNING world_id::text, item_instance_id::text",
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.execute("SET LOCAL session_replication_role = origin")
+        .await?;
+    insert_location(&mut tx, &world, &item, HOUSE, 1).await?;
+    let refused = tx
+        .execute("SET CONSTRAINTS game_house_location_proven IMMEDIATE")
+        .await;
+    assert!(message(refused)?.contains("house insertion lacks own physical shape"));
+    tx.rollback().await?;
+    connection
+        .execute(
+            "ALTER TABLE game_item_house_interior_locations \
+             DISABLE TRIGGER game_house_location_proven",
+        )
+        .await?;
+    Ok(())
 }
 
 fn run(case: impl AsyncFnOnce(&mut PgConnection, &str) -> TestResult) -> TestResult {

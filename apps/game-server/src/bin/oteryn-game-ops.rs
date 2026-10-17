@@ -1354,7 +1354,7 @@ async fn projection(
     connect: impl AsyncFn(&DatabaseConfig) -> Result<DurabilityRoot, Failure>,
 ) -> Outcome {
     use oteryn_game_server::native_admission_source::account_characters::EpochFenceFile;
-    use oteryn_game_server::node::serve::{ResyncError, resync};
+    use oteryn_game_server::node::serve::resync;
     if arguments.words.get(1).map(String::as_str) != Some("resync") || arguments.words.len() != 2 {
         return Err(Failure::Usage(PROJECTION_USAGE));
     }
@@ -1369,7 +1369,51 @@ async fn projection(
     ))?;
     let root = connect(&config.database).await?;
     let mut fence = EpochFenceFile::new(config.epoch_fence_file.clone());
-    match resync(&root, raise, &mut fence).await {
+    resync_outcome(resync(&root, raise, &mut fence).await)
+}
+
+const PUBLIC_PROJECTION_USAGE: &str = "public-projection resync --family \
+all|highscores|character_profile|world_online --raise-epoch true|false: re-enqueue the current \
+public snapshots of the family for the Platform public read model and print the public projection \
+epoch. `true` (only with `--family all`) raises the epoch above the public epoch fence and then \
+persists the fence; it uses the [public_projection] operator credential of the ops config. After a \
+Character store restore: stop the node, restore, run `public-projection resync --family all \
+--raise-epoch true`, then start the node.";
+
+/// `public-projection resync` (PUBLIC-PROJ §5): prints only the epoch. Like
+/// `projection resync`, it connects only its own login, before and instead
+/// of the operator root.
+async fn public_projection(
+    config: &OpsConfig,
+    mut arguments: Arguments,
+    connect: impl AsyncFn(&DatabaseConfig) -> Result<DurabilityRoot, Failure>,
+) -> Outcome {
+    use oteryn_game_server::native_admission_source::account_characters::EpochFenceFile;
+    use oteryn_game_server::node::serve::public_resync;
+    if arguments.words.get(1).map(String::as_str) != Some("resync") || arguments.words.len() != 2 {
+        return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE));
+    }
+    let family = arguments.take("family")?;
+    if !["all", "highscores", "character_profile", "world_online"].contains(&family.as_str()) {
+        return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE));
+    }
+    let raise = match arguments.take("raise-epoch")?.as_str() {
+        "true" if family == "all" => true,
+        "false" => false,
+        _ => return Err(Failure::Usage(PUBLIC_PROJECTION_USAGE)),
+    };
+    arguments.finish()?;
+    let config = config.public_projection.as_ref().ok_or(Failure::Usage(
+        "public-projection resync requires the [public_projection] section",
+    ))?;
+    let root = connect(&config.database).await?;
+    let mut fence = EpochFenceFile::new(config.epoch_fence_file.clone());
+    resync_outcome(public_resync(&root, &family, raise, &mut fence).await)
+}
+
+fn resync_outcome(result: Result<u64, oteryn_game_server::node::serve::ResyncError>) -> Outcome {
+    use oteryn_game_server::node::serve::ResyncError;
+    match result {
         Ok(epoch) => {
             println!("{epoch}");
             Ok(())
@@ -1428,6 +1472,9 @@ async fn dispatch(
     if arguments.words.first().map(String::as_str) == Some("projection") {
         return projection(&config, arguments, connect).await;
     }
+    if arguments.words.first().map(String::as_str) == Some("public-projection") {
+        return public_projection(&config, arguments, connect).await;
+    }
     let state = secure_file::open_state_directory(&config.operator.state_directory, invoking)
         .map_err(|error| Failure::Input(format!("operator.state_directory: {error:?}")))?;
     let root = connect(&config.database).await?;
@@ -1444,7 +1491,7 @@ async fn dispatch(
         Some("assignment") => assignment(&operator, arguments).await,
         Some("content") => content(&operator, arguments).await,
         _ => Err(Failure::Usage(
-            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection ...",
+            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection|public-projection ...",
         )),
     }
 }
@@ -1570,9 +1617,122 @@ mod tests {
         assert_eq!(*connected.borrow(), ["projection_owner"]);
         // Every other command needs its state directory before the operator root.
         connected.borrow_mut().clear();
+        let public = words(&[
+            "public-projection",
+            "resync",
+            "--family",
+            "all",
+            "--raise-epoch",
+            "true",
+        ]);
+        let outcome = block_on(dispatch(config.clone(), 0, public, &connect));
+        assert!(
+            matches!(outcome, Err(Failure::Usage(text)) if text.contains("[public_projection]"))
+        );
+        assert!(connected.borrow().is_empty());
         let other = words(&["content", "activate"]);
         let outcome = block_on(dispatch(config, 0, other, &connect));
         assert!(matches!(outcome, Err(Failure::Input(_))));
+        assert!(connected.borrow().is_empty());
+    }
+
+    #[test]
+    fn public_projection_resync_connects_only_the_public_projection_login() {
+        let database = |username: &str, password: &str| {
+            format!(
+                "transport_ip = \"127.0.0.1\"\nport = 5432\ntls_server_name = \"db.internal\"\n\
+                 database = \"oteryn\"\nusername = \"{username}\"\n\
+                 password_file = \"/etc/oteryn/ops/{password}\"\n\
+                 root_ca_file = \"/etc/oteryn/ops/db-ca.pem\"\n"
+            )
+        };
+        let document = format!(
+            "[operator]\nstate_directory = \"/nonexistent/oteryn-ops-state\"\nservice_uid = 990\n\
+             [database]\n{}\
+             [character]\nfence_directory = \"/var/lib/oteryn/character-fence\"\n\
+             authority_scope_id = \"character-primary\"\nissuer_identity = \"game-ops\"\n\
+             [public_projection]\nepoch_fence_file = \"/var/lib/oteryn/public-projection/epoch-fence\"\n\
+             [public_projection.database]\n{}",
+            database("control_login", "pg-password"),
+            database("public_projection_owner", "public-projection-pg-password"),
+        );
+        let config = OpsConfig::parse(document.as_bytes()).unwrap();
+        let block_on = |future| {
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap()
+                .block_on(future)
+        };
+        let connected = RefCell::new(Vec::new());
+        let connect = async |database: &DatabaseConfig| {
+            connected.borrow_mut().push(database.username.clone());
+            Err(Failure::Unavailable("not connected in tests".into()))
+        };
+        let words = |words: &[&str]| {
+            Arguments::parse(words.iter().map(|word| (*word).to_owned()).collect()).unwrap()
+        };
+        for family in ["all", "highscores", "character_profile", "world_online"] {
+            connected.borrow_mut().clear();
+            let resync = words(&[
+                "public-projection",
+                "resync",
+                "--family",
+                family,
+                "--raise-epoch",
+                "false",
+            ]);
+            let outcome = block_on(dispatch(config.clone(), 0, resync, &connect));
+            assert!(matches!(outcome, Err(Failure::Unavailable(_))), "{family}");
+            assert_eq!(*connected.borrow(), ["public_projection_owner"]);
+        }
+        connected.borrow_mut().clear();
+        let raise = words(&[
+            "public-projection",
+            "resync",
+            "--family",
+            "all",
+            "--raise-epoch",
+            "true",
+        ]);
+        let outcome = block_on(dispatch(config.clone(), 0, raise, &connect));
+        assert!(matches!(outcome, Err(Failure::Unavailable(_))));
+        // A raise of one family, an unknown family and a missing flag are
+        // refused before any login.
+        connected.borrow_mut().clear();
+        for refused in [
+            &[
+                "public-projection",
+                "resync",
+                "--family",
+                "world_online",
+                "--raise-epoch",
+                "true",
+            ][..],
+            &[
+                "public-projection",
+                "resync",
+                "--family",
+                "guild",
+                "--raise-epoch",
+                "false",
+            ][..],
+            &["public-projection", "resync", "--raise-epoch", "false"][..],
+            &[
+                "public-projection",
+                "status",
+                "--family",
+                "all",
+                "--raise-epoch",
+                "false",
+            ][..],
+        ] {
+            let outcome = block_on(dispatch(config.clone(), 0, words(refused), &connect));
+            assert!(outcome.is_err(), "{refused:?}");
+            assert!(
+                !matches!(outcome, Err(Failure::Unavailable(_))),
+                "{refused:?}"
+            );
+        }
         assert!(connected.borrow().is_empty());
     }
 
