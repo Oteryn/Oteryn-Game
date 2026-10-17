@@ -145,6 +145,10 @@ name = "item_ref_production"
 test = false
 
 [[test]]
+name = "item_timed_postgres"
+test = false
+
+[[test]]
 name = "item_timed_state_postgres"
 test = false
 
