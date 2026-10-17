@@ -31,7 +31,85 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
-## 2026-10-17 nullable-owner correction — bounded source qualification
+## 2026-10-17 current published source — D1420 requalification required
+
+The current draft source checkpoint is
+`0ca09342c7283a3ea4e28a7bc1391bf3b199578b`, sole parent
+`20b751c889936cb311ca61d0374512e83e374470`, tree
+`3c4514f571626edc32f7ebdcfbe7a5c9ff1597b9`. A fresh read of #2140 confirmed this
+head and its draft/open disposition. The nullable-owner correction is already
+published; this successor changes only this owned task record. It adds no Rust,
+schema, shared registration, runtime grant or gameplay activation.
+
+The published writer and reader decode a nullable property owner kind and return
+the existing typed `AclError::NotOwner` for VACANT, AUCTION and RETIRED properties.
+The existing native regression exercises both actual Root entrypoints and requires
+unchanged ACL revision with no operation receipt or change-outbox row on refusal.
+The three retained ACL inputs are unchanged:
+
+| Source | SHA-256 |
+| --- | --- |
+| `apps/game-server/src/durability/house_acl.rs` | `2dd835a3b9873acb54008c478405c1090e81922d9ea3f2bb488967768f462b1c` |
+| `apps/game-server/src/house/acl.rs` | `948735ef66be8456fdba602e5619c934db1e48652376e74eac9c93ea22a75b5a` |
+| `apps/game-server/src/house/acl_tests.rs` | `7da6c7dc7c907309f593f5ea30a9cf08b87155fd9366bf7a609ccf521e6f0457` |
+
+### Honest native disposition
+
+[CP D1420](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6239666536)
+requires touching the `src/lib.rs` of each changed crate, at minimum
+`apps/game-server/src/lib.rs`, inside the actual canonical lease before every
+Cargo command. This includes locked fetch, LIST and execution. The operation must
+preserve the pinned source bytes. Earlier native Cargo results without that step
+need a repeat and remain historical evidence.
+
+The recorded Molehill-PC run beginning 2026-10-17 13:20:10 UTC passed nine ACL
+cases: four pure and five native PostgreSQL cases, zero failed or ignored, 10.12s.
+That run used the disclosed main-f010 source assembly, genuine unchanged native
+Root/harness dependencies, this task's three ACL leaves and the WIRE leaves. It
+predates D1420 and did not include its required touch step. The result is retained
+in the historical section below; it is not current D1420 qualification, an
+exact-published-head native result or a production activation result.
+
+| Required evidence | Current disposition |
+| --- | --- |
+| Nullable-owner source checkpoint and retained source identities | Published at 0ca09342; unchanged by this card. |
+| Earlier native formatting and source reviews | Retained source evidence; no new compile or runtime result inferred. |
+| Historical ACL inventory | Nine cases: four pure plus five PG, including the nullable-owner regression. |
+| D1420 native compilation, LIST9 and execution of those nine cases | NOT_RUN for the required repeat. Pin the complete real source/dependency assembly and report its identity explicitly. |
+| Exact published-head and integrated runtime qualification | NOT_FULLY_QUALIFIED; remains separate from an assembled native component run. |
+
+A repeat requires its actual allocated native window and the existing resource,
+source/HEAD, lease and final-integrity checks. This card starts no additional job
+in the active four-child House queue. [D1329](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233047791)
+remains mandatory: use the existing shared PostgreSQL17.6 service on
+`127.0.0.1:55432`, the adjacent `in-pg-netns.sh` and an own disposable database;
+run `cargo fetch --locked` first and clean up that own database. No new PostgreSQL
+server/container or other database is part of this task.
+
+### Actual door/currentness and integration gates remain open
+
+A fresh read of [#2167](https://github.com/Oteryn/Oteryn-Game/pull/2167) found
+`8702779595ec0611add17200f08328fa2e23b503`, still draft/open and unmerged.
+D1348 therefore continues to hold `QualifiedHousePlacement::door_cell`, its
+real generation-qualified ACL consumer and the associated content tests until
+#2167 merges. The recovery proposal remains NOT_APPLIED. Its data-only door
+coordinate must not stand in for current active content or admission authority.
+
+The actual consumer must bind the same World/House row and transaction, retain
+the required SHARE lock, and compare both placement and compatible-content digests
+against the genuine current qualified source. Missing or ambiguous doors and
+missing/mismatched source preserve the existing legacy behavior. The canonical
+property/Guild lifecycle, House-session fence, shared spell/door/GUI consumers,
+legacy0038 compatibility, registered House event and definer-only runtime
+integration remain unfinished criteria. The native ACL fixture's minimal private
+property/Guild schema does not qualify any of those producers.
+
+The complete recovery appendix and its original patch bytes, SHA-256
+`38c73cef567300e641310f4d911660cffedce8bfc544d2c5396f2aa63d3d3c4e`, are preserved
+unchanged. All original acceptance boxes and scope restrictions remain. Root is
+the sole publisher; ready, review triggers and merge remain CP-owned.
+
+## Historical 2026-10-17 nullable-owner source-assembly result
 
 This packet follows CP's ordinary main merge at
 `20b751c889936cb311ca61d0374512e83e374470`. The three changed preimages were
