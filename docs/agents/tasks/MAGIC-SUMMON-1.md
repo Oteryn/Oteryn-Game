@@ -409,3 +409,8 @@ non-spawn/GraceExpiry path is held by generic writer refusal; no marker is silen
 cleared. Same-session open Login reconstruction still refuses resetting a live timer.
 No build/native/PG/strict Clippy/full package was executed for the integrated source.
 The pre-integration f0f9dfbc bundle and all older evidence remain historical.
+
+
+### 2026-10-17 source qualification continuation
+
+NOT_FULLY_QUALIFIED. Exact-source native LIST initially rejected a stale shared-target artifact (2 tests versus the required 3); candidate-only detached metadata freshness retained all raw Git bytes and old proof metadata. A subsequent disk-guard stop occurred before any native test while preparing the separate source handoff; physical deduplication restored the reserve, with no cache clean or runner change. The actual fresh compiler then reported E0308 in the existing runtime PostgreSQL fixture helper (String error versus boxed TestResult error); the helper now uses the normal `Ok(...?)` conversion. These stopped attempts are retained, and no native test, strict Clippy or full-package PASS is claimed for this continuation. The complete source-bound native inventory and strict all-targets Clippy remain mandatory; earlier scoped evidence stays tied to its own source.
