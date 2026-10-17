@@ -2049,7 +2049,15 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_attack_damage(runtime, target, session, amount, &occurrence, now)
+                vitals.apply_attack_damage(
+                    runtime,
+                    target,
+                    session,
+                    amount,
+                    &occurrence,
+                    now,
+                    crate::player_lethal::LethalSource::Creature(proposal.issuer),
+                )
             } else {
                 let policy = facts
                     .condition_policy
@@ -2455,7 +2463,8 @@ mod tests {
                         &crate::foundation::owner_timer::VirtualOwnerClock::new(
                             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
                         )
-                    )
+                    ),
+                    crate::player_lethal::LethalSource::Creature(p.issuer)
                 )
                 .expect("qualified fixture")
                 .health_after,
@@ -2478,7 +2487,8 @@ mod tests {
                         &crate::foundation::owner_timer::VirtualOwnerClock::new(
                             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
                         )
-                    )
+                    ),
+                    crate::player_lethal::LethalSource::Creature(p.issuer)
                 )
                 .expect("qualified fixture")
                 .health_after,
@@ -2938,7 +2948,8 @@ mod tests {
                     w.facts.attack.session,
                     1,
                     "variant-no-hp-probe",
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000),
+                    crate::player_lethal::LethalSource::Creature(p.issuer)
                 )
                 .expect("qualified fixture")
                 .health_after,
@@ -3125,7 +3136,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "variant-first-hp-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3138,7 +3150,8 @@ mod tests {
                 session,
                 1,
                 "variant-second-hp-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3332,7 +3345,8 @@ mod tests {
                     w.facts.attack.session,
                     1,
                     "dispel-hp-probe",
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000),
+                    crate::player_lethal::LethalSource::Creature(p.issuer)
                 )
                 .expect("qualified fixture")
                 .health_after,
@@ -3427,6 +3441,7 @@ mod tests {
             .as_ref()
             .expect("qualified fixture")
             .damage
+            .as_ref()
             .expect("qualified fixture");
         assert!(receipt.applied > 0);
         assert_eq!(
@@ -3498,7 +3513,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "independent-spell-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(4_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(4_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3549,7 +3565,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "tile-refusal-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(3_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(3_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3604,7 +3621,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "condition-no-primary-hp-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(9_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("real HP store")
             .health_after,
@@ -3654,7 +3672,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "armor-arrow-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3695,7 +3714,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "immune-curse-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3761,7 +3781,8 @@ mod tests {
                 w.facts.attack.session,
                 1,
                 "overflow-A-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3774,7 +3795,8 @@ mod tests {
                 second_session,
                 1,
                 "overflow-B-probe",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
+                crate::player_lethal::LethalSource::Creature(p.issuer)
             )
             .expect("qualified fixture")
             .health_after,
@@ -3927,6 +3949,7 @@ mod tests {
                         crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                     ),
                 ),
+                crate::player_lethal::LethalSource::Creature(p.issuer),
             )
             .expect("qualified fixture");
         assert_eq!(death.health_after, 0);
@@ -4204,6 +4227,7 @@ mod tests {
                 .as_ref()
                 .expect("qualified fixture")
                 .damage
+                .as_ref()
                 .expect("qualified fixture")
                 .applied
                 > 0
@@ -4230,6 +4254,7 @@ mod tests {
                 .as_ref()
                 .expect("qualified fixture")
                 .damage
+                .as_ref()
                 .expect("qualified fixture")
                 .applied
                 > 0

@@ -9,6 +9,7 @@
 //! creature-only and nothing here changes a live decision. The durable write-ahead of the
 //! deadlines needs the PVP-1 tables and is not part of this slice.
 
+mod death;
 mod legality;
 mod lock;
 #[cfg(test)]

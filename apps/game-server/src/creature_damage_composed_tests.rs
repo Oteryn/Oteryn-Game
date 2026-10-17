@@ -366,6 +366,7 @@ fn frozen_positive_ice_source_heals_real_player_and_creature_once_no_primary_dam
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
                 ),
             ),
+            crate::player_lethal::LethalSource::Creature(p.issuer),
         )
         .expect("qualified fixture");
     let mut owner = ComposedOwner::default();
@@ -502,8 +503,9 @@ impl PlayerLethalVitals for RefusePlayerHeal {
         n: u32,
         o: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
+        source: crate::player_lethal::LethalSource,
     ) -> Option<PlayerDamageReceipt> {
-        self.0.apply_attack_damage(r, t, s, n, o, now)
+        self.0.apply_attack_damage(r, t, s, n, o, now, source)
     }
     fn source_player_health(
         &self,

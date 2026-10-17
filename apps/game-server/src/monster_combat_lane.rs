@@ -2269,7 +2269,7 @@ mod tests {
         VirtualOwnerClock,
     ) {
         let (mut r, t, s) = runtime_with_player(0x58);
-        r.initialize_movement_test_position(
+        r.initialize_pinned_test_position(
             t,
             MovementLocalPosition {
                 x: 100,
@@ -2301,7 +2301,7 @@ mod tests {
             })
             .expect("monster_combat_lane.rs:tests:2247: qualified fixture operation must succeed");
         let issuer = r
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: 101,
                     y: 100,
@@ -2395,7 +2395,7 @@ mod tests {
             })
             .expect("monster_combat_lane.rs:tests:2335: qualified fixture operation must succeed");
         let actor = r
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: 101,
                     y: 100,
@@ -2444,7 +2444,7 @@ mod tests {
                 assert!(steps.iter().any(|(_, _, r)| r.as_ref().is_ok_and(|h| {
                     h.targets.iter().any(|(_, t)| {
                         t.as_ref()
-                            .is_ok_and(|t| t.damage.is_some_and(|d| d.applied > 0))
+                            .is_ok_and(|t| t.damage.as_ref().is_some_and(|d| d.applied > 0))
                     })
                 })));
                 observed = true;
@@ -3329,7 +3329,7 @@ mod tests {
             occurrence: DecisionOccurrenceId::from_bytes([91; 16]),
         };
         let caster = runtime
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: start.x,
                     y: start.y,
@@ -3534,6 +3534,7 @@ mod tests {
                 1,
                 "composed-condition-install",
                 crate::foundation::owner_timer::OwnerClock::now(&clock),
+                crate::player_lethal::LethalSource::Creature(issuer),
             )
             .expect("monster_combat_lane.rs:tests:3321: qualified fixture operation must succeed");
         r.remove_test_actor(issuer)

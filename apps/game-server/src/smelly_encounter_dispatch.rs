@@ -431,7 +431,15 @@ fn execute_pulse(
             continue;
         }
         let receipt = v
-            .apply_attack_damage(r, target, session, amount, &id, now)
+            .apply_attack_damage(
+                r,
+                target,
+                session,
+                amount,
+                &id,
+                now,
+                crate::player_lethal::LethalSource::Creature(actor),
+            )
             .ok_or(AttackError::MissingVitals);
         committed.push((target, receipt))
     }
@@ -479,7 +487,7 @@ mod tests {
         SourceSmelly,
     ) {
         let (mut r, p, session) = runtime_with_player(0x75);
-        r.initialize_movement_test_position(
+        r.initialize_pinned_test_position(
             p,
             MovementLocalPosition {
                 x: 101,
@@ -489,7 +497,7 @@ mod tests {
         )
         .expect("smelly_encounter_dispatch.rs:tests:485: qualified fixture operation must succeed");
         let c = r
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: 100,
                     y: 100,

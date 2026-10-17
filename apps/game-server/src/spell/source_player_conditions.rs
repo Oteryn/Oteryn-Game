@@ -231,6 +231,7 @@ impl PlayerSpellState {
     pub(crate) fn stage_source_player_conditions(
         &self,
         source: String,
+        lethal_source: Option<crate::player_lethal::LethalSource>,
         definitions: &[source::ConditionDefinition],
         immunities: &[source::ConditionType],
         facts: &source::ApplicationFacts<'_>,
@@ -261,12 +262,13 @@ impl PlayerSpellState {
         };
         let mut next = self.clone();
         for definition in definitions {
-            match next.conditions.apply(
+            match next.conditions.apply_with_lethal_source(
                 &definition,
                 Some(source.clone()),
                 native::ConditionSourceKind::Creature,
                 &immunities,
                 &facts,
+                lethal_source,
             ) {
                 Ok(_) => {}
                 Err(
@@ -304,7 +306,7 @@ impl PlayerSpellState {
         &mut self,
         now: u64,
         facts: native::TickFacts,
-    ) -> Vec<native::ConditionTick<String>> {
+    ) -> Vec<native::ConditionTick<String, crate::player_lethal::LethalSource>> {
         self.conditions.take_due(now, facts)
     }
     pub(crate) fn source_set_batch_revision(&mut self, revision: u64) {

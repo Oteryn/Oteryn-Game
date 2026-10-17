@@ -66,9 +66,15 @@ pub(crate) fn commit_smelly_unambiguous_damage(
             cast_sequence,
             hex(target.placement_identity())
         );
-        if let Some(receipt) =
-            vitals.apply_attack_damage(runtime, target, session, magnitude, &occurrence, now)
-        {
+        if let Some(receipt) = vitals.apply_attack_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            &occurrence,
+            now,
+            crate::player_lethal::LethalSource::Creature(caster),
+        ) {
             receipts.push(receipt);
         }
     }
@@ -93,7 +99,7 @@ mod tests {
     fn actual_hp_nonlethal_a_b_retry_a_and_presentation_never_redamage() {
         let (mut runtime, player, session) = runtime_with_player(0x59);
         runtime
-            .initialize_movement_test_position(
+            .initialize_pinned_test_position(
                 player,
                 MovementLocalPosition {
                     x: 101,
@@ -103,7 +109,7 @@ mod tests {
             )
             .expect("smelly_damage.rs:tests:103: qualified fixture operation must succeed");
         let caster = runtime
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: 100,
                     y: 100,
@@ -177,6 +183,7 @@ mod tests {
                 20,
                 "other-attack:B",
                 clock.now(),
+                crate::player_lethal::LethalSource::Creature(caster),
             )
             .expect("smelly_damage.rs:tests:178: qualified fixture operation must succeed");
         assert_eq!(b.health_after, 1580);
@@ -221,6 +228,7 @@ mod tests {
                 1,
                 "read-through-native-hit:C",
                 clock.now(),
+                crate::player_lethal::LethalSource::Creature(caster),
             )
             .expect("smelly_damage.rs:tests:222: qualified fixture operation must succeed");
         assert_eq!(after.health_after, 1579);
@@ -229,7 +237,7 @@ mod tests {
     fn retained_due_pulse_cannot_write_hp_after_independent_scope_grant_changes() {
         let (mut runtime, player, session) = runtime_with_player(0x5a);
         runtime
-            .initialize_movement_test_position(
+            .initialize_pinned_test_position(
                 player,
                 MovementLocalPosition {
                     x: 101,
@@ -239,7 +247,7 @@ mod tests {
             )
             .expect("smelly_damage.rs:tests:237: qualified fixture operation must succeed");
         let caster = runtime
-            .admit_monster_lab_creature(
+            .admit_source_pinned_lab_creature(
                 MovementLocalPosition {
                     x: 100,
                     y: 100,

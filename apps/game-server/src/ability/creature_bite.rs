@@ -155,6 +155,22 @@ pub(crate) enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub(crate) trait CreatureBiteVitals {
+    /// D1253: the admitted melee issuer and exact Ability occurrence reach the sole
+    /// native player-lethal owner. A source-unaware implementation fails closed.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_creature_melee_damage(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _target_session: GameSessionId,
+        _magnitude: u32,
+        _now: SemanticTimeMicros,
+        _creature: ExactActorRef,
+        _occurrence: &str,
+    ) -> Option<CreatureHit> {
+        None
+    }
+
     /// Lower the committed, living player's health by one creature hit in one vitals write; a
     /// hit to 0 records the player's death with a newly minted occurrence in the same write.
     /// `None` changes nothing.
@@ -300,12 +316,14 @@ fn resolve_and_apply(
         _ => return Err(BiteRejection::InvalidPlan),
     };
     let hit = vitals
-        .apply_creature_damage(
+        .apply_creature_melee_damage(
             runtime,
             intent.target,
             intent.target_session,
             magnitude,
             now,
+            intent.issuer,
+            plan.occurrence().id().as_str(),
         )
         .ok_or(BiteRejection::StaleTarget)?;
     Ok(AppliedBite {

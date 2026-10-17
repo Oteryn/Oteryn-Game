@@ -13,7 +13,7 @@ pub(crate) struct PreparedPlayerPeriodicTurn {
     stamp: RuntimeWorkStamp,
     before: PlayerSpellState,
     next: PlayerSpellState,
-    ticks: Vec<ConditionTick<String>>,
+    ticks: Vec<ConditionTick<String, crate::player_lethal::LethalSource>>,
     publish: bool,
 }
 impl PreparedPlayerPeriodicTurn {
@@ -29,7 +29,7 @@ impl PreparedPlayerPeriodicTurn {
     pub(crate) fn predecessor(&self) -> &PlayerSpellState {
         &self.before
     }
-    pub(crate) fn ticks(&self) -> &[ConditionTick<String>] {
+    pub(crate) fn ticks(&self) -> &[ConditionTick<String, crate::player_lethal::LethalSource>] {
         &self.ticks
     }
     pub(crate) fn into_successor(self) -> (PlayerSpellState, bool) {
@@ -46,7 +46,7 @@ pub(crate) fn stage_player_periodic_turn(
     stamp: RuntimeWorkStamp,
     now: SemanticTimeMicros,
     facts: TickFacts,
-    mut damage_legal: impl FnMut(&ConditionTick<String>) -> bool,
+    mut damage_legal: impl FnMut(&ConditionTick<String, crate::player_lethal::LethalSource>) -> bool,
 ) -> Result<Option<PreparedPlayerPeriodicTurn>, SpellCastDisposition> {
     let Some(cycle) =
         super::actor_conditions::stage_source_owner_cycle(state, now, Some(facts), None)?

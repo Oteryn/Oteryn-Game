@@ -25,6 +25,10 @@ pub mod foundation;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
+// The native source carrier uses this test root's actual Foundation identities.
+#[allow(dead_code)]
+#[path = "../src/ability/player_lethal.rs"]
+mod player_lethal;
 
 // Standalone target for local focused runs; the protected PostgreSQL lane also
 // includes these exact cases through character_authority_postgres.

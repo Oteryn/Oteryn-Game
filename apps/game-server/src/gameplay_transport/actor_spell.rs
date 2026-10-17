@@ -136,7 +136,12 @@ pub(crate) struct ChannelSpellStates {
     deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
     source_secondary_memos: Vec<actor_conditions::NativeSecondaryMemo>,
-    source_damage: Vec<NativeSourceMemo<crate::player_lethal::PlayerDamageReceipt>>,
+    source_damage: Vec<NativeDamageMemo>,
+    damage_ledgers: Vec<(
+        ExactActorRef,
+        GameSessionId,
+        crate::player_lethal::PlayerDamageLedger,
+    )>,
     source_mana: Vec<NativeSourceMemo<crate::player_lethal::PlayerManaDrainReceipt>>,
     source_heal: Vec<NativeSourceMemo<crate::player_lethal::PlayerHealReceipt>>,
 }
@@ -270,6 +275,7 @@ impl Default for ChannelSpellStates {
             mint_death: mint_player_death_occurrence,
             source_secondary_memos: Vec::new(),
             source_damage: Vec::new(),
+            damage_ledgers: Vec::new(),
             source_mana: Vec::new(),
             source_heal: Vec::new(),
         }
@@ -964,6 +970,37 @@ impl ChannelSpellStates {
 }
 
 impl CreatureBiteVitals for ChannelSpellStates {
+    #[allow(clippy::too_many_arguments)]
+    fn apply_creature_melee_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        creature: ExactActorRef,
+        occurrence: &str,
+    ) -> Option<CreatureHit> {
+        let receipt = crate::player_lethal::PlayerLethalVitals::apply_melee_attack_damage(
+            self,
+            runtime,
+            target,
+            target_session,
+            magnitude,
+            occurrence,
+            now,
+            creature,
+        )?;
+        Some(CreatureHit {
+            damage: crate::ability::creature_bite::CreatureDamage {
+                applied: receipt.applied,
+                health_after: receipt.health_after,
+            },
+            vitals_revision: receipt.vitals_revision,
+            death: receipt.death.as_ref().map(|death| death.occurrence_bytes()),
+        })
+    }
+
     fn apply_creature_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -2017,9 +2054,11 @@ pub(crate) mod tests {
         let (mut runtime, actor, session) = runtime_with_player(tag);
         let at = |x, y| MovementLocalPosition { x, y, floor: 7 };
         runtime
-            .initialize_movement_test_position(actor, at(10, 10))
+            .initialize_pinned_test_position(actor, at(10, 10))
             .expect("player position");
-        let creature = runtime.admit_test_creature(at(11, 10)).expect("creature");
+        let creature = runtime
+            .admit_pinned_test_creature(at(11, 10))
+            .expect("creature");
         let mut states = ChannelSpellStates::default();
         states
             .initialize(&runtime, actor, session, facts, monk, now(0))
@@ -2063,6 +2102,52 @@ pub(crate) mod tests {
             },
             OwnerTime::from_micros(micros),
         )
+    }
+
+    #[test]
+    fn native_creature_melee_has_no_nonlethal_receipt_and_one_attributed_lethal_receipt() {
+        use crate::ability::creature_bite::CreatureBiteLedger;
+        let (mut r, mut s, a, g, creature) = bitten_player(0x39, 20);
+        let mut bites = CreatureBiteLedger::default();
+        let actors = (creature, a, g);
+        let first = bite_at(&mut r, &mut s, &mut bites, actors, 0, 0).expect("nonlethal bite");
+        assert!(first.death.is_none());
+        assert!(
+            s.source_damage
+                .iter()
+                .all(|memo| memo.receipt.death.is_none())
+        );
+        assert!(
+            bite_at(&mut r, &mut s, &mut bites, actors, 1, 2_000_000)
+                .expect("second nonlethal bite")
+                .death
+                .is_none()
+        );
+        let lethal =
+            bite_at(&mut r, &mut s, &mut bites, actors, 2, 4_000_000).expect("lethal bite");
+        assert_eq!(lethal.damage.applied, 4);
+        let deaths: Vec<_> = s
+            .source_damage
+            .iter()
+            .filter_map(|memo| memo.receipt.death.as_ref())
+            .collect();
+        assert_eq!(deaths.len(), 1);
+        assert_eq!(Some(deaths[0].occurrence_bytes()), lethal.death);
+        assert_eq!(
+            deaths[0].attribution().killer,
+            crate::player_lethal::LethalSource::Creature(creature)
+        );
+        assert_eq!(
+            deaths[0].source_context(),
+            crate::player_lethal::PlayerDamageSourceContext::CreatureMelee { creature }
+        );
+        let observed = s.damage_ledgers.clone();
+        assert_eq!(
+            bite_at(&mut r, &mut s, &mut bites, actors, 2, 4_000_000),
+            Ok(lethal)
+        );
+        assert_eq!(s.damage_ledgers, observed);
+        assert_eq!(s.deaths.len(), 1);
     }
 
     /// DEATH-2 §4.1/§4.2 on the real vitals owner: a creature bite to 0 is lethal, the death
@@ -2278,8 +2363,20 @@ struct NativeSourceMemo<T> {
     magnitude: u32,
     receipt: T,
 }
+#[derive(Debug)]
+struct NativeDamageMemo {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    occurrence: String,
+    magnitude: u32,
+    source: crate::player_lethal::LethalSource,
+    context: crate::player_lethal::PlayerDamageSourceContext,
+    receipt: crate::player_lethal::PlayerDamageReceipt,
+}
 impl ChannelSpellStates {
     fn prune_source_memos(&mut self, runtime: &ChannelRuntimeV1) {
+        self.damage_ledgers
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.source_damage
             .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
         self.source_mana
@@ -2288,6 +2385,8 @@ impl ChannelSpellStates {
             .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
     }
     fn forget_source_memos(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.damage_ledgers
+            .retain(|(a, s, _)| *a != actor || *s != session);
         self.source_secondary_memos
             .retain(|m| m.actor != actor || m.session != session);
         self.source_damage
@@ -2297,6 +2396,53 @@ impl ChannelSpellStates {
         self.source_heal
             .retain(|m| m.actor != actor || m.session != session);
     }
+    #[allow(clippy::too_many_arguments)] // The staged observation binds victim/session/source/actual HP/time and lethal result.
+    fn stage_damage_ledger(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        source: crate::player_lethal::LethalSource,
+        applied: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        lethal: bool,
+    ) -> Option<(
+        crate::player_lethal::PlayerDamageLedger,
+        Option<crate::player_lethal::LethalAttribution>,
+    )> {
+        let source = source.current(runtime)?;
+        let old = self
+            .damage_ledgers
+            .iter()
+            .find(|(a, s, _)| *a == actor && *s == session);
+        let mut staged = old.map(|(_, _, ledger)| ledger.clone()).unwrap_or_default();
+        if old.is_none() {
+            self.damage_ledgers.try_reserve(1).ok()?;
+        }
+        staged.observe(source, applied, now).ok()?;
+        let attribution = if lethal {
+            Some(staged.snapshot(source, now).ok()?)
+        } else {
+            None
+        };
+        Some((staged, attribution))
+    }
+    fn publish_damage_ledger(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        ledger: crate::player_lethal::PlayerDamageLedger,
+    ) {
+        if let Some((_, _, current)) = self
+            .damage_ledgers
+            .iter_mut()
+            .find(|(a, s, _)| *a == actor && *s == session)
+        {
+            *current = ledger;
+        } else {
+            self.damage_ledgers.push((actor, session, ledger));
+        }
+    }
     fn source_occurrence_text(occurrence: &str) -> Option<String> {
         if occurrence.is_empty() || occurrence.len() > 4096 {
             return None;
@@ -2305,6 +2451,113 @@ impl ChannelSpellStates {
         text.try_reserve(occurrence.len()).ok()?;
         text.push_str(occurrence);
         Some(text)
+    }
+}
+impl ChannelSpellStates {
+    #[allow(clippy::too_many_arguments)] // D1244 source identity is independent of target/session/occurrence/time.
+    fn commit_source_player_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        source: crate::player_lethal::LethalSource,
+        context: crate::player_lethal::PlayerDamageSourceContext,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
+        if magnitude == 0
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        if self
+            .source_secondary_memos
+            .iter()
+            .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+            && !self
+                .source_damage
+                .iter()
+                .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+        {
+            return None;
+        }
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_damage
+            .iter()
+            .position(|m| m.actor == target && m.session == session);
+        if let Some(i) = old {
+            let m = &self.source_damage[i];
+            if m.occurrence == occurrence {
+                return (m.magnitude == magnitude && m.source == source && m.context == context)
+                    .then(|| m.receipt.clone());
+            }
+        }
+        if self.is_dead(target) {
+            return None;
+        }
+        // Position/allocation failures precede native HP. Existing native owner rechecks position,
+        // reserves and mints its one PlayerDeathOccurrence before its own compare-commit.
+        let position = runtime.read_actor_position(target).ok()?.position();
+        if old.is_none() {
+            self.source_damage.try_reserve(1).ok()?;
+        }
+        let state = self.get(runtime, target, session)?;
+        let (_, expected) =
+            crate::spell::actor_conditions::stage_creature_hit(state, magnitude, now.get()).ok()?;
+        let (ledger, attribution) = self.stage_damage_ledger(
+            runtime,
+            target,
+            session,
+            source,
+            expected.applied,
+            now,
+            expected.health_after == 0,
+        )?;
+        let hit = CreatureBiteVitals::apply_creature_damage(
+            self, runtime, target, session, magnitude, now,
+        )?;
+        self.publish_damage_ledger(target, session, ledger);
+        let death = hit.death.zip(attribution).map(|(bytes, attribution)| {
+            PlayerLethalReceipt::from_native_commit(
+                runtime,
+                target,
+                session,
+                hit.vitals_revision,
+                bytes,
+                position,
+                attribution,
+                context,
+            )
+        });
+        let receipt = PlayerDamageReceipt {
+            applied: hit.damage.applied,
+            health_after: hit.damage.health_after,
+            vitals_revision: hit.vitals_revision,
+            death,
+        };
+        let memo = NativeDamageMemo {
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            source,
+            context,
+            receipt: receipt.clone(),
+        };
+        if let Some(i) = old {
+            self.source_damage[i] = memo
+        } else {
+            self.source_damage.push(memo)
+        }
+        Some(receipt)
     }
 }
 impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
@@ -2372,6 +2625,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         }
 
         if definitions.is_empty() {
+            let lethal_source = crate::player_lethal::LethalSource::current_actor(runtime, source)?;
             return self.apply_attack_damage(
                 runtime,
                 target,
@@ -2379,6 +2633,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
                 magnitude,
                 occurrence,
                 crate::foundation::owner_timer::SemanticTimeMicros::from_micros(facts.now),
+                lethal_source,
             );
         }
         self.native_composite_conditions(
@@ -2431,6 +2686,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             state.revision(),
         ))
     }
+    #[allow(clippy::too_many_arguments)]
     fn apply_attack_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -2439,81 +2695,40 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         magnitude: u32,
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
+        source: crate::player_lethal::LethalSource,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
-        use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
-        if magnitude == 0
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
-            return None;
-        }
-        if self
-            .source_secondary_memos
-            .iter()
-            .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
-            && !self
-                .source_damage
-                .iter()
-                .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
-        {
-            return None;
-        }
-        let text = Self::source_occurrence_text(occurrence)?;
-        self.prune_source_memos(runtime);
-        let old = self
-            .source_damage
-            .iter()
-            .position(|m| m.actor == target && m.session == session);
-        if let Some(i) = old {
-            let m = &self.source_damage[i];
-            if m.occurrence == occurrence {
-                return (m.magnitude == magnitude).then_some(m.receipt);
-            }
-        }
-        if self.is_dead(target) {
-            return None;
-        }
-        // Position/allocation failures precede native HP. Existing native owner rechecks position,
-        // reserves and mints its one PlayerDeathOccurrence before its own compare-commit.
-        let position = runtime.read_actor_position(target).ok()?.position();
-        if old.is_none() {
-            self.source_damage.try_reserve(1).ok()?;
-        }
-        let hit = CreatureBiteVitals::apply_creature_damage(
-            self, runtime, target, session, magnitude, now,
-        )?;
-        let death = hit.death.map(|bytes| {
-            PlayerLethalReceipt::from_native_commit(
-                runtime,
-                target,
-                session,
-                hit.vitals_revision,
-                bytes,
-                position,
-            )
-        });
-        let receipt = PlayerDamageReceipt {
-            applied: hit.damage.applied,
-            health_after: hit.damage.health_after,
-            vitals_revision: hit.vitals_revision,
-            death,
-        };
-        let memo = NativeSourceMemo {
-            actor: target,
+        self.commit_source_player_damage(
+            runtime,
+            target,
             session,
-            occurrence: text,
             magnitude,
-            receipt,
-        };
-        if let Some(i) = old {
-            self.source_damage[i] = memo
-        } else {
-            self.source_damage.push(memo)
-        }
-        Some(receipt)
+            occurrence,
+            now,
+            source,
+            crate::player_lethal::PlayerDamageSourceContext::SourceAttack,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn apply_melee_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        creature: ExactActorRef,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        self.commit_source_player_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            now,
+            crate::player_lethal::LethalSource::Creature(creature),
+            crate::player_lethal::PlayerDamageSourceContext::CreatureMelee { creature },
+        )
     }
     fn apply_source_player_heal(
         &mut self,
@@ -2656,9 +2871,10 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
 mod source_native_vitals_tests {
     #![allow(
         clippy::panic,
+        clippy::expect_used,
         reason = "test-only native outcome destructuring asserts impossible fixture variants; same scope as adjacent canonical owner tests"
     )]
-    use super::tests::{runtime_with_player, wound};
+    use super::tests::{runtime_with_capacity, runtime_with_player, wound};
     use super::*;
     use crate::player_lethal::PlayerLethalVitals;
     fn ready(
@@ -2668,11 +2884,12 @@ mod source_native_vitals_tests {
         ChannelSpellStates,
         ExactActorRef,
         GameSessionId,
+        ExactActorRef,
     ) {
-        let (mut runtime, actor, session) = runtime_with_player(tag);
+        let (mut runtime, actor, session) = runtime_with_capacity(tag, 4);
         assert!(
             runtime
-                .initialize_movement_test_position(
+                .initialize_pinned_test_position(
                     actor,
                     MovementLocalPosition {
                         x: 10,
@@ -2703,11 +2920,448 @@ mod source_native_vitals_tests {
                 )
                 .is_some()
         );
-        (runtime, states, actor, session)
+        let creature = runtime
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 11,
+                y: 10,
+                floor: 7,
+            })
+            .expect("admitted source");
+        (runtime, states, actor, session, creature)
+    }
+    fn bound_player_source(
+        r: &mut ChannelRuntimeV1,
+    ) -> (ExactActorRef, GameSessionId, crate::domain::CharacterId) {
+        let raw = [1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2];
+        let session = GameSessionId::decode(&raw).expect("source session");
+        let reservation = r.reserve_fresh_session(session).expect("source admission");
+        let actor = r.commit_fresh_session(reservation).expect("source slot");
+        r.initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 12,
+                y: 10,
+                floor: 7,
+            },
+        )
+        .expect("source position");
+        assert!(crate::player_lethal::LethalSource::current_actor(r, actor).is_none());
+        let lease = crate::foundation::CharacterLease::new(
+            crate::foundation::CharacterId::decode(&raw).expect("character"),
+            7,
+        )
+        .expect("actual fixture lease");
+        r.bind_attacker_lease(actor, session, lease)
+            .expect("bind admitted source lease");
+        (
+            actor,
+            session,
+            crate::domain::CharacterId::from_bytes(raw).expect("durable character"),
+        )
+    }
+    #[test]
+    fn lethal_player_source_uses_actual_admitted_bound_character_lease() {
+        let (mut r, mut s, a, g, _) = ready(0x47);
+        let (issuer, _, character) = bound_player_source(&mut r);
+        let source =
+            crate::player_lethal::LethalSource::current_actor(&r, issuer).expect("current source");
+        assert_eq!(
+            source,
+            crate::player_lethal::LethalSource::Character(character)
+        );
+        let receipt = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                185,
+                "player:lethal",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                source,
+            )
+            .expect("native lethal HP");
+        assert_eq!(
+            receipt
+                .death
+                .as_ref()
+                .expect("lethal receipt")
+                .attribution()
+                .killer,
+            source
+        );
+    }
+    #[test]
+    fn lethal_companion_source_uses_actual_master_session_and_bound_durable_owner() {
+        use crate::foundation::{CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags};
+        let (mut r, mut s, a, g, _) = ready(0x48);
+        let (owner, session, character) = bound_player_source(&mut r);
+        let policy = CompiledCreaturePolicy {
+            definition_key: "creature:ledger-fixture".into(),
+            definition_revision: "test-1".into(),
+            display_name: "ledger fixture".into(),
+            maximum_health: 100,
+            base_speed: 220,
+            outfit_look_type: 991,
+            object_look_type: None,
+            summonable: true,
+            convinceable: true,
+            mana_cost: Some(250),
+            is_familiar: false,
+            condition_immunities: vec![],
+            defense: Some(1),
+            armor: Some(10),
+            mitigation: None,
+            resistances: vec![],
+            damage_immunities: vec![],
+            healing_from_damage: vec![],
+            flags: CreatureFlags {
+                attackable: true,
+                illusionable: false,
+                health_hidden: false,
+            },
+            preferred_distance: Some(1),
+            reward_boss: Some(false),
+        };
+        let policies = CompiledCreaturePolicies::from_active_artifact(
+            r.content_pin().server_artifact_digest(),
+            vec![policy],
+        )
+        .expect("closed fixture policy");
+        r.install_companion_policies(policies)
+            .expect("actual policy owner");
+        let creature = r
+            .create_companion(
+                owner,
+                session,
+                "creature:ledger-fixture",
+                MovementLocalPosition {
+                    x: 13,
+                    y: 10,
+                    floor: 7,
+                },
+                None,
+                None,
+                0,
+            )
+            .expect("actual owned companion");
+        let source = crate::player_lethal::LethalSource::Creature(creature);
+        let receipt = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                185,
+                "companion:lethal",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                source,
+            )
+            .expect("native lethal HP");
+        assert_eq!(
+            receipt
+                .death
+                .as_ref()
+                .expect("lethal receipt")
+                .attribution()
+                .killer,
+            crate::player_lethal::LethalSource::SummonOf {
+                owner: character,
+                creature
+            }
+        );
+    }
+    #[test]
+    fn lethal_attribution_uses_actual_applied_hp_and_does_not_count_heal_or_replay() {
+        let (mut r, mut s, a, g, c) = ready(0x44);
+        let second = r
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 12,
+                y: 10,
+                floor: 7,
+            })
+            .expect("second source");
+        let first = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                3,
+                "ledger:first",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c),
+            )
+            .expect("first hit");
+        let observed = s.damage_ledgers.clone();
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                3,
+                "ledger:first",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
+            ),
+            Some(first)
+        );
+        assert_eq!(s.damage_ledgers, observed);
+        assert!(
+            s.apply_source_player_heal(
+                &mut r,
+                a,
+                g,
+                1,
+                "ledger:heal",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            )
+            .is_some()
+        );
+        assert_eq!(s.damage_ledgers, observed);
+        let lethal = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                u32::MAX,
+                "ledger:final",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1),
+                crate::player_lethal::LethalSource::Creature(second),
+            )
+            .expect("final hit");
+        assert_eq!(lethal.applied, 183);
+        let death = lethal.death.as_ref().expect("native lethal receipt");
+        assert_eq!(
+            death.attribution().killer,
+            crate::player_lethal::LethalSource::Creature(second)
+        );
+        assert_eq!(
+            death.attribution().assists,
+            vec![(crate::player_lethal::LethalSource::Creature(c), 3)]
+        );
+        assert_eq!(
+            death.occurrence_bytes(),
+            *s.player_death(&r, a, g)
+                .expect("native death")
+                .occurrence
+                .as_bytes()
+        );
+    }
+    #[test]
+    fn source_replay_substitution_and_cross_runtime_source_refuse_without_hp_or_ledger_write() {
+        let (mut r, mut s, a, g, c) = ready(0x45);
+        let second = r
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 12,
+                y: 10,
+                floor: 7,
+            })
+            .expect("second source");
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "binding:one",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
+            )
+            .is_some()
+        );
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "binding:one",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(second)
+            )
+            .is_none()
+        );
+        let foreign = ExactActorRef::transport_fixture(
+            crate::foundation::WorldId::decode(&[
+                1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1,
+            ])
+            .expect("foreign world"),
+            r.binding().channel_id(),
+        );
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "binding:foreign",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1),
+                crate::player_lethal::LethalSource::Creature(foreign)
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+    }
+    #[test]
+    fn source_clock_regression_refuses_without_hp_ledger_or_replay_mutation() {
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        let (mut r, mut s, a, g, c) = ready(0x48);
+        let source = crate::player_lethal::LethalSource::Creature(c);
+        let first = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "clock:first",
+                OwnerTime::from_micros(10),
+                source,
+            )
+            .expect("fresh native hit");
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "clock:stale",
+                OwnerTime::from_micros(9),
+                source
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+        assert!(s.deaths.is_empty());
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "clock:first",
+                OwnerTime::from_micros(11),
+                source
+            ),
+            Some(first)
+        );
+        assert_eq!(s.damage_ledgers, ledger);
+    }
+    #[test]
+    fn source_replay_after_source_retirement_keeps_history_but_fresh_damage_refuses() {
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        let (mut r, mut s, a, g, c) = ready(0x49);
+        let source = crate::player_lethal::LethalSource::Creature(c);
+        let first = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "retired:first",
+                OwnerTime::from_micros(0),
+                source,
+            )
+            .expect("admitted source hit");
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        r.remove_test_actor(c)
+            .expect("source retired by actual owner");
+        assert!(crate::player_lethal::LethalSource::current_actor(&r, c).is_none());
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                20,
+                "retired:first",
+                OwnerTime::from_micros(1),
+                source
+            ),
+            Some(first)
+        );
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                1,
+                "retired:fresh",
+                OwnerTime::from_micros(1),
+                source
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+        assert!(s.deaths.is_empty());
+    }
+    #[test]
+    fn failed_lethal_mint_does_not_publish_staged_window_pruning() {
+        use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
+        let (mut r, mut s, a, g, c) = ready(0x4a);
+        let final_source = r
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 12,
+                y: 10,
+                floor: 7,
+            })
+            .expect("second admitted source");
+        let first_source = crate::player_lethal::LethalSource::Creature(c);
+        let final_source = crate::player_lethal::LethalSource::Creature(final_source);
+        s.apply_attack_damage(
+            &mut r,
+            a,
+            g,
+            20,
+            "prune:first",
+            OwnerTime::from_micros(0),
+            first_source,
+        )
+        .expect("initial actual HP contribution");
+        let before = s.get(&r, a, g).cloned();
+        let ledger = s.damage_ledgers.clone();
+        let mint = s.mint_death;
+        s.mint_death = || None;
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                200,
+                "prune:failed",
+                OwnerTime::from_micros(300_000_001),
+                final_source
+            )
+            .is_none()
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert_eq!(s.damage_ledgers, ledger);
+        assert!(s.deaths.is_empty());
+        s.mint_death = mint;
+        let receipt = s
+            .apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                200,
+                "prune:committed",
+                OwnerTime::from_micros(1),
+                final_source,
+            )
+            .expect("fresh native lethal commit after refused staging");
+        assert_eq!(receipt.applied, 165);
+        let death = receipt.death.as_ref().expect("same-commit lethal receipt");
+        assert_eq!(death.attribution().killer, final_source);
+        assert_eq!(death.attribution().assists, vec![(first_source, 20)]);
+        assert_eq!(s.deaths.len(), 1);
     }
     #[test]
     fn source_lethal_receipt_reuses_native_death_and_respawn_clears_source_replay() {
-        let (mut r, mut s, a, g) = ready(0x41);
+        let (mut r, mut s, a, g, c) = ready(0x41);
         wound(&mut s, a, g, 8);
         let Some(hit) = s.apply_attack_damage(
             &mut r,
@@ -2716,18 +3370,25 @@ mod source_native_vitals_tests {
             8,
             "source:lethal:0",
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+            crate::player_lethal::LethalSource::Creature(c),
         ) else {
             panic!("native source hit")
         };
         let Some(native) = s.player_death(&r, a, g) else {
             panic!("native death")
         };
-        let Some(receipt) = hit.death else {
+        let Some(receipt) = hit.death.as_ref() else {
             panic!("receipt")
         };
         assert_eq!(receipt.occurrence_bytes(), *native.occurrence.as_bytes());
         assert_eq!(receipt.position(), native.cell);
         assert_eq!(hit.health_after, 0);
+        assert_eq!(
+            receipt.attribution().killer,
+            crate::player_lethal::LethalSource::Creature(c)
+        );
+        assert!(receipt.attribution().assists.is_empty());
+        let observed = s.damage_ledgers.clone();
         assert_eq!(
             s.apply_attack_damage(
                 &mut r,
@@ -2735,7 +3396,8 @@ mod source_native_vitals_tests {
                 g,
                 8,
                 "source:lethal:0",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
             ),
             Some(hit)
         );
@@ -2746,10 +3408,12 @@ mod source_native_vitals_tests {
                 g,
                 9,
                 "source:lethal:0",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
             ),
             None
         );
+        assert_eq!(s.damage_ledgers, observed);
         assert_eq!(s.deaths.len(), 1);
         assert_eq!(
             s.apply_source_player_heal(
@@ -2784,6 +3448,7 @@ mod source_native_vitals_tests {
             .is_some()
         );
         assert!(s.source_damage.is_empty());
+        assert!(s.damage_ledgers.is_empty());
         assert!(s.source_mana.is_empty());
         assert!(s.source_heal.is_empty());
         assert!(
@@ -2793,7 +3458,8 @@ mod source_native_vitals_tests {
                 g,
                 8,
                 "source:lethal:1",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
             )
             .is_some()
         );
@@ -2801,7 +3467,7 @@ mod source_native_vitals_tests {
     }
     #[test]
     fn source_failed_native_mint_and_wrong_session_have_no_hp_or_memo_write() {
-        let (mut r, mut s, a, g) = ready(0x42);
+        let (mut r, mut s, a, g, c) = ready(0x42);
         wound(&mut s, a, g, 8);
         s.mint_death = || None;
         let before = s.get(&r, a, g).cloned();
@@ -2812,12 +3478,14 @@ mod source_native_vitals_tests {
                 g,
                 8,
                 "mint:failed",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
             ),
             None
         );
         assert_eq!(s.get(&r, a, g).cloned(), before);
         assert!(s.source_damage.is_empty());
+        assert!(s.damage_ledgers.is_empty());
         assert!(s.deaths.is_empty());
         let (_, _, other) = runtime_with_player(0x43);
         assert_eq!(
@@ -2827,7 +3495,8 @@ mod source_native_vitals_tests {
                 other,
                 1,
                 "session:wrong",
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+                crate::player_lethal::LethalSource::Creature(c)
             ),
             None
         );
@@ -2857,7 +3526,7 @@ mod source_native_vitals_tests {
     }
     #[test]
     fn source_heal_uses_current_maximum_native_credit_noop_revision_and_replay() {
-        let (mut r, mut s, a, g) = ready(0x44);
+        let (mut r, mut s, a, g, _c) = ready(0x44);
         wound(&mut s, a, g, 100);
         let before = s.get(&r, a, g).cloned();
         let Some(heal) = s.apply_source_player_heal(
@@ -2926,7 +3595,7 @@ mod source_native_vitals_tests {
     }
     #[test]
     fn source_mp_only_drain_clamps_current_pool_replays_and_exhaustion_keeps_revision() {
-        let (mut r, mut s, a, g) = ready(0x45);
+        let (mut r, mut s, a, g, _c) = ready(0x45);
         let Some(before) = s.get(&r, a, g).cloned() else {
             panic!("before")
         };
@@ -3135,10 +3804,12 @@ impl NativeRegenerationTickSource for NativeRegenerationRegistry {
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 pub(crate) struct NativeOwnedPlayerTickReceipt {
-    pub(crate) ticks: Vec<crate::ability::condition::ConditionTick<String>>,
+    pub(crate) ticks:
+        Vec<crate::ability::condition::ConditionTick<String, crate::player_lethal::LethalSource>>,
     pub(crate) revision: u64,
     pub(crate) damage: u32,
     pub(crate) death: Option<PlayerDeath>,
+    pub(crate) lethal: Option<crate::player_lethal::PlayerLethalReceipt>,
 }
 impl ChannelSpellStates {
     /// Independently qualified map/field facts are supplied by the same source owner turn.
@@ -3174,6 +3845,15 @@ impl ChannelSpellStates {
             return None;
         }
         let mut next = before.clone();
+        // Frozen application source is historical data. Do not reacquire a dead caster.
+        let mut ledger = self
+            .damage_ledgers
+            .iter()
+            .find(|(actor, current_session, _)| *actor == target && *current_session == session)
+            .map(|(_, _, ledger)| ledger.clone())
+            .unwrap_or_default();
+        let mut observed = false;
+        let mut lethal_context = None;
         let ticks = next.source_take_due(now.get(), facts);
         let mut damage = 0u32;
         for tick in &ticks {
@@ -3182,6 +3862,7 @@ impl ChannelSpellStates {
             }
             match tick.kind {
                 TickKind::Damage {
+                    element,
                     amount,
                     refused: false,
                     ..
@@ -3201,6 +3882,23 @@ impl ChannelSpellStates {
                         now.get(),
                     )
                     .ok()?;
+                    if hit.applied > 0 {
+                        let source = tick
+                            .provenance
+                            .lethal_source
+                            .unwrap_or(crate::player_lethal::LethalSource::Unattributed);
+                        ledger.observe(source, hit.applied, now).ok()?;
+                        observed = true;
+                        if hit.health_after == 0 {
+                            lethal_context =
+                                Some(crate::player_lethal::PlayerDamageSourceContext::Condition {
+                                    kind: crate::ability::condition::ConditionType::DamageOverTime(
+                                        element,
+                                    ),
+                                    source,
+                                });
+                        }
+                    }
                     damage = damage.checked_add(hit.applied)?;
                     next = successor;
                 }
@@ -3242,6 +3940,22 @@ impl ChannelSpellStates {
                             now.get(),
                         )
                         .ok()?;
+                        if hit.applied > 0 {
+                            let source = tick
+                                .provenance
+                                .lethal_source
+                                .unwrap_or(crate::player_lethal::LethalSource::Unattributed);
+                            ledger.observe(source, hit.applied, now).ok()?;
+                            observed = true;
+                            if hit.health_after == 0 {
+                                lethal_context = Some(
+                                    crate::player_lethal::PlayerDamageSourceContext::Condition {
+                                        kind: crate::ability::condition::ConditionType::Agony,
+                                        source,
+                                    },
+                                );
+                            }
+                        }
                         damage = damage.checked_add(hit.applied)?;
                         next = successor;
                     }
@@ -3265,9 +3979,44 @@ impl ChannelSpellStates {
         } else {
             None
         };
+        let attribution = if death.is_some() {
+            let context = lethal_context?;
+            let crate::player_lethal::PlayerDamageSourceContext::Condition { source, .. } = context
+            else {
+                return None;
+            };
+            Some((ledger.snapshot(source, now).ok()?, context))
+        } else {
+            None
+        };
+        if observed
+            && !self
+                .damage_ledgers
+                .iter()
+                .any(|(actor, current_session, _)| *actor == target && *current_session == session)
+        {
+            self.damage_ledgers.try_reserve(1).ok()?;
+        }
         if changed && !self.commit(runtime, target, session, next) {
             return None;
         }
+        if observed {
+            self.publish_damage_ledger(target, session, ledger);
+        }
+        let lethal = death
+            .zip(attribution)
+            .map(|(death, (attribution, context))| {
+                crate::player_lethal::PlayerLethalReceipt::from_native_commit(
+                    runtime,
+                    target,
+                    session,
+                    revision,
+                    *death.occurrence.as_bytes(),
+                    death.cell,
+                    attribution,
+                    context,
+                )
+            });
         if let Some(death) = death {
             self.deaths.push((target, session, death));
         }
@@ -3276,6 +4025,7 @@ impl ChannelSpellStates {
             revision,
             damage,
             death,
+            lethal,
         })
     }
 }
@@ -3586,12 +4336,33 @@ mod owned_source_tick_tests {
         assert!(pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()).is_none());
         assert_eq!(s.get(&r, a, g), before.as_ref());
         assert!(s.deaths.is_empty());
+        assert!(s.damage_ledgers.is_empty());
         s.mint_death = mint;
         let Some(receipt) = pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()) else {
             panic!("owned lethal")
         };
         assert_eq!(receipt.damage, 185);
         assert!(receipt.death.is_some());
+        let Some(lethal) = receipt.lethal.as_ref() else {
+            panic!("same-commit lethal receipt")
+        };
+        assert_eq!(
+            lethal.attribution().killer,
+            crate::player_lethal::LethalSource::Unattributed
+        );
+        assert_eq!(
+            lethal.source_context(),
+            crate::player_lethal::PlayerDamageSourceContext::Condition {
+                kind: crate::ability::condition::ConditionType::DamageOverTime(
+                    crate::ability::condition::DotElement::Poison
+                ),
+                source: crate::player_lethal::LethalSource::Unattributed
+            }
+        );
+        let Some(native) = receipt.death else {
+            panic!("native death")
+        };
+        assert_eq!(lethal.occurrence_bytes(), *native.occurrence.as_bytes());
         let Some(state) = s.get(&r, a, g) else {
             panic!("nativeHP")
         };
@@ -3730,7 +4501,8 @@ impl ChannelSpellStates {
                 .map(|byte| format!("{byte:02x}"))
                 .collect::<String>()
         );
-        let Some(next) = before.stage_source_player_conditions(source, definitions, &[], facts)
+        let Some(next) =
+            before.stage_source_player_conditions(source, None, definitions, &[], facts)
         else {
             return false;
         };
@@ -3742,7 +4514,8 @@ impl ChannelSpellStates {
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
-    ) -> Option<crate::ability::condition::ConditionStore<String>> {
+    ) -> Option<crate::ability::condition::ConditionStore<String, crate::player_lethal::LethalSource>>
+    {
         Some(
             self.get(runtime, target, session)?
                 .owned_conditions()

@@ -110,7 +110,8 @@ pub(crate) struct PlayerSpellState {
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
     pub(super) monk: Option<MonkState>,
-    pub(super) conditions: crate::ability::condition::ConditionStore<String>,
+    pub(super) conditions:
+        crate::ability::condition::ConditionStore<String, crate::player_lethal::LethalSource>,
     pub(super) base_speed: u32,
     pub(super) stance: Option<super::native_actor_states::StandardStance>,
     pub(super) stance_key: Option<String>,
@@ -261,7 +262,7 @@ impl PlayerSpellState {
                 cooldowns: Cooldowns::default(),
                 revision: 1,
                 monk,
-                conditions: crate::ability::condition::ConditionStore::new(),
+                conditions: crate::ability::condition::ConditionStore::default(),
                 base_speed,
                 stance: None,
                 stance_key: None,
@@ -586,8 +587,8 @@ pub(crate) fn condition_gate(
 }
 
 /// [`condition_gate`] over any condition store, such as the actor's runtime condition slot.
-pub(crate) fn store_condition_gate<S: Clone>(
-    store: &crate::ability::condition::ConditionStore<S>,
+pub(crate) fn store_condition_gate<S: Clone, L: Clone>(
+    store: &crate::ability::condition::ConditionStore<S, L>,
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
 ) -> Result<(), crate::ability::condition::ConditionGate> {
@@ -1180,13 +1181,22 @@ pub(crate) fn resolve_ordinary_due_effects(
 }
 
 impl PlayerSpellState {
-    pub(crate) fn owned_conditions(&self) -> &crate::ability::condition::ConditionStore<String> {
+    pub(crate) fn owned_conditions(
+        &self,
+    ) -> &crate::ability::condition::ConditionStore<String, crate::player_lethal::LethalSource>
+    {
         &self.conditions
     }
     pub(crate) fn apply_batch_conditions(
         &mut self,
-        expected: &crate::ability::condition::ConditionStore<String>,
-        next: &crate::ability::condition::ConditionStore<String>,
+        expected: &crate::ability::condition::ConditionStore<
+            String,
+            crate::player_lethal::LethalSource,
+        >,
+        next: &crate::ability::condition::ConditionStore<
+            String,
+            crate::player_lethal::LethalSource,
+        >,
     ) -> Result<(), SpellCastDisposition> {
         if &self.conditions != expected {
             return Err(SpellCastDisposition::Rejected);

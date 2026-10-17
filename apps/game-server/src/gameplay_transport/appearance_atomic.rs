@@ -68,6 +68,7 @@ impl ChannelSpellStates {
                 let before = self.get(runtime, target.actor, session)?.clone();
                 let next = before.stage_source_player_conditions(
                     label.clone(),
+                    None,
                     definitions,
                     &target.immunities,
                     &target.facts,

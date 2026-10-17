@@ -454,8 +454,8 @@ pub(crate) fn remove_condition_at(
 
 /// The same real store predicate is shared by both cast consumers. It neither
 /// removes the condition nor grants current actor or payment authority.
-pub(crate) fn require_active_mana_shield<S: Clone>(
-    store: &crate::ability::condition::ConditionStore<S>,
+pub(crate) fn require_active_mana_shield<S: Clone, L: Clone>(
+    store: &crate::ability::condition::ConditionStore<S, L>,
     now_us: u64,
 ) -> Result<(), SpellCastDisposition> {
     if !store.accepts_time(now_us) {
@@ -496,7 +496,7 @@ pub(crate) fn tick(
     state: &mut PlayerSpellState,
     now_ms: u64,
     facts: TickFacts,
-) -> Result<Vec<ConditionTick<String>>, SpellCastDisposition> {
+) -> Result<Vec<ConditionTick<String, crate::player_lethal::LethalSource>>, SpellCastDisposition> {
     tick_inner(state, now_ms, facts, true)
 }
 fn tick_inner(
@@ -504,7 +504,7 @@ fn tick_inner(
     now_ms: u64,
     facts: TickFacts,
     damage: bool,
-) -> Result<Vec<ConditionTick<String>>, SpellCastDisposition> {
+) -> Result<Vec<ConditionTick<String, crate::player_lethal::LethalSource>>, SpellCastDisposition> {
     let now = now_us(now_ms)?;
     if !state.conditions.accepts_time(now)
         || state.health > state.facts.max_health
@@ -1132,7 +1132,7 @@ pub(crate) fn movement_speed_with(
 /// complete successor. The struct itself grants no periodic damage authority.
 pub(crate) struct ConditionCycle {
     pub(crate) next: PlayerSpellState,
-    pub(crate) combat_ticks: Vec<ConditionTick<String>>,
+    pub(crate) combat_ticks: Vec<ConditionTick<String, crate::player_lethal::LethalSource>>,
     pub(crate) publish_vitals: bool,
 }
 pub(crate) fn stage_owner_cycle(

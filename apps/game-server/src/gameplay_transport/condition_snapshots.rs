@@ -78,8 +78,8 @@ impl PreparedConditionSnapshot {
         Ok(())
     }
 }
-fn current_fields<S: Clone>(
-    store: &ConditionStore<S>,
+fn current_fields<S: Clone, L: Clone>(
+    store: &ConditionStore<S, L>,
     now: u64,
 ) -> Result<(bool, Option<codec::Light>, Option<TemporaryAppearance>), Error> {
     if !store.accepts_time(now) {
