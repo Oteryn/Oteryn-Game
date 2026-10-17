@@ -272,3 +272,240 @@ migration 0098, post-commit notices and complete gameplay/E2E delivery remain
 unfinished. The earlier 23-case offline coverage result remains a separate
 tooling result. `NOT_FULLY_QUALIFIED`, the shared-slot gates and CP-only
 integration/merge authority remain in force.
+
+## ACH-COUNTER-1: pending catalogue loader — CP D1331–D1334 (2026-10-17)
+
+Prepared against exact source `52007b10f28991b9eb4fa4d4eb0ea86fd67e45a7` under
+[CP D1331–D1334](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233177640).
+This is a held D1332 source slice. Its publication slot follows #2181 merged and
+fresh main integration; the coordinator remains the sole branch publisher.
+
+### owned_paths amendment under D1332
+
+In addition to the already owned `apps/game-server/src/achievement/counters.rs`,
+D1332 grants these exact paths for this slice:
+
+- `content/achievements/counter-thresholds.json` — new table; the initial empty
+  version is superseded here by exactly one CP-permitted, evidence-qualified row.
+- `tools/content-schema/achievement-authoring/counter-thresholds.schema.json` — table schema.
+- `apps/game-server/src/achievement_catalogue.rs` — the real catalogue lookup binding;
+  this candidate reuses its existing `lookup` unchanged, without a duplicate wrapper.
+
+The new loader accepts only `level`, `magic_level`, `fist`, `club`, `sword`,
+`axe`, `distance`, `shielding` and `fishing`. It rejects malformed/unknown fields,
+unknown versions, any status other than `PENDING`, nonpositive or unrepresentable
+values, exact duplicate `(counter, value, achievement)` triples, and catalogue keys
+that are absent or retired. The revision comes from the actual
+`AchievementCatalogue::lookup`, never from the threshold document or a supplied
+lookup callback. Different achievements may share one counter/value event; the
+existing batch writer retains the separate per-earning-transaction request limit.
+
+The result is explicitly `PendingCounterThresholdCatalogue`: pending authoring
+bindings only, with no grant request, activation variant or authority witness.
+The table's `PENDING` status remains unchanged. Qualification of a threshold datum
+does not activate its earning path.
+
+### Exactly one independently reviewed Reference datum
+
+[CP capture 6233358050](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233358050)
+permits exactly `oteryn:achievement/seasoned_adventurer`, counter `level`, value
+`50`. The [raw transfer 6233403966](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233403966)
+was independently reviewed against the actual catalogue record at this source head:
+
+| Binding | Exact evidence |
+|---|---|
+| Catalogue key/revision | `oteryn:achievement/seasoned_adventurer` / `1`; the record is not retired |
+| Catalogue source | `content/achievements/achievements-00000-00499.json` at `52007b10f28991b9eb4fa4d4eb0ea86fd67e45a7`, Git blob `fa42f0dc1d90a8863515f1c1ed95d24c6662386b` |
+| MediaWiki page/revision | pageid `68951`, revid `753341`, timestamp `2019-01-11T21:20:04Z`; cut `2026-09-27T23:59:59Z` |
+| Revision content SHA1 | `31b7fd5f97c0f45159e7bfbb6c62aac04d97cd56` |
+| Raw response SHA256 | `c1ace44aae3025b4db8228272a8239a9bad95410cf6f3ce98997353adf48d1b4` |
+| Independent review receipt SHA256 | `daf2dc77e825db186b0e3c83916f2cf6d2ed8113cc98a6b185c5b8ca189a05c8` |
+
+The independent review binds the registered MediaWiki request, response/content
+hashes, full acquisition condition, and the actual catalogue identity/provenance.
+Its scope is this one positive datum; it is not native loader/runtime qualification.
+The earlier local API HTTP 402 is retained in
+[6233309005](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233309005)
+and was superseded for this datum by CP's successful capture and raw review.
+
+The other eight counter keys receive no rows. Discovery screened current text;
+historical completeness at the cut is not established, so this slice makes no
+global claim that other thresholds never existed.
+
+The acquisition condition also describes obtaining the achievement on another
+level-up after already surpassing level 50. That catch-up wording is a separate
+future caller question against ACHIEVEMENT0 §3.4's accepted strict crossing
+`before < threshold <= after`. It does not authorize login-time or historical
+automatic grants. This pending loader implements neither earning behavior and
+does not change the current crossing contract.
+
+### Qualification boundary
+
+Eight original Rust tests live in the owned loader leaf. The embedded-table test
+requires exactly the one real `level / 50 / seasoned_adventurer / revision 1` row,
+resolved through the actual embedded Achievement catalogue. The other seven test
+bodies remain unchanged: all nine keys, unowned keys, closed JSON shape/status/version,
+lossless positive values, absent/retired bindings, duplicate triples and distinct
+achievements sharing a threshold event. Their synthetic fixtures add no other
+Reference claim or production row.
+
+The coordinator qualified the original v1 JSON Schema driver on PC: **50/50 PASS**.
+V2 changes the schema description only, with every validation rule preserved;
+the checked-in table now carries the one qualified row. Schema execution against
+this exact v2, native Cargo tests, strict Clippy and Rust formatting are **NOT_RUN**
+at this held checkpoint. No prior batch/CI/native result is transferred to the
+new loader.
+
+No module registration, production activation, counter receipts, XP/build writer
+hooks or proof extension is part of this source slice. D1333 still defers the two
+writer hooks until #2181, #2192 and #2154 have merged and CP grants fresh pinned
+hunks. D1334 requires a separate exact proof-type/consumer decision. The existing
+batch, encounter/quest earning, post-commit notice, full-package and E2E gates
+remain as recorded above; this slice does not complete ACH-1.
+
+## ACH-COUNTER-1 — D1363 compiling draft checkpoint (2026-10-17)
+
+This appendix supersedes the preceding D1332 **publication timing** hold and the
+selected loader's NOT_RUN checkpoint. The complete preceding record is preserved.
+[CP D1363](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234142275)
+performed the ordinary main merge and permits the complete compiling draft source
+checkpoint now. Its exact base is `5a309b1a89ad42481e03e273ea83808034751279`, with
+parents `52007b10f28991b9eb4fa4d4eb0ea86fd67e45a7` and main
+`f010472bcb6794a2cbc56dfaf755bd122c10225e`.
+
+### D1363 owned_paths supplement
+
+The checkpoint contains exactly these five paths within the existing D1332/D1363
+scope:
+
+- `apps/game-server/src/achievement/counters.rs` — the PENDING loader and eight original cases.
+- `content/achievements/counter-thresholds.json` — the one independently qualified D1340 row.
+- `tools/content-schema/achievement-authoring/counter-thresholds.schema.json` — the closed table schema.
+- `apps/game-server/tests/account_achievement_postgres.rs` — exactly the granted two-line mount of the owned loader in the existing canonical test target.
+- `docs/agents/tasks/ACH-1.md` — this additive allocation and evidence record.
+
+D1363 permits publication of the actual test mount in this draft. The original
+entry, catalogue registration and test bodies are preserved. The existing
+`AchievementCatalogue::lookup` is reused unchanged. The loader/table remain
+PENDING and provide no grant, runtime consumer, XP/build hook or authority proof.
+
+### Preserved attempt 1: failed compilation, no counter test result
+
+The first assembly used exact `52007b10f28991b9eb4fa4d4eb0ea86fd67e45a7`.
+Its fresh locked fetch passed, but the selected test command exited **101 before
+test execution** with three unresolved protocol `logout` imports. No eight-case,
+Clippy or workspace fmt PASS is attributed to that attempt.
+
+Actual current source already exported `logout` unconditionally. Root retained
+Cargo's `fresh:true` protocol artifact and its dependency text omitting
+`logout.rs`. These facts establish the incompatible reused dependency artifact;
+they do not identify a particular sccache failure mechanism. No counter or
+protocol source repair was used for the retry.
+
+Historical evidence remains in
+`/root/oteryn-six-pr-20261017/evidence-ach-counter-native-1017/`:
+
+- Raw failed `results.json`: SHA256 `154baac0d172bfea737912236242d54c7bd83f1b89b3be70d6f3b4d3161304a2`.
+- Failed `ach-counter-eight.log`: SHA256 `3801c713bbacfdb714c2884c299f1ac2c3205945abd12a497fc5458f0590f7f4`.
+- Retained diagnosis `/mnt/c/Oteryn/tmp/six-pr-ach-cache-diagnosis.json`: SHA256 `6297f6669fa24c22f4fc3b4bd23e986e5c34fe45992bc7248cb79a8680740808`.
+- Attempt-1 driver: SHA256 `216a8ba38031dc2fab5fa1ac0f4984be231e0cef64c819cbcdea29a74ed2d03f`.
+
+### Exact current-source native qualification
+
+The coordinator's attempt 2 qualified **8 passed, 0 failed, 0 ignored, 0 measured,
+1163 filtered out**, in **0.01 seconds**, at `2026-10-17T13:23:01.170836+00:00`.
+These are the eight original pending-loader/schema/catalogue cases, through
+`--test account_achievement_postgres`; they are not eight PostgreSQL grant cases.
+Explicit target strict Clippy, game-server all-target strict Clippy and workspace
+Cargo fmt also passed. The terminal run record reports PASS and source UNCHANGED;
+the qualified before/after snapshots are equal at exact base `5a309b1a`.
+
+D1363c's repair was ordinary `cargo clean` only in the run's held D1342 slot
+**A**, target `/root/oteryn-target-A`, followed by a fresh locked fetch and the unchanged
+selected checks. Each recorded Cargo command used the pinned shared build
+environment and a fresh MemAvailable check of at least 12 GiB. The shared sccache
+configuration remained unchanged. No cache purge, source-mtime or compiler-flag
+workaround, peer action, or outside-target ELF action was used.
+The original tests used their default Rust stack and one test thread.
+
+Fresh source preparation is bound by
+`/root/oteryn-six-pr-20261017/evidence-ach-counter-current-prep-v2-1017/prep.json`,
+SHA256 `8e54e2a6966e25395c3a05f90ec6e2f3a03f1ef8da88fe31fe5e2c0d456c0ec4`;
+it records the exact source/build pins and **50/50** schema cases passing.
+The four source/content publication files are byte-identical to native input:
+
+| File | SHA256 |
+|---|---|
+| `achievement/counters.rs` | `cb326fe554de199f034124be70e984313ebc5ae2b9a8a21c42f0ef7848c22e69` |
+| `tests/account_achievement_postgres.rs` | `0fce1e7aa54c396a6ca8f9d893ae5b19a33b26c92e2563fbd29bcb36658f92a3` |
+| `content/achievements/counter-thresholds.json` | `e943343675780fa2ce0ea52f8f769b5797c4b0aa380f0f5e5e980a59537800f1` |
+| `achievement-authoring/counter-thresholds.schema.json` | `d0fd833d9e3df61c0bf1fb913ee9f0c673fa92ad23a7feac26ea664f3f23f09d` |
+
+The native input task-card bytes (`46afaf7ce1e7eb1f87144939f869f8fd4eb5844a15bb485f778edacbcdaf8c57`)
+remain the complete prefix before this appendix. The publication adds only this
+truthful documentation after those qualified inputs.
+
+Actual requested commands below were each wrapped by the recorded pinned build
+environment; the native receipts retain the complete outer argv:
+
+```sh
+cargo clean --target-dir /root/oteryn-target-A
+cargo fetch --locked
+/root/.oteryn/in-pg-netns.sh cargo test --locked --offline -p oteryn-game-server --test account_achievement_postgres achievement_counter_thresholds_ --quiet --message-format=json-render-diagnostics -- --test-threads=1
+/root/.oteryn/in-pg-netns.sh cargo clippy --locked --offline -p oteryn-game-server --test account_achievement_postgres --quiet -- -D warnings
+/root/.oteryn/in-pg-netns.sh cargo clippy --locked --offline -p oteryn-game-server --all-targets --quiet -- -D warnings
+cargo fmt --all -- --check
+```
+
+| Check | Result | Finished at UTC | Actual log SHA256 |
+|---|---|---|---|
+| ach-counter-clean | PASS | 2026-10-17T13:16:51.697749+00:00 | 34054be9ba0ac00767ebd8904e92ae5e5734eff85b5029bc965d1ff0684bd9de |
+| ach-counter-fetch | PASS | 2026-10-17T13:16:55.471312+00:00 | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+| ach-counter-eight | PASS | 2026-10-17T13:19:16.908264+00:00 | ec9b20d8f210e8959100e5968a7d7190c218b247560655bd697957c0d9dccd45 |
+| ach-counter-clippy-target | PASS | 2026-10-17T13:21:08.895005+00:00 | 984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1 |
+| ach-counter-clippy | PASS | 2026-10-17T13:22:28.070901+00:00 | 984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1 |
+| ach-counter-fmt | PASS | 2026-10-17T13:23:00.733713+00:00 | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+
+Native evidence directory:
+`/root/oteryn-six-pr-20261017/evidence-ach-counter-native-v2-1017/`.
+
+| Receipt or source binding | SHA256 |
+|---|---|
+| `ach-counter-qualified.json` | `b2b01a3501a5a248c34e387fa57ff3eabc9ea548e53cb54565909cfaec85bd17` |
+| Terminal `results.json` | `27e3cbfed5f64415e37dc3a07efbfb9aa680e6bedf7740a02387304bd49b4361` |
+| `clean-qualified.json` | `56e6e219ca0429bb489439790eabb66305d2d61ff3157fbdd7d03e70e29a17b3` |
+| `fetch-qualified.json` | `c867ea47a07d50b86c4cd5c853dc4fdfe67c5b8e9d580a6cc5e84e9603fbedb4` |
+| `ach-counter-artifact.json` | `2052522c9b4bb866cc15f0fabc8ddb4e1af53223cdc8596bb26359ea4dc2bce8` |
+| `protocol-artifact.json` | `fbda21e8d526e29c14fc36078c07ba1c14e21c5ec5470854480eab4706a372f8` |
+| Actual test ELF, checked under the native slot lease | `265341f1f34a8afc95220ddf4aa940922ebaaaaa0ab18b092e21d0383b5c6cdf` |
+| Actual test dependency file | `b1012024a6385240ebda03a3740b722f68053f207a1edf3f60a5fc5efbf90c73` |
+| Retained current protocol dependency file | `20916bdf5c82ee33919b88b9abaadf8d1ff0a7cd6275c66526d1649f6c697806` |
+| Attempt-2 driver | `8a81aa75b380842b2684aa53b01be336d4c4b9b86bf96e36537dba679b95299b` |
+| Shared slot helper | `851870ed67accd2f66bfb5f0ecce2a81662e908509cfe742daaebb7b0cacb3e3` |
+| Shared build environment | `afc2f04924c412b5965a1c4f6a2b30dfcd9e80ac0a185af737d070ebedbefd82` |
+
+The actual Cargo JSON and test dependency receipt bind the canonical entry,
+owned loader, real Achievement catalogue and threshold table to the native
+checkout. The protocol receipt records a rebuilt (`fresh:false`) actual library
+and retained dependency text containing both current `lib.rs` and `logout.rs`.
+The driver verified these artifacts while it still held its slot; publication
+rehashes their saved receipts and logs without reading a later user's live slot
+ELF or dependency files.
+
+### Remaining integration gates
+
+The source checkpoint does not complete ACH-1. Under D1363b, merge and production
+activation remain **after #2181 merges**. The shared test-file integration order
+is still #2181 → #2154, and #2154 merges then-current main again after #2181 lands.
+Ready-for-review and queue actions remain CP-only.
+
+D1331, D1333 and D1334 remain DEFERRED. The separately qualified single D1340 row
+does not establish a complete threshold catalogue; historical absence of other
+thresholds has not been proved. The captured level-50 catch-up wording remains a
+future caller question against the accepted strict crossing contract. Earning
+receipts/callers, XP/build hooks, proof-type extension, encounter/quest composition,
+notices, full-package execution and gameplay/E2E retain their existing gates.
+
+Frozen-commit diff/governance checks and publication readback are required after
+this source freeze. Their actual outcomes belong to the separate publication
+record and PR evidence; this appendix contains no claim about a future commit.
