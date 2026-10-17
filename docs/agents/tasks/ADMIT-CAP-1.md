@@ -18,7 +18,7 @@ registry: yes
 owner: Admission family I (user-delegated; CP D1081-D1084)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-16
+updated_at: 2026-10-17
 candidate_state: AUTHORING
 execution_policy: continuous_progress
 owned_paths:
@@ -53,7 +53,110 @@ Skeleton task record (parallel work model, owner-approved 2026-10-15). The build
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
 CP and architect do the final review.
 
-## Current checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
+## Continuation checkpoint — NOT_FULLY_QUALIFIED (2026-10-17)
+
+Fresh-read public source: `c26d8a3150683539361202c94b08e3f82d89b8af`.
+The continuation is AUTHORING; this repair changes only the owned login-local
+configuration renderer and this task record. Root owns publication. The recovered
+private A2 source remains `d0a262f47c0e3afc1fcc80fb4cbe007d0781b8d4`;
+its 17,276-byte Git bundle and 40,003-byte, 13-file integration patch reproduce
+the recovery SHA256 values retained below. No shared runtime hunk is published.
+
+**F1 — fixed:** the actual `write_node_config()` emitted
+`required_gameplay_capabilities = []` even with `LOGIN_LOCAL_WORLD_BUNDLE=1`.
+That bundle offer has the accepted map floor 18, so boot refuses the empty
+declaration with `MissingFloor([18])` before readiness. The renderer now declares
+`[18]` for bundle mode and `[]` for the fixture build. The existing immutable
+builder still computes closure `[4, 6, 18]`; its floor and refusal are unchanged.
+
+Validation executes the actual renderer in a disposable directory for modes 0
+and 1, intercepting only the final privileged installation. It parses both
+outputs as TOML and checks the declaration, map revision and bundle-table
+presence. Original source blob `5547e2be1764d566ecadf7da29ef704fcadc845b`
+fails the bundle case (RED, exit 1); repaired source blob
+`cdedcf24d79b2fc708c982700a89ff989cb501fe` passes both cases (GREEN, exit 0).
+`bash -n tools/qualification/login_local/run.sh` and `git diff --check`: PASS.
+Local `tools/agents/validate_governance.py`: PASS (22 documents, 9 lanes);
+`python -m unittest discover -s tools/agents/tests`: PASS (124 tests).
+ShellCheck: NOT_RUN, executable unavailable in the authoring environment.
+Repaired script SHA256:
+`744e5e53bd739322a6d01b46fbf6cb8d7f7a96baf834f7d3c7ac9f8903475663`.
+The lead retains the disposable renderer regression beside the source packet.
+
+**F2 — cross-domain finding, deferred to the deployment owner:**
+`deploy/synology-game/node.toml.template` and `preprod-topology.toml` at the
+reviewed source omit the new mandatory field. `NodeConfig` intentionally rejects
+its absence. The shipped preproduction bundle needs `[18]`; the template's default
+fixture needs `[]` with an explicit update when bundle mode is enabled. Their
+owning templates, `deploy-ops.sh` manifest validation, existing topology tests and
+rollout configuration need the matching declaration. These paths are outside this
+allocation; no installed configuration or deployment has been changed.
+
+**F3 — test aggregation finding, confirmed by native guard:** the new
+`world_required_capabilities_postgres` target path-loads test-bearing production
+modules but has no thin-wrapper exclusion in `apps/game-server/Cargo.toml`, and
+the three ADMIT0 cases are not registered in `tests/durability_postgres.rs`.
+The actual Cargo JSON/dep-info guard reports 112 violating source paths:
+
+| Source paths | Strict test targets in the retained guard log |
+| --- | --- |
+| 109 test-bearing `src/` files | Library, `npc_econ_bank_postgres`, `world_required_capabilities_postgres` |
+| `tests/support/item_transfer_postgres_cases.rs` and `npc_econ_bank_postgres_cases.rs` | `character_authority_postgres`, `npc_econ_bank_postgres` |
+| `tests/support/postgres.rs` | `durability_postgres`, `world_required_capabilities_postgres` |
+
+Admission appears in 110 of these paths. The independent NPC duplication remains
+even if the Admission wrapper is excluded. The existing guard and its
+only-shrinking allowlist remain unchanged. Retained `duplicate_sources.log` SHA256:
+`f2d68e47be87be0ad6e3d4acabca6b0568467aad7b532aebe9a274fd2c6474f3`.
+
+A scratch-only four-file proposal moves the unchanged three cases to
+`tests/support/world_required_capabilities_postgres_cases.rs`, mounts them in the
+canonical aggregate, and marks the focused wrapper `test = false`. Its 566-line
+case/helper body is byte-identical to the recovered source, and `git apply --check`
+passes on `d0a262f4`. This proposal is not compiled or published; the support path,
+Cargo entry and aggregate mount require shared-path routing. It addresses the
+Admission duplication only; no whole-guard PASS follows from this proposal.
+
+**Native continuation — selected tests PASS, aggregate guard FAIL:** the lead's PC run
+`/root/oteryn-pr-i-20261017-b2bde334/admission-validation/run-PIQIEdLt` binds
+recovered `d0a262f4` plus the repaired script by exact hashes. Actual renderer
+RED/GREEN (2/2 repaired modes), Bash syntax, diff check, Cargo format, strict
+server Clippy (`--all-targets -- -D warnings`) and strict protocol Clippy: PASS.
+The selected server tests pass: capability closure/floor/profile 14/14,
+explicit registered/canonical NodeConfig 1/1, typed recovery wire 1/1, fresh
+bundle wire 1/1, and resume 4/4. This is 21 selected server tests, not the full
+server suite. The protocol library passes 247/247. All reported test runs have
+zero failed and zero ignored tests; the runner checks the positive counts.
+
+The PostgreSQL target compiles and all three exact ADMIT0 cases pass: fresh
+atomic refusal, independently current runtime replacement, and V2 PREPARE/COMMIT
+refusal. Each reports 1 passed, 0 failed, 0 ignored and its existing
+`ADMIT0_PG17_6_PASS` marker after cleanup. These are signed-fixture store-boundary
+checks, not a Platform/TLS/transport E2E qualification. The freshly compiled
+executable SHA256 is
+`f61b323826aac15dae92783dba81f5b61659ed5fd4b8ce0a5f9c63c49f1bf0cc`.
+
+The run used build slot B with two Cargo jobs and serialized PostgreSQL under the
+native PG lock in the dedicated PostgreSQL 17.6 container's network namespace.
+The host's unrelated PostgreSQL endpoint and all fixture guards remained unchanged.
+Before/after manifests for all 18,876 tracked files are byte-identical, SHA256
+`e2ccdcad6c086621c2b1bfda625d2fdef291a905cc3cb29dcec000462056fb9b`:
+SOURCE_REHASH PASS. The runner exits 1 solely because the real duplicate-source
+guard fails; its other nonzero result is the deliberately expected original
+renderer RED. The lead retains the full logs and exact compiled-PG record.
+
+This recovered predecessor composition is not current-main or current-dependency
+qualification: its NPC predecessor is `427fe6224d30557af4b70afb651768b90a07446d`,
+while the lead's fresh read finds #2197 still draft/open at
+`5ef65a81bea8ee3d7c8f7b11b008a0a73f1dd0f8`. Historical native PASS below retains
+its original source scope.
+
+Public Merge gate run `38976459975`, job
+`117227528614`, fails before tests because the held A2 module, owner fields,
+refusal variant and caller arguments are not yet published. CP confirms #2163
+merged while #2197 remains held; the A2 publication hold and draft status remain.
+
+## Historical checkpoint — NOT_FULLY_QUALIFIED (2026-10-16)
 
 The boot-bound `BoundRequiredCapabilities::effective()` read port is published
 on #2187 at `c8b5cb16f54ea54bf5e4a2cc64137c59aafbba13`.

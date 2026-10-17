@@ -522,7 +522,11 @@ sudo install -o root -m 0600 "$WORK/report.toml" "$BASE/ops/report.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() {
   MAP_REVISION=map-ll-1
-  [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" != 1 ]] || MAP_REVISION="$WB_DIGEST"
+  local required_gameplay_capabilities='[]'
+  if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+    MAP_REVISION="$WB_DIGEST"
+    required_gameplay_capabilities='[18]'
+  fi
   cat > "$WORK/node.toml" <<TOML
 [listener]
 address = "$LL_HOST:$GAME_PORT"
@@ -558,7 +562,7 @@ ruleset_revision = "rules-ll-1"
 content_revision = "content-ll-1"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
-required_gameplay_capabilities = []
+required_gameplay_capabilities = $required_gameplay_capabilities
 offer_revision = "offer-ll-1"
 [platform]
 source_authority = "platform"
