@@ -61,6 +61,11 @@ pub mod monk_state;
 pub mod native_admission_source;
 pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
+#[allow(
+    dead_code,
+    reason = "D1176 NPC purchase port awaits its held semantic-pass/RevisionSlot caller"
+)]
+pub(crate) mod npc_purchase;
 pub mod npc_trade;
 pub mod npc_trade_audit;
 pub mod premium_activation_latch;

@@ -61,16 +61,53 @@ pub struct OneItemCharmUnassignV1 {
     pub occurrence: Vec<u8>,
 }
 
+/// D1106: the promotion source receipt owns the NPC/service provenance. This
+/// occurrence links its coins-only payment to that same Character transaction.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemPromotionPurchaseV1 {
+    #[prost(bytes = "vec", tag = "1")]
+    pub occurrence: Vec<u8>,
+}
+
+/// Proposed blessing source shape: bounded native held key plus occurrence.
+#[derive(Clone, PartialEq, Eq, Message)]
+pub struct OneItemBlessingPurchaseV1 {
+    #[prost(string, tag = "1")]
+    pub blessing_key: String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub occurrence: Vec<u8>,
+}
+
+/// Same exact key grammar as the native held-blessing relation (0016).
+pub(crate) fn check_blessing_fee_key(value: &str) -> Result<(), AuditError> {
+    let Some(first) = value.bytes().next() else {
+        return Err(AuditError::InvalidInput);
+    };
+    if value.len() > 128
+        || !first.is_ascii_alphanumeric()
+        || !value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b':' | b'-'))
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
+}
+
 /// The closed `FeeBurnCause`: one variant per admitted fee source.
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
 pub enum FeeBurnCauseV1 {
     #[prost(message, tag = "1")]
     CharmUnassign(OneItemCharmUnassignV1),
+    #[prost(message, tag = "2")]
+    PromotionPurchase(OneItemPromotionPurchaseV1),
+    #[prost(message, tag = "3")]
+    BlessingPurchase(OneItemBlessingPurchaseV1),
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemFeeBurnCauseV1 {
-    #[prost(oneof = "FeeBurnCauseV1", tags = "1")]
+    #[prost(oneof = "FeeBurnCauseV1", tags = "1, 2, 3")]
     pub cause: Option<FeeBurnCauseV1>,
 }
 
@@ -215,13 +252,23 @@ fn line_coin(state: &OneItemStateV1) -> Result<Coin, AuditError> {
 
 /// Complete closed fee shape, conservation and every registered bound.
 pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
-    let Some(FeeBurnCauseV1::CharmUnassign(cause)) =
-        value.cause.as_ref().and_then(|cause| cause.cause.as_ref())
-    else {
-        return Err(AuditError::InvalidInput);
-    };
-    CharmKey::new(cause.charm_key.clone()).map_err(|_| AuditError::InvalidInput)?;
-    check_uuid_v7(&cause.occurrence)?;
+    match value.cause.as_ref().and_then(|cause| cause.cause.as_ref()) {
+        Some(FeeBurnCauseV1::CharmUnassign(cause)) => {
+            CharmKey::new(cause.charm_key.clone()).map_err(|_| AuditError::InvalidInput)?;
+            check_uuid_v7(&cause.occurrence)?;
+        }
+        Some(FeeBurnCauseV1::PromotionPurchase(cause)) => {
+            check_uuid_v7(&cause.occurrence)?;
+            if value.fee_gold_units != 20_000 || value.bank_debit.is_some() {
+                return Err(AuditError::InvalidInput);
+            }
+        }
+        Some(FeeBurnCauseV1::BlessingPurchase(cause)) => {
+            check_blessing_fee_key(&cause.blessing_key)?;
+            check_uuid_v7(&cause.occurrence)?;
+        }
+        None => return Err(AuditError::InvalidInput),
+    }
     check_uuid_v7(&value.character_id)?;
     check_uuid_v7(&value.world_id)?;
     check_uuid_v7(&value.channel_id)?;
@@ -525,6 +572,91 @@ mod tests {
     use super::super::item_mint_audit::{OneItemTypedDefinitionRevisionV1, decode_payload};
     use super::*;
     use serde_json::Value;
+
+    #[test]
+    fn promotion_audit_requires_its_exact_coins_only_fee_and_native_occurrence() {
+        let mut value = burn(vec![coin_line(Coin::Crystal, 10, 1, 2, 0)], 20_000);
+        value.cause = Some(OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::PromotionPurchase(
+                OneItemPromotionPurchaseV1 {
+                    occurrence: uuid(70),
+                },
+            )),
+        });
+        assert_eq!(check_fee_burn(&value), Ok(()));
+        let encoded = value.encode_to_vec();
+        assert_eq!(OneItemFeeBurnV1::decode(encoded.as_slice()).unwrap(), value);
+
+        let mut wrong_price = value.clone();
+        wrong_price.fee_gold_units = 19_999;
+        assert_eq!(check_fee_burn(&wrong_price), Err(AuditError::InvalidInput));
+        let mut wrong_occurrence = value.clone();
+        wrong_occurrence.cause = Some(OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::PromotionPurchase(
+                OneItemPromotionPurchaseV1 {
+                    occurrence: vec![0; 16],
+                },
+            )),
+        });
+        assert_eq!(
+            check_fee_burn(&wrong_occurrence),
+            Err(AuditError::InvalidInput)
+        );
+        value.bank_debit = Some(OneItemFeeBankDebitV1 {
+            entry_id: uuid(71),
+            asset: ASSET_GOLD.into(),
+            account_id: uuid(72),
+            world_id: uuid(1),
+            kind: LEDGER_FEE_DEBIT,
+            line_class: LINE_CLASS_BURN,
+            debit_gold_units: 1,
+            balance_before_gold_units: 1,
+            balance_after_gold_units: 0,
+        });
+        assert_eq!(check_fee_burn(&value), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
+    fn blessing_audit_retains_key_and_native_bank_debit_without_promotion_exemption() {
+        let mut value = burn(vec![coin_line(Coin::Crystal, 10, 1, 2, 0)], 20500);
+        value.burned_gold_units = 20_000;
+        value.cause = Some(OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::BlessingPurchase(
+                OneItemBlessingPurchaseV1 {
+                    blessing_key: "fixture.blessing.a".into(),
+                    occurrence: uuid(70),
+                },
+            )),
+        });
+        value.bank_debit = Some(OneItemFeeBankDebitV1 {
+            entry_id: uuid(71),
+            asset: ASSET_GOLD.into(),
+            account_id: uuid(72),
+            world_id: uuid(1),
+            kind: LEDGER_FEE_DEBIT,
+            line_class: LINE_CLASS_BURN,
+            debit_gold_units: 500,
+            balance_before_gold_units: 1000,
+            balance_after_gold_units: 500,
+        });
+        assert_eq!(check_fee_burn(&value), Ok(()));
+        let encoded = value.encode_to_vec();
+        assert_eq!(OneItemFeeBurnV1::decode(encoded.as_slice()).unwrap(), value);
+        for bad in ["", " leading", "key/other", "key\n"] {
+            assert_eq!(check_blessing_fee_key(bad), Err(AuditError::InvalidInput));
+        }
+        assert_eq!(
+            check_blessing_fee_key(&"a".repeat(129)),
+            Err(AuditError::InvalidInput)
+        );
+        if let Some(OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::BlessingPurchase(cause)),
+        }) = value.cause.as_mut()
+        {
+            cause.occurrence = vec![0; 16];
+        }
+        assert_eq!(check_fee_burn(&value), Err(AuditError::InvalidInput));
+    }
 
     const RESOURCE_REGISTRY: &str =
         include_str!("../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");

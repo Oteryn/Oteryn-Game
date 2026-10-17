@@ -12,8 +12,10 @@ use super::{
     spell_access_facts::{AccessFactsError, CurrentSpellAccessOwner, owner_registration},
 };
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
+use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::premium_activation_latch::{
-    EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
+    EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead,
+    PremiumGateTx, PromotionPreDeliveryBypass, PromotionPremiumGateOperation,
 };
 use crate::durability::{
     DurabilityError, DurabilityRoot, fresh_admission::FreshAdmissionStore,
@@ -122,6 +124,35 @@ impl<T, F> PremiumGateOperation<T> for F where
         + Send
         + 'static
 {
+}
+
+#[allow(
+    dead_code,
+    reason = "Pending CP NPC gate caller constructs this existing typed adapter."
+)]
+struct PromotionGateBypass<T, E, F> {
+    operation: F,
+    _output: PhantomData<fn() -> Result<T, E>>,
+}
+
+impl<T: Send, E: Send, F: PromotionPremiumGateOperation<T, E>> PromotionPreDeliveryBypass
+    for PromotionGateBypass<T, E, F>
+{
+    type Output = T;
+    type Error = E;
+    fn apply<'a, 't>(
+        self,
+        held: &'a EmptyLatchHeld,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'a>>
+    where
+        Self: 'a,
+    {
+        self.operation.run(
+            PremiumStatus::NotActivated(PreDelivery::inside_gate(held)),
+            Some(tx),
+        )
+    }
 }
 /// A multi-account Premium gate operation: runs once with one status per account, in order, and,
 /// for `NotActivated` only, the gate's transaction (PREMIUM-ACTIVATION-0 §1.2).
@@ -404,6 +435,69 @@ impl SpellPremiumCoordinator {
             }
         }
     }
+    /// Promotion-specific D1106 composition. The ordinary gate above is
+    /// unchanged: only this fee-bearing bypass opens Type2 before the latch.
+    #[allow(
+        dead_code,
+        reason = "Pending CP NPC purchase caller uses this source-specific coordinator gate."
+    )]
+    pub(crate) async fn with_promotion_gate<T, E, F>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+    ) -> Result<Result<T, E>, DurabilityError>
+    where
+        T: Send,
+        E: Send,
+        F: PromotionPremiumGateOperation<T, E>,
+    {
+        let now = self.read_now();
+        if self.delivery.held.get().is_some() {
+            return Ok(operation
+                .run(self.delivered_status(account, now), None)
+                .await);
+        }
+        let empty = match (&self.delivery.activation, now) {
+            (None, _) => EmptyLatch::NotActivated,
+            (Some(_), None) => EmptyLatch::NotCurrent,
+            (Some(activation), Some(now)) if now.upper_us() < activation.switch_over_us => {
+                EmptyLatch::NotActivated
+            }
+            (Some(_), Some(now)) => EmptyLatch::Latch { now },
+        };
+        let Some(root) = &self.latch else {
+            return Ok(operation.run(PremiumStatus::NotCurrent, None).await);
+        };
+        if !matches!(empty, EmptyLatch::NotActivated) {
+            let read = root.read_premium_activation::<T>().await;
+            let delivered = self.after_read(&empty, read).await;
+            let status = if delivered {
+                self.delivered_status(account, now)
+            } else {
+                PremiumStatus::NotCurrent
+            };
+            return Ok(operation.run(status, None).await);
+        }
+        let mut slot = Some(PromotionGateBypass {
+            operation,
+            _output: PhantomData,
+        });
+        match (root.read_premium_promotion_with(&mut slot).await, slot) {
+            (Ok(PremiumActivationRead::PreDelivery(applied)), _) => Ok(applied),
+            (Ok(PremiumActivationRead::Latched(latch)), Some(bypass)) => {
+                self.delivery.hold(latch);
+                Ok(bypass
+                    .operation
+                    .run(self.delivered_status(account, now), None)
+                    .await)
+            }
+            (Ok(PremiumActivationRead::Empty) | Err(_), Some(bypass)) => {
+                Ok(bypass.operation.run(PremiumStatus::NotCurrent, None).await)
+            }
+            (Err(error), None) => Err(error),
+            (Ok(_), None) => Err(DurabilityError::InvalidStoredState),
+        }
+    }
     /// The multi-account Premium gate (PREMIUM-ACTIVATION-0 §1.2; the GUILD daily job and HOUSE
     /// settlement): delivery is decided once, under one shared latch lock, before the operation
     /// takes any guild or house rows, and `operation` runs once with one status per account, in
@@ -580,7 +674,140 @@ struct PremiumOwnerBinding {
     build: crate::durability::character_build::DurableBuildState,
     level: u32,
 }
+
+/// Expected source facts read through the existing native actor/session and
+/// pinned item owners. They are not a durable promotion or an authority token;
+/// the purchase writer independently checks its current database fences.
+#[allow(
+    dead_code,
+    reason = "Pending CP promotion NPC registration consumes these native command facts."
+)]
+pub(crate) struct PromotionCommandFacts {
+    pub(crate) account: [u8; 16],
+    pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    pub(crate) npc_key: String,
+    pub(crate) gold: crate::durability::item_mint::TypedDefinitionRef,
+    pub(crate) platinum: crate::durability::item_mint::TypedDefinitionRef,
+    pub(crate) crystal: crate::durability::item_mint::TypedDefinitionRef,
+    pub(crate) backpack: crate::durability::item_transfer::ItemDefinitionFacts,
+}
+
+#[allow(
+    dead_code,
+    reason = "Pending CP blessing NPC registration consumes these native actor fences."
+)]
+pub(crate) struct PromotionActorFacts {
+    pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[allow(
+        dead_code,
+        reason = "Pending CP blessing NPC caller reads current actor fences here."
+    )]
+    pub(crate) async fn promotion_actor_facts(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<PromotionActorFacts> {
+        let current = self.current_premium_binding(actor, session).await?;
+        Some(PromotionActorFacts {
+            fence: crate::durability::character_progression::CurrentCharacterGameplayFence {
+                character_id: current.fence.character_id,
+                game_session_id: current.fence.game_session_id,
+                connection_generation: current.fence.connection_generation,
+                character_lease_generation: current.fence.character_lease_generation,
+                runtime_scope: current.fence.runtime_scope,
+                scope_ownership_generation: current.fence.scope_ownership_generation,
+                expected_character_revision: crate::domain::CharacterRevision::new(
+                    current.character_revision,
+                )
+                .ok()?,
+            },
+        })
+    }
+
+    #[allow(
+        dead_code,
+        reason = "Pending CP promotion NPC caller resolves native command facts here."
+    )]
+    pub(crate) async fn promotion_command_facts(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        npc_ref: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
+    ) -> Option<PromotionCommandFacts> {
+        use crate::domain::currency::{COIN_DEFINITION_FAMILY, Coin};
+        use crate::durability::item_mint::TypedDefinitionRef;
+        use oteryn_protocol_oteryn::npc_service::TALK_RANGE_TILES;
+        let binding = self.current_premium_binding(actor, session).await?;
+        let backpack = self
+            .root
+            .read_character_backpack(self.character, binding.fence.character_id)
+            .await
+            .ok()??;
+        let native = self.active_generation?.native_gameplay()?;
+        let backpack =
+            super::item_ref_admission::generation_item_facts(native, &backpack.backpack.definition)
+                .ok()?;
+        let runtime = self.runtime.lock().await;
+        let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
+        let physical = runtime.player_control_facts(actor, session).ok()?;
+        if physical.control_loss.is_some() {
+            return None;
+        }
+        let visible = runtime.visible_entities();
+        let speaker = visible
+            .players
+            .iter()
+            .find(|player| player.actor == actor)?;
+        let npc = visible.npcs.iter().find(|npc| {
+            npc.actor.placement_identity() == npc_ref.identity
+                && npc.generation == npc_ref.generation
+        })?;
+        if self.chat.engaged(session) != Some(npc.actor)
+            || speaker.position.floor != npc.position.floor
+            || speaker.position.x.abs_diff(npc.position.x) > TALK_RANGE_TILES
+            || speaker.position.y.abs_diff(npc.position.y) > TALK_RANGE_TILES
+            || binding.fence.runtime_scope
+                != RuntimeScopeRefV1::channel(
+                    runtime.binding().world_id(),
+                    runtime.binding().channel_id(),
+                )
+            || binding.fence.scope_ownership_generation != runtime.binding().scope_generation()
+        {
+            return None;
+        }
+        let npc_key = runtime.npc_key(npc.actor)?.to_owned();
+        let coin = |coin: Coin| {
+            Some(TypedDefinitionRef {
+                family: COIN_DEFINITION_FAMILY.to_owned(),
+                production_key: coin.production_key().to_owned(),
+                revision_ref: index.revision(coin.production_key())?.to_owned(),
+            })
+        };
+        Some(PromotionCommandFacts {
+            account: binding.account,
+            fence: crate::durability::character_progression::CurrentCharacterGameplayFence {
+                character_id: binding.fence.character_id,
+                game_session_id: binding.fence.game_session_id,
+                connection_generation: binding.fence.connection_generation,
+                character_lease_generation: binding.fence.character_lease_generation,
+                runtime_scope: binding.fence.runtime_scope,
+                scope_ownership_generation: binding.fence.scope_ownership_generation,
+                expected_character_revision: crate::domain::CharacterRevision::new(
+                    binding.character_revision,
+                )
+                .ok()?,
+            },
+            npc_key,
+            gold: coin(Coin::Gold)?,
+            platinum: coin(Coin::Platinum)?,
+            crystal: coin(Coin::Crystal)?,
+            backpack,
+        })
+    }
+
     async fn current_premium_binding(
         &self,
         actor: ExactActorRef,
@@ -795,6 +1022,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match self.premium_coordinator {
             Some(coordinator) => coordinator.with_premium_gate(account, operation).await,
             None => Ok(run_delivered(operation, PremiumStatus::NotCurrent).await),
+        }
+    }
+    #[allow(
+        dead_code,
+        reason = "Pending CP NPC dispatch calls this current admission promotion gate."
+    )]
+    pub(crate) async fn with_promotion_gate<T, E, F>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+    ) -> Result<Result<T, E>, DurabilityError>
+    where
+        T: Send,
+        E: Send,
+        F: PromotionPremiumGateOperation<T, E>,
+    {
+        match self.premium_coordinator {
+            Some(coordinator) => coordinator.with_promotion_gate(account, operation).await,
+            None => Ok(operation.run(PremiumStatus::NotCurrent, None).await),
         }
     }
     /// The multi-account Premium gate: see [`SpellPremiumCoordinator::with_premium_batch_gate`].

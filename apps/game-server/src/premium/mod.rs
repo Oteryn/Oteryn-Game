@@ -23,8 +23,10 @@
 //! pull marks the account `AUTHORITY_UNAVAILABLE` until a later pull succeeds
 //! ([`PremiumConsumer::pull_failed`]).
 
+pub(crate) mod blessing_purchase;
 pub mod client;
 pub mod clock;
+pub(crate) mod promotion;
 pub mod refresh;
 pub mod snapshot;
 #[cfg(test)]

@@ -126,9 +126,51 @@ impl PremiumStatus<'_> {
     }
 }
 
+/// Promotion's WHEEL-0 §6.2 exception is separate from the general Premium gate.
+/// This is a policy check, not a durable grant or reusable authority permit. Call it
+/// inside the native gate closure; a later command must obtain its own current status.
+pub const fn require_promotion_premium(status: &PremiumStatus<'_>) -> Result<(), PremiumRefusal> {
+    match status {
+        PremiumStatus::NotActivated(held) => require_promotion_before_delivery(held),
+        _ => status.gate().require(),
+    }
+}
+
+/// The exception cannot be selected with a bare bool or a closed PremiumGate: the
+/// native gate must still lend its empty-latch witness while the command runs.
+const fn require_promotion_before_delivery(_held: &PreDelivery<'_>) -> Result<(), PremiumRefusal> {
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn promotion_pre_delivery_exception_keeps_the_general_gate_closed() {
+        let held = EmptyLatchHeld::for_test();
+        let status = PremiumStatus::NotActivated(PreDelivery::inside_gate(&held));
+        assert_eq!(require_promotion_premium(&status), Ok(()));
+        assert_eq!(status.gate().require(), Err(PremiumRefusal::NotCurrent));
+    }
+
+    #[test]
+    fn promotion_requires_current_premium_after_delivery_without_reusing_the_exception() {
+        {
+            let held = EmptyLatchHeld::for_test();
+            let status = PremiumStatus::NotActivated(PreDelivery::inside_gate(&held));
+            assert_eq!(require_promotion_premium(&status), Ok(()));
+        }
+        assert_eq!(
+            require_promotion_premium(&PremiumStatus::NotCurrent),
+            Err(PremiumRefusal::NotCurrent)
+        );
+        assert_eq!(require_promotion_premium(&PremiumStatus::Current), Ok(()));
+        assert_eq!(
+            require_promotion_premium(&PremiumStatus::NotCurrent),
+            Err(PremiumRefusal::NotCurrent)
+        );
+    }
 
     #[test]
     fn only_current_status_opens_the_gate() {
