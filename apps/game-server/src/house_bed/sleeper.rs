@@ -57,6 +57,20 @@ pub struct StoredSleeper {
     pub occupancy_revision: NonZeroU64,
 }
 
+/// One raw storage snapshot for an exact bed key, including its House-wide
+/// occupancy revision. This is not proof that the key names an active bed,
+/// that the House exists, or that a character may use or wake it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StoredBedOccupancy {
+    pub bed: StoredBedKey,
+    /// None means no revision row was observed. It does not establish that the
+    /// House or bed is new; callers still need their actual native owners.
+    pub occupancy_revision: Option<NonZeroU64>,
+    /// Only an open sleeper can occupy this key. Freed rows remain available
+    /// to their character's settlement and are not returned as occupants.
+    pub sleeper: Option<StoredSleeper>,
+}
+
 #[cfg(test)]
 #[path = "sleeper_tests.rs"]
 mod tests;

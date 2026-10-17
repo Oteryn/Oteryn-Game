@@ -31,6 +31,112 @@ slot_only_paths:
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
 
+## 2026-10-17 raw BedKey occupancy — source checkpoint, native held
+
+This checkpoint extends #2147
+`87674e53cd4be954b19dfb049a5d41013182fc03` with three owned Rust leaves
+and this card, which retains the complete
+[reproducible source evidence](#reproducible-occupancy-source-checkpoint).
+The source was frozen before this documentation update and has not changed.
+The draft remains **NOT_FULLY_QUALIFIED**. The older sections below are historical
+records of their named source generations, not qualification of this new packet.
+
+### Implemented raw read
+
+`StoredBedOccupancy` and `read_bed_occupancy` use the actual `StoredBedKey`:
+World, canonical HouseId and every head-cell coordinate. One PostgreSQL statement
+reads the open occupant and House-wide occupancy revision in one MVCC snapshot.
+A freed row remains available for its character's settlement and no longer
+occupies that bed when another character uses the same key.
+
+The query returns at most two matching open rows and refuses ambiguity. A
+missing House revision while any open sleeper remains in that House also
+refuses, including a lookup of an empty neighbouring bed. Stored identity,
+lease, appearance, timestamps and revision still use the existing strict decoder.
+The private schema and lifecycle/revision triggers remain unchanged.
+
+This DTO is raw storage data. An absent revision is `None`, not revision zero,
+proof of a new House, active head/foot placement, ACL permission or current
+authority. The read neither reserves the bed nor starts a transaction, writes
+a sleeper, installs production DDL or grants regeneration. Actual USE/wake
+writers still require their independent current producers and native locks.
+
+### Exact source and regression inventory
+
+| Owned source | Frozen SHA-256 |
+|---|---|
+| `durability/bed_sleeper.rs` | `9b111c1aad110e6abf5013ca499815e91544d3b1a445d191553d770664e77405` |
+| `house_bed/sleeper.rs` | `50ed072d5aca2deb7382985e18406bcc95cf7098a9d0783797fc71c11feeb336` |
+| `house_bed/sleeper_tests.rs` | `b375914e741a007647d88009db0b18199b56fbc77eedb463f2c79713935bb26b` |
+
+All ten previously published test bodies are preserved. Three actual-PG cases
+add exact-key/free/reuse behavior, coherent revision/occupant snapshots across
+a concurrent rollback and commit, and missing-counter/ambiguous-row refusal.
+The selected inventory is **13 cases: one pure and twelve PostgreSQL cases**.
+This includes the existing own-database error/panic cleanup regression.
+
+| Check for this thirteen-case source | Result |
+|---|---|
+| Independent source review | **PASS** for the exact production pair and pre-format test `05dbf0ed...`; full report SHA `d1ea8f53c53f74c1b3f851b2dca443a930adc532329352ffe0c9791af6eacdd8` is embedded in the evidence. |
+| Focused native formatting | **PASS**, applied by root on Molehill. Production pair unchanged; tests become `b375914e...`. Exact formatter delta SHA `b528eef524f7e28c63f2e5f0451473cf516b818d47536188afcd2acb0a48d1f3` is retained. |
+| Source checkpoint reconstruction | **PASS**: exact patch applied to pinned published preimages reproduces all three frozen files byte for byte. This is not compilation. |
+| Native compilation and execution of all thirteen cases | **NOT_RUN**: no House heavy window after the D1399b MAIL/HUNT queue yet. No PG result is inferred from source review or formatting. |
+| Mounted-head, package Clippy, production sleep/wake/logout/settlement and restart | **NOT_RUN / incomplete**; this checkpoint adds no module registration or production writer. |
+
+The earlier **10/10 PASS** belongs only to the cleanup source assembly recorded
+below: main `f010472bcb6794a2cbc56dfaf755bd122c10225e`, its exact prior three
+BED leaves and two own module lines, Molehill slot B starting 13:04:41 UTC.
+That result does not execute these three new occupancy cases. Neither the prior
+published head nor this source checkpoint installs the BED modules in production.
+
+### Native window and retained execution constraints
+
+[D1399b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236882742)
+orders the current MAIL D1396a run before HUNT D1392. The coordinator will obtain
+a House window after that queue; checkpointing this owned source does not claim
+that such a window was granted or that a native run started.
+[D1397](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236432747)
+requires the single actual `/home/mole/oteryn-cache/heavy.lock` in Ubuntu/mole.
+An existing Ubuntu-24.04 worktree uses the granted
+[D1397a outer bridge](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236550340)
+for the whole run, together with the D1342 slot lock and verified environment.
+A duplicate lock path in another distribution cannot serialize these jobs.
+
+The actual native recipe remains main `f010472b...` plus the exact three leaves
+and two explicitly labelled own module lines, as **SOURCE ASSEMBLY**. Run
+`cargo fetch --locked` first, then use only D1329's existing `in-pg-netns.sh`
+and shared PostgreSQL17.6. Each case creates and drops only its own bounded
+`oteryn_bed_2147_*` database; cleanup failure remains failure. The operator checks
+Windows C: space before the run and cleans only its own target/temp files after
+it, following D1399b. No server/container lifecycle action is introduced.
+
+### Actual producer gates remain open
+
+[D1370](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234571417)
+assigns the real OFFLINE receipt/build extension, chain guards, PG fixture and
+FND clock/predecessor source to #2174. Its earlier migration0118 reservation
+and the later migration0120 description in
+[D1381](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235225446)
+still need an explicit CP reconciliation. This checkpoint makes no migration
+number choice. D1381 moves the native marker writer to
+`durability/character_build`; the eventual BED hook must bind that actual writer
+after the real #2174 and #2196 merges.
+
+The real #2196 food/vitals/soul before-values and mutation participant must share
+the same physical transaction. Full active-bundle House placement/currentness
+from #2167, installed canonical property/BED schema and actual logout/sleeper
+provenance remain separate dependencies. The recorded helper is an inert
+proposal, and its participant-required branch must not become a blocking
+runtime call. No detached calculator or copied producer substitutes for them.
+
+The actual Logout microsecond anchor binds BED's millisecond row as
+`slept_at == committed_at_us / 1000`; multiplying the stored milliseconds would
+reject a legitimate submillisecond remainder. The future consumer preserves
+the real food millisecond remainder and caps. The native boundary, same-TX
+rollback and replay cases still require the actual owners and are **NOT_RUN**.
+
+The PR remains draft; all original production acceptance items stay open.
+
 ## 2026-10-17 shared PostgreSQL fixture cleanup — AUTHORING
 
 Predecessor after CP's ordinary main merge:
@@ -911,3 +1017,680 @@ Previous reviewable handoff: https://github.com/Oteryn/Oteryn-Game/pull/2147#iss
   }
 }
 ```
+
+## Reproducible occupancy source checkpoint
+
+The following UTF-8 artifact is preserved verbatim as data within this owned card. Its embedded patch and review may be recovered without adding a repository evidence path. Artifact bytes: 32417; SHA-256: `26078095a20640dfce02e6126d3ae5f8537e1d84b4cc0c8b645529b56f398e7b`.
+
+<!-- card-artifact:bed2147-occupancy-source-checkpoint.md -->
+`````markdown
+# BED-1 — raw occupancy source checkpoint
+
+State: **frozen formatted source; native compilation and 13-case execution NOT_RUN under the D1399b window order**. Published predecessor: `87674e53cd4be954b19dfb049a5d41013182fc03`. This document preserves the exact three source leaves handed to root for native qualification. The coordinator will publish these exact three Rust leaves and the owned task card, which retains this evidence in its appendix; this documentation preparation has changed none of the frozen Rust bytes.
+
+## Prepared behavior
+
+`StoredBedOccupancy` is a raw stored-data view of an exact World/House/head-cell key, an optional nonzero House occupancy revision and the open sleeper at that key. One actual PostgreSQL statement reads the revision and occupant in one MVCC snapshot. It preserves every key component, refuses ambiguous open rows, and refuses an open House sleeper whose required occupancy counter is absent. A missing counter is recorded as `None` when no open row requires it; this does not mean revision zero and is not proof that a House or bed is current or newly created.
+
+The read neither grants authority nor writes state. It introduces no schema, trigger, pool, module mount or runtime caller. The existing private BED schema remains a separately installed dependency; isolated fixture qualification is not production installation.
+
+## Regression inventory and review
+
+The ten published case bodies remain present. Three actual-PG cases add exact-key/free/reuse coverage, a concurrent snapshot test across rollback and commit, and missing-counter/ambiguous-row failure coverage. Inventory: **13 cases: one pure and twelve PostgreSQL cases**. The existing cleanup regression exercises both returned errors and a caught assertion panic; each fixture may drop only its own uniquely named database.
+
+Independent source review passed for production hashes `9b111c1a...` and `50ed072d...` and the pre-format test hash `05dbf0ed...`. Root then applied native rustfmt to the test file, producing `b375914e741a007647d88009db0b18199b56fbc77eedb463f2c79713935bb26b`; the two production hashes stayed unchanged. The exact formatting patch and original review are embedded for an auditable relationship. Root confirmed that the 13-case run has not started: D1399b orders the current MAIL window and then HUNT ahead of the requested House window. The old ten-case PASS must not be relabeled as a result for these new cases.
+
+## Native execution boundary
+
+The recorded recipe uses actual main `f010472bcb6794a2cbc56dfaf755bd122c10225e` plus these three leaves and the two explicit BED module lines as **SOURCE ASSEMBLY**. Root alone controls the sequential Molehill run, full-run slot lock, verified build environment and target directory. First run `cargo fetch --locked`, then run PG through the existing `in-pg-netns.sh` under D1329 using only the shared PG 17.6. No PostgreSQL server/container lifecycle action or another database is authorized by this evidence.
+
+The previous cleanup packet had a separate source-assembly result: **10/10 PASS** on Molehill slot B starting 2026-10-17 13:04:41 UTC, at main `f010472bcb6794a2cbc56dfaf755bd122c10225e` plus its exact three leaves and two own mounts. The published #2147 branch was unmounted, so that was not exact-head qualification. This occupancy packet has no native execution result. Root authorizes one bounded source checkpoint with an accurate task card and embedded evidence before the House window; it remains NOT_FULLY_QUALIFIED and unmounted. Only a later actual terminal receipt can qualify the thirteen-case run.
+
+
+### Updated shared PC execution order
+
+[D1399b](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236882742) keeps heavy runs sequential: current MAIL D1396a, then HUNT D1392. A House window is still required. Use the actual Ubuntu/mole `/home/mole/oteryn-cache/heavy.lock` for the full run under [D1397](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236432747). Existing Ubuntu-24.04 inputs use the granted [D1397a bridge](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6236550340), not a duplicate lock or a new mount. Check Windows C: free space before execution, retain the D1342 slot/environment and D1329 shared PG route, and remove only the run's own target/temp afterward. New worktrees belong in Ubuntu/mole. This checkpoint starts no native job.
+
+## Recovery and integrity
+
+This evidence is retained in the owned task card alongside the exact three owned Rust leaves in one bounded source checkpoint. Its embedded patch, formatting delta and review remain data: they register no module, install no dependency schema and activate no caller. No new repository evidence path or scope expansion is used. Runtime permission, dependency order and qualification gates still apply.
+
+Recover each artifact from the matching section below. Preserve its exact UTF-8 bytes and verify the listed byte length and SHA-256. Reconstruct an isolated review tree from each file's pinned base ref and Git blob in `source-inventory.json`, then check and apply the patch there. Never apply a historical patch to an unspecified current checkout. The checkpoint preparation independently applied the recorded patch to those exact preimages and compared every resulting file byte for byte with the frozen source. That integrity check is not Rust compilation or PostgreSQL qualification.
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `source-inventory.json` | 2660 | `53385190859e85511604068f310d588ba4194a3c90f13c6baf4b43344e81052f` |
+| `bed2147-occupancy-formatted.patch` | 13243 | `22493b008617fc6c78e7096b1513b21233924d17d47a6e1886f223c253049078` |
+| `native-format.patch` | 8199 | `b528eef524f7e28c63f2e5f0451473cf516b818d47536188afcd2acb0a48d1f3` |
+| `independent-source-review.md` | 1980 | `d1ea8f53c53f74c1b3f851b2dca443a930adc532329352ffe0c9791af6eacdd8` |
+
+## Embedded artifacts
+
+### source-inventory.json
+
+<!-- checkpoint-artifact:source-inventory.json -->
+````json
+{
+  "pr": 2147,
+  "expected_predecessor": "87674e53cd4be954b19dfb049a5d41013182fc03",
+  "production_source_predecessor": "87674e53cd4be954b19dfb049a5d41013182fc03",
+  "evidence_class": "FROZEN formatted source checkpoint; native compilation and 13-case execution NOT_RUN under D1399b; no PASS claim",
+  "mount_recipe": [
+    {
+      "path": "apps/game-server/src/durability/mod.rs",
+      "add_if_missing": "pub mod bed_sleeper;",
+      "scope": "one own module line"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "add_if_missing": "pub mod house_bed { pub mod sleeper; }",
+      "scope": "one own namespace registration; rustfmt normalizes only this added hunk"
+    }
+  ],
+  "cargo_fetch": "cargo fetch --locked",
+  "test_command": [
+    "cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "-p",
+    "oteryn-game-server",
+    "--lib",
+    "house_bed::sleeper::tests::",
+    "--",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "expected_tests": 13,
+  "expected_original_tests": 10,
+  "expected_pg_tests": 12,
+  "pg_route": "D1329 existing in-pg-netns.sh; shared PG17.6 only, no lifecycle actions. Each case creates/drops only its own oteryn_bed_2147_* DB.",
+  "change": "Read-only raw occupancy by exact StoredBedKey, one SQL snapshot with House-wide revision, no caller/authority/mutations/new schema. Three real-PG cases added; published baseline ten test bodies preserved.",
+  "files": [
+    {
+      "path": "apps/game-server/src/durability/bed_sleeper.rs",
+      "base_ref": "87674e53cd4be954b19dfb049a5d41013182fc03",
+      "base_git_blob": "d15c64b976f1ce9250eb30d8601546b266bef71d",
+      "base_sha256": "7a4d88ce68e80e7ce7638bd329050f006b8dd16d2c77c43cda2dabf9d5f4d39f",
+      "result_sha256": "9b111c1aad110e6abf5013ca499815e91544d3b1a445d191553d770664e77405",
+      "result_bytes": 13084
+    },
+    {
+      "path": "apps/game-server/src/house_bed/sleeper.rs",
+      "base_ref": "87674e53cd4be954b19dfb049a5d41013182fc03",
+      "base_git_blob": "c23d1fcd3e6ef32f11db9d7b17459bf0d3ef3456",
+      "base_sha256": "06ec9e07e3328998dfedc33ba1c6db072a5dfdc3165a1f0d3c6395520a5fc3ca",
+      "result_sha256": "50ed072d5aca2deb7382985e18406bcc95cf7098a9d0783797fc71c11feeb336",
+      "result_bytes": 2539
+    },
+    {
+      "path": "apps/game-server/src/house_bed/sleeper_tests.rs",
+      "base_ref": "87674e53cd4be954b19dfb049a5d41013182fc03",
+      "base_git_blob": "92f4c51775fa13827b3fb2c128c978a57d080f5c",
+      "base_sha256": "5c4cae6da93e572fc6880afb32404fc00ead2750f776fa6abcb8884328e997d6",
+      "result_sha256": "b375914e741a007647d88009db0b18199b56fbc77eedb463f2c79713935bb26b",
+      "result_bytes": 36044
+    }
+  ]
+}
+````
+
+### bed2147-occupancy-formatted.patch
+
+<!-- checkpoint-artifact:bed2147-occupancy-formatted.patch -->
+````diff
+--- a/apps/game-server/src/durability/bed_sleeper.rs
++++ b/apps/game-server/src/durability/bed_sleeper.rs
+@@ -12,7 +12,7 @@
+ use crate::domain::CharacterId;
+ use crate::foundation::WorldId;
+ use crate::house_bed::sleeper::{
+-    FreedCause, FreedSleeper, OccupiedVariant, StoredBedKey, StoredSleeper,
++    FreedCause, FreedSleeper, OccupiedVariant, StoredBedKey, StoredBedOccupancy, StoredSleeper,
+ };
+ use crate::house_scope::HouseId;
+ use sqlx::postgres::{PgConnection, PgRow};
+@@ -135,6 +135,82 @@
+         .transpose()
+ }
+ 
++const READ_BED_OCCUPANCY: &str = "WITH wanted AS (SELECT encode($1,'hex')::uuid AS world_id, \
++    $2::text AS house_key, $3::integer AS bed_x, $4::integer AS bed_y, $5::integer AS bed_z) \
++    SELECT uuid_send(s.world_id) AS world_identity,s.house_key,s.bed_x,s.bed_y,s.bed_z, \
++    uuid_send(s.character_id) AS character_identity,s.lease_generation::text AS lease, \
++    s.occupied_variant,s.slept_at,s.freed_at,s.freed_cause,r.revision::text AS revision, \
++    EXISTS(SELECT 1 FROM game_house_bed_sleepers live \
++        WHERE live.world_id=w.world_id AND live.house_key=w.house_key \
++        AND live.freed_at IS NULL) AS has_open_sleeper \
++    FROM wanted w LEFT JOIN game_house_bed_revisions r \
++        ON r.world_id=w.world_id AND r.house_key=w.house_key \
++    LEFT JOIN game_house_bed_sleepers s \
++        ON s.world_id=w.world_id AND s.house_key=w.house_key \
++        AND s.bed_x=w.bed_x AND s.bed_y=w.bed_y AND s.bed_z=w.bed_z \
++        AND s.freed_at IS NULL LIMIT 2";
++
++/// Reads the exact key and its House-wide revision in one statement snapshot.
++/// At most two rows are returned so a broken uniqueness constraint refuses
++/// instead of silently choosing an occupant. The open-row check uses the
++/// existing partial bed index and catches a missing House revision even when
++/// another bed in that House is occupied.
++///
++/// This starts no transaction and takes no gameplay or mutation authority.
++/// A None occupant is raw storage data, not permission to reserve or insert;
++/// callers must still resolve the active bed and hold their actual native
++/// runtime/property/access fences. No marker or settlement is inferred.
++pub async fn read_bed_occupancy(
++    connection: &mut PgConnection,
++    bed: &StoredBedKey,
++) -> Result<StoredBedOccupancy, SleeperReadError> {
++    let rows = sqlx::query(READ_BED_OCCUPANCY)
++        .bind(bed.house.world_id().as_bytes().as_slice())
++        .bind(bed.house.house_key())
++        .bind(bed.head.x)
++        .bind(bed.head.y)
++        .bind(bed.head.z)
++        .fetch_all(connection)
++        .await?;
++    let [row] = rows.as_slice() else {
++        return Err(SleeperReadError::InvalidStoredState);
++    };
++    let invalid = || SleeperReadError::InvalidStoredState;
++    let occupancy_revision = row
++        .try_get::<Option<String>, _>("revision")?
++        .map(|value| {
++            value
++                .parse::<u64>()
++                .ok()
++                .and_then(NonZeroU64::new)
++                .ok_or_else(invalid)
++        })
++        .transpose()?;
++    if occupancy_revision.is_none() && row.try_get::<bool, _>("has_open_sleeper")? {
++        return Err(invalid());
++    }
++    let sleeper = row
++        .try_get::<Option<Vec<u8>>, _>("character_identity")?
++        .map(|bytes| {
++            let character = CharacterId::from_bytes(bytes.try_into().map_err(|_| invalid())?)
++                .map_err(|_| invalid())?;
++            let sleeper = decode(row, character)?;
++            if &sleeper.bed != bed
++                || sleeper.freed.is_some()
++                || Some(sleeper.occupancy_revision) != occupancy_revision
++            {
++                return Err(invalid());
++            }
++            Ok(sleeper)
++        })
++        .transpose()?;
++    Ok(StoredBedOccupancy {
++        bed: bed.clone(),
++        occupancy_revision,
++        sleeper,
++    })
++}
++
+ /// Pins an existing row until the caller's transaction ends. This does not
+ /// settle, delete, wake, qualify current authority or resolve the offline marker.
+ /// Future mutation owners must acquire their actual property/revision locks in
+--- a/apps/game-server/src/house_bed/sleeper.rs
++++ b/apps/game-server/src/house_bed/sleeper.rs
+@@ -57,6 +57,20 @@
+     pub occupancy_revision: NonZeroU64,
+ }
+ 
++/// One raw storage snapshot for an exact bed key, including its House-wide
++/// occupancy revision. This is not proof that the key names an active bed,
++/// that the House exists, or that a character may use or wake it.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct StoredBedOccupancy {
++    pub bed: StoredBedKey,
++    /// None means no revision row was observed. It does not establish that the
++    /// House or bed is new; callers still need their actual native owners.
++    pub occupancy_revision: Option<NonZeroU64>,
++    /// Only an open sleeper can occupy this key. Freed rows remain available
++    /// to their character's settlement and are not returned as occupants.
++    pub sleeper: Option<StoredSleeper>,
++}
++
+ #[cfg(test)]
+ #[path = "sleeper_tests.rs"]
+ mod tests;
+--- a/apps/game-server/src/house_bed/sleeper_tests.rs
++++ b/apps/game-server/src/house_bed/sleeper_tests.rs
+@@ -1,7 +1,8 @@
+ //! Real private-schema tests. No marker, access grant or gameplay sleep is simulated.
+ use super::*;
+ use crate::durability::bed_sleeper::{
+-    PRIVATE_SLEEPER_SCHEMA_SQL, SleeperReadError, read_sleeper, read_sleeper_for_update,
++    PRIVATE_SLEEPER_SCHEMA_SQL, SleeperReadError, read_bed_occupancy, read_sleeper,
++    read_sleeper_for_update,
+ };
+ use sqlx::{Connection, PgConnection};
+ 
+@@ -679,3 +680,193 @@
+         Ok(())
+     })
+ }
++
++fn stored_bed(
++    world: u8,
++    house: &str,
++    head: LogicalCell,
++) -> Result<StoredBedKey, Box<dyn std::error::Error>> {
++    let world = crate::foundation::WorldId::decode(&id(world)).map_err(debug)?;
++    Ok(StoredBedKey {
++        house: HouseId::new(world, house).ok_or("invalid fixture HouseId")?,
++        head,
++    })
++}
++
++#[test]
++fn bed_occupancy_lookup_is_exact_and_preserves_freed_rows_during_reuse() -> TestResult {
++    run_case("bed_lookup", async |c| {
++        let head = LogicalCell { x: 10, y: 20, z: 7 };
++        let bed = stored_bed(8, "oteryn:content.house.a", head)?;
++        let empty = read_bed_occupancy(c, &bed).await.map_err(debug)?;
++        assert_eq!(empty.bed, bed);
++        assert_eq!(empty.occupancy_revision, None);
++        assert_eq!(empty.sleeper, None);
++
++        insert(c, 1, "oteryn:content.house.a", 8).await?;
++        insert(c, 2, "oteryn:content.house.b", 8).await?;
++        insert(c, 4, "oteryn:content.house.c", 9).await?;
++        let occupied = read_bed_occupancy(c, &bed).await.map_err(debug)?;
++        assert_eq!(occupied.bed, bed);
++        assert_eq!(occupied.occupancy_revision, NonZeroU64::new(1));
++        assert_eq!(
++            occupied.sleeper,
++            read_sleeper(c, character(1)?).await.map_err(debug)?
++        );
++
++        for head in [
++            LogicalCell { x: 11, y: 20, z: 7 },
++            LogicalCell { x: 10, y: 21, z: 7 },
++            LogicalCell { x: 10, y: 20, z: 8 },
++        ] {
++            let target = stored_bed(8, "oteryn:content.house.a", head)?;
++            let empty = read_bed_occupancy(c, &target).await.map_err(debug)?;
++            assert_eq!(empty.bed, target);
++            assert_eq!(empty.occupancy_revision, NonZeroU64::new(1));
++            assert_eq!(empty.sleeper, None);
++        }
++        for (world, house, who) in [
++            (8, "oteryn:content.house.b", 2),
++            (9, "oteryn:content.house.c", 4),
++        ] {
++            let target = stored_bed(world, house, head)?;
++            let other = read_bed_occupancy(c, &target).await.map_err(debug)?;
++            assert_eq!(other.bed, target);
++            assert_eq!(other.occupancy_revision, NonZeroU64::new(1));
++            assert_eq!(
++                other.sleeper,
++                read_sleeper(c, character(who)?).await.map_err(debug)?
++            );
++        }
++        let different_world = stored_bed(9, "oteryn:content.house.a", head)?;
++        let unknown = read_bed_occupancy(c, &different_world)
++            .await
++            .map_err(debug)?;
++        assert_eq!(unknown.bed, different_world);
++        assert_eq!(unknown.occupancy_revision, None);
++        assert_eq!(unknown.sleeper, None);
++
++        sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=110,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
++            .bind(id(1).as_slice()).execute(&mut *c).await?;
++        let free = read_bed_occupancy(c, &bed).await.map_err(debug)?;
++        assert_eq!(free.occupancy_revision, NonZeroU64::new(2));
++        assert_eq!(free.sleeper, None);
++        let retained = read_sleeper(c, character(1)?)
++            .await
++            .map_err(debug)?
++            .ok_or("missing freed row")?;
++        assert_eq!(
++            retained.freed,
++            Some(FreedSleeper {
++                at: 110,
++                cause: FreedCause::OwnerWake
++            })
++        );
++        insert(c, 3, "oteryn:content.house.a", 8).await?;
++        let reused = read_bed_occupancy(c, &bed).await.map_err(debug)?;
++        assert_eq!(reused.occupancy_revision, NonZeroU64::new(3));
++        assert_eq!(
++            reused.sleeper,
++            read_sleeper(c, character(3)?).await.map_err(debug)?
++        );
++        assert_eq!(
++            read_sleeper(c, character(1)?)
++                .await
++                .map_err(debug)?
++                .ok_or("lost freed row")?
++                .freed,
++            retained.freed
++        );
++        assert_eq!(revision(c, "oteryn:content.house.a").await?, "3");
++        Ok(())
++    })
++}
++
++#[test]
++fn bed_occupancy_revision_and_occupant_share_the_same_commit_snapshot() -> TestResult {
++    run_case("bed_snapshot", async |c| {
++        insert(c, 1, "oteryn:content.house.a", 8).await?;
++        let bed = stored_bed(
++            8,
++            "oteryn:content.house.a",
++            LogicalCell { x: 10, y: 20, z: 7 },
++        )?;
++        let before = read_bed_occupancy(c, &bed).await.map_err(debug)?;
++        let mut other = another_connection(c).await?;
++        for commit in [false, true] {
++            let mut tx = c.begin().await?;
++            sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=110,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
++                .bind(id(1).as_slice()).execute(&mut *tx).await?;
++            insert(&mut tx, 2, "oteryn:content.house.a", 8).await?;
++            let inside = read_bed_occupancy(&mut tx, &bed).await.map_err(debug)?;
++            assert_eq!(inside.occupancy_revision, NonZeroU64::new(3));
++            assert_eq!(
++                inside.sleeper.as_ref().map(|s| s.character),
++                Some(character(2)?)
++            );
++            assert_eq!(
++                read_bed_occupancy(&mut other, &bed).await.map_err(debug)?,
++                before
++            );
++            if commit {
++                tx.commit().await?;
++                assert_eq!(
++                    read_bed_occupancy(&mut other, &bed).await.map_err(debug)?,
++                    inside
++                );
++            } else {
++                tx.rollback().await?;
++                assert_eq!(read_bed_occupancy(c, &bed).await.map_err(debug)?, before);
++                assert_eq!(read_sleeper(c, character(2)?).await.map_err(debug)?, None);
++            }
++        }
++        other.close().await?;
++        Ok(())
++    })
++}
++
++#[test]
++fn bed_occupancy_refuses_missing_revision_and_ambiguous_open_rows() -> TestResult {
++    run_case("bed_invalid", async |c| {
++        insert(c, 1, "oteryn:content.house.a", 8).await?;
++        let bed = stored_bed(
++            8,
++            "oteryn:content.house.a",
++            LogicalCell { x: 10, y: 20, z: 7 },
++        )?;
++        let empty = stored_bed(
++            8,
++            "oteryn:content.house.a",
++            LogicalCell { x: 11, y: 20, z: 7 },
++        )?;
++        // Corruption exists only in this test's own migration-owner database.
++        sqlx::query("DELETE FROM game_house_bed_revisions")
++            .execute(&mut *c)
++            .await?;
++        for target in [&bed, &empty] {
++            assert!(matches!(
++                read_bed_occupancy(c, target).await,
++                Err(SleeperReadError::InvalidStoredState)
++            ));
++        }
++        sqlx::query("INSERT INTO game_house_bed_revisions VALUES(encode($1,'hex')::uuid,'oteryn:content.house.a',1)")
++            .bind(id(8).as_slice()).execute(&mut *c).await?;
++        assert!(
++            read_bed_occupancy(c, &bed)
++                .await
++                .map_err(debug)?
++                .sleeper
++                .is_some()
++        );
++        sqlx::query("DROP INDEX game_house_bed_live_key")
++            .execute(&mut *c)
++            .await?;
++        insert(c, 2, "oteryn:content.house.a", 8).await?;
++        assert_eq!(revision(c, "oteryn:content.house.a").await?, "2");
++        assert!(matches!(
++            read_bed_occupancy(c, &bed).await,
++            Err(SleeperReadError::InvalidStoredState)
++        ));
++        Ok(())
++    })
++}
+````
+
+### native-format.patch
+
+<!-- checkpoint-artifact:native-format.patch -->
+````diff
+--- a/apps/game-server/src/house_bed/sleeper_tests.rs
++++ b/apps/game-server/src/house_bed/sleeper_tests.rs
+@@ -681,7 +681,11 @@
+     })
+ }
+ 
+-fn stored_bed(world: u8, house: &str, head: LogicalCell) -> Result<StoredBedKey, Box<dyn std::error::Error>> {
++fn stored_bed(
++    world: u8,
++    house: &str,
++    head: LogicalCell,
++) -> Result<StoredBedKey, Box<dyn std::error::Error>> {
+     let world = crate::foundation::WorldId::decode(&id(world)).map_err(debug)?;
+     Ok(StoredBedKey {
+         house: HouseId::new(world, house).ok_or("invalid fixture HouseId")?,
+@@ -705,7 +709,10 @@
+         let occupied = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+         assert_eq!(occupied.bed, bed);
+         assert_eq!(occupied.occupancy_revision, NonZeroU64::new(1));
+-        assert_eq!(occupied.sleeper, read_sleeper(c, character(1)?).await.map_err(debug)?);
++        assert_eq!(
++            occupied.sleeper,
++            read_sleeper(c, character(1)?).await.map_err(debug)?
++        );
+ 
+         for head in [
+             LogicalCell { x: 11, y: 20, z: 7 },
+@@ -718,15 +725,23 @@
+             assert_eq!(empty.occupancy_revision, NonZeroU64::new(1));
+             assert_eq!(empty.sleeper, None);
+         }
+-        for (world, house, who) in [(8, "oteryn:content.house.b", 2), (9, "oteryn:content.house.c", 4)] {
++        for (world, house, who) in [
++            (8, "oteryn:content.house.b", 2),
++            (9, "oteryn:content.house.c", 4),
++        ] {
+             let target = stored_bed(world, house, head)?;
+             let other = read_bed_occupancy(c, &target).await.map_err(debug)?;
+             assert_eq!(other.bed, target);
+             assert_eq!(other.occupancy_revision, NonZeroU64::new(1));
+-            assert_eq!(other.sleeper, read_sleeper(c, character(who)?).await.map_err(debug)?);
++            assert_eq!(
++                other.sleeper,
++                read_sleeper(c, character(who)?).await.map_err(debug)?
++            );
+         }
+         let different_world = stored_bed(9, "oteryn:content.house.a", head)?;
+-        let unknown = read_bed_occupancy(c, &different_world).await.map_err(debug)?;
++        let unknown = read_bed_occupancy(c, &different_world)
++            .await
++            .map_err(debug)?;
+         assert_eq!(unknown.bed, different_world);
+         assert_eq!(unknown.occupancy_revision, None);
+         assert_eq!(unknown.sleeper, None);
+@@ -736,13 +751,32 @@
+         let free = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+         assert_eq!(free.occupancy_revision, NonZeroU64::new(2));
+         assert_eq!(free.sleeper, None);
+-        let retained = read_sleeper(c, character(1)?).await.map_err(debug)?.ok_or("missing freed row")?;
+-        assert_eq!(retained.freed, Some(FreedSleeper { at: 110, cause: FreedCause::OwnerWake }));
++        let retained = read_sleeper(c, character(1)?)
++            .await
++            .map_err(debug)?
++            .ok_or("missing freed row")?;
++        assert_eq!(
++            retained.freed,
++            Some(FreedSleeper {
++                at: 110,
++                cause: FreedCause::OwnerWake
++            })
++        );
+         insert(c, 3, "oteryn:content.house.a", 8).await?;
+         let reused = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+         assert_eq!(reused.occupancy_revision, NonZeroU64::new(3));
+-        assert_eq!(reused.sleeper, read_sleeper(c, character(3)?).await.map_err(debug)?);
+-        assert_eq!(read_sleeper(c, character(1)?).await.map_err(debug)?.ok_or("lost freed row")?.freed, retained.freed);
++        assert_eq!(
++            reused.sleeper,
++            read_sleeper(c, character(3)?).await.map_err(debug)?
++        );
++        assert_eq!(
++            read_sleeper(c, character(1)?)
++                .await
++                .map_err(debug)?
++                .ok_or("lost freed row")?
++                .freed,
++            retained.freed
++        );
+         assert_eq!(revision(c, "oteryn:content.house.a").await?, "3");
+         Ok(())
+     })
+@@ -752,7 +786,11 @@
+ fn bed_occupancy_revision_and_occupant_share_the_same_commit_snapshot() -> TestResult {
+     run_case("bed_snapshot", async |c| {
+         insert(c, 1, "oteryn:content.house.a", 8).await?;
+-        let bed = stored_bed(8, "oteryn:content.house.a", LogicalCell { x: 10, y: 20, z: 7 })?;
++        let bed = stored_bed(
++            8,
++            "oteryn:content.house.a",
++            LogicalCell { x: 10, y: 20, z: 7 },
++        )?;
+         let before = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+         let mut other = another_connection(c).await?;
+         for commit in [false, true] {
+@@ -762,11 +800,20 @@
+             insert(&mut tx, 2, "oteryn:content.house.a", 8).await?;
+             let inside = read_bed_occupancy(&mut tx, &bed).await.map_err(debug)?;
+             assert_eq!(inside.occupancy_revision, NonZeroU64::new(3));
+-            assert_eq!(inside.sleeper.as_ref().map(|s| s.character), Some(character(2)?));
+-            assert_eq!(read_bed_occupancy(&mut other, &bed).await.map_err(debug)?, before);
++            assert_eq!(
++                inside.sleeper.as_ref().map(|s| s.character),
++                Some(character(2)?)
++            );
++            assert_eq!(
++                read_bed_occupancy(&mut other, &bed).await.map_err(debug)?,
++                before
++            );
+             if commit {
+                 tx.commit().await?;
+-                assert_eq!(read_bed_occupancy(&mut other, &bed).await.map_err(debug)?, inside);
++                assert_eq!(
++                    read_bed_occupancy(&mut other, &bed).await.map_err(debug)?,
++                    inside
++                );
+             } else {
+                 tx.rollback().await?;
+                 assert_eq!(read_bed_occupancy(c, &bed).await.map_err(debug)?, before);
+@@ -782,20 +829,44 @@
+ fn bed_occupancy_refuses_missing_revision_and_ambiguous_open_rows() -> TestResult {
+     run_case("bed_invalid", async |c| {
+         insert(c, 1, "oteryn:content.house.a", 8).await?;
+-        let bed = stored_bed(8, "oteryn:content.house.a", LogicalCell { x: 10, y: 20, z: 7 })?;
+-        let empty = stored_bed(8, "oteryn:content.house.a", LogicalCell { x: 11, y: 20, z: 7 })?;
++        let bed = stored_bed(
++            8,
++            "oteryn:content.house.a",
++            LogicalCell { x: 10, y: 20, z: 7 },
++        )?;
++        let empty = stored_bed(
++            8,
++            "oteryn:content.house.a",
++            LogicalCell { x: 11, y: 20, z: 7 },
++        )?;
+         // Corruption exists only in this test's own migration-owner database.
+-        sqlx::query("DELETE FROM game_house_bed_revisions").execute(&mut *c).await?;
++        sqlx::query("DELETE FROM game_house_bed_revisions")
++            .execute(&mut *c)
++            .await?;
+         for target in [&bed, &empty] {
+-            assert!(matches!(read_bed_occupancy(c, target).await, Err(SleeperReadError::InvalidStoredState)));
++            assert!(matches!(
++                read_bed_occupancy(c, target).await,
++                Err(SleeperReadError::InvalidStoredState)
++            ));
+         }
+         sqlx::query("INSERT INTO game_house_bed_revisions VALUES(encode($1,'hex')::uuid,'oteryn:content.house.a',1)")
+             .bind(id(8).as_slice()).execute(&mut *c).await?;
+-        assert!(read_bed_occupancy(c, &bed).await.map_err(debug)?.sleeper.is_some());
+-        sqlx::query("DROP INDEX game_house_bed_live_key").execute(&mut *c).await?;
++        assert!(
++            read_bed_occupancy(c, &bed)
++                .await
++                .map_err(debug)?
++                .sleeper
++                .is_some()
++        );
++        sqlx::query("DROP INDEX game_house_bed_live_key")
++            .execute(&mut *c)
++            .await?;
+         insert(c, 2, "oteryn:content.house.a", 8).await?;
+         assert_eq!(revision(c, "oteryn:content.house.a").await?, "2");
+-        assert!(matches!(read_bed_occupancy(c, &bed).await, Err(SleeperReadError::InvalidStoredState)));
+-        Ok(())
+-    })
+-}
++        assert!(matches!(
++            read_bed_occupancy(c, &bed).await,
++            Err(SleeperReadError::InvalidStoredState)
++        ));
++        Ok(())
++    })
++}
+````
+
+### independent-source-review.md
+
+<!-- checkpoint-artifact:independent-source-review.md -->
+````markdown
+# Independent BED occupancy source review
+
+Result: **PASS — no material source findings** in the bounded raw read component.
+
+Reviewed candidate based on published #2147 `87674e53cd4be954b19dfb049a5d41013182fc03`.
+Exact source hashes:
+
+| File | SHA-256 |
+|---|---|
+| apps/game-server/src/durability/bed_sleeper.rs | 9b111c1aad110e6abf5013ca499815e91544d3b1a445d191553d770664e77405 |
+| apps/game-server/src/house_bed/sleeper.rs | 50ed072d5aca2deb7382985e18406bcc95cf7098a9d0783797fc71c11feeb336 |
+| apps/game-server/src/house_bed/sleeper_tests.rs | 05dbf0eda36c0590d98417b1736f42f3d89105a79117586a4df3b1193eb7ac04 |
+
+The query binds the complete native World/House/x/y/z identity. It returns the
+occupant and House-wide revision within one statement snapshot; the two-row limit
+detects ambiguous live occupancy instead of choosing a first row. The correlated
+open-row check rejects missing revision state even when the requested bed is empty
+and a different bed in the same House is occupied. Existing decode validation is
+reused, and exact key/revision equality is checked before returning a sleeper.
+
+Freed rows are excluded from occupancy and retained for character settlement.
+An absent row/counter remains explicitly raw storage state: the type and function
+documentation confer no active-content, ownership, access, reservation, logout
+marker or runtime authority. No transaction, schema, mutation, runtime mount or
+activation is added by this component.
+
+The added tests use the actual private schema and real connections. They cover
+full key isolation, free/reuse while retaining the old freed row, statement
+visibility before/after commit and rollback, missing revision state and two live
+occupants after corruption limited to the test's own database.
+
+This is a source review only. I did not run native compilation or PostgreSQL, and
+do not treat the new tests as passing. Published BED source remains the dependency
+of the separate House/Guild qualification assembly.
+````
+
+`````

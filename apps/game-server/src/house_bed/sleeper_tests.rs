@@ -1,7 +1,8 @@
 //! Real private-schema tests. No marker, access grant or gameplay sleep is simulated.
 use super::*;
 use crate::durability::bed_sleeper::{
-    PRIVATE_SLEEPER_SCHEMA_SQL, SleeperReadError, read_sleeper, read_sleeper_for_update,
+    PRIVATE_SLEEPER_SCHEMA_SQL, SleeperReadError, read_bed_occupancy, read_sleeper,
+    read_sleeper_for_update,
 };
 use sqlx::{Connection, PgConnection};
 
@@ -676,6 +677,196 @@ fn native_owner_change_frees_open_rows_atomically_and_preserves_specific_first_c
             })
         );
         assert_eq!(revision(c, "oteryn:content.house.a").await?, "7");
+        Ok(())
+    })
+}
+
+fn stored_bed(
+    world: u8,
+    house: &str,
+    head: LogicalCell,
+) -> Result<StoredBedKey, Box<dyn std::error::Error>> {
+    let world = crate::foundation::WorldId::decode(&id(world)).map_err(debug)?;
+    Ok(StoredBedKey {
+        house: HouseId::new(world, house).ok_or("invalid fixture HouseId")?,
+        head,
+    })
+}
+
+#[test]
+fn bed_occupancy_lookup_is_exact_and_preserves_freed_rows_during_reuse() -> TestResult {
+    run_case("bed_lookup", async |c| {
+        let head = LogicalCell { x: 10, y: 20, z: 7 };
+        let bed = stored_bed(8, "oteryn:content.house.a", head)?;
+        let empty = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+        assert_eq!(empty.bed, bed);
+        assert_eq!(empty.occupancy_revision, None);
+        assert_eq!(empty.sleeper, None);
+
+        insert(c, 1, "oteryn:content.house.a", 8).await?;
+        insert(c, 2, "oteryn:content.house.b", 8).await?;
+        insert(c, 4, "oteryn:content.house.c", 9).await?;
+        let occupied = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+        assert_eq!(occupied.bed, bed);
+        assert_eq!(occupied.occupancy_revision, NonZeroU64::new(1));
+        assert_eq!(
+            occupied.sleeper,
+            read_sleeper(c, character(1)?).await.map_err(debug)?
+        );
+
+        for head in [
+            LogicalCell { x: 11, y: 20, z: 7 },
+            LogicalCell { x: 10, y: 21, z: 7 },
+            LogicalCell { x: 10, y: 20, z: 8 },
+        ] {
+            let target = stored_bed(8, "oteryn:content.house.a", head)?;
+            let empty = read_bed_occupancy(c, &target).await.map_err(debug)?;
+            assert_eq!(empty.bed, target);
+            assert_eq!(empty.occupancy_revision, NonZeroU64::new(1));
+            assert_eq!(empty.sleeper, None);
+        }
+        for (world, house, who) in [
+            (8, "oteryn:content.house.b", 2),
+            (9, "oteryn:content.house.c", 4),
+        ] {
+            let target = stored_bed(world, house, head)?;
+            let other = read_bed_occupancy(c, &target).await.map_err(debug)?;
+            assert_eq!(other.bed, target);
+            assert_eq!(other.occupancy_revision, NonZeroU64::new(1));
+            assert_eq!(
+                other.sleeper,
+                read_sleeper(c, character(who)?).await.map_err(debug)?
+            );
+        }
+        let different_world = stored_bed(9, "oteryn:content.house.a", head)?;
+        let unknown = read_bed_occupancy(c, &different_world)
+            .await
+            .map_err(debug)?;
+        assert_eq!(unknown.bed, different_world);
+        assert_eq!(unknown.occupancy_revision, None);
+        assert_eq!(unknown.sleeper, None);
+
+        sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=110,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(1).as_slice()).execute(&mut *c).await?;
+        let free = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+        assert_eq!(free.occupancy_revision, NonZeroU64::new(2));
+        assert_eq!(free.sleeper, None);
+        let retained = read_sleeper(c, character(1)?)
+            .await
+            .map_err(debug)?
+            .ok_or("missing freed row")?;
+        assert_eq!(
+            retained.freed,
+            Some(FreedSleeper {
+                at: 110,
+                cause: FreedCause::OwnerWake
+            })
+        );
+        insert(c, 3, "oteryn:content.house.a", 8).await?;
+        let reused = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+        assert_eq!(reused.occupancy_revision, NonZeroU64::new(3));
+        assert_eq!(
+            reused.sleeper,
+            read_sleeper(c, character(3)?).await.map_err(debug)?
+        );
+        assert_eq!(
+            read_sleeper(c, character(1)?)
+                .await
+                .map_err(debug)?
+                .ok_or("lost freed row")?
+                .freed,
+            retained.freed
+        );
+        assert_eq!(revision(c, "oteryn:content.house.a").await?, "3");
+        Ok(())
+    })
+}
+
+#[test]
+fn bed_occupancy_revision_and_occupant_share_the_same_commit_snapshot() -> TestResult {
+    run_case("bed_snapshot", async |c| {
+        insert(c, 1, "oteryn:content.house.a", 8).await?;
+        let bed = stored_bed(
+            8,
+            "oteryn:content.house.a",
+            LogicalCell { x: 10, y: 20, z: 7 },
+        )?;
+        let before = read_bed_occupancy(c, &bed).await.map_err(debug)?;
+        let mut other = another_connection(c).await?;
+        for commit in [false, true] {
+            let mut tx = c.begin().await?;
+            sqlx::query("UPDATE game_house_bed_sleepers SET freed_at=110,freed_cause='owner_wake' WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(1).as_slice()).execute(&mut *tx).await?;
+            insert(&mut tx, 2, "oteryn:content.house.a", 8).await?;
+            let inside = read_bed_occupancy(&mut tx, &bed).await.map_err(debug)?;
+            assert_eq!(inside.occupancy_revision, NonZeroU64::new(3));
+            assert_eq!(
+                inside.sleeper.as_ref().map(|s| s.character),
+                Some(character(2)?)
+            );
+            assert_eq!(
+                read_bed_occupancy(&mut other, &bed).await.map_err(debug)?,
+                before
+            );
+            if commit {
+                tx.commit().await?;
+                assert_eq!(
+                    read_bed_occupancy(&mut other, &bed).await.map_err(debug)?,
+                    inside
+                );
+            } else {
+                tx.rollback().await?;
+                assert_eq!(read_bed_occupancy(c, &bed).await.map_err(debug)?, before);
+                assert_eq!(read_sleeper(c, character(2)?).await.map_err(debug)?, None);
+            }
+        }
+        other.close().await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn bed_occupancy_refuses_missing_revision_and_ambiguous_open_rows() -> TestResult {
+    run_case("bed_invalid", async |c| {
+        insert(c, 1, "oteryn:content.house.a", 8).await?;
+        let bed = stored_bed(
+            8,
+            "oteryn:content.house.a",
+            LogicalCell { x: 10, y: 20, z: 7 },
+        )?;
+        let empty = stored_bed(
+            8,
+            "oteryn:content.house.a",
+            LogicalCell { x: 11, y: 20, z: 7 },
+        )?;
+        // Corruption exists only in this test's own migration-owner database.
+        sqlx::query("DELETE FROM game_house_bed_revisions")
+            .execute(&mut *c)
+            .await?;
+        for target in [&bed, &empty] {
+            assert!(matches!(
+                read_bed_occupancy(c, target).await,
+                Err(SleeperReadError::InvalidStoredState)
+            ));
+        }
+        sqlx::query("INSERT INTO game_house_bed_revisions VALUES(encode($1,'hex')::uuid,'oteryn:content.house.a',1)")
+            .bind(id(8).as_slice()).execute(&mut *c).await?;
+        assert!(
+            read_bed_occupancy(c, &bed)
+                .await
+                .map_err(debug)?
+                .sleeper
+                .is_some()
+        );
+        sqlx::query("DROP INDEX game_house_bed_live_key")
+            .execute(&mut *c)
+            .await?;
+        insert(c, 2, "oteryn:content.house.a", 8).await?;
+        assert_eq!(revision(c, "oteryn:content.house.a").await?, "2");
+        assert!(matches!(
+            read_bed_occupancy(c, &bed).await,
+            Err(SleeperReadError::InvalidStoredState)
+        ));
         Ok(())
     })
 }

@@ -12,7 +12,7 @@ use crate::content::LogicalCell;
 use crate::domain::CharacterId;
 use crate::foundation::WorldId;
 use crate::house_bed::sleeper::{
-    FreedCause, FreedSleeper, OccupiedVariant, StoredBedKey, StoredSleeper,
+    FreedCause, FreedSleeper, OccupiedVariant, StoredBedKey, StoredBedOccupancy, StoredSleeper,
 };
 use crate::house_scope::HouseId;
 use sqlx::postgres::{PgConnection, PgRow};
@@ -133,6 +133,82 @@ pub async fn read_sleeper(
         .await?
         .map(|row| decode(&row, character))
         .transpose()
+}
+
+const READ_BED_OCCUPANCY: &str = "WITH wanted AS (SELECT encode($1,'hex')::uuid AS world_id, \
+    $2::text AS house_key, $3::integer AS bed_x, $4::integer AS bed_y, $5::integer AS bed_z) \
+    SELECT uuid_send(s.world_id) AS world_identity,s.house_key,s.bed_x,s.bed_y,s.bed_z, \
+    uuid_send(s.character_id) AS character_identity,s.lease_generation::text AS lease, \
+    s.occupied_variant,s.slept_at,s.freed_at,s.freed_cause,r.revision::text AS revision, \
+    EXISTS(SELECT 1 FROM game_house_bed_sleepers live \
+        WHERE live.world_id=w.world_id AND live.house_key=w.house_key \
+        AND live.freed_at IS NULL) AS has_open_sleeper \
+    FROM wanted w LEFT JOIN game_house_bed_revisions r \
+        ON r.world_id=w.world_id AND r.house_key=w.house_key \
+    LEFT JOIN game_house_bed_sleepers s \
+        ON s.world_id=w.world_id AND s.house_key=w.house_key \
+        AND s.bed_x=w.bed_x AND s.bed_y=w.bed_y AND s.bed_z=w.bed_z \
+        AND s.freed_at IS NULL LIMIT 2";
+
+/// Reads the exact key and its House-wide revision in one statement snapshot.
+/// At most two rows are returned so a broken uniqueness constraint refuses
+/// instead of silently choosing an occupant. The open-row check uses the
+/// existing partial bed index and catches a missing House revision even when
+/// another bed in that House is occupied.
+///
+/// This starts no transaction and takes no gameplay or mutation authority.
+/// A None occupant is raw storage data, not permission to reserve or insert;
+/// callers must still resolve the active bed and hold their actual native
+/// runtime/property/access fences. No marker or settlement is inferred.
+pub async fn read_bed_occupancy(
+    connection: &mut PgConnection,
+    bed: &StoredBedKey,
+) -> Result<StoredBedOccupancy, SleeperReadError> {
+    let rows = sqlx::query(READ_BED_OCCUPANCY)
+        .bind(bed.house.world_id().as_bytes().as_slice())
+        .bind(bed.house.house_key())
+        .bind(bed.head.x)
+        .bind(bed.head.y)
+        .bind(bed.head.z)
+        .fetch_all(connection)
+        .await?;
+    let [row] = rows.as_slice() else {
+        return Err(SleeperReadError::InvalidStoredState);
+    };
+    let invalid = || SleeperReadError::InvalidStoredState;
+    let occupancy_revision = row
+        .try_get::<Option<String>, _>("revision")?
+        .map(|value| {
+            value
+                .parse::<u64>()
+                .ok()
+                .and_then(NonZeroU64::new)
+                .ok_or_else(invalid)
+        })
+        .transpose()?;
+    if occupancy_revision.is_none() && row.try_get::<bool, _>("has_open_sleeper")? {
+        return Err(invalid());
+    }
+    let sleeper = row
+        .try_get::<Option<Vec<u8>>, _>("character_identity")?
+        .map(|bytes| {
+            let character = CharacterId::from_bytes(bytes.try_into().map_err(|_| invalid())?)
+                .map_err(|_| invalid())?;
+            let sleeper = decode(row, character)?;
+            if &sleeper.bed != bed
+                || sleeper.freed.is_some()
+                || Some(sleeper.occupancy_revision) != occupancy_revision
+            {
+                return Err(invalid());
+            }
+            Ok(sleeper)
+        })
+        .transpose()?;
+    Ok(StoredBedOccupancy {
+        bed: bed.clone(),
+        occupancy_revision,
+        sleeper,
+    })
 }
 
 /// Pins an existing row until the caller's transaction ends. This does not
