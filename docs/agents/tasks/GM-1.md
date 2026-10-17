@@ -26,6 +26,14 @@ owned_paths:
   - "apps/game-server/src/staff/{mod,audit,signature}.rs (new)"
   - "apps/game-server/src/durability/staff_action.rs (new)"
   - "apps/game-server/tests/staff_audit_postgres.rs (new)"
+  - "apps/game-server/tests/support/staff_audit_postgres_cases.rs (D1343: canonical production-type cases)"
+  - "apps/game-server/tests/durability_postgres.rs (D1343: additive staff case mount only)"
+  - "apps/game-server/migrations/0116_staff_audit.sql (D1343a: current migration lease)"
+  - "apps/game-server/src/node/{config,serve}.rs (D1343d: exact staff config/control hunks; D1352: test-only spawn correction)"
+  - "apps/game-server/Cargo.toml (D1343e: staff_audit_postgres test=false target entry only)"
+  - "docs/contracts/game-events/v1/staff_action.proto (D1343b/c: STAFF_ACTION ID 5, schema revision 1)"
+  - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json (D1343: additive STAFF_ACTION event and retention)"
+  - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json (D1343: additive CANDIDATE staff wire bounds)"
   - "crates/release-manifest/ (new; shared JCS only, D1087)"
   - "workspace-boundaries.toml (D1091: exact member/path/production and two edge hunks only)"
   - "apps/game-server/src/bin/oteryn-game-ops.rs (existing executable, signed requests)"
@@ -34,18 +42,178 @@ owned_paths:
   - "apps/game-server/tests/*.rs (D1161: 26 exact production node/staff forwarding lines only)"
   - "content/world/pins/oteryn.json (D1328: compiler-derived inputs_digest correction only)"
 slot_only_paths:
-  - "apps/game-server/src/node/serve.rs, apps/game-server/src/node/config.rs"
-  - "Cargo.toml, apps/game-server/Cargo.toml (CP handwritten integration landed in 647053e9 under D1328)"
-  - "apps/game-server/migrations/0092_staff_audit.sql (historical proposal identifier; no current migration lease)"
-  - "docs/contracts/game-events/v2/staff_action.proto and STAFF_ACTION registration"
+  - "Cargo.toml and further apps/game-server/Cargo.toml integration outside the exact D1343e test-target hunk (CP grant required; D1328 integration already landed in 647053e9)"
   - "migrations: game_character_sanctions, game_staff_roles, game_player_reports"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (staff panel)"
-  - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json (`staff_action`)"
   - "apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs, crates/protocol-oteryn/src/lib.rs"
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — D1328 review repairs and World pin, NOT_FULLY_QUALIFIED (2026-10-17)
+## Current checkpoint — D1343 installed audit contract and review repairs, REPORT_ONLY (2026-10-17)
+
+Authoring predecessor is published draft #2181
+`df1d39389eabe030ac7dc2a37b92d202aaedae62`. The root lead is the sole branch
+publisher. [D1343](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233583959)
+and [D1343d/e](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233694200)
+allocate the following complete package. This checkpoint supersedes the migration,
+event, canonical PG and node/control holds recorded in older checkpoints below;
+it does not turn their historical tests into evidence for this package.
+
+### Installed contract and composition
+
+- Migration `0116_staff_audit.sql` is the single DDL source, embedded by the real
+  `sqlx::migrate!("./migrations")` ledger. Historical 0092 is not installed or
+  reused, and the old public proposal string is removed. The inherited LOGIN
+  membership guard from P1 4302394369 remains intact.
+- `STAFF_ACTION` has the current D1343 lease for event ID 5, schema revision 1
+  and a 365-day ordinary audit expiry. The v1 proto and the production registry
+  binding strings agree. Existing event/resource rows remain unchanged; the
+  staff rows are additive. Payload/envelope wire limits remain CANDIDATE until
+  native max/overflow tests execute on the published successor head.
+- All staff PG cases use the public production staff types, the installed
+  migration and `Contract::registered()`. The support fixture owns its test
+  OpenSSH keys and loads trust through the public checked-file API. It does not
+  expose production signing or rely on a private fixture-only contract.
+- `durability_postgres.rs` gains only the two-line staff case mount; all its
+  previous bytes are preserved. Ten of the twelve existing GM case blocks
+  remain byte-identical. Two replace fixture event IDs with the registered ID
+  and a distinct wrong-route value, preserving each assertion and negative
+  operator. The new activation regressions bring the staff family to 14 cases.
+  The standalone wrapper remains explicitly callable; its `test = false` entry
+  routes default execution through the canonical aggregate without duplicating
+  cases.
+- Node config accepts an optional restart-only staff trust section and still
+  parses existing configs without it. Boot loads pinned trust before authority
+  registration. The UID-0 control socket preserves its 30-second deadline and
+  64-byte bootstrap route; staff framing separately bounds prefix and payload.
+  It passes opaque signed bytes to the existing verified durability owners.
+  Missing trust refuses the staff route, and every non-read request remains
+  refused by `audit_staff_read`. Runtime stays REPORT_ONLY under D1343d; no
+  activation endpoint, live roster change, signer distribution or new gameplay
+  mutation capability is introduced.
+
+### Review findings in this package
+
+The prior df1 review completed with two P2 findings, both accepted for repair in
+this single successor:
+
+- [4302571603](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4302571603):
+  ordinary signed requests require both WorldId and ChannelId. The existing
+  typed `RosterActivate` environment-link exception is preserved. Tests exercise
+  ten ordinary variants through preparation and real signature verification,
+  with missing scope, invalid WorldId and invalid ChannelId as separate cases.
+- [4302571606](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4302571606):
+  later activations must lock and validate the independently current head.
+  Only a no-head activation at sequence 1 with the zero predecessor may
+  bootstrap. PostgreSQL regressions use real signatures, isolated predecessor
+  mutations, valid bootstrap/rotations and an actual concurrent INSERT blocked
+  on the head before a competing valid rotation commits.
+
+The earlier P1 member-role guard and P2 exact retained-envelope validation remain
+in the package. No case, signature check or authorization fence is disabled.
+
+### Qualification and resource rules
+
+The native source assembly is the named published predecessor plus this complete
+14-file package. Its results remain distinct from qualification of the eventual
+API-created successor. All three collaborators reviewed separate source portions;
+root reviewed the complete package and remains the sole native executor and
+publisher.
+
+The original node/control proposal is patch SHA256
+`8f55229e824663df1a8f94e0b49db07b88b5f1c29ae24800a78897aa2051b9e1`.
+Attempt 1 stopped before tests with E0433 because the new socket test used
+`tokio::join!` without the macros feature. [D1352](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234008098)
+accepts the exact test-only `tokio::spawn` writer plus awaited completion
+correction, patch `2dff1cb5d047262966d057a2f4dbcc0bb0fe1e682e996902c6b4e2831d60b32f`.
+It preserves the concurrent socket test, assertions and production bytes without
+changing Cargo features. The compile-only failure is retained, never counted as
+defect RED.
+
+Attempt 2 executed genuine RED against the preserved scope and activation SQL:
+all three selected regressions exited 101 with exactly one failure each. Scope
+reported all 20 missing-scope prepare/verify markers; binding reported six
+independent predecessor failures; the actual concurrent INSERT showed both the
+missing lock and stale-predecessor acceptance. The two PG cases cleaned their
+owned fixtures before their final assertions. All 18,917 source paths were
+unchanged, snapshot
+`b787968a4025d056f0618b5b0adfe6910ad2978bbfe7f5348de5683ca9b40b97`;
+the raw result SHA256 is
+`e5e67dcfaecd2f9cc117659a7dc283df8395b33f50810731229ffb010da92fc8`.
+
+Attempt 2 GREEN then compiled both real targets and produced 15 passing staff
+tests plus one genuine payload-boundary failure: the new borrowed-length visitor
+used envelope field 27 (digest), while payload is field 26. Producer bounds,
+the outer envelope limit and whole regenerated-event comparison remained intact.
+[The retained failure and correction](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234225406)
+change only that one visitor byte; tests and limits are unchanged. Its before/after
+source was
+`ece0ad58c19f5c9ebcb0f929378428e4dc55c163521aaf5a68e03496556f310b`;
+raw result SHA256
+`2cd3e160676e45584c0ccdb838286a6fffa222c9a73a7a74af6299fe493e5fd8`.
+All 22 completed reports and full raw logs from the failed stages are preserved
+in archive SHA256
+`89db5a0b5e7025b8e85587bd75527003ad19a2e2d8672e8eaa96d4f97ebb2e91`.
+
+Attempt 3 executed all 16 staff unit tests, all 14 canonical staff PG cases and
+four selected node tests: 34 passed, zero failed or ignored. Workspace fmt passed.
+Strict all-target Clippy then failed on the direct `panic!` in the newly added
+parser test. [The test-only assertion correction](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6234386607)
+uses `Option<Vec<u8>>` plus `assert_eq!` to preserve the required Staff variant
+and byte-for-byte Request/Receipt round trip. No production code, test selection,
+limit or lint allowance changes. The retained attempt 3 source snapshot is
+`52282e7bd3a4f736c9b7f441b35f6190bb81039dd33dc0fcce9d4a09f236dd4d`,
+packet SHA256
+`1869935ad0efcdad502d724e7e40797c6b7b55e21f5ebee97a17cbd7f19d51b5`.
+Preparation verified exactly one changed audit byte and zero rustfmt changes.
+The raw Clippy-failed result is
+`e7d65093696608761d68166bf161ffc34bb8b625467d83fc0bab4910acde28ae`;
+all 37 completed reports and full raw logs through this stage are preserved in
+archive `35ec6e73c7730b270e2dc35a67ca366955e43aadda594f09166f5dfa109fbab6`.
+
+Corrected attempt 4 GREEN completed on Molehill-PC at 13:34:54 UTC: all 16 staff
+unit tests, all 14 canonical staff PostgreSQL cases and four node tests passed,
+with zero failures or ignored cases. Workspace fmt and strict all-target Clippy
+for game-server/release-manifest also passed. Its sole source correction
+relative to attempt 3 is the parser test assertion, patch
+`33c89ba15d7a3d329d628ece99d9fd849f4a923dd8c47ccbfacf0ac1484d48a0`;
+source packet SHA256
+`2ff8fe149a126d09f13704f02a7cb00b3588839226dc31cc675debc5283c3fec`.
+The complete 18,917-path source snapshot remained unchanged before and after:
+`1c8d874c818f211533456753336eba99a70bc8b2018296ce3aeef2d996c44079`.
+The raw passing result SHA256 is
+`9f3e30b0f5aac607b84a3bf0785ff6adee35b55a98df60540a698ef23f0c9f46`.
+All 52 completed reports and full raw logs through this passing stage are
+preserved and verified in archive
+`b6282fb5da1a852ff7461a3d9e4730970a21343906d42bfe63c75cec02fd9102`.
+The original three RED executions and the payload-boundary RED retain their
+separate source identities and are not relabelled or repeated.
+At preparation of this publication, native qualification of the API-created
+successor and the original PG target-aggregation guard remain PENDING until
+that successor exists and is checked out cleanly. Their later receipts belong
+in the PR and control-plane discussion; this source-assembly evidence is not
+relabelled as execution of the future commit.
+
+[D1342](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233555077)
+requires the prescribed sourced sccache environment, an exclusively held free
+build-slot lock, its own `/root/oteryn-target-<slot>`, jobs=4, incremental=0 and
+MemAvailable >= 12 GiB before Cargo. D1329 requires `cargo fetch --locked` before
+tests through the shared PG 17.6 namespace helper. No private PG server or
+container is started. Each fixture cleans only its own database/roles.
+[The retention clarification](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233732824)
+requires a separate lock only for keeping/deleting ELF files outside the slot
+target; this run keeps none there.
+
+[The Cargo correction](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6233644124)
+confirms that D1328 remains binding and #1942 is not a gate. Only the exact
+D1343e target hunk changes Cargo in this package. #2197 precedes #2181.
+D1353 orders the canonical PG mount #2181 → #2166 → #2187; D1354 orders the
+shared transport mount #2197 → #2145 house line → QUEST (#2198) → A2 (#2187).
+Ready/queue actions stay with CP. D1343d/e
+requests responses and resolution for both new findings with the fixing commit,
+then one new-head review request after live de-duplication.
+
+## Published predecessor checkpoint — D1328/D1337 review repairs and World pin (2026-10-17)
 
 Current authoring base is published draft #2181 head
 `647053e929694a9dceb639bd42e4cdceb3ded479`, sole parent

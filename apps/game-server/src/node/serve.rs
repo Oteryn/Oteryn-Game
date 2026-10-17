@@ -85,7 +85,9 @@ const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
-const CONTROL_REQUEST_BYTES: usize = 64;
+const BOOTSTRAP_REQUEST_BYTES: usize = 64;
+const CONTROL_REQUEST_BYTES: usize =
+    crate::staff::signature::CONTROL_PREFIX.len() + crate::staff::signature::MAX_CONTROL_BYTES;
 const CONTROL_DEADLINE: Duration = Duration::from_secs(30);
 const MAX_GAMEPLAY_KEY_BYTES: usize = 16 * 1024;
 
@@ -1918,14 +1920,34 @@ fn parse_operation_id(request: &[u8]) -> Option<[u8; 16]> {
     (bytes[6] >> 4 == 7 && bytes[8] & 0xc0 == 0x80).then_some(bytes)
 }
 
-async fn handle_control(stream: &mut UnixStream) -> Option<[u8; 16]> {
-    let mut request = Vec::with_capacity(CONTROL_REQUEST_BYTES);
-    let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
-    limited.read_to_end(&mut request).await.ok()?;
+enum ControlInput {
+    Bootstrap([u8; 16]),
+    Staff(crate::staff::signature::ControlMessage),
+}
+
+fn parse_control_input(request: &[u8]) -> Option<ControlInput> {
     if request.len() > CONTROL_REQUEST_BYTES {
         return None;
     }
-    parse_operation_id(&request)
+    if let Some(bytes) = request.strip_prefix(crate::staff::signature::CONTROL_PREFIX) {
+        let message =
+            oteryn_release_manifest::jcs::decode(bytes, crate::staff::signature::MAX_CONTROL_BYTES)
+                .ok()?;
+        // Only the bounded transport envelope is decoded here. The executable
+        // inner request remains opaque until OpenSSH verifies its exact bytes.
+        return Some(ControlInput::Staff(message));
+    }
+    if request.len() > BOOTSTRAP_REQUEST_BYTES {
+        return None;
+    }
+    parse_operation_id(request).map(ControlInput::Bootstrap)
+}
+
+async fn handle_control(stream: &mut UnixStream) -> Option<ControlInput> {
+    let mut request = Vec::with_capacity(BOOTSTRAP_REQUEST_BYTES);
+    let mut limited = (&mut *stream).take(CONTROL_REQUEST_BYTES as u64 + 1);
+    limited.read_to_end(&mut request).await.ok()?;
+    parse_control_input(&request)
 }
 
 /// One request at a time, bounded size and deadline; only uid 0 is served.
@@ -1937,6 +1959,7 @@ async fn control_loop(
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
     intents: &ProducerDescriptor,
+    staff_trust: Option<&std::sync::Arc<crate::staff::signature::VerifierTrust>>,
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -1956,14 +1979,46 @@ async fn control_loop(
         let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
         let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
-            let answer = match handle_control(&mut stream).await {
-                Some(operation) => {
+            let input = handle_control(&mut stream).await;
+            if let Some(ControlInput::Staff(message)) = input {
+                let answer = if let Some(trust) = staff_trust {
+                    match message {
+                        crate::staff::signature::ControlMessage::Request(signed) => root
+                            .audit_staff_read(std::sync::Arc::clone(trust), signed)
+                            .await
+                            .ok()
+                            .map(|outcome| outcome.bytes),
+                        crate::staff::signature::ControlMessage::Receipt(signed) => root
+                            .store_staff_receipt(std::sync::Arc::clone(trust), signed)
+                            .await
+                            .ok()
+                            .map(|()| b"receipt-stored".to_vec()),
+                    }
+                } else {
+                    None
+                };
+                event_traced(
+                    if answer.is_some() {
+                        "event=staff_audit result=recorded"
+                    } else {
+                        "event=staff_audit result=rejected"
+                    },
+                    connection,
+                );
+                let _ = stream
+                    .write_all(answer.as_deref().unwrap_or(b"rejected"))
+                    .await;
+                let _ = stream.shutdown().await;
+                return;
+            }
+            let answer = match input {
+                Some(ControlInput::Bootstrap(operation)) => {
                     bootstrap_one(
                         root, authority, proof, evidence, intents, &capacity, operation,
                     )
                     .await
                 }
-                None => "rejected",
+                _ => "rejected",
             };
             event_traced(
                 &format!("event=character_bootstrap result={answer}"),
@@ -2410,6 +2465,13 @@ async fn boot_and_serve(
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
+    let staff_trust = config
+        .staff
+        .as_ref()
+        .map(|staff| staff.load())
+        .transpose()
+        .map_err(|_| BootError::Startup(StartupError::Invalid { key: "staff" }))?
+        .map(std::sync::Arc::new);
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
         stopped_before_ready();
@@ -2726,6 +2788,7 @@ async fn boot_and_serve(
         &proof,
         evidence,
         &material.intents,
+        staff_trust.as_ref(),
         &shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));
@@ -2963,6 +3026,108 @@ mod tests {
         assert!(parse_operation_id(b"01890f4c-3b2a-4c01-8d11-9a321b7c0004").is_none());
         assert!(parse_operation_id(b"bootstrap everything").is_none());
         assert!(parse_operation_id(b"01890F4C-3B2A-7C01-8D11-9A321B7C0004").is_none());
+    }
+
+    fn staff_control_wire(message: &crate::staff::signature::ControlMessage) -> Vec<u8> {
+        let mut wire = crate::staff::signature::CONTROL_PREFIX.to_vec();
+        wire.extend(
+            oteryn_release_manifest::jcs::encode(
+                message,
+                crate::staff::signature::MAX_CONTROL_BYTES + 1,
+            )
+            .expect("transport fixture"),
+        );
+        wire
+    }
+
+    #[test]
+    fn control_parser_preserves_signed_bytes_and_legacy_bootstrap_bound() {
+        use crate::staff::signature::{ControlMessage, SignedBytes};
+        let signed = SignedBytes {
+            principal: "operator".into(),
+            bytes: vec![0, 255, 1, 128],
+            signature: "not yet verified".into(),
+        };
+        for message in [
+            ControlMessage::Request(signed.clone()),
+            ControlMessage::Receipt(signed.clone()),
+        ] {
+            let wire = staff_control_wire(&message);
+            let roundtrip = match parse_control_input(&wire) {
+                Some(ControlInput::Staff(parsed)) => Some(staff_control_wire(&parsed)),
+                _ => None,
+            };
+            assert_eq!(roundtrip, Some(wire), "bounded opaque signed envelope");
+        }
+        let operation = b"01890f4c-3b2a-7c01-8d11-9a321b7c0004\n";
+        assert!(matches!(
+            parse_control_input(operation),
+            Some(ControlInput::Bootstrap(_))
+        ));
+        let mut padded = operation.to_vec();
+        padded.resize(BOOTSTRAP_REQUEST_BYTES, b'\n');
+        assert!(matches!(
+            parse_control_input(&padded),
+            Some(ControlInput::Bootstrap(_))
+        ));
+        padded.push(b'\n');
+        assert!(parse_control_input(&padded).is_none());
+        assert!(parse_control_input(b"OTERYN-STAFF-AUDIT/2\n{}").is_none());
+        let valid = serde_json::to_value(ControlMessage::Request(signed)).expect("transport value");
+        for field in ["message", "execute"] {
+            let mut changed = valid.clone();
+            changed[field] = if field == "message" {
+                serde_json::Value::String("Activate".into())
+            } else {
+                serde_json::Value::Bool(true)
+            };
+            let mut wire = crate::staff::signature::CONTROL_PREFIX.to_vec();
+            wire.extend(
+                oteryn_release_manifest::jcs::encode(
+                    &changed,
+                    crate::staff::signature::MAX_CONTROL_BYTES,
+                )
+                .expect("canonical changed transport"),
+            );
+            assert!(parse_control_input(&wire).is_none(), "{field}");
+        }
+    }
+
+    #[test]
+    fn control_reader_accepts_exact_transport_limit_and_rejects_one_byte_over() {
+        use crate::staff::signature::{ControlMessage, MAX_CONTROL_BYTES, SignedBytes};
+        let mut signed = SignedBytes {
+            principal: "operator".into(),
+            bytes: vec![],
+            signature: String::new(),
+        };
+        let empty = oteryn_release_manifest::jcs::encode(
+            &ControlMessage::Request(signed.clone()),
+            MAX_CONTROL_BYTES,
+        )
+        .expect("empty transport fixture");
+        signed.signature = "a".repeat(MAX_CONTROL_BYTES - empty.len());
+        let at_limit = staff_control_wire(&ControlMessage::Request(signed.clone()));
+        assert_eq!(at_limit.len(), CONTROL_REQUEST_BYTES);
+        signed.signature.push('a');
+        let over_limit = staff_control_wire(&ControlMessage::Request(signed));
+        assert_eq!(over_limit.len(), CONTROL_REQUEST_BYTES + 1);
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            for (wire, accepted) in [(at_limit, true), (over_limit, false)] {
+                let (mut client, mut server) = UnixStream::pair().expect("control pair");
+                let writer = tokio::spawn(async move {
+                    client.write_all(&wire).await.expect("control bytes");
+                    client.shutdown().await.expect("request end");
+                });
+                let parsed = handle_control(&mut server).await;
+                writer.await.expect("control writer");
+                assert_eq!(matches!(parsed, Some(ControlInput::Staff(_))), accepted);
+            }
+        });
     }
 
     #[test]

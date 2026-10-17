@@ -246,6 +246,8 @@ pub struct BootConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    /// D1041 restart-only reviewed independent staff trust; absent disables staff control.
+    pub staff: Option<crate::staff::signature::TrustConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
     pub database: DatabaseConfig,
@@ -807,6 +809,38 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
         assert_eq!(
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
+        );
+    }
+
+    #[test]
+    fn staff_configuration_is_optional_and_has_no_unsigned_extension_fields() {
+        assert!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("node")
+                .staff
+                .is_none()
+        );
+        let section = format!(
+            "\n[staff]\nenvironment = \"preprod\"\nallowed_signers_file = \"/etc/oteryn/staff/allowed_signers\"\nallowed_signers_sha256 = \"{}\"\nnewest_activation_sha256 = \"{}\"\n",
+            "1".repeat(64),
+            "2".repeat(64)
+        );
+        let document = format!("{NODE}{section}");
+        let config = NodeConfig::parse(document.as_bytes()).expect("staff config");
+        let staff = config.staff.expect("restart-only staff trust");
+        assert_eq!(staff.environment, "preprod");
+        assert_eq!(staff.allowed_signers_sha256, "1".repeat(64));
+        assert_eq!(staff.newest_activation_sha256, "2".repeat(64));
+        assert!(
+            NodeConfig::parse(format!("{document}allow_unsigned = true\n").as_bytes()).is_err()
+        );
+        assert!(
+            NodeConfig::parse(
+                document
+                    .replace("newest_activation_sha256", "unrecognized_activation")
+                    .as_bytes()
+            )
+            .is_err()
         );
     }
 

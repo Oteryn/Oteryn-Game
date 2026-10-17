@@ -1,5 +1,5 @@
-//! D1088 proposed STAFF_ACTION payload contract. Event numbers are never guessed:
-//! production construction fails closed until the CP registry slot is installed.
+//! D1343 STAFF_ACTION payload contract. Event numbers come from the CP registry;
+//! registration alone grants no runtime mutation or collection authority.
 use super::signature::{self, Error, Outcome, VerifiedRequest};
 use crate::durability::item_mint_audit::{EventEnvelopeV1, TransactionEventRefV1};
 use oteryn_protocol_oteryn::{
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 pub const RETENTION_PROFILE: &str = "STAFF_ACTION_AUDIT_RETENTION_V1";
-/// Proposed finite ordinary ceiling: 365 elapsed days. Retained domain evidence,
+/// Finite ordinary ceiling: 365 elapsed days. Retained domain evidence,
 /// receipts, roster revisions and their links live as long as relying records.
 pub const RETENTION_MS: i64 = 31_536_000_000;
 pub const MAX_PAYLOAD_BYTES: usize = 49_152;
@@ -170,8 +170,8 @@ impl Contract {
             .ok_or(Error::MissingMaterial)?;
         if event["durability_class"] != "DURABLE_AUDIT"
             || event["current_schema_revision"] != 1
-            || event["payload_schema"] != "docs/contracts/game-events/v2/staff_action.proto"
-            || event["payload_message"] != "oteryn.events.v2.StaffActionV1"
+            || event["payload_schema"] != "docs/contracts/game-events/v1/staff_action.proto"
+            || event["payload_message"] != "oteryn.events.v1.StaffActionV1"
             || event["privacy_class_floor"] != "RESTRICTED_PLAYER_LINKED"
             || event["retention_profile_id"] != RETENTION_PROFILE
             || event["atomic_mutation_evidence"] != true
@@ -211,7 +211,7 @@ impl Contract {
     }
 }
 
-/// Review proposal for game-events/v2/staff_action.proto. IDs 1–17 are payload
+/// Registered game-events/v1/staff_action.proto. IDs 1–17 are payload
 /// field numbers, not an allocation of the registry's event type number.
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct StaffActionV1 {
@@ -257,6 +257,14 @@ fn name<T: Serialize>(value: &T) -> Result<String, Error> {
         .and_then(|v| v.as_str().map(str::to_owned))
         .ok_or(Error::Invalid)
 }
+
+fn encode_bounded(message: &impl Message, maximum: usize) -> Result<Vec<u8>, Error> {
+    if message.encoded_len() > maximum {
+        return Err(Error::Bounds);
+    }
+    Ok(message.encode_to_vec())
+}
+
 pub fn encode(
     contract: Contract,
     request: &VerifiedRequest,
@@ -301,11 +309,8 @@ pub fn encode(
         basis_refs_jcs: b"[]".to_vec(),
         outcome_jcs: outcome.canonical_bytes()?,
         environment: action.environment.clone(),
-    }
-    .encode_to_vec();
-    if payload.len() > MAX_PAYLOAD_BYTES {
-        return Err(Error::Bounds);
-    }
+    };
+    let payload = encode_bounded(&payload, MAX_PAYLOAD_BYTES)?;
     let scope = action.scope.as_ref();
     let envelope = EventEnvelopeV1 {
         envelope_revision: 1,
@@ -332,12 +337,8 @@ pub fn encode(
         payload_sha256: Sha256::digest(&payload).to_vec(),
         payload,
         ..EventEnvelopeV1::default()
-    }
-    .encode_to_vec();
-    if envelope.len() > MAX_ENVELOPE_BYTES {
-        return Err(Error::Bounds);
-    }
-    Ok(envelope)
+    };
+    encode_bounded(&envelope, MAX_ENVELOPE_BYTES)
 }
 
 #[derive(Clone, Copy)]
@@ -376,6 +377,17 @@ fn validate_audit_wire(bytes: &[u8], message: AuditWireMessage) -> Result<(), Er
             )
             .map_err(|_| Error::Invalid)?;
             validate_audit_wire(transaction, AuditWireMessage::Transaction)?;
+        } else if matches!((message, field), (AuditWireMessage::Envelope, 26)) {
+            let payload = bounded_length_delimited(
+                bytes,
+                &mut cursor,
+                MAX_ENVELOPE_BYTES,
+                FoundationProtocolError::MalformedEnvelope,
+            )
+            .map_err(|_| Error::Invalid)?;
+            if payload.len() > MAX_PAYLOAD_BYTES {
+                return Err(Error::Bounds);
+            }
         } else {
             // Other nested messages are absent from a STAFF_ACTION envelope;
             // the regenerated value comparison below rejects their presence.
@@ -478,6 +490,155 @@ mod tests {
     #![allow(clippy::expect_used)]
     use super::super::signature::{Disposition, REQUEST_NAMESPACE, tests::Signer};
     use super::*;
+
+    fn verified_event_fixture() -> (VerifiedRequest, Outcome) {
+        let signer = Signer::new();
+        let trust = signer.trust("alpha-test", &"a".repeat(64));
+        let request = trust
+            .verify_request(
+                signer.sign(
+                    signer
+                        .request(2, 2, &"b".repeat(64))
+                        .canonical_bytes()
+                        .expect("JCS"),
+                    REQUEST_NAMESPACE,
+                ),
+            )
+            .expect("verified scoped intent");
+        let outcome = Outcome {
+            disposition: Disposition::Committed,
+            result: ResultCode::Ok,
+            action_id: "00000000-0000-7000-8000-000000000003".into(),
+            transaction_id: "00000000-0000-7000-8000-000000000004".into(),
+            occurred_at: signature::Decimal(1_000_000),
+        };
+        (request, outcome)
+    }
+
+    #[test]
+    fn staff_action_prost_payload_boundary_and_overflow() {
+        // This isolates the codec's capacity ceiling. Padding is not a legal
+        // signed request; semantic admission is exercised separately below.
+        // Tag 7 is one byte and this length varint occupies three bytes.
+        let mut payload = StaffActionV1 {
+            signed_request: vec![0; MAX_PAYLOAD_BYTES - 4],
+            ..StaffActionV1::default()
+        };
+        assert_eq!(payload.encoded_len(), 49_152);
+        let bytes = encode_bounded(&payload, MAX_PAYLOAD_BYTES).expect("payload at ceiling");
+        assert_eq!(bytes.len(), 49_152);
+        assert_eq!(
+            StaffActionV1::decode(bytes.as_slice()).expect("prost payload"),
+            payload
+        );
+        let mut envelope = EventEnvelopeV1 {
+            payload: bytes,
+            ..EventEnvelopeV1::default()
+        };
+        assert!(validate_audit_wire(&envelope.encode_to_vec(), AuditWireMessage::Envelope).is_ok());
+
+        payload.signed_request.push(0);
+        assert_eq!(payload.encoded_len(), 49_153);
+        assert_eq!(
+            encode_bounded(&payload, MAX_PAYLOAD_BYTES),
+            Err(Error::Bounds)
+        );
+        envelope.payload = payload.encode_to_vec();
+        let overflow = envelope.encode_to_vec();
+        assert!(overflow.len() < MAX_ENVELOPE_BYTES);
+        assert_eq!(
+            validate_audit_wire(&overflow, AuditWireMessage::Envelope),
+            Err(Error::Bounds)
+        );
+    }
+
+    #[test]
+    fn staff_action_prost_envelope_boundary_and_overflow() {
+        // Capacity-only vector, not an authorized event: the build string is
+        // padded to isolate this outer ceiling from all signed request fields.
+        // Tag 25 occupies two bytes and the length varint occupies three.
+        let mut envelope = EventEnvelopeV1 {
+            server_build_id: "x".repeat(MAX_ENVELOPE_BYTES - 5),
+            ..EventEnvelopeV1::default()
+        };
+        assert_eq!(envelope.encoded_len(), 50_176);
+        let bytes = encode_bounded(&envelope, MAX_ENVELOPE_BYTES).expect("envelope at ceiling");
+        assert_eq!(bytes.len(), 50_176);
+        assert_eq!(
+            EventEnvelopeV1::decode(bytes.as_slice()).expect("prost envelope"),
+            envelope
+        );
+
+        envelope.server_build_id.push('x');
+        assert_eq!(envelope.encoded_len(), 50_177);
+        assert_eq!(
+            encode_bounded(&envelope, MAX_ENVELOPE_BYTES),
+            Err(Error::Bounds)
+        );
+        let (request, outcome) = verified_event_fixture();
+        let contract = Contract::registered().expect("D1343 registry");
+        assert_eq!(
+            verify_event(contract, &request, &outcome, &envelope.encode_to_vec()),
+            Err(Error::Bounds)
+        );
+    }
+
+    #[test]
+    fn registered_scoped_event_binds_contract_and_resource_ceilings() {
+        let contract = Contract::registered().expect("D1343 registry");
+        assert_eq!(contract.event_type(), 5);
+        assert_eq!(contract.revision(), 1);
+        assert_eq!(RETENTION_MS, 365 * 24 * 60 * 60 * 1_000);
+        let limits: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+        ))
+        .expect("resource registry");
+        for (id, maximum) in [
+            ("GM1-STAFF-ACTION-PAYLOAD-BYTES", MAX_PAYLOAD_BYTES),
+            ("GM1-STAFF-ACTION-ENVELOPE-BYTES", MAX_ENVELOPE_BYTES),
+        ] {
+            let entry = limits["entries"]
+                .as_array()
+                .expect("resource entries")
+                .iter()
+                .find(|entry| entry["id"] == id)
+                .expect("registered ceiling");
+            assert_eq!(entry["hard_maximum"].as_u64(), Some(maximum as u64));
+        }
+        let (request, outcome) = verified_event_fixture();
+        let bytes = encode(contract, &request, &outcome, 1_000_000, "staff-test")
+            .expect("registered scoped event");
+        let envelope = EventEnvelopeV1::decode(bytes.as_slice()).expect("envelope");
+        let scope = request
+            .request()
+            .scope
+            .as_ref()
+            .expect("ordinary action scope");
+        assert_eq!(
+            envelope.world_id,
+            Some(
+                crate::node::uuid_bytes(&scope.world_id)
+                    .expect("WorldId")
+                    .to_vec()
+            )
+        );
+        assert_eq!(
+            envelope.channel_id,
+            Some(
+                crate::node::uuid_bytes(&scope.channel_id)
+                    .expect("ChannelId")
+                    .to_vec()
+            )
+        );
+        assert_ne!(envelope.world_id, envelope.channel_id);
+        assert_eq!(envelope.event_type_id, 5);
+        assert_eq!(envelope.event_schema_revision, 1);
+        assert_eq!(envelope.retention_profile_id, RETENTION_PROFILE);
+        assert!(envelope.payload.len() <= MAX_PAYLOAD_BYTES);
+        assert!(bytes.len() <= MAX_ENVELOPE_BYTES);
+        assert!(verify_event(contract, &request, &outcome, &bytes).is_ok());
+    }
+
     #[test]
     fn unsigned_read_timestamp_cannot_excuse_missing_unexpired_audit() {
         let signer = Signer::new();

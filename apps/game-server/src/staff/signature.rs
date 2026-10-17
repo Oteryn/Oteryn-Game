@@ -175,6 +175,10 @@ impl Request {
         {
             return Err(Error::Invalid);
         }
+        // Only the typed, restart-pinned roster activation is environment-wide.
+        if self.scope.is_none() && !matches!(&self.action, Action::RosterActivate { .. }) {
+            return Err(Error::Invalid);
+        }
         if let Some(scope) = &self.scope
             && (!uuid(&scope.world_id) || !uuid(&scope.channel_id))
         {
@@ -876,7 +880,10 @@ pub(crate) mod tests {
                 issued_at: Decimal(1_000_000),
                 control_seq: Decimal(sequence),
                 previous_link_sha256: previous.into(),
-                scope: None,
+                scope: Some(Scope {
+                    world_id: "00000000-0000-7000-8000-000000000010".into(),
+                    channel_id: "00000000-0000-7000-8000-000000000011".into(),
+                }),
                 reason: Reason::Support,
                 action: Action::Inspect {
                     character_id: "00000000-0000-7000-8000-000000000001".into(),
@@ -885,6 +892,7 @@ pub(crate) mod tests {
         }
         pub fn activation(&self) -> (VerifierTrust, SignedBytes) {
             let mut request = self.request(1, 1, &"0".repeat(64));
+            request.scope = None;
             request.reason = Reason::Roster;
             request.action = Action::RosterActivate {
                 roster_sha256: sha256(&self.roster),
@@ -895,6 +903,129 @@ pub(crate) mod tests {
             );
             (self.trust("alpha-test", &sha256(&signed.bytes)), signed)
         }
+    }
+    #[test]
+    fn ordinary_requests_require_signed_world_and_channel_scope() {
+        let signer = Signer::new();
+        let trust = signer.trust("alpha-test", &"a".repeat(64));
+        let id = "00000000-0000-7000-8000-000000000001";
+        let actions = [
+            (
+                "inspect",
+                Action::Inspect {
+                    character_id: id.into(),
+                },
+            ),
+            (
+                "kick character",
+                Action::Kick {
+                    target: Target::Character {
+                        character_id: id.into(),
+                    },
+                },
+            ),
+            (
+                "kick account",
+                Action::Kick {
+                    target: Target::Account {
+                        account_ref: "c".repeat(64),
+                    },
+                },
+            ),
+            (
+                "mute",
+                Action::Mute {
+                    character_id: id.into(),
+                    duration_ms: Decimal(1),
+                },
+            ),
+            (
+                "unmute",
+                Action::Unmute {
+                    sanction_id: id.into(),
+                },
+            ),
+            (
+                "reports open",
+                Action::ReportsList {
+                    state: ReportState::Open,
+                },
+            ),
+            (
+                "reports closed",
+                Action::ReportsList {
+                    state: ReportState::Closed,
+                },
+            ),
+            (
+                "reports expired",
+                Action::ReportsList {
+                    state: ReportState::Expired,
+                },
+            ),
+            (
+                "report close",
+                Action::ReportClose {
+                    report_id: id.into(),
+                },
+            ),
+            (
+                "report clear text",
+                Action::ReportClearText {
+                    report_id: id.into(),
+                },
+            ),
+        ];
+        let mut unexpected = Vec::new();
+        for (name, action) in actions {
+            let mut request = signer.request(2, 2, &"b".repeat(64));
+            request.action = action;
+            let valid = trust
+                .verify_request(signer.sign(
+                    request.canonical_bytes().expect("scoped request JCS"),
+                    REQUEST_NAMESPACE,
+                ))
+                .expect("signed scoped request");
+            assert_eq!(valid.request().scope, request.scope, "{name}");
+
+            for operator in ["missing scope", "invalid world", "invalid channel"] {
+                let mut invalid = request.clone();
+                match operator {
+                    "missing scope" => invalid.scope = None,
+                    "invalid world" => {
+                        invalid.scope.as_mut().expect("scope").world_id = "invalid".into()
+                    }
+                    _ => invalid.scope.as_mut().expect("scope").channel_id = "invalid".into(),
+                }
+                if !matches!(invalid.canonical_bytes(), Err(Error::Invalid)) {
+                    unexpected.push(format!("{name}: {operator}: prepare"));
+                }
+                // Sign the adversarial JCS directly so preparation cannot hide
+                // a verifier failure behind an invalid or absent signature.
+                let signed = signer.sign(
+                    jcs::encode(&invalid, MAX_REQUEST_BYTES).expect("adversarial JCS"),
+                    REQUEST_NAMESPACE,
+                );
+                if !matches!(trust.verify_request(signed), Err(Error::Invalid)) {
+                    unexpected.push(format!("{name}: {operator}: verify"));
+                }
+            }
+        }
+        // The accepted first link activates the environment's independently
+        // pinned roster; it is the existing typed exception to world scope.
+        let (activation_trust, activation) = signer.activation();
+        let activation = activation_trust
+            .verify_request(activation)
+            .expect("environment roster activation");
+        assert!(activation.request().scope.is_none());
+        assert!(matches!(
+            activation.request().action,
+            Action::RosterActivate { .. }
+        ));
+        assert!(
+            unexpected.is_empty(),
+            "scope validation failures: {unexpected:?}"
+        );
     }
     #[test]
     fn missing_signature_unknown_principal_and_wrong_namespace_are_independent() {

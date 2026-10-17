@@ -11839,6 +11839,53 @@
         "apps/game-server/migrations/0091_public_projections.sql"
       ],
       "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Sized for a store of 1,000,000 Characters plus all their highscores pairs (about 30 s at about 30 us per subject); if a resync exceeds it, re-run one family at a time, and if a single family still exceeds it, that is a blocker for the contract owner, resolved by a contract change and never by editing this deadline in place. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "GM1-STAFF-ACTION-PAYLOAD-BYTES",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md",
+      "resource": "One encoded oteryn.events.v1.StaffActionV1 payload, STAFF_ACTION event type 5 schema revision 1",
+      "unit": "bytes",
+      "hard_maximum": 49152,
+      "configurable_range": {
+        "minimum": 49152,
+        "maximum": 49152
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check prost encoded_len before allocating the encoded payload output; validate its borrowed length inside the envelope before prost decoding. The lower 49,152-byte limit applies together with ANL01-EVENT-PAYLOAD-BYTES.",
+      "client_visible": false,
+      "boundary_tests": [
+        "staff::audit::tests::staff_action_prost_payload_boundary_and_overflow: a real prost capacity vector encodes to exactly 49,152 bytes; 49,153 bytes refuses both encoded output and borrowed payload decoding",
+        "staff::audit::tests::registered_scoped_event_binds_contract_and_resource_ceilings: a separately signed and verified request retains both scope UUIDs and the registered event tuple"
+      ],
+      "consumers": [
+        "apps/game-server/src/staff/audit.rs"
+      ],
+      "notes": "CP D1343 on 2026-10-17: CANDIDATE until native prost max/overflow tests on the new source. This is a codec security ceiling, not a measured maximum legal business request or a throughput claim. Capacity fixtures do not bypass signed-request, typed-field, immutable-payload or event-binding checks."
+    },
+    {
+      "id": "GM1-STAFF-ACTION-ENVELOPE-BYTES",
+      "status": "CANDIDATE",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md",
+      "resource": "One encoded v1 foundation EventEnvelope carrying STAFF_ACTION event type 5, including its payload",
+      "unit": "bytes",
+      "hard_maximum": 50176,
+      "configurable_range": {
+        "minimum": 50176,
+        "maximum": 50176
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check prost encoded_len before allocating the encoded envelope output and reject received envelope bytes above the limit before wire parsing or prost decoding. The payload limit and ANL01-EVENT-ENVELOPE-BYTES apply conjunctively; migration 0116 bounds the retained outbox bytes to this ceiling.",
+      "client_visible": false,
+      "boundary_tests": [
+        "staff::audit::tests::staff_action_prost_envelope_boundary_and_overflow: a real prost capacity vector encodes to exactly 50,176 bytes; 50,177 bytes refuses encoded output and event verification before decoding",
+        "staff::audit::tests::registered_scoped_event_binds_contract_and_resource_ceilings: a separately signed and verified request retains both scope UUIDs and the registered event tuple"
+      ],
+      "consumers": [
+        "apps/game-server/src/staff/audit.rs",
+        "apps/game-server/migrations/0116_staff_audit.sql"
+      ],
+      "notes": "CP D1343 on 2026-10-17: CANDIDATE until native prost max/overflow tests on the new source. This is a codec security ceiling; a capacity fixture is not a semantically valid STAFF_ACTION or evidence that an ordinary request can reach this encoded size. Existing field, scope, signature and whole-event checks remain required."
     }
   ]
 }
