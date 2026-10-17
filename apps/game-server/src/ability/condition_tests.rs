@@ -375,6 +375,7 @@ fn the_channel_order_is_due_then_actor_then_sequence() {
             definition_key: "cond.recovery".to_owned(),
             definition_revision: 1,
             lineage: None,
+            lethal_source: None,
         },
     };
     let order = channel_tick_order([
