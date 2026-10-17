@@ -327,11 +327,19 @@ mod native_cosmetics {
                     "starter_addons_male",
                     "premium",
                     "unlock_sources",
+                    "source",
                 ][..],
             ),
             (
                 "mounts",
-                &["key", "revision", "look", "speed_bonus", "premium"][..],
+                &[
+                    "key",
+                    "revision",
+                    "look",
+                    "speed_bonus",
+                    "premium",
+                    "source",
+                ][..],
             ),
         ] {
             let records = document[family]
@@ -1101,6 +1109,11 @@ impl NativeGameplayInput {
                 let pin = load(pin, native_cosmetics::MAX_BYTES)?;
                 if native_cosmetics::decode(&pin.bytes)?.is_none() {
                     return Err(invalid("native gameplay v6 requires authored cosmetics"));
+                }
+                if manifest.loot_tables.is_none() {
+                    return Err(invalid(
+                        "native gameplay v6 cosmetics require the v8 section closure",
+                    ));
                 }
                 pin
             }
@@ -3075,6 +3088,56 @@ pub(crate) mod tests {
         assert!(native_cosmetics::decode(duplicate.as_bytes()).is_err());
     }
     #[test]
+    fn cosmetics_definition_source_citations_require_their_own_promotion() {
+        let original = cosmetics_test_packet();
+        assert!(native_cosmetics::decode(&serde_json::to_vec(&original).unwrap()).is_ok());
+        for path in ["/outfits/0/source", "/mounts/0/source"] {
+            let mut changed = original.clone();
+            changed["authoring"]["promotions"]
+                .as_array_mut()
+                .unwrap()
+                .retain(|promotion| promotion["path"] != path);
+            assert!(
+                native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()).is_err(),
+                "{path}"
+            );
+        }
+    }
+    #[test]
+    fn v6_manifest_with_cosmetics_requires_the_loot_tables_closure() {
+        let committed =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
+        let directory = committed.parent().unwrap();
+        let mut manifest: Value =
+            serde_json::from_slice(&std::fs::read(&committed).unwrap()).unwrap();
+        for pin in manifest.as_object_mut().unwrap().values_mut() {
+            if let Some(path) = pin.get("path").and_then(Value::as_str).map(str::to_owned) {
+                pin["path"] = directory.join(path).to_str().unwrap().into();
+            }
+        }
+        let scratch =
+            std::env::temp_dir().join(format!("oteryn-v6-cosmetics-{}", std::process::id()));
+        std::fs::create_dir_all(&scratch).unwrap();
+        let packet = serde_json::to_vec(&cosmetics_test_packet()).unwrap();
+        std::fs::write(scratch.join("cosmetics.json"), &packet).unwrap();
+        manifest["schema"] = "OTERYN_NATIVE_GAMEPLAY_MANIFEST/v6".into();
+        manifest["cosmetics"] = serde_json::json!({
+            "path": scratch.join("cosmetics.json").to_str().unwrap(),
+            "sha256": hex(sha256(&packet)),
+        });
+        let write = |name: &str, value: &Value| {
+            let path = scratch.join(name);
+            std::fs::write(&path, serde_json::to_vec(value).unwrap()).unwrap();
+            path
+        };
+        let complete = NativeGameplayInput::from_manifest(&write("complete.json", &manifest));
+        manifest.as_object_mut().unwrap().remove("loot_tables");
+        let without = NativeGameplayInput::from_manifest(&write("without.json", &manifest));
+        std::fs::remove_dir_all(&scratch).unwrap();
+        assert!(complete.is_ok());
+        assert!(without.is_err());
+    }
+    #[test]
     fn cosmetics_canonical_bounds_ascii_and_zero_citations_match_materializer() {
         let original = cosmetics_test_packet();
         let mut changed = original.clone();
@@ -3097,6 +3160,11 @@ pub(crate) mod tests {
         ));
         let mut changed = original.clone();
         changed["authoring"]["document"]["outfits"][0]["source"]["sha256"] = "0".repeat(64).into();
+        for promotion in changed["authoring"]["promotions"].as_array_mut().unwrap() {
+            if promotion["path"] == "/outfits/0/source" {
+                promotion["value"]["sha256"] = "0".repeat(64).into();
+            }
+        }
         assert!(matches!(
             native_cosmetics::decode(&serde_json::to_vec(&changed).unwrap()),
             Err(ContentError::InvalidArtifact(

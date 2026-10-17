@@ -225,6 +225,42 @@ class CosmeticsAuthoring(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "digest"):
                     self.build_unvalidated(authoring, root)
 
+    def test_definition_source_citations_require_their_own_promotion(self):
+        for path in ["/outfits/0/source", "/mounts/0/source"]:
+            with self.subTest(path=path):
+                altered = copy.deepcopy(self.authoring)
+                altered["promotions"] = [p for p in altered["promotions"] if p["path"] != path]
+                with self.assertRaisesRegex(ValueError, "incomplete"):
+                    c.validate(altered)
+
+    def test_staged_manifest_must_have_the_full_rust_decoder_shape(self):
+        def staged_build(mutate):
+            with tempfile.TemporaryDirectory() as temporary:
+                staged = Path(temporary)
+                shutil.copytree((c.ROOT / c.MANIFEST).parent, staged, dirs_exist_ok=True)
+                manifest = c.parse((staged / "manifest.json").read_bytes())
+                mutate(manifest)
+                raw = json.dumps(manifest, sort_keys=True).encode()
+                (staged / "manifest.json").write_bytes(raw)
+                authoring = copy.deepcopy(self.authoring)
+                authoring["document"]["source_manifest_sha256"] = c.sha(raw)
+                for promotion in authoring["promotions"]:
+                    if promotion["path"] == "/source_manifest_sha256":
+                        promotion["value"] = c.sha(raw)
+                return c.build(authoring, staged / "manifest.json")
+        staged_build(lambda manifest: None)
+        for label, mutate in [
+            ("empty file", lambda m: m["inputs"]["appearances"].update(file="")),
+            ("control file", lambda m: m["inputs"]["appearances"].update(file="a\nb")),
+            ("overlong file", lambda m: m["inputs"]["appearances"].update(file="a" * 1025)),
+            ("missing file", lambda m: m["inputs"]["appearances"].pop("file")),
+            ("missing excluded_top_level", lambda m: m.pop("excluded_top_level")),
+            ("unknown member", lambda m: m.update(extra=1)),
+            ("unknown shard member", lambda m: m["files"][0].update(extra=1)),
+        ]:
+            with self.subTest(label), self.assertRaisesRegex(ValueError, "manifest shape"):
+                staged_build(mutate)
+
     def test_missing_authoring_produces_no_population_and_stale_output_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

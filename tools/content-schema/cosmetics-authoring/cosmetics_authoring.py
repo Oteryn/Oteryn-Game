@@ -61,8 +61,9 @@ def promotion_paths(document):
               "/fallbacks/female", "/fallbacks/male"}
     for family, fields in [
         ("outfits", ["key", "revision", "female", "male", "addon_count", "starter_female", "starter_male",
-                     "starter_addons_female", "starter_addons_male", "premium", "unlock_sources"]),
-        ("mounts", ["key", "revision", "look", "speed_bonus", "premium"]),
+                     "starter_addons_female", "starter_addons_male", "premium", "unlock_sources",
+                     "source"]),
+        ("mounts", ["key", "revision", "look", "speed_bonus", "premium", "source"]),
     ]:
         for index in range(len(document[family])):
             result.update(f"/{family}/{index}/{field}" for field in fields)
@@ -134,12 +135,39 @@ def validate(authoring):
             raise ValueError("fallback must name an explicit starter for its sex")
 
 
+def printable(value, limit):
+    return (type(value) is str and 0 < len(value.encode()) <= limit
+            and not any(ord(c) < 32 or 127 <= ord(c) < 160 for c in value))
+
+
+def manifest_shape(manifest):
+    """The exact staged manifest shape the Rust `Manifest` decoder requires (deny unknown, all required)."""
+    keys = {"schema", "authority", "client_version", "family", "identity_namespace", "source",
+            "top_level_field", "record_count", "excluded_top_level", "inputs", "files"}
+    inputs = manifest.get("inputs") if isinstance(manifest, dict) else None
+    appearances = inputs.get("appearances") if isinstance(inputs, dict) else None
+    files = manifest.get("files") if isinstance(manifest, dict) else None
+    if (not isinstance(manifest, dict) or set(manifest) != keys
+            or not all(type(manifest[k]) is str for k in
+                       ["schema", "authority", "client_version", "family", "identity_namespace", "source"])
+            or type(manifest["top_level_field"]) is not int or type(manifest["record_count"]) is not int
+            or set(inputs) != {"appearances"} or not isinstance(appearances, dict)
+            or set(appearances) != {"file", "sha256"} or not printable(appearances["file"], 1024)
+            or type(appearances["sha256"]) is not str
+            or not isinstance(files, list)
+            or any(not isinstance(f, dict) or set(f) != {"path", "records", "sha256"}
+                   or type(f["path"]) is not str or type(f["records"]) is not int
+                   or type(f["sha256"]) is not str for f in files)):
+        raise ValueError("cosmetics source manifest shape")
+
+
 def build(authoring, manifest_path: Path) -> bytes:
     """Materialize exact source bytes with the authored facts; no filesystem output."""
     validate(authoring)
     document = authoring["document"]
     raw = read(manifest_path)
     manifest = parse(raw)
+    manifest_shape(manifest)
     if (sha(raw) != document["source_manifest_sha256"]
             or manifest["schema"] != "OTERYN_CIPSOFT_APPEARANCE_OUTFIT_SOURCE_MANIFEST/v1"
             or manifest["family"] != "Outfit" or manifest["top_level_field"] != 2
