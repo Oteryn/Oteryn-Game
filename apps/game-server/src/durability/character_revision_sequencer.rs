@@ -189,6 +189,40 @@ impl RevisionSlot {
         .await
     }
 
+    /// Build-aware death uses the same sequencer cursor and retained-receipt
+    /// original revision as the compatibility death method. The writer resolves
+    /// current fences and build before-state in its transaction.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing sequenced death inputs plus the current build formula"
+    )]
+    pub async fn commit_death_with_build<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: &dyn BuildFormula,
+        original: Option<CharacterRevision>,
+    ) -> Result<CharacterDeathOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| {
+                root.commit_character_death_with_build(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    formula,
+                )
+            },
+        )
+        .await
+    }
+
     /// One Bestiary kill at the cursor. Its binding excludes the revision, so a mismatch reloads
     /// the cursor and retries once.
     pub async fn commit_bestiary(
