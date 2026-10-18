@@ -1,0 +1,54 @@
+{
+  "task": "FORGE-CONTENT-1",
+  "review_date": "2026-10-18",
+  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
+  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Classes 1–4, caps, normal/convergence fusion and transfer tables, success probabilities, currencies/conversions and dust capacity upgrades are captured. Four regular tier-7–10 transfer core counts are explicitly unknown in the source itself; no convergence count is substituted. Unpublished lucky-effect probability distribution remains held.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "rulesets/items/exaltation-forge/reference-evidence.json": 53
+  },
+  "evidence_field_counts": {
+    "PROVEN": 333,
+    "UNKNOWN": 5
+  },
+  "unresolved_fields": [
+    {
+      "field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/28/facts/cores",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+    },
+    {
+      "field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/29/facts/cores",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+    },
+    {
+      "field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/30/facts/cores",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+    },
+    {
+      "field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/31/facts/cores",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+    },
+    {
+      "field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "No controlled probability for the lucky bonus effects; the source calls eight effects known but lists nine."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+}

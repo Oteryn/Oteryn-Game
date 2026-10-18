@@ -3,11 +3,11 @@
 ```yaml
 task_id: FORGE-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/forge-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2236
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -18,6 +18,7 @@ owned_paths:
   - docs/reference/content-prep/forge-content-1/sources.json
   - docs/reference/content-prep/forge-content-1/README.md
   - docs/agents/tasks/FORGE-CONTENT-1.md
+  - docs/reference/content-prep/forge-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -53,3 +54,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+Classes 1–4, caps, normal/convergence fusion and transfer tables, success probabilities, currencies/conversions and dust capacity upgrades are captured. Four regular tier-7–10 transfer core counts are explicitly unknown in the source itself; no convergence count is substituted. Unpublished lucky-effect probability distribution remains held.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
