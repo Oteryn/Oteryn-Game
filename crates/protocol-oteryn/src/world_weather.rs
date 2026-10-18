@@ -260,7 +260,8 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn registry_binds_the_weather_wire_ids_and_limits() {
-        const REGISTRY: &str = include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+        const REGISTRY: &str =
+            include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
         const SCHEMA: &str =
             include_str!("../../../docs/contracts/protocol-oteryn/v1/world_weather_v1.proto");
         let protocol: serde_json::Value = serde_json::from_str(REGISTRY).expect("registry");

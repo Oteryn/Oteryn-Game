@@ -205,9 +205,12 @@ fn visual_selection_does_not_mutate_native_clock_light_or_gameplay_decision()
     let root = GameplayDecisionRoot::from_bytes([0x31; 32]);
     let occurrence = DecisionOccurrenceId::from_bytes([0x72; 16]);
     let gameplay_before = deterministic_decision_u64(&root, occurrence, "gameplay.fixture.v1", 0)?;
+    // Fixture policy only (CP D1446: no shipped table exists).
+    let all: Vec<u8> = (1..=16).collect();
+    let policy = WeatherPolicy::new(&all, &all).map_err(|error| format!("{error:?}"))?;
     for bucket in 0..16_u64 {
-        let _visual = WEATHER_VISUAL_POLICY.preset_for_draw(bucket << 60);
-        let _selected = WEATHER_VISUAL_POLICY.select(&root, occurrence)?;
+        let _visual = policy.preset_for_draw(bucket << 60);
+        let _selected = policy.select(&root, occurrence)?;
         assert_eq!(source.reading(time), Some(before));
         assert_eq!(
             deterministic_decision_u64(&root, occurrence, "gameplay.fixture.v1", 0)?,

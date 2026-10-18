@@ -277,11 +277,6 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
     (CAPABILITY_WORLD_LIGHT_V1, &[], &[STATE_DOMAIN_WORLD_CLOCK]),
-    (
-        CAPABILITY_WORLD_WEATHER_V1,
-        &[],
-        &[STATE_DOMAIN_WORLD_WEATHER],
-    ),
     (CAPABILITY_LOGOUT_V1, &[COMMAND_TYPE_LOGOUT_INTENT], &[]),
     // RUNE-USE-0 §4: owns no command type or domain; it gates the USE position arm and
     // dispositions 18 and 19, and is not offered before RUNE-CAST-1.
@@ -293,6 +288,13 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_WORLD_PRESENTATION,
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
+    ),
+    // WEATHER-1: capability 26 owns domain 22 and no command type; it is offered per connection
+    // only with a retained weather source (`with_weather_offer`).
+    (
+        CAPABILITY_WORLD_WEATHER_V1,
+        &[],
+        &[STATE_DOMAIN_WORLD_WEATHER],
     ),
     // ITEM-LOOK-1: capability 28 `ITEM_LOOK_V1` gates command type 30 `ITEM_LOOK_INTENT` (CP
     // D1268, D1292) and owns no domain. It is not offered and command 30 has no handler yet, so a

@@ -1442,7 +1442,7 @@ fn world_clock_delta(
 
 /// WEATHER-1: the full-replacement domain 22 value at the authority's UTC time fact.
 /// `Unavailable` when the authority holds no binding (lost after selection) or no time fact.
-fn observe_weather<A: GameplayAuthority>(authority: &A) -> WorldWeather {
+fn observe_weather<A: FreshAdmissionAuthority>(authority: &A) -> WorldWeather {
     match (authority.world_weather(), authority.world_clock_utc_ms()) {
         (Some(source), Some(now)) => source.observe(now),
         _ => WorldWeather::Unavailable,
