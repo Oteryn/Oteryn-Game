@@ -5,10 +5,10 @@
 //! one persisted page and an optional own row; hidden progress and source identities stay private.
 //! Rows preserve the durable vocation key, including promotions and `none` for account rankings.
 //!
-//! This leaf does not register or offer the capability. The held `highscores_v1.proto`, shared
-//! registry/error rows and the session handler are the HS-WIRE-1 integration gate. In particular,
-//! NOT_SUPPORTED and SNAPSHOT_EXPIRED are FND-02 error results without a success payload, not a
-//! second status field invented inside this message.
+//! Schema: `docs/contracts/protocol-oteryn/v1/highscores_v1.proto`. RANK-1 (CP D1155) registers
+//! capability 9 (offered) and command type 14, and the game server's session handler answers it.
+//! NOT_SUPPORTED (1200) and SNAPSHOT_EXPIRED (1201) are FND-02 error results without a success
+//! payload ([`crate::FoundationProtocolError`]), not a second status field inside this message.
 //!
 //! As in the existing native payload codecs, unknown or repeated singular fields, wrong wire
 //! types, invalid UTF-8, invalid semantic defaults and values above a bound fail closed. Encoding

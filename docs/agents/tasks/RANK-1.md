@@ -55,8 +55,24 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `crates/protocol-oteryn/src/highscores.rs`
 - `crates/protocol-oteryn/src/highscores_tests.rs`
 - `apps/game-server/src/analyser_emit.rs`
-- `apps/game-server/tests/highscores_postgres.rs`
+- `apps/game-server/tests/highscores_postgres.rs` (removed; its cases moved to the support file below)
 - `docs/agents/tasks/RANK-1.md` (this record: status and notes only)
+
+Widened by CP D1441 (integration slot, 2026-10-18):
+
+- `apps/game-server/migrations/0097_world_highscores.sql`
+- `apps/game-server/src/highscores/reply.rs` (the command type 14 handler core)
+- `apps/game-server/src/gameplay_transport/highscores_tests.rs`
+- `apps/game-server/src/gameplay_transport/capabilities.rs`, `capabilities_tests.rs`,
+  `connection.rs`, `mod.rs` (capability 9 offer, `GATED` row, dispatch, authority)
+- `apps/game-server/src/node/serve.rs` (the per-World snapshot job in the serve loop)
+- `apps/game-server/src/durability/mod.rs`, `apps/game-server/src/lib.rs` (module registration)
+- `apps/game-server/tests/character_authority_postgres.rs`,
+  `apps/game-server/tests/support/highscores_postgres_cases.rs`,
+  `apps/game-server/tests/support/public_projections_postgres_cases.rs`
+- `crates/protocol-oteryn/src/lib.rs` (`pub mod highscores`, capability 9, errors 1200/1201)
+- `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`,
+  `docs/contracts/protocol-oteryn/v1/highscores_v1.proto`
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
@@ -670,3 +686,39 @@ protocol checks above do not qualify the game-server all-target graph, every
 ranking/PostgreSQL case or complete runtime/E2E delivery.
 
 This draft remains partial, with no ready or merge action requested.
+
+
+## Integration slot — 2026-10-18 (CP D1441, CP D1155)
+
+CP D1441 opened the shared slot on draft #2168 after merging main. It installs the integration
+the sections above held:
+
+- [x] Migration 0097: snapshot tables, the NOLOGIN job role and its grants, the AFTER INSERT
+  public-outbox snapshot trigger (0091 §11).
+- [x] Snapshot job: one `HighscoreWorldJob` per World in the node serve loop
+  (`node/serve.rs::highscores_loop`); immediate first check, then every 30 minutes from durable
+  database time; a planned reset forces one complete cut.
+- [x] Categories 1 to 11: nine native skill/experience lists, category 10 from the activated
+  Achievement catalogue, category 11 from the Charm point owner.
+- [x] HS-WIRE-1: capability 9 offered, command type 14, errors 1200 `NOT_SUPPORTED` and 1201
+  `SNAPSHOT_EXPIRED`, `HIGHSCORES0-RL-01..03`, `highscores_v1.proto`; the handler reads the
+  admitted session's World and Character only. Live collision check: no open draft uses
+  capability 9, command type 14 or errors 1200/1201.
+- [x] PostgreSQL cases run in the canonical `character_authority_postgres` lane; the old
+  `cfg(any())` target is removed.
+- [x] End-to-end case `experience_gain_reaches_the_client_through_the_snapshot_job`: a real
+  session-fenced experience award, the actual job (immediate pass, then a planned reset), and the
+  client's encoded query answered by the dispatched handler with the ordered page and own row.
+- [ ] ANALYSER-EMIT-1 (ANALYSERS0 is ACCEPTED). Not shipped: emission needs hooks in the combat,
+  loot-settlement, progression and item-use commit paths (the loot settlement must return its
+  committed partial list), which are owned outside RANK-1. Capability 10 stays registered and
+  not offered, so the seam fails closed. This is the one remaining RANK-1 child.
+
+Remaining dependencies (REPORT_ONLY):
+
+- Planned World reset notifications (#2167, WORLD-RESET): the job's reset channel is held open
+  with no sender until that owner lands; the 30-minute schedule runs meanwhile.
+- Per-race Charm points in production (CHARM-6): no production source exists, so category 11
+  publishes the empty catalogue (every Character 0 points) until it lands.
+
+Status stays `NOT_FULLY_QUALIFIED` until ANALYSER-EMIT-1 lands; CP owns ready and merge.

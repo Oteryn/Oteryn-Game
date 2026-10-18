@@ -41,6 +41,11 @@ pub enum FoundationProtocolError {
     /// key the catalogue lacks): an internal integrity fault. The client learns only that its
     /// account data needs support; the diagnostic stays in the operator event.
     AccountDataIntegrity = 1050,
+    /// HIGHSCORES0 §6 (HS-WIRE-1): the query names a category this server does not offer.
+    NotSupported = 1200,
+    /// HIGHSCORES0 §6 (HS-WIRE-1): the echoed snapshot token is no longer retained; the client
+    /// starts the list again at page 1 with token 0.
+    SnapshotExpired = 1201,
     // FND-04A §11 fresh-admission refusal rows (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2, N8): written
     // once before admission with generation 0, then the server closes. `admission_refusal_class`
     // gives each its progression and public class.
@@ -112,7 +117,9 @@ impl FoundationProtocolError {
             | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
             Self::PayloadLimitExceeded
             | Self::TooManyOutstandingCommands
-            | Self::AccountDataIntegrity => ProtocolDisposition::OperationTerminal,
+            | Self::AccountDataIntegrity
+            | Self::NotSupported
+            | Self::SnapshotExpired => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
             | Self::CommandSequenceGap
             | Self::ServerSequenceGap
@@ -145,6 +152,8 @@ impl Display for FoundationProtocolError {
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
             Self::AccountDataIntegrity => "account data needs support",
+            Self::NotSupported => "query is not supported",
+            Self::SnapshotExpired => "snapshot is no longer retained",
             Self::AdmissionGrantMalformed => "admission grant is malformed",
             Self::AdmissionGrantAuthenticationFailed => "admission grant authentication failed",
             Self::AdmissionGrantBindingMismatch => "admission grant binding mismatch",
@@ -373,10 +382,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
 // LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
 // 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
-// capability requirement was assigned. Next unallocated capability is29.
+// capability requirement was assigned. 9 HIGHSCORES_V1 (HS-WIRE-1, RANK-1) is offered with its
+// command type 14 handler. Next unallocated capability is 29.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28,
+    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -2560,6 +2570,7 @@ mod charm_wire;
 pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
+pub mod highscores;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
@@ -4074,6 +4085,8 @@ mod tests {
             (E::BootstrapLimitExceeded, "BOOTSTRAP_LIMIT_EXCEEDED"),
             (E::InvalidCapabilitySet, "INVALID_CAPABILITY_SET"),
             (E::AccountDataIntegrity, "ACCOUNT_DATA_INTEGRITY"),
+            (E::NotSupported, "NOT_SUPPORTED"),
+            (E::SnapshotExpired, "SNAPSHOT_EXPIRED"),
             (E::AdmissionGrantMalformed, "ADMISSION_GRANT_MALFORMED"),
             (
                 E::AdmissionGrantAuthenticationFailed,

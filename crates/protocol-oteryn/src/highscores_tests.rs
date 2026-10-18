@@ -484,3 +484,111 @@ fn all_declared_field_bounds_fit_the_fnd02_parent() {
     assert!(bytes.len() < crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES);
     assert_eq!(decode_highscores_result(&bytes), Ok(result));
 }
+
+const PROTOCOL_REGISTRY: &str =
+    include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+const RESOURCE_REGISTRY: &str =
+    include_str!("../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json");
+const HIGHSCORES_PROTO: &str =
+    include_str!("../../../docs/contracts/protocol-oteryn/v1/highscores_v1.proto");
+
+#[test]
+fn the_registries_bind_the_highscores_constants() {
+    use serde_json::{Value, json};
+    let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
+    let find = |list: &str, key: &str, id: u32| {
+        let matching: Vec<&Value> = protocol[list]
+            .as_array()
+            .expect(list)
+            .iter()
+            .filter(|entry| entry[key] == id)
+            .collect();
+        assert_eq!(matching.len(), 1, "{list} {id}");
+        matching[0].clone()
+    };
+    let capability = find("capabilities", "id", CAPABILITY_HIGHSCORES_V1);
+    assert_eq!(capability["name"], "HIGHSCORES_V1");
+    assert_eq!(capability["offered"], true);
+    assert_eq!(capability["requires"], json!([]));
+    assert_eq!(
+        capability["command_types"],
+        json!([COMMAND_TYPE_HIGHSCORES_QUERY_V1])
+    );
+    assert_eq!(capability["state_domains"], json!([]));
+    assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_HIGHSCORES_V1));
+
+    let schema = "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#";
+    let command = find("command_types", "id", COMMAND_TYPE_HIGHSCORES_QUERY_V1);
+    assert_eq!(command["name"], "HIGHSCORES_QUERY_V1");
+    assert_eq!(command["capability"], CAPABILITY_HIGHSCORES_V1);
+    assert_eq!(
+        command["payload_schema"],
+        format!("{schema}HighscoresQueryV1")
+    );
+    assert_eq!(
+        command["result_schema"],
+        format!("{schema}HighscoresResultV1")
+    );
+    assert_eq!(
+        command["max_payload_bytes"].as_u64(),
+        Some(MAX_HIGHSCORES_QUERY_BYTES as u64)
+    );
+    assert_eq!(
+        command["max_result_payload_bytes"].as_u64(),
+        Some(MAX_HIGHSCORES_RESULT_BYTES as u64)
+    );
+    for message in [
+        "message HighscoresQueryV1 {",
+        "message HighscoreRowV1 {",
+        "message HighscoresResultV1 {",
+    ] {
+        assert!(HIGHSCORES_PROTO.contains(message), "{message}");
+    }
+    assert!(HIGHSCORES_PROTO.contains(&format!(
+        "At most {MAX_HIGHSCORES_QUERY_BYTES} encoded bytes"
+    )));
+    assert!(HIGHSCORES_PROTO.contains(&format!(
+        "At most {MAX_HIGHSCORES_RESULT_BYTES} encoded bytes"
+    )));
+    assert!(HIGHSCORES_PROTO.contains(&format!("At most {MAX_HIGHSCORE_ROW_BYTES} encoded bytes")));
+    // The two HIGHSCORES0 §6 results are FND-02 errors without a payload.
+    for (error, name) in [
+        (
+            crate::FoundationProtocolError::NotSupported,
+            "NOT_SUPPORTED",
+        ),
+        (
+            crate::FoundationProtocolError::SnapshotExpired,
+            "SNAPSHOT_EXPIRED",
+        ),
+    ] {
+        let row = find("error_codes", "code", error.code());
+        assert_eq!(row["name"], name);
+        assert_eq!(row["default_disposition"], "OPERATION_TERMINAL");
+        assert_eq!(
+            error.disposition(),
+            crate::ProtocolDisposition::OperationTerminal
+        );
+        assert!(HIGHSCORES_PROTO.contains(&format!("{name} ({}", error.code())));
+    }
+
+    let resources: Value = serde_json::from_str(RESOURCE_REGISTRY).expect("resource registry");
+    let limit = |row: &str| {
+        resources["entries"]
+            .as_array()
+            .expect("entries")
+            .iter()
+            .find(|entry| entry["id"] == row)
+            .and_then(|entry| entry["hard_maximum"].as_u64())
+    };
+    assert_eq!(
+        limit("HIGHSCORES0-RL-02"),
+        Some(u64::from(MAX_HIGHSCORES_LIST_ROWS))
+    );
+    assert_eq!(
+        limit("HIGHSCORES0-RL-03"),
+        Some(MAX_HIGHSCORES_PAGE_ROWS as u64)
+    );
+    assert!(HIGHSCORES_PROTO.contains("HIGHSCORES0-RL-02"));
+    assert!(HIGHSCORES_PROTO.contains("HIGHSCORES0-RL-03"));
+}

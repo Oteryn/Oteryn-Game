@@ -1,15 +1,35 @@
-//! Real native tables/guards and Root projection APIs. Administrative source dataset rows
-//! are committed fixture DATA, not gameplay writes or current authority for those Characters.
+//! RANK-1 HS-1 (migration 0097): real native tables/guards and Root projection APIs, run in the
+//! protected PostgreSQL lane on the CHARM-2 harness. Administrative source dataset rows are
+//! committed fixture DATA, not gameplay writes or current authority for those Characters.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
-use super::*;
 use crate::bestiary_postgres_harness as harness;
+use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+use crate::durability::account_achievement::EarnedAchievement;
 use crate::durability::character_authority::CharacterAuthorityError;
+use crate::durability::character_build::DurableBuildState;
 use crate::durability::character_build::{
     BuildCause, BuildChangeRequest, BuildFormula, BuildOccurrence,
 };
+use crate::durability::character_progression::{
+    ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
+};
+use crate::durability::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
+use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_highscores};
+use crate::durability::highscore_snapshot::{
+    AchievementPoints, SnapshotCatalogues, SnapshotError, SnapshotPage, begin_projection, job,
+    publish_in_transaction, read_source,
+};
+use crate::durability::{DurabilityError, DurabilityRoot};
+use crate::foundation::{CharacterId, WorldId};
 use harness::{CHARACTER, Harness, TestResult, WORLD, debug, id};
+use oteryn_protocol_oteryn::highscores::{
+    HighscoresQuery, HighscoresResult, decode_highscores_query, decode_highscores_result,
+    encode_highscores_query,
+};
+use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::Executor;
+use std::time::Instant;
 
 struct Formula;
 impl BuildFormula for Formula {
@@ -43,7 +63,9 @@ fn run<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
-    let admin = harness::configured_admin().ok_or("PostgreSQL routing absent; no qualification")?;
+    let Some(admin) = harness::configured_admin() else {
+        return Ok(());
+    };
     harness::runtime()?.block_on(async {
         let h = Harness::create(admin, tag, true).await?;
         let server: String = sqlx::query_scalar("SHOW server_version_num")
@@ -51,7 +73,6 @@ where
             .await?;
         assert_eq!(server, "170006");
         eprintln!("HIGHSCORES-NATIVE-PG server_version_num={server} fixture={tag}");
-        h.pool.execute(SNAPSHOT_SCHEMA_PROPOSAL).await?;
         // One genuinely session/Node/recovery-fenced native build writer creates the source
         // template; later bulk datasets are explicitly admin fixtures, never active actors.
         let seal = h.recovery.seal_current().map_err(debug)?;
@@ -516,9 +537,22 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
     })
 }
 
-fn complete_catalogues() -> TestResult<SnapshotCatalogues> {
+/// The achievement point owner of the fixture: one known key worth two points; any other key is
+/// unknown to it, as a retired catalogue's missing entry is to the real one.
+struct FixtureAchievementPoints;
+impl AchievementPoints for FixtureAchievementPoints {
+    fn total_points(&self, earned: &[EarnedAchievement]) -> Option<u32> {
+        earned.iter().try_fold(0_u32, |sum, fact| {
+            (fact.achievement_key == "oteryn:achievement/a_friend_in_need")
+                .then_some(2)
+                .and_then(|points| sum.checked_add(points))
+        })
+    }
+}
+
+pub(crate) fn complete_catalogues() -> TestResult<SnapshotCatalogues> {
     SnapshotCatalogues::new(
-        AchievementCatalogue::embedded().map_err(debug)?,
+        std::sync::Arc::new(FixtureAchievementPoints),
         [BestiaryCharmEntry {
             race: crate::domain::bestiary::BestiaryRace::new(
                 "oteryn:creature.rat",
@@ -679,14 +713,15 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
         // A separately connected genuine Root supplies no process-local schedule cache.
         let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
-        let job = job::HighscoreWorldJob::new(
-            std::sync::Arc::new(other),
-            world(),
-            complete_catalogues()?,
-        );
-        let next = job.periodic_tick().await.map_err(debug)?;
+        let next = other
+            .refresh_highscore_world(world(), complete_catalogues()?, false)
+            .await
+            .map_err(debug)?;
         assert!(next.is_empty());
-        let reset = job.after_planned_reset().await.map_err(debug)?;
+        let reset = other
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
         assert_eq!(reset.len(), 11);
         assert!(
             reset
@@ -707,30 +742,8 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
 
 #[test]
 fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> TestResult {
-    // This branch predates 0091. The CP executor must first stage that exact owning migration
-    // from protected main; missing setup fails explicitly instead of skipping this case.
-    let migration_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("migrations/0091_public_projections.sql");
-    let migration = std::fs::read_to_string(&migration_path).map_err(|error| {
-        format!(
-            "required owning 0091 public producer migration absent at {}: {error}",
-            migration_path.display()
-        )
-    })?;
-    run("hsoutbox", async move |h| {
-        // The native harness may already apply 0091 after the slot merges main.
-        let installed: bool = sqlx::query_scalar(
-            "SELECT to_regprocedure('game_public_highscores_snapshot_trigger()') IS NOT NULL",
-        )
-        .fetch_one(&h.pool)
-        .await?;
-        if !installed {
-            // Fixed owning migration from this verified source tree; no dynamic SQL inputs.
-            h.pool.execute(sqlx::AssertSqlSafe(migration)).await?;
-        }
-        h.pool
-            .execute(PUBLIC_PROJECTION_ATTACHMENT_PROPOSAL)
-            .await?;
+    // Migration 0097 attaches 0091's snapshot trigger; no fixture SQL installs it.
+    run("hsoutbox", async |h| {
         h.root
             .refresh_highscore_world(world(), complete_catalogues()?, true)
             .await
@@ -901,7 +914,8 @@ fn actual_job_restart_preserves_durable_deadline_after_a_failed_reset() -> TestR
             wait_for_passes(&job, 1).await;
             // The immediate restart check truly skipped the not-yet-due retained cut.
             assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
-            h.pool.execute("CREATE SEQUENCE highscore_job_failure_seen; CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('highscore_job_failure_seen'); RAISE EXCEPTION 'fixture reset failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
+            // The job writes as its own role (SET LOCAL ROLE): the fixture grants it the counter.
+            h.pool.execute("CREATE SEQUENCE highscore_job_failure_seen; GRANT USAGE ON SEQUENCE highscore_job_failure_seen TO oteryn_game_highscore_job; CREATE FUNCTION highscore_job_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN PERFORM nextval('highscore_job_failure_seen'); RAISE EXCEPTION 'fixture reset failure'; END;$$; CREATE TRIGGER highscore_job_fail BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_job_fail();").await?;
             sender.send(()).await?;
             wait_for_passes(&job, 2).await;
             let failed: bool =
@@ -1004,6 +1018,157 @@ fn missing_achievement_catalogue_key_keeps_complete_previous_cut() -> TestResult
             );
         }
         assert_eq!(h.root_revision().await?, "2");
+        Ok(())
+    })
+}
+
+fn xp_award(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
+    let context = harness::context();
+    Ok(ExperienceAwardRequest {
+        occurrence: ExperienceRewardOccurrence::from_bytes(id(tag)).map_err(debug)?,
+        amount: ExactI64::new(5),
+        context: context.clone(),
+        policy_revision: "policy-1".into(),
+        reward_revision: "reward-1".into(),
+        policy: FiniteProgressionPolicy {
+            context,
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+            death_policy_revision: "death-1".into(),
+            declared_difference_revision: "declaration-1".into(),
+            thresholds: [
+                LevelThreshold {
+                    level: 50,
+                    minimum_experience: ExactI64::new(1000),
+                },
+                LevelThreshold {
+                    level: 51,
+                    minimum_experience: ExactI64::new(1100),
+                },
+            ],
+            terminal_exclusive_experience: ExactI64::new(1200),
+            death_loss_numerator: 1,
+            death_loss_denominator: 10,
+            death_loss_rounding: RoundingMode::Floor,
+        },
+    })
+}
+
+/// The client's command type 14 round trip: the encoded query is decoded exactly as the
+/// gameplay transport decodes it and answered by the handler it dispatches to.
+async fn client_query(
+    h: &Harness,
+    vocation: u32,
+    page: u32,
+    snapshot_id: u64,
+) -> TestResult<HighscoresResult> {
+    let payload = encode_highscores_query(HighscoresQuery {
+        category: 1,
+        vocation,
+        page,
+        snapshot_id,
+    })
+    .map_err(debug)?;
+    let query = decode_highscores_query(&payload).map_err(debug)?;
+    match answer_highscores(&h.root, world(), asking(), query).await {
+        HighscoresReply::Result(result) => {
+            decode_highscores_result(&result).map_err(|e| debug(e).into())
+        }
+        other => Err(format!("highscores query was not accepted: {other:?}").into()),
+    }
+}
+
+fn standing(result: &HighscoresResult) -> Vec<(u64, u64)> {
+    result
+        .rows
+        .iter()
+        .map(|row| (row.rank, row.value))
+        .collect()
+}
+
+/// RANK-1 end to end: the World's actual snapshot job publishes on its immediate check, the
+/// asking Character gains experience through the real writer and other players join, and the
+/// client's highscore request returns the ordered persisted page with its own row once the job
+/// publishes again on a planned reset.
+#[test]
+fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
+    run("hsendtoend", async |h| {
+        let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(root.maintain_ready_once().await?);
+        let job =
+            job::HighscoreWorldJob::new(std::sync::Arc::new(root), world(), complete_catalogues()?);
+        let (planned_resets, resets) = tokio::sync::mpsc::channel(1);
+        let observer = async {
+            wait_for_passes(&job, 1).await;
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
+            let first = client_query(h, 0, 1, 0).await?;
+            assert_eq!(standing(&first), [(1, 1000)]);
+            let own = first.own_row.clone().ok_or("own row missing")?;
+            assert_eq!(
+                (own.rank, own.name.as_str(), own.value),
+                (1, "Fixture Hero", 1000)
+            );
+            assert!(!first.has_more);
+
+            // The asking Character gains experience through the session-fenced native writer.
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let award = h
+                .root
+                .commit_character_experience(&authority, &h.node, harness::fence(2)?, xp_award(80)?)
+                .await
+                .map_err(debug)?;
+            assert!(matches!(award, ExperienceCommitOutcome::Committed(_)));
+            drop(authority);
+            drop(seal);
+            // Admin-only ranking rows lack creation provenance, so they follow every native
+            // gameplay write (see `account_representatives_and_earned_charm_points_...`).
+            dataset(h, 1, 3, "knight", 1003, world()).await?;
+            dataset(h, 4, 2, "sorcerer", 900, world()).await?;
+            // The persisted snapshot is a cut: the changes are invisible until the job publishes.
+            assert_eq!(standing(&client_query(h, 0, 1, 0).await?), standing(&first));
+
+            planned_resets.send(()).await?;
+            wait_for_passes(&job, 2).await;
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
+            let second = client_query(h, 0, 1, 0).await?;
+            assert_ne!(second.snapshot_id, first.snapshot_id);
+            assert_eq!(
+                standing(&second),
+                [
+                    (1, 1005),
+                    (2, 1003),
+                    (2, 1003),
+                    (2, 1003),
+                    (5, 900),
+                    (5, 900)
+                ]
+            );
+            assert_eq!(second.rows[0].name, "Fixture Hero");
+            assert_eq!(
+                second.own_row.map(|row| (row.rank, row.value)),
+                Some((1, 1005))
+            );
+            // The previous token stays answerable; a filter keeps the global ranks.
+            assert_eq!(
+                standing(&client_query(h, 0, 1, first.snapshot_id).await?),
+                standing(&first)
+            );
+            let sorcerers = client_query(h, 3, 1, 0).await?;
+            assert_eq!(standing(&sorcerers), [(5, 900), (5, 900)]);
+            assert!(sorcerers.own_row.is_none());
+            drop(planned_resets);
+            Ok(())
+        };
+        tokio::time::timeout(
+            std::time::Duration::from_secs(20),
+            drive_real_job(&job, resets, observer),
+        )
+        .await??;
         Ok(())
     })
 }

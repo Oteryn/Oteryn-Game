@@ -19,6 +19,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
+mod highscores;
 mod input_gate;
 #[allow(
     dead_code,
@@ -3633,6 +3634,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => AccountAchievementsReply::Rejected,
         }
+    }
+
+    async fn highscores(
+        &self,
+        world: WorldId,
+        session: GameSessionId,
+        query: oteryn_protocol_oteryn::highscores::HighscoresQuery,
+    ) -> highscores::HighscoresReply {
+        // HIGHSCORES0 §6: the asking Character is the one the current, non-terminal session
+        // controls, read from durable state; a failed read proves nothing and is REJECTED.
+        if world != self.world_id {
+            return highscores::HighscoresReply::Rejected;
+        }
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let Ok((current, _)) = store.current_session_at(session).await else {
+            return highscores::HighscoresReply::Rejected;
+        };
+        if current.session_state() == GameSessionState::Terminal {
+            return highscores::HighscoresReply::Rejected;
+        }
+        highscores::answer_highscores(self.root, world, current.commit().character_id(), query)
+            .await
     }
 
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the

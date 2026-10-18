@@ -78,7 +78,3 @@ pub fn ranked_list<'a, Value: Ord>(
     }
     Ok(result)
 }
-
-#[cfg(test)]
-#[path = "ranking_tests.rs"]
-mod tests;

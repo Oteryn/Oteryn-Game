@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used)]
 
-use super::*;
+use crate::durability::highscore_snapshot::ranking::*;
+use crate::foundation::CharacterId;
 
 fn character(number: u32) -> CharacterId {
     let mut bytes = [0; 16];

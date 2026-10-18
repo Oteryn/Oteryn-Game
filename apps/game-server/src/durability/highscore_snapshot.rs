@@ -1,35 +1,33 @@
 //! HIGHSCORES0 §§3–6: rebuildable committed-state projections, never gameplay authority.
 //!
-//! UNINSTALLED candidate: the owned job implements timing/reset consumption; the CP owns
-//! its node spawn and actual reset notifications, the dedicated writer role,
-//! source SELECT grants, runtime SELECT-only grants and registration. A Root pass supplies
-//! its real connection/deadline; it does not attest a caller's World or job permission.
-#![allow(
-    dead_code,
-    reason = "Snapshot job/reader registration awaits the CP slot"
-)]
-
+//! RANK-1: migration 0097 installs the tables; the node's serve loop runs one
+//! [`job::HighscoreWorldJob`] per World and the HS-WIRE-1 handler reads pages through
+//! [`DurabilityRoot::read_highscore_page`]. A Root pass supplies its real connection and deadline;
+//! it does not attest a caller's World or job permission.
 #[path = "../highscores/ranking.rs"]
-mod ranking;
+pub(crate) mod ranking;
 
 #[path = "../highscores/job.rs"]
 pub(crate) mod job;
+
+#[path = "../highscores/reply.rs"]
+pub(crate) mod reply;
 
 use super::account_achievement::EarnedAchievement;
 use super::character_build::{DurableBuildState, SKILLS};
 use super::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
 use super::db::commit_semantic_transaction;
 use super::{DurabilityError, DurabilityRoot};
-use crate::achievement_catalogue::AchievementCatalogue;
 use crate::foundation::{CharacterId, WorldId};
 use ranking::{RankingRow, ranked_list};
 use serde::Serialize;
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// Private persisted filter order, not a new protocol-number allocation.
-const FILTERS: [Option<&str>; 6] = [
+pub(crate) const FILTERS: [Option<&str>; 6] = [
     None,
     Some("knight"),
     Some("paladin"),
@@ -40,15 +38,23 @@ const FILTERS: [Option<&str>; 6] = [
 const PAGE_ROWS: u64 = 50;
 const SNAPSHOT_INTERVAL_MS: i64 = 30 * 60 * 1000;
 
+/// The account achievement point owner (category 10). The composition root implements it with
+/// the activated achievement catalogue; this module stays independent of that content owner.
+pub(crate) trait AchievementPoints: Send + Sync {
+    /// Total points of every earned fact, or `None` when a fact names an unknown key or the sum
+    /// overflows. A retired entry counts its owner's value (0).
+    fn total_points(&self, earned: &[EarnedAchievement]) -> Option<u32>;
+}
+
 /// Actual owning catalogues from the activated content generation, never caller-provided scores.
 #[derive(Clone)]
 pub(crate) struct SnapshotCatalogues {
-    achievements: AchievementCatalogue,
-    bestiary: BTreeMap<String, BestiaryCharmEntry>,
+    achievements: Arc<dyn AchievementPoints>,
+    pub(crate) bestiary: BTreeMap<String, BestiaryCharmEntry>,
 }
 impl SnapshotCatalogues {
     pub(crate) fn new(
-        achievements: AchievementCatalogue,
+        achievements: Arc<dyn AchievementPoints>,
         entries: impl IntoIterator<Item = BestiaryCharmEntry>,
     ) -> Result<Self> {
         let entries: Vec<_> = entries.into_iter().collect();
@@ -135,7 +141,7 @@ pub(crate) struct SnapshotPage {
 /// Actual native Root budget and commit handling, with no Character/value write or session
 /// authority grant. This cannot use begin_semantic_transaction: its first SELECT has already
 /// fixed the transaction's isolation. Only this derived projection starts RR directly.
-async fn begin_projection<'a>(
+pub(crate) async fn begin_projection<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Instant,
 ) -> std::result::Result<Transaction<'a, Postgres>, DurabilityError> {
@@ -164,8 +170,12 @@ async fn begin_projection<'a>(
 
 impl DurabilityRoot {
     /// Legacy nine-source projection, retained for the isolated native fixtures.
-    /// Production scheduling uses `refresh_highscore_world` with both owning catalogues.
+    /// Production scheduling uses `refresh_highscore_schedule` with both owning catalogues.
     /// Deployment must bind this to the dedicated projection role. No raw admin pool is used.
+    #[allow(
+        dead_code,
+        reason = "the PostgreSQL highscore suites call it; the serve job uses refresh_highscore_schedule"
+    )]
     pub(crate) async fn publish_highscore_world(
         &self,
         world: WorldId,
@@ -177,6 +187,10 @@ impl DurabilityRoot {
 
     /// Periodic publication is due after 30 minutes; a planned reset forces one complete cut.
     /// The composition root supplies the actual reset notification, not client command DATA.
+    #[allow(
+        dead_code,
+        reason = "the PostgreSQL highscore suites call it; the serve job uses refresh_highscore_schedule"
+    )]
     pub(crate) async fn refresh_highscore_world(
         &self,
         world: WorldId,
@@ -270,7 +284,7 @@ impl DurabilityRoot {
     }
 }
 
-struct Source {
+pub(crate) struct Source {
     character_id: CharacterId,
     name: String,
     vocation: String,
@@ -285,7 +299,10 @@ fn character(row: &PgRow) -> Result<CharacterId> {
     CharacterId::decode(&bytes).map_err(|_| corrupt())
 }
 
-async fn read_source(tx: &mut Transaction<'_, Postgres>, world: WorldId) -> Result<Vec<Source>> {
+pub(crate) async fn read_source(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+) -> Result<Vec<Source>> {
     // No row means native vocation `none`, excluded. Do not silently drop an eligible
     // non-none build whose required XP row is missing: fail and retain the prior generation.
     let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none'")
@@ -358,13 +375,11 @@ async fn read_extra_sources(
     for row in representatives {
         let account: String = row.try_get("account_id")?;
         let earned = facts.remove(&account).unwrap_or_default();
-        // The owner handles retired/unknown entries and checked point addition. Page zero is
-        // merely its existing read idiom: total_points covers ALL earned facts, not page rows.
+        // The owner handles retired/unknown entries and checked point addition over ALL facts.
         let points = catalogues
             .achievements
-            .account_achievements_page(&earned, 0)
-            .map_err(|_| corrupt())?
-            .total_points;
+            .total_points(&earned)
+            .ok_or_else(corrupt)?;
         let level = u32::try_from(nonnegative(&row, "level")?).map_err(|_| corrupt())?;
         if level == 0 {
             return Err(corrupt());
@@ -464,7 +479,11 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
     Ok(result)
 }
 
-async fn publish_in_transaction(
+#[allow(
+    dead_code,
+    reason = "the PostgreSQL stale-publication case calls it inside its own transaction"
+)]
+pub(crate) async fn publish_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
 ) -> Result<Vec<SnapshotInfo>> {
@@ -479,6 +498,11 @@ async fn publish_cut(
     catalogues: Option<&SnapshotCatalogues>,
     only_if_due: bool,
 ) -> Result<SnapshotRefresh> {
+    // HIGHSCORES0 §4: only the job's role writes the snapshot tables. The runtime login is its
+    // member without inheritance, so these privileges last for this transaction only.
+    sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
+        .execute(&mut **tx)
+        .await?;
     let categories: i32 = if catalogues.is_some() { 11 } else { 9 };
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
@@ -618,64 +642,3 @@ async fn read_in_transaction(
         own_row,
     })
 }
-
-/// Private UNINSTALLED design/fixture only. The eventual job role gets source SELECT and
-/// projection DML; runtime gets projection SELECT only. No role/grant/migration is installed.
-pub(crate) const SNAPSHOT_SCHEMA_PROPOSAL: &str = r#"
-CREATE TABLE game_world_highscore_snapshots(
- snapshot_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
- world_id UUID NOT NULL,category INTEGER NOT NULL CHECK(category BETWEEN 1 AND 11),
- computed_at_ms BIGINT NOT NULL CHECK(computed_at_ms>=0),source_cut TEXT NOT NULL,
- row_count INTEGER NOT NULL CHECK(row_count BETWEEN 0 AND 6000),
- UNIQUE(world_id,category,snapshot_id));
-CREATE TABLE game_world_highscore_rows(
- snapshot_id BIGINT NOT NULL REFERENCES game_world_highscore_snapshots ON DELETE CASCADE,
- filter SMALLINT NOT NULL CHECK(filter BETWEEN 0 AND 5),
- position INTEGER NOT NULL CHECK(position BETWEEN 1 AND 1000),rank BIGINT NOT NULL CHECK(rank>=1),
- character_id UUID NOT NULL,name TEXT NOT NULL,vocation TEXT NOT NULL,
- level BIGINT NOT NULL CHECK(level BETWEEN 1 AND 4294967295),
- value_primary BIGINT NOT NULL CHECK(value_primary>=0),value_progress BIGINT NOT NULL CHECK(value_progress>=0),
- PRIMARY KEY(snapshot_id,filter,position),UNIQUE(snapshot_id,filter,character_id));
-CREATE TABLE game_world_highscore_heads(
- world_id UUID NOT NULL,category INTEGER NOT NULL CHECK(category BETWEEN 1 AND 11),
- current_snapshot_id BIGINT,previous_snapshot_id BIGINT,PRIMARY KEY(world_id,category),
- CHECK(previous_snapshot_id IS NULL OR current_snapshot_id<>previous_snapshot_id),
- FOREIGN KEY(world_id,category,current_snapshot_id) REFERENCES game_world_highscore_snapshots(world_id,category,snapshot_id),
- FOREIGN KEY(world_id,category,previous_snapshot_id) REFERENCES game_world_highscore_snapshots(world_id,category,snapshot_id));
-CREATE FUNCTION game_highscore_immutable() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN
- RAISE EXCEPTION 'immutable highscore projection row' USING ERRCODE='23514'; END;$$;
-CREATE TRIGGER game_highscore_header_immutable BEFORE UPDATE ON game_world_highscore_snapshots
- FOR EACH ROW EXECUTE FUNCTION game_highscore_immutable();
-CREATE TRIGGER game_highscore_row_immutable BEFORE UPDATE ON game_world_highscore_rows
- FOR EACH ROW EXECUTE FUNCTION game_highscore_immutable();
-CREATE FUNCTION game_highscore_row_membership_guard() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN
- IF TG_OP='INSERT' THEN
-  IF EXISTS(SELECT 1 FROM game_world_highscore_heads WHERE current_snapshot_id=NEW.snapshot_id OR previous_snapshot_id=NEW.snapshot_id) THEN
-   RAISE EXCEPTION 'published snapshot cannot acquire rows' USING ERRCODE='23514';
-  END IF;
-  RETURN NEW;
- END IF;
- IF EXISTS(SELECT 1 FROM game_world_highscore_snapshots WHERE snapshot_id=OLD.snapshot_id) THEN
-  RAISE EXCEPTION 'snapshot rows only delete with their header' USING ERRCODE='23514';
- END IF;
- RETURN OLD;
-END;$$;
-CREATE TRIGGER game_highscore_row_membership_guard BEFORE INSERT OR DELETE ON game_world_highscore_rows
- FOR EACH ROW EXECUTE FUNCTION game_highscore_row_membership_guard();
-REVOKE ALL ON game_world_highscore_snapshots,game_world_highscore_rows,game_world_highscore_heads FROM PUBLIC;
-REVOKE ALL ON FUNCTION game_highscore_immutable(),game_highscore_row_membership_guard() FROM PUBLIC;
-"#;
-
-/// Append to the CP migration after the real 0091 public producer migration has installed
-/// its SECURITY DEFINER function. Kept separate so private-source fixtures need no fake
-/// public producer. A missing prerequisite aborts installation; it never silently skips export.
-pub(crate) const PUBLIC_PROJECTION_ATTACHMENT_PROPOSAL: &str = r#"
--- Public producer migration 0091 owns this trigger function. This attachment and the
--- snapshot INSERT share the job transaction, so failed cuts publish no public revision.
-CREATE TRIGGER game_public_highscores_snapshot_insert AFTER INSERT ON game_world_highscore_snapshots
- FOR EACH ROW EXECUTE FUNCTION game_public_highscores_snapshot_trigger();
-"#;
-
-#[cfg(test)]
-#[path = "highscore_snapshot_tests.rs"]
-mod tests;

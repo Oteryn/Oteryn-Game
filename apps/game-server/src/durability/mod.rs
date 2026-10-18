@@ -45,6 +45,7 @@ pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub(crate) mod ground_cell_limit;
+pub(crate) mod highscore_snapshot;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;

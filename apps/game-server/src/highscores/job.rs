@@ -31,21 +31,11 @@ impl HighscoreWorldJob {
         }
     }
 
-    /// Check durable due state after restart, using database time and the publication locks.
-    pub(crate) async fn periodic_tick(&self) -> Result<Vec<SnapshotInfo>, SnapshotError> {
-        self.root
-            .refresh_highscore_world(self.world, self.catalogues.clone(), false)
-            .await
-    }
-
-    /// Called only from the composition root's actual planned World reset notification.
-    pub(crate) async fn after_planned_reset(&self) -> Result<Vec<SnapshotInfo>, SnapshotError> {
-        self.root
-            .refresh_highscore_world(self.world, self.catalogues.clone(), true)
-            .await
-    }
-
     #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "the PostgreSQL job cases in character_authority_postgres read it"
+    )]
     pub(crate) fn completed_passes(&self) -> u64 {
         self.completed_passes
             .load(std::sync::atomic::Ordering::SeqCst)
@@ -53,7 +43,9 @@ impl HighscoreWorldJob {
 
     /// First check is immediate. Every successful check schedules from durable database time,
     /// including a recent snapshot skipped after restart. A failed periodic pass backs off one
-    /// interval; a failed reset preserves the pending periodic deadline. Closing resets stops.
+    /// interval; a failed reset preserves the pending periodic deadline. A message on
+    /// `planned_resets` is the composition root's actual planned World reset notification and
+    /// forces one complete cut; closing the channel stops the job.
     pub(crate) async fn run(&self, mut planned_resets: mpsc::Receiver<()>) {
         let interval = Duration::from_secs(30 * 60);
         let mut due = Instant::now();
@@ -71,13 +63,22 @@ impl HighscoreWorldJob {
                 .refresh_highscore_schedule(self.world, self.catalogues.clone(), reset)
                 .await;
             match result {
-                Ok(refresh) => due = started + refresh.next_check_after,
+                Ok(refresh) => {
+                    for snapshot in &refresh.snapshots {
+                        published(self.world, snapshot);
+                    }
+                    due = started + refresh.next_check_after;
+                }
                 Err(error) => {
                     if !reset {
                         due = Instant::now() + interval;
                     }
+                    let reason = match &error {
+                        SnapshotError::Unavailable(source) => format!("unavailable {source:?}"),
+                        other => format!("{other:?}"),
+                    };
                     eprintln!(
-                        "highscore snapshot pass failed world={:?}: {error:?}",
+                        "event=highscore_snapshot state=failed world={:?} reset={reset} reason=\"{reason}\"",
                         self.world
                     );
                 }
@@ -87,4 +88,12 @@ impl HighscoreWorldJob {
                 .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         }
     }
+}
+
+/// One operator event per published (World, category) snapshot.
+fn published(world: WorldId, snapshot: &SnapshotInfo) {
+    eprintln!(
+        "event=highscore_snapshot state=published world={world:?} category={} snapshot_id={} computed_at_ms={} source_cut={}",
+        snapshot.category, snapshot.snapshot_id, snapshot.computed_at_ms, snapshot.source_cut
+    );
 }

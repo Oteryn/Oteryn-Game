@@ -96,10 +96,13 @@ fn progression(character: u8, level: u32) -> String {
     )
 }
 
-/// A HIGHSCORES-0 snapshot run (HS-1's job): the snapshot insert fires the attached trigger.
+/// A HIGHSCORES-0 snapshot run (HS-1's job, migration 0097): the snapshot insert fires the
+/// attached trigger. The fixture pins the identity so the expected outbox rows stay exact.
 fn snapshot(id: i64, world: u8, category: i16) -> String {
     format!(
-        "INSERT INTO game_world_highscore_snapshots VALUES ({id},{},{category},0);",
+        "INSERT INTO game_world_highscore_snapshots \
+           (snapshot_id, world_id, category, computed_at_ms, source_cut, row_count) \
+         OVERRIDING SYSTEM VALUE VALUES ({id},{},{category},0,'',0);",
         uuid(world)
     )
 }
@@ -400,21 +403,11 @@ async fn projection_cases(database: &Database) -> TestResult {
     .await?;
     assert_eq!(future, 0);
 
-    // Highscores: no HIGHSCORES-0 source yet, so a resync queues nothing.
+    // Highscores: no HIGHSCORES-0 snapshot yet, so a resync queues nothing.
     assert_eq!(resync(&pool, "highscores", false).await?, 1);
     assert_eq!(highscores(&pool).await?, vec![]);
-    // The HS-1 interface (contract §11): a snapshot insert advances the (World, category)
-    // revision in the job's own transaction, whatever role the job runs as.
-    attempt(
-        &pool,
-        "CREATE TABLE game_world_highscore_snapshots (snapshot_id BIGINT PRIMARY KEY, \
-           world_id UUID NOT NULL, category SMALLINT NOT NULL, computed_at_ms BIGINT NOT NULL); \
-         CREATE TRIGGER game_public_highscores_snapshot AFTER INSERT \
-           ON game_world_highscore_snapshots FOR EACH ROW \
-           EXECUTE FUNCTION game_public_highscores_snapshot_trigger(); \
-         GRANT SELECT, INSERT ON game_world_highscore_snapshots TO oteryn_game_runtime;",
-    )
-    .await?;
+    // The HS-1 interface (contract §11, attached by migration 0097): a snapshot insert advances
+    // the (World, category) revision in the job's own transaction, whatever role the job runs as.
     let mut tx = pool.begin().await?;
     sqlx::raw_sql(sqlx::AssertSqlSafe(snapshot(1, 0x90, 1)))
         .execute(&mut *tx)
@@ -422,10 +415,20 @@ async fn projection_cases(database: &Database) -> TestResult {
     tx.rollback().await?;
     assert_eq!(highscores(&pool).await?, vec![]);
     attempt(&pool, &snapshot(1, 0x90, 1)).await?;
-    attempt(
+    // HIGHSCORES0 §4: only the job's role writes; a runtime login without the role does not.
+    let denied = attempt(
         &pool,
         &format!(
             "SET LOCAL ROLE oteryn_game_runtime; {}",
+            snapshot(2, 0x90, 1)
+        ),
+    )
+    .await;
+    assert_eq!(sqlstate(&denied).as_deref(), Some("42501"), "{denied:?}");
+    attempt(
+        &pool,
+        &format!(
+            "SET LOCAL ROLE oteryn_game_runtime; SET LOCAL ROLE oteryn_game_highscore_job; {}",
             snapshot(2, 0x90, 1)
         ),
     )
@@ -750,15 +753,11 @@ async fn large_resync(database: &Database) -> TestResult {
                {world}, 1, 1, 'profile-1', 'ruleset-1', 'content-1', 'starter-1', \
                'Hero ' || translate(lpad(i::text, 6, '0'), '0123456789', 'abcdefghij') \
              FROM generate_series(1, {CHARACTERS}) i; \
-             CREATE TABLE game_world_highscore_snapshots (snapshot_id BIGINT PRIMARY KEY, \
-               world_id UUID NOT NULL, category SMALLINT NOT NULL, \
-               computed_at_ms BIGINT NOT NULL); \
-             CREATE TRIGGER game_public_highscores_snapshot AFTER INSERT \
-               ON game_world_highscore_snapshots FOR EACH ROW \
-               EXECUTE FUNCTION game_public_highscores_snapshot_trigger(); \
              INSERT INTO game_world_highscore_snapshots \
+               (snapshot_id, world_id, category, computed_at_ms, source_cut, row_count) \
+             OVERRIDING SYSTEM VALUE \
              SELECT w * 11 + c, (lpad(to_hex(w), 8, '0') || '-0000-7000-8000-0000000000ff')::uuid, \
-               c, 0 FROM generate_series(1, 64) w, generate_series(1, 11) c;",
+               c, 0, '', 0 FROM generate_series(1, 64) w, generate_series(1, 11) c;",
             world = uuid(90),
         ),
     )
@@ -1081,7 +1080,11 @@ pub(crate) async fn bootstrap_reads(
             .profile_oldest_ms
             .is_some_and(|oldest| oldest <= facts.now_ms)
     );
-    assert_eq!(facts.highscores, None, "no HIGHSCORES-0 source yet");
+    assert_eq!(
+        facts.highscores,
+        Some(None),
+        "migration 0097's source with nothing undelivered"
+    );
     assert!(
         root.next_public_highscores(authority, &[])
             .await
@@ -1209,25 +1212,7 @@ pub(crate) async fn bootstrap_reads(
         }
     );
 
-    // HS-1's tables (contract §11 interface), its trigger and its runtime grant.
-    sqlx::raw_sql(
-        "CREATE TABLE game_world_highscore_snapshots (snapshot_id BIGINT PRIMARY KEY, \
-           world_id UUID NOT NULL, category SMALLINT NOT NULL, computed_at_ms BIGINT NOT NULL); \
-         CREATE TABLE game_world_highscore_heads (world_id UUID NOT NULL, \
-           category SMALLINT NOT NULL, current_snapshot_id BIGINT NOT NULL, \
-           PRIMARY KEY (world_id, category)); \
-         CREATE TABLE game_world_highscore_rows (snapshot_id BIGINT NOT NULL, \
-           filter SMALLINT NOT NULL, position INTEGER NOT NULL, rank BIGINT NOT NULL, \
-           character_id UUID NOT NULL, name TEXT NOT NULL, vocation TEXT NOT NULL, \
-           level BIGINT NOT NULL, value_primary NUMERIC(20,0) NOT NULL); \
-         CREATE TRIGGER game_public_highscores_snapshot AFTER INSERT \
-           ON game_world_highscore_snapshots FOR EACH ROW \
-           EXECUTE FUNCTION game_public_highscores_snapshot_trigger(); \
-         GRANT SELECT ON game_world_highscore_snapshots, game_world_highscore_heads, \
-           game_world_highscore_rows TO oteryn_game_runtime;",
-    )
-    .execute(pool)
-    .await?;
+    // HS-1's tables (migration 0097, contract §11 interface): its trigger and runtime SELECT.
     let facts = root.public_outbox_facts(authority).await.map_err(error)?;
     assert_eq!(
         facts.highscores,
@@ -1235,24 +1220,34 @@ pub(crate) async fn bootstrap_reads(
         "a source with nothing undelivered"
     );
     let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
+        .execute(&mut *tx)
+        .await?;
     sqlx::query(
-        "INSERT INTO game_world_highscore_snapshots VALUES (1, $1::uuid, 1, 1700000000123)",
+        "INSERT INTO game_world_highscore_snapshots \
+           (snapshot_id, world_id, category, computed_at_ms, source_cut, row_count) \
+         OVERRIDING SYSTEM VALUE VALUES (1, $1::uuid, 1, 1700000000123, '', 2)",
     )
     .bind(world_id)
     .execute(&mut *tx)
     .await?;
-    sqlx::query("INSERT INTO game_world_highscore_heads VALUES ($1::uuid, 1, 1)")
-        .bind(world_id)
-        .execute(&mut *tx)
-        .await?;
-    // The overall list and its vocation's list: a promoted key and a wire id.
+    // The overall list and its vocation's list: a promoted key and a wire id. A published
+    // snapshot never acquires rows, so the rows precede its head.
     sqlx::query(
-        "INSERT INTO game_world_highscore_rows VALUES \
-           (1, 0, 1, 1, $1::uuid, $2, 'elite_knight', 50, 1000), \
-           (1, 2, 1, 1, $1::uuid, $2, '2', 50, 1000)",
+        "INSERT INTO game_world_highscore_rows (snapshot_id, filter, position, rank, \
+           character_id, name, vocation, level, value_primary, value_progress) VALUES \
+           (1, 0, 1, 1, $1::uuid, $2, 'elite_knight', 50, 1000, 0), \
+           (1, 2, 1, 1, $1::uuid, $2, '2', 50, 1000, 0)",
     )
     .bind(character_id)
     .bind(&entry.name)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_world_highscore_heads (world_id, category, current_snapshot_id) \
+         VALUES ($1::uuid, 1, 1)",
+    )
+    .bind(world_id)
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;

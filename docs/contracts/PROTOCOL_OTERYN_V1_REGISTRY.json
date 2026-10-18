@@ -104,6 +104,17 @@
       "offer_gate": "Capability negotiation: the server selects no optional capability before the authoritative negotiation path is composed. Without it selected, domain 13 is never sent."
     },
     {
+      "id": 9,
+      "name": "HIGHSCORES_V1",
+      "owner_decision": "HIGHSCORES-0 HIGHSCORES0-WORLD-HIGHSCORES-V1 §6 (docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md, accepted through #2209); numbers leased to HS-WIRE-1 by the #1622 control plane (cap 9, cmd 14; the leased domain 14 stays unclaimed), registered by RANK-1 under CP D1155",
+      "owner": "Highscores module (persisted World snapshots of migration 0097, never live state)",
+      "requires": [],
+      "command_types": [14],
+      "state_domains": [],
+      "offered": true,
+      "offer_gate": "HS-WIRE-1: offered in every offered set (production, Item view and bundle World). With it selected, command type 14 reads one 50-row page of the session's own World snapshot (categories 1 to 11, base-vocation filter 0 to 5) with the asking Character's own row, and never computes ranks. A category outside 1 to 11 is NOT_SUPPORTED and an echoed snapshot token that is no longer retained (current or previous) is SNAPSHOT_EXPIRED, both as FND-02 error results without rows. Without it selected, command type 14 is refused as an unregistered command."
+    },
+    {
       "id": 10,
       "name": "ANALYSER_V1",
       "owner_decision": "ANALYSERS-0 ANALYSERS0-HUNTING-ANALYSERS-V1 \u00a74 and \u00a76 (docs/architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md, D298); numbers leased to ANALYSER-WIRE-1 by the #1622 control plane",
@@ -373,6 +384,16 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatIntentResultV1",
       "max_payload_bytes": 1148,
       "max_result_payload_bytes": 8
+    },
+    {
+      "id": 14,
+      "name": "HIGHSCORES_QUERY_V1",
+      "owner_decision": "HIGHSCORES-0 HIGHSCORES0-WORLD-HIGHSCORES-V1 §6 (docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md); number leased to HS-WIRE-1 by the #1622 control plane, registered by RANK-1 under CP D1155",
+      "capability": 9,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#HighscoresQueryV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/highscores_v1.proto#HighscoresResultV1",
+      "max_payload_bytes": 25,
+      "max_result_payload_bytes": 9878
     },
     {
       "id": 15,
@@ -918,6 +939,8 @@
     {"code": 1040, "name": "BOOTSTRAP_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
     {"code": 1041, "name": "INVALID_CAPABILITY_SET", "category": "INVALID_INPUT", "default_disposition": "SESSION_FATAL"},
     {"code": 1050, "name": "ACCOUNT_DATA_INTEGRITY", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "OPERATION_TERMINAL"},
+    {"code": 1200, "name": "NOT_SUPPORTED", "category": "UNSUPPORTED_REVISION", "default_disposition": "OPERATION_TERMINAL"},
+    {"code": 1201, "name": "SNAPSHOT_EXPIRED", "category": "CONFLICT", "default_disposition": "OPERATION_TERMINAL"},
     {"code": 1100, "name": "ADMISSION_GRANT_MALFORMED", "category": "INVALID_INPUT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
     {"code": 1101, "name": "ADMISSION_GRANT_AUTHENTICATION_FAILED", "category": "AUTHENTICATION_FAILED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "AUTHENTICATION_REQUIRED"},
     {"code": 1102, "name": "ADMISSION_GRANT_BINDING_MISMATCH", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "RETRY_LOGIN"},

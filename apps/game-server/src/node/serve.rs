@@ -1063,6 +1063,32 @@ async fn public_projections_loop(
     first(publisher.run(), stop.cancelled()).await;
 }
 
+/// RANK-1 (HIGHSCORES0 §4): this World's highscore snapshot job for the serve lifetime. It
+/// never gates serving and its end is not a shutdown reason. The job publishes under its own
+/// group role (migration 0097) and schedules from durable database time, so a restart or a second
+/// Channel of the World never publishes early. Category 10 reads the activated Achievement
+/// catalogue. No per-race Charm point source is activated yet (CHARM-6), so category 11 credits
+/// no Bestiary entry, exactly as the Charm owner does. The planned World reset notification
+/// source is not wired yet (WORLD-RESET): the sender is held, unused, for the job's lifetime.
+async fn highscores_loop(
+    root: &DurabilityRoot,
+    world: crate::foundation::WorldId,
+    achievements: &crate::achievement_catalogue::AchievementCatalogue,
+    stop: &CancellationToken,
+) {
+    use crate::durability::highscore_snapshot::{SnapshotCatalogues, job::HighscoreWorldJob};
+    let points: std::sync::Arc<dyn crate::durability::highscore_snapshot::AchievementPoints> =
+        std::sync::Arc::new(achievements.clone());
+    let Ok(catalogues) = SnapshotCatalogues::new(points, Vec::new()) else {
+        event("event=highscores state=refused reason=catalogues");
+        return;
+    };
+    let job = HighscoreWorldJob::new(std::sync::Arc::new(root.clone()), world, catalogues);
+    let (_planned_resets, receiver) = tokio::sync::mpsc::channel(1);
+    event("event=highscores state=started");
+    first(job.run(receiver), stop.cancelled()).await;
+}
+
 /// Both futures to completion on this task.
 async fn both(a: impl Future<Output = ()>, b: impl Future<Output = ()>) {
     let mut a = pin!(a);
@@ -2732,15 +2758,18 @@ async fn boot_and_serve(
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
     let mut projection = pin!(both(
-        account_characters_loop(
-            root,
-            &authority,
-            material
-                .account_characters
-                .lock()
-                .ok()
-                .and_then(|mut projection| projection.take()),
-            &loops_stop
+        both(
+            highscores_loop(root, material.world, &achievements, &loops_stop),
+            account_characters_loop(
+                root,
+                &authority,
+                material
+                    .account_characters
+                    .lock()
+                    .ok()
+                    .and_then(|mut projection| projection.take()),
+                &loops_stop
+            ),
         ),
         public_projections_loop(
             root,

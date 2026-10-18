@@ -153,6 +153,12 @@ mod world_party_runtime_postgres_cases;
 #[path = "durability/forge_dust_limit_audit_tests.rs"]
 mod forge_dust_limit_audit_tests;
 
+// RANK-1 ranking order has one source mount; the PG roots path-load durability (which owns the
+// ranking leaf) and must not collect these pure cases a second time.
+#[cfg(test)]
+#[path = "highscores/ranking_tests.rs"]
+mod highscore_ranking_tests;
+
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
 mod foundation_recovery_tests;

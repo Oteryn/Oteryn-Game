@@ -28,6 +28,9 @@ use oteryn_protocol_oteryn::chat::{
 use oteryn_protocol_oteryn::container_tree::{
     CAPABILITY_CONTAINER_TREE_V1, COMMAND_TYPE_CONTAINER_VIEW_INTENT, STATE_DOMAIN_CONTAINER_VIEWS,
 };
+use oteryn_protocol_oteryn::highscores::{
+    CAPABILITY_HIGHSCORES_V1, COMMAND_TYPE_HIGHSCORES_QUERY_V1,
+};
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
@@ -78,11 +81,18 @@ const LOGOUT: OfferedCapability = OfferedCapability {
     requires: &[],
 };
 
+/// RANK-1 (HS-WIRE-1, CP D1155): capability 9 `HIGHSCORES_V1` (command type 14), which requires
+/// nothing. It reads persisted World snapshots only, so every offered set offers it.
+const HIGHSCORES: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_HIGHSCORES_V1,
+    requires: &[],
+};
+
 /// The production offered set for a generation without a non-empty Item key set: the registry's
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
-/// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; CLOCK-1 offers
-/// capability 19 and LOGOUT-WIRE-1 capability 21. A test keeps it equal to the registry and within
+/// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; RANK-1 offers
+/// capability 9 `HIGHSCORES_V1`; CLOCK-1 offers capability 19 and LOGOUT-WIRE-1 capability 21. A test keeps it equal to the registry and within
 /// `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
@@ -93,6 +103,7 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_CHAT_V1,
         requires: &[],
     },
+    HIGHSCORES,
     OfferedCapability {
         id: CAPABILITY_PACED_MOVEMENT_V1,
         requires: &[],
@@ -155,6 +166,7 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
         id: CAPABILITY_CHAT_V1,
         requires: &[],
     },
+    HIGHSCORES,
     OfferedCapability {
         id: CAPABILITY_PACED_MOVEMENT_V1,
         requires: &[],
@@ -215,6 +227,12 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         CAPABILITY_ACHIEVEMENT_NOTICES_V1,
         &[],
         &[STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES],
+    ),
+    // RANK-1 (HS-WIRE-1): capability 9 gates the highscore query and owns no domain.
+    (
+        CAPABILITY_HIGHSCORES_V1,
+        &[COMMAND_TYPE_HIGHSCORES_QUERY_V1],
+        &[],
     ),
     (CAPABILITY_ANALYSER_V1, &[], &[STATE_DOMAIN_ACTOR_ANALYSER]),
     (

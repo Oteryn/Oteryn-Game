@@ -1,0 +1,63 @@
+// HIGHSCORES-0 HIGHSCORES0-WORLD-HIGHSCORES-V1 §6 (docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md):
+// typed payloads of capability 9 HIGHSCORES_V1 (no requirement, no state domain) and command
+// type 14 HIGHSCORES_QUERY_V1, registered by RANK-1 (HS-WIRE-1) under CP D1155. The query reads
+// one page of a persisted World snapshot (migration 0097); it never computes ranks. The World and
+// the asking Character come from the admitted session, never from the payload. FND-02 envelopes
+// own CommandRef, server sequence and the command status; these payloads never duplicate them.
+// NOT_SUPPORTED (1200, a category outside 1..=11) and SNAPSHOT_EXPIRED (1201, an echoed token no
+// longer retained) are FND-02 error results without a payload, not a status field here. Unknown
+// fields, repeated singular fields, wrong wire types, invalid UTF-8, a zero category, rank or
+// level, a filter above 5, page 0, a later page with token 0, a name or vocation outside its
+// grammar, more than 50 rows (HIGHSCORES0-RL-03) and `has_more` on a page that is not full or is
+// the last of the 1,000-row list (HIGHSCORES0-RL-02) all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.highscores;
+
+// ClientCommand.payload of command type 14. At most 25 encoded bytes.
+message HighscoresQueryV1 {
+  // 1 experience, 2 magic level, 3 fist, 4 club, 5 sword, 6 axe, 7 distance, 8 shielding,
+  // 9 fishing, 10 achievement points (one row per account), 11 Charm points. Zero fails closed;
+  // any other value is NOT_SUPPORTED.
+  uint32 category = 1;
+  // 0 all, 1 knight, 2 paladin, 3 sorcerer, 4 druid, 5 monk (a promotion counts as its base).
+  uint32 vocation = 2;
+  // 1 for the first page. A page beyond the last returns no rows and `has_more` false.
+  uint32 page = 3;
+  // 0 only for page 1 (answered from the current snapshot); every later page echoes the returned
+  // token and is answered from that snapshot while it is retained (the current or the previous).
+  uint64 snapshot_id = 4;
+}
+
+// One persisted row. At most 190 encoded bytes.
+message HighscoreRowV1 {
+  // Standard competition rank over all eligible characters of the World (1, 2, 2, 4).
+  uint64 rank = 1;
+  // CHAR-NAME-1: 2..=29 ASCII letters with single internal spaces.
+  string name = 2;
+  // The durable vocation key, at most 128 bytes (promotions and `none` for account rows kept).
+  string vocation = 3;
+  uint32 level = 4;
+  // The category's primary value only (experience, a skill or magic level, points). Hidden
+  // progress breaks ties inside the snapshot and is never sent.
+  uint64 value = 5;
+}
+
+// CommandResult.payload of command type 14. At most 9878 encoded bytes: 35 bytes of scalar
+// fields plus 51 rows (50 page rows and the own row) of 193 bytes each (the row, its tag and its
+// 2-byte length).
+message HighscoresResultV1 {
+  uint32 category = 1;
+  // The opaque snapshot token to echo on the next page of this list.
+  uint64 snapshot_id = 2;
+  // Unix milliseconds of the snapshot's database cut, not client time.
+  int64 computed_at = 3;
+  uint32 page = 4;
+  // True exactly when a later page of this list holds rows; then this page holds 50 rows.
+  bool has_more = 5;
+  // At most 50, in stored position order.
+  repeated HighscoreRowV1 rows = 6;
+  // The asking character's own row when it is listed in this snapshot's selected list, whether
+  // or not it is on this page; absent otherwise.
+  HighscoreRowV1 own_row = 7;
+}
