@@ -22874,17 +22874,21 @@
       "key": "oteryn:item.tibia.i5799",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:435189:golden_figurine",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:17943:1103139",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
           "value": "Decoration",
@@ -22921,22 +22925,23 @@
         },
         "trade.per_item_restrictions": {
           "value": {
-            "source_observations": {
-              "writable": "yes"
-            },
-            "global_exclusions": "market.global.instance_exclusions",
-            "exhaustive_current_instance_rules_proven": false
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
           },
-          "classification": "UNKNOWN",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:435189:golden_figurine",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:17943:1103139",
-              "selector": "Infobox Object / writable"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Item-specific state observations retained from current own-ID page; complete instance listing predicates are not officially specified by these fields. Global exclusions apply."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
@@ -36861,17 +36866,21 @@
       "key": "oteryn:item.tibia.i6506",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:385754:red_christmas_bundle",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:12383:1050129",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
           "value": "Decoration",
@@ -36907,12 +36916,24 @@
           "note": "Applies to the documented taxonomy projection, not an assertion about unpublished current client filters."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:385754:red_christmas_bundle",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:12383:1050129",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
@@ -36936,17 +36957,21 @@
       "key": "oteryn:item.tibia.i6507",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:385755:blue_christmas_bundle",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:42747:1050125",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
           "value": "Decoration",
@@ -36982,12 +37007,24 @@
           "note": "Applies to the documented taxonomy projection, not an assertion about unpublished current client filters."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:385755:blue_christmas_bundle",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:42747:1050125",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
@@ -37011,17 +37048,21 @@
       "key": "oteryn:item.tibia.i6508",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:385753:green_christmas_bundle",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:42746:1050128",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
           "value": "Decoration",
@@ -37057,12 +37098,24 @@
           "note": "Applies to the documented taxonomy projection, not an assertion about unpublished current client filters."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:385753:green_christmas_bundle",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:42746:1050128",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
@@ -50536,59 +50589,81 @@
       "key": "oteryn:item.tibia.i7874",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:382670:the_witches_grimoire",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:25545:1114595",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:25545:1114595",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:382670:the_witches_grimoire",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:25545:1114595",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.market_subcategory": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:25545:1114595",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:382670:the_witches_grimoire",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:25545:1114595",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:382670:the_witches_grimoire",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:25545:1114595",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {

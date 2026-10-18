@@ -27936,6 +27936,291 @@
       ],
       "native_identity_attribution": "NOT_ESTABLISHED",
       "qualification": "Explicit negative observation for the inspected Store Inbox object only. No native item ID, regular-potion type marketability, or universal restriction is inferred from the shared display name. Private inventory quantities are omitted."
+    },
+    "wiki-br:427155:guardcatcher": {
+      "title": "Guardcatcher",
+      "url": "https://www.tibiawiki.com.br/wiki/Guardcatcher",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Guardcatcher&oldid=427155",
+      "revid": 427155,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "64a8a0bffdf6a1b0e8705e8ac00ad57148f20037fc1df32045b0de0a10701187",
+      "retained_revision_footer_sha256": "312db1ff6ef190e74cf06e83f6b970223fec091fd759dfbe6b8b9ac02123be35",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:62004:1115227",
+        "single_own_item_id": 17669,
+        "matching_own_name": "Guardcatcher",
+        "matching_weight_oz": "8.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:401258:bottle_with_rat_urine": {
+      "title": "Bottle with Rat Urine",
+      "url": "https://www.tibiawiki.com.br/wiki/Bottle_with_Rat_Urine",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bottle_with_Rat_Urine&oldid=401258",
+      "revid": 401258,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "19ab7a795c06f8626c36a216ca8c1cf44031274f585076c169c6bd1589215862",
+      "retained_revision_footer_sha256": "c6de7eafe6021e260d217d199468fa902dfbe72dafa4477a8c4e8e6ac69f74f8",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:62155:1115228",
+        "single_own_item_id": 17671,
+        "matching_own_name": "Bottle with Rat Urine",
+        "matching_weight_oz": "1.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:380385:fur_of_a_wolf_whelp": {
+      "title": "Fur of a Wolf Whelp",
+      "url": "https://www.tibiawiki.com.br/wiki/Fur_of_a_Wolf_Whelp",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Fur_of_a_Wolf_Whelp&oldid=380385",
+      "revid": 380385,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "1c0d2ea6f6f310d0a24b48c89558d434fec19d60c92443bcca08673be235ab4f",
+      "retained_revision_footer_sha256": "80e9c477fe2254949cdc96bf9b4d21994700b08e9ceab2825d0e1592cf074b97",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:81375:1115714",
+        "single_own_item_id": 25238,
+        "matching_own_name": "Fur of a Wolf Whelp",
+        "matching_weight_oz": "1.05"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:380042:empty_starlight_vial": {
+      "title": "Empty Starlight Vial",
+      "url": "https://www.tibiawiki.com.br/wiki/Empty_Starlight_Vial",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Empty_Starlight_Vial&oldid=380042",
+      "revid": 380042,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "d667c85f8e492fdc133d587e2b0be4954e69f1f06d46615d1b41835efaa43c81",
+      "retained_revision_footer_sha256": "03a396bfc3392e024b416a6c298b6f41ddd34bec087c63c4652cca4b6d47d22e",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:81665:1115733",
+        "single_own_item_id": 25731,
+        "matching_own_name": "Empty Starlight Vial",
+        "matching_weight_oz": "12.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:379587:christmas_tree_package": {
+      "title": "Christmas Tree Package",
+      "url": "https://www.tibiawiki.com.br/wiki/Christmas_Tree_Package",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Christmas_Tree_Package&oldid=379587",
+      "revid": 379587,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "cd679c0ad7d24c46fbb6d249c8faf0477903eb0a603633d1dc464009e2688051",
+      "retained_revision_footer_sha256": "0082922e1903eea2dd32601e231ab7bd2930c6b60a4ec70e8e933233c3d0c67f",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:43048:1050127",
+        "single_own_item_id": 2812,
+        "matching_own_name": "Christmas Tree Package",
+        "matching_weight_oz": "35.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:379532:celestial_chart": {
+      "title": "Celestial Chart",
+      "url": "https://www.tibiawiki.com.br/wiki/Celestial_Chart",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Celestial_Chart&oldid=379532",
+      "revid": 379532,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "4c00bc25a4d8a85e07ee386f7a3bf7f65da7e51d2b2baa62919086885e60af94",
+      "retained_revision_footer_sha256": "33b4e74d48c8dae1b87035719db835f239f82d590da437149abbc8f75fa65cab",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:98635:1116211",
+        "single_own_item_id": 39136,
+        "matching_own_name": "Celestial Chart",
+        "matching_weight_oz": "0.20"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:379101:bag_with_naga_eggs": {
+      "title": "Bag with Naga Eggs",
+      "url": "https://www.tibiawiki.com.br/wiki/Bag_with_Naga_Eggs",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bag_with_Naga_Eggs&oldid=379101",
+      "revid": 379101,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "dfa82bab8aaa6fd73bf2af6c531d46d83d7d6c4ddcca50442d0ab0842aa43520",
+      "retained_revision_footer_sha256": "9a00153578484a229febcdf09878c94cf731927bcc411b21dcadb3251fec8f63",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:98749:1116229",
+        "single_own_item_id": 39577,
+        "matching_own_name": "Bag with Naga Eggs",
+        "matching_weight_oz": "50.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:387947:icicle_chisel": {
+      "title": "Icicle Chisel",
+      "url": "https://www.tibiawiki.com.br/wiki/Icicle_Chisel",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Icicle_Chisel&oldid=387947",
+      "revid": 387947,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "29175f98de5eca881e5284c97e46d5e1587e7485300321adc8f7b85a45a6c3ff",
+      "retained_revision_footer_sha256": "a28e0cb0d148bf4a0c47fd310874cdc2580b79cf51fbaaacad4c7460ba930909",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:98751:1116230",
+        "single_own_item_id": 39578,
+        "matching_own_name": "Icicle Chisel",
+        "matching_weight_oz": "3.20"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:385526:family_signet_ring": {
+      "title": "Family Signet Ring",
+      "url": "https://www.tibiawiki.com.br/wiki/Family_Signet_Ring",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Family_Signet_Ring&oldid=385526",
+      "revid": 385526,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "f0d180796ee91949ce6c15a64cdfcfeb63b3c433de41826d8574a81309802a22",
+      "retained_revision_footer_sha256": "7be25c8ec19966105ec469c79ec01e816e57334fced9da0455bdd9081f6411ee",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:67566:1194101",
+        "single_own_item_id": 406,
+        "matching_own_name": "Family Signet Ring",
+        "matching_weight_oz": "0.80"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:435189:golden_figurine": {
+      "title": "Golden Figurine",
+      "url": "https://www.tibiawiki.com.br/wiki/Golden_Figurine",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Golden_Figurine&oldid=435189",
+      "revid": 435189,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "7f556064db9a907b0396492137c8c3f446073995f0e4c54f226744d383ab89e7",
+      "retained_revision_footer_sha256": "ae2414afd954effa952f18707bf45a4a83ba0793d8c34eeab4fa88768f7d6bff",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:17943:1103139",
+        "single_own_item_id": 5799,
+        "matching_own_name": "Golden Figurine",
+        "matching_weight_oz": "15.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:385754:red_christmas_bundle": {
+      "title": "Red Christmas Bundle",
+      "url": "https://www.tibiawiki.com.br/wiki/Red_Christmas_Bundle",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Red_Christmas_Bundle&oldid=385754",
+      "revid": 385754,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "2ec745adac29b14da0dae34d909adebd73de1aaa2b277a41562af3eb5e44d75e",
+      "retained_revision_footer_sha256": "d493a8e6da5fe0dac1f57af8cc8cba2b58e62ccd24f5c5b41083c340fbbe8664",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:12383:1050129",
+        "single_own_item_id": 6506,
+        "matching_own_name": "Red Christmas Bundle",
+        "matching_weight_oz": "25.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:385755:blue_christmas_bundle": {
+      "title": "Blue Christmas Bundle",
+      "url": "https://www.tibiawiki.com.br/wiki/Blue_Christmas_Bundle",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Blue_Christmas_Bundle&oldid=385755",
+      "revid": 385755,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "f110b13f81ed690d4d566085cb02c3cd576a8c1ea7094e1f992abf7f6778020a",
+      "retained_revision_footer_sha256": "6c3b6028dfb709af3d16afbb767497300db6768f77078b481ba3e767bf8ea643",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:42747:1050125",
+        "single_own_item_id": 6507,
+        "matching_own_name": "Blue Christmas Bundle",
+        "matching_weight_oz": "25.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:385753:green_christmas_bundle": {
+      "title": "Green Christmas Bundle",
+      "url": "https://www.tibiawiki.com.br/wiki/Green_Christmas_Bundle",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Green_Christmas_Bundle&oldid=385753",
+      "revid": 385753,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "3756dd2d79e37aa91fbfaf8f135672abeb9d7a9ac919280265ae49ce1970472e",
+      "retained_revision_footer_sha256": "81cd4b5ed204d65f56dabead806ad48e2dee040695916e1cb44b5ab63b4010da",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:42746:1050128",
+        "single_own_item_id": 6508,
+        "matching_own_name": "Green Christmas Bundle",
+        "matching_weight_oz": "25.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:382670:the_witches_grimoire": {
+      "title": "The Witches' Grimoire",
+      "url": "https://www.tibiawiki.com.br/wiki/The_Witches'_Grimoire",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=The_Witches'_Grimoire&oldid=382670",
+      "revid": 382670,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "601679fb565ec8d3e251d6aa4ffaa4c13c89f4bf295fb9a48efe510c9652a08c",
+      "retained_revision_footer_sha256": "90a6b911ebabfb82c4e252b5ce1aaf0ed043ad947c8afd3f9580d06838da0ead",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:25545:1114595",
+        "single_own_item_id": 7874,
+        "matching_own_name": "The Witches' Grimoire",
+        "matching_weight_oz": "13.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "wiki-br:381058:large_used_amphora_kit": {
+      "title": "Large Used Amphora Kit",
+      "url": "https://www.tibiawiki.com.br/wiki/Large_Used_Amphora_Kit",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Large_Used_Amphora_Kit&oldid=381058",
+      "revid": 381058,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_ITEM_MARKET_DECLARATION_AND_CURRENT_REVISION_FOOTER",
+      "retained_claim_sha256": "c7cb0fe441482c66ba9b6a2d72c65839b9e3b8e5ae513a8d56b864fbf5416a26",
+      "retained_revision_footer_sha256": "c30ddf29e7bcf4c64477b571cebca7e58eb24b858d08f82c3173264018d79392",
+      "literal_observation": "Mercado: Este item não pode ser comercializado pelo Mercado.",
+      "identity_binding": {
+        "fandom_source": "wiki:78094:1115630",
+        "single_own_item_id": 23460,
+        "matching_own_name": "Large Used Amphora Kit",
+        "matching_weight_oz": "30.00"
+      },
+      "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
     }
   }
 }

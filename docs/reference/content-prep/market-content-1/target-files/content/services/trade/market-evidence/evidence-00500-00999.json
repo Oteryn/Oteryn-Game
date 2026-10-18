@@ -10100,59 +10100,81 @@
       "key": "oteryn:item.tibia.i25238",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:380385:fur_of_a_wolf_whelp",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:81375:1115714",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:81375:1115714",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:380385:fur_of_a_wolf_whelp",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:81375:1115714",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.market_subcategory": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:81375:1115714",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:380385:fur_of_a_wolf_whelp",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:81375:1115714",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:380385:fur_of_a_wolf_whelp",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:81375:1115714",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
@@ -12592,59 +12614,81 @@
       "key": "oteryn:item.tibia.i25731",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:380042:empty_starlight_vial",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:81665:1115733",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:81665:1115733",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:380042:empty_starlight_vial",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:81665:1115733",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.market_subcategory": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:81665:1115733",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:380042:empty_starlight_vial",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:81665:1115733",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:380042:empty_starlight_vial",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:81665:1115733",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
@@ -23601,59 +23645,81 @@
       "key": "oteryn:item.tibia.i2812",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
+              "source": "wiki-br:379587:christmas_tree_package",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
               "source": "wiki:43048:1050127",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.market_category": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:43048:1050127",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:379587:christmas_tree_package",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:43048:1050127",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.market_subcategory": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "status": "NOT_APPLICABLE",
+            "reason": "Wiki BR explicitly excludes this item type from Market trading."
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
           "sources": [
             {
-              "source": "wiki:43048:1050127",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "wiki-br:379587:christmas_tree_package",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+              "source": "wiki:43048:1050127",
+              "selector": "Infobox Object / single itemid, actualname and weight"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. Market category is not applicable to listing this excluded type."
         },
         "trade.per_item_restrictions": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "listing": "FORBIDDEN_ITEM_TYPE_COMMUNITY_WIKI_BR",
+            "global_exclusions_reference": "market.global.instance_exclusions"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+          "continuity": "CURRENT_WIKI_BR_EXPLICIT_NEGATIVE_WITH_FANDOM_SINGLE_ID_BINDING",
+          "sources": [
+            {
+              "source": "wiki-br:379587:christmas_tree_package",
+              "selector": "Own item / Mercado / explicit cannot-be-traded declaration; name and weight"
+            },
+            {
+              "source": "wiki:43048:1050127",
+              "selector": "Infobox Object / single itemid, actualname and weight"
+            }
+          ],
+          "note": "Wiki BR explicitly states that this item cannot be traded in Market. Name and weight agree with a Fandom own-item page listing exactly this one native ID. Derived community-reference binding; no server transaction, exhaustive global-rule claim or inference from an absent field. "
         },
         "trade.instance_restrictions": {
           "value": {
