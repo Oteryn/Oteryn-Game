@@ -11,7 +11,8 @@ use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::pvp_state::{
     PvpCleanup, PvpDeadlineKinds, PvpDeathConsequences, PvpDeathContributor, PvpSkull,
-    PvpWriteAhead, cleanup_pvp_rows_in_transaction,
+    PvpWriteAhead, apply_pvp_death_in_transaction, cleanup_pvp_rows_in_transaction, skull,
+    skull_history,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
@@ -90,17 +91,9 @@ fn occurrence(n: u8) -> [u8; 16] {
     [n, 9, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n]
 }
 
-/// Runs `sql` as the owner inside a fixture death transaction of `victim` (0123): a receipt
-/// inserted with triggers off and the victim's ledger naming `contributor` now. Commits when
-/// `sql` succeeds and reports whether it did.
-async fn in_death_of(
-    h: &Harness,
-    n: u8,
-    victim: u8,
-    contributor: u8,
-    sql: &str,
-) -> TestResult<bool> {
-    let mut tx = h.pool.begin().await?;
+/// The death receipt of occurrence `n` of `victim`, inserted with triggers off inside `tx`, so
+/// `tx` is a fixture death transaction of `victim` for the 0081/0123 guards.
+async fn death_receipt(tx: &mut sqlx::PgConnection, n: u8, victim: u8) -> TestResult {
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
         .await?;
@@ -127,6 +120,21 @@ async fn in_death_of(
     sqlx::query("SET LOCAL session_replication_role = origin")
         .execute(&mut *tx)
         .await?;
+    Ok(())
+}
+
+/// Runs `sql` as the owner inside a fixture death transaction of `victim` (0123): a receipt
+/// inserted with triggers off and the victim's ledger naming `contributor` now. Commits when
+/// `sql` succeeds and reports whether it did.
+async fn in_death_of(
+    h: &Harness,
+    n: u8,
+    victim: u8,
+    contributor: u8,
+    sql: &str,
+) -> TestResult<bool> {
+    let mut tx = h.pool.begin().await?;
+    death_receipt(&mut tx, n, victim).await?;
     sqlx::query(
         "INSERT INTO game_character_pvp_ledger (victim_character_id, contributor_character_id, \
             buckets, last_at) \
@@ -1092,4 +1100,221 @@ async fn skull_deaths(h: &Harness) -> TestResult {
     // The points stay for their 45 days (`PARTYPVP0-RL-23`).
     assert_eq!(consequences(h).await?, (3, 3000, 3, 0));
     Ok(())
+}
+
+/// The World job and a death transaction take the PvP state rows (CharacterId order) before
+/// ledger rows. A death holds the victim's and the killer's state rows; a World pass that has an
+/// expired skull (the killer's) and an expired ledger row (of the victim) to clean waits for it
+/// without holding a ledger row, so the death's deletion of the victim's ledger does not
+/// deadlock against it, both commit, and the pass then clears the skull.
+#[test]
+fn a_world_pass_waits_for_a_death_holding_its_state_rows_without_deadlock() -> TestResult {
+    run("pvp_cleanup_lock_order", async |h| {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        seed_root(h, OTHER, WORLD).await?;
+        seed_root(h, THIRD, WORLD).await?;
+        sqlx::query(
+            "INSERT INTO game_character_pvp_state (character_id, world_id) \
+             SELECT encode(c,'hex')::uuid, encode($2,'hex')::uuid FROM unnest($1::bytea[]) c",
+        )
+        .bind(vec![id(CHARACTER).to_vec(), id(OTHER).to_vec()])
+        .bind(id(WORLD).as_slice())
+        .execute(&h.pool)
+        .await?;
+        // The killer's red skull ended a second ago (a fixture, triggers off).
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "UPDATE game_character_pvp_state SET skull = 1, \
+                skull_until = clock_timestamp() - interval '1 second' \
+              WHERE character_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(OTHER).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        // The victim's ledger: the killer now, and a third contributor six minutes ago.
+        for (contributor, age) in [(OTHER, "0 seconds"), (THIRD, "6 minutes")] {
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "INSERT INTO game_character_pvp_ledger (victim_character_id, \
+                    contributor_character_id, buckets, last_at) \
+                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, '[]', \
+                    clock_timestamp() - interval '{age}')"
+            )))
+            .bind(id(CHARACTER).as_slice())
+            .bind(id(contributor).as_slice())
+            .execute(&h.pool)
+            .await?;
+        }
+        // The death transaction, at its lock step: the victim's and the killer's state rows.
+        let mut death_tx = h.pool.begin().await?;
+        death_receipt(&mut death_tx, 70, CHARACTER).await?;
+        let held: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM (SELECT character_id FROM game_character_pvp_state \
+              WHERE character_id IN (encode($1,'hex')::uuid, encode($2,'hex')::uuid) \
+              ORDER BY character_id FOR UPDATE) l",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(OTHER).as_slice())
+        .fetch_one(&mut *death_tx)
+        .await?;
+        assert_eq!(held, 2);
+        let killer = PvpDeathConsequences {
+            contributors: vec![PvpDeathContributor {
+                character_id: character(OTHER)?,
+                damage: true,
+                justified: false,
+            }],
+        };
+        let lane = crate::durability::spell_owner_commit::SpellLane::new(
+            crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+            crate::foundation::ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        );
+        let permit = lane.acquire().await.map_err(|_| "spell lane unresolved")?;
+        // The death goes on only once the pass blocks on a state row the death holds.
+        let pass_pid = std::sync::Arc::new(std::sync::atomic::AtomicI32::new(0));
+        let death = tokio::spawn({
+            let pool = h.pool.clone();
+            let pass_pid = pass_pid.clone();
+            let victim = character(CHARACTER)?;
+            let world = crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?;
+            async move {
+                let started = std::time::Instant::now();
+                loop {
+                    let pid = pass_pid.load(std::sync::atomic::Ordering::SeqCst);
+                    if pid != 0 {
+                        let waiting: bool = sqlx::query_scalar(
+                            "SELECT EXISTS (SELECT 1 FROM pg_stat_activity \
+                              WHERE pid = $1 AND wait_event_type = 'Lock')",
+                        )
+                        .bind(pid)
+                        .fetch_one(&pool)
+                        .await
+                        .map_err(|e| format!("{e:?}"))?;
+                        if waiting {
+                            break;
+                        }
+                    }
+                    if started.elapsed() > std::time::Duration::from_secs(30) {
+                        return Err(
+                            "the World pass did not wait for the death's state rows".to_owned()
+                        );
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                }
+                apply_pvp_death_in_transaction(
+                    &mut death_tx,
+                    victim,
+                    world,
+                    &occurrence(70),
+                    &killer,
+                )
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                .map_err(|e| format!("{e:?}"))?;
+                death_tx.commit().await.map_err(|e| format!("{e:?}"))
+            }
+        });
+        let mut tx = h.pool.begin().await?;
+        let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut *tx)
+            .await?;
+        pass_pid.store(pid, std::sync::atomic::Ordering::SeqCst);
+        let scope_held =
+            crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
+                &mut tx,
+                &permit,
+                &h.root,
+                &authority,
+                &h.node,
+                scope()?,
+                1,
+            )
+            .await
+            .map_err(debug)?;
+        let cleaned = cleanup_pvp_rows_in_transaction(&mut tx, &scope_held).await;
+        let committed = match &cleaned {
+            Ok(_) => tx.commit().await.map_err(debug),
+            Err(_) => tx.rollback().await.map_err(debug),
+        };
+        death.await.map_err(debug)??;
+        committed?;
+        let cleaned = cleaned.map_err(debug)?;
+        // The death deleted the whole ledger first; the pass cleared the still-expired skull.
+        assert_eq!((cleaned.ledger_rows, cleaned.skulls), (0, 1));
+        assert_eq!(killer_row(h).await?.0, 0);
+        assert_eq!(consequences(h).await?, (1, 1000, 1, 0));
+        Ok(())
+    })
+}
+
+/// The skull history is bounded by one exact database-clock sample at PostgreSQL's microsecond
+/// resolution, `(now - 30 days, now]` (D1443): a point committed off a millisecond boundary
+/// counts from its own microsecond, also when `now` lies in the same millisecond, and leaves
+/// the window exactly 30 days later; the death's own occurrence never counts.
+#[test]
+fn skull_history_bounds_are_exact_to_the_microsecond() -> TestResult {
+    run("pvp_skull_history_precision", async |h| {
+        seed_root(h, OTHER, WORLD).await?;
+        let mut tx = h.pool.begin().await?;
+        death_receipt(&mut tx, 71, CHARACTER).await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "INSERT INTO game_character_unjustified_points (character_id, death_occurrence_id, \
+                victim_character_id, points_milli, committed_at) \
+             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1000, \
+                timestamptz '2026-10-18 12:00:00.123456+00')",
+        )
+        .bind(id(OTHER).as_slice())
+        .bind(occurrence(71).as_slice())
+        .bind(id(CHARACTER).as_slice())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("SET LOCAL session_replication_role = origin")
+            .execute(&mut *tx)
+            .await?;
+        let at: i64 = sqlx::query_scalar(
+            "SELECT (extract(epoch FROM committed_at) * 1000000)::bigint \
+               FROM game_character_unjustified_points WHERE character_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(OTHER).as_slice())
+        .fetch_one(&mut *tx)
+        .await?;
+        assert_eq!(at % 1_000_000, 123_456);
+        let window = i64::try_from(skull::HISTORY_WINDOW_US)?;
+        let point = vec![(u64::try_from(at)?, 1000_u16)];
+        for (offset, counted) in [
+            (-1, false),
+            (0, true),
+            (1, true),
+            (window - 1, true),
+            (window, false),
+        ] {
+            let history = skull_history(&mut tx, &id(OTHER), &occurrence(72), at + offset)
+                .await
+                .map_err(debug)?
+                .iter()
+                .map(|row| (row.committed_at_us, row.points_milli))
+                .collect::<Vec<_>>();
+            let expected = if counted { point.clone() } else { Vec::new() };
+            assert_eq!(history, expected, "now = point + {offset} us");
+        }
+        assert!(
+            skull_history(&mut tx, &id(OTHER), &occurrence(71), at)
+                .await
+                .map_err(debug)?
+                .is_empty()
+        );
+        tx.rollback().await?;
+        Ok(())
+    })
 }

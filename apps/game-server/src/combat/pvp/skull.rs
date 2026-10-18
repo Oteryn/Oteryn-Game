@@ -19,8 +19,18 @@ use crate::durability::pvp_state::PvpSkull;
 
 const DAY_MS: u64 = 24 * 60 * 60 * 1_000;
 const WINDOWS_MS: [u64; 3] = [DAY_MS, 7 * DAY_MS, 30 * DAY_MS];
-/// The longest window: older points never count (they stay until `PARTYPVP0-RL-23`).
-pub(crate) const HISTORY_WINDOW_MS: u64 = WINDOWS_MS[2];
+/// Evaluation runs at PostgreSQL's timestamp resolution, one microsecond, so a sampled clock
+/// and stored timestamps are compared exactly; the policy durations are whole milliseconds.
+const MICROS_PER_MS: u64 = 1_000;
+const DAY_US: u64 = DAY_MS * MICROS_PER_MS;
+const WINDOWS_US: [u64; 3] = [
+    WINDOWS_MS[0] * MICROS_PER_MS,
+    WINDOWS_MS[1] * MICROS_PER_MS,
+    WINDOWS_MS[2] * MICROS_PER_MS,
+];
+/// The longest window in microseconds: older points never count (they stay until
+/// `PARTYPVP0-RL-23`).
+pub(crate) const HISTORY_WINDOW_US: u64 = WINDOWS_US[2];
 const RED_THRESHOLDS_MILLI: [u64; 3] = [3_000, 5_000, 10_000];
 const BLACK_THRESHOLDS_MILLI: [u64; 3] = [6_000, 10_000, 20_000];
 const RED_DAYS: u64 = 30;
@@ -56,10 +66,11 @@ pub(crate) fn unjustified_points_milli(damage: bool, damage_contributors: usize)
 }
 
 /// A point row supplied by the caller, excluding the new point increment.
-/// Timestamps share the caller's millisecond time domain; they are not clock/commit evidence.
+/// Timestamps share the caller's microsecond time domain (PostgreSQL's exact resolution); they
+/// are not clock/commit evidence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct SkullPoint {
-    pub(crate) committed_at_ms: u64,
+    pub(crate) committed_at_us: u64,
     pub(crate) points_milli: u16,
 }
 
@@ -67,7 +78,7 @@ pub(crate) struct SkullPoint {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct SkullState {
     pub(crate) skull: PvpSkull,
-    pub(crate) until_ms: Option<u64>,
+    pub(crate) until_us: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +97,8 @@ pub(crate) enum SkullEvaluationError {
     DeadlineOverflow,
 }
 
-/// Evaluate one contributor that gained `new_points_milli` (1..=1,000) at `now_ms`.
+/// Evaluate one contributor that gained `new_points_milli` (1..=1,000) at `now_us`, in
+/// microseconds since the epoch.
 /// `history` excludes that increment; it is added to all three windows exactly once here.
 /// This is an arithmetic input convention, not evidence that a new death/commit occurred.
 /// No-points calls are refused rather than refreshing a deadline or evaluating old points.
@@ -95,13 +107,13 @@ pub(crate) enum SkullEvaluationError {
 /// from its committed timestamp and the window end is exclusive (control-plane decision D1443).
 /// Expiry itself follows §6.2's explicit strict `until > now` rule.
 pub(crate) fn evaluate_skull(
-    now_ms: u64,
+    now_us: u64,
     current: SkullState,
     history: &[SkullPoint],
     new_points_milli: u16,
 ) -> Result<SkullEvaluation, SkullEvaluationError> {
     use SkullEvaluationError as E;
-    match (current.skull, current.until_ms) {
+    match (current.skull, current.until_us) {
         (PvpSkull::None, None) | (PvpSkull::Red | PvpSkull::Black, Some(_)) => {}
         _ => return Err(E::InvalidState),
     }
@@ -113,10 +125,10 @@ pub(crate) fn evaluate_skull(
         if !(1..=1_000).contains(&row.points_milli) {
             return Err(E::InvalidPoints);
         }
-        let age = now_ms
-            .checked_sub(row.committed_at_ms)
+        let age = now_us
+            .checked_sub(row.committed_at_us)
             .ok_or(E::FuturePoint)?;
-        for (total, duration) in points_milli.iter_mut().zip(WINDOWS_MS) {
+        for (total, duration) in points_milli.iter_mut().zip(WINDOWS_US) {
             if age < duration {
                 *total = total
                     .checked_add(u64::from(row.points_milli))
@@ -130,7 +142,7 @@ pub(crate) fn evaluate_skull(
             .zip(thresholds)
             .any(|(&total, threshold)| total >= threshold)
     };
-    let active = if current.until_ms.is_some_and(|until| until > now_ms) {
+    let active = if current.until_us.is_some_and(|until| until > now_us) {
         current.skull
     } else {
         PvpSkull::None
@@ -147,19 +159,19 @@ pub(crate) fn evaluate_skull(
         PvpSkull::Red => Some(RED_DAYS),
         PvpSkull::Black => Some(BLACK_DAYS),
     };
-    let until_ms = days
-        .map(|days| now_ms.checked_add(days * DAY_MS).ok_or(E::DeadlineOverflow))
+    let until_us = days
+        .map(|days| now_us.checked_add(days * DAY_US).ok_or(E::DeadlineOverflow))
         .transpose()?;
     // The installed state guard also forbids shortening an unexpired skull, including
     // during an upgrade. Check the reset arithmetic before preserving a later deadline.
-    let until_ms = until_ms.map(|reset| {
+    let until_us = until_us.map(|reset| {
         current
-            .until_ms
-            .filter(|&until| until > now_ms)
+            .until_us
+            .filter(|&until| until > now_us)
             .map_or(reset, |until| reset.max(until))
     });
     Ok(SkullEvaluation {
-        state: SkullState { skull, until_ms },
+        state: SkullState { skull, until_us },
         points_milli,
     })
 }

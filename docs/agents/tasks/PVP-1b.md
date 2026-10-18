@@ -149,6 +149,11 @@ next_action: Codex review of the pushed head; CP decides the go-live split
   contributors), a 7-day revenge mark, the white skull at least to the kill block (PVP-0 §6.1,
   D971) and the skull evaluation; then the victim's ledger is deleted. The contributors are
   part of the death command binding (empty for PvE, so PvE bindings are unchanged).
+- Review fixes (#2203): the skull evaluation samples the database clock once, exactly, at
+  microsecond resolution (PostgreSQL's), and bounds the history with that same instant (no
+  millisecond rounding); the World job locks the state rows of its expired-skull candidates
+  and of its expired-ledger victims in CharacterId order before any ledger row, the order of
+  the death transaction and the 0081 ledger guard, so the two cannot deadlock.
 - Migration 0123: runtime grants for skull/kill block/points/marks; an UPDATE guard that admits
   a skull or kill-block change only in a death transaction of the row's World naming the
   Character in the victim's ledger, except clearing an expired skull; the expiry index.

@@ -467,29 +467,63 @@ pub(crate) async fn cleanup_pvp_rows_in_transaction(
     .execute(&mut **tx)
     .await?
     .rows_affected();
-    let ledger_rows = sqlx::query(
-        "DELETE FROM game_character_pvp_ledger WHERE (victim_character_id, contributor_character_id) IN \
-           (SELECT l.victim_character_id, l.contributor_character_id FROM game_character_pvp_ledger l \
-              JOIN game_character_pvp_state s ON s.character_id = l.victim_character_id \
-             WHERE s.world_id = encode($1,'hex')::uuid \
-               AND l.last_at < clock_timestamp() - interval '5 minutes' \
-             ORDER BY l.last_at, l.victim_character_id LIMIT $2 FOR UPDATE OF l)",
+    // Lock order (as the death transaction and the 0081 ledger guard): the PvP state rows first,
+    // in one statement in CharacterId order, then ledger rows. The pass locks the state rows of
+    // its expired-skull candidates and of the victims of its expired ledger rows before it
+    // touches a ledger row, so it never holds a ledger row a death transaction will delete while
+    // waiting for a state row that death holds.
+    let locked = sqlx::query(
+        "WITH skulls AS ( \
+           SELECT e.character_id FROM game_character_pvp_state e \
+            WHERE e.world_id = encode($1,'hex')::uuid AND e.skull > 0 \
+              AND e.skull_until <= clock_timestamp() \
+            ORDER BY e.skull_until, e.character_id LIMIT $2), \
+         victims AS ( \
+           SELECT DISTINCT o.victim_character_id FROM \
+             (SELECT l.victim_character_id FROM game_character_pvp_ledger l \
+                JOIN game_character_pvp_state v ON v.character_id = l.victim_character_id \
+               WHERE v.world_id = encode($1,'hex')::uuid \
+                 AND l.last_at < clock_timestamp() - interval '5 minutes' \
+               ORDER BY l.last_at, l.victim_character_id LIMIT $2) o) \
+         SELECT s.character_id::text AS character_id, \
+                s.character_id IN (SELECT character_id FROM skulls) AS skull_candidate \
+           FROM game_character_pvp_state s \
+          WHERE s.character_id IN (SELECT character_id FROM skulls) \
+             OR s.character_id IN (SELECT victim_character_id FROM victims) \
+          ORDER BY s.character_id FOR UPDATE OF s",
     )
     .bind(world.as_slice())
     .bind(PVP_CLEANUP_BATCH)
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut skull_candidates = Vec::new();
+    let mut locked_ids = Vec::with_capacity(locked.len());
+    for row in &locked {
+        let character: String = row.try_get("character_id")?;
+        if row.try_get::<bool, _>("skull_candidate")? {
+            skull_candidates.push(character.clone());
+        }
+        locked_ids.push(character);
+    }
+    // The expiry is checked again on the locked row: a death may have set a new skull meanwhile.
     let skulls = sqlx::query(
         "UPDATE game_character_pvp_state AS s SET skull = 0, skull_until = NULL, \
                 revision = s.revision + 1 \
-          WHERE s.character_id IN \
-           (SELECT e.character_id FROM game_character_pvp_state e \
-             WHERE e.world_id = encode($1,'hex')::uuid AND e.skull > 0 \
-               AND e.skull_until <= clock_timestamp() \
-             ORDER BY e.skull_until, e.character_id LIMIT $2 FOR UPDATE OF e)",
+          WHERE s.character_id = ANY($1::text[]::uuid[]) \
+            AND s.skull > 0 AND s.skull_until <= clock_timestamp()",
     )
-    .bind(world.as_slice())
+    .bind(&skull_candidates)
+    .execute(&mut **tx)
+    .await?
+    .rows_affected();
+    let ledger_rows = sqlx::query(
+        "DELETE FROM game_character_pvp_ledger WHERE (victim_character_id, contributor_character_id) IN \
+           (SELECT l.victim_character_id, l.contributor_character_id FROM game_character_pvp_ledger l \
+             WHERE l.victim_character_id = ANY($1::text[]::uuid[]) \
+               AND l.last_at < clock_timestamp() - interval '5 minutes' \
+             ORDER BY l.last_at, l.victim_character_id LIMIT $2 FOR UPDATE OF l)",
+    )
+    .bind(&locked_ids)
     .bind(PVP_CLEANUP_BATCH)
     .execute(&mut **tx)
     .await?
@@ -543,6 +577,44 @@ impl DurabilityRoot {
     }
 }
 
+/// The contributor's point rows of the last 30 days before `now_us` (microseconds since the
+/// epoch, an exact database-clock sample), excluding this death's own occurrence: `(now - 30
+/// days, now]` at microsecond resolution (D1443). The bound is rebuilt from whole seconds and
+/// microseconds, so it equals the sampled timestamp exactly.
+pub(crate) async fn skull_history(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: &[u8],
+    occurrence: &[u8; 16],
+    now_us: i64,
+) -> std::result::Result<Vec<skull::SkullPoint>, DurabilityError> {
+    let rows: Vec<(i64, i32)> = sqlx::query_as(
+        "SELECT (extract(epoch FROM p.committed_at) * 1000000)::bigint, p.points_milli \
+           FROM game_character_unjustified_points p, \
+                (SELECT timestamptz 'epoch' + ($3::bigint / 1000000) * interval '1 second' \
+                        + ($3::bigint % 1000000) * interval '1 microsecond' AS now) c \
+          WHERE p.character_id = encode($1,'hex')::uuid \
+            AND p.death_occurrence_id <> encode($2,'hex')::uuid \
+            AND p.committed_at <= c.now \
+            AND p.committed_at > c.now - $4::bigint * interval '1 microsecond'",
+    )
+    .bind(character)
+    .bind(occurrence.as_slice())
+    .bind(now_us)
+    .bind(i64::try_from(skull::HISTORY_WINDOW_US).map_err(|_| DurabilityError::InvalidStoredState)?)
+    .fetch_all(&mut **tx)
+    .await?;
+    rows.into_iter()
+        .map(|(at, milli)| {
+            Ok(skull::SkullPoint {
+                committed_at_us: u64::try_from(at)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                points_milli: u16::try_from(milli)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            })
+        })
+        .collect()
+}
+
 /// §9 inside the victim's death transaction, after its receipt is inserted (the 0081 and 0123
 /// guards require that receipt and the victim's ledger): the contributors must be exactly the
 /// victim's ledger rows within five minutes. State rows of the victim and every contributor are
@@ -593,7 +665,7 @@ pub(crate) async fn apply_pvp_death_in_transaction(
     }
     let locked = sqlx::query(
         "SELECT character_id::text, world_id::text, skull, \
-                floor(extract(epoch FROM skull_until) * 1000)::bigint AS skull_until_ms \
+                (extract(epoch FROM skull_until) * 1000000)::bigint AS skull_until_us \
            FROM game_character_pvp_state \
           WHERE character_id IN (SELECT encode(id,'hex')::uuid FROM unnest($1::bytea[]) id) \
           ORDER BY character_id FOR UPDATE",
@@ -661,50 +733,28 @@ pub(crate) async fn apply_pvp_death_in_transaction(
                     2 => PvpSkull::Black,
                     _ => return Err(DurabilityError::InvalidStoredState),
                 },
-                until_ms: state
-                    .try_get::<Option<i64>, _>("skull_until_ms")?
+                until_us: state
+                    .try_get::<Option<i64>, _>("skull_until_us")?
                     .map(u64::try_from)
                     .transpose()
                     .map_err(|_| DurabilityError::InvalidStoredState)?,
             };
-            let now_ms: i64 = sqlx::query_scalar(
-                "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
+            // One exact sample of the database clock (microseconds, PostgreSQL's resolution)
+            // bounds the history and drives the evaluation; nothing is rounded to milliseconds.
+            let now_us: i64 = sqlx::query_scalar(
+                "SELECT (extract(epoch FROM clock_timestamp()) * 1000000)::bigint",
             )
             .fetch_one(&mut **tx)
             .await?;
-            let now_ms = u64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
-            let history: Vec<(i64, i32)> = sqlx::query_as(
-                "SELECT floor(extract(epoch FROM committed_at) * 1000)::bigint, points_milli \
-                   FROM game_character_unjustified_points \
-                  WHERE character_id = encode($1,'hex')::uuid \
-                    AND death_occurrence_id <> encode($2,'hex')::uuid \
-                    AND committed_at <= to_timestamp($3::bigint / 1000.0) \
-                    AND committed_at > to_timestamp($3::bigint / 1000.0) - $4 * interval '1 millisecond'",
-            )
-            .bind(id)
-            .bind(occurrence.as_slice())
-            .bind(i64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?)
-            .bind(i64::try_from(skull::HISTORY_WINDOW_MS).map_err(|_| DurabilityError::InvalidStoredState)?)
-            .fetch_all(&mut **tx)
-            .await?;
-            let history = history
-                .into_iter()
-                .map(|(at, milli)| {
-                    Ok(skull::SkullPoint {
-                        committed_at_ms: u64::try_from(at)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
-                        points_milli: u16::try_from(milli)
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
-                    })
-                })
-                .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
-            let evaluation = skull::evaluate_skull(now_ms, current, &history, points)
+            let history = skull_history(tx, id, occurrence, now_us).await?;
+            let now_us = u64::try_from(now_us).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let evaluation = skull::evaluate_skull(now_us, current, &history, points)
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
             if evaluation.points_milli[0] < u64::from(points) {
                 return Err(DurabilityError::InvalidStoredState);
             }
             if let (skull @ (PvpSkull::Red | PvpSkull::Black), Some(until)) =
-                (evaluation.state.skull, evaluation.state.until_ms)
+                (evaluation.state.skull, evaluation.state.until_us)
             {
                 skull_write = Some((
                     if skull == PvpSkull::Red { 1 } else { 2 },
@@ -745,7 +795,8 @@ pub(crate) async fn apply_pvp_death_in_transaction(
                 skull = COALESCE($3::smallint, s.skull), \
                 skull_until = CASE WHEN $3::smallint IS NULL THEN s.skull_until \
                     ELSE GREATEST(CASE WHEN s.skull_until > clock_timestamp() THEN s.skull_until END, \
-                                  to_timestamp($4::bigint / 1000.0)) END, \
+                                  timestamptz 'epoch' + ($4::bigint / 1000000) * interval '1 second' \
+                                      + ($4::bigint % 1000000) * interval '1 microsecond') END, \
                 revision = s.revision + 1 \
                FROM (SELECT clock_timestamp() + $5 * interval '1 millisecond' AS kill_until) c \
               WHERE s.character_id = encode($1,'hex')::uuid",
