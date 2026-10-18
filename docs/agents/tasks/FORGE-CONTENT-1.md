@@ -60,3 +60,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 Classes 1–4, caps, normal/convergence fusion and transfer tables, success probabilities, currencies/conversions and dust capacity upgrades are captured. Four regular tier-7–10 transfer core counts are explicitly unknown in the source itself; no convergence count is substituted. Unpublished lucky-effect probability distribution remains held.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Full outstanding-field source sweep —2026-10-18
+
+forge.transfer.class4.tier7/cores; forge.transfer.class4.tier8/cores; forge.transfer.class4.tier9/cores; forge.transfer.class4.tier10/cores; Corrected obsolete dust increment and held three stale cap/cost formulas.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

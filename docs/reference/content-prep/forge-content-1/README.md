@@ -11,3 +11,9 @@ These files prepare Reference data for CP. They add no runtime admission, Rust c
 Classes 1–4, caps, normal/convergence fusion and transfer tables, success probabilities, currencies/conversions and dust capacity upgrades are captured. Four regular tier-7–10 transfer core counts are explicitly unknown in the source itself; no convergence count is substituted. Unpublished lucky-effect probability distribution remains held.
 
 The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+
+## Full outstanding-field source sweep —2026-10-18
+
+forge.transfer.class4.tier7/cores; forge.transfer.class4.tier8/cores; forge.transfer.class4.tier9/cores; forge.transfer.class4.tier10/cores; Corrected obsolete dust increment and held three stale cap/cost formulas.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

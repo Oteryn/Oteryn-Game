@@ -2690,12 +2690,17 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "cores": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 25,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
         },
         "dust": {
           "value": 100,
@@ -2798,12 +2803,17 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "cores": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 35,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
         },
         "dust": {
           "value": 100,
@@ -2906,12 +2916,17 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "cores": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 50,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
         },
         "dust": {
           "value": 100,
@@ -3014,12 +3029,17 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "cores": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 60,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "The source table explicitly says ? for regular transfers from tiers 7–10; convergence-core counts must not be reused."
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "community:tibia-wiki.com:forge:15.20:20261018",
+              "selector": "Zwykły transfer / explicit source-tier→target-tier row"
+            }
+          ],
+          "note": "Literal regular-transfer cost from the secondary community table. Other two wikis lack this cell. Reference-only; source version15.20, current official-client continuity remains unmeasured."
         },
         "dust": {
           "value": 100,
@@ -4703,56 +4723,92 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "maximum_dust_limit": {
-          "value": 325,
-          "classification": "PROVEN",
+          "value": null,
+          "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "HISTORICAL_WIKI_MAXIMUM_SUPERSEDED_BY_OFFICIAL_2026_CHANGE",
           "sources": [
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "maximum amount raised considerably"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Official2026 announcement raises the maximum substantially but the retained paragraph gives no exact maximum. Historical325 is not current. A reported character limit is not proof of the global maximum.",
+          "observations": [
+            {
+              "value": 325,
+              "status": "HISTORICAL_PRE_2026_CAP",
+              "sources": [
+                {
+                  "source": "wiki:95592:1205481",
+                  "selector": "Dust, Slivers, and Exalted Cores"
+                }
+              ]
+            }
+          ]
         },
         "dust_limit_increment": {
-          "value": 1,
+          "value": 20,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:95592:1205481",
-              "selector": "Dust limit examples"
+              "source": "official:news:8850:20261018",
+              "selector": "Dust-limit upgrade announcement"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Official announcement explicitly changes each increase from1 to20 and applies it retroactively. Earlier Wiki increments are historical."
         },
         "dust_limit_increment_cost": {
           "value": "current_limit - 75",
-          "classification": "PROVEN",
+          "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "HISTORICAL_FORMULA_REQUIRES_2026_REPARAMETERIZATION",
           "sources": [
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "unlocking cost remains unchanged; increments now20"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Historical formula is retained as an observation. The meaning of current_limit changed under20-point increments; a current parameterization and rounding/domain need explicit qualification. Do not execute the historical formula against the new limit.",
+          "observations": [
+            {
+              "value": "current_limit - 75",
+              "status": "HISTORICAL_ONE_POINT_INCREMENT_MODEL"
+            }
+          ]
         },
         "total_upgrade_cost": {
           "value": "(n-100)*(n-51)/2",
-          "classification": "PROVEN",
+          "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "HISTORICAL_FORMULA_REQUIRES_2026_REPARAMETERIZATION",
           "sources": [
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
+            },
+            {
+              "source": "official:news:8850:20261018",
+              "selector": "unlocking cost remains unchanged; increments now20"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Historical formula is retained as an observation. The meaning of current_limit changed under20-point increments; a current parameterization and rounding/domain need explicit qualification. Do not execute the historical formula against the new limit.",
+          "observations": [
+            {
+              "value": "(n-100)*(n-51)/2",
+              "status": "HISTORICAL_ONE_POINT_INCREMENT_MODEL"
+            }
+          ]
         },
         "dust_per_conversion": {
           "value": 60,

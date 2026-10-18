@@ -15,6 +15,29 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "659e52ca9a8f175937853837226a5fc53a46347800b587d3d6f734667de346ad",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=The%20Market%20(Object)%7CTravelling%7CEquipment%20Upgrade%7CBlessings&redirects=1"
+    },
+    "community:tibia-wiki.com:forge:15.20:20261018": {
+      "title": "Exaltation Forge",
+      "url": "https://tibia-wiki.com/15.20/pl/ExaltationForge",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "fc0bab1b297bb578aa8184a443b13ed0e188876368a5ac7507645eca7e33e705",
+      "supported_claim": "Regular tier transfers7→6,8→7,9→8,10→9 list25,35,50,60 cores respectively.",
+      "reference_version": "15.20",
+      "qualification": "Secondary Global community reference, explicitly regular transfer rows. Fandom and Wiki BR still show?; these are reference candidates, not a controlled forge observation or an equivalence to convergence transfer."
+    },
+    "official:news:8850:20261018": {
+      "title": "Weapon Proficiency Update: dust-limit change",
+      "url": "https://www.tibia.com/news/?id=8850&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dfa87ca7f6a94ab6dc3bff910d1d97985ae76656ae44ccce220b3315b244cda2",
+      "supported_claim": "Each dust-limit upgrade now grants20 instead of1; existing upgrades are converted retroactively.",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
     }
   }
 }
