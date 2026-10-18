@@ -1,0 +1,39 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "TRAVEL-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Every tracked content/services/ file participates in the World Bundle input fingerprint. Owner forbids content/world/pins/* mutation and regeneration; coordinator applies these data packets together with separately qualified pin regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/services/travel/admission-evidence/evidence-00000-00194.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json",
+      "sha256": "7beeeeab0c77b6c03329d20eb5eb0bfb101735b4daf1288c45c90dd5652fb46c"
+    },
+    {
+      "target_path": "content/services/travel/admission-evidence/index.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/index.json",
+      "sha256": "97a4b629491f0d4762c6797472ed508c5cc33bcb6b63f08c12d2b46b5c771cb2"
+    },
+    {
+      "target_path": "content/services/travel/admission-evidence/services/evidence-00000-00055.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/evidence-00000-00055.json",
+      "sha256": "31d6e00b639f1d642c9023abf6c85eed4d47c0822f8598a685355cb940f5cd82"
+    },
+    {
+      "target_path": "content/services/travel/admission-evidence/services/index.json",
+      "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/index.json",
+      "sha256": "25d0d7d66c5d146d2cab14e5ed6e08cebc54f984da09947de2c50269e3148a6c"
+    }
+  ],
+  "generated_service_declarations_changed": false,
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "generated catalogue equivalence",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

@@ -13,12 +13,14 @@ owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
-  - content/services/travel/admission-evidence/evidence-00000-00194.json
-  - content/services/travel/admission-evidence/index.json
-  - content/services/travel/travel-00000-00055.json
   - docs/reference/content-prep/travel-content-1/sources.json
   - docs/reference/content-prep/travel-content-1/README.md
   - docs/agents/tasks/TRAVEL-CONTENT-1.md
+  - docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json
+  - docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/index.json
+  - docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/evidence-00000-00055.json
+  - docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/index.json
+  - docs/reference/content-prep/travel-content-1/service-apply-plan.json
 ```
 
 ## Outcome
@@ -54,3 +56,7 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Service placement constraint
+
+Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.

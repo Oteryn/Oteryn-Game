@@ -1,0 +1,1276 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "TRAVEL-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "oteryn:service.travel.anderson",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.anderson/folda",
+            "oteryn:service.travel.anderson/tibia",
+            "oteryn:service.travel.anderson/vega"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/0/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.brodrosch",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.brodrosch/gnomprona"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/1/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_bluebear",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_bluebear/ab_dendriel",
+            "oteryn:service.travel.captain_bluebear/edron",
+            "oteryn:service.travel.captain_bluebear/krailos",
+            "oteryn:service.travel.captain_bluebear/liberty_bay",
+            "oteryn:service.travel.captain_bluebear/oramond",
+            "oteryn:service.travel.captain_bluebear/port_hope",
+            "oteryn:service.travel.captain_bluebear/roshamuul",
+            "oteryn:service.travel.captain_bluebear/svargrond",
+            "oteryn:service.travel.captain_bluebear/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/2/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_breezelda",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_breezelda/carlin",
+            "oteryn:service.travel.captain_breezelda/thais",
+            "oteryn:service.travel.captain_breezelda/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/3/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_chelop",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_chelop/thais",
+            "oteryn:service.travel.captain_chelop/town"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/4/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_cookie",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_cookie/liberty_bay",
+            "oteryn:service.travel.captain_cookie/passage"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/5/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_corsarah",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_corsarah/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/6/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_fearless",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_fearless/ab_dendriel",
+            "oteryn:service.travel.captain_fearless/ankrahmun",
+            "oteryn:service.travel.captain_fearless/carlin",
+            "oteryn:service.travel.captain_fearless/edron",
+            "oteryn:service.travel.captain_fearless/gray_island",
+            "oteryn:service.travel.captain_fearless/issavi",
+            "oteryn:service.travel.captain_fearless/krailos",
+            "oteryn:service.travel.captain_fearless/liberty_bay",
+            "oteryn:service.travel.captain_fearless/port_hope",
+            "oteryn:service.travel.captain_fearless/svargrond",
+            "oteryn:service.travel.captain_fearless/thais"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/7/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_greyhound",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_greyhound/ab_dendriel",
+            "oteryn:service.travel.captain_greyhound/edron",
+            "oteryn:service.travel.captain_greyhound/svargrond",
+            "oteryn:service.travel.captain_greyhound/thais",
+            "oteryn:service.travel.captain_greyhound/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/8/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_gulliver",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_gulliver/issavi",
+            "oteryn:service.travel.captain_gulliver/krailos",
+            "oteryn:service.travel.captain_gulliver/thais"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/9/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_harava",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_harava/darashia",
+            "oteryn:service.travel.captain_harava/krailos",
+            "oteryn:service.travel.captain_harava/oramond",
+            "oteryn:service.travel.captain_harava/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/10/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_jack",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_jack/tibia"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/11/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_max_calassa",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_max_calassa/liberty_bay"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/12/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_pelagia",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_pelagia/darashia",
+            "oteryn:service.travel.captain_pelagia/edron",
+            "oteryn:service.travel.captain_pelagia/issavi",
+            "oteryn:service.travel.captain_pelagia/oramond",
+            "oteryn:service.travel.captain_pelagia/thais",
+            "oteryn:service.travel.captain_pelagia/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/13/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_seagull",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_seagull/carlin",
+            "oteryn:service.travel.captain_seagull/edron",
+            "oteryn:service.travel.captain_seagull/gray_island",
+            "oteryn:service.travel.captain_seagull/thais",
+            "oteryn:service.travel.captain_seagull/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/14/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_seahorse",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_seahorse/ab_dendriel",
+            "oteryn:service.travel.captain_seahorse/ankrahmun",
+            "oteryn:service.travel.captain_seahorse/carlin",
+            "oteryn:service.travel.captain_seahorse/cormaya",
+            "oteryn:service.travel.captain_seahorse/gray_island",
+            "oteryn:service.travel.captain_seahorse/krailos",
+            "oteryn:service.travel.captain_seahorse/liberty_bay",
+            "oteryn:service.travel.captain_seahorse/port_hope",
+            "oteryn:service.travel.captain_seahorse/thais"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/15/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_sinbeard",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_sinbeard/darashia",
+            "oteryn:service.travel.captain_sinbeard/edron",
+            "oteryn:service.travel.captain_sinbeard/liberty_bay",
+            "oteryn:service.travel.captain_sinbeard/port_hope",
+            "oteryn:service.travel.captain_sinbeard/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/16/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.captain_waverider_island",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.captain_waverider_island/liberty_bay"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/17/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.carlson",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.carlson/folda",
+            "oteryn:service.travel.carlson/senja",
+            "oteryn:service.travel.carlson/tibia"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/18/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.cornell",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.cornell/edron",
+            "oteryn:service.travel.cornell/grimvale"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/19/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.ferryman_kamil",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.ferryman_kamil/meluna"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/20/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.ferryman_kamil_meluna",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.ferryman_kamil_meluna/fibula"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/21/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.gewen",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.gewen/darashia",
+            "oteryn:service.travel.gewen/edron",
+            "oteryn:service.travel.gewen/femor_hills",
+            "oteryn:service.travel.gewen/hills",
+            "oteryn:service.travel.gewen/issavi",
+            "oteryn:service.travel.gewen/marapur",
+            "oteryn:service.travel.gewen/svargrond"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/22/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.gurbasch",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.gurbasch/gnomprona",
+            "oteryn:service.travel.gurbasch/kazordoon"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/23/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.harlow_vengoth",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.harlow_vengoth/yalahar"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/24/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.hawkhurst",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.hawkhurst/passage"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/25/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.hawkhurst_ingol",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.hawkhurst_ingol/passage"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/26/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.imbul",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.imbul/centre",
+            "oteryn:service.travel.imbul/east"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/27/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.iyad",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.iyad/darama",
+            "oteryn:service.travel.iyad/darashia",
+            "oteryn:service.travel.iyad/edron",
+            "oteryn:service.travel.iyad/femor_hills",
+            "oteryn:service.travel.iyad/hills",
+            "oteryn:service.travel.iyad/issavi",
+            "oteryn:service.travel.iyad/kazor",
+            "oteryn:service.travel.iyad/kazordoon",
+            "oteryn:service.travel.iyad/marapur"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/28/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.jack_fate",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.jack_fate/ankrahmun",
+            "oteryn:service.travel.jack_fate/darashia",
+            "oteryn:service.travel.jack_fate/edron",
+            "oteryn:service.travel.jack_fate/port_hope",
+            "oteryn:service.travel.jack_fate/venore"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/29/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.junkar_mines",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.junkar_mines/kazordoon",
+            "oteryn:service.travel.junkar_mines/robsons_isle",
+            "oteryn:service.travel.junkar_mines/thais"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/30/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.junkar_robsons",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.junkar_robsons/kazordoon",
+            "oteryn:service.travel.junkar_robsons/mines",
+            "oteryn:service.travel.junkar_robsons/thais"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/31/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.junkar_thais",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.junkar_thais/kazordoon",
+            "oteryn:service.travel.junkar_thais/mines",
+            "oteryn:service.travel.junkar_thais/robsons_isle"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/32/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.kendra",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.kendra/thais"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/33/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.kendra_thais",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.kendra_thais/nostalgia"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/34/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.lorek",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.lorek/center",
+            "oteryn:service.travel.lorek/centre",
+            "oteryn:service.travel.lorek/darama",
+            "oteryn:service.travel.lorek/west"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/35/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.maris",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.maris/fenrock",
+            "oteryn:service.travel.maris/mistrock"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/36/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.maris_fenrock",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.maris_fenrock/mistrock",
+            "oteryn:service.travel.maris_fenrock/yalahar"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/37/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.maris_mistrock",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.maris_mistrock/fenrock",
+            "oteryn:service.travel.maris_mistrock/yalahar"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/38/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.melian",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.melian/darama",
+            "oteryn:service.travel.melian/darashia",
+            "oteryn:service.travel.melian/edron",
+            "oteryn:service.travel.melian/femor_hills",
+            "oteryn:service.travel.melian/hills",
+            "oteryn:service.travel.melian/issavi",
+            "oteryn:service.travel.melian/kazor",
+            "oteryn:service.travel.melian/kazordoon",
+            "oteryn:service.travel.melian/marapur",
+            "oteryn:service.travel.melian/svargrond"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/39/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.nielson",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.nielson/folda",
+            "oteryn:service.travel.nielson/senja",
+            "oteryn:service.travel.nielson/vega"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/40/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.old_adall",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.old_adall/east",
+            "oteryn:service.travel.old_adall/west"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/41/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.pemaret",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.pemaret/edron",
+            "oteryn:service.travel.pemaret/eremo"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/42/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.petros",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.petros/issavi"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/43/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.pino",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.pino/darama",
+            "oteryn:service.travel.pino/darashia",
+            "oteryn:service.travel.pino/femor_hills",
+            "oteryn:service.travel.pino/hills",
+            "oteryn:service.travel.pino/issavi",
+            "oteryn:service.travel.pino/kazor",
+            "oteryn:service.travel.pino/kazordoon",
+            "oteryn:service.travel.pino/marapur",
+            "oteryn:service.travel.pino/svargrond"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/44/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.sebastian",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.sebastian/liberty_bay",
+            "oteryn:service.travel.sebastian/nargor"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/45/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.sebastian_nargor",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.sebastian_nargor/liberty_bay",
+            "oteryn:service.travel.sebastian_nargor/meriana"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/46/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.svenson",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.svenson/senja",
+            "oteryn:service.travel.svenson/tibia",
+            "oteryn:service.travel.svenson/vega"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/47/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.tanyt",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.tanyt/darama",
+            "oteryn:service.travel.tanyt/darashia",
+            "oteryn:service.travel.tanyt/edron",
+            "oteryn:service.travel.tanyt/femor_hills",
+            "oteryn:service.travel.tanyt/hills",
+            "oteryn:service.travel.tanyt/kazor",
+            "oteryn:service.travel.tanyt/kazordoon",
+            "oteryn:service.travel.tanyt/marapur",
+            "oteryn:service.travel.tanyt/svargrond"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/48/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.thorgrin",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.thorgrin/cormaya",
+            "oteryn:service.travel.thorgrin/gnomprona",
+            "oteryn:service.travel.thorgrin/kazordoon"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/49/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.tonar",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.tonar/passage"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/50/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.tonar_oskayaat",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.tonar_oskayaat/passage"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/51/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.urks_the_mute",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.urks_the_mute/cormaya",
+            "oteryn:service.travel.urks_the_mute/kazordoon"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/52/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.uzon",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.uzon/darama",
+            "oteryn:service.travel.uzon/darashia",
+            "oteryn:service.travel.uzon/edron",
+            "oteryn:service.travel.uzon/issavi",
+            "oteryn:service.travel.uzon/kazor",
+            "oteryn:service.travel.uzon/kazordoon",
+            "oteryn:service.travel.uzon/svargrond"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/53/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.uzon_back",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.uzon_back/passage"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/54/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.travel.ziyad",
+      "facts": {
+        "routes": {
+          "value": [
+            "oteryn:service.travel.ziyad/darama",
+            "oteryn:service.travel.ziyad/darashia",
+            "oteryn:service.travel.ziyad/edron",
+            "oteryn:service.travel.ziyad/femor_hills",
+            "oteryn:service.travel.ziyad/hills",
+            "oteryn:service.travel.ziyad/issavi",
+            "oteryn:service.travel.ziyad/kazor",
+            "oteryn:service.travel.ziyad/kazordoon",
+            "oteryn:service.travel.ziyad/svargrond"
+          ],
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "/records/55/declaration/routes"
+            }
+          ],
+          "note": "Exact existing service membership/identity projection. This evidence does not modify generated Service declarations or imply admission."
+        }
+      }
+    }
+  ],
+  "family": "Service.EvidenceLink",
+  "shard": {
+    "index": 0,
+    "start": 0,
+    "end": 55,
+    "count": 56
+  }
+}
