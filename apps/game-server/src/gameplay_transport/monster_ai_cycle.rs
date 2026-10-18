@@ -114,8 +114,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if swing_pass && monsters.is_empty() {
             return;
         }
-        states.next_monster_ai_pass_us = due;
-        states.monster_ai_sequence = sequence;
+        // Codex 4304357864: the cadence and sequence stay reserved only while the pass can still
+        // complete; a pass whose SQL work fails releases them, so the next window retries it.
+        let reservation = MonsterAiPassReservation::reserve(&mut states, due, sequence);
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
         let digest = content
             .source_digest()
@@ -194,6 +195,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // cancellation may defer work, but cannot drop an extracted think table or its memos.
         states.monster_melee = melee_owner;
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
+            reservation.release(&mut states);
             return;
         };
         let mut completed_next = None;
@@ -274,8 +276,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await;
-        let next_think =
-            completed_next.unwrap_or_else(|| states.monster_melee.creature_ai.earliest_due());
+        // Codex 4304357864: transaction setup, scope assertion or a Map/Item read failed before
+        // the native thinks completed. The unchanged owner work stays due: the cadence and the
+        // sequence are released and no swing pass is consumed. Once the thinks completed, a
+        // failed rollback of this read-only transaction leaves the pass complete.
+        let Some(next_think) = completed_next else {
+            reservation.release(&mut states);
+            return;
+        };
         let mut melee_owner = std::mem::take(&mut states.monster_melee);
         // CREATUREAI0-RL-05 (Codex 4243189401): thinks left due past this window's budget, or
         // due before the next interval pass, run in a pass of their own as soon as the budget
@@ -464,6 +472,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !swinging.is_empty() {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
+    }
+}
+
+/// Codex 4304357864: the pass cadence and sequence a coalesced monster pass reserved. A pass
+/// whose SQL work did not complete releases them to their prior values, so the next owner
+/// window retries the same due work under the same sequence instead of skipping an interval.
+#[must_use]
+struct MonsterAiPassReservation {
+    prior_pass_us: u64,
+    prior_sequence: u64,
+}
+
+impl MonsterAiPassReservation {
+    fn reserve(states: &mut ChannelSpellStates, due: u64, sequence: u64) -> Self {
+        let reservation = Self {
+            prior_pass_us: states.next_monster_ai_pass_us,
+            prior_sequence: states.monster_ai_sequence,
+        };
+        states.next_monster_ai_pass_us = due;
+        states.monster_ai_sequence = sequence;
+        reservation
+    }
+
+    fn release(self, states: &mut ChannelSpellStates) {
+        states.next_monster_ai_pass_us = self.prior_pass_us;
+        states.monster_ai_sequence = self.prior_sequence;
     }
 }
 
@@ -3850,6 +3884,28 @@ mod tests {
         drive_owner_spawns(&mut runtime, due + 4_200_000);
         let replacement = runtime.spawn_point_creatures()[0].2.expect("respawned rat");
         assert_ne!(replacement, rat);
+    }
+
+    /// Codex 4304357864: a pass whose SQL work failed releases its reserved cadence and sequence
+    /// and leaves the swing interval unconsumed, so the next owner window retries the same work.
+    #[test]
+    fn a_failed_monster_pass_releases_its_cadence_and_sequence() {
+        let mut states = ChannelSpellStates::default();
+        states.next_monster_ai_pass_us = 1_000_000;
+        states.monster_ai_sequence = 7;
+        states.monster_melee.next_swing_pass_us = 1_000_000;
+        let reservation = MonsterAiPassReservation::reserve(&mut states, 2_000_000, 8);
+        assert_eq!(states.next_monster_ai_pass_us, 2_000_000);
+        assert_eq!(states.monster_ai_sequence, 8);
+        reservation.release(&mut states);
+        assert_eq!(states.next_monster_ai_pass_us, 1_000_000);
+        assert_eq!(states.monster_ai_sequence, 7);
+        // The retry in the next window is still due and reserves the same sequence again.
+        assert!(1_050_000 >= states.next_monster_ai_pass_us);
+        assert!(1_050_000 >= states.monster_melee.next_swing_pass_us);
+        let _retry = MonsterAiPassReservation::reserve(&mut states, 2_050_000, 8);
+        assert_eq!(states.monster_ai_sequence, 8);
+        assert_eq!(states.next_monster_ai_pass_us, 2_050_000);
     }
 
     /// SPAWN-CEILINGS-1 (Codex 4243189401): thinks left due by `CREATUREAI0-RL-05` resume in the
