@@ -62,3 +62,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 Offline statues, pool/delay rules and exercise behavior are documented. Exact existing Item identities carry 32 own-page charge facts, including normal/durable/lasting Monk wraps and eight daily-training weapon types. Community observed/estimated efficiency, contradictory bow units and unsupported stamina/skill-rate formulas remain held.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Full outstanding-field source sweep —2026-10-18
+
+exercise.efficiency/expert_dummy_bonus_percent.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

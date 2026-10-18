@@ -430,6 +430,19 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "b2b5708d2bae2dd8d3a7b2991f1d5d9496cdf3cf025c3450869bc87a02c6a10e",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Training+Sword%7CTraining+Axe%7CTraining+Club%7CTraining+Bow%7CTraining+Rod%7CTraining+Wand%7CTraining+Shield"
+    },
+    "official:news:4577:20261018": {
+      "title": "Upcoming New Store Products",
+      "url": "https://www.tibia.com/news/?id=4577&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "fb6fbcd07eb766bd3238dcc2548146e70d13de96654051b38ed6c4e4cf9d2638",
+      "supported_claim": "Expert exercise dummies grant10% higher skill gain than public dummies.",
+      "publication_date": "2018-04-17",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
     }
   }
 }

@@ -340,16 +340,16 @@
         },
         "expert_dummy_bonus_percent": {
           "value": 10,
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:84906:1126820",
-              "selector": "Opening paragraphs"
+              "source": "official:news:4577:20261018",
+              "selector": "Expert exercise dummy / comparison with public dummy"
             }
           ],
-          "note": "Wiki-only efficiency bonus; do not promote to a proven skill formula."
+          "note": "Primary official declaration of the10% relative skill-gain bonus. This does not establish per-charge vocation formulas or stacking/rounding behavior."
         }
       }
     }

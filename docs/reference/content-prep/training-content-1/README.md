@@ -11,3 +11,9 @@ These files prepare Reference data for CP. They add no runtime admission, Rust c
 Offline statues, pool/delay rules and exercise behavior are documented. Exact existing Item identities carry 32 own-page charge facts, including normal/durable/lasting Monk wraps and eight daily-training weapon types. Community observed/estimated efficiency, contradictory bow units and unsupported stamina/skill-rate formulas remain held.
 
 The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+
+## Full outstanding-field source sweep —2026-10-18
+
+exercise.efficiency/expert_dummy_bonus_percent.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

@@ -11,8 +11,8 @@
     "content/items/exercise-weapon-evidence/evidence-00000-00031.json": 32
   },
   "evidence_field_counts": {
-    "PROVEN": 57,
-    "UNKNOWN": 5,
+    "PROVEN": 58,
+    "UNKNOWN": 4,
     "DERIVED": 4,
     "CONFLICT": 1
   },
@@ -71,19 +71,15 @@
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "Hunting stamina and offline training pool are distinct. No current controlled exercise-stamina consumption rule."
-    },
-    {
-      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/expert_dummy_bonus_percent",
-      "candidate": 10,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:84906:1126820",
-          "selector": "Opening paragraphs"
-        }
-      ],
-      "limitation": "Wiki-only efficiency bonus; do not promote to a proven skill formula."
     }
   ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "exercise.efficiency/expert_dummy_bonus_percent"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  }
 }
