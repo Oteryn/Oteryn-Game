@@ -3,23 +3,24 @@
 ```yaml
 task_id: TRAINING-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/training-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2247
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
   - docs/reference/content-prep/training-content-1/facts.json
-  - content/items/exercise-weapon-evidence/evidence-00000-00020.json
   - content/items/exercise-weapon-evidence/index.json
   - docs/reference/offline-training.md
   - docs/reference/content-prep/training-content-1/sources.json
   - docs/reference/content-prep/training-content-1/README.md
   - docs/agents/tasks/TRAINING-CONTENT-1.md
+  - content/items/exercise-weapon-evidence/evidence-00000-00031.json
+  - docs/reference/content-prep/training-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -55,3 +56,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+Offline statues, pool/delay rules and exercise behavior are documented. Exact existing Item identities carry 32 own-page charge facts, including normal/durable/lasting Monk wraps and eight daily-training weapon types. Community observed/estimated efficiency, contradictory bow units and unsupported stamina/skill-rate formulas remain held.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

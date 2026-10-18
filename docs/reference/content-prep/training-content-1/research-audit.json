@@ -1,0 +1,89 @@
+{
+  "task": "TRAINING-CONTENT-1",
+  "review_date": "2026-10-18",
+  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
+  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Offline statues, pool/delay rules and exercise behavior are documented. Exact existing Item identities carry 32 own-page charge facts, including normal/durable/lasting Monk wraps and eight daily-training weapon types. Community observed/estimated efficiency, contradictory bow units and unsupported stamina/skill-rate formulas remain held.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "docs/reference/content-prep/training-content-1/facts.json": 6,
+    "content/items/exercise-weapon-evidence/evidence-00000-00031.json": 32
+  },
+  "evidence_field_counts": {
+    "PROVEN": 57,
+    "UNKNOWN": 5,
+    "DERIVED": 4,
+    "CONFLICT": 1
+  },
+  "unresolved_fields": [
+    {
+      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:59605:1101626",
+          "selector": "Mathematics"
+        }
+      ],
+      "limitation": "The source explicitly labels its efficiency rates observed and formulas estimated. These are not official or controlled vocation formulas."
+    },
+    {
+      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+      "candidate": 7.2,
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:84906:1126820",
+          "selector": "Types of Weapons"
+        }
+      ],
+      "limitation": "Community rate without controlled/official evidence."
+    },
+    {
+      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+      "candidate": 600,
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:84906:1126820",
+          "selector": "Types of Weapons"
+        }
+      ],
+      "limitation": "Community rate without controlled/official evidence."
+    },
+    {
+      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:84906:1126820",
+          "selector": "Conflicting statements identified in note"
+        }
+      ],
+      "limitation": "Same current article says 3.6 hits per charge in introduction, 2.16 blood/4.32 miss later, and 2160 hits per 500-charge bow. These measures must not be collapsed into a single proven skill rate."
+    },
+    {
+      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Hunting stamina and offline training pool are distinct. No current controlled exercise-stamina consumption rule."
+    },
+    {
+      "field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/expert_dummy_bonus_percent",
+      "candidate": 10,
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:84906:1126820",
+          "selector": "Opening paragraphs"
+        }
+      ],
+      "limitation": "Wiki-only efficiency bonus; do not promote to a proven skill formula."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+}

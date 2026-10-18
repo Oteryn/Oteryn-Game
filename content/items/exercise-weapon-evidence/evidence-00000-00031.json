@@ -7,6 +7,192 @@
   "reference_only": true,
   "records": [
     {
+      "key": "oteryn:item.tibia.i28540",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84876:1017135",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Sword",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84876:1017135",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28541",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84875:1017130",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Axe",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84875:1017130",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28542",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84874:1017131",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Club",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84874:1017131",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28543",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84873:1017133",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Bow",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84873:1017133",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28544",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84871:1017134",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Rod",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84871:1017134",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28545",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84872:1017137",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Wand",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84872:1017137",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
       "key": "oteryn:item.tibia.i28552",
       "facts": {
         "charges": {
@@ -331,6 +517,37 @@
       }
     },
     {
+      "key": "oteryn:item.tibia.i44064",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:103806:1036429",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Shield",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:103806:1036429",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
       "key": "oteryn:item.tibia.i44065",
       "facts": {
         "charges": {
@@ -383,13 +600,137 @@
           "note": "Reference evidence; runtime admission is separate."
         }
       }
+    },
+    {
+      "key": "oteryn:item.tibia.i50292",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108204:1099753",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Training Wraps",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108204:1099753",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i50293",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108203:1098139",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Exercise Wraps",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108203:1098139",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i50294",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108202:1098125",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Durable Exercise Wraps",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108202:1098125",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i50295",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108041:1098168",
+              "selector": "Infobox Object / itemid, charges"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "name": {
+          "value": "Lasting Exercise Wraps",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:108041:1098168",
+              "selector": "Infobox Object / name"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        }
+      }
     }
   ],
   "family": "Item.ExerciseWeaponEvidence",
   "shard": {
     "index": 0,
     "start": 0,
-    "end": 20,
-    "count": 21
+    "end": 31,
+    "count": 32
   }
 }
