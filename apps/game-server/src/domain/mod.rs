@@ -5,9 +5,16 @@ pub mod bestiary;
 pub mod character_name;
 pub mod charm;
 pub mod currency;
+pub mod cyclopedia;
 pub mod death;
 pub mod equipment;
+pub mod forge;
 pub mod forge_dust;
+#[cfg(test)]
+#[path = "../durability/forge_tests.rs"]
+mod forge_tests;
+pub mod mail;
+pub mod market;
 pub mod premium;
 pub mod progression;
 pub mod timed_item;

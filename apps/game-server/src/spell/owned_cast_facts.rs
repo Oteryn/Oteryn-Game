@@ -515,6 +515,7 @@ mod tests {
                 .collect(),
         };
         let input = NativeGameplayInput {
+            cosmetics: NativeGameplayInput::unavailable_cosmetics(),
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pinned(include_bytes!(
                 "../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
