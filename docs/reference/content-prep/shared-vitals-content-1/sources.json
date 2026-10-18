@@ -2266,6 +2266,55 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "9d42d32ce0701ed9009c8e54ab01fce19b3eefc65055891d0efd6a85b8968fd6",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Some+Mushrooms+%28Brown%29%7CStockfish%7CSun+Fruit%7CTaiyaki%7CThe+Carrot+of+Doom%7CTiny+Bass%7CTortoise+Egg%7CTortoise+Egg+from+Nargor%7CWinterberry+Liquor%7CYummy+Gummy+Worm"
+    },
+    "owner:food-defaults:20261018": {
+      "title": "Explicit owner decisions for three unresolved Food durations",
+      "source_class": "OWNER_DECISION / REFERENCE_DEFAULT_NOT_TIBIA_MEASUREMENT",
+      "fetched_at": "2026-10-18",
+      "retained_scope": "Exact owner instructions in this chat",
+      "instructions": [
+        "dla item 1 i 2 ustal 240 sekund",
+        "3 ustal czas dla tego itemu do najblizej zblizonego itemu pasujacego do 3"
+      ],
+      "decision": "Cake (Item)=240s; Cake with a Cherry=240s. Cheese Cookie uses Cookie3598 as closest biscuit analogue, 24s. These are owner-selected reference defaults; original exact-item source durations remain unknown.",
+      "reference_only": true
+    },
+    "official:news:8543:20261018": {
+      "title": "A New Helping Hand II",
+      "url": "https://www.tibia.com/news/?id=8543&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "f7016d3d6244a41c1bbb07c9b3178a8d71e5010064cb0d2b2b4c14cfe64dfb23",
+      "supported_claim": "HP/MP tick intervals4/6s; saturated3/5s; restored amounts depend on vocation.",
+      "publication_date": "2025-10-15",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "official:news:8553:20261018": {
+      "title": "Newhaven release",
+      "url": "https://www.tibia.com/news/?id=8553&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "2a580ffff4cb85910c6957e9aea5c2d9699205e3897f7207f9c820c7a38e2ed7",
+      "supported_claim": "Newhaven and associated changes released2025-10-21.",
+      "publication_date": "2025-10-21",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "wiki-br:newhaven-update:429434": {
+      "title": "Updates/15.12.c7d92c",
+      "url": "https://www.tibiawiki.com.br/wiki/Updates/15.12.c7d92c",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "9f501137d503f16d1dd92cbb428a75d5a18bc2cc5aaf662ac1cd1462f259bb39",
+      "supported_claim": "Confirms4/6s standard intervals and3/5s while fed.",
+      "revid": 429434,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Updates/15.12.c7d92c&oldid=429434"
     }
   }
 }

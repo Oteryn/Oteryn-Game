@@ -2,21 +2,21 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "review_date": "2026-10-18",
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "COMPLETE_CURRENT_FOOD_CATALOGUE_WITH_SAMPLED_UI_CORROBORATION_AND_EXPLICIT_HOLDS",
+  "research_status": "COMPLETE_FOOD_REFERENCE_WITH_THREE_EXPLICIT_OWNER_DEFAULTS",
   "runtime_admission": "BLOCKED",
-  "coverage": "The current rendered Food page contains 146 regenerative rows and 42 separately listed non-regenerative items. Every regenerative row is reconciled to its own current item-page revision. The duration packet now contains 140 existing-native-ID records and six explicitly source-only records (four IDs absent from native definitions and two multi-state cake pages). 143 numeric nutrition durations are retained as DERIVED source data; three current ? values remain UNKNOWN. Five ordinary foods were spot-checked from an explicit hungry baseline using one item and a fresh official Food tooltip: brown mushroom 264 s, blueberry 12 s, cherry 12 s, raspberry 12 s, banana 96 s. These five checks agree with Wiki; no other row is claimed individually measured. The 42 non-regenerative names are retained separately without inventing zero-duration values. HP/MP regeneration rates, the food cap and other behaviour-sensitive formulas retain their existing evidence holds. No original binary, screenshot, character identity or balance is published.",
+  "coverage": "The current rendered Food page contains 146 regenerative rows and 42 separately listed non-regenerative items. Every regenerative row is reconciled to its own current item-page revision. The duration packet now contains 140 existing-native-ID records and six explicitly source-only records (four IDs absent from native definitions and two multi-state cake pages). 143 numeric nutrition durations are retained from own-item Wiki data. The owner selected three additional DERIVED reference defaults: Cake (Item)240s, Cake with a Cherry240s, and Cheese Cookie24s copied from ordinary Cookie3598. All146 reference rows now have numeric durations; these three defaults are not exact-item source measurements. Five ordinary foods were spot-checked from an explicit hungry baseline using one item and a fresh official Food tooltip: brown mushroom 264 s, blueberry 12 s, cherry 12 s, raspberry 12 s, banana 96 s. These five checks agree with Wiki; no other row is claimed individually measured. The 42 non-regenerative names are retained separately without inventing zero-duration values. HP/MP regeneration rates, the food cap and other behaviour-sensitive formulas retain their existing evidence holds. No original binary, screenshot, character identity or balance is published.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/party/shared-experience/reference-evidence.json": 1,
     "rulesets/character/stamina/reference-evidence.json": 1,
     "rulesets/character/soul/reference-evidence.json": 1,
-    "docs/reference/content-prep/shared-vitals-content-1/regeneration.json": 6,
+    "docs/reference/content-prep/shared-vitals-content-1/regeneration.json": 7,
     "docs/reference/content-prep/shared-vitals-content-1/food-durations.json": 146
   },
   "evidence_field_counts": {
-    "DERIVED": 145,
-    "PROVEN": 29,
-    "UNKNOWN": 26,
+    "DERIVED": 148,
+    "PROVEN": 30,
+    "UNKNOWN": 23,
     "CONFLICT": 2
   },
   "unresolved_fields": [
@@ -87,9 +87,13 @@
         {
           "source": "wiki:794:1192367",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/normal_mana",
@@ -102,9 +106,13 @@
         {
           "source": "wiki:794:1192367",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_hp",
@@ -117,9 +125,13 @@
         {
           "source": "wiki:794:1192367",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/0/facts/promoted_mana",
@@ -132,9 +144,13 @@
         {
           "source": "wiki:794:1192367",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_hp",
@@ -147,9 +163,13 @@
         {
           "source": "wiki:1414:1121343",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/normal_mana",
@@ -162,9 +182,13 @@
         {
           "source": "wiki:1414:1121343",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_hp",
@@ -177,9 +201,13 @@
         {
           "source": "wiki:1414:1121343",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/1/facts/promoted_mana",
@@ -192,9 +220,13 @@
         {
           "source": "wiki:1414:1121343",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
@@ -207,9 +239,13 @@
         {
           "source": "wiki:1397:1179121",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
@@ -222,9 +258,13 @@
         {
           "source": "wiki:1397:1179121",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
@@ -237,9 +277,13 @@
         {
           "source": "wiki:1397:1179121",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
@@ -252,9 +296,13 @@
         {
           "source": "wiki:1397:1179121",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
@@ -267,9 +315,13 @@
         {
           "source": "wiki:1068:1121345",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
@@ -282,9 +334,13 @@
         {
           "source": "wiki:1068:1121345",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_hp",
@@ -297,9 +353,13 @@
         {
           "source": "wiki:1068:1121345",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
@@ -312,9 +372,13 @@
         {
           "source": "wiki:1068:1121345",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
@@ -327,9 +391,13 @@
         {
           "source": "wiki:107879:1207320",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
@@ -342,9 +410,13 @@
         {
           "source": "wiki:107879:1207320",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
@@ -357,9 +429,13 @@
         {
           "source": "wiki:107879:1207320",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_mana",
@@ -372,9 +448,13 @@
         {
           "source": "wiki:107879:1207320",
           "selector": "Regeneration / normal and promoted vocation"
+        },
+        {
+          "source": "official:news:8543:20261018",
+          "selector": "Unified post-Newhaven intervals supersede historical tick timings"
         }
       ],
-      "limitation": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+      "limitation": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
     },
     {
       "field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/5/facts/cap_seconds",
@@ -387,43 +467,35 @@
         }
       ],
       "limitation": "Precise cap is Wiki evidence; local owner/runtime constants are not an independent official observation."
-    },
-    {
-      "field_path": "docs/reference/content-prep/shared-vitals-content-1/food-durations.json/records/10/facts/food_duration_seconds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:57849:1136738",
-          "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
-        }
-      ],
-      "limitation": "The current own-item page has no numeric regenseconds and the rendered table shows ?. No value is inferred from appearance, cake family or another item state."
-    },
-    {
-      "field_path": "docs/reference/content-prep/shared-vitals-content-1/food-durations.json/records/144/facts/food_duration_seconds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:84437:1008829",
-          "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
-        }
-      ],
-      "limitation": "The current own-item page has no numeric regenseconds and the rendered table shows ?. No value is inferred from appearance, cake family or another item state."
-    },
-    {
-      "field_path": "docs/reference/content-prep/shared-vitals-content-1/food-durations.json/records/145/facts/food_duration_seconds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:84438:1008840",
-          "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
-        }
-      ],
-      "limitation": "The current own-item page has no numeric regenseconds and the rendered table shows ?. No value is inferred from appearance, cake family or another item state."
     }
   ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "limitations_policy": "Unproven external facts remain UNKNOWN/CONFLICT. Three Food fields use owner-authorized DERIVED reference defaults with original source limitations retained; they are not claimed as measured or official Tibia mechanics.",
+  "owner_selected_reference_defaults": [
+    {
+      "title": "Cheese Cookie",
+      "seconds": 24,
+      "source": "owner:food-defaults:20261018",
+      "direct_measurement": false
+    },
+    {
+      "title": "Cake (Item)",
+      "seconds": 240,
+      "source": "owner:food-defaults:20261018",
+      "direct_measurement": false
+    },
+    {
+      "title": "Cake with a Cherry",
+      "seconds": 240,
+      "source": "owner:food-defaults:20261018",
+      "direct_measurement": false
+    }
+  ],
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "New official unified intervals; twenty obsolete community timer candidates explicitly held as historical"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  }
 }

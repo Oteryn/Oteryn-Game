@@ -209,20 +209,28 @@
     {
       "key": "oteryn:item.tibia.i11685",
       "source_title": "Cheese Cookie",
-      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "measurement_status": "OWNER_SELECTED_DEFAULT_NOT_INDIVIDUALLY_MEASURED",
       "facts": {
         "food_duration_seconds": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 24,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "OWNER_SELECTED_REFERENCE_DEFAULT_NOT_EXACT_ITEM_MEASUREMENT",
           "sources": [
             {
               "source": "wiki:57849:1136738",
               "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
+            },
+            {
+              "source": "owner:food-defaults:20261018",
+              "selector": "Owner instruction: 3 ustal czas dla tego itemu do najblizej zblizonego itemu pasujacego do 3"
+            },
+            {
+              "source": "wiki:2884:1113907",
+              "selector": "Infobox Object / regenseconds, itemid"
             }
           ],
-          "note": "The current own-item page has no numeric regenseconds and the rendered table shows ?. No value is inferred from appearance, cake family or another item state."
+          "note": "Owner requested the closest matching item as duration analogue. Selected ordinary Cookie (native3598), another small stackable biscuit weighing0.10oz, with Wiki nutrition24seconds. Copying its duration is an owner-authorized approximation, not an observation of Cheese Cookie."
         }
       }
     },
@@ -2993,20 +3001,24 @@
     {
       "key": "wiki:food.page.84437",
       "source_title": "Cake (Item)",
-      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "measurement_status": "OWNER_SELECTED_DEFAULT_NOT_INDIVIDUALLY_MEASURED",
       "facts": {
         "food_duration_seconds": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 240,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "OWNER_SELECTED_REFERENCE_DEFAULT_NOT_EXACT_ITEM_MEASUREMENT",
           "sources": [
             {
               "source": "wiki:84437:1008829",
               "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
+            },
+            {
+              "source": "owner:food-defaults:20261018",
+              "selector": "Owner instruction: dla item 1 i 2 ustal 240 sekund"
             }
           ],
-          "note": "The current own-item page has no numeric regenseconds and the rendered table shows ?. No value is inferred from appearance, cake family or another item state."
+          "note": "Owner explicitly selected this 240-second reference default. The exact-item Wiki duration remains unspecified; Cake (Wall) has a reported 240-second duration, but equivalence of movable item states is not independently established."
         },
         "wiki_item_id_candidates": {
           "value": [
@@ -3035,20 +3047,24 @@
     {
       "key": "wiki:food.page.84438",
       "source_title": "Cake with a Cherry",
-      "measurement_status": "WIKI_SOURCE_ONLY_NOT_INDIVIDUALLY_MEASURED",
+      "measurement_status": "OWNER_SELECTED_DEFAULT_NOT_INDIVIDUALLY_MEASURED",
       "facts": {
         "food_duration_seconds": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 240,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "OWNER_SELECTED_REFERENCE_DEFAULT_NOT_EXACT_ITEM_MEASUREMENT",
           "sources": [
             {
               "source": "wiki:84438:1008840",
               "selector": "Infobox Object / missing regenseconds; rendered Food table ?"
+            },
+            {
+              "source": "owner:food-defaults:20261018",
+              "selector": "Owner instruction: dla item 1 i 2 ustal 240 sekund"
             }
           ],
-          "note": "The current own-item page has no numeric regenseconds and the rendered table shows ?. No value is inferred from appearance, cake family or another item state."
+          "note": "Owner explicitly selected this 240-second reference default. The exact-item Wiki duration remains unspecified; Cake (Wall) has a reported 240-second duration, but equivalence of movable item states is not independently established."
         },
         "wiki_item_id_candidates": {
           "value": [
@@ -3090,7 +3106,8 @@
       8012
     ],
     "all_rows_individually_measured": false,
-    "method": "Current per-item Wiki extraction with five independent official-client UI spot checks; only ? and missing numeric source values remain unresolved."
+    "method": "143 own-item Wiki nutrition durations with five official-client UI spot checks, plus three explicitly owner-selected reference defaults: two cakes240s and Cheese Cookie24s by Cookie analogy.",
+    "owner_selected_default_rows": 3
   },
   "non_regenerative_food_reference": {
     "value": [

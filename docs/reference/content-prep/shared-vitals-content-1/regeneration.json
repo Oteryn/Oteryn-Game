@@ -16,14 +16,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:794:1192367",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "normal_mana": {
           "value": {
@@ -32,14 +36,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:794:1192367",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_hp": {
           "value": {
@@ -48,14 +56,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:794:1192367",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_mana": {
           "value": {
@@ -64,14 +76,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:794:1192367",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         }
       }
     },
@@ -85,14 +101,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1414:1121343",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "normal_mana": {
           "value": {
@@ -101,14 +121,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1414:1121343",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_hp": {
           "value": {
@@ -117,14 +141,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1414:1121343",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_mana": {
           "value": {
@@ -133,14 +161,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1414:1121343",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         }
       }
     },
@@ -154,14 +186,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1397:1179121",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "normal_mana": {
           "value": {
@@ -170,14 +206,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1397:1179121",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_hp": {
           "value": {
@@ -186,14 +226,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1397:1179121",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_mana": {
           "value": {
@@ -202,14 +246,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1397:1179121",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         }
       }
     },
@@ -223,14 +271,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1068:1121345",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "normal_mana": {
           "value": {
@@ -239,14 +291,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1068:1121345",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_hp": {
           "value": {
@@ -255,14 +311,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1068:1121345",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_mana": {
           "value": {
@@ -271,14 +331,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:1068:1121345",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         }
       }
     },
@@ -292,14 +356,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:107879:1207320",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "normal_mana": {
           "value": {
@@ -308,14 +376,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:107879:1207320",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_hp": {
           "value": {
@@ -324,14 +396,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:107879:1207320",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         },
         "promoted_mana": {
           "value": {
@@ -340,14 +416,18 @@
           },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "HISTORICAL_COMMUNITY_VOCATION_TABLE_NOT_CURRENT_POST_NEWHAVEN",
           "sources": [
             {
               "source": "wiki:107879:1207320",
               "selector": "Regeneration / normal and promoted vocation"
+            },
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Unified post-Newhaven intervals supersede historical tick timings"
             }
           ],
-          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
+          "note": "Historical community vocation/promotion candidate retained for comparison. Official Newhaven changes unify HP/MP intervals at4/6seconds (3/5when saturated); these old per-vocation intervals are not current executable rules. Exact current points per tick and promotion behavior still require qualification."
         }
       }
     },
@@ -398,6 +478,41 @@
             }
           ],
           "note": "Complete reference table is now linked explicitly. Wiki-derived nutrition seconds and five observed UI durations remain separate from HP/MP regeneration rates and runtime admission."
+        }
+      }
+    },
+    {
+      "key": "regeneration.current_unified_intervals",
+      "facts": {
+        "interval_seconds": {
+          "value": {
+            "hungry": {
+              "hp": 4,
+              "mana": 6
+            },
+            "saturated": {
+              "hp": 3,
+              "mana": 5
+            }
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:news:8543:20261018",
+              "selector": "Further Adjustments / regeneration"
+            },
+            {
+              "source": "official:news:8553:20261018",
+              "selector": "Newhaven release confirmation"
+            },
+            {
+              "source": "wiki-br:newhaven-update:429434",
+              "selector": "Regeneração de HP e mana unificada"
+            }
+          ],
+          "note": "Explicit official announced intervals, corroborated by official release and the matching Wiki BR update page. Amounts per tick are vocation-dependent and are not reconstructed from the outdated older interval table."
         }
       }
     }
