@@ -45,10 +45,29 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
         };
 
         // Control: the fixture World's owner serves domain 2 and neither offers nor requires 18.
-        let fixture = dependencies.owner(&harness, &authority);
+        let mut fixture = dependencies.owner(&harness, &authority);
+        // Use the same explicit fixture facts as prepare_current_session; this
+        // snapshot configures the boot binding and grants no current authority.
+        let current = super::fresh_fixture::fresh::Source::new(0)?.current;
+        let scope =
+            crate::foundation::RuntimeScopeRefV1::channel(current.world_id, current.channel_id);
+        fixture.required_capabilities =
+            crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[],
+                scope,
+                current.scope_ownership_generation,
+                &current.world_policy_revision,
+                fixture.offered_capabilities(),
+            )
+            .map_err(debug)?;
         assert!(fixture.observe_world_object_overlay().await.is_some());
         assert!(!offers_18(&fixture));
-        assert_eq!(fixture.required_capability(), None);
+        assert!(fixture.required_capabilities.matches_current(
+            scope,
+            current.scope_ownership_generation,
+            &current.world_policy_revision,
+        ));
+        assert!(fixture.required_capabilities.effective().is_empty());
         drop(fixture);
 
         // The same owner on a bundle World's movement cells.
@@ -58,11 +77,22 @@ fn a_bundle_world_owner_requires_18_and_never_holds_domain_2_state() -> TestResu
             .map_err(debug)?;
         let mut owner = dependencies.owner(&harness, &authority);
         owner.movement_cells = &cells;
+        owner.required_capabilities =
+            crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[CAPABILITY_WORLD_MAP_VIEW_V1],
+                scope,
+                current.scope_ownership_generation,
+                &current.world_policy_revision,
+                owner.offered_capabilities(),
+            )
+            .map_err(debug)?;
         assert!(offers_18(&owner));
-        assert_eq!(
-            owner.required_capability(),
-            Some(CAPABILITY_WORLD_MAP_VIEW_V1)
-        );
+        assert!(owner.required_capabilities.matches_current(
+            scope,
+            current.scope_ownership_generation,
+            &current.world_policy_revision,
+        ));
+        assert_eq!(owner.required_capabilities.effective(), &[4, 6, 18]);
         assert!(owner.observe_world_object_overlay().await.is_none());
 
         // The actor stands beside the door (native floor -7 is movement floor 7).

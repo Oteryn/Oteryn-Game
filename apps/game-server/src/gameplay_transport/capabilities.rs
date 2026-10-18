@@ -202,6 +202,10 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
 const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
 /// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
 const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
+/// `MAP_STATE_V1`, registry capability 29 (CP D1442): never offered, superseded by 18.
+const CAPABILITY_MAP_STATE_V1: u32 = 29;
+/// `WORLD_SPATIAL_FIELDS`, registry capability 30 (CP D1442): not offered before FIELD-WIRE-1.
+const CAPABILITY_WORLD_SPATIAL_FIELDS: u32 = 30;
 
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
@@ -307,6 +311,10 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[COMMAND_TYPE_ITEM_LOOK_INTENT],
         &[],
     ),
+    // CP D1442: registered for the ADMIT0 floor names; neither owns a command type or domain
+    // and neither is offered, so no session selects them.
+    (CAPABILITY_MAP_STATE_V1, &[], &[]),
+    (CAPABILITY_WORLD_SPATIAL_FIELDS, &[], &[]),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3
