@@ -290,3 +290,49 @@ and exact card-only scope check are retained in
 `/workspace/oteryn-prep/app-4-evidence/index.md`. No Rust, renderer, Windows,
 protocol roundtrip, server writer, relog or runtime appearance qualification is
 claimed from this documentation change.
+
+
+## Native verified-asset compositor successor, 2026-10-16 (AUTHORING, UNQUALIFIED)
+
+This five-path successor starts at actual draft `e075762135c932d8f848076325c86b61a46278af`.
+The narrower card-only preparation above is historical; root now leases the four exact new
+Rust files and this record. Existing client/server/asset files and shared wiring stay untouched.
+Accepted CHARACTER_APPEARANCE §§3, 4.1–4.6 and its cited Game-owned
+`OTERYN_ATLAS_ANIMATED_APPEARANCES_V1` outfit grammar bind this bounded increment.
+
+`PinnedOutfitAssets::open` consumes actual native `AssetStore::open_pinned`, `Catalog`,
+`AppearanceIndex` and `SpriteSheets`; `compose` returns actual composed pixel bytes and native
+`AtlasImage`, with source bottom-right anchoring and displacement. It uses the native public
+outfit category, native sheet layout/cell decode/hash checks and existing bounded sheet LRU.
+It adds no DAT/BMP/LZMA decoder, asset parser, HSI resolver, sprite cache or fallback look.
+The four palette RGB values resolve from a supplied133-entry content palette and indices;
+this component grants no catalogue/current-content/unlock authority.
+
+Rendering follows exact opaque mask roles (yellow head, red body, green legs, blue feet),
+RGB multiplication by role colour/255, base alpha-over then mask per row, and ascending enabled
+addon rows. Cardinal widths2/3, unsupported layer/addon grammar, unknown look and invalid
+palette fail explicitly. The pixels use actual15.30 native assets; the15.32 export contract is
+semantic evidence, never an alternative asset source. Sprite0 keeps the native empty-cell
+meaning. Existing per-entry and native renderer output bounds remain in force.
+
+The component intentionally renders only phase0/z0 of the first frame group retained by the
+existing native loader (its documented group0 surface). That loader does not expose fixed
+frame-group identity or timing; no other-group, moving, animation, mount or effect support
+is qualified. Native group identity/source mapping still needs owning integration review.
+`outfit_preview.rs` directly calls this same compositor and returns a fresh resolved/unresolved
+frame; failure cannot return a previous look. It stores no selected or observed actor state.
+
+Ten original bodies are authored: four explicitly synthetic pixel/palette/grammar controls and
+six native asset/preview bodies. The latter require the actual pinned15.30 manifest/assets,
+exercise native decoders and sheet pixels, compare white-control output to the native base
+resolver, independently inspect exact mask pixels, vary addons and test explicit failures.
+A supplied white/RGB test palette is synthetic DATA, never claimed an admitted game palette.
+All ten bodies are UNEXECUTED; no build/runtime/pixel-parity/performance/GPU pass is claimed.
+
+Outside-tree ordinary test-module mounting with actual native dependencies may qualify this
+private component after root heavyGO. `client-runtime` needs its native asset/renderer Cargo
+dependencies and module export; those shared changes remain CP-owned, as do the client module
+registration, scene/window adoption and APP-3/Session wire ownership. No existing `world.rs`,
+Scene, Cargo, lib/mod, codec, registry, content or pin file is edited. Full outfit UI, other-actor
+appearance observation, server unlock/sex/fallback selection and family acceptance stay open.
+No commit, push or remote mutation is authorized for this worker. Guild text remains frozen.
