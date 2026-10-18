@@ -286,6 +286,7 @@ impl ChaseState {
     /// most [`CHASE_SEARCH_INTERVAL_MICROS`] after the last, detours around the cell while it is
     /// remembered.
     pub(crate) fn step_blocked(&mut self, now_us: u64) {
+        self.in_flight = None;
         if let Some(cell) = self.expected_at {
             self.refused.retain(|&(blocked, _)| blocked != cell);
             if self.refused.len() >= CHASE_REFUSED_CELLS {
@@ -536,6 +537,21 @@ mod tests {
         assert!(chase.has_in_flight_step(0, at(0, 0)));
         assert!(!chase.has_in_flight_step(0, at(1, 0)));
         assert!(!chase.has_in_flight_step(CHASE_WINDOW_MICROS, at(0, 0)));
+    }
+
+    #[test]
+    fn a_blocked_step_leaves_no_planned_destination_for_a_resumed_drain() {
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        assert_eq!(chase.planned_search_cell(0, at(0, 0)), Some(at(1, 0)));
+        chase.step_blocked(0);
+        // The player stays at the origin in the same window: the rejected destination is not
+        // an occupied plan.
+        assert!(!chase.has_in_flight_step(0, at(0, 0)));
+        assert_eq!(chase.planned_search_cell(0, at(0, 0)), None);
     }
 
     #[test]
