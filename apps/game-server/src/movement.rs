@@ -208,6 +208,155 @@ pub(crate) fn step_cardinal(
     decision.commit(owner)
 }
 
+/// Current target/goal DATA resolved by the AI owner; this grants no Movement authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CreatureChaseGoal {
+    pub(crate) target: ExactActorRef,
+    pub(crate) expected_target: MovementPositionSnapshot,
+    pub(crate) distance: u16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CreatureChaseOutcome {
+    DeferredSearchBudget,
+    NoRoute,
+    AtGoal,
+    WaitingForCadence,
+    Moved(MovementPositionSnapshot),
+}
+
+/// One bounded search and at most one native step. The caller owns route adoption,
+/// goal changes and the shared Channel search budget; this is not another scheduler/cache.
+#[derive(Debug)]
+pub(crate) struct CreatureChaseStep {
+    pub(crate) actor: ExactActorRef,
+    pub(crate) searched_from: MovementPositionSnapshot,
+    pub(crate) goal: CreatureChaseGoal,
+    pub(crate) content_digest: [u8; 32],
+    /// Unconsumed steps only: a successful first step is removed, a paced one is retained.
+    pub(crate) route: Vec<CardinalStep>,
+    /// Conservative reservation from the caller's existing window, never a new budget.
+    pub(crate) search_work_charged: usize,
+    pub(crate) outcome: CreatureChaseOutcome,
+}
+
+/// Consume an AI-owner-admitted search, then use the existing exact-actor cadence/Movement
+/// commit. The caller must qualify the current target/goal and reserve its shared search work.
+/// Reserve PATH_SEARCH_WORK before calling; an error consumes that reservation too.
+/// Every actual commit still revalidates the current owner, actor, Content, speed and tile.
+/// A refusal returns no adoptable route; no fallback allows unknown map/ground/goal facts.
+#[allow(clippy::too_many_arguments)] // Independent native owner, goal, speed and map inputs.
+pub(crate) fn step_creature_chase(
+    runtime: &mut ChannelRuntimeV1,
+    current: &crate::foundation::ScopeRuntimeFence,
+    stamp: crate::foundation::RuntimeWorkStamp,
+    cadence: &mut speed::CreatureMovementCadence,
+    near: &speed::CreatureNearTarget,
+    expected: MovementPositionSnapshot,
+    goal: CreatureChaseGoal,
+    source: &dyn speed::CurrentCreatureSpeedReader,
+    ground: &dyn speed::GroundSpeedSource,
+    now: oteryn_simulation_determinism::SemanticTimeMicros,
+    scope: &EngineeringStaticCellScope,
+    index: &EngineeringStaticCellIndex,
+    blocking: &[LogicalCell],
+    search_work_available: usize,
+    tile_admits: impl Fn(MovementLocalPosition) -> bool,
+    can_hold: impl Fn(MovementLocalPosition) -> bool,
+) -> Result<CreatureChaseStep, speed::CreatureCadenceError> {
+    use speed::CreatureCadenceError as E;
+    let actor = cadence.actor();
+    let mut result = CreatureChaseStep {
+        actor,
+        searched_from: expected,
+        goal,
+        content_digest: runtime.content_pin().server_artifact_digest(),
+        route: Vec::new(),
+        search_work_charged: 0,
+        outcome: CreatureChaseOutcome::DeferredSearchBudget,
+    };
+    if search_work_available < path_search::PATH_SEARCH_WORK {
+        return Ok(result);
+    }
+    let binding = runtime.binding();
+    if !current.is_current_for_scope(
+        crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        binding.scope_generation(),
+    ) || !current.accepts_stamp(stamp)
+    {
+        return Err(E::StaleOwner);
+    }
+    if !runtime.contains_live_creature(actor)
+        || runtime
+            .native_summon_role(actor)
+            .map_err(E::Carrier)?
+            .is_some()
+        || actor == goal.target
+        || goal.distance == 0
+    {
+        return Err(E::StaleActor);
+    }
+    if runtime.read_actor_position(actor).map_err(E::Carrier)? != expected
+        || runtime
+            .read_actor_position(goal.target)
+            .map_err(E::Carrier)?
+            != goal.expected_target
+    {
+        return Err(E::Movement(MovementError::SnapshotMismatch));
+    }
+    if scope.world_id != expected.world_id()
+        || scope.generation_digest != result.content_digest
+        || expected.context() != goal.expected_target.context()
+    {
+        return Err(E::MissingMap);
+    }
+    let (route, work) = path_search::route_at_distance_counted(
+        expected.position(),
+        goal.expected_target.position(),
+        goal.distance,
+        |at| {
+            let cell = LogicalCell {
+                x: at.x,
+                y: at.y,
+                z: i32::from(at.floor),
+            };
+            if blocking.contains(&cell)
+                || !tile_admits(at)
+                || index.lookup(scope, cell) != Ok(CollisionClass::Walkable)
+            {
+                return None;
+            }
+            Some(if runtime.native_summon_cell_free(at) {
+                0
+            } else {
+                path_search::CREATURE_COST
+            })
+        },
+        can_hold,
+    );
+    // Admission required the per-search cap; only the actual expansions are charged.
+    result.search_work_charged = work.min(path_search::PATH_SEARCH_WORK);
+    let Some(route) = route else {
+        result.outcome = CreatureChaseOutcome::NoRoute;
+        return Ok(result);
+    };
+    result.route = route;
+    let Some(&first) = result.route.first() else {
+        result.outcome = CreatureChaseOutcome::AtGoal;
+        return Ok(result);
+    };
+    result.outcome = match cadence.step_near(
+        runtime, current, stamp, source, ground, now, scope, index, blocking, first, near, false,
+    )? {
+        Some(after) => {
+            result.route.remove(0);
+            CreatureChaseOutcome::Moved(after)
+        }
+        None => CreatureChaseOutcome::WaitingForCadence,
+    };
+    Ok(result)
+}
+
 /// Explicit engineering work budget for one exclusive Channel owner borrow. The caller
 /// retains inputs returned as Deferred and decides which actor to offer next turn.
 /// No production maximum, queue, command outcome, or scheduling authority is implied.
@@ -511,6 +660,398 @@ mod tests {
             MovementLocalPosition { x, y: 5, floor: 7 },
         )?;
         Ok((actor, snapshot))
+    }
+
+    struct ChaseSpeed {
+        actor: ExactActorRef,
+        content: [u8; 32],
+    }
+    impl speed::CurrentCreatureSpeedReader for ChaseSpeed {
+        fn current_native_base_speed(
+            &self,
+            runtime: &ChannelRuntimeV1,
+            actor: ExactActorRef,
+        ) -> Option<u16> {
+            (actor == self.actor
+                && runtime.contains_live_creature(actor)
+                && runtime.content_pin().server_artifact_digest() == self.content)
+                .then_some(220)
+        }
+    }
+
+    type ChaseFixture = (
+        ChannelRuntimeV1,
+        crate::foundation::ScopeRuntimeFence,
+        ExactActorRef,
+        ExactActorRef,
+        EngineeringStaticCellScope,
+        EngineeringStaticCellIndex,
+    );
+
+    fn chase_fixture() -> Result<ChaseFixture, Box<dyn Error>> {
+        let world = WorldId::decode(&{
+            let mut id = [0; 16];
+            id[6] = 0x70;
+            id[8] = 0x80;
+            id[15] = 1;
+            id
+        })?;
+        let (runtime, fence, actor, target, _, _) =
+            crate::monster_summon::summon_execution_fixture_for_world(world);
+        let mut scope = scope_for_world(world)?;
+        scope.generation_digest = runtime.content_pin().server_artifact_digest();
+        let cells: Vec<_> = (100..=105).map(|x| (x, 100, 7, walkable())).collect();
+        let index = index(&scope, &cells)?;
+        Ok((runtime, fence, actor, target, scope, index))
+    }
+
+    #[test]
+    fn creature_chase_adapter_commits_once_and_retains_unconsumed_route_while_paced()
+    -> Result<(), Box<dyn Error>> {
+        let (mut runtime, mut fence, actor, target, scope, index) = chase_fixture()?;
+        let ordinal = fence.accept_input(runtime.binding().scope_generation())?;
+        let stamp = fence.stamp(ordinal);
+        let mut cadence = speed::CreatureMovementCadence::bind(&runtime, actor)
+            .ok_or("missing native cadence")?;
+        let source = ChaseSpeed {
+            actor,
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        let expected = runtime.read_actor_position(actor)?;
+        let goal = CreatureChaseGoal {
+            target,
+            expected_target: runtime.read_actor_position(target)?,
+            distance: 3,
+        };
+        let first = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        let CreatureChaseOutcome::Moved(after) = first.outcome else {
+            return Err("native first step missing".into());
+        };
+        assert_eq!(after.position().x, expected.position().x + 1);
+        assert_eq!(first.actor, actor);
+        assert_eq!(first.goal, goal);
+        assert_eq!(first.searched_from, expected);
+        assert_eq!(first.content_digest, scope.generation_digest);
+        assert_eq!(first.route, vec![CardinalStep::East]);
+        assert_eq!(first.search_work_charged, 2);
+        let next = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            after,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(next.outcome, CreatureChaseOutcome::WaitingForCadence);
+        assert_eq!(next.route, vec![CardinalStep::East]);
+        assert_eq!(runtime.read_actor_position(actor)?, after);
+        let stale = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        );
+        assert!(matches!(
+            stale,
+            Err(speed::CreatureCadenceError::Movement(
+                MovementError::SnapshotMismatch
+            ))
+        ));
+        assert_eq!(runtime.read_actor_position(actor)?, after);
+        Ok(())
+    }
+
+    /// First moved step at owner time 0 with the given near-target state; the instant the next
+    /// step waits for is the recorded duration.
+    fn first_step_deadline(
+        near: &speed::CreatureNearTarget,
+    ) -> Result<oteryn_simulation_determinism::SemanticTimeMicros, Box<dyn Error>> {
+        let (mut runtime, mut fence, actor, target, scope, index) = chase_fixture()?;
+        let ordinal = fence.accept_input(runtime.binding().scope_generation())?;
+        let stamp = fence.stamp(ordinal);
+        let mut cadence = speed::CreatureMovementCadence::bind(&runtime, actor)
+            .ok_or("missing native cadence")?;
+        let source = ChaseSpeed {
+            actor,
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        let expected = runtime.read_actor_position(actor)?;
+        let goal = CreatureChaseGoal {
+            target,
+            expected_target: runtime.read_actor_position(target)?,
+            distance: 3,
+        };
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0);
+        let step = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            near,
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            now,
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(step.outcome, CreatureChaseOutcome::Moved(_)));
+        cadence
+            .waiting_until(now)
+            .ok_or_else(|| "no recorded deadline".into())
+    }
+
+    #[test]
+    fn creature_chase_cadence_records_the_doubled_duration_for_a_near_target()
+    -> Result<(), Box<dyn Error>> {
+        let far = first_step_deadline(&speed::CreatureNearTarget::default())?;
+        let mut near = speed::CreatureNearTarget::default();
+        let at = MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: 7,
+        };
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 6,
+                y: 5,
+                floor: 7,
+            },
+        );
+        assert_eq!(first_step_deadline(&near)?.get(), far.get() * 2);
+        Ok(())
+    }
+
+    #[test]
+    fn creature_chase_cadence_is_unchanged_when_the_near_counter_is_zero()
+    -> Result<(), Box<dyn Error>> {
+        let mut near = speed::CreatureNearTarget::default();
+        let at = MovementLocalPosition {
+            x: 5,
+            y: 5,
+            floor: 7,
+        };
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 6,
+                y: 5,
+                floor: 7,
+            },
+        );
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 9,
+                y: 5,
+                floor: 7,
+            },
+        );
+        near.evaluate(
+            at,
+            MovementLocalPosition {
+                x: 9,
+                y: 5,
+                floor: 7,
+            },
+        );
+        assert_eq!(
+            first_step_deadline(&near)?,
+            first_step_deadline(&speed::CreatureNearTarget::default())?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn creature_chase_adapter_budget_deferral_does_not_query_map_or_advance_cadence()
+    -> Result<(), Box<dyn Error>> {
+        let (mut runtime, mut fence, actor, target, scope, index) = chase_fixture()?;
+        let ordinal = fence.accept_input(runtime.binding().scope_generation())?;
+        let stamp = fence.stamp(ordinal);
+        let mut cadence = speed::CreatureMovementCadence::bind(&runtime, actor)
+            .ok_or("missing native cadence")?;
+        let source = ChaseSpeed {
+            actor,
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        let expected = runtime.read_actor_position(actor)?;
+        let goal = CreatureChaseGoal {
+            target,
+            expected_target: runtime.read_actor_position(target)?,
+            distance: 3,
+        };
+        let calls = std::cell::Cell::new(0);
+        let deferred = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK - 1,
+            |_| {
+                calls.set(calls.get() + 1);
+                true
+            },
+            |_| {
+                calls.set(calls.get() + 1);
+                true
+            },
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(deferred.outcome, CreatureChaseOutcome::DeferredSearchBudget);
+        assert_eq!(deferred.search_work_charged, 0);
+        assert_eq!(calls.get(), 0);
+        assert_eq!(runtime.read_actor_position(actor)?, expected);
+        let admitted = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(admitted.outcome, CreatureChaseOutcome::Moved(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn creature_chase_adapter_refuses_changed_target_and_unqualified_endpoint()
+    -> Result<(), Box<dyn Error>> {
+        let (mut runtime, mut fence, actor, target, scope, index) = chase_fixture()?;
+        let ordinal = fence.accept_input(runtime.binding().scope_generation())?;
+        let stamp = fence.stamp(ordinal);
+        let mut cadence = speed::CreatureMovementCadence::bind(&runtime, actor)
+            .ok_or("missing native cadence")?;
+        let source = ChaseSpeed {
+            actor,
+            content: runtime.content_pin().server_artifact_digest(),
+        };
+        let expected = runtime.read_actor_position(actor)?;
+        let goal = CreatureChaseGoal {
+            target,
+            expected_target: runtime.read_actor_position(target)?,
+            distance: 3,
+        };
+        let no_sight = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| false,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(no_sight.outcome, CreatureChaseOutcome::NoRoute);
+        assert!(no_sight.route.is_empty());
+        assert_eq!(runtime.read_actor_position(actor)?, expected);
+        let mut target_next = goal.expected_target.position();
+        target_next.x += 1;
+        runtime
+            .borrow_movement_position()
+            .commit_cardinal(goal.expected_target, target_next)?;
+        let changed = step_creature_chase(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut cadence,
+            &speed::CreatureNearTarget::default(),
+            expected,
+            goal,
+            &source,
+            &speed::EngineeringGroundSpeed,
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            &scope,
+            &index,
+            &[],
+            path_search::PATH_SEARCH_WORK,
+            |_| true,
+            |_| true,
+        );
+        assert!(matches!(
+            changed,
+            Err(speed::CreatureCadenceError::Movement(
+                MovementError::SnapshotMismatch
+            ))
+        ));
+        assert_eq!(runtime.read_actor_position(actor)?, expected);
+        Ok(())
     }
 
     #[test]

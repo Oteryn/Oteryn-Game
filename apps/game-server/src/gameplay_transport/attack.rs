@@ -40,9 +40,10 @@ use crate::combat::charm_effects::{
     CharmHookEvent, CharmStateRead, CharmStateUnavailable, evaluate_charm_hook,
 };
 use crate::combat_attack::{
-    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CREATURE_COST,
-    ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts, TargetRefusal,
-    armor_reduction_bounds, chase_search_order, player_fist_formula, player_melee_formula,
+    AttackConstants, AttackState, BlockBudget, CHASE_SEARCHES_PER_WINDOW, CHASE_WINDOW_MICROS,
+    CREATURE_COST, ChaseDecision, ChaseSearchBudget, ChaseState, FightMode, SwingPoll, TargetFacts,
+    TargetRefusal, UNITS_PER_SEARCH, armor_reduction_bounds, chase_search_order,
+    player_fist_formula, player_melee_formula,
 };
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{
@@ -303,6 +304,28 @@ pub(crate) struct ChannelAttackStates {
 }
 
 impl ChannelAttackStates {
+    /// D1212: creature and player drains share this owner's existing search window.
+    #[allow(dead_code, reason = "D1212 paired creature drain is composed by #2200")]
+    pub(in crate::gameplay_transport) fn chase_search_window(&mut self) -> &mut ChaseSearchBudget {
+        &mut self.chase_searches
+    }
+
+    /// D1229: the actual waiting queue, using the existing drain's window eligibility.
+    /// Read once under this owner before borrowing its shared window for creatures.
+    #[allow(dead_code, reason = "D1229 paired creature drain is composed by #2200")]
+    pub(in crate::gameplay_transport) fn player_chase_waiting(
+        &self,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        let window = now.get() / CHASE_WINDOW_MICROS;
+        self.entries.iter().any(|entry| {
+            entry
+                .chase
+                .search_waiting_since()
+                .is_some_and(|since| since / CHASE_WINDOW_MICROS < window)
+        })
+    }
+
     pub(crate) const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
         &self.kills
     }
@@ -855,8 +878,11 @@ impl ChannelAttackStates {
     /// [`CHASE_SEARCHES_PER_WINDOW`], in the order [`chase_search_order`] gives, each against
     /// the occupancy the earlier ones leave once they take their next step; every chase then
     /// takes its own stored route. Nothing here depends on which check drains: the inputs are
-    /// the Channel's runtime, its path tiles and the waiting chases alone.
-    fn drain_chase_searches(
+    /// the Channel's runtime, its path tiles and the waiting chases alone. A drain the shared
+    /// work budget stops is suspended, not completed: a later check in the same window resumes
+    /// it once creature refunds return capacity; the search count and still-planned destinations
+    /// span the resume.
+    pub(in crate::gameplay_transport) fn drain_chase_searches(
         &mut self,
         runtime: &ChannelRuntimeV1,
         room: &QualifiedNativeEntryRoom,
@@ -891,10 +917,34 @@ impl ChannelAttackStates {
             .chain(&visible.players)
             .map(|other| (other.actor, other.position))
             .collect();
-        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = Vec::new();
-        let mut searched = 0;
+        // A searched chaser's first step may be stored or returned but not yet committed by
+        // Movement. Retain that destination, never an older route or a later step of a mover.
+        let mut stepping: Vec<(ExactActorRef, MovementLocalPosition)> = entries
+            .iter()
+            .filter_map(|entry| {
+                // A step already returned may still commit after target cleanup, so the live
+                // target is not required; only the actor's own position gates the plan.
+                let from = runtime.read_actor_position(entry.actor).ok()?.position();
+                let held = entry
+                    .state
+                    .target()
+                    .filter(|_| entry.modes.chase == ChaseMode::Chase);
+                // A returned step may still commit when the target turns adjacent, so only a
+                // stored (uncommitted) plan is dropped by adjacency.
+                if !entry.chase.has_in_flight_step(now.get(), from)
+                    && let Some((from, to)) = held.and_then(|target| {
+                        chase_ends(runtime, room, entry.actor, entry.session, target, now)
+                    })
+                    && crate::movement::path_search::chebyshev(from, to) <= 1
+                {
+                    return None;
+                }
+                let next = entry.chase.planned_search_cell(now.get(), from)?;
+                Some((entry.actor, next))
+            })
+            .collect();
         for (_, index) in order {
-            if searched == CHASE_SEARCHES_PER_WINDOW {
+            if chase_searches.player_searches() >= CHASE_SEARCHES_PER_WINDOW {
                 break;
             }
             let entry = &mut entries[index];
@@ -922,7 +972,16 @@ impl ChannelAttackStates {
                 .filter(|position| position.floor == from.floor)
                 .map(|position| (position.x, position.y))
                 .collect();
-            let ran = entry.chase.search(now.get(), from, to, |cell| {
+            // Reserve the same bounded work as creatures before any actual search.
+            // Searches that only hold an already-reached/other-floor goal do no work.
+            if from.floor == to.floor
+                && crate::movement::path_search::chebyshev(from, to) > 1
+                && !chase_searches.charge_player(now.get(), UNITS_PER_SEARCH)
+            {
+                chase_searches.suspend_drain(now.get());
+                break;
+            }
+            let work = entry.chase.search(now.get(), from, to, |cell| {
                 if cell == to || !path_tile(cell) {
                     return None;
                 }
@@ -932,8 +991,12 @@ impl ChannelAttackStates {
                     0
                 })
             });
-            if ran {
-                searched += 1;
+            if let Some(work) = work {
+                // Admission reserved the per-search cap; keep only the actual expansions.
+                let used =
+                    u32::try_from(work).map_or(UNITS_PER_SEARCH, |w| w.min(UNITS_PER_SEARCH));
+                chase_searches.refund_player(now.get(), UNITS_PER_SEARCH - used);
+                chase_searches.note_player_search(now.get());
             }
             if let Some(next) = entry.chase.next_cell() {
                 stepping.push((entry.actor, next));

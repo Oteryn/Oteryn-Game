@@ -645,6 +645,46 @@ pub(crate) fn creature_step_duration(
     )
 }
 
+/// CREATURE-MOVE-1 §1.3: ephemeral near-target state, reset on admission by `Default`.
+/// The existing AI owner must retain this alongside its creature state and evaluate it once per
+/// chase/keep-distance evaluation. Steps only read it; no timer or alternate owner lives here.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct CreatureNearTarget {
+    evaluations: u8,
+}
+
+impl CreatureNearTarget {
+    pub(crate) fn evaluate(
+        &mut self,
+        at: crate::foundation::MovementLocalPosition,
+        target: crate::foundation::MovementLocalPosition,
+    ) {
+        let nearby = at.floor == target.floor
+            && at.x.abs_diff(target.x) <= 1
+            && at.y.abs_diff(target.y) <= 1;
+        self.evaluations = if nearby {
+            self.evaluations.saturating_add(1).min(2)
+        } else {
+            self.evaluations.saturating_sub(1)
+        };
+    }
+
+    /// Apply the near ×2 after the canonical table/ground duration. Flee and summons retain
+    /// that duration. Overflow refuses pacing before any Movement commit.
+    pub(crate) fn step_duration(
+        &self,
+        canonical: Duration,
+        fleeing: bool,
+        is_summon: bool,
+    ) -> Option<Duration> {
+        canonical.checked_mul(if self.evaluations >= 1 && !fleeing && !is_summon {
+            2
+        } else {
+            1
+        })
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::unwrap_used)]
 mod creature_native_speed_tests {
@@ -658,6 +698,88 @@ mod creature_native_speed_tests {
         actor: ExactActorRef,
         base: u16,
         pin: [u8; 32],
+    }
+    #[test]
+    fn creature_move_near_counter_saturates_and_decays_per_target_evaluation() {
+        let at = MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        };
+        let near = MovementLocalPosition { x: 1, y: -1, ..at };
+        let far = MovementLocalPosition { x: 2, ..at };
+        let mut counter = CreatureNearTarget::default();
+        let duration = Duration::from_millis(900);
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration)
+        );
+        for _ in 0..3 {
+            counter.evaluate(at, near);
+        }
+        assert_eq!(counter.evaluations, 2);
+        counter.evaluate(at, far);
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration * 2)
+        );
+        counter.evaluate(at, far);
+        counter.evaluate(at, far);
+        assert_eq!(counter.evaluations, 0);
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration)
+        );
+    }
+
+    #[test]
+    fn creature_move_near_duration_excludes_flee_and_summons_and_checks_overflow() {
+        let at = MovementLocalPosition {
+            x: i32::MIN,
+            y: i32::MAX,
+            floor: 7,
+        };
+        let mut counter = CreatureNearTarget::default();
+        counter.evaluate(at, at);
+        let duration = Duration::from_millis(900);
+        assert_eq!(counter.step_duration(duration, true, false), Some(duration));
+        assert_eq!(counter.step_duration(duration, false, true), Some(duration));
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(duration * 2)
+        );
+        assert_eq!(counter.step_duration(Duration::MAX, false, false), None);
+        counter.evaluate(
+            at,
+            MovementLocalPosition {
+                x: i32::MAX,
+                y: i32::MIN,
+                ..at
+            },
+        );
+        assert_eq!(counter.evaluations, 0);
+        counter.evaluate(at, MovementLocalPosition { floor: 8, ..at });
+        assert_eq!(counter.evaluations, 0);
+    }
+
+    #[test]
+    fn creature_move_rat_67_uses_the_canonical_beat_before_near_doubling() {
+        let duration = StepSpeedTable::embedded()
+            .unwrap()
+            .step_duration(67, 150)
+            .unwrap();
+        assert_eq!(duration, Duration::from_millis(900));
+        let at = MovementLocalPosition {
+            x: 0,
+            y: 0,
+            floor: 7,
+        };
+        let mut counter = CreatureNearTarget::default();
+        counter.evaluate(at, MovementLocalPosition { x: 1, ..at });
+        assert_eq!(
+            counter.step_duration(duration, false, false),
+            Some(Duration::from_millis(1_800))
+        );
     }
     impl CurrentCreatureSpeedReader for Native {
         fn current_native_base_speed(&self, r: &ChannelRuntimeV1, a: ExactActorRef) -> Option<u16> {
@@ -737,6 +859,12 @@ mod creature_native_speed_tests {
         assert!(r.commit_actor_condition(&plan, at(100)).unwrap());
         assert_eq!(runtime_creature_speed(&r, actor, &src, at(99)), None);
         assert_eq!(runtime_creature_speed(&r, actor, &src, at(101)), Some(330));
+        let immobile = Native { base: 0, ..src };
+        assert_eq!(
+            creature_step_duration(&r, actor, &immobile, &EngineeringGroundSpeed, onto, at(101)),
+            None,
+            "a SPEED condition cannot make a source-immobile creature walk"
+        );
         assert_eq!(
             creature_step_duration(&r, actor, &src, &EngineeringGroundSpeed, onto, at(101)),
             Some(Duration::from_millis(250))
@@ -895,6 +1023,14 @@ pub(crate) enum CreatureCadenceError {
     Movement(crate::movement::MovementError),
 }
 impl CreatureMovementCadence {
+    /// The owner time before which a further step waits, if a moved step was recorded.
+    #[cfg(test)]
+    pub(crate) fn waiting_until(&self, now: SemanticTimeMicros) -> Option<SemanticTimeMicros> {
+        self.pacer.wait_until(now)
+    }
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
     pub(crate) fn bind(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> Option<Self> {
         if !runtime.contains_live_creature(actor) {
             return None;
@@ -921,6 +1057,41 @@ impl CreatureMovementCadence {
         index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
         blocking: &[LogicalCell],
         direction: crate::movement::CardinalStep,
+    ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, CreatureCadenceError> {
+        self.step_near(
+            runtime,
+            current,
+            stamp,
+            source,
+            ground,
+            now,
+            scope,
+            index,
+            blocking,
+            direction,
+            &CreatureNearTarget::default(),
+            false,
+        )
+    }
+
+    /// [`Self::step`] with the owner's retained near-target state: the recorded duration is
+    /// `near.step_duration(canonical, fleeing, false)`. The caller is a regular creature here
+    /// (summons are refused), so `is_summon` is always false.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn step_near(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        current: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: &dyn CurrentCreatureSpeedReader,
+        ground: &dyn GroundSpeedSource,
+        now: SemanticTimeMicros,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+        index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
+        blocking: &[LogicalCell],
+        direction: crate::movement::CardinalStep,
+        near: &CreatureNearTarget,
+        fleeing: bool,
     ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, CreatureCadenceError> {
         use CreatureCadenceError as E;
         let b = runtime.binding();
@@ -965,6 +1136,9 @@ impl CreatureMovementCadence {
         };
         let duration = creature_step_duration(runtime, self.actor, source, ground, onto, now)
             .ok_or(E::MissingSpeed)?;
+        let duration = near
+            .step_duration(duration, fleeing, false)
+            .ok_or(E::ClockOverflow)?;
         if self.pacer.wait_until(now).is_some() {
             return Ok(None);
         }

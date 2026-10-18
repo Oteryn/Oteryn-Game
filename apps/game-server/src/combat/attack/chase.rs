@@ -12,7 +12,9 @@ use std::collections::VecDeque;
 
 use crate::foundation::MovementLocalPosition;
 use crate::movement::CardinalStep;
-use crate::movement::path_search::{CHASE_SEARCH_DISTANCE, chebyshev, delta, route_next_to};
+use crate::movement::path_search::{
+    CHASE_SEARCH_DISTANCE, chebyshev, delta, route_next_to_counted,
+};
 
 pub(crate) use crate::movement::path_search::CREATURE_COST;
 
@@ -25,6 +27,10 @@ pub(crate) const CHASE_FAILED_SEARCH_WAIT_MICROS: u64 = 2_000_000;
 pub(crate) const CHASE_SEARCHES_PER_WINDOW: u32 = 64;
 /// The owner window `RANGED0-RL-03` counts in (`CREATUREAI0-RL-09`'s 50 ms window).
 pub(crate) const CHASE_WINDOW_MICROS: u64 = 50_000;
+/// CREATURE-AI0 §5.3 / D1219: one shared Channel window, including player reserve.
+pub(crate) const WINDOW_UNITS: u32 = 65_536;
+pub(crate) const PLAYER_WAIT_RESERVE: u32 = 16_384;
+pub(crate) const UNITS_PER_SEARCH: u32 = 1_024;
 /// `RANGED0-RL-08`'s TTL: how long a cell the Movement owner refused a chase step into as
 /// blocked stays out of the search.
 pub(crate) const CHASE_REFUSED_CELL_MICROS: u64 = CHASE_FAILED_SEARCH_WAIT_MICROS;
@@ -38,6 +44,8 @@ pub(crate) struct ChaseState {
     /// The adopted route and the position the attacker must hold to take its next step.
     route: VecDeque<CardinalStep>,
     expected_at: Option<MovementLocalPosition>,
+    /// The window and starting cell of the adopted search, while its first step awaits Movement.
+    search_origin: Option<(u64, MovementLocalPosition)>,
     /// The target position the route was searched for.
     goal: Option<MovementLocalPosition>,
     /// No search before this owner time.
@@ -50,6 +58,10 @@ pub(crate) struct ChaseState {
     /// `RANGED0-RL-03`: the owner time since which a due search has waited for the Channel's
     /// window budget.
     waiting_since: Option<u64>,
+    /// The first step a search planned and `next_step` returned: window, starting cell and
+    /// destination. Survives [`Self::reset`] (target cleanup) because Movement may still commit
+    /// it; it only counts while the actor stands on the starting cell in that window.
+    in_flight: Option<(u64, MovementLocalPosition, MovementLocalPosition)>,
 }
 
 /// What a chase check decided.
@@ -68,6 +80,7 @@ impl ChaseState {
     pub(crate) fn reset(&mut self) {
         *self = Self {
             next_search_us: self.next_search_us,
+            in_flight: self.in_flight,
             ..Self::default()
         };
     }
@@ -79,6 +92,7 @@ impl ChaseState {
     pub(crate) fn hold(&mut self) {
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
         self.waiting_since = None;
     }
@@ -88,6 +102,7 @@ impl ChaseState {
     pub(crate) fn yield_to_client(&mut self, now_us: u64) {
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
         self.waiting_since = None;
         self.next_search_us = self
@@ -121,6 +136,7 @@ impl ChaseState {
         if self.expected_at != Some(at) {
             self.route.clear();
             self.expected_at = None;
+            self.search_origin = None;
             self.goal = None;
         }
         let stale = self.route.is_empty() || self.goal != Some(target);
@@ -132,23 +148,23 @@ impl ChaseState {
     }
 
     /// The Channel's drain runs this chase's search from `at` towards `target` at `now_us`
-    /// (`RANGED0-RL-03`); `false` when none ran (another floor or in reach). The route it adopts
-    /// starts at `at`.
+    /// (`RANGED0-RL-03`); `None` when none ran (another floor or in reach), else the search's
+    /// actual expansion count. The route it adopts starts at `at`.
     pub(crate) fn search(
         &mut self,
         now_us: u64,
         at: MovementLocalPosition,
         target: MovementLocalPosition,
         mut tile_cost: impl FnMut(MovementLocalPosition) -> Option<u32>,
-    ) -> bool {
+    ) -> Option<usize> {
         if at.floor != target.floor || chebyshev(at, target) <= 1 {
             self.hold();
-            return false;
+            return None;
         }
         self.waiting_since = None;
         self.refused.retain(|&(_, expires_us)| now_us < expires_us);
         let refused = &self.refused;
-        let route = route_next_to(at, target, CHASE_SEARCH_DISTANCE, |cell| {
+        let (route, work) = route_next_to_counted(at, target, CHASE_SEARCH_DISTANCE, |cell| {
             if refused.iter().any(|&(blocked, _)| blocked == cell) {
                 None
             } else {
@@ -159,17 +175,19 @@ impl ChaseState {
             Some(route) if !route.is_empty() => {
                 self.route = route.into();
                 self.expected_at = Some(at);
+                self.search_origin = Some((now_us / CHASE_WINDOW_MICROS, at));
                 self.goal = Some(target);
                 self.next_search_us = now_us.saturating_add(CHASE_SEARCH_INTERVAL_MICROS);
             }
             _ => {
                 self.route.clear();
                 self.expected_at = None;
+                self.search_origin = None;
                 self.goal = None;
                 self.next_search_us = now_us.saturating_add(CHASE_FAILED_SEARCH_WAIT_MICROS);
             }
         }
-        true
+        Some(work)
     }
 
     /// The cell the route's next step enters, if a route is held.
@@ -178,15 +196,55 @@ impl ChaseState {
         Some(stepped(at, *step))
     }
 
+    /// The first destination selected by this window's earlier drain, before Movement commits.
+    /// After the first step is consumed, `expected_at` is that in-flight destination, never the
+    /// route's following step. A changed current position uses standing occupancy instead.
+    pub(crate) fn planned_search_cell(
+        &self,
+        now_us: u64,
+        at: MovementLocalPosition,
+    ) -> Option<MovementLocalPosition> {
+        if self.search_origin != Some((now_us / CHASE_WINDOW_MICROS, at)) {
+            return self
+                .in_flight
+                .filter(|&(window, origin, _)| {
+                    window == now_us / CHASE_WINDOW_MICROS && origin == at
+                })
+                .map(|(_, _, destination)| destination);
+        }
+        let expected = self.expected_at?;
+        if expected == at {
+            self.next_cell()
+        } else {
+            Some(expected)
+        }
+    }
+
+    /// Whether a step already returned by [`Self::next_step`] this window from `at` may still
+    /// commit, whatever the target does meanwhile.
+    pub(crate) fn has_in_flight_step(&self, now_us: u64, at: MovementLocalPosition) -> bool {
+        self.in_flight.is_some_and(|(window, origin, _)| {
+            window == now_us / CHASE_WINDOW_MICROS && origin == at
+        })
+    }
+
     /// The step the chase takes now from `at`: the route's next step, if any.
     pub(crate) fn next_step(&mut self, at: MovementLocalPosition) -> ChaseDecision {
         if self.expected_at != Some(at) {
             self.route.clear();
+            self.search_origin = None;
         }
         let Some(step) = self.route.pop_front() else {
             self.expected_at = None;
+            self.search_origin = None;
             return ChaseDecision::Hold;
         };
+        if self.search_origin.is_some_and(|(_, origin)| origin != at) {
+            self.search_origin = None;
+        }
+        self.in_flight = self
+            .search_origin
+            .map(|(window, origin)| (window, origin, stepped(at, step)));
         self.expected_at = Some(stepped(at, step));
         ChaseDecision::Step(step)
     }
@@ -215,8 +273,10 @@ impl ChaseState {
     /// the route is dropped and nothing is remembered (`RANGED0-RL-08`); the cell stays a path
     /// tile.
     pub(crate) fn step_refused(&mut self) {
+        self.in_flight = None;
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
     }
 
@@ -226,6 +286,7 @@ impl ChaseState {
     /// most [`CHASE_SEARCH_INTERVAL_MICROS`] after the last, detours around the cell while it is
     /// remembered.
     pub(crate) fn step_blocked(&mut self, now_us: u64) {
+        self.in_flight = None;
         if let Some(cell) = self.expected_at {
             self.refused.retain(|&(blocked, _)| blocked != cell);
             if self.refused.len() >= CHASE_REFUSED_CELLS {
@@ -236,6 +297,7 @@ impl ChaseState {
         }
         self.route.clear();
         self.expected_at = None;
+        self.search_origin = None;
         self.goal = None;
     }
 }
@@ -253,18 +315,173 @@ fn stepped(at: MovementLocalPosition, step: CardinalStep) -> MovementLocalPositi
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct ChaseSearchBudget {
     drained: Option<u64>,
+    window: Option<u64>,
+    player_units_used: u32,
+    creature_units_used: u32,
+    /// Units the creature queue declared for its already-pending searches (CREATURE-MOVE-1
+    /// packet: pending creature searches go before player chase). Not reset by a new window, so
+    /// a player drain that runs before the creature drain in that window cannot take them.
+    creature_pending_units: u32,
+    /// Player chase searches the drain ran in the current window ([`CHASE_SEARCHES_PER_WINDOW`]
+    /// counts across a resumed drain).
+    player_searches: u32,
+    /// The current window's player drain stopped on the shared work budget, not on its own
+    /// queue or search count; it resumes once a full search fits again (creature refunds).
+    drain_suspended: bool,
 }
 
 impl ChaseSearchBudget {
+    fn advance(&mut self, now_us: u64) -> bool {
+        let window = now_us / CHASE_WINDOW_MICROS;
+        match self.window {
+            Some(current) if window < current => false,
+            Some(current) if window == current => true,
+            _ => {
+                self.window = Some(window);
+                self.player_units_used = 0;
+                self.creature_units_used = 0;
+                self.drained = None;
+                self.player_searches = 0;
+                self.drain_suspended = false;
+                true
+            }
+        }
+    }
+
+    /// Units of the current window held for declared pending creature work. A charging player
+    /// is waiting, so the hold never cuts into the player reserve: creatures stay within
+    /// `WINDOW_UNITS - PLAYER_WAIT_RESERVE` while a player waits.
+    fn creature_hold(&self) -> u32 {
+        self.creature_pending_units
+            .min((WINDOW_UNITS - PLAYER_WAIT_RESERVE).saturating_sub(self.creature_units_used))
+    }
+
+    /// Declare the total units the creature queue's pending searches need (for example
+    /// pending searches times [`UNITS_PER_SEARCH`]); it replaces the earlier declaration.
+    /// [`Self::charge_creature`] consumes it; the owner re-declares when its queue changes.
+    #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
+    pub(crate) fn declare_creature_pending(&mut self, units: u32) {
+        self.creature_pending_units = units;
+    }
+
+    /// The most player work the current window still admits.
+    fn player_limit(&self) -> u32 {
+        WINDOW_UNITS - self.creature_units_used - self.creature_hold()
+    }
+
+    pub(crate) fn charge_player(&mut self, now_us: u64, units: u32) -> bool {
+        if !self.advance(now_us) {
+            return false;
+        }
+        let limit = self.player_limit();
+        let Some(after) = self
+            .player_units_used
+            .checked_add(units)
+            .filter(|used| *used <= limit)
+        else {
+            return false;
+        };
+        self.player_units_used = after;
+        true
+    }
+
+    /// Return `units` of an earlier [`Self::charge_player`] in the same window: admission
+    /// reserved the per-search cap, and only the work the search actually did stays debited.
+    pub(crate) fn refund_player(&mut self, now_us: u64, units: u32) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.player_units_used = self.player_units_used.saturating_sub(units);
+        }
+    }
+
+    /// Creature counterpart of [`Self::refund_player`]: return the unused part of an earlier
+    /// [`Self::charge_creature`] in the same window once the search's real work is known.
+    #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
+    pub(crate) fn refund_creature(&mut self, now_us: u64, units: u32) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.creature_units_used = self.creature_units_used.saturating_sub(units);
+        }
+    }
+
+    #[allow(dead_code, reason = "D1219 creature consumer is composed by #2200")]
+    pub(crate) fn charge_creature(
+        &mut self,
+        now_us: u64,
+        units: u32,
+        player_waiting: bool,
+    ) -> bool {
+        if !self.advance(now_us) {
+            return false;
+        }
+        let reserve = if player_waiting {
+            PLAYER_WAIT_RESERVE.saturating_sub(self.player_units_used)
+        } else {
+            0
+        };
+        let Some(after) = self
+            .creature_units_used
+            .checked_add(units)
+            .filter(|used| *used <= WINDOW_UNITS - reserve - self.player_units_used)
+        else {
+            return false;
+        };
+        self.creature_units_used = after;
+        self.creature_pending_units = self.creature_pending_units.saturating_sub(units);
+        true
+    }
+
+    #[allow(
+        dead_code,
+        reason = "D1219 current shared-window reader is consumed by #2200"
+    )]
+    pub(crate) fn remaining(&mut self, now_us: u64) -> u32 {
+        if self.advance(now_us) {
+            WINDOW_UNITS - self.player_units_used - self.creature_units_used
+        } else {
+            0
+        }
+    }
+
     /// Whether the owner window of `now_us` is still to be drained; if so it counts as drained.
-    /// A caller's earlier window never reopens a drained one.
+    /// A caller's earlier window never reopens a drained one. A drain [`Self::suspend_drain`]
+    /// stopped on the shared budget reopens in its window once a full search fits again, so
+    /// work creature refunds return stays usable by waiting players.
     pub(crate) fn open(&mut self, now_us: u64) -> bool {
+        if !self.advance(now_us) {
+            return false;
+        }
         let window = now_us / CHASE_WINDOW_MICROS;
         if self.drained.is_some_and(|drained| window <= drained) {
-            return false;
+            let resumable = self.drain_suspended
+                && self.drained == Some(window)
+                && self.player_searches < CHASE_SEARCHES_PER_WINDOW
+                && self.player_limit().saturating_sub(self.player_units_used) >= UNITS_PER_SEARCH;
+            if resumable {
+                self.drain_suspended = false;
+            }
+            return resumable;
         }
         self.drained = Some(window);
         true
+    }
+
+    /// The drain of the window of `now_us` stopped because [`Self::charge_player`] refused a
+    /// search: it is not complete, and [`Self::open`] resumes it once capacity returns.
+    pub(crate) fn suspend_drain(&mut self, now_us: u64) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.drain_suspended = true;
+        }
+    }
+
+    /// Player chase searches run in the current window, across a resumed drain.
+    pub(crate) const fn player_searches(&self) -> u32 {
+        self.player_searches
+    }
+
+    /// Count one player chase search run in the window of `now_us`.
+    pub(crate) fn note_player_search(&mut self, now_us: u64) {
+        if self.window == Some(now_us / CHASE_WINDOW_MICROS) {
+            self.player_searches = self.player_searches.saturating_add(1);
+        }
     }
 }
 
@@ -310,6 +527,31 @@ mod tests {
                 floor: at.floor,
             }
         })
+    }
+
+    #[test]
+    fn a_returned_step_stays_in_flight_for_its_window_and_cell() {
+        let mut chase = ChaseState::default();
+        let decision = chase.decide(0, at(0, 0), at(4, 0), || true, open);
+        assert_eq!(decision, ChaseDecision::Step(CardinalStep::East));
+        assert!(chase.has_in_flight_step(0, at(0, 0)));
+        assert!(!chase.has_in_flight_step(0, at(1, 0)));
+        assert!(!chase.has_in_flight_step(CHASE_WINDOW_MICROS, at(0, 0)));
+    }
+
+    #[test]
+    fn a_blocked_step_leaves_no_planned_destination_for_a_resumed_drain() {
+        let mut chase = ChaseState::default();
+        assert_eq!(
+            chase.decide(0, at(0, 0), at(4, 0), || true, open),
+            ChaseDecision::Step(CardinalStep::East)
+        );
+        assert_eq!(chase.planned_search_cell(0, at(0, 0)), Some(at(1, 0)));
+        chase.step_blocked(0);
+        // The player stays at the origin in the same window: the rejected destination is not
+        // an occupied plan.
+        assert!(!chase.has_in_flight_step(0, at(0, 0)));
+        assert_eq!(chase.planned_search_cell(0, at(0, 0)), None);
     }
 
     #[test]
@@ -622,6 +864,186 @@ mod tests {
             !budget.open(49_999),
             "a late caller's earlier window never reopens a drained one"
         );
+    }
+
+    #[test]
+    fn many_trivial_searches_do_not_exhaust_the_window_early() {
+        let mut budget = ChaseSearchBudget::default();
+        let mut chase = ChaseState::default();
+        // Twice the fixed-charge capacity (64): each admission needs the 1,024 cap, but only
+        // the actual (tiny) expansion count stays debited.
+        for _ in 0..128 {
+            assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+            let work = chase.search(0, at(0, 0), at(3, 0), open).unwrap();
+            assert!(work < 8, "{work}");
+            budget.refund_player(0, UNITS_PER_SEARCH - u32::try_from(work).unwrap());
+            chase.next_search_us = 0;
+        }
+        assert!(budget.remaining(0) > WINDOW_UNITS - 128 * 8);
+        // Admission still needs the worst case: a nearly full window refuses another search.
+        assert!(budget.charge_player(0, WINDOW_UNITS - budget.player_units_used));
+        assert!(!budget.charge_player(0, 1));
+    }
+
+    #[test]
+    fn refunded_creature_reservations_keep_only_actual_work_debited() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..128 {
+            assert!(budget.charge_creature(0, UNITS_PER_SEARCH, true));
+            budget.refund_creature(0, UNITS_PER_SEARCH - 4);
+        }
+        assert_eq!(budget.creature_units_used, 128 * 4);
+        budget.refund_creature(50_000, 4);
+        assert_eq!(budget.creature_units_used, 128 * 4, "other window ignored");
+    }
+
+    #[test]
+    fn creature_work_leaves_the_exact_player_reserve_and_does_not_drain_players() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..48 {
+            assert!(budget.charge_creature(0, UNITS_PER_SEARCH, true));
+        }
+        assert_eq!(budget.remaining(0), PLAYER_WAIT_RESERVE);
+        assert!(!budget.charge_creature(0, 1, true));
+        assert!(
+            budget.open(0),
+            "creature charges never consume player drain"
+        );
+        for _ in 0..16 {
+            assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+        }
+        assert_eq!(budget.remaining(0), 0);
+        assert!(!budget.charge_player(0, 1));
+        assert!(!budget.open(0));
+    }
+
+    #[test]
+    fn pending_creature_work_stays_admissible_when_players_charge_first() {
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.charge_creature(0, UNITS_PER_SEARCH, true));
+        budget.declare_creature_pending(4 * UNITS_PER_SEARCH);
+        // A new window: the player drain wins the lock before the creature drain.
+        let mut players = 0;
+        while budget.charge_player(50_000, UNITS_PER_SEARCH) {
+            players += 1;
+        }
+        assert_eq!(players, 60);
+        for _ in 0..4 {
+            assert!(budget.charge_creature(50_000, UNITS_PER_SEARCH, true));
+        }
+        assert_eq!(budget.creature_pending_units, 0);
+        assert_eq!(budget.remaining(50_000), 0);
+        // A declaration over the creature share never cuts into the player reserve.
+        budget.declare_creature_pending(WINDOW_UNITS);
+        let mut players = 0;
+        while budget.charge_player(100_000, UNITS_PER_SEARCH) {
+            players += 1;
+        }
+        assert_eq!(players, 16);
+        for _ in 0..48 {
+            assert!(budget.charge_creature(100_000, UNITS_PER_SEARCH, true));
+        }
+        assert!(!budget.charge_creature(100_000, 1, true));
+    }
+
+    #[test]
+    fn a_budget_stopped_player_drain_resumes_after_creature_refunds() {
+        let mut budget = ChaseSearchBudget::default();
+        // 48 pending creature searches hold their full reservations in a new window.
+        budget.declare_creature_pending(48 * UNITS_PER_SEARCH);
+        assert!(budget.open(50_000));
+        // The first player searches do their full bounded work, so nothing is refunded.
+        let mut players = 0;
+        while budget.charge_player(50_000, UNITS_PER_SEARCH) {
+            budget.note_player_search(50_000);
+            players += 1;
+        }
+        assert_eq!(players, 16);
+        budget.suspend_drain(50_000);
+        assert!(!budget.open(50_000), "no capacity returned yet");
+        // The creature drain runs and each search does a single expansion.
+        for _ in 0..48 {
+            assert!(budget.charge_creature(50_000, UNITS_PER_SEARCH, true));
+            budget.refund_creature(50_000, UNITS_PER_SEARCH - 1);
+        }
+        assert!(
+            budget.open(50_000),
+            "the refunded units reopen the suspended player drain"
+        );
+        assert!(!budget.open(50_000), "a resumed drain is drained once more");
+        // The resumed searches are trivial: only one expansion each stays debited.
+        while budget.player_searches() < CHASE_SEARCHES_PER_WINDOW
+            && budget.charge_player(50_000, UNITS_PER_SEARCH)
+        {
+            budget.refund_player(50_000, UNITS_PER_SEARCH - 1);
+            budget.note_player_search(50_000);
+            players += 1;
+        }
+        assert_eq!(players, 64, "the per-window search count spans the resume");
+        // A complete drain (not suspended) never reopens, even with capacity left.
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.open(0));
+        assert!(!budget.open(0));
+        budget.suspend_drain(50_000);
+        assert!(!budget.open(0), "another window's suspension is ignored");
+    }
+
+    #[test]
+    fn without_pending_creature_work_players_can_use_the_full_window() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..64 {
+            assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+        }
+        assert_eq!(budget.remaining(0), 0);
+        assert!(!budget.charge_player(0, 1));
+        // Charged creature work consumed its declaration, so it no longer holds capacity.
+        budget.declare_creature_pending(2 * UNITS_PER_SEARCH);
+        assert!(budget.charge_creature(50_000, 2 * UNITS_PER_SEARCH, false));
+        assert!(budget.charge_player(100_000, WINDOW_UNITS));
+    }
+
+    #[test]
+    fn both_drains_share_one_total_and_stale_windows_cannot_reset_it() {
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.open(50_000));
+        assert!(budget.charge_player(50_000, 16 * UNITS_PER_SEARCH));
+        assert!(budget.charge_creature(50_000, 32 * UNITS_PER_SEARCH, true));
+        assert!(!budget.charge_player(49_999, 1));
+        assert!(!budget.charge_creature(49_999, 1, false));
+        assert_eq!(budget.remaining(49_999), 0);
+        assert_eq!(budget.remaining(50_000), PLAYER_WAIT_RESERVE);
+        assert!(budget.charge_creature(50_000, PLAYER_WAIT_RESERVE, false));
+        assert_eq!(budget.remaining(50_000), 0);
+        assert!(budget.charge_creature(100_000, UNITS_PER_SEARCH, true));
+        assert_eq!(budget.player_units_used, 0);
+        assert_eq!(budget.creature_units_used, UNITS_PER_SEARCH);
+        assert_eq!(budget.remaining(100_000), WINDOW_UNITS - UNITS_PER_SEARCH);
+        assert!(budget.open(100_000));
+        assert!(!budget.open(50_000));
+    }
+
+    #[test]
+    fn an_overflowing_charge_preserves_the_shared_window() {
+        let mut budget = ChaseSearchBudget::default();
+        assert!(budget.charge_player(0, UNITS_PER_SEARCH));
+        assert!(!budget.charge_player(0, u32::MAX));
+        assert!(!budget.charge_creature(0, u32::MAX, false));
+        assert_eq!(budget.remaining(0), WINDOW_UNITS - UNITS_PER_SEARCH);
+    }
+
+    #[test]
+    fn no_player_waiters_release_the_entire_shared_window_to_creatures() {
+        let mut budget = ChaseSearchBudget::default();
+        for _ in 0..64 {
+            assert!(budget.charge_creature(0, UNITS_PER_SEARCH, false));
+        }
+        assert_eq!(budget.remaining(0), 0);
+        assert!(!budget.charge_creature(0, 1, false));
+        assert!(
+            budget.open(0),
+            "the player drain marker is still independent"
+        );
+        assert!(!budget.charge_player(0, 1));
     }
 
     #[test]

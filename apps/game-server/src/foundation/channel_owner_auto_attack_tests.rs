@@ -1521,6 +1521,153 @@ fn the_chase_search_drain_gives_the_same_routes_in_any_check_order() {
 }
 
 #[test]
+fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
+    fn routes(
+        suspend: bool,
+        first_caller: usize,
+        clear_first: bool,
+    ) -> ([Option<CardinalStep>; 2], Option<MovementLocalPosition>) {
+        let (mut owner, chasers) = two_chasers();
+        let room = owner.room.clone();
+        let first = owner
+            .runtime
+            .read_actor_position(chasers[0].0)
+            .unwrap()
+            .position();
+        let second = owner
+            .runtime
+            .read_actor_position(chasers[1].0)
+            .unwrap()
+            .position();
+        let target = owner.runtime.visible_entities().creatures[0].position;
+        let dy = second.y - first.y;
+        assert_eq!(second.x, first.x);
+        assert_eq!(dy.abs(), 1, "the second chaser stands beside the corridor");
+        assert_eq!(target.y, first.y);
+        assert!(target.x >= first.x + 3);
+        // The first route goes east. The second can cross its planned destination or take a
+        // two-step detour through the outer row; +40 makes the detour cheaper. Its entry cell
+        // joins both routes, so also observe its following waypoint, not only its first step.
+        let path_tile = |cell: MovementLocalPosition| {
+            cell.floor == first.floor
+                && ((cell.y == first.y && (first.x..target.x).contains(&cell.x))
+                    || cell == second
+                    || (cell.x == first.x + 1 && cell.y == second.y)
+                    || (cell.y == first.y + 2 * dy && (first.x..=target.x).contains(&cell.x))
+                    || (cell.x == target.x && cell.y == second.y))
+        };
+        for (player, session) in chasers {
+            assert_eq!(
+                owner.attack.chase_decision(
+                    &owner.runtime,
+                    &room,
+                    player,
+                    session,
+                    at(T0),
+                    path_tile,
+                ),
+                None,
+                "both searches first register"
+            );
+        }
+        let now = T0 + CHASE_WINDOW_MICROS;
+        if suspend {
+            // Pending creatures hold 48 searches; prior player work leaves one reservation.
+            let budget = &mut owner.attack.chase_searches;
+            budget.declare_creature_pending(48 * UNITS_PER_SEARCH);
+            assert!(budget.charge_player(now, 15 * UNITS_PER_SEARCH));
+        }
+        // Either caller drains in actor order. The lower id's first step can remain stored
+        // (higher id calls first) or be returned before Movement commits (lower id calls first).
+        let mut steps = [None; 2];
+        steps[first_caller] = owner.attack.chase_decision(
+            &owner.runtime,
+            &room,
+            chasers[first_caller].0,
+            chasers[first_caller].1,
+            at(now),
+            path_tile,
+        );
+        assert_eq!(
+            owner.attack.chase_searches.player_searches(),
+            if suspend { 1 } else { 2 }
+        );
+        if suspend {
+            assert_eq!(steps[1], None, "the second search stopped on the budget");
+            assert!(
+                owner
+                    .attack
+                    .chase_search_waiting(chasers[1].0, chasers[1].1)
+            );
+            let budget = &mut owner.attack.chase_searches;
+            for _ in 0..48 {
+                assert!(budget.charge_creature(now, UNITS_PER_SEARCH, true));
+                budget.refund_creature(now, UNITS_PER_SEARCH - 1);
+            }
+        }
+        if clear_first {
+            // The target is cleared while the returned step still awaits Movement.
+            let (player, session) = chasers[0];
+            owner.attack.clear_target(player, session);
+        }
+        // As in chase_step_now's await of paced_step, no returned step has committed yet. The
+        // resumed search must see the first destination even if next_step already consumed it.
+        for (step, (player, session)) in steps.iter_mut().zip(chasers) {
+            if step.is_none() && !(clear_first && player == chasers[0].0) {
+                *step = owner.attack.chase_decision(
+                    &owner.runtime,
+                    &room,
+                    player,
+                    session,
+                    at(now),
+                    path_tile,
+                );
+            }
+        }
+        assert_eq!(steps[0], Some(CardinalStep::East));
+        assert!(steps[1].is_some());
+        assert_eq!(owner.attack.chase_searches.player_searches(), 2);
+        assert_eq!(
+            owner
+                .runtime
+                .read_actor_position(chasers[0].0)
+                .unwrap()
+                .position(),
+            first
+        );
+        let index = owner.attack.index(chasers[1].0, chasers[1].1).unwrap();
+        (steps, owner.attack.entries[index].chase.next_cell())
+    }
+
+    let uninterrupted = routes(false, 1, false);
+    assert!(uninterrupted.1.is_some());
+    assert_ne!(
+        uninterrupted.1,
+        Some(MovementLocalPosition {
+            x: OPEN_PLAYER.x + 1,
+            ..OPEN_PLAYER
+        }),
+        "the second route avoids the first chaser's planned destination"
+    );
+    assert_eq!(routes(false, 0, false), uninterrupted);
+    assert_eq!(
+        routes(true, 1, false),
+        uninterrupted,
+        "the first step is still stored"
+    );
+    assert_eq!(
+        routes(true, 0, false),
+        uninterrupted,
+        "the first step awaits Movement"
+    );
+    assert_eq!(
+        routes(true, 0, true),
+        uninterrupted,
+        "the in-flight step survives target cleanup"
+    );
+}
+
+#[test]
 fn the_drain_serves_sixty_four_searches_a_window_and_the_sixty_fifth_in_the_next() {
     // RANGED0-RL-03 max=64 / max+1=65: 65 chases wait from one window; the next window's drain
     // serves 64 of them in actor id order, and the 65th keeps its place for the window after.
