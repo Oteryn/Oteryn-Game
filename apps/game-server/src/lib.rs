@@ -148,6 +148,12 @@ mod spell_familiar_runtime_postgres_cases;
 #[path = "durability/world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
 
+// LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
+// path-loads durability and must not collect these pure cases a second time.
+#[cfg(test)]
+#[path = "durability/forge_dust_limit_audit_tests.rs"]
+mod forge_dust_limit_audit_tests;
+
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
 mod foundation_recovery_tests;
@@ -856,3 +862,6 @@ mod creature_source_items;
 // D1287: selection-source component tests, without a production runtime caller.
 #[cfg(test)]
 mod world_change;
+
+#[cfg(test)]
+mod security;
