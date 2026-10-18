@@ -14,10 +14,12 @@
 --     (World, category) revision in the job's own transaction, so a failed cut publishes none;
 --   * the job's role (HIGHSCORES0 §4): the NOLOGIN group `oteryn_game_highscore_job` alone
 --     writes and deletes the snapshot tables and reads their committed sources. A pre-existing
---     role is refused unless it is a plain NOLOGIN group that is a member of no role. The
---     runtime group is its member WITH INHERIT FALSE, SET TRUE: a runtime login holds none of its
---     privileges and gains them only for the job's own transaction (`SET LOCAL ROLE`). The
---     runtime and control roles SELECT the snapshot tables only.
+--     role is refused unless it is a plain NOLOGIN NOINHERIT group that is a member of no role
+--     and whose only members are the runtime group (WITH INHERIT FALSE, without ADMIN) and the
+--     migration role's own ADMIN-only creator grant. The runtime group is its member WITH
+--     INHERIT FALSE, SET TRUE: a runtime login holds none of its privileges and gains them only
+--     for the job's own transaction (`SET LOCAL ROLE`). The runtime and control roles SELECT the
+--     snapshot tables only.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration that drops the
 -- trigger, the three tables and the two guard functions, and revokes the job role's grants (the
@@ -29,16 +31,17 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'oteryn_game_highscore_job') THEN
         -- Roles are cluster-global: a concurrent migration of another database may create it.
         BEGIN
-            CREATE ROLE oteryn_game_highscore_job NOLOGIN;
+            CREATE ROLE oteryn_game_highscore_job NOLOGIN NOINHERIT;
         EXCEPTION WHEN duplicate_object OR unique_violation THEN
             NULL;
         END;
     END IF;
     IF EXISTS (
         SELECT 1 FROM pg_roles WHERE rolname = 'oteryn_game_highscore_job'
-          AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication)
+          AND (rolcanlogin OR rolinherit OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb
+               OR rolreplication)
     ) THEN
-        RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job is not a plain NOLOGIN group'
+        RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job is not a plain NOLOGIN NOINHERIT group'
             USING ERRCODE = '42501';
     END IF;
     -- A membership of its own would let the job's transaction inherit, or SET ROLE to,
@@ -48,6 +51,23 @@ BEGIN
         WHERE r.rolname = 'oteryn_game_highscore_job'
     ) THEN
         RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job is a member of another role'
+            USING ERRCODE = '42501';
+    END IF;
+    -- A member of the group could inherit, SET ROLE to or grant the highscore privileges below.
+    -- Its only members may be the runtime group WITH INHERIT FALSE and without ADMIN (granted
+    -- below, or already by another Game database of this cluster) and the ADMIN-only grant that
+    -- PostgreSQL gives the migration role when a non-superuser CREATEROLE role creates the group.
+    IF EXISTS (
+        SELECT 1 FROM pg_auth_members m
+        JOIN pg_roles g ON g.oid = m.roleid
+        JOIN pg_roles r ON r.oid = m.member
+        WHERE g.rolname = 'oteryn_game_highscore_job'
+          AND NOT (
+              (r.rolname = 'oteryn_game_runtime' AND NOT m.inherit_option AND NOT m.admin_option)
+              OR (r.rolname = current_user AND NOT m.inherit_option AND NOT m.set_option)
+          )
+    ) THEN
+        RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job has a member other than the runtime group'
             USING ERRCODE = '42501';
     END IF;
 END $$;

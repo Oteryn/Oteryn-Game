@@ -1271,37 +1271,70 @@ fn job_role_guard() -> &'static str {
     &MIGRATION[start..end]
 }
 
+/// Runs `statements` and then the 0097 guard in one transaction. With `refusal` the guard must
+/// refuse with 42501 and that message, otherwise it must pass. The changes to the cluster-global
+/// group exist only in this transaction, so no other database on the shared cluster ever sees
+/// them; after the rollback the provisioned group passes the guard again.
+async fn guard_in_rollback(
+    h: &Harness,
+    statements: &[String],
+    refusal: Option<&str>,
+) -> TestResult {
+    let guard = job_role_guard();
+    let mut tx = h.pool.begin().await?;
+    for statement in statements {
+        sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+            .execute(&mut *tx)
+            .await?;
+    }
+    let outcome = (&mut *tx).execute(guard).await;
+    match refusal {
+        Some(message) => {
+            let code = outcome
+                .as_ref()
+                .err()
+                .and_then(sqlx::Error::as_database_error)
+                .and_then(|error| error.code());
+            assert_eq!(
+                code.as_deref(),
+                Some("42501"),
+                "{statements:?}: {outcome:?}"
+            );
+            assert!(
+                format!("{outcome:?}").contains(message),
+                "{statements:?}: {outcome:?}"
+            );
+        }
+        None => {
+            outcome?;
+        }
+    }
+    tx.rollback().await?;
+    h.pool.execute(guard).await?;
+    Ok(())
+}
+
 #[test]
 fn job_role_guard_refuses_a_pre_existing_group_with_any_membership() -> TestResult {
     run("hsjobmembership", async |h| {
         let guard = job_role_guard();
         assert!(guard.contains("pg_auth_members"));
-        // The provisioned group is a plain NOLOGIN group that is a member of no role.
+        // The provisioned group is a plain NOLOGIN NOINHERIT group that is a member of no role.
         h.pool.execute(guard).await?;
         let probe = format!("bp_hsjobmember_{}", std::process::id());
-        // The membership exists only in this transaction, so no other database on the shared
-        // cluster ever sees the group as a member of a role.
-        let mut tx = h.pool.begin().await?;
-        for statement in [
-            format!("CREATE ROLE {probe} NOLOGIN"),
-            format!("GRANT {probe} TO oteryn_game_highscore_job"),
-        ] {
-            sqlx::query(sqlx::AssertSqlSafe(statement))
-                .execute(&mut *tx)
-                .await?;
+        // A membership of the group is refused whatever its options: it could be inherited,
+        // used through SET ROLE, or turned into either by a later re-grant.
+        for options in ["", " WITH INHERIT TRUE", " WITH INHERIT FALSE, SET FALSE"] {
+            guard_in_rollback(
+                h,
+                &[
+                    format!("CREATE ROLE {probe} NOLOGIN"),
+                    format!("GRANT {probe} TO oteryn_game_highscore_job{options}"),
+                ],
+                Some("is a member of another role"),
+            )
+            .await?;
         }
-        let refused = (&mut *tx).execute(guard).await;
-        let code = refused
-            .as_ref()
-            .err()
-            .and_then(sqlx::Error::as_database_error)
-            .and_then(|error| error.code());
-        assert_eq!(code.as_deref(), Some("42501"), "{refused:?}");
-        assert!(
-            format!("{refused:?}").contains("is a member of another role"),
-            "{refused:?}"
-        );
-        tx.rollback().await?;
         let memberships: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member \
              WHERE r.rolname = 'oteryn_game_highscore_job'",
@@ -1309,7 +1342,101 @@ fn job_role_guard_refuses_a_pre_existing_group_with_any_membership() -> TestResu
         .fetch_one(&h.pool)
         .await?;
         assert_eq!(memberships, 0);
-        h.pool.execute(guard).await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn job_role_guard_refuses_a_pre_existing_group_that_inherits() -> TestResult {
+    run("hsjobinherit", async |h| {
+        let guard = job_role_guard();
+        assert!(guard.contains("CREATE ROLE oteryn_game_highscore_job NOLOGIN NOINHERIT;"));
+        let inherits = async || -> TestResult<bool> {
+            Ok(sqlx::query_scalar(
+                "SELECT rolinherit FROM pg_roles WHERE rolname = 'oteryn_game_highscore_job'",
+            )
+            .fetch_one(&h.pool)
+            .await?)
+        };
+        // The migration provisions (or accepts) the group only as NOINHERIT.
+        assert!(!inherits().await?);
+        guard_in_rollback(
+            h,
+            &["ALTER ROLE oteryn_game_highscore_job INHERIT".to_owned()],
+            Some("is not a plain NOLOGIN NOINHERIT group"),
+        )
+        .await?;
+        assert!(!inherits().await?);
+        Ok(())
+    })
+}
+
+#[test]
+fn job_role_guard_refuses_an_unexpected_member_of_the_group() -> TestResult {
+    run("hsjobmembers", async |h| {
+        // Provisioned: the runtime group is a member WITH INHERIT FALSE, SET TRUE and no ADMIN.
+        let runtime: (bool, bool, bool) = sqlx::query_as(
+            "SELECT bool_or(m.inherit_option), bool_and(m.set_option), bool_or(m.admin_option) \
+             FROM pg_auth_members m JOIN pg_roles g ON g.oid = m.roleid \
+             JOIN pg_roles r ON r.oid = m.member \
+             WHERE g.rolname = 'oteryn_game_highscore_job' AND r.rolname = 'oteryn_game_runtime'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(runtime, (false, true, false));
+        h.pool.execute(job_role_guard()).await?;
+        let refusal = Some("has a member other than the runtime group");
+        let probe = format!("bp_hsjobholder_{}", std::process::id());
+        // Any other member is refused, whether it would inherit the group's privileges, could
+        // SET ROLE to it or could only grant it.
+        for options in [
+            "",
+            " WITH INHERIT FALSE, SET TRUE",
+            " WITH ADMIN TRUE, INHERIT FALSE, SET FALSE",
+        ] {
+            guard_in_rollback(
+                h,
+                &[
+                    format!("CREATE ROLE {probe} NOLOGIN"),
+                    format!("GRANT oteryn_game_highscore_job TO {probe}{options}"),
+                ],
+                refusal,
+            )
+            .await?;
+        }
+        // The runtime group itself is refused once it would inherit or could grant the group.
+        for options in ["WITH INHERIT TRUE", "WITH ADMIN TRUE"] {
+            guard_in_rollback(
+                h,
+                &[format!(
+                    "GRANT oteryn_game_highscore_job TO oteryn_game_runtime {options}"
+                )],
+                refusal,
+            )
+            .await?;
+        }
+        // A non-superuser CREATEROLE migration role holds an ADMIN-only grant of the group it
+        // created. That grant passes when that role runs the guard, but not once it could
+        // SET ROLE, and not for any other role.
+        let migrator = format!("bp_hsjobmigrator_{}", std::process::id());
+        let creator = vec![
+            format!("CREATE ROLE {migrator} NOLOGIN CREATEROLE"),
+            format!(
+                "GRANT oteryn_game_highscore_job TO {migrator} \
+                 WITH ADMIN TRUE, INHERIT FALSE, SET FALSE"
+            ),
+        ];
+        let as_migrator = format!("SET LOCAL ROLE {migrator}");
+        let mut run_by_migrator = creator.clone();
+        run_by_migrator.push(as_migrator.clone());
+        guard_in_rollback(h, &run_by_migrator, None).await?;
+        guard_in_rollback(h, &creator, refusal).await?;
+        let mut settable = creator;
+        settable.push(format!(
+            "GRANT oteryn_game_highscore_job TO {migrator} WITH SET TRUE"
+        ));
+        settable.push(as_migrator);
+        guard_in_rollback(h, &settable, refusal).await?;
         Ok(())
     })
 }
