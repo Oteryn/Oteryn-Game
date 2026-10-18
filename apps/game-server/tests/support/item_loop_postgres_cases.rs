@@ -11,8 +11,8 @@ use crate::durability::character_equipment::{
     assert_equipment_authority_in_transaction, initialize_equipment_in_transaction,
 };
 use crate::durability::item_loop_move::{
-    ITEM_LOOP_DROP_REF_PREFIX, ItemLoopContent, LoopDestination, LoopGround, LoopMoveReceipt,
-    LoopMoveRefusal, LoopMoveReplay, LoopMoveRequest,
+    ITEM_LOOP_CHANNEL_DROPS_MAX, ITEM_LOOP_DROP_REF_PREFIX, ItemLoopContent, LoopDestination,
+    LoopGround, LoopMoveReceipt, LoopMoveRefusal, LoopMoveReplay, LoopMoveRequest,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
@@ -734,6 +734,262 @@ fn item_loop_drops_and_picks_up_within_the_derived_capacity() -> TestResult {
         };
         assert_eq!(part.item.quantity, 10);
         assert_ne!(part.item.item_instance_id, coin);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Copy the live item `template` `n` times outside the runtime guards; each copy lands where
+/// `place` (one INSERT .. SELECT over `ids`, `$1` the template, `$3` a bytea parameter) puts it.
+async fn seed_copies(
+    harness: &Harness,
+    template: [u8; 16],
+    n: i64,
+    param: &[u8],
+    place: &str,
+) -> TestResult {
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "WITH ids AS MATERIALIZED ( \
+           SELECT game_character_uuid_v7() AS item, n FROM generate_series(1, $2::bigint) n), \
+         copied AS ( \
+           INSERT INTO game_item_instances \
+           SELECT (jsonb_populate_record(NULL::game_item_instances, \
+                   to_jsonb(i) || jsonb_build_object('item_instance_id', ids.item))).* \
+             FROM game_item_instances i, ids \
+            WHERE i.item_instance_id = encode($1,'hex')::uuid) \
+         {place}"
+    )))
+    .bind(template.as_slice())
+    .bind(n)
+    .bind(param)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+/// `n` live loop-dropped copies of the Ground item `template` in Channel 43, one per cell away
+/// from [`CELL`], each with its own loop drop reference and Ground ordinal.
+async fn seed_loop_drops(harness: &Harness, template: [u8; 16], n: i64) -> TestResult {
+    seed_copies(
+        harness,
+        template,
+        n,
+        ITEM_LOOP_DROP_REF_PREFIX,
+        "INSERT INTO game_item_ground_locations \
+         SELECT (jsonb_populate_record(NULL::game_item_ground_locations, \
+                 to_jsonb(g) || jsonb_build_object( \
+                   'item_instance_id', ids.item, \
+                   'spatial_position', \
+                     '\\x' || encode(int4send(ids.n::int) || '\\x0000ffff0007'::bytea, 'hex'), \
+                   'corpse_ref', \
+                     '\\x' || encode($3::bytea || uuid_send(game_character_uuid_v7()), 'hex'), \
+                   'stack_ordinal', nextval('game_item_ground_stack_ordinal_seq')))).* \
+           FROM game_item_ground_locations g, ids \
+          WHERE g.item_instance_id = encode($1,'hex')::uuid",
+    )
+    .await
+}
+
+/// `n` copies of the live item `template` nested directly under `parent`.
+async fn seed_nested(
+    harness: &Harness,
+    template: [u8; 16],
+    parent: [u8; 16],
+    n: i64,
+) -> TestResult {
+    seed_copies(
+        harness,
+        template,
+        n,
+        &parent,
+        "INSERT INTO game_item_nested_entries (item_instance_id, world_id, \
+           parent_item_instance_id, placement_ordinal, placed_transaction_id) \
+         SELECT ids.item, i.world_id, encode($3::bytea,'hex')::uuid, ids.n, \
+                game_character_uuid_v7() \
+           FROM game_item_instances i, ids \
+          WHERE i.item_instance_id = encode($1,'hex')::uuid",
+    )
+    .await
+}
+
+async fn tree_size(harness: &Harness) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+            .bind(id(CHARACTER).as_slice())
+            .fetch_one(&harness.pool)
+            .await?,
+    )
+}
+
+fn pickup(item: [u8; 16], cell: &[u8]) -> LoopMoveRequest {
+    LoopMoveRequest {
+        pickup_cell: Some(cell.to_vec()),
+        ..request(item, LoopDestination::MainBackpack)
+    }
+}
+
+#[test]
+fn item_loop_drop_is_blocked_at_the_channel_cap_until_a_pickup_frees_room() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "itemloop_cap").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        equip_backpack(&harness, &authority, fence()?, SESSION).await?;
+        let stone = carry(&harness, &authority, 2, STONE, 1).await?;
+        let other = carry(&harness, &authority, 3, STONE, 1).await?;
+        let minted = harness.mint(&authority, STONE, 1).await?;
+        activate_and_initialize(&harness, &authority).await?;
+        let light = Content(Stone::Light);
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
+
+        // ITEMMOVE1-RL-02: one below the cap, a drop fills the channel to exactly 20,000.
+        seed_loop_drops(&harness, minted, ITEM_LOOP_CHANNEL_DROPS_MAX - 1).await?;
+        moved(
+            &harness,
+            &authority,
+            10,
+            &light,
+            request(stone, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        let on_ground = harness
+            .root
+            .read_item_loop_ground(world, channel)
+            .await
+            .map_err(debug)?;
+        assert_eq!(i64::try_from(on_ground.len())?, ITEM_LOOP_CHANNEL_DROPS_MAX);
+
+        // At the cap the next drop is BLOCKED and writes nothing.
+        let committed = footprint(&harness).await?;
+        assert_eq!(
+            loop_move(
+                &harness,
+                &authority,
+                11,
+                &light,
+                request(other, LoopDestination::Ground(ground())),
+            )
+            .await?
+            .err(),
+            Some(LoopMoveRefusal::Blocked)
+        );
+        assert_eq!(footprint(&harness).await?, committed);
+        assert!(!harness.on_ground(other).await?);
+
+        // A pickup of a dropped item frees one place; the next drop then commits.
+        moved(&harness, &authority, 12, &light, pickup(stone, &CELL)).await?;
+        moved(
+            &harness,
+            &authority,
+            13,
+            &light,
+            request(other, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        assert!(harness.on_ground(other).await?);
+        assert_eq!(
+            i64::try_from(
+                harness
+                    .root
+                    .read_item_loop_ground(world, channel)
+                    .await
+                    .map_err(debug)?
+                    .len()
+            )?,
+            ITEM_LOOP_CHANNEL_DROPS_MAX
+        );
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn item_loop_full_merge_passes_at_the_tree_ceiling_where_a_placement_has_no_room() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "itemloop_ceiling").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        equip_backpack(&harness, &authority, fence()?, SESSION).await?;
+        let bag = carry(&harness, &authority, 2, BAG, 1).await?;
+        let coin = carry(&harness, &authority, 3, COIN, 50).await?;
+        let stone = carry(&harness, &authority, 4, STONE, 1).await?;
+        activate_and_initialize(&harness, &authority).await?;
+        let light = Content(Stone::Light);
+
+        // Ten coins split onto the cell and the stone follows; the bag and 40 coins stay.
+        moved(
+            &harness,
+            &authority,
+            10,
+            &light,
+            LoopMoveRequest {
+                count: Some(10),
+                ..request(coin, LoopDestination::Ground(ground()))
+            },
+        )
+        .await?;
+        moved(
+            &harness,
+            &authority,
+            11,
+            &light,
+            request(stone, LoopDestination::Ground(ground())),
+        )
+        .await?;
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
+        let part = harness
+            .root
+            .read_item_loop_ground(world, channel)
+            .await
+            .map_err(debug)?
+            .iter()
+            .map(|dropped| dropped.item.item_instance_id)
+            .find(|item| *item != stone)
+            .ok_or("the dropped coins are not on the Ground")?;
+
+        // BAGS-1: 498 stones under the bag fill the carried tree to its 500 ceiling.
+        seed_nested(&harness, stone, bag, 498).await?;
+        assert_eq!(tree_size(&harness).await?, 500);
+
+        // Placing the stone would grow the tree past the ceiling: NO_ROOM, nothing written.
+        let committed = footprint(&harness).await?;
+        assert_eq!(
+            loop_move(&harness, &authority, 12, &light, pickup(stone, &CELL))
+                .await?
+                .err(),
+            Some(LoopMoveRefusal::NoRoom)
+        );
+        assert_eq!(footprint(&harness).await?, committed);
+        assert!(harness.on_ground(stone).await?);
+
+        // STACK-1: a full merge adds nothing, so the coins top up the carried stack at 500.
+        moved(&harness, &authority, 13, &light, pickup(part, &CELL)).await?;
+        assert_eq!(harness.item_state(coin).await?, (50, 1));
+        assert!(!harness.on_ground(part).await?);
+        assert_eq!(tree_size(&harness).await?, 500);
         drop(authority);
         drop(seal);
         harness.cleanup().await

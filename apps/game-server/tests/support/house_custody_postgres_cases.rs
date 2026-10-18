@@ -384,8 +384,9 @@ fn house_item_has_exactly_one_location_while_live_and_none_when_retired() -> Tes
         assert!(message(contents)?.contains("cannot have contents"));
         tx.rollback().await?;
 
-        // The guard covers all six current custody locations and the item row.
-        // Migration 0035 adds equipment custody to the original house contract.
+        // The guard covers all seven current custody locations and the item row.
+        // Migration 0035 adds equipment custody to the original house contract;
+        // Migration 0128 adds nested container custody.
         let guarded: Vec<String> = sqlx::query_scalar(
             "SELECT tgrelid::regclass::text FROM pg_trigger \
               WHERE tgfoid = 'game_item_location_exclusivity_guard'::regproc \
@@ -403,6 +404,7 @@ fn house_item_has_exactly_one_location_while_live_and_none_when_retired() -> Tes
                 "game_item_ground_locations",
                 "game_item_house_interior_locations",
                 "game_item_instances",
+                "game_item_nested_entries",
             ]
         );
         Ok(())

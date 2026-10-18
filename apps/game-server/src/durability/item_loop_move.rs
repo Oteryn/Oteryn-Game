@@ -43,6 +43,8 @@ use sqlx::{Postgres, Row, Transaction};
 pub(crate) const ITEM_LOOP_DEPTH_MAX: i32 = 8;
 /// BAGS-1: the most items below one Character's main backpack.
 pub(crate) const ITEM_LOOP_TREE_ITEMS_MAX: i64 = 500;
+/// ITEMMOVE1-RL-02: the most loop-dropped Ground items of one channel.
+pub(crate) const ITEM_LOOP_CHANNEL_DROPS_MAX: i64 = 20_000;
 /// The prefix of every loop drop's Ground `corpse_ref` (0128 `game_item_loop_drop_ref`).
 pub(crate) const ITEM_LOOP_DROP_REF_PREFIX: &[u8] = b"OTERYN_ITEM_LOOP_DROP/v1:";
 
@@ -658,23 +660,10 @@ async fn apply_loop_move<C: ItemLoopContent>(
 
     // BAGS-1 ceilings and the destination's room.
     let fresh = partial;
-    if let Target::Container { parent_depth, .. } = &target {
-        if parent_depth + 1 + height > ITEM_LOOP_DEPTH_MAX {
-            return refuse(LoopMoveRefusal::NotSupported);
-        }
-        let tree: i64 =
-            sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
-                .bind(character.as_bytes().as_slice())
-                .fetch_one(&mut **tx)
-                .await?;
-        let added = if source == SourceKind::Ground {
-            size
-        } else {
-            0
-        } + i64::from(fresh);
-        if tree + added > ITEM_LOOP_TREE_ITEMS_MAX {
-            return refuse(LoopMoveRefusal::NoRoom);
-        }
+    if let Target::Container { parent_depth, .. } = &target
+        && parent_depth + 1 + height > ITEM_LOOP_DEPTH_MAX
+    {
+        return refuse(LoopMoveRefusal::NotSupported);
     }
     let Ok((maximum, stackable)) = stack_maximum(facts.stack) else {
         return refuse(LoopMoveRefusal::NotSupported);
@@ -725,6 +714,27 @@ async fn apply_loop_move<C: ItemLoopContent>(
         let occupied = entries.len() - usize::from(already_here);
         if placed && occupied + 1 > *capacity as usize {
             return refuse(LoopMoveRefusal::NoRoom);
+        }
+        // The carried tree grows only by what is placed: a pickup's subtree or a split's fresh
+        // stack. A full merge retires its source and adds nothing, so it passes at the ceiling.
+        let added = if placed {
+            (if source == SourceKind::Ground {
+                size
+            } else {
+                0
+            }) + i64::from(fresh)
+        } else {
+            0
+        };
+        if added > 0 {
+            let tree: i64 =
+                sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+                    .bind(character.as_bytes().as_slice())
+                    .fetch_one(&mut **tx)
+                    .await?;
+            if tree + added > ITEM_LOOP_TREE_ITEMS_MAX {
+                return refuse(LoopMoveRefusal::NoRoom);
+            }
         }
     }
 
@@ -788,6 +798,29 @@ async fn apply_loop_move<C: ItemLoopContent>(
     };
     let target = match target {
         Target::Ground(mut ground) => {
+            // ITEMMOVE1-RL-02: the channel's row lock serializes its drops, so the count read
+            // after it is exact; a drop over the cap is BLOCKED.
+            sqlx::query(
+                "INSERT INTO game_item_loop_drop_channels (world_id, channel_id) \
+                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid) \
+                 ON CONFLICT (world_id, channel_id) DO UPDATE SET world_id = EXCLUDED.world_id",
+            )
+            .bind(world.as_slice())
+            .bind(channel.as_slice())
+            .execute(&mut **tx)
+            .await?;
+            let dropped: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_ground_locations \
+                  WHERE world_id = encode($1,'hex')::uuid AND channel_id = encode($2,'hex')::uuid \
+                    AND game_item_loop_drop_ref(corpse_ref)",
+            )
+            .bind(world.as_slice())
+            .bind(channel.as_slice())
+            .fetch_one(&mut **tx)
+            .await?;
+            if dropped + 1 > ITEM_LOOP_CHANNEL_DROPS_MAX {
+                return refuse(LoopMoveRefusal::Blocked);
+            }
             ground.corpse_ref = [ITEM_LOOP_DROP_REF_PREFIX, transaction_id.as_slice()].concat();
             check_ground_cell_root_insert_with_recovery(
                 tx,
@@ -1289,12 +1322,20 @@ impl DurabilityRoot {
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.channel_id = encode($2,'hex')::uuid AND i.lifecycle = 1 \
                             AND game_item_loop_drop_ref(g.corpse_ref) \
-                          ORDER BY g.stack_ordinal, i.item_instance_id",
+                          ORDER BY g.stack_ordinal, i.item_instance_id \
+                          LIMIT $3",
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.as_bytes().as_slice())
+                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + 1)
                     .fetch_all(&mut *tx)
                     .await?;
+                    // ITEMMOVE1-RL-02 bounds the channel's loop drops; more is a broken store.
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if rows.len() > bound {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
                     let invalid = |_| DurabilityError::InvalidStoredState;
                     let mut items = Vec::with_capacity(rows.len());
                     for row in &rows {

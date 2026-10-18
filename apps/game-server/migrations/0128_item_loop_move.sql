@@ -4,6 +4,8 @@
 -- - ITEM-MOVE-2a/2b, STACK-1: one fenced move receipt per CommandRef with one line per touched
 --   item (move, merge, split, drop to Ground, pickup from Ground).
 -- - STARTER-1: one durable starter grant per Character and template (MINTED or SKIPPED).
+-- - ITEMMOVE1-RL-02: at most 20,000 loop-dropped Ground items per channel, counted from the live
+--   rows under a per-channel lock row.
 -- The existing proof triggers keep their functions unchanged; each is recreated with a WHEN that
 -- hands an item carrying a current loop line (or a current starter grant) to the proofs below.
 -- PARITY_PENDING: container capacity is a receipt-attested Rust Content fact bound to
@@ -201,6 +203,16 @@ CREATE FUNCTION game_item_loop_drop_ref(p_ref BYTEA) RETURNS BOOLEAN
 LANGUAGE sql IMMUTABLE SET search_path = pg_catalog, pg_temp AS $$
     SELECT position(convert_to('OTERYN_ITEM_LOOP_DROP/v1:', 'UTF8') IN p_ref) = 1
 $$;
+
+-- ITEMMOVE1-RL-02: a loop drop locks its channel's row, then counts the channel's live loop-drop
+-- Ground rows through this index, so the count always equals the live dropped rows.
+CREATE TABLE game_item_loop_drop_channels (
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    PRIMARY KEY (world_id, channel_id)
+);
+CREATE INDEX game_item_ground_loop_drops ON game_item_ground_locations (world_id, channel_id)
+    WHERE game_item_loop_drop_ref(corpse_ref);
 
 -- Immediate: a line names its item's exact current state and source location at insertion,
 -- before any custody write of this transaction touches the item.
@@ -625,7 +637,10 @@ GRANT EXECUTE ON FUNCTION game_item_loop_owner(UUID), game_item_loop_subtree(UUI
     game_item_loop_tree_size(UUID) TO oteryn_game_runtime;
 
 REVOKE ALL ON game_item_nested_entries, game_item_loop_move_receipts, game_item_loop_move_lines,
-    game_character_starter_grants FROM PUBLIC;
+    game_character_starter_grants, game_item_loop_drop_channels FROM PUBLIC;
+-- The drop writer takes the channel row lock with INSERT .. ON CONFLICT DO UPDATE.
+GRANT SELECT, INSERT, UPDATE ON game_item_loop_drop_channels TO oteryn_game_runtime;
+GRANT SELECT ON game_item_loop_drop_channels TO oteryn_game_control;
 GRANT SELECT, INSERT, DELETE ON game_item_nested_entries TO oteryn_game_runtime;
 GRANT SELECT, INSERT ON game_item_loop_move_receipts, game_item_loop_move_lines,
     game_character_starter_grants TO oteryn_game_runtime;

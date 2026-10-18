@@ -51,6 +51,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs
   - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
   - apps/game-server/tests/character_authority_postgres.rs
+  - apps/game-server/tests/spell_lane_key33_pin.rs (CP D1438: pins the new key-33 writer apply_loop_move)
   - apps/game-server/tests/support/item_loop_postgres_cases.rs
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
@@ -149,6 +150,11 @@ Ran on Molehill-PC on the exact tree of the head, Rust 1.94.0; PG per D1329 thro
 - `cargo clippy --locked -p oteryn-game-server --all-targets -j 4 -- -D warnings`: pass
 - `cargo test --locked -p oteryn-game-server --lib -j 4 -- capabilities item_move container_view loop_move item_loop starter_grant item_transfer character_equipment kill_reward monk_save world_map_domain`: pass (167 passed, 0 failed)
 - `cargo test --locked -p oteryn-game-server --test character_authority_postgres -j 4 -- item_loop`: pass (4 passed, 0 failed)
+- Repair head (CI run 39134799119 and Codex P1/P2): `cargo fmt --all --check`: pass;
+  `cargo clippy --locked -p oteryn-game-server --all-targets -j 4 -- -D warnings`: pass;
+  the `--lib` filter above: pass (167 passed, 0 failed);
+  `--test character_authority_postgres -- item_loop house_custody`: pass (10 passed, 0 failed);
+  `--test spell_lane_key33_pin`: pass (8 passed, 0 failed)
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
@@ -834,6 +840,14 @@ in PR #2190 and `owned_paths` widen to the files listed in the YAML header.
   USE of a container (domain 14) and the first-entry admission (starter grant).
 - Review state: no open Codex threads on the previous head; one Codex review
   requested on the final head.
+- Repair of head d7a57bea (CI run 39134799119, Codex P1/P2 on #2190):
+  `spell_lane_key33_pin` pins `item_loop_move.rs::apply_loop_move` (a key-33
+  writer holding its `SpellLanePermit`); the house custody case lists the
+  0128 nested-entry exclusivity trigger; ITEMMOVE1-RL-02 (20,000 loop drops
+  per channel, BLOCKED over it) is enforced under a per-channel lock row and
+  registered; a full merge at the 500-item tree ceiling commits because it
+  adds nothing to the tree.
 - Follow-ups: STACK-WIRE-1 (stack counts on the wire), a distinct overweight
-  result code, Ground stack merge, MAP-PICKUP-1 base-map pickup, and the
+  result code, Ground stack merge, MAP-PICKUP-1 base-map pickup, the
+  ITEMMOVE1-RL-02 alarm at 16,000 (no durability metrics sink yet), and the
   migration renumbering at the queue turn.
