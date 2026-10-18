@@ -13,109 +13,125 @@
           "value": 100,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.4"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "promoted_cap": {
           "value": 200,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.4"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "cap_eligibility": {
+          "value": {
+            "normal": 100,
+            "promoted": 200
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.8 / More Soul Points"
+            }
+          ],
+          "note": "Live official promotion section explicitly identifies promotion, rather than Premium account ownership, as the cap condition."
+        },
+        "normal_tick_seconds": {
+          "value": 120,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "promoted_tick_seconds": {
+          "value": 15,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "points_per_tick": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "trigger": {
+          "value": "Single XP award >= own level starts a four-minute soul window.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "bed_minutes_per_point": {
+          "value": 15,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.4"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "cap_source_disagreement": {
           "value": null,
           "classification": "CONFLICT",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4560:1204055",
               "selector": "Introduction"
             },
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.4"
             }
           ],
           "note": "Official manual distinguishes normal/promoted caps (100/200); current Soul Point Wiki distinguishes Free/Premium accounts instead. These conditions are not equivalent."
-        },
-        "normal_tick_seconds": {
-          "value": 120,
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
-              "selector": "5.1.4"
-            }
-          ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
-        },
-        "promoted_tick_seconds": {
-          "value": 15,
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
-              "selector": "5.1.4"
-            }
-          ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
-        },
-        "points_per_tick": {
-          "value": 1,
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
-              "selector": "5.1.4"
-            }
-          ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
-        },
-        "trigger": {
-          "value": "Single XP award >= own level starts a four-minute soul window.",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
-              "selector": "5.1.4"
-            }
-          ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
-        },
-        "bed_minutes_per_point": {
-          "value": 15,
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
-              "selector": "5.1.4"
-            }
-          ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
         }
       }
     }

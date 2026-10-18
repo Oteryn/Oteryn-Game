@@ -14,7 +14,7 @@
   "payloads": [
     {
       "path": "rulesets/character/stamina/reference-evidence.json",
-      "sha256": "61cbd4ba2a001cb1f892a5b5beff964d2d48efd41865eeefa34be63a5fa9da6f"
+      "sha256": "447fbfa623898a6b6605cefac1e6c82983a019b366828875dec73df4ee67d553"
     }
   ]
 }

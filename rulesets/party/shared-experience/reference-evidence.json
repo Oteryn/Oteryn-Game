@@ -13,10 +13,10 @@
           "value": "3 * lowest_level >= 2 * highest_level",
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.13.c"
             }
           ],
@@ -26,14 +26,14 @@
           "value": 30,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.13.c"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "activity_timeout": {
           "value": 120,
@@ -49,47 +49,67 @@
           "note": "Official notes say recently active without an exact timeout."
         },
         "bonus_by_distinct_vocations": {
+          "value": {
+            "1": 20,
+            "2": 30,
+            "3": 60,
+            "4_or_more": 100
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Live official primary source takes precedence over conflicting community list; discrepancy retained separately."
+        },
+        "rounding": {
+          "value": "Round each uneven shared-XP split up to the next integer.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "floors": {
+          "value": {
+            "max_absolute_floor_difference": 1
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.13.c / one floor up or down"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "bonus_source_disagreement": {
           "value": null,
           "classification": "CONFLICT",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:3582:1189634",
               "selector": "Conflicting statements identified in note"
             },
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "Conflicting statements identified in note"
             }
           ],
-          "note": "Official capture: 20/30/60/100% for 1/2/3/4+ vocations. Current Party Wiki bullet list: 20/35/70/100%; its worked example still uses 60% for three. No current bonus selected."
-        },
-        "rounding": {
-          "value": "Round each uneven shared-XP split up to the next integer.",
-          "classification": "PROVEN",
-          "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
-              "selector": "5.3.13.c"
-            }
-          ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
-        },
-        "floors": {
-          "value": "One floor above/below",
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
-          "sources": [
-            {
-              "source": "wiki:3582:1189634",
-              "selector": "Requirements to Share Experience"
-            }
-          ],
-          "note": "Official notes do not specify an exact floor delta."
+          "note": "Live official manual states 20/30/60/100%; current Wiki list states 20/35/70/100% but its worked example uses 60%. Official curve is selected separately under primary-source precedence; Wiki disagreement remains recorded."
         }
       }
     }

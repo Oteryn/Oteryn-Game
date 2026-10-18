@@ -3,11 +3,11 @@
 ```yaml
 task_id: SHARED-VITALS-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/shared-vitals-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2241
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -25,6 +25,7 @@ owned_paths:
   - docs/reference/content-prep/shared-vitals-content-1/sources.json
   - docs/reference/content-prep/shared-vitals-content-1/README.md
   - docs/agents/tasks/SHARED-VITALS-CONTENT-1.md
+  - docs/reference/content-prep/shared-vitals-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -60,3 +61,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+Current official shared-XP eligibility/bonuses, stamina and soul rules are recorded. Five vocation/promotion HP/MP observations are structured numerically; 75 own-ID food timers are retained. Exact community-only regeneration, food and activity/drain numbers remain UNKNOWN for gameplay. Current official promotion-based soul caps and party bonuses take precedence, while Wiki disagreements remain recorded.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

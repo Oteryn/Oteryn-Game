@@ -10,41 +10,68 @@
       "key": "regeneration.knight",
       "facts": {
         "normal_hp": {
-          "value": "As time passes, every player will regenerate lost hitpoints and mana, as long as they have eaten recently (see the page on Regeneration for more information).\n\nKnights regenerate:\n* 1 hitpoint every 6 seconds\n* 2 mana every 6 seconds\n\nElite knights regenerate:\n* 1 hitpoint every 4 seconds\n* 2 mana every 6 seconds\n\n\n===Promotion===\nWhen a knight reaches level 20, they can purchase a promotion and become an elite knight with certain benefits.",
+          "value": {
+            "points": 1,
+            "interval_seconds": 6
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:794:1192367",
-              "selector": "Regeneration"
+              "selector": "Regeneration / normal and promoted vocation"
             }
           ],
-          "note": "Vocation source observation only; exact per-vocation numeric timer needs official or controlled evidence."
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "normal_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 6
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:794:1192367",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_hp": {
-          "value": null,
+          "value": {
+            "points": 1,
+            "interval_seconds": 4
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:794:1192367",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 6
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:794:1192367",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         }
       }
     },
@@ -52,41 +79,68 @@
       "key": "regeneration.paladin",
       "facts": {
         "normal_hp": {
-          "value": "As time passes, every player will regenerate lost hitpoints and mana, as long as they have eaten recently (see the page on Regeneration for more information).\n\nPaladins regenerate:\n* 1 hitpoint every 8 seconds\n* 2 mana every 4 seconds\n\nRoyal paladins regenerate:\n* 1 hitpoint every 6 seconds\n* 2 mana every 3 seconds\n\n===Promotion===\nWhen a paladin reaches level 20, they can purchase a promotion and become a royal paladin with certain benefits.",
+          "value": {
+            "points": 1,
+            "interval_seconds": 8
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:1414:1121343",
-              "selector": "Regeneration"
+              "selector": "Regeneration / normal and promoted vocation"
             }
           ],
-          "note": "Vocation source observation only; exact per-vocation numeric timer needs official or controlled evidence."
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "normal_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 4
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1414:1121343",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_hp": {
-          "value": null,
+          "value": {
+            "points": 1,
+            "interval_seconds": 6
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1414:1121343",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 3
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1414:1121343",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         }
       }
     },
@@ -94,41 +148,68 @@
       "key": "regeneration.druid",
       "facts": {
         "normal_hp": {
-          "value": "As time passes, every player will regenerate lost hitpoints and mana, as long as they have eaten recently (see the page on Regeneration for more information).\n\nDruids regenerate:\n* 1 hitpoint every 12 seconds\n* 2 mana every 3 seconds\n\n\nElder druids regenerate:\n* 1 hitpoint every 12 seconds\n* 2 mana every 2 seconds\n\n===Promotion===\nWhen a druid reaches level 20, they can purchase a promotion and become an elder druid with certain benefits.",
+          "value": {
+            "points": 1,
+            "interval_seconds": 12
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:1397:1179121",
-              "selector": "Regeneration"
+              "selector": "Regeneration / normal and promoted vocation"
             }
           ],
-          "note": "Vocation source observation only; exact per-vocation numeric timer needs official or controlled evidence."
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "normal_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 3
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1397:1179121",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_hp": {
-          "value": null,
+          "value": {
+            "points": 1,
+            "interval_seconds": 12
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1397:1179121",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 2
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1397:1179121",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         }
       }
     },
@@ -136,41 +217,68 @@
       "key": "regeneration.sorcerer",
       "facts": {
         "normal_hp": {
-          "value": "As time passes, every player will regenerate lost hitpoints and mana, as long as they have eaten recently (see the page on Regeneration for more information).\n\nSorcerers regenerate:\n* 1 hitpoint every 12 seconds\n* 2 mana every 3 seconds\n\nMaster sorcerers regenerate:\n* 1 hitpoint every 12 seconds\n* 2 mana every 2 seconds\n\n===Promotion===\nWhen a sorcerer reaches level 20, they can purchase a promotion and become a master sorcerer with certain benefits.",
+          "value": {
+            "points": 1,
+            "interval_seconds": 12
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:1068:1121345",
-              "selector": "Regeneration"
+              "selector": "Regeneration / normal and promoted vocation"
             }
           ],
-          "note": "Vocation source observation only; exact per-vocation numeric timer needs official or controlled evidence."
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "normal_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 3
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1068:1121345",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_hp": {
-          "value": null,
+          "value": {
+            "points": 1,
+            "interval_seconds": 12
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1068:1121345",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 2
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1068:1121345",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         }
       }
     },
@@ -178,41 +286,68 @@
       "key": "regeneration.monk",
       "facts": {
         "normal_hp": {
-          "value": "As time passes, every player will regenerate lost hitpoints and mana, as long as they have eaten recently (see the page on Regeneration for more information).\n\nMonks regenerate:\n* 1 hitpoint every 7 seconds\n* 2 mana every 4 seconds\n\nExalted Monks regenerate:\n* 1 hitpoint every 5 seconds\n* 2 mana every 3 seconds\n\n\n===Promotion===\nWhen a monk reaches level 20, they can purchase a promotion and become an exalted monk with certain benefits.",
+          "value": {
+            "points": 1,
+            "interval_seconds": 7
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:107879:1207320",
-              "selector": "Regeneration"
+              "selector": "Regeneration / normal and promoted vocation"
             }
           ],
-          "note": "Vocation source observation only; exact per-vocation numeric timer needs official or controlled evidence."
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "normal_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 4
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:107879:1207320",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_hp": {
-          "value": null,
+          "value": {
+            "points": 1,
+            "interval_seconds": 5
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:107879:1207320",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         },
         "promoted_mana": {
-          "value": null,
+          "value": {
+            "points": 2,
+            "interval_seconds": 3
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No official numeric vocation tick table qualified."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:107879:1207320",
+              "selector": "Regeneration / normal and promoted vocation"
+            }
+          ],
+          "note": "Exact community vocation timer preserved structurally. Live official manual confirms qualitative regeneration/promotion effects but supplies no per-vocation numeric table; no controlled measurement available."
         }
       }
     },
@@ -223,14 +358,14 @@
           "value": "HP/mana regeneration disabled in protection zones.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.2"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "cap_seconds": {
           "value": 1200,

@@ -14,7 +14,7 @@
   "payloads": [
     {
       "path": "rulesets/character/soul/reference-evidence.json",
-      "sha256": "5a0d0cb889b8521da7ec3e606eeadffc7ce140b9825ddf1981abe4b517af313e"
+      "sha256": "f7a932518d8837c1e4f72c1011915d9e09836fe38b6ae6326efd54cf752d627e"
     }
   ]
 }
