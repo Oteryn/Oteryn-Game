@@ -1,12 +1,19 @@
-//! PREM-5 NPC policy and D1106 native promotion purchase consumer.
-//! Qualified blessing catalogue data and final dispatch registration remain pending.
+//! PREM-5 NPC policy and D1106 native promotion and blessing purchase consumers.
+//! `npc_command` dispatches the talk topics here (command 7): `promotion` or a blessing name
+//! opens one offer prompt, and the next `yes` of the same conversation buys it through the
+//! native owner. The offers come only from an installed [`PremiumNpcServiceCatalogue`]. No
+//! qualified catalogue is installed in production yet (no admitted NPC service names the
+//! promotion or a blessing, and no blessing price table is sourced), so every topic fails closed:
+//! no prompt, no purchase, nothing written.
 //!
 //! A quote or successful Premium check is data, not a payment/authority permit. The future
 //! owner must recheck current Character facts and Premium inside the actual command boundary,
 //! and commit the coins-only GOLD-FEE-1b burn and promotion/provenance together, idempotently.
 
 use crate::domain::premium::{PremiumGate, PremiumRefusal, PremiumStatus};
-use crate::premium::promotion::{PROMOTION_PRICE, PromotionRefusal, check_promotion_eligibility};
+use crate::gameplay_transport::premium_promotion::{
+    PROMOTION_PRICE, PromotionRefusal, check_promotion_eligibility,
+};
 
 /// ACCEPT_BATCH §3 and PREMIUM_ACTIVATION §4.2: one-time promotion, paid in coins.
 pub(crate) const PROMOTION_FEE_GOLD_UNITS: u64 = PROMOTION_PRICE;
@@ -77,7 +84,7 @@ pub(crate) struct BlessingPriceBand {
     pub(crate) gold_units: u64,
 }
 
-fn admitted_promotion_offer(
+pub(crate) fn admitted_promotion_offer(
     catalogue: &dyn PremiumNpcServiceCatalogue,
     native_npc_key: &str,
 ) -> Option<PromotionNpcOffer> {
@@ -106,7 +113,7 @@ fn admitted_promotion_offer(
 
 /// Distinct blessing conversation/source qualification. A promotion service
 /// reference can never stand in for the requested blessing service.
-fn admitted_blessing_offer(
+pub(crate) fn admitted_blessing_offer(
     catalogue: &dyn PremiumNpcServiceCatalogue,
     native_npc_key: &str,
     requested: PremiumBlessingService,
@@ -158,30 +165,45 @@ fn promotion_command_id(
     value
 }
 
-struct PromotionPurchaseOperation {
-    context: crate::durability::character_revision_sequencer::NpcPurchaseWriteContext,
-    fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
-    request: crate::premium::promotion::PromotionPurchaseRequest,
+use crate::durability::character_progression::{
+    CharacterProgressionError, CurrentCharacterGameplayFence,
+};
+use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
+use crate::durability::item_mint_audit::Type2Transaction;
+use crate::durability::npc_purchase::NpcPurchaseOwner;
+use crate::durability::premium_activation_latch::{PremiumGateTx, PromotionPremiumGateOperation};
+use crate::foundation::{CommandRef, ExactActorRef};
+use crate::gameplay_transport::premium_blessing_purchase::{
+    BlessingPurchaseError, BlessingPurchaseOperation, BlessingPurchaseOutcome,
+    BlessingPurchaseRequest, BlessingReplayRead, PendingBlessingPurchase,
+};
+use crate::gameplay_transport::premium_promotion::{
+    NpcPurchaseSource, PendingPromotionPurchase, PromotionPurchaseError,
+    PromotionPurchaseOperation, PromotionPurchaseOutcome, PromotionPurchaseRequest,
+    PromotionReplayRead, prepare_promotion_purchase,
+};
+use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+use std::future::Future;
+use std::pin::Pin;
+
+/// The one promotion operation of a command, run once by the native promotion gate.
+struct PromotionGateOp {
+    owner: NpcPurchaseOwner,
+    fence: CurrentCharacterGameplayFence,
+    request: PromotionPurchaseRequest,
 }
 
-impl
-    crate::durability::premium_activation_latch::PromotionPremiumGateOperation<
-        crate::premium::promotion::PendingPromotionPurchase,
-        crate::premium::promotion::PromotionPurchaseError,
-    > for PromotionPurchaseOperation
+impl PromotionPremiumGateOperation<PendingPromotionPurchase, PromotionPurchaseError>
+    for PromotionGateOp
 {
     fn run<'g, 't>(
         self,
         status: PremiumStatus<'g>,
-        tx: Option<&'g mut crate::durability::item_mint_audit::Type2Transaction<'t>>,
-    ) -> std::pin::Pin<
+        tx: Option<&'g mut Type2Transaction<'t>>,
+    ) -> Pin<
         Box<
-            dyn std::future::Future<
-                    Output = Result<
-                        crate::premium::promotion::PendingPromotionPurchase,
-                        crate::premium::promotion::PromotionPurchaseError,
-                    >,
-                > + Send
+            dyn Future<Output = Result<PendingPromotionPurchase, PromotionPurchaseError>>
+                + Send
                 + 'g,
         >,
     >
@@ -190,20 +212,23 @@ impl
     {
         Box::pin(async move {
             match tx {
+                // WHEEL-0 §6.2: before delivery the purchase joins the gate's own Type2
+                // transaction, which holds the shared latch lock; the gate commits it on success
+                // and rolls it back on a typed refusal.
                 Some(tx) if matches!(status, PremiumStatus::NotActivated(_)) => {
-                    crate::premium::promotion::prepare_promotion_purchase(
-                        &self.context,
-                        tx,
-                        self.fence,
-                        &self.request,
-                        &status,
-                    )
-                    .await
+                    let write = self.owner.bind(tx).await?;
+                    prepare_promotion_purchase(&write, tx, self.fence, &self.request, &status).await
                 }
-                Some(_) => Err(crate::premium::promotion::PromotionPurchaseError::InvalidInput),
+                Some(_) => Err(PromotionPurchaseError::InvalidInput),
+                // Delivered (or unknown): the native owner opens and commits one Type2
+                // transaction; the writer checks the status it is given.
                 None => {
-                    self.context
-                        .prepare_delivered_promotion_purchase(self.fence, &self.request, &status)
+                    self.owner
+                        .commit(PromotionPurchaseOperation {
+                            fence: self.fence,
+                            request: &self.request,
+                            premium: &status,
+                        })
                         .await
                 }
             }
@@ -211,294 +236,406 @@ impl
     }
 }
 
-impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
-    /// The actual native NPC purchase consumer. The slot spans replay, the
-    /// current actor/NPC checks, the single gate operation and its final COMMIT.
-    /// Dispatch/registration stays in the final CP slot.
-    pub(crate) async fn buy_npc_promotion(
-        &self,
-        actor: crate::foundation::ExactActorRef,
-        command: crate::foundation::CommandRef,
-        npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-        catalogue: &dyn PremiumNpcServiceCatalogue,
-    ) -> Result<
-        crate::premium::promotion::PromotionPurchaseOutcome,
-        crate::premium::promotion::PromotionPurchaseError,
-    > {
-        use crate::durability::character_progression::CharacterProgressionError;
-        use crate::durability::character_revision_sequencer::NpcPurchaseWriteContext;
-        use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
-        use crate::premium::promotion::{
-            PromotionNpcSource, PromotionPurchaseError, PromotionPurchaseRequest,
-        };
-        let actor_facts = self
-            .promotion_actor_facts(actor, command.game_session_id())
-            .await
-            .ok_or(PromotionPurchaseError::Current(
-                CharacterProgressionError::AuthorityRejected,
-            ))?;
-        let mut slot = self
-            .revision_sequencer
-            .acquire(actor_facts.fence.character_id)
-            .await;
-        let context =
-            NpcPurchaseWriteContext::from_native_owner(self.root, self.character, self.holder)?;
-        let occurrence = promotion_command_id(b"oteryn:promotion-occurrence:v1", command, npc);
-        // The NPC may have gone away since the first COMMIT. Its historical
-        // answer needs no live conversation, price table or Premium approval.
-        match context
-            .read_retained_promotion(actor_facts.fence.character_id, occurrence, npc)
-            .await
-        {
-            Ok(Some(outcome)) => return slot.finish_promotion_gate(Ok(outcome)),
-            Ok(None) => {}
-            Err(error) => return slot.finish_promotion_gate(Err(error)),
-        }
-        let expected = match slot.cursor(self.root, self.character).await {
-            Ok(expected) => expected,
-            Err(crate::durability::character_authority::CharacterAuthorityError::Unavailable(
-                error,
-            )) => {
-                return slot.finish_promotion_gate(Err(PromotionPurchaseError::Unavailable(error)));
-            }
-            Err(_) => {
-                return Err(PromotionPurchaseError::Current(
-                    CharacterProgressionError::AuthorityRejected,
-                ));
-            }
-        };
-        // Independently re-read the native physical actor and NPC after waiting
-        // for the slot/read. No earlier snapshot manufactures current authority.
-        let facts = self
-            .promotion_command_facts(actor, command.game_session_id(), npc)
-            .await
-            .ok_or(PromotionPurchaseError::Current(
-                CharacterProgressionError::AuthorityRejected,
-            ))?;
-        if facts.fence.character_id != slot.character_id() {
-            return Err(PromotionPurchaseError::InvalidInput);
-        }
-        let offer = admitted_promotion_offer(catalogue, &facts.npc_key)
-            .ok_or(PromotionPurchaseError::InvalidInput)?;
-        let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
-        let occurred_at_unix_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .ok()
-            .and_then(|time| i64::try_from(time.as_millis()).ok())
-            .filter(|time| *time > 0)
-            .ok_or(PromotionPurchaseError::InvalidInput)?;
-        let request = PromotionPurchaseRequest {
-            occurrence,
-            account_id: facts.account,
-            source: PromotionNpcSource {
-                npc: offer.npc,
-                service: offer.service,
-                actor: npc,
-                content_revision: catalogue.content_revision().to_owned(),
-            },
-            fee: FeeBurnRequest {
-                cause: FeeBurnCause::PromotionPurchase { occurrence },
-                fee_gold_units: PROMOTION_PRICE,
-                transaction_id: id(b"oteryn:promotion-fee-transaction:v1"),
-                event_id: id(b"oteryn:promotion-fee-event:v1"),
-                occurred_at_unix_ms,
-                server_build_id: crate::durability::character_authority::SERVER_BUILD_ID.to_owned(),
-                change: FeeChangeFacts {
-                    item_instance_ids: [
-                        id(b"oteryn:promotion-change-platinum:v1"),
-                        id(b"oteryn:promotion-change-gold:v1"),
-                    ],
-                    platinum: facts.platinum,
-                    gold: facts.gold,
-                    crystal: facts.crystal,
-                    backpack: facts.backpack,
-                },
-            },
-        };
-        let result = self
-            .with_promotion_gate(
-                facts.account,
-                PromotionPurchaseOperation {
-                    context,
-                    fence:
-                        crate::durability::character_progression::CurrentCharacterGameplayFence {
-                            expected_character_revision: expected,
-                            ..facts.fence
-                        },
-                    request,
-                },
-            )
-            .await;
-        let outcome = match result {
-            Ok(Ok(pending)) => Ok(pending.after_native_commit()),
-            Ok(Err(error)) => Err(error),
-            Err(error) => Err(PromotionPurchaseError::Unavailable(error)),
-        };
-        slot.finish_promotion_gate(outcome)
-    }
+/// The one blessing operation of a command, run once by the ordinary Premium gate. Blessings
+/// have no pre-delivery exception: they need `Current`.
+struct BlessingGateOp {
+    owner: NpcPurchaseOwner,
+    fence: CurrentCharacterGameplayFence,
+    request: BlessingPurchaseRequest,
 }
 
-struct BlessingPurchaseOperation {
-    context: crate::durability::character_revision_sequencer::NpcPurchaseWriteContext,
-    fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
-    request: crate::premium::blessing_purchase::BlessingPurchaseRequest,
-}
-impl BlessingPurchaseOperation {
+impl BlessingGateOp {
     fn run<'g, 't>(
         self,
         status: PremiumStatus<'g>,
-        tx: Option<&'g mut crate::durability::premium_activation_latch::PremiumGateTx<'t>>,
-    ) -> std::pin::Pin<
+        tx: Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<
         Box<
-            dyn std::future::Future<
-                    Output = Result<
-                        crate::premium::blessing_purchase::PendingBlessingPurchase,
-                        crate::premium::blessing_purchase::BlessingPurchaseError,
-                    >,
-                > + Send
-                + 'g,
+            dyn Future<Output = Result<PendingBlessingPurchase, BlessingPurchaseError>> + Send + 'g,
         >,
     > {
         Box::pin(async move {
-            // An ordinary gate supplies a borrowed TX only before delivery.
-            // Blessings have no exception and never adopt it as Type2.
+            // The ordinary gate lends a transaction only before delivery; a blessing never
+            // writes in it.
             if tx.is_some() || matches!(status, PremiumStatus::NotActivated(_)) {
-                return Err(
-                    crate::premium::blessing_purchase::BlessingPurchaseError::Premium(
-                        PremiumRefusal::NotCurrent,
-                    ),
-                );
+                return Err(BlessingPurchaseError::Premium(PremiumRefusal::NotCurrent));
             }
-            // The native source resolves a raced stored outcome before Current-only
-            // fresh admission, then opens/commits one actual source Type2 TX.
-            self.context
-                .prepare_delivered_blessing_purchase(self.fence, &self.request, &status)
+            self.owner
+                .commit(BlessingPurchaseOperation {
+                    fence: self.fence,
+                    request: &self.request,
+                    premium: &status,
+                })
                 .await
         })
     }
 }
+
+fn occurred_at_unix_ms() -> Option<i64> {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|time| i64::try_from(time.as_millis()).ok())
+        .filter(|time| *time > 0)
+}
+
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
-    /// A selected native blessing conversation; client input contains no key/fee.
-    /// The retained answer precedes live NPC, catalogue and Premium resolution.
-    /// Final npc_talk dispatch remains its explicit CP slot after #2197.
-    pub(crate) async fn buy_npc_blessing(
+    /// One NPC promotion purchase (PREMIUM_ACTIVATION §4.2, D1106). The revision slot spans the
+    /// replay read, the current actor/NPC checks, the one gate operation and its final COMMIT.
+    /// The client supplies neither the fee nor the service: both come from `catalogue`.
+    pub(crate) async fn buy_npc_promotion(
         &self,
-        actor: crate::foundation::ExactActorRef,
-        command: crate::foundation::CommandRef,
-        npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
-        service: PremiumBlessingService,
+        actor: ExactActorRef,
+        command: CommandRef,
+        npc: EntityRef,
         catalogue: &dyn PremiumNpcServiceCatalogue,
-    ) -> Result<
-        crate::premium::blessing_purchase::BlessingPurchaseOutcome,
-        crate::premium::blessing_purchase::BlessingPurchaseError,
-    > {
-        use crate::durability::character_progression::CharacterProgressionError;
-        use crate::durability::character_revision_sequencer::NpcPurchaseWriteContext;
-        use crate::durability::item_fee_burn::{FeeBurnCause, FeeBurnRequest, FeeChangeFacts};
-        use crate::premium::blessing_purchase::{BlessingPurchaseError, BlessingPurchaseRequest};
-        use crate::premium::promotion::NpcPurchaseSource;
+    ) -> Result<PromotionPurchaseOutcome, PromotionPurchaseError> {
+        let rejected =
+            PromotionPurchaseError::Current(CharacterProgressionError::AuthorityRejected);
         let actor_facts = self
             .promotion_actor_facts(actor, command.game_session_id())
             .await
-            .ok_or(BlessingPurchaseError::Current(
-                CharacterProgressionError::AuthorityRejected,
-            ))?;
-        let mut slot = self
-            .revision_sequencer
-            .acquire(actor_facts.fence.character_id)
-            .await;
-        let context =
-            NpcPurchaseWriteContext::from_native_owner(self.root, self.character, self.holder)?;
+            .ok_or(rejected)?;
+        let character = actor_facts.fence.character_id;
+        let occurrence = promotion_command_id(b"oteryn:promotion-occurrence:v1", command, npc);
+        let mut slot = self.revision_sequencer.acquire(character).await;
+        slot.commit_npc_purchase(
+            self.root,
+            self.character,
+            self.holder,
+            actor_facts.fence,
+            |owner, fence| async move {
+                // The NPC may have gone away since the first COMMIT. Its historical answer needs
+                // no live conversation, price table or Premium approval.
+                if let Some(outcome) = owner
+                    .commit(PromotionReplayRead {
+                        character,
+                        occurrence,
+                        npc,
+                    })
+                    .await?
+                {
+                    return Ok(outcome);
+                }
+                // Re-read the physical actor and NPC under the slot; no earlier snapshot
+                // stands in for current authority.
+                let facts = self
+                    .promotion_command_facts(actor, command.game_session_id(), npc)
+                    .await
+                    .ok_or(PromotionPurchaseError::Current(
+                        CharacterProgressionError::AuthorityRejected,
+                    ))?;
+                if facts.fence.character_id != character {
+                    return Err(PromotionPurchaseError::InvalidInput);
+                }
+                let offer = admitted_promotion_offer(catalogue, &facts.npc_key)
+                    .ok_or(PromotionPurchaseError::InvalidInput)?;
+                let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
+                let request = PromotionPurchaseRequest {
+                    occurrence,
+                    account_id: facts.account,
+                    source: NpcPurchaseSource {
+                        npc: offer.npc,
+                        service: offer.service,
+                        actor: npc,
+                        content_revision: catalogue.content_revision().to_owned(),
+                    },
+                    fee: FeeBurnRequest {
+                        cause: FeeBurnCause::PromotionPurchase { occurrence },
+                        fee_gold_units: PROMOTION_PRICE,
+                        transaction_id: id(b"oteryn:promotion-fee-transaction:v1"),
+                        event_id: id(b"oteryn:promotion-fee-event:v1"),
+                        occurred_at_unix_ms: occurred_at_unix_ms()
+                            .ok_or(PromotionPurchaseError::InvalidInput)?,
+                        server_build_id: crate::durability::character_authority::SERVER_BUILD_ID
+                            .to_owned(),
+                        change: FeeChangeFacts {
+                            item_instance_ids: [
+                                id(b"oteryn:promotion-change-platinum:v1"),
+                                id(b"oteryn:promotion-change-gold:v1"),
+                            ],
+                            platinum: facts.platinum,
+                            gold: facts.gold,
+                            crystal: facts.crystal,
+                            backpack: facts.backpack,
+                        },
+                    },
+                };
+                let operation = PromotionGateOp {
+                    owner,
+                    fence: CurrentCharacterGameplayFence {
+                        expected_character_revision: fence.expected_character_revision,
+                        ..facts.fence
+                    },
+                    request,
+                };
+                match self.with_promotion_gate(facts.account, operation).await {
+                    Ok(Ok(pending)) => Ok(pending.after_native_commit()),
+                    Ok(Err(error)) => Err(error),
+                    Err(error) => Err(PromotionPurchaseError::Unavailable(error)),
+                }
+            },
+        )
+        .await
+    }
+
+    /// One Premium blessing purchase (PREMIUM_ACTIVATION §4.4, DEATH_COMPLETE0 §4.7). The
+    /// client input names only the service; the blessing key and price band come from
+    /// `catalogue`, and the band is chosen by the writer at the locked level.
+    pub(crate) async fn buy_npc_blessing(
+        &self,
+        actor: ExactActorRef,
+        command: CommandRef,
+        npc: EntityRef,
+        service: PremiumBlessingService,
+        catalogue: &dyn PremiumNpcServiceCatalogue,
+    ) -> Result<BlessingPurchaseOutcome, BlessingPurchaseError> {
+        let rejected = BlessingPurchaseError::Current(CharacterProgressionError::AuthorityRejected);
+        let actor_facts = self
+            .promotion_actor_facts(actor, command.game_session_id())
+            .await
+            .ok_or(rejected)?;
+        let character = actor_facts.fence.character_id;
         let occurrence = promotion_command_id(b"oteryn:blessing-occurrence:v1", command, npc);
-        match context
-            .read_retained_blessing(actor_facts.fence.character_id, occurrence, npc, service)
+        let mut slot = self.revision_sequencer.acquire(character).await;
+        slot.commit_npc_purchase(
+            self.root,
+            self.character,
+            self.holder,
+            actor_facts.fence,
+            |owner, fence| async move {
+                if let Some(outcome) = owner
+                    .commit(BlessingReplayRead {
+                        character,
+                        occurrence,
+                        npc,
+                        service,
+                    })
+                    .await?
+                {
+                    return Ok(outcome);
+                }
+                let facts = self
+                    .promotion_command_facts(actor, command.game_session_id(), npc)
+                    .await
+                    .ok_or(BlessingPurchaseError::Current(
+                        CharacterProgressionError::AuthorityRejected,
+                    ))?;
+                if facts.fence.character_id != character {
+                    return Err(BlessingPurchaseError::InvalidInput);
+                }
+                let offer = admitted_blessing_offer(catalogue, &facts.npc_key, service)
+                    .ok_or(BlessingPurchaseError::InvalidInput)?;
+                let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
+                let request = BlessingPurchaseRequest {
+                    occurrence,
+                    account_id: facts.account,
+                    source: NpcPurchaseSource {
+                        npc: offer.source.npc.clone(),
+                        service: offer.source.service.clone(),
+                        actor: npc,
+                        content_revision: catalogue.content_revision().to_owned(),
+                    },
+                    fee: FeeBurnRequest {
+                        cause: FeeBurnCause::BlessingPurchase {
+                            occurrence,
+                            blessing: offer.storage_key.clone(),
+                        },
+                        // Not authoritative: the writer replaces it with the band selected at
+                        // its locked Character level.
+                        fee_gold_units: 0,
+                        transaction_id: id(b"oteryn:blessing-fee-transaction:v1"),
+                        event_id: id(b"oteryn:blessing-fee-event:v1"),
+                        occurred_at_unix_ms: occurred_at_unix_ms()
+                            .ok_or(BlessingPurchaseError::InvalidInput)?,
+                        server_build_id: crate::durability::character_authority::SERVER_BUILD_ID
+                            .to_owned(),
+                        change: FeeChangeFacts {
+                            item_instance_ids: [
+                                id(b"oteryn:blessing-change-platinum:v1"),
+                                id(b"oteryn:blessing-change-gold:v1"),
+                            ],
+                            platinum: facts.platinum,
+                            gold: facts.gold,
+                            crystal: facts.crystal,
+                            backpack: facts.backpack,
+                        },
+                    },
+                    offer,
+                };
+                let operation = BlessingGateOp {
+                    owner,
+                    fence: CurrentCharacterGameplayFence {
+                        expected_character_revision: fence.expected_character_revision,
+                        ..facts.fence
+                    },
+                    request,
+                };
+                // Exactly one ordinary Premium gate for this command; the status stays inside it
+                // through the source transaction and its COMMIT.
+                match self
+                    .with_premium_gate(facts.account, move |status, tx| operation.run(status, tx))
+                    .await
+                {
+                    Ok(Ok(pending)) => Ok(pending.after_native_commit()),
+                    Ok(Err(error)) => Err(error),
+                    Err(error) => Err(BlessingPurchaseError::Unavailable(error)),
+                }
+            },
+        )
+        .await
+    }
+}
+
+/// The talk topic of a Premium NPC service: `None` is the promotion, `Some` one of the three
+/// Premium blessings (PREMIUM_ACTIVATION §4.4). Matched whole and case-insensitively.
+pub(crate) fn premium_topic(text: &str) -> Option<Option<PremiumBlessingService>> {
+    let text = text.trim_matches(' ');
+    if text.eq_ignore_ascii_case("promotion") {
+        return Some(None);
+    }
+    [
+        (
+            "wisdom of solitude",
+            PremiumBlessingService::WisdomOfSolitude,
+        ),
+        (
+            "blood of the mountain",
+            PremiumBlessingService::BloodOfTheMountain,
+        ),
+        (
+            "heart of the mountain",
+            PremiumBlessingService::HeartOfTheMountain,
+        ),
+    ]
+    .into_iter()
+    .find(|(name, _)| text.eq_ignore_ascii_case(name))
+    .map(|(_, service)| Some(service))
+}
+
+/// The offer prompt of `topic` at the NPC `native_npc_key`, only when `catalogue` admits that
+/// NPC's service. The prompt is display text: it is not a quote the purchase relies on.
+pub(crate) fn premium_prompt(
+    catalogue: &dyn PremiumNpcServiceCatalogue,
+    native_npc_key: &str,
+    topic: Option<PremiumBlessingService>,
+) -> Option<String> {
+    match topic {
+        None => admitted_promotion_offer(catalogue, native_npc_key).map(|_| {
+            format!("Do you want to be promoted in your vocation for {PROMOTION_PRICE} gold?")
+        }),
+        Some(service) => admitted_blessing_offer(catalogue, native_npc_key, service).map(|_| {
+            format!(
+                "Do you want to receive the {} blessing?",
+                blessing_name(service)
+            )
+        }),
+    }
+}
+
+const fn blessing_name(service: PremiumBlessingService) -> &'static str {
+    match service {
+        PremiumBlessingService::WisdomOfSolitude => "Wisdom of Solitude",
+        PremiumBlessingService::BloodOfTheMountain => "Blood of the Mountain",
+        PremiumBlessingService::HeartOfTheMountain => "Heart of the Mountain",
+    }
+}
+
+/// One offer the NPC prompted and the speaker has not confirmed yet. It names the NPC
+/// generation and the conversation it was made in; it is not a quote or a permit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PendingPremiumService {
+    pub(crate) npc: EntityRef,
+    pub(crate) service: Option<PremiumBlessingService>,
+    pub(crate) conversation_generation: u64,
+}
+
+/// What one Premium service talk intent does, decided under the Channel runtime lock.
+pub(crate) enum PremiumTalkStep {
+    Prompt(String),
+    Confirm {
+        pending: PendingPremiumService,
+        catalogue: std::sync::Arc<dyn PremiumNpcServiceCatalogue>,
+    },
+}
+
+/// The answer to a confirmed offer.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PremiumTalkAnswer {
+    Line {
+        text: String,
+        inventory_changed: bool,
+    },
+    /// The durable outcome is unknown: not a refusal.
+    Unknown,
+    Rejected,
+}
+
+fn line(text: &str, inventory_changed: bool) -> PremiumTalkAnswer {
+    PremiumTalkAnswer::Line {
+        text: text.to_owned(),
+        inventory_changed,
+    }
+}
+
+fn fee_answer(error: &crate::durability::item_fee_burn::FeeBurnError) -> PremiumTalkAnswer {
+    use crate::durability::item_fee_burn::FeeBurnError;
+    match error {
+        FeeBurnError::InsufficientFunds => line("You do not have enough money.", false),
+        FeeBurnError::CapacityExceeded | FeeBurnError::ChangeDoesNotFit => {
+            line("There is not enough room in your backpack.", false)
+        }
+        FeeBurnError::Unavailable(_) => PremiumTalkAnswer::Unknown,
+        _ => PremiumTalkAnswer::Rejected,
+    }
+}
+
+/// Buys the confirmed offer as one command `command`, whose CommandRef keys the purchase
+/// occurrence: a retry of the same command replays its receipt and burns nothing twice.
+/// The caller holds no runtime or conversation lock.
+pub(crate) async fn confirm_premium_service(
+    admission: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: CommandRef,
+    pending: PendingPremiumService,
+    catalogue: &dyn PremiumNpcServiceCatalogue,
+) -> PremiumTalkAnswer {
+    use crate::durability::character_revision_sequencer::SequencedError;
+    match pending.service {
+        None => match admission
+            .buy_npc_promotion(actor, command, pending.npc, catalogue)
             .await
         {
-            Ok(Some(outcome)) => return slot.finish_blessing_gate(Ok(outcome)),
-            Ok(None) => {}
-            Err(error) => return slot.finish_blessing_gate(Err(error)),
-        }
-        let expected = match slot.cursor(self.root, self.character).await {
-            Ok(expected) => expected,
-            Err(crate::durability::character_authority::CharacterAuthorityError::Unavailable(
-                error,
-            )) => return slot.finish_blessing_gate(Err(BlessingPurchaseError::Unavailable(error))),
-            Err(_) => {
-                return Err(BlessingPurchaseError::Current(
-                    CharacterProgressionError::AuthorityRejected,
-                ));
-            }
-        };
-        let facts = self
-            .promotion_command_facts(actor, command.game_session_id(), npc)
+            Ok(_) => line("Congratulations! You are now promoted.", true),
+            Err(error) if error.is_unknown() => PremiumTalkAnswer::Unknown,
+            Err(PromotionPurchaseError::Eligibility(refusal)) => match refusal {
+                PromotionRefusal::Premium(_) => {
+                    line("You need a premium account in order to be promoted.", false)
+                }
+                PromotionRefusal::LevelTooLow => line(
+                    "You need to be at least level 20 in order to be promoted.",
+                    false,
+                ),
+                PromotionRefusal::AlreadyPromoted => line("You are already promoted!", false),
+            },
+            Err(PromotionPurchaseError::Fee(error)) => fee_answer(&error),
+            Err(_) => PremiumTalkAnswer::Rejected,
+        },
+        Some(service) => match admission
+            .buy_npc_blessing(actor, command, pending.npc, service, catalogue)
             .await
-            .ok_or(BlessingPurchaseError::Current(
-                CharacterProgressionError::AuthorityRejected,
-            ))?;
-        if facts.fence.character_id != slot.character_id() {
-            return Err(BlessingPurchaseError::InvalidInput);
-        }
-        let offer = admitted_blessing_offer(catalogue, &facts.npc_key, service)
-            .ok_or(BlessingPurchaseError::InvalidInput)?;
-        let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
-        let occurred_at_unix_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .ok()
-            .and_then(|time| i64::try_from(time.as_millis()).ok())
-            .filter(|time| *time > 0)
-            .ok_or(BlessingPurchaseError::InvalidInput)?;
-        let request = BlessingPurchaseRequest {
-            occurrence,
-            account_id: facts.account,
-            source: NpcPurchaseSource {
-                npc: offer.source.npc.clone(),
-                service: offer.source.service.clone(),
-                actor: npc,
-                content_revision: catalogue.content_revision().to_owned(),
-            },
-            fee: FeeBurnRequest {
-                cause: FeeBurnCause::BlessingPurchase {
-                    occurrence,
-                    blessing: offer.storage_key.clone(),
-                },
-                // The real source overwrites this nonauthoritative placeholder using
-                // the qualified price band selected at its locked Character level.
-                fee_gold_units: 0,
-                transaction_id: id(b"oteryn:blessing-fee-transaction:v1"),
-                event_id: id(b"oteryn:blessing-fee-event:v1"),
-                occurred_at_unix_ms,
-                server_build_id: crate::durability::character_authority::SERVER_BUILD_ID.to_owned(),
-                change: FeeChangeFacts {
-                    item_instance_ids: [
-                        id(b"oteryn:blessing-change-platinum:v1"),
-                        id(b"oteryn:blessing-change-gold:v1"),
-                    ],
-                    platinum: facts.platinum,
-                    gold: facts.gold,
-                    crystal: facts.crystal,
-                    backpack: facts.backpack,
-                },
-            },
-            offer,
-        };
-        let operation = BlessingPurchaseOperation {
-            context,
-            fence: crate::durability::character_progression::CurrentCharacterGameplayFence {
-                expected_character_revision: expected,
-                ..facts.fence
-            },
-            request,
-        };
-        // Exactly one ordinary Premium gate for this command. Native status stays
-        // inside its closure through the source TX/COMMIT; no cached admission.
-        let result = self
-            .with_premium_gate(facts.account, move |status, tx| operation.run(status, tx))
-            .await;
-        let outcome = match result {
-            Ok(Ok(pending)) => Ok(pending.after_native_commit()),
-            Ok(Err(error)) => Err(error),
-            Err(error) => Err(BlessingPurchaseError::Unavailable(error)),
-        };
-        slot.finish_blessing_gate(outcome)
+        {
+            Ok(_) => line("You have been blessed.", true),
+            Err(error) if error.is_unknown() => PremiumTalkAnswer::Unknown,
+            Err(BlessingPurchaseError::Premium(_)) => line(
+                "You need a premium account in order to receive this blessing.",
+                false,
+            ),
+            Err(BlessingPurchaseError::AlreadyHeld) => {
+                line("You already possess this blessing.", false)
+            }
+            Err(BlessingPurchaseError::Fee(error)) => fee_answer(&error),
+            Err(_) => PremiumTalkAnswer::Rejected,
+        },
     }
 }

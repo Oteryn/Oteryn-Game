@@ -9,10 +9,12 @@
 //! closes with the conversation. A trade intent (command 8, NPC-TRADE-2) names an offer of the
 //! window open on the NPC of the session's conversation; [`NpcConversations::trade_in`] resolves it
 //! against the server catalogue and the connection commits it as one durable NPC trade
-//! (NPC-TRADE-1). Nothing here is durable.
+//! (NPC-TRADE-1). A Premium service topic (PREM-5: `promotion` or a blessing name) of an NPC
+//! that an installed [`PremiumNpcServiceCatalogue`] admits is prompted here and confirmed by the
+//! next `yes` through [`super::npc_promotion`]. Nothing here is durable.
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use oteryn_protocol_oteryn::npc_service::{
     MAX_OFFERS, MAX_TALK_INTENTS_PER_SECOND, NpcConversation, NpcConversationState,
@@ -24,6 +26,10 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::bank_npc::{BankConfirmation, BankDialogueContext, BankNpcOperation};
 use super::chat_intent::ChatRuntime;
+use super::npc_promotion::{
+    PendingPremiumService, PremiumNpcServiceCatalogue, PremiumTalkAnswer, PremiumTalkStep,
+    premium_prompt, premium_topic,
+};
 use super::npc_talk::{TalkNpc, asks_to_trade, talk};
 use crate::chat::{ChatPosition, ChatText};
 use crate::content::item_ref::{ITEM_FAMILY, ItemDefinitionIndex};
@@ -56,6 +62,8 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    /// PREM-5: the one Premium service offer awaiting `yes`.
+    premium: Option<PendingPremiumService>,
 }
 
 pub(crate) struct PendingBank {
@@ -72,6 +80,9 @@ pub(crate) struct PendingBank {
 #[derive(Default)]
 pub(crate) struct NpcConversations {
     sessions: Mutex<HashMap<GameSessionId, SessionNpc>>,
+    /// PREM-5: the qualified Premium NPC service source of the Channel, once installed. Without
+    /// it no promotion or blessing topic is offered.
+    premium_services: OnceLock<Arc<dyn PremiumNpcServiceCatalogue>>,
 }
 
 /// The whole payloads of domains 7 and 8 that changed, for the speaker alone.
@@ -249,12 +260,71 @@ impl NpcConversations {
             state.vocation = None;
         }
     }
+    /// Cancels the pending confirmation of `session`: a Bank operation or a Premium service.
     pub(crate) fn cancel_bank(&self, session: GameSessionId) {
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(state) = sessions.get_mut(&session)
         {
             state.bank = None;
+            state.premium = None;
         }
+    }
+
+    /// Installs the Premium NPC service source once; a second install is refused. No qualified
+    /// source exists in production yet (PREM-5), so the node never installs one there.
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "PREM-5: no qualified promotion/blessing NPC source is pinned yet; fail closed"
+        )
+    )]
+    pub(crate) fn install_premium_services(
+        &self,
+        catalogue: Arc<dyn PremiumNpcServiceCatalogue>,
+    ) -> bool {
+        self.premium_services.set(catalogue).is_ok()
+    }
+
+    /// PREM-5: the Premium service step of one `OK` talk intent, under the Channel runtime lock.
+    /// Every intent consumes the pending offer. A `yes` of the same NPC generation and
+    /// conversation confirms it; an admitted topic opens a new prompt and cancels a pending Bank
+    /// operation. Anything else is `None`: the Bank and ordinary conversation go on.
+    pub(crate) fn premium_step(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTalkIntent,
+    ) -> Option<PremiumTalkStep> {
+        let catalogue = self.premium_services.get()?.clone();
+        let pending = self
+            .sessions
+            .lock()
+            .ok()?
+            .get_mut(&session)
+            .and_then(|state| state.premium.take());
+        let (generation, npc_key) =
+            Self::current_service_npc(chat, runtime, actor, session, intent)?;
+        let text = intent.text.trim_matches(' ');
+        if text.eq_ignore_ascii_case("yes") {
+            let pending = pending.filter(|pending| {
+                pending.npc == intent.npc_actor && pending.conversation_generation == generation
+            })?;
+            return Some(PremiumTalkStep::Confirm { pending, catalogue });
+        }
+        let topic = premium_topic(text)?;
+        let line = premium_prompt(catalogue.as_ref(), &npc_key, topic)?;
+        let mut sessions = self.sessions.lock().ok()?;
+        let state = sessions.entry(session).or_default();
+        state.bank = None;
+        state.premium = Some(PendingPremiumService {
+            npc: intent.npc_actor,
+            service: topic,
+            conversation_generation: generation,
+        });
+        Some(PremiumTalkStep::Prompt(line))
     }
 
     pub(crate) fn take_bank(&self, session: GameSessionId) -> Option<PendingBank> {
@@ -265,7 +335,9 @@ impl NpcConversations {
         let Ok(mut sessions) = self.sessions.lock() else {
             return false;
         };
-        sessions.entry(session).or_default().bank = Some(pending);
+        let state = sessions.entry(session).or_default();
+        state.premium = None;
+        state.bank = Some(pending);
         true
     }
 
@@ -279,6 +351,24 @@ impl NpcConversations {
         session: GameSessionId,
         intent: &NpcTalkIntent,
     ) -> Option<(u64, u64, String)> {
+        let (generation, npc_key) =
+            Self::current_service_npc(chat, runtime, actor, session, intent)?;
+        let book = chat.npc_talk()?;
+        if !book.get(&npc_key)?.bank() {
+            return None;
+        }
+        Some((book.catalogue_revision(), generation, npc_key))
+    }
+
+    /// The conversation generation and native key of the NPC `intent` names, when it is the
+    /// visible NPC `session` is engaged with and within talk range of the visible speaker.
+    fn current_service_npc(
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTalkIntent,
+    ) -> Option<(u64, String)> {
         let visible = runtime.visible_entities();
         let speaker = visible
             .players
@@ -295,12 +385,7 @@ impl NpcConversations {
         {
             return None;
         }
-        let book = chat.npc_talk()?;
-        if !book.get(runtime.npc_key(npc.actor)?)?.bank() {
-            return None;
-        }
         Some((
-            book.catalogue_revision(),
             chat.npc_conversation_generation(session)?,
             runtime.npc_key(npc.actor)?.to_owned(),
         ))
@@ -735,6 +820,42 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if let Some(step) =
+        admission
+            .npc_conversations
+            .premium_step(&admission.chat, &runtime, actor, session, &intent)
+    {
+        // The purchase re-reads the actor, NPC, range and Content itself under its revision
+        // slot, so no runtime lock is held across it.
+        drop(runtime);
+        return match step {
+            PremiumTalkStep::Prompt(line) => reply(line),
+            PremiumTalkStep::Confirm { pending, catalogue } => {
+                let Some(reference) = reference else {
+                    return rejected();
+                };
+                match super::npc_promotion::confirm_premium_service(
+                    admission,
+                    actor,
+                    reference,
+                    pending,
+                    catalogue.as_ref(),
+                )
+                .await
+                {
+                    PremiumTalkAnswer::Line {
+                        text,
+                        inventory_changed,
+                    } => NpcTalkOutcome {
+                        inventory_changed,
+                        ..reply(text)
+                    },
+                    PremiumTalkAnswer::Unknown => unknown(),
+                    PremiumTalkAnswer::Rejected => rejected(),
+                }
+            }
+        };
     }
     let Some((catalogue_revision, conversation_generation, npc_key)) = admission
         .npc_conversations

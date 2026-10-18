@@ -524,4 +524,3 @@ exist on main. They are the held semantic-pass/RevisionSlot integration in
 authored here. Because the lib does not compile, the integration-test targets that
 hold the E0005 sites were not compiler-checked; only rustfmt passed. Canonical
 full-package, PG and runtime qualification remain **NOT_RUN**.
-

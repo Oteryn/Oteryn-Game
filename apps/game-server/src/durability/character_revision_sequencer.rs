@@ -2,7 +2,8 @@
 //!
 //! The owning Channel runtime holds one [`CharacterRevisionSequencer`]. Every write that advances
 //! a CharacterRevision (XP, death, Bestiary, charm with its in-transaction fee burn, monk state
-//! save, build, proficiency, quest transition, quest XP award, Wheel change and Wheel reset) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
+//! save, build, proficiency, quest transition, quest XP award, Wheel change, Wheel reset and NPC
+//! purchase with its in-transaction fee burn) runs through a [`RevisionSlot`] of that Character: the slot is an asynchronous FIFO
 //! queue per Character, and the holder is the only writer of that Character's revision until it
 //! drops the slot. A composition (a creature death's XP, then Bestiary) holds one slot for its
 //! whole chain, so each step takes the revision the previous one committed and no other request
@@ -14,7 +15,7 @@
 //!
 //! On a `CharacterRevisionMismatch`, a write whose binding excludes the revision (Bestiary,
 //! quest transition, Wheel change and reset) reloads the cursor and is retried once; a write whose binding includes it (XP, death, charm,
-//! monk, build, proficiency) is not retried: it fails closed and is reported as a defect.
+//! monk, build, proficiency, NPC purchase) is not retried: it fails closed and is reported as a defect.
 //!
 //! The slot is not the runtime lock and adds no fence: callers never hold the runtime lock while
 //! they wait for a slot or across the durable write, and every write is still refused by the
@@ -48,6 +49,7 @@ use super::character_wheel::{
 };
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
+use super::npc_purchase::NpcPurchaseOwner;
 use super::quest_state::quest::QuestStateCatalogue;
 use super::quest_state::{
     QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
@@ -518,6 +520,52 @@ impl RevisionSlot {
         .await
     }
 
+    /// One NPC purchase (Promotion, blessing) at the cursor. The native purchase owner is built
+    /// here, under the held slot, and handed to `write` with the cursor's fence; the source runs
+    /// its whole purchase, fee burn included, in one Character transaction of that owner. Its
+    /// binding includes the revision, so a mismatch fails closed. An exact replay of a retained
+    /// receipt is answered inside the source's transaction and never moves the cursor back.
+    #[allow(
+        dead_code,
+        reason = "standalone durability suites path-load this module without NPC purchases"
+    )]
+    pub(crate) async fn commit_npc_purchase<T, E, W, Fut>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        write: W,
+    ) -> Result<T, E>
+    where
+        T: SequencedOutcome,
+        E: SequencedError,
+        W: FnOnce(NpcPurchaseOwner, CurrentCharacterGameplayFence) -> Fut,
+        Fut: Future<Output = Result<T, E>>,
+    {
+        let owner = root
+            .npc_purchase_owner(authority, node, self.character_id)
+            .map_err(E::unavailable)?;
+        let mut write = Some(write);
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::FailClosed),
+            |fence| {
+                let write = write.take();
+                let owner = owner.clone();
+                async move {
+                    match write {
+                        Some(write) => write(owner, fence).await,
+                        // FailClosed never calls the writer twice.
+                        None => Err(E::rejected()),
+                    }
+                }
+            },
+        )
+        .await
+    }
+
     async fn sequenced<T, E, L, LFut, W, Fut>(
         &mut self,
         mut load: L,
@@ -606,7 +654,7 @@ fn root_revision<'r>(
 }
 
 /// A sequenced write's success: the revision it committed or replayed, if any.
-trait SequencedOutcome {
+pub(crate) trait SequencedOutcome {
     fn committed_revision(&self) -> Option<CharacterRevision>;
 }
 
@@ -714,7 +762,7 @@ impl SequencedOutcome for MonkStateSaveOutcome {
 }
 
 /// A sequenced write's error, as the slot classifies it.
-trait SequencedError {
+pub(crate) trait SequencedError {
     fn is_mismatch(&self) -> bool;
     /// The write may or may not have committed.
     fn is_unknown(&self) -> bool;
@@ -1133,57 +1181,69 @@ mod tests {
 
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
-    const SEQUENCED_WRITERS: [(&str, &str); 13] = [
+    const SEQUENCED_WRITERS: [(&str, &[&str]); 14] = [
         (
             ".commit_character_experience(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_death(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_bestiary_kill(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_charm_command(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_monk_state_save(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_build(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_proficiency(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_quest_transition(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_proficiency_modification(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_quest_experience(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".commit_character_wheel(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
         ),
         (
             ".reset_character_wheel(",
-            "durability/character_revision_sequencer.rs",
+            &["durability/character_revision_sequencer.rs"],
+        ),
+        // The NPC purchase owner is built only under a held slot.
+        (
+            ".npc_purchase_owner(",
+            &["durability/character_revision_sequencer.rs"],
         ),
         // The fee burn runs only inside its source's sequenced Character transaction.
-        ("burn_fee_in_transaction(", "durability/charm_state.rs"),
+        (
+            "burn_fee_in_transaction(",
+            &[
+                "durability/charm_state.rs",
+                "premium/promotion.rs",
+                "premium/blessing_purchase.rs",
+            ],
+        ),
     ];
 
     /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other
@@ -1211,7 +1271,7 @@ mod tests {
         SEQUENCED_WRITERS
             .iter()
             .filter(|(call, allowed)| {
-                !path.ends_with(allowed)
+                !allowed.iter().any(|allowed| path.ends_with(allowed))
                     && source.lines().any(|line| {
                         let code = line.split("//").next().unwrap_or_default();
                         code.contains(call) && !code.contains("fn ")
@@ -1266,6 +1326,10 @@ mod tests {
         let fee = "burn_fee_in_transaction(&mut tx, &fence, &request).await?;";
         assert_eq!(bypasses("src/durability/item_transfer.rs", fee).len(), 1);
         assert!(bypasses("src/durability/charm_state.rs", fee).is_empty());
+        assert!(bypasses("src/premium/promotion.rs", fee).is_empty());
+        let owner = "let owner = root.npc_purchase_owner(authority, node, id)?;";
+        assert_eq!(bypasses("src/interaction/npc_promotion.rs", owner).len(), 1);
+        assert!(bypasses("src/durability/character_revision_sequencer.rs", owner).is_empty());
         // Test modules and definitions are not writers.
         let tested = "pub async fn commit_charm_command(\n#[cfg(test)]\n#[allow(clippy::expect_used)]\nmod tests { x.commit_charm_command(); }";
         assert!(bypasses("src/durability/charm_state.rs", tested).is_empty());

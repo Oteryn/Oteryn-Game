@@ -126,10 +126,6 @@ impl<T, F> PremiumGateOperation<T> for F where
 {
 }
 
-#[allow(
-    dead_code,
-    reason = "Pending CP NPC gate caller constructs this existing typed adapter."
-)]
 struct PromotionGateBypass<T, E, F> {
     operation: F,
     _output: PhantomData<fn() -> Result<T, E>>,
@@ -437,10 +433,6 @@ impl SpellPremiumCoordinator {
     }
     /// Promotion-specific D1106 composition. The ordinary gate above is
     /// unchanged: only this fee-bearing bypass opens Type2 before the latch.
-    #[allow(
-        dead_code,
-        reason = "Pending CP NPC purchase caller uses this source-specific coordinator gate."
-    )]
     pub(crate) async fn with_promotion_gate<T, E, F>(
         &self,
         account: [u8; 16],
@@ -678,10 +670,6 @@ struct PremiumOwnerBinding {
 /// Expected source facts read through the existing native actor/session and
 /// pinned item owners. They are not a durable promotion or an authority token;
 /// the purchase writer independently checks its current database fences.
-#[allow(
-    dead_code,
-    reason = "Pending CP promotion NPC registration consumes these native command facts."
-)]
 pub(crate) struct PromotionCommandFacts {
     pub(crate) account: [u8; 16],
     pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
@@ -692,19 +680,11 @@ pub(crate) struct PromotionCommandFacts {
     pub(crate) backpack: crate::durability::item_transfer::ItemDefinitionFacts,
 }
 
-#[allow(
-    dead_code,
-    reason = "Pending CP blessing NPC registration consumes these native actor fences."
-)]
 pub(crate) struct PromotionActorFacts {
     pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(
-        dead_code,
-        reason = "Pending CP blessing NPC caller reads current actor fences here."
-    )]
     pub(crate) async fn promotion_actor_facts(
         &self,
         actor: ExactActorRef,
@@ -727,10 +707,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
-    #[allow(
-        dead_code,
-        reason = "Pending CP promotion NPC caller resolves native command facts here."
-    )]
     pub(crate) async fn promotion_command_facts(
         &self,
         actor: ExactActorRef,
@@ -1006,10 +982,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ///
     /// # Errors
     /// Only when `operation` ran with `NotActivated` and its transaction did not commit.
-    #[allow(
-        dead_code,
-        reason = "the gate of MAGIC-CAST-1 §4.6, GUILD-1 and HOUSE-1a pre-delivery bypasses"
-    )]
     pub(crate) async fn with_premium_gate<T, F>(
         &self,
         account: [u8; 16],
@@ -1024,10 +996,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None => Ok(run_delivered(operation, PremiumStatus::NotCurrent).await),
         }
     }
-    #[allow(
-        dead_code,
-        reason = "Pending CP NPC dispatch calls this current admission promotion gate."
-    )]
     pub(crate) async fn with_promotion_gate<T, E, F>(
         &self,
         account: [u8; 16],

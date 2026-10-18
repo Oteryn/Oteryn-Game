@@ -897,7 +897,7 @@ fn runtime_grants_and_canonical_blessing_sets() -> TestResult {
         )
         .fetch_all(pool)
         .await?;
-        // Blessing INSERT belongs to DEATH-4's receipt kind, not DEATH-0.
+        // DEATH-0 reserved blessing INSERT; the PREM-5 purchase receipt kind (0137) grants it.
         assert_eq!(
             granted,
             [
@@ -905,6 +905,7 @@ fn runtime_grants_and_canonical_blessing_sets() -> TestResult {
                 "oteryn_game_control/game_character_death_receipts:SELECT",
                 "oteryn_game_control/game_character_pending_respawns:SELECT",
                 "oteryn_game_runtime/game_character_blessings:DELETE",
+                "oteryn_game_runtime/game_character_blessings:INSERT",
                 "oteryn_game_runtime/game_character_blessings:SELECT",
                 "oteryn_game_runtime/game_character_death_receipts:INSERT",
                 "oteryn_game_runtime/game_character_death_receipts:SELECT",

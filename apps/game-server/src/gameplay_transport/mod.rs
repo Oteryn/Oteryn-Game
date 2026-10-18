@@ -34,6 +34,12 @@ mod last_position;
 mod logout;
 #[cfg(test)]
 mod logout_tests;
+#[path = "../interaction/npc_promotion.rs"]
+pub(crate) mod npc_promotion;
+#[path = "../premium/blessing_purchase.rs"]
+pub(crate) mod premium_blessing_purchase;
+#[path = "../premium/promotion.rs"]
+pub(crate) mod premium_promotion;
 pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;

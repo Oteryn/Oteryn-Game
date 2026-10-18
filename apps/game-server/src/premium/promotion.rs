@@ -1,10 +1,10 @@
 //! PREM-2b policy and D1106 native one-transaction promotion source.
-//! Module/caller registration and installed schema remain CP-slot work.
 //!
 //! ACCEPT_BATCH (2026-10-15) releases the NPC source and accepts WHEEL-0 §6.2's
 //! pre-delivery exception. Callers borrow the native PremiumStatus inside the gate
 //! closure once per command/use; the exception retains its native PreDelivery witness.
-//! No entitlement classification or reusable authority is constructed here.
+//! No entitlement classification or reusable authority is constructed here. The NPC
+//! conversation (`npc_promotion`) is the only caller; migration 0137 installs the schema.
 
 use crate::content::{ProjectV2DefinitionRef, ProjectV2Family};
 use crate::domain::premium::{PremiumRefusal, PremiumStatus, require_promotion_premium};
@@ -13,11 +13,13 @@ use crate::durability::DurabilityError;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
+use crate::durability::character_revision_sequencer::{SequencedError, SequencedOutcome};
 use crate::durability::item_fee_burn::{
     FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, burn_fee_in_transaction,
 };
 use crate::durability::item_mint_audit::{Type2Transaction, check_technical_text, check_uuid_v7};
 use crate::durability::npc_purchase::NpcPurchaseWriteContext;
+use crate::gameplay_transport::npc_promotion::promotion_coin_fee_quote;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -151,19 +153,44 @@ impl PendingPromotionPurchase {
 #[derive(Debug)]
 pub(crate) enum PromotionPurchaseError {
     InvalidInput,
-    #[allow(
-        dead_code,
-        reason = "Pending CP error response mapping retains the typed refusal."
-    )]
     Eligibility(PromotionRefusal),
     ConflictingOccurrence,
     Current(CharacterProgressionError),
     Fee(FeeBurnError),
     #[allow(
         dead_code,
-        reason = "Pending CP error response mapping retains the durability cause."
+        reason = "the durability cause is kept for Debug diagnostics; callers only classify it"
     )]
     Unavailable(DurabilityError),
+}
+
+impl SequencedOutcome for PromotionPurchaseOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        Some(self.receipt().committed_revision)
+    }
+}
+
+impl SequencedError for PromotionPurchaseError {
+    fn is_mismatch(&self) -> bool {
+        matches!(
+            self,
+            Self::Current(CharacterProgressionError::CharacterRevisionMismatch)
+        )
+    }
+    fn is_unknown(&self) -> bool {
+        matches!(
+            self,
+            Self::Unavailable(_)
+                | Self::Current(CharacterProgressionError::Unavailable(_))
+                | Self::Fee(FeeBurnError::Unavailable(_))
+        )
+    }
+    fn rejected() -> Self {
+        Self::Current(CharacterProgressionError::AuthorityRejected)
+    }
+    fn unavailable(error: DurabilityError) -> Self {
+        Self::Unavailable(error)
+    }
 }
 
 impl From<sqlx::Error> for PromotionPurchaseError {
@@ -295,12 +322,16 @@ async fn apply_promotion_purchase(
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
     let promoted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid AND promoted)")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
-    check_promotion_eligibility(
+    let quoted = promotion_coin_fee_quote(
         u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?,
         promoted,
         premium,
     )
     .map_err(PromotionPurchaseError::Eligibility)?;
+    // The client never quotes a fee: the request carries the native quote it was built from.
+    if quoted != request.fee.fee_gold_units {
+        return Err(PromotionPurchaseError::InvalidInput);
+    }
 
     let paid = burn_fee_in_transaction(tx, &fence, &request.fee).await?;
     let FeeBurnOutcome::Burned(paid) = paid else {
@@ -383,28 +414,46 @@ async fn load_promotion_receipt(
         .bind(occurrence.as_slice()).fetch_optional(&mut ***tx).await
 }
 
-/// Exact historical answer before any live NPC/catalogue lookup. The native
-/// reader checks recovery and commits its read transaction before exposing it.
-pub(crate) async fn read_promotion_intent_in_transaction(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    character: CharacterId,
-    occurrence: &[u8; 16],
-    npc: EntityRef,
-) -> Result<Option<PendingPromotionPurchase>, PromotionPurchaseError> {
-    check_uuid_v7(occurrence).map_err(|_| PromotionPurchaseError::InvalidInput)?;
-    let row = sqlx::query("SELECT command_binding,character_id::text,original_character_revision::text,committed_character_revision::text,fee_transaction_id::text,fee_event_id::text,purchase_occurrence_id::text, npc_actor_id=encode($2,'hex')::uuid AND npc_actor_generation=$3::text::numeric(20,0) AS target_matches FROM game_character_promotion_receipts WHERE purchase_occurrence_id=encode($1,'hex')::uuid")
-        .bind(occurrence.as_slice()).bind(npc.identity.as_slice()).bind(npc.generation.to_string())
-        .fetch_optional(&mut **tx).await?;
-    let Some(row) = row else {
-        return Ok(None);
-    };
-    let receipt = decode_promotion_receipt(&row)?;
-    if receipt.character_id != character || !row.try_get::<bool, _>("target_matches")? {
-        return Err(PromotionPurchaseError::ConflictingOccurrence);
+/// Exact historical answer of one occurrence, read before any live NPC/catalogue lookup: the NPC
+/// may have gone away since the first COMMIT. The owner checks recovery on this transaction; the
+/// answer never creates current actor authority.
+pub(crate) struct PromotionReplayRead {
+    pub(crate) character: CharacterId,
+    pub(crate) occurrence: [u8; 16],
+    pub(crate) npc: EntityRef,
+}
+
+impl crate::durability::npc_purchase::NpcPurchaseOperation for PromotionReplayRead {
+    type Output = Option<PromotionPurchaseOutcome>;
+    type Error = PromotionPurchaseError;
+
+    fn apply<'a, 't>(
+        self,
+        _context: &'a NpcPurchaseWriteContext,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>,
+    >
+    where
+        Self: 'a,
+    {
+        Box::pin(async move {
+            check_uuid_v7(&self.occurrence).map_err(|_| PromotionPurchaseError::InvalidInput)?;
+            let row = sqlx::query("SELECT command_binding,character_id::text,original_character_revision::text,committed_character_revision::text,fee_transaction_id::text,fee_event_id::text,purchase_occurrence_id::text, npc_actor_id=encode($2,'hex')::uuid AND npc_actor_generation=$3::text::numeric(20,0) AS target_matches FROM game_character_promotion_receipts WHERE purchase_occurrence_id=encode($1,'hex')::uuid")
+                .bind(self.occurrence.as_slice()).bind(self.npc.identity.as_slice()).bind(self.npc.generation.to_string())
+                .fetch_optional(&mut ***tx).await?;
+            let Some(row) = row else {
+                return Ok(None);
+            };
+            let receipt = decode_promotion_receipt(&row)?;
+            if receipt.character_id != self.character
+                || !row.try_get::<bool, _>("target_matches")?
+            {
+                return Err(PromotionPurchaseError::ConflictingOccurrence);
+            }
+            Ok(Some(PromotionPurchaseOutcome::AlreadyPurchased(receipt)))
+        })
     }
-    Ok(Some(PendingPromotionPurchase(
-        PromotionPurchaseOutcome::AlreadyPurchased(receipt),
-    )))
 }
 
 fn decode_promotion_receipt(
@@ -456,7 +505,7 @@ mod policy_tests {
     use crate::domain::premium::{
         PremiumGate, PremiumRefusal, PremiumStatus, promotion_benefit_current,
     };
-    use crate::interaction::npc_promotion::{
+    use crate::gameplay_transport::npc_promotion::{
         PremiumBlessingService, check_premium_blessing_purchase, promotion_coin_fee_quote,
     };
 

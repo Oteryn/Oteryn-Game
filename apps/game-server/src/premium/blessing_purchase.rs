@@ -1,6 +1,6 @@
 //! D1106 / DEATH_COMPLETE0 §4.7: one fenced Premium blessing grant and native fee.
-//! Catalogue, NPC conversation, Premium gate and RevisionSlot belong to the caller.
-//! Schema/shared receipt-chain registration remain explicit uninstalled proposals.
+//! Catalogue, NPC conversation, Premium gate and RevisionSlot belong to the caller
+//! (`npc_promotion`); migration 0137 installs the receipt table and its chain arms.
 use crate::content::ProjectV2Family;
 use crate::domain::premium::{PremiumRefusal, PremiumStatus};
 use crate::domain::{CharacterId, CharacterRevision};
@@ -8,16 +8,17 @@ use crate::durability::DurabilityError;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence,
 };
+use crate::durability::character_revision_sequencer::{SequencedError, SequencedOutcome};
 use crate::durability::item_fee_burn::{
     FeeBankDebit, FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest,
     burn_fee_in_transaction,
 };
 use crate::durability::item_mint_audit::{Type2Transaction, check_technical_text, check_uuid_v7};
 use crate::durability::npc_purchase::NpcPurchaseWriteContext;
-use crate::interaction::npc_promotion::{
-    BlessingNpcOffer, BlessingPriceBand, PremiumBlessingService,
+use crate::gameplay_transport::npc_promotion::{
+    BlessingNpcOffer, BlessingPriceBand, PremiumBlessingService, check_premium_blessing_purchase,
 };
-use crate::premium::promotion::NpcPurchaseSource;
+use crate::gameplay_transport::premium_promotion::NpcPurchaseSource;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -101,9 +102,36 @@ pub(crate) enum BlessingPurchaseError {
     Fee(FeeBurnError),
     #[allow(
         dead_code,
-        reason = "Pending CP error response mapping retains the durability cause."
+        reason = "the durability cause is kept for Debug diagnostics; callers only classify it"
     )]
     Unavailable(DurabilityError),
+}
+impl SequencedOutcome for BlessingPurchaseOutcome {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        Some(self.receipt().committed_revision)
+    }
+}
+impl SequencedError for BlessingPurchaseError {
+    fn is_mismatch(&self) -> bool {
+        matches!(
+            self,
+            Self::Current(CharacterProgressionError::CharacterRevisionMismatch)
+        )
+    }
+    fn is_unknown(&self) -> bool {
+        matches!(
+            self,
+            Self::Unavailable(_)
+                | Self::Current(CharacterProgressionError::Unavailable(_))
+                | Self::Fee(FeeBurnError::Unavailable(_))
+        )
+    }
+    fn rejected() -> Self {
+        Self::Current(CharacterProgressionError::AuthorityRejected)
+    }
+    fn unavailable(error: DurabilityError) -> Self {
+        Self::Unavailable(error)
+    }
 }
 impl From<sqlx::Error> for BlessingPurchaseError {
     fn from(error: sqlx::Error) -> Self {
@@ -269,9 +297,7 @@ pub(crate) async fn prepare_blessing_purchase(
         )
         .await?;
     // Unlike promotion, neither NotActivated nor NotCurrent has an exception here.
-    premium
-        .gate()
-        .require()
+    check_premium_blessing_purchase(request.offer.blessing, premium.gate())
         .map_err(BlessingPurchaseError::Premium)?;
     let level:i64=sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
@@ -376,35 +402,49 @@ async fn load_receipt(
         .fetch_optional(&mut ***tx)
         .await
 }
-/// Recovery-qualified native reader uses this BEFORE live NPC/offer/Premium lookup.
-/// This is an answer to the same intent; it never creates current actor authority.
-pub(crate) async fn read_blessing_intent_in_transaction(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    character: CharacterId,
-    occurrence: &[u8; 16],
-    npc: EntityRef,
-    service: PremiumBlessingService,
-) -> Result<Option<PendingBlessingPurchase>, BlessingPurchaseError> {
-    check_uuid_v7(occurrence).map_err(|_| BlessingPurchaseError::InvalidInput)?;
-    let row = sqlx::query("SELECT command_binding,purchase_occurrence_id::text,character_id::text,original_character_revision::text,committed_character_revision::text,fee_transaction_id::text,fee_event_id::text,blessing_key,blessing_service,price_gold_units,account_id::text,bank_entry_id::text,bank_debit_gold_units,bank_balance_before,bank_balance_after,npc_actor_id=encode($2,'hex')::uuid AND npc_actor_generation=$3::text::numeric(20,0) AS target_matches FROM game_character_blessing_purchase_receipts WHERE purchase_occurrence_id=encode($1,'hex')::uuid")
-        .bind(occurrence.as_slice())
-        .bind(npc.identity.as_slice())
-        .bind(npc.generation.to_string())
-        .fetch_optional(&mut **tx)
-        .await?;
-    let Some(row) = row else {
-        return Ok(None);
-    };
-    let receipt = decode_receipt(&row)?;
-    if receipt.character_id != character
-        || receipt.service != service
-        || !row.try_get::<bool, _>("target_matches")?
+/// Exact historical answer of one occurrence, read BEFORE live NPC/offer/Premium lookup. The
+/// owner checks recovery on this transaction; the answer never creates current actor authority.
+pub(crate) struct BlessingReplayRead {
+    pub(crate) character: CharacterId,
+    pub(crate) occurrence: [u8; 16],
+    pub(crate) npc: EntityRef,
+    pub(crate) service: PremiumBlessingService,
+}
+impl crate::durability::npc_purchase::NpcPurchaseOperation for BlessingReplayRead {
+    type Output = Option<BlessingPurchaseOutcome>;
+    type Error = BlessingPurchaseError;
+
+    fn apply<'a, 't>(
+        self,
+        _context: &'a NpcPurchaseWriteContext,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>,
+    >
+    where
+        Self: 'a,
     {
-        return Err(BlessingPurchaseError::ConflictingOccurrence);
+        Box::pin(async move {
+            check_uuid_v7(&self.occurrence).map_err(|_| BlessingPurchaseError::InvalidInput)?;
+            let row = sqlx::query("SELECT command_binding,purchase_occurrence_id::text,character_id::text,original_character_revision::text,committed_character_revision::text,fee_transaction_id::text,fee_event_id::text,blessing_key,blessing_service,price_gold_units,account_id::text,bank_entry_id::text,bank_debit_gold_units,bank_balance_before,bank_balance_after,npc_actor_id=encode($2,'hex')::uuid AND npc_actor_generation=$3::text::numeric(20,0) AS target_matches FROM game_character_blessing_purchase_receipts WHERE purchase_occurrence_id=encode($1,'hex')::uuid")
+                .bind(self.occurrence.as_slice())
+                .bind(self.npc.identity.as_slice())
+                .bind(self.npc.generation.to_string())
+                .fetch_optional(&mut ***tx)
+                .await?;
+            let Some(row) = row else {
+                return Ok(None);
+            };
+            let receipt = decode_receipt(&row)?;
+            if receipt.character_id != self.character
+                || receipt.service != self.service
+                || !row.try_get::<bool, _>("target_matches")?
+            {
+                return Err(BlessingPurchaseError::ConflictingOccurrence);
+            }
+            Ok(Some(BlessingPurchaseOutcome::AlreadyPurchased(receipt)))
+        })
     }
-    Ok(Some(PendingBlessingPurchase(
-        BlessingPurchaseOutcome::AlreadyPurchased(receipt),
-    )))
 }
 fn decode_uuid(text: &str) -> Result<[u8; 16], BlessingPurchaseError> {
     let text = text.replace('-', "");

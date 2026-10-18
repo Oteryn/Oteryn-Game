@@ -78,7 +78,7 @@ pub trait PreDeliveryBypass: Send {
 /// Other Premium operations retain their existing transaction path.
 #[allow(
     dead_code,
-    reason = "Pending CP NPC source registration consumes this typed pre-delivery bypass."
+    reason = "standalone durability suites path-load this module without the NPC purchase sources"
 )]
 pub(crate) trait PromotionPreDeliveryBypass: Send {
     type Output: Send;
@@ -101,7 +101,7 @@ pub(crate) trait PromotionPreDeliveryBypass: Send {
 /// owner rolls back the actual Type2 transaction on every typed source refusal.
 #[allow(
     dead_code,
-    reason = "Pending CP NPC source registration consumes this fallible gate operation."
+    reason = "standalone durability suites path-load this module without the NPC purchase sources"
 )]
 pub(crate) trait PromotionPremiumGateOperation<T, E>: Send {
     fn run<'g, 't>(
@@ -120,7 +120,7 @@ impl DurabilityRoot {
     /// savepoint may change the native fee/root xmin provenance.
     #[allow(
         dead_code,
-        reason = "Pending CP NPC registration calls this source-specific Type2 latch owner."
+        reason = "standalone durability suites path-load this module without the NPC purchase sources"
     )]
     pub(crate) async fn read_premium_promotion_with<B: PromotionPreDeliveryBypass>(
         &self,

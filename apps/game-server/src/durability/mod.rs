@@ -71,7 +71,7 @@ pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
 #[allow(
     dead_code,
-    reason = "D1176 NPC purchase port awaits its held semantic-pass/RevisionSlot caller"
+    reason = "standalone durability suites path-load this module without the NPC purchase sources"
 )]
 pub(crate) mod npc_purchase;
 pub mod npc_trade;

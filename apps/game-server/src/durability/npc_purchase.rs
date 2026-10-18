@@ -1,17 +1,17 @@
 //! D1176 native purchase participant. Upper-layer operations consume this port;
 //! this module never imports a Premium policy, NPC service or purchase receipt.
-//! Registration and the semantic-pass/RevisionSlot caller remain held integration.
+//! The revision sequencer builds the owner under a held slot; the Premium gate and the NPC
+//! service live in the upper layer.
 
 use std::future::Future;
 use std::pin::Pin;
-use std::time::Instant;
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
     state_matches_root,
 };
-use super::db::lock_admission_relations;
+use super::db::{begin_type2_transaction, lock_admission_relations};
 use super::item_mint_audit::Type2Transaction;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -117,44 +117,90 @@ impl NpcPurchaseWriteContext {
     }
 }
 
-/// Called only from the native root's semantic pass while holding the owning
-/// Character's RevisionSlot and Premium gate. `tx` must be that pass's original
-/// Type2 transaction, not a savepoint; no nested transaction is introduced here.
-/// Pending source results leave this function only after its physical COMMIT.
-pub(super) async fn commit_npc_purchase<O: NpcPurchaseOperation>(
-    root: &DurabilityRoot,
-    authority: &ReconciledCharacterAuthority<'_, '_>,
-    node: &NodeIncarnationProof,
+/// The native purchase owner of one Character, built only by the revision sequencer under that
+/// Character's held slot (`RevisionSlot::commit_npc_purchase`). It is not a permit: every write
+/// still re-checks recovery, the exact gameplay fence and the account inside its own Type2
+/// transaction, and the XID binds a write context to the one transaction it was admitted on.
+#[derive(Clone)]
+pub(crate) struct NpcPurchaseOwner {
+    root: DurabilityRoot,
+    recovery: CharacterRecoveryFenceV1,
+    node: NodeIncarnationProof,
     character_id: CharacterId,
-    mut tx: Type2Transaction<'_>,
-    deadline: Instant,
-    operation: O,
-) -> Result<O::Output, O::Error> {
-    let recovery = authority
-        .record_for(root)
-        .map_err(|_| DurabilityError::Unavailable)?;
-    let xid = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
-        .fetch_one(&mut **tx)
-        .await
-        .map_err(DurabilityError::from)?;
-    let context = NpcPurchaseWriteContext {
-        recovery,
-        node: node.clone(),
-        character_id,
-        xid,
-    };
-    context.check_recovery(&mut tx).await?;
-    match operation.apply(&context, &mut tx).await {
-        Ok(output) => {
-            tx.commit(deadline).await?;
-            Ok(output)
-        }
-        Err(error) => {
-            tx.into_inner()
-                .rollback()
-                .await
-                .map_err(DurabilityError::from)?;
-            Err(error)
-        }
+}
+
+impl DurabilityRoot {
+    /// Only the revision sequencer calls this, under a held slot (structural gate in
+    /// `character_revision_sequencer`).
+    pub(crate) fn npc_purchase_owner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        character_id: CharacterId,
+    ) -> Result<NpcPurchaseOwner, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        Ok(NpcPurchaseOwner {
+            root: self.clone(),
+            recovery,
+            node: node.clone(),
+            character_id,
+        })
+    }
+}
+
+impl NpcPurchaseOwner {
+    /// Binds a write context to `tx`, the original Type2 transaction of a pass (not a
+    /// savepoint), after checking the recovery fence on it.
+    pub(crate) async fn bind(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+    ) -> Result<NpcPurchaseWriteContext, DurabilityError> {
+        let xid = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+            .fetch_one(&mut ***tx)
+            .await?;
+        let context = NpcPurchaseWriteContext {
+            recovery: self.recovery.clone(),
+            node: self.node.clone(),
+            character_id: self.character_id,
+            xid,
+        };
+        context.check_recovery(tx).await?;
+        Ok(context)
+    }
+
+    /// Runs `operation` in one fresh semantic pass and Type2 transaction of the native root.
+    /// A success commits; a typed refusal rolls back every callback write. Pending source
+    /// results leave this function only after the physical COMMIT. An unknown commit outcome
+    /// closes the pass holder and surfaces as `DurabilityError`.
+    pub(crate) async fn commit<O: NpcPurchaseOperation>(
+        &self,
+        operation: O,
+    ) -> Result<O::Output, O::Error> {
+        let mut context = (Some(operation), self.clone());
+        self.root
+            .try_issue_semantic_pass()?
+            .run_with_context(&mut context, |holder, deadline, context| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    let operation = context
+                        .0
+                        .take()
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let write = context.1.bind(&mut tx).await?;
+                    match operation.apply(&write, &mut tx).await {
+                        Ok(output) => {
+                            tx.commit(deadline).await?;
+                            Ok(Ok(output))
+                        }
+                        Err(error) => {
+                            tx.into_inner().rollback().await?;
+                            Ok(Err(error))
+                        }
+                    }
+                })
+            })
+            .await?
     }
 }
