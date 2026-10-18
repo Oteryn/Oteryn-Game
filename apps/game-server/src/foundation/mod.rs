@@ -1,5 +1,10 @@
 //! Protocol/runtime authority primitives for the native Oteryn game server.
 
+// One physical encoder for production and native roots without a content module.
+#[path = "../content/spatial_position.rs"]
+mod spatial_position;
+pub(crate) use spatial_position::encode_spatial_position;
+
 mod admission {
     include!("admission.rs");
     include!("admission_recovery_inner.rs");
@@ -21,6 +26,15 @@ pub(crate) mod owner_timer;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
+// D1373: the one native House identity and the one existing carrier's House arm.
+pub use runtime_actor_carrier::house_actor_placement::{
+    HOUSE_KEY_MAX_BYTES, HOUSE_SCOPE_CHARACTERS_MAX, HOUSE_TILE_MAX_BYTES, HouseId,
+};
+pub(crate) use runtime_actor_carrier::house_actor_placement::{
+    HouseActorAuthorityV1, HouseActorDirectory, HouseActorReconcileAuthorityV1,
+    HouseActorReconcileOutcome, HouseActorSettledState, HouseEntryPlacement, HousePlacedActor,
+    HousePlacementError, HouseSourceActorHold, house_actor_authority_seal,
+};
 pub(crate) use runtime_actor_carrier::npc_actor::{
     NpcPlacement, NpcPlacementError, NpcPlacementTable, NpcPlacements,
 };

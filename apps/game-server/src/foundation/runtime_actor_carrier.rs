@@ -33,6 +33,22 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::mem::size_of;
 use std::sync::Arc;
 
+// D1373: one physical carrier; Channel handles remain Channel-only.
+#[path = "../house_scope/actor_placement.rs"]
+pub(super) mod house_actor_placement;
+use house_actor_placement::HouseId;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum CarrierScopeDomain {
+    Channel(ChannelId),
+    House(HouseId),
+}
+impl CarrierScopeDomain {
+    fn is_channel(&self, channel: ChannelId) -> bool {
+        matches!(self, Self::Channel(current) if *current == channel)
+    }
+}
+
 #[path = "runtime_actor_conditions.rs"]
 mod runtime_actor_conditions;
 // SPAWN-1a: the pure spawn schedule (std only) compiles with the carrier so every
@@ -1233,6 +1249,7 @@ impl CurrentOwnerExactActorLookup<'_> {
             } => *generation == actor.0.actor_local_generation.0 && *health > 0,
             Slot::VacantReusable { .. }
             | Slot::Exhausted { .. }
+            | Slot::HousePlayer { .. }
             | Slot::CreatureReserved { .. }
             | Slot::NpcOccupied { .. } => false,
         }
@@ -1300,6 +1317,12 @@ enum Slot {
         /// after an authoritative control loss (`DISCONNECT-PROTECTION-V1`).
         lifecycle: Box<PlayerRuntimeState>,
         spell_combat: Box<runtime_actor_spell::ActorCombatState>,
+    },
+    /// D1373: a House reservation/player in this same arena. The full staged
+    /// tile is present even before materialization/consumption.
+    HousePlayer {
+        generation: u64,
+        player: Box<house_actor_placement::HousePlayerSlot>,
     },
     CreatureOccupied {
         generation: u64,
@@ -1406,7 +1429,7 @@ pub(crate) struct PlayerControlFacts {
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ChannelActorCarrier {
     world_id: WorldId,
-    channel_id: ChannelId,
+    scope_domain: CarrierScopeDomain,
     scope_generation: ScopeOwnershipGeneration,
     slots: Box<[Slot]>,
     free_head: Option<u32>,
@@ -2381,10 +2404,13 @@ impl ChannelRuntimeV1 {
     pub(crate) fn visible_entities(&self) -> VisibleRuntimeEntities {
         let context = self.pinned_position_context();
         let carrier = &self.carrier;
+        let CarrierScopeDomain::Channel(channel_id) = &carrier.scope_domain else {
+            return VisibleRuntimeEntities::default();
+        };
         let actor = |version: &VersionedPosition| VisibleRuntimeActor {
             actor: ExactActorRef(ActorRef {
                 world_id: carrier.world_id,
-                channel_id: carrier.channel_id,
+                channel_id: *channel_id,
                 scope_generation: carrier.scope_generation,
                 actor_local_id: version.actor_local_id,
                 actor_local_generation: version.actor_local_generation,
@@ -3941,19 +3967,46 @@ impl ChannelActorCarrier {
         // Reject replay before touching allocation while retaining the claim
         // commit until every fallible construction step has succeeded.
         continuity.ensure_current_generation_unclaimed()?;
+        let carrier = Self::allocate_for_scope(
+            continuity.world_id,
+            CarrierScopeDomain::Channel(continuity.channel_id),
+            continuity.current_generation,
+            explicit_capacity,
+        )?;
+        // Claim only after every fallible construction step has succeeded.
+        continuity.claim_current_generation()?;
+        Ok(carrier)
+    }
+
+    /// One private allocator shared by Channel and the sealed native House
+    /// consumer; no actor backing or free list is duplicated.
+    fn allocate_for_scope(
+        world_id: WorldId,
+        scope_domain: CarrierScopeDomain,
+        scope_generation: ScopeOwnershipGeneration,
+        explicit_capacity: usize,
+    ) -> Result<Self, CarrierError> {
+        if explicit_capacity == 0 {
+            return Err(CarrierError::InvalidCapacity);
+        }
+        if matches!(&scope_domain, CarrierScopeDomain::House(house) if house.world_id() != world_id)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        u32::try_from(explicit_capacity).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        explicit_capacity
+            .checked_mul(size_of::<Slot>())
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
         let slots = allocate_slots(explicit_capacity)?;
         let mut occupied = Vec::new();
         occupied
             .try_reserve_exact(explicit_capacity)
             .map_err(|_| CarrierError::AllocationFailed)?;
 
-        // Claim only after every fallible construction step has succeeded.
-        continuity.claim_current_generation()?;
-
         Ok(Self {
-            world_id: continuity.world_id,
-            channel_id: continuity.channel_id,
-            scope_generation: continuity.current_generation,
+            world_id,
+            scope_domain,
+            scope_generation,
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
             corpse_projections: Vec::new(),
@@ -4157,7 +4210,7 @@ impl ChannelActorCarrier {
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
         let actor_ref = ActorRef {
             world_id: self.world_id,
-            channel_id: self.channel_id,
+            channel_id: continuity.channel_id,
             scope_generation: self.scope_generation,
             actor_local_id,
             actor_local_generation: ActorLocalGeneration(next_generation),
@@ -4229,7 +4282,8 @@ impl ChannelActorCarrier {
             | Slot::CreatureOccupied { .. }
             | Slot::CreatureReserved { .. }
             | Slot::VacantReusable { .. }
-            | Slot::Exhausted { .. } => Err(CarrierError::StaleActorGeneration),
+            | Slot::Exhausted { .. }
+            | Slot::HousePlayer { .. } => Err(CarrierError::StaleActorGeneration),
         }
     }
 
@@ -4284,7 +4338,8 @@ impl ChannelActorCarrier {
             Slot::CreatureReserved { .. }
             | Slot::NpcOccupied { .. }
             | Slot::VacantReusable { .. }
-            | Slot::Exhausted { .. } => {
+            | Slot::Exhausted { .. }
+            | Slot::HousePlayer { .. } => {
                 return Err(CarrierError::PlanConflict);
             }
         }
@@ -4377,7 +4432,8 @@ impl ChannelActorCarrier {
             | Slot::CreatureOccupied { .. }
             | Slot::CreatureReserved { .. }
             | Slot::VacantReusable { .. }
-            | Slot::Exhausted { .. } => return Err(CarrierError::StaleActorGeneration),
+            | Slot::Exhausted { .. }
+            | Slot::HousePlayer { .. } => return Err(CarrierError::StaleActorGeneration),
         };
         // Parent despawn removes children, without death/corpse/rewards. The relation never
         // admits child masters, so this bounded cleanup cannot recurse into another family.
@@ -4489,7 +4545,7 @@ impl ChannelActorCarrier {
                 return Err(CarrierError::PositionContextMismatch);
             }
             if self.world_id != g.world
-                || self.channel_id != g.channel
+                || !self.scope_domain.is_channel(g.channel)
                 || self.scope_generation != g.generation
             {
                 return Err(CarrierError::WrongScope);
@@ -4959,7 +5015,7 @@ impl ChannelActorCarrier {
             session,
             actor: ExactActorRef(ActorRef {
                 world_id: self.world_id,
-                channel_id: self.channel_id,
+                channel_id: continuity.channel_id,
                 scope_generation: self.scope_generation,
                 actor_local_id: ActorLocalId(
                     u32::try_from(slot_index + 1)
@@ -5163,7 +5219,7 @@ impl ChannelActorCarrier {
     /// scope generation.
     fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
         actor.world_id() == self.world_id
-            && actor.channel_id() == self.channel_id
+            && self.scope_domain.is_channel(actor.channel_id())
             && actor.scope_generation() == self.scope_generation
             && self
                 .corpse_projections
@@ -5249,7 +5305,7 @@ impl ChannelActorCarrier {
         context: PreProductionPositionContext,
     ) -> Result<(), CarrierError> {
         if context.world_id != self.world_id
-            || context.channel_id != self.channel_id
+            || !self.scope_domain.is_channel(context.channel_id)
             || context.scope_generation != self.scope_generation
             || context.coordinate_frame_marker == 0
             || context.map_revision_marker == 0
@@ -5793,7 +5849,7 @@ impl ChannelActorCarrier {
             || actor_ref.channel_id != continuity.channel_id
             || actor_ref.scope_generation != continuity.current_generation
             || actor_ref.world_id != self.world_id
-            || actor_ref.channel_id != self.channel_id
+            || !self.scope_domain.is_channel(actor_ref.channel_id)
             || actor_ref.scope_generation != self.scope_generation
         {
             return Err(CarrierError::WrongScope);
@@ -5816,7 +5872,7 @@ impl ChannelActorCarrier {
     ) -> Result<(), CarrierError> {
         if !continuity.active
             || continuity.world_id != self.world_id
-            || continuity.channel_id != self.channel_id
+            || !self.scope_domain.is_channel(continuity.channel_id)
             || continuity.current_generation != self.scope_generation
         {
             return Err(CarrierError::WrongScope);
@@ -6360,7 +6416,7 @@ impl ChannelActorCarrier {
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
         if actor.world_id() != self.world_id
-            || actor.channel_id() != self.channel_id
+            || !self.scope_domain.is_channel(actor.channel_id())
             || actor.scope_generation() != self.scope_generation
             || !self
                 .corpse_projections
@@ -6990,6 +7046,9 @@ impl ChannelActorCarrier {
 
     /// Test only: the committed player slot of `session`.
     pub(crate) fn test_player_actor(&self, session: GameSessionId) -> Option<ExactActorRef> {
+        let CarrierScopeDomain::Channel(channel_id) = &self.scope_domain else {
+            return None;
+        };
         self.slots
             .iter()
             .enumerate()
@@ -7001,7 +7060,7 @@ impl ChannelActorCarrier {
                     ..
                 } if *bound == session => Some(ExactActorRef(ActorRef {
                     world_id: self.world_id,
-                    channel_id: self.channel_id,
+                    channel_id: *channel_id,
                     scope_generation: self.scope_generation,
                     actor_local_id: ActorLocalId(u32::try_from(index + 1).ok()?),
                     actor_local_generation: ActorLocalGeneration(*generation),
@@ -12637,7 +12696,7 @@ impl ChannelRuntimeV1 {
                     Some((
                         ExactActorRef(ActorRef {
                             world_id: self.carrier.world_id,
-                            channel_id: self.carrier.channel_id,
+                            channel_id: self.continuity.channel_id,
                             scope_generation: self.carrier.scope_generation,
                             actor_local_id: ActorLocalId((i + 1) as u32),
                             actor_local_generation: ActorLocalGeneration(*generation),
@@ -12810,7 +12869,7 @@ impl ChannelRuntimeV1 {
                         (
                             ExactActorRef(ActorRef {
                                 world_id: self.carrier.world_id,
-                                channel_id: self.carrier.channel_id,
+                                channel_id: self.continuity.channel_id,
                                 scope_generation: self.carrier.scope_generation,
                                 actor_local_id: ActorLocalId((index + 1) as u32),
                                 actor_local_generation: ActorLocalGeneration(generation),
@@ -13028,7 +13087,7 @@ fn welter_native_source_owner_proof() {
         .continuity
         .advance(PreProductionContinuityGrant {
             world_id: other.carrier.world_id,
-            channel_id: other.carrier.channel_id,
+            channel_id: other.continuity.channel_id,
             scope_generation: ScopeOwnershipGeneration::new(2)
                 .expect("valid native fixture operation must succeed"),
         })
@@ -13556,7 +13615,7 @@ impl ChannelRuntimeV1 {
             {
                 removed.push(ExactActorRef(ActorRef {
                     world_id: self.carrier.world_id,
-                    channel_id: self.carrier.channel_id,
+                    channel_id: self.continuity.channel_id,
                     scope_generation: self.carrier.scope_generation,
                     actor_local_id: ActorLocalId(
                         u32::try_from(i + 1)
@@ -13789,7 +13848,7 @@ impl ChannelRuntimeV1 {
                         {
                             target = Some(ExactActorRef(ActorRef {
                                 world_id: self.carrier.world_id,
-                                channel_id: self.carrier.channel_id,
+                                channel_id: self.continuity.channel_id,
                                 scope_generation: self.carrier.scope_generation,
                                 actor_local_id: ActorLocalId(
                                     u32::try_from(i + 1)
@@ -14445,6 +14504,9 @@ impl ChannelRuntimeV1 {
         &self,
         limit: usize,
     ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        let CarrierScopeDomain::Channel(channel_id) = &self.carrier.scope_domain else {
+            return Err(CarrierError::WrongScope);
+        };
         let context = self.pinned_position_context();
         let mut out = Vec::new();
         for (i, slot) in self.carrier.slots.iter().enumerate() {
@@ -14470,7 +14532,7 @@ impl ChannelRuntimeV1 {
                 .map_err(|_| CarrierError::AllocationFailed)?;
             out.push(ExactActorRef(ActorRef {
                 world_id: self.carrier.world_id,
-                channel_id: self.carrier.channel_id,
+                channel_id: *channel_id,
                 scope_generation: self.carrier.scope_generation,
                 actor_local_id: ActorLocalId((i + 1) as u32),
                 actor_local_generation: ActorLocalGeneration(*generation),
@@ -14894,7 +14956,7 @@ impl ChannelActorCarrier {
         g: &NativeBoneSharedGroup,
     ) -> Result<[usize; 4], CarrierError> {
         if self.world_id != g.world
-            || self.channel_id != g.channel
+            || !self.scope_domain.is_channel(g.channel)
             || self.scope_generation != g.generation
         {
             return Err(CarrierError::WrongScope);

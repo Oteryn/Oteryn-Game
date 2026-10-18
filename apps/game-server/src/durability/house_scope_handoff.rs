@@ -46,18 +46,13 @@ use super::{
     V2_TERMINAL_SESSION, fresh_admission,
 };
 use crate::foundation::{CharacterId, GameSessionId, RuntimeScopeRefV1, WorldId};
-use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 
-/// HOUSERT0-RL-03: Characters inside one house, PREPARED entries included.
-pub const HOUSE_SCOPE_CHARACTERS_MAX: u64 = 200;
-/// Maximum UTF-8 bytes of a house key (migration 0025).
-pub const HOUSE_KEY_MAX_BYTES: usize = 512;
-/// Maximum bytes of an encoded HouseInterior spatial position (migration 0025).
-pub const HOUSE_TILE_MAX_BYTES: usize = 128;
-
+pub use crate::foundation::{
+    HOUSE_KEY_MAX_BYTES, HOUSE_SCOPE_CHARACTERS_MAX, HOUSE_TILE_MAX_BYTES, HouseId,
+};
+#[cfg(test)]
 const HOUSE_KEY_PREFIX: &str = "oteryn:content.house.";
-const HOUSE_INSTANCE_DOMAIN: &[u8] = b"oteryn:house-scope-instance:v1";
 const SCOPE_KIND_HOUSE: i16 = 2;
 const ASSIGNMENT_ASSIGNED: i16 = 1;
 const ASSIGNMENT_REVOKED: i16 = 2;
@@ -68,67 +63,10 @@ const HANDOFF_ENTRY: i16 = 1;
 const COMMAND_VERSION: u8 = 1;
 const COMMAND_MAX_BYTES: usize = 1_024;
 
-/// Exact identity of one house: its World and its content house key (migration 0025).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct HouseId {
-    world_id: WorldId,
-    house_key: String,
-}
-
 impl HouseId {
-    /// `None` unless the key is `oteryn:content.house.[a-z0-9_]+` within 512 bytes.
-    #[must_use]
-    pub fn new(world_id: WorldId, house_key: &str) -> Option<Self> {
-        let suffix = house_key.strip_prefix(HOUSE_KEY_PREFIX)?;
-        let valid = house_key.len() <= HOUSE_KEY_MAX_BYTES
-            && !suffix.is_empty()
-            && suffix
-                .bytes()
-                .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_');
-        valid.then(|| Self {
-            world_id,
-            house_key: house_key.to_owned(),
-        })
-    }
-
-    #[must_use]
-    pub const fn world_id(&self) -> WorldId {
-        self.world_id
-    }
-
-    #[must_use]
-    pub fn house_key(&self) -> &str {
-        &self.house_key
-    }
-
-    /// The tagged assignment key: `\x02 || world || house key`.
-    #[must_use]
-    pub fn scope_key(&self) -> Vec<u8> {
-        let mut key = Vec::with_capacity(17 + self.house_key.len());
-        key.push(0x02);
-        key.extend_from_slice(self.world_id.as_bytes());
-        key.extend_from_slice(self.house_key.as_bytes());
-        key
-    }
-
-    /// The UUIDv7-shaped instance id of this house; equal to `game_house_scope_instance_id`.
-    #[must_use]
-    pub fn instance_id(&self) -> [u8; 16] {
-        let digest = Sha256::new()
-            .chain_update(HOUSE_INSTANCE_DOMAIN)
-            .chain_update(self.world_id.as_bytes())
-            .chain_update(self.house_key.as_bytes())
-            .finalize();
-        let mut id = [0_u8; 16];
-        id.copy_from_slice(&digest[..16]);
-        id[6] = (id[6] & 0x0f) | 0x70;
-        id[8] = (id[8] & 0x3f) | 0x80;
-        id
-    }
-
     /// The runtime scope of a house session.
     pub fn runtime_scope(&self) -> Result<RuntimeScopeRefV1, DurabilityError> {
-        RuntimeScopeRefV1::instance(self.world_id, self.instance_id())
+        RuntimeScopeRefV1::instance(self.world_id(), self.instance_id())
             .map_err(|_| DurabilityError::InvalidStoredState)
     }
 }
@@ -163,6 +101,8 @@ pub enum HouseHandoffError {
     AuthorityRejected,
     /// The exit into a Channel scope (and the §4.3 fallback) awaits ADMIT-0.
     ExitNotAdmitted,
+    /// The accepted native interior loader refused this materialization input.
+    InteriorUnavailable(super::house_interior::HouseInteriorLoadError),
     Unavailable(DurabilityError),
 }
 
@@ -383,17 +323,17 @@ impl HouseScopeAssignmentRequest {
         }
         let house = self.command.house();
         let key_len =
-            u16::try_from(house.house_key.len()).map_err(|_| AssignmentError::InvalidInput)?;
-        let mut encoded = Vec::with_capacity(128 + house.house_key.len());
+            u16::try_from(house.house_key().len()).map_err(|_| AssignmentError::InvalidInput)?;
+        let mut encoded = Vec::with_capacity(128 + house.house_key().len());
         encoded.push(COMMAND_VERSION);
         encoded.push(self.command.kind());
         encoded.extend_from_slice(self.operation_key.as_bytes());
         encoded.push(u8::try_from(actor.len()).map_err(|_| AssignmentError::InvalidInput)?);
         encoded.extend_from_slice(actor);
         encoded.push(0x02);
-        encoded.extend_from_slice(house.world_id.as_bytes());
+        encoded.extend_from_slice(house.world_id().as_bytes());
         encoded.extend_from_slice(&key_len.to_be_bytes());
-        encoded.extend_from_slice(house.house_key.as_bytes());
+        encoded.extend_from_slice(house.house_key().as_bytes());
         match &self.command {
             HouseScopeAssignmentCommand::Replace { predecessor, .. }
             | HouseScopeAssignmentCommand::Revoke { predecessor, .. } => {
@@ -693,8 +633,8 @@ pub(crate) async fn assign_house_scope_in_transaction(
            AND house_key = $3 AND operation = $4)",
     )
     .bind(request.actor_role.as_str())
-    .bind(house.world_id.as_bytes().as_slice())
-    .bind(house.house_key.as_str())
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
     .bind(i16::from(request.command.kind()))
     .fetch_one(&mut **tx)
     .await?;
@@ -709,8 +649,8 @@ pub(crate) async fn assign_house_scope_in_transaction(
         let bare: bool = sqlx::query_scalar(
             "SELECT game_house_scope_bare_session_exists(encode($1, 'hex')::uuid, $2)",
         )
-        .bind(house.world_id.as_bytes().as_slice())
-        .bind(house.house_key.as_str())
+        .bind(house.world_id().as_bytes().as_slice())
+        .bind(house.house_key())
         .fetch_one(&mut **tx)
         .await?;
         if bare {
@@ -817,8 +757,8 @@ pub(crate) async fn assign_house_scope_in_transaction(
              operation_key = EXCLUDED.operation_key, decided_at = EXCLUDED.decided_at",
     )
     .bind(key.as_slice())
-    .bind(house.world_id.as_bytes().as_slice())
-    .bind(house.house_key.as_str())
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
     .bind(ownership_generation.to_string())
     .bind(state)
     .bind(holder_node.as_deref())
@@ -876,8 +816,8 @@ fn validate_request(request: &HouseEntryRequest) -> Result<()> {
         return Err(HouseHandoffError::ExitNotAdmitted);
     };
     let valid = is_uuid_v7(&request.handoff_id)
-        && world_id == request.house.world_id
-        && HouseId::new(request.house.world_id, &request.house.house_key).as_ref()
+        && world_id == request.house.world_id()
+        && HouseId::new(request.house.world_id(), request.house.house_key()).as_ref()
             == Some(&request.house)
         && (1..=HOUSE_TILE_MAX_BYTES).contains(&request.reserved_tile.len())
         && request.source_connection_generation >= 1
@@ -996,8 +936,8 @@ pub(crate) async fn prepare_house_entry_in_transaction(
                   WHERE world_id = encode($1,'hex')::uuid AND house_key = $2 AND state IN (1,2) \
                     AND reserved_tile = $3) AS tile_taken",
     )
-    .bind(request.house.world_id.as_bytes().as_slice())
-    .bind(request.house.house_key.as_str())
+    .bind(request.house.world_id().as_bytes().as_slice())
+    .bind(request.house.house_key())
     .bind(request.reserved_tile.as_slice())
     .fetch_one(&mut **tx)
     .await?;
@@ -1032,7 +972,7 @@ pub(crate) async fn prepare_house_entry_in_transaction(
     .bind(request.source_connection_generation.to_string())
     .bind(request.source_character_lease_generation.to_string())
     .bind(request.source_scope_ownership_generation.to_string())
-    .bind(request.house.house_key.as_str())
+    .bind(request.house.house_key())
     .bind(request.house_scope_ownership_generation.to_string())
     .bind(request.acl_revision.to_string())
     .bind(request.reserved_tile.as_slice())
@@ -1050,6 +990,379 @@ pub(crate) async fn prepare_house_entry_in_transaction(
         .await?
         .ok_or(DurabilityError::InvalidStoredState)?;
     Ok(HousePrepareOutcome::Prepared(record))
+}
+
+/// D1362 preparation facts read from the locked native handoff and its owners.
+/// This is not a placement capability. Its interior is one statement snapshot;
+/// only the future native House actor owner may consume it for materialization.
+pub(super) struct PreparedHouseClaimContext {
+    record: HouseHandoffRecord,
+    account_id: String,
+    origin_channel: crate::foundation::ChannelId,
+    source_connection_generation: u64,
+    source_character_lease_generation: u64,
+    source_scope_ownership_generation: u64,
+    destination_scope_ownership_generation: u64,
+    destination_game_session_id: GameSessionId,
+    node: NodeIncarnationProof,
+    interior: super::house_interior::HouseInteriorSnapshot,
+}
+
+impl PreparedHouseClaimContext {
+    pub(super) fn record(&self) -> &HouseHandoffRecord {
+        &self.record
+    }
+
+    pub(super) fn destination_session(&self) -> GameSessionId {
+        self.destination_game_session_id
+    }
+
+    pub(super) fn node_fact(&self) -> super::runtime_scope_assignment::NodeRegistrationFact {
+        self.node.fact()
+    }
+
+    pub(super) fn source_session(&self) -> GameSessionId {
+        self.record.source_game_session_id
+    }
+
+    pub(super) fn interior(&self) -> &super::house_interior::HouseInteriorSnapshot {
+        &self.interior
+    }
+
+    /// The adapter supplies the independently reconciled current session from
+    /// this same transaction. Expected request fields never construct it.
+    pub(super) fn operation(
+        &self,
+        current: crate::foundation::GameSessionAuthoritySnapshot<
+            crate::foundation::AuthenticatedTransportRefV1,
+        >,
+    ) -> Result<
+        crate::foundation::admission_authority_publication::AdmissionClaimLifecycleOperationV1,
+    > {
+        use crate::foundation::GameSessionState;
+        if current.current_game_session_id() != self.record.source_game_session_id
+            || current.commit().character_id() != self.record.character_id
+            || current.commit().world_id() != self.record.house.world_id()
+            || current.current_connection_generation().get() != self.source_connection_generation
+            || current.current_character_lease().generation()
+                != self.source_character_lease_generation
+            || current.current_scope_generation().get() != self.source_scope_ownership_generation
+            || current.current_runtime_scope()
+                != RuntimeScopeRefV1::channel(self.record.house.world_id(), self.origin_channel)
+            || !matches!(
+                current.session_state(),
+                GameSessionState::Active | GameSessionState::Reconnectable
+            )
+        {
+            return Err(HouseHandoffError::AuthorityRejected);
+        }
+        Ok(crate::foundation::admission_authority_publication::AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            account_id: self.account_id.clone(),
+            current_session: current,
+            handoff_id: self.record.handoff_id,
+            destination_game_session_id: self.destination_game_session_id,
+            destination_scope: self.record.house.runtime_scope()?,
+            destination_scope_ownership_generation: self.destination_scope_ownership_generation,
+            destination_house_key: self.record.house.house_key().into(),
+            reserved_entry_tile: self.record.reserved_tile.clone(),
+        })
+    }
+
+    /// Verify only the durable successor written by the owning handoff. This
+    /// deliberately supplies no placement proof from terminal/generation state.
+    /// The D1362 caller must have completed actual placement and reservation
+    /// consumption before reaching its bind/generation/claim write sequence.
+    pub(super) async fn verify_durable_successor(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<()> {
+        let (current, _) = load_handoff(tx, self.record.handoff_id, true)
+            .await?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let mut expected = self.record.clone();
+        // The reservation must already be consumed while the destination is
+        // still unbound at generation one. The legacy release path cannot
+        // establish this state: terminal or generation > 1 is never accepted
+        // here as a substitute for the missing native placement producer.
+        expected.state = HouseHandoffState::Released;
+        expected.destination_game_session_id = Some(self.destination_game_session_id);
+        if current != expected
+            || !house_assigned(
+                tx,
+                &self.record.house,
+                self.destination_scope_ownership_generation,
+                Some(&self.node),
+            )
+            .await?
+        {
+            return Err(HouseHandoffError::AuthorityRejected);
+        }
+        let correct: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s \
+             JOIN game_durability_reconnect_sessions d \
+               ON d.game_session_id = encode($2,'hex')::uuid \
+             WHERE s.game_session_id = encode($1,'hex')::uuid \
+               AND s.account_id = $3::uuid AND d.account_id = s.account_id \
+               AND s.character_id = encode($4,'hex')::uuid AND d.character_id = s.character_id \
+               AND s.world_id = encode($5,'hex')::uuid AND d.world_id = s.world_id \
+               AND s.session_state = 3 AND s.current_transport_ref IS NULL \
+               AND s.current_generation = $6::text::numeric(20,0) \
+               AND s.character_lease_generation = $7::text::numeric(20,0) \
+               AND s.scope_ownership_generation = $8::text::numeric(20,0) \
+               AND s.runtime_scope_kind = 1 AND s.runtime_scope_world_id = s.world_id \
+               AND s.runtime_scope_channel_id = encode($9,'hex')::uuid \
+               AND d.session_state = 1 AND d.current_transport_ref IS NULL \
+               AND d.current_generation = 1 \
+               AND d.character_lease_generation = $10::text::numeric(20,0) \
+               AND d.scope_ownership_generation = $11::text::numeric(20,0) \
+               AND d.runtime_scope_kind = 2 AND d.runtime_scope_world_id = d.world_id \
+               AND d.runtime_scope_house_key = $12 \
+               AND d.runtime_scope_instance_id = encode($13,'hex')::uuid \
+               AND d.origin_channel_id = s.runtime_scope_channel_id)",
+        )
+        .bind(self.record.source_game_session_id.as_bytes().as_slice())
+        .bind(self.destination_game_session_id.as_bytes().as_slice())
+        .bind(&self.account_id)
+        .bind(self.record.character_id.as_bytes().as_slice())
+        .bind(self.record.house.world_id().as_bytes().as_slice())
+        .bind(self.source_connection_generation.to_string())
+        .bind(self.source_character_lease_generation.to_string())
+        .bind(self.source_scope_ownership_generation.to_string())
+        .bind(self.origin_channel.as_bytes().as_slice())
+        .bind(
+            self.source_character_lease_generation
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .to_string(),
+        )
+        .bind(self.destination_scope_ownership_generation.to_string())
+        .bind(self.record.house.house_key())
+        .bind(self.record.house.instance_id().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        if !correct {
+            return Err(HouseHandoffError::AuthorityRejected);
+        }
+        Ok(())
+    }
+}
+
+/// D1362 native preparation, before any source terminalization or claim effect.
+/// The caller already owns the recovery fence and admission relation locks.
+/// No controller or placement acknowledgement is constructed from these facts.
+pub(super) async fn prepare_house_claim_context_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    commit: &HouseEntryCommit,
+) -> Result<PreparedHouseClaimContext> {
+    if !is_uuid_v7(&commit.handoff_id) || commit.committed_at < 0 {
+        return Err(HouseHandoffError::InvalidInput);
+    }
+    let row = sqlx::query(
+        "SELECT state, account_id::text AS account, uuid_send(origin_channel_id) AS origin, \
+         source_connection_generation::text AS source_generation, \
+         source_character_lease_generation::text AS source_lease, \
+         source_scope_ownership_generation::text AS source_scope, \
+         destination_scope_ownership_generation::text AS house_generation, prepared_at \
+         FROM game_house_scope_handoffs WHERE handoff_id = encode($1,'hex')::uuid FOR UPDATE",
+    )
+    .bind(commit.handoff_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(HouseHandoffError::AuthorityRejected)?;
+    let (record, _) = load_handoff(tx, commit.handoff_id, false)
+        .await?
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if row.try_get::<i16, _>("state")? != HANDOFF_PREPARED
+        || record.state != HouseHandoffState::Prepared
+        || record.destination_game_session_id.is_some()
+        || record.source_game_session_id == commit.destination_game_session_id
+        || row.try_get::<i64, _>("prepared_at")? > commit.committed_at
+    {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    let source_scope = parse_u64(&row.try_get::<String, _>("source_scope")?)?;
+    let house_generation = parse_u64(&row.try_get::<String, _>("house_generation")?)?;
+    let origin: Vec<u8> = row.try_get("origin")?;
+    let origin_channel = crate::foundation::ChannelId::decode(&origin)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let mut origin_key = vec![1_u8];
+    origin_key.extend_from_slice(record.house.world_id().as_bytes());
+    origin_key.extend_from_slice(origin_channel.as_bytes());
+    if !house_assigned(tx, &record.house, house_generation, Some(node)).await?
+        || !origin_channel_held(tx, &origin_key, source_scope, node).await?
+    {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    let source_locked: Option<i32> = sqlx::query_scalar(
+        "SELECT 1 FROM game_durability_reconnect_sessions \
+         WHERE game_session_id = encode($1,'hex')::uuid \
+           AND character_id = encode($2,'hex')::uuid \
+           AND world_id = encode($3,'hex')::uuid \
+           AND account_id = $4::uuid AND session_state IN (1,2) \
+           AND runtime_scope_kind = 1 AND runtime_scope_world_id = world_id \
+           AND runtime_scope_channel_id = encode($5,'hex')::uuid \
+           AND current_generation = $6::text::numeric(20,0) \
+           AND character_lease_generation = $7::text::numeric(20,0) \
+           AND scope_ownership_generation = $8::text::numeric(20,0) FOR UPDATE",
+    )
+    .bind(record.source_game_session_id.as_bytes().as_slice())
+    .bind(record.character_id.as_bytes().as_slice())
+    .bind(record.house.world_id().as_bytes().as_slice())
+    .bind(row.try_get::<String, _>("account")?)
+    .bind(origin_channel.as_bytes().as_slice())
+    .bind(row.try_get::<String, _>("source_generation")?)
+    .bind(row.try_get::<String, _>("source_lease")?)
+    .bind(source_scope.to_string())
+    .fetch_optional(&mut **tx)
+    .await?;
+    if source_locked != Some(1) {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    let access = sqlx::query(
+        "SELECT a.role, a.content_fenced, \
+         a.acl_revision IS NOT DISTINCT FROM h.acl_revision AS acl_current, \
+         a.guild_revisions IS NOT DISTINCT FROM h.guild_revisions AS guild_current \
+         FROM game_house_scope_handoffs h \
+         CROSS JOIN LATERAL game_house_access(h.world_id,h.house_key,h.character_id) a \
+         WHERE h.handoff_id = encode($1,'hex')::uuid",
+    )
+    .bind(commit.handoff_id.as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let [access] = access.as_slice() else {
+        return Err(HouseHandoffError::AuthorityRejected);
+    };
+    if !access
+        .try_get::<Option<String>, _>("role")?
+        .as_deref()
+        .is_some_and(|role| HOUSE_ACCESS_ROLES.contains(&role))
+        || access.try_get::<Option<bool>, _>("content_fenced")? != Some(false)
+        || !access.try_get::<bool, _>("acl_current")?
+        || !access.try_get::<bool, _>("guild_current")?
+    {
+        return Err(HouseHandoffError::AuthorityRejected);
+    }
+    let interior = super::house_interior::load_house_interior_in_transaction(
+        tx,
+        &record.house,
+        house_generation,
+        node,
+    )
+    .await
+    .map_err(HouseHandoffError::InteriorUnavailable)?;
+    Ok(PreparedHouseClaimContext {
+        record,
+        account_id: row.try_get("account")?,
+        origin_channel,
+        source_connection_generation: parse_u64(&row.try_get::<String, _>("source_generation")?)?,
+        source_character_lease_generation: parse_u64(&row.try_get::<String, _>("source_lease")?)?,
+        source_scope_ownership_generation: source_scope,
+        destination_scope_ownership_generation: house_generation,
+        destination_game_session_id: commit.destination_game_session_id,
+        node: node.clone(),
+        interior,
+    })
+}
+
+/// Independently retained native identity for historical reconciliation only.
+/// Replaying a committed record cannot establish current placement or ownership.
+pub(super) async fn house_claim_replay_record_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    commit: &HouseEntryCommit,
+) -> Result<Option<HouseHandoffRecord>> {
+    if !is_uuid_v7(&commit.handoff_id) || commit.committed_at < 0 {
+        return Err(HouseHandoffError::InvalidInput);
+    }
+    let Some((record, _)) = load_handoff(tx, commit.handoff_id, true).await? else {
+        return Ok(None);
+    };
+    if record.state == HouseHandoffState::Prepared {
+        return Ok(None);
+    }
+    if record.destination_game_session_id != Some(commit.destination_game_session_id) {
+        return Err(HouseHandoffError::InvalidInput);
+    }
+    Ok(Some(record))
+}
+
+/// Compare decoded history with independently retained native handoff fields.
+/// This method never returns a live admission or a materialization capability.
+pub(super) async fn validate_house_claim_history_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    record: &HouseHandoffRecord,
+    evidence: &crate::foundation::admission_authority_publication::AdmissionClaimLifecycleEvidenceV1,
+    decided_at: i64,
+) -> Result<()> {
+    use crate::foundation::admission_authority_publication::AdmissionClaimLifecycleOperationV1;
+    let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+        account_id,
+        current_session,
+        handoff_id,
+        destination_game_session_id,
+        destination_scope,
+        destination_scope_ownership_generation,
+        destination_house_key,
+        reserved_entry_tile,
+    } = &evidence.operation
+    else {
+        return Err(DurabilityError::InvalidStoredState.into());
+    };
+    if *handoff_id != record.handoff_id
+        || record.source_game_session_id != current_session.current_game_session_id()
+        || record.character_id != current_session.commit().character_id()
+        || record.destination_game_session_id != Some(*destination_game_session_id)
+        || record.house.house_key() != destination_house_key
+        || record.house.runtime_scope()? != *destination_scope
+        || record.reserved_tile != *reserved_entry_tile
+        || record.state != HouseHandoffState::Released
+    {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = current_session.current_runtime_scope()
+    else {
+        return Err(DurabilityError::InvalidStoredState.into());
+    };
+    let exact: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_house_scope_handoffs \
+         WHERE handoff_id = encode($1,'hex')::uuid AND state = 3 \
+           AND account_id = $2::uuid AND world_id = encode($3,'hex')::uuid \
+           AND origin_channel_id = encode($4,'hex')::uuid \
+           AND source_connection_generation = $5::text::numeric(20,0) \
+           AND source_character_lease_generation = $6::text::numeric(20,0) \
+           AND source_scope_ownership_generation = $7::text::numeric(20,0) \
+           AND destination_scope_ownership_generation = $8::text::numeric(20,0) \
+           AND prepared_at <= $9 AND committed_at <= $10)",
+    )
+    .bind(handoff_id.as_slice())
+    .bind(account_id)
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(
+        current_session
+            .current_connection_generation()
+            .get()
+            .to_string(),
+    )
+    .bind(
+        current_session
+            .current_character_lease()
+            .generation()
+            .to_string(),
+    )
+    .bind(current_session.current_scope_generation().get().to_string())
+    .bind(destination_scope_ownership_generation.to_string())
+    .bind(evidence.transition.prepared_at)
+    .bind(decided_at)
+    .fetch_one(&mut **tx)
+    .await?;
+    if !exact {
+        return Err(DurabilityError::InvalidStoredState.into());
+    }
+    Ok(())
 }
 
 /// Commit inside a transaction that asserted the recovery fence and took the admission
@@ -1106,7 +1419,7 @@ pub(crate) async fn commit_house_entry_in_transaction(
     // The origin Channel is still held by the proving node at the source session's generation:
     // a replaced or revoked origin assignment fails the handoff.
     let mut origin_key = vec![1_u8];
-    origin_key.extend_from_slice(record.house.world_id.as_bytes());
+    origin_key.extend_from_slice(record.house.world_id().as_bytes());
     origin_key.extend_from_slice(&origin);
     if !origin_channel_held(tx, &origin_key, parse_u64(&source_scope)?, node).await? {
         return Err(HouseHandoffError::AuthorityRejected);
@@ -1249,9 +1562,9 @@ pub(crate) async fn commit_house_entry_in_transaction(
     .bind(commit.destination_game_session_id.as_bytes().as_slice())
     .bind(account)
     .bind(record.character_id.as_bytes().as_slice())
-    .bind(record.house.world_id.as_bytes().as_slice())
+    .bind(record.house.world_id().as_bytes().as_slice())
     .bind(record.house.instance_id().as_slice())
-    .bind(record.house.house_key.as_str())
+    .bind(record.house.house_key())
     .bind(origin.as_slice())
     .bind(grace_deadline)
     .bind(destination_lease.to_string())
@@ -1533,8 +1846,8 @@ async fn house_assigned(
           FOR SHARE",
     )
     .bind(house.scope_key().as_slice())
-    .bind(house.world_id.as_bytes().as_slice())
-    .bind(house.house_key.as_str())
+    .bind(house.world_id().as_bytes().as_slice())
+    .bind(house.house_key())
     .bind(generation.to_string())
     .fetch_optional(&mut **tx)
     .await?;

@@ -452,6 +452,9 @@ impl AdmissionClaimOwningSourceV1 for LifecycleOwner {
             AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } => {
                 Some(candidate.identity().game_session_id())
             }
+            AdmissionClaimLifecycleOperationV1::HouseScopeTransition { .. } => {
+                return Err(AdmissionAuthorityPublicationErrorV1::Unavailable);
+            }
         };
         for row in &mut successors {
             row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
@@ -471,9 +474,12 @@ impl AdmissionClaimOwningSourceV1 for LifecycleOwner {
             match &mut row.state {
                 AdmissionAuthorityGuardStateV1::Account { security, presence } => {
                     security.provenance.publication_revision = row.publication_revision;
-                    *presence = holder.map(|session| (self.session.commit().character_id(), session));
+                    *presence =
+                        holder.map(|session| (self.session.commit().character_id(), session));
                 }
-                AdmissionAuthorityGuardStateV1::Character { holder: current, .. } => {
+                AdmissionAuthorityGuardStateV1::Character {
+                    holder: current, ..
+                } => {
                     *current = holder;
                 }
                 _ => return Err(AdmissionAuthorityPublicationErrorV1::Invalid),
@@ -519,8 +525,7 @@ fn replacement_record(
         snapshot.current_connection_generation(),
         ConnectionGeneration::new(snapshot.current_connection_generation().get() + 1)
             .require("replacement generation"),
-        AuthenticatedTransportRefV1::decode(&[transport; 16])
-            .require("replacement transport"),
+        AuthenticatedTransportRefV1::decode(&[transport; 16]).require("replacement transport"),
     )
     .require("replacement connection");
     let authority = ReconnectAuthorityFenceV1::new(
@@ -529,7 +534,9 @@ fn replacement_record(
     )
     .require("replacement authority");
     let continuity = ReconnectContinuityV1::new(
-        snapshot.current_control_loss_epoch().require("replacement epoch"),
+        snapshot
+            .current_control_loss_epoch()
+            .require("replacement epoch"),
         snapshot
             .current_original_grace_deadline()
             .require("replacement grace"),
@@ -1867,25 +1874,52 @@ fn complete_bridge_all_modes_require_current_activated_successor_proof() {
 fn early_terminal_prepare_transfers_claims_before_candidate_commit() {
     let (owner, identity, token) = bridge_fixture(true);
     let auth = CompleteReconnectAuthorizationV1::authorize(
-        &owner, identity, proof(&owner, &token, true, 100), 100,
-    ).require("terminal authorization");
+        &owner,
+        identity,
+        proof(&owner, &token, true, 100),
+        100,
+    )
+    .require("terminal authorization");
     let transition = CompleteReconnectClaimTransitionV1::prepare(&owner, &auth, 100)
         .require("independent claim source");
     let mut flow = CompleteReconnectFlowV1::begin(auth, Some(transition)).require("flow");
-    let expected = flow.operation().replacement.as_ref().require("receipt")
-        .transition.successors.clone();
-    let effect = flow.take_request(CompleteReconnectRequestKindV1::Prepare).require("request")
-        .validate_locked(&owner, 100).require("prepare");
+    let expected = flow
+        .operation()
+        .replacement
+        .as_ref()
+        .require("receipt")
+        .transition
+        .successors
+        .clone();
+    let effect = flow
+        .take_request(CompleteReconnectRequestKindV1::Prepare)
+        .require("request")
+        .validate_locked(&owner, 100)
+        .require("prepare");
     assert_eq!(effect.claims(), expected);
-    assert_eq!(effect.session().commit(), owner.current.snapshot.session.commit());
+    assert_eq!(
+        effect.session().commit(),
+        owner.current.snapshot.session.commit()
+    );
     assert_eq!(
         effect.session().current_connection_generation(),
-        owner.current.snapshot.session.current_connection_generation()
+        owner
+            .current
+            .snapshot
+            .session
+            .current_connection_generation()
     );
     assert_eq!(effect.session().current_transport(), None);
     let anchor = effect.replacement_anchor().require("replacement anchor");
     assert_eq!(anchor.state, GameSessionState::Reconnectable);
-    assert_eq!(anchor.connection_generation, owner.current.snapshot.session.current_connection_generation());
+    assert_eq!(
+        anchor.connection_generation,
+        owner
+            .current
+            .snapshot
+            .session
+            .current_connection_generation()
+    );
     assert_eq!(anchor.transport, None);
     assert_eq!(anchor.receipt.successors, expected);
 }
@@ -1900,8 +1934,8 @@ fn early_terminal_prepared_current_claims_fail_closed_on_fabricated_bindings() {
         100,
     )
     .require("terminal authorization");
-    let transition = CompleteReconnectClaimTransitionV1::prepare(&owner, &auth, 100)
-        .require("claim transition");
+    let transition =
+        CompleteReconnectClaimTransitionV1::prepare(&owner, &auth, 100).require("claim transition");
     let mut flow = CompleteReconnectFlowV1::begin(auth, Some(transition)).require("flow");
     let effect = flow
         .take_request(CompleteReconnectRequestKindV1::Prepare)
@@ -1961,15 +1995,24 @@ fn early_terminal_prepared_rejects_structurally_valid_substituted_receipt() {
     substituted_evidence
         .validate_historical(101)
         .require("substitute remains structurally valid");
-    owner.current.snapshot.replacement_anchor.as_mut().require("anchor").receipt = substituted.clone();
+    owner
+        .current
+        .snapshot
+        .replacement_anchor
+        .as_mut()
+        .require("anchor")
+        .receipt = substituted.clone();
     owner.current.snapshot.claims = substituted.successors;
 
-    assert!(CompleteReconnectAuthorizationV1::reauthorize_history(
-        original_operation.recovery.clone(),
-        proof(&owner, &token, true, 101),
-        &owner,
-        101,
-    ).is_err());
+    assert!(
+        CompleteReconnectAuthorizationV1::reauthorize_history(
+            original_operation.recovery.clone(),
+            proof(&owner, &token, true, 101),
+            &owner,
+            101,
+        )
+        .is_err()
+    );
 
     let auth = CompleteReconnectAuthorizationV1 {
         operation: original_operation.recovery,
@@ -1995,7 +2038,10 @@ fn replacement_commit_projects_candidate_as_current_session_identity() {
     validate_current_authority(candidate, snapshot).require("candidate is current");
     assert!(validate_current_authority(predecessor, snapshot).is_err());
     assert!(validate_current_authority(wrong, snapshot).is_err());
-    assert_eq!(snapshot.commit(), flow.operation().recovery.original.session.commit());
+    assert_eq!(
+        snapshot.commit(),
+        flow.operation().recovery.original.session.commit()
+    );
 
     #[derive(Clone)]
     struct NextLoss(ControlLossObservationV1);
@@ -2054,7 +2100,10 @@ fn persisted_current_reload_preserves_nonreplacement_and_replacement_shapes() {
         committed.current_scope_generation(),
     )
     .require("persisted replacement current authority");
-    assert_eq!(replacement.commit(), flow.operation().recovery.original.session.commit());
+    assert_eq!(
+        replacement.commit(),
+        flow.operation().recovery.original.session.commit()
+    );
     assert_eq!(replacement.current_game_session_id(), current);
     validate_current_authority(current, replacement).require("replacement rehydrates");
     assert!(validate_current_authority(commit.game_session_id(), replacement).is_err());
@@ -2072,64 +2121,68 @@ fn persisted_current_reload_preserves_nonreplacement_and_replacement_shapes() {
         original.current_scope_generation(),
     )
     .require("persisted original current authority");
-    assert_eq!(nonreplacement.current_game_session_id(), commit.game_session_id());
+    assert_eq!(
+        nonreplacement.current_game_session_id(),
+        commit.game_session_id()
+    );
     assert_eq!(nonreplacement.commit(), commit);
 
-    assert!(GameSessionAuthoritySnapshot::from_persisted_current_facts(
-        current,
-        commit,
-        GameSessionState::Active,
-        committed.current_connection_generation(),
-        None,
-        committed.current_character_lease(),
-        committed.current_character_world_eligibility(),
-        committed.current_runtime_scope(),
-        committed.current_scope_generation(),
-    )
-    .is_err());
-    assert!(GameSessionAuthoritySnapshot::from_persisted_current_facts(
-        current,
-        commit,
-        committed.session_state(),
-        committed.current_connection_generation(),
-        committed.current_transport(),
-        committed.current_character_lease(),
-        None,
-        committed.current_runtime_scope(),
-        committed.current_scope_generation(),
-    )
-    .is_err());
+    assert!(
+        GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            current,
+            commit,
+            GameSessionState::Active,
+            committed.current_connection_generation(),
+            None,
+            committed.current_character_lease(),
+            committed.current_character_world_eligibility(),
+            committed.current_runtime_scope(),
+            committed.current_scope_generation(),
+        )
+        .is_err()
+    );
+    assert!(
+        GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            current,
+            commit,
+            committed.session_state(),
+            committed.current_connection_generation(),
+            committed.current_transport(),
+            committed.current_character_lease(),
+            None,
+            committed.current_runtime_scope(),
+            committed.current_scope_generation(),
+        )
+        .is_err()
+    );
 }
 
-fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_case(
-    proof_case: u8,
-) {
+fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_case(proof_case: u8) {
     let (first_flow, mut owner) = committed_bridge(true, true);
     let predecessor = owner.current.snapshot.session.commit().game_session_id();
     let replacement = owner.current.snapshot.session.current_game_session_id();
     let persisted = owner.current.snapshot.session;
-    owner.current.snapshot.session =
-        GameSessionAuthoritySnapshot::from_persisted_current_facts(
-            replacement,
-            persisted.commit(),
-            persisted.session_state(),
-            persisted.current_connection_generation(),
-            persisted.current_transport(),
-            persisted.current_character_lease(),
-            persisted.current_character_world_eligibility(),
-            persisted.current_runtime_scope(),
-            persisted.current_scope_generation(),
-        )
-        .require("reload committed replacement before following loss")
-        .with_control_loss_continuity(
-            persisted
-                .current_control_loss_epoch()
-                .require("persisted control-loss epoch"),
-            persisted
-                .current_original_grace_deadline()
-                .require("persisted original grace deadline"),
-        )
-        .require("reload persisted loss continuity");
+    owner.current.snapshot.session = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        replacement,
+        persisted.commit(),
+        persisted.session_state(),
+        persisted.current_connection_generation(),
+        persisted.current_transport(),
+        persisted.current_character_lease(),
+        persisted.current_character_world_eligibility(),
+        persisted.current_runtime_scope(),
+        persisted.current_scope_generation(),
+    )
+    .require("reload committed replacement before following loss")
+    .with_control_loss_continuity(
+        persisted
+            .current_control_loss_epoch()
+            .require("persisted control-loss epoch"),
+        persisted
+            .current_original_grace_deadline()
+            .require("persisted original grace deadline"),
+    )
+    .require("reload persisted loss continuity");
     let mut wrong_bytes = [0; 16];
     wrong_bytes[6] = 0x70;
     wrong_bytes[8] = 0x80;
@@ -2234,15 +2287,18 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
                 candidate_session,
                 ReconnectAttemptRef::new(22).require("second complete attempt"),
                 ConnectionGeneration::new(3).require("second complete generation"),
-                AuthenticatedTransportRefV1::decode(&[12; 16])
-                    .require("second complete transport"),
+                AuthenticatedTransportRefV1::decode(&[12; 16]).require("second complete transport"),
                 103,
             )
             .require("second complete candidate");
             candidate_owner.current.snapshot.candidate = candidate;
             candidate_owner.current.snapshot.proof_transition =
                 CompleteReconnectProofTransitionV1 {
-                    owner: candidate_owner.current.snapshot.session.current_runtime_scope(),
+                    owner: candidate_owner
+                        .current
+                        .snapshot
+                        .session
+                        .current_runtime_scope(),
                     revision: 14,
                     accepted_revision: 14,
                     observed_at: 102,
@@ -2258,7 +2314,11 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
                 &candidate_owner.current.snapshot.recovery.account_id,
                 candidate_owner.current.snapshot.recovery.character_id,
                 candidate_owner.current.snapshot.recovery.world_id,
-                candidate_owner.current.snapshot.session.current_runtime_scope(),
+                candidate_owner
+                    .current
+                    .snapshot
+                    .session
+                    .current_runtime_scope(),
             )
             .require("second complete identity");
             (candidate_owner, candidate_identity)
@@ -2277,32 +2337,27 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
             102,
         )
         .require("fresh second complete authorization");
-        let fresh_claim = CompleteReconnectClaimTransitionV1::prepare(
-            &fresh_owner,
-            &fresh_authorization,
-            102,
-        )
-        .require("fresh second complete claim");
-        let mut fresh_flow = CompleteReconnectFlowV1::begin(
-            fresh_authorization,
-            Some(fresh_claim),
-        )
-        .require("fresh second complete flow");
+        let fresh_claim =
+            CompleteReconnectClaimTransitionV1::prepare(&fresh_owner, &fresh_authorization, 102)
+                .require("fresh second complete claim");
+        let mut fresh_flow = CompleteReconnectFlowV1::begin(fresh_authorization, Some(fresh_claim))
+            .require("fresh second complete flow");
         fresh_flow
             .take_request(CompleteReconnectRequestKindV1::Prepare)
             .require("fresh second complete prepare request")
             .validate_locked(&fresh_owner, 102)
             .require("fresh second complete prepare effect");
 
-        let (historical_owner, historical_identity) =
-            configure_terminal_replacement(predecessor);
-        assert!(CompleteReconnectAuthorizationV1::authorize(
-            &historical_owner,
-            historical_identity,
-            next_proof(&historical_owner, 102),
-            102,
-        )
-        .is_err());
+        let (historical_owner, historical_identity) = configure_terminal_replacement(predecessor);
+        assert!(
+            CompleteReconnectAuthorizationV1::authorize(
+                &historical_owner,
+                historical_identity,
+                next_proof(&historical_owner, 102),
+                102,
+            )
+            .is_err()
+        );
 
         let mut substituted = owner.clone();
         substituted
@@ -2320,8 +2375,16 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
         )
         .require("substituted candidate");
         substituted.current.snapshot.candidate = substituted_candidate;
-        substituted.current.snapshot.proof_transition.predecessor_session = wrong;
-        substituted.current.snapshot.proof_transition.successor_session = wrong;
+        substituted
+            .current
+            .snapshot
+            .proof_transition
+            .predecessor_session = wrong;
+        substituted
+            .current
+            .snapshot
+            .proof_transition
+            .successor_session = wrong;
         substituted.current.snapshot.proof_transition.candidate = substituted_candidate;
         for row in &mut substituted.current.snapshot.claims {
             match &mut row.state {
@@ -2343,13 +2406,15 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
             substituted.current.snapshot.session.current_runtime_scope(),
         )
         .require("substituted reconnect identity");
-        assert!(CompleteReconnectAuthorizationV1::authorize(
-            &substituted,
-            substituted_identity,
-            next_proof(&substituted, 102),
-            102,
-        )
-        .is_err());
+        assert!(
+            CompleteReconnectAuthorizationV1::authorize(
+                &substituted,
+                substituted_identity,
+                next_proof(&substituted, 102),
+                102,
+            )
+            .is_err()
+        );
     }
     for rejected in [predecessor, wrong] {
         let rejected_identity = ReconnectIdentityV1::new(
@@ -2361,25 +2426,26 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
             owner.current.snapshot.session.current_runtime_scope(),
         )
         .require("rejected reconnect identity");
-        assert!(CompleteReconnectAuthorizationV1::authorize(
-            &owner,
-            rejected_identity,
-            next_proof(&owner, 102),
-            102,
-        )
-        .is_err());
+        assert!(
+            CompleteReconnectAuthorizationV1::authorize(
+                &owner,
+                rejected_identity,
+                next_proof(&owner, 102),
+                102,
+            )
+            .is_err()
+        );
     }
 
-    let authorization = CompleteReconnectAuthorizationV1::authorize(
-        &owner,
-        identity,
-        next_proof(&owner, 102),
-        102,
-    )
-    .require("following reconnect authorization");
-    assert_eq!(authorization.operation().mode, CompleteReconnectModeV1::SameSession);
-    let mut flow = CompleteReconnectFlowV1::begin(authorization, None)
-        .require("following reconnect flow");
+    let authorization =
+        CompleteReconnectAuthorizationV1::authorize(&owner, identity, next_proof(&owner, 102), 102)
+            .require("following reconnect authorization");
+    assert_eq!(
+        authorization.operation().mode,
+        CompleteReconnectModeV1::SameSession
+    );
+    let mut flow =
+        CompleteReconnectFlowV1::begin(authorization, None).require("following reconnect flow");
     let prepare = flow
         .take_request(CompleteReconnectRequestKindV1::Prepare)
         .require("following prepare request")
@@ -2418,7 +2484,10 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
         owner.fast_adoption = Some(CompleteFastReconnectAdoptionV1 {
             session: replacement,
             connection: commit.session().current_connection_generation(),
-            transport: commit.session().current_transport().require("following transport"),
+            transport: commit
+                .session()
+                .current_transport()
+                .require("following transport"),
             proof_generation: 2,
             observed_at: 103,
             compatibility: owner
@@ -2465,15 +2534,17 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
             13,
             104,
         );
-        assert!(TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
-            &owner.current.snapshot.recovery.account_id,
-            Some(&presence),
-            replacement,
-            predecessor,
-            terminal,
-            &historical_candidate,
-        )
-        .is_err());
+        assert!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                &owner.current.snapshot.recovery.account_id,
+                Some(&presence),
+                replacement,
+                predecessor,
+                terminal,
+                &historical_candidate,
+            )
+            .is_err()
+        );
         let authorization = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             &owner.current.snapshot.recovery.account_id,
             Some(&presence),
@@ -2490,8 +2561,7 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
             security.provenance.source_revision = 8;
             security.provenance.accepted_source_revision = 8;
             security.provenance.decision_identity = "second-replacement-security".into();
-            security.provenance.accepted_decision_identity =
-                "second-replacement-security".into();
+            security.provenance.accepted_decision_identity = "second-replacement-security".into();
             security.provenance.source_observed_at = 104;
         }
         let lifecycle_owner = LifecycleOwner {
@@ -2523,9 +2593,7 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
 #[test]
 fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle() {
     for proof_case in 0..3 {
-        replacement_session_completes_a_following_control_loss_and_reconnect_cycle_case(
-            proof_case,
-        );
+        replacement_session_completes_a_following_control_loss_and_reconnect_cycle_case(proof_case);
     }
 }
 
@@ -2556,13 +2624,8 @@ fn replacement_session_is_current_at_the_post_grace_actor_boundary() {
         placement_identity: owner.current.snapshot.placement_identity,
         placement_revision: owner.current.snapshot.placement_revision,
         account_security_source_revision: 7,
-        budget: RetainedRecoveryBudgetV1::restore(
-            epoch,
-            RecoveryEpochStateV1::Open,
-            true,
-            vec![],
-        )
-        .require("post-grace budget"),
+        budget: RetainedRecoveryBudgetV1::restore(epoch, RecoveryEpochStateV1::Open, true, vec![])
+            .require("post-grace budget"),
         protection: Some(owner.current.snapshot.protection),
     };
 
@@ -2573,10 +2636,7 @@ fn replacement_session_is_current_at_the_post_grace_actor_boundary() {
 
 #[derive(Clone)]
 struct ReplacementPostGraceActor(PostGraceActorObservationV1);
-impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
-    for ReplacementPostGraceActor
-{
-}
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed for ReplacementPostGraceActor {}
 impl PostGraceActorSourceV1 for ReplacementPostGraceActor {
     fn resolve_current_actor(
         &self,
@@ -2593,10 +2653,7 @@ struct ReplacementPostGraceClaims {
     actor: PostGraceActorObservationV1,
     transition: AdmissionClaimTransitionEvidenceV1,
 }
-impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
-    for ReplacementPostGraceClaims
-{
-}
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed for ReplacementPostGraceClaims {}
 impl PostGraceClaimOwningSourceV1 for ReplacementPostGraceClaims {
     fn prepare_post_grace_claim(
         &self,
@@ -2636,10 +2693,7 @@ impl PostGraceCompletionSourceV1 for ReplacementPostGraceCompletion {
 
 #[derive(Clone)]
 struct ReplacementPostGraceAdoption(PostGraceAdoptionCurrentV1);
-impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
-    for ReplacementPostGraceAdoption
-{
-}
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed for ReplacementPostGraceAdoption {}
 impl PostGraceAdoptionSourceV1 for ReplacementPostGraceAdoption {
     fn current_adoption(
         &self,
@@ -2692,13 +2746,8 @@ fn replacement_session_completes_post_grace_prepare_commit_and_adoption() {
         placement_identity: owner.current.snapshot.placement_identity,
         placement_revision: owner.current.snapshot.placement_revision,
         account_security_source_revision: 7,
-        budget: RetainedRecoveryBudgetV1::restore(
-            epoch,
-            RecoveryEpochStateV1::Open,
-            true,
-            vec![],
-        )
-        .require("post-grace budget"),
+        budget: RetainedRecoveryBudgetV1::restore(epoch, RecoveryEpochStateV1::Open, true, vec![])
+            .require("post-grace budget"),
         protection: Some(owner.current.snapshot.protection),
     };
     let actor_source = ReplacementPostGraceActor(actor.clone());
@@ -2712,8 +2761,7 @@ fn replacement_session_completes_post_grace_prepare_commit_and_adoption() {
     candidate_bytes[15] = 13;
     let candidate = GameSessionId::decode(&candidate_bytes).require("post-grace candidate");
     let attempt = ReconnectAttemptRef::new(23).require("post-grace attempt");
-    let transport =
-        AuthenticatedTransportRefV1::decode(&[13; 16]).require("post-grace transport");
+    let transport = AuthenticatedTransportRefV1::decode(&[13; 16]).require("post-grace transport");
     let authorize = |source: &ReplacementPostGraceActor| {
         PostGraceRecoveryAuthorizationV1::prepare(
             &verified,
@@ -2779,19 +2827,17 @@ fn replacement_session_completes_post_grace_prepare_commit_and_adoption() {
     {
         *lease_generation = 2;
     }
-    assert!(PostGraceClaimTransitionV1::prepare(
-        &mismatched_claim_owner,
-        &authorization,
-        102,
-    )
-    .is_err());
+    assert!(
+        PostGraceClaimTransitionV1::prepare(&mismatched_claim_owner, &authorization, 102,).is_err()
+    );
     let claim = PostGraceClaimTransitionV1::prepare(&claim_owner, &authorization, 102)
         .require("post-grace claim transition");
     let mut flow = PostGraceDurabilityFlowV1::begin(authorization, &claim_owner, 102)
         .require("post-grace flow");
     assert_eq!(flow.operation(), claim.evidence());
     let mut queue = ReplacementPostGraceQueue::default();
-    flow.submit_prepare(&mut queue).require("post-grace prepare");
+    flow.submit_prepare(&mut queue)
+        .require("post-grace prepare");
     flow.poll(&mut ReplacementPostGraceCompletion(Some(
         PostGraceDurableCompletionV1 {
             operation: flow.operation().clone(),
@@ -2849,8 +2895,7 @@ fn replacement_session_completes_post_grace_prepare_commit_and_adoption() {
     let mut adopted_session = predecessor;
     adopted_session.replacement_game_session_id = Some(candidate);
     adopted_session.session_state = GameSessionState::Active;
-    adopted_session.current_connection_generation =
-        flow.operation().operation.candidate_generation;
+    adopted_session.current_connection_generation = flow.operation().operation.candidate_generation;
     adopted_session.current_transport = Some(transport);
     let adoption = ReplacementPostGraceAdoption(PostGraceAdoptionCurrentV1 {
         actor: adopted_actor,
@@ -3071,7 +3116,11 @@ fn complete_session_use_observation_rejects_intermediate_retired_id_for_every_fa
             3,
         ));
         assert_eq!(
-            authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, request),
+            authorize_session_use(
+                &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                family,
+                request
+            ),
             Err(GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed)
         );
 
@@ -3082,8 +3131,14 @@ fn complete_session_use_observation_rejects_intermediate_retired_id_for_every_fa
             3,
         ));
         assert_eq!(
-            authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, fresh),
-            Ok(GameSessionUseDecisionV1::NewSession { committed_revision: 4 })
+            authorize_session_use(
+                &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                family,
+                fresh
+            ),
+            Ok(GameSessionUseDecisionV1::NewSession {
+                committed_revision: 4
+            })
         );
     }
 }
@@ -3103,7 +3158,10 @@ fn session_use_observation_fails_closed_and_replay_precedes_membership_rejection
 
     let mut bad = session_use_observation(request, GameSessionCandidateMembershipV1::Unused, 7);
     bad.completeness = GameSessionUseCompletenessV1::Incomplete;
-    assert_eq!(authorize(bad), Err(GameSessionUseAuthorizationErrorV1::StaleAuthority));
+    assert_eq!(
+        authorize(bad),
+        Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+    );
     for mutate in 0..8 {
         let mut bad = session_use_observation(request, GameSessionCandidateMembershipV1::Unused, 7);
         match mutate {
@@ -3114,9 +3172,17 @@ fn session_use_observation_fails_closed_and_replay_precedes_membership_rejection
             4 => bad.source_version = 2,
             5 => bad.membership_revision = 6,
             6 => bad.operation_binding[0] = 1,
-            _ => bad.current_fence.as_mut().require("fence").scope_ownership_generation = 6,
+            _ => {
+                bad.current_fence
+                    .as_mut()
+                    .require("fence")
+                    .scope_ownership_generation = 6
+            }
         }
-        assert_eq!(authorize(bad), Err(GameSessionUseAuthorizationErrorV1::StaleAuthority));
+        assert_eq!(
+            authorize(bad),
+            Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+        );
     }
 
     let replay_request = session_use_request(
@@ -3171,21 +3237,39 @@ fn session_use_ledger_ceiling_has_permanent_family_specific_results() {
     assert_eq!(
         GameSessionUseAuthorityV1::from_owning_source(&owner)
             .authorize_terminal_replacement(request),
-        Ok(GameSessionUseDecisionV1::NewSession { committed_revision: 65_536 })
+        Ok(GameSessionUseDecisionV1::NewSession {
+            committed_revision: 65_536
+        })
     );
 
     let request = session_use_request(session_use_id(3), session_use_id(5), 14, 65_536);
     for (family, expected) in [
-        (GameSessionUseFamilyV1::TerminalReplacement, GameSessionUseAuthorizationErrorV1::TerminalReplacementGameSessionLedgerExhausted),
-        (GameSessionUseFamilyV1::EarlyTerminalReplacement, GameSessionUseAuthorizationErrorV1::EarlyTerminalReplacementGameSessionLedgerExhausted),
-        (GameSessionUseFamilyV1::PostGraceRecovery, GameSessionUseAuthorizationErrorV1::PostGraceRecoveryGameSessionLedgerExhausted),
+        (
+            GameSessionUseFamilyV1::TerminalReplacement,
+            GameSessionUseAuthorizationErrorV1::TerminalReplacementGameSessionLedgerExhausted,
+        ),
+        (
+            GameSessionUseFamilyV1::EarlyTerminalReplacement,
+            GameSessionUseAuthorizationErrorV1::EarlyTerminalReplacementGameSessionLedgerExhausted,
+        ),
+        (
+            GameSessionUseFamilyV1::PostGraceRecovery,
+            GameSessionUseAuthorizationErrorV1::PostGraceRecoveryGameSessionLedgerExhausted,
+        ),
     ] {
         let owner = SessionUseOwner(session_use_observation(
             request,
             GameSessionCandidateMembershipV1::Unused,
             GAME_SESSION_USE_LEDGER_CAPACITY_V1,
         ));
-        assert_eq!(authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, request), Err(expected));
+        assert_eq!(
+            authorize_session_use(
+                &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                family,
+                request
+            ),
+            Err(expected)
+        );
     }
 }
 
@@ -3216,8 +3300,7 @@ fn replacement_session_use_families_require_current_predecessor_and_fence() {
             );
         }
 
-        let mut missing_fence =
-            session_use_request(session_use_id(3), session_use_id(4), 17, 7);
+        let mut missing_fence = session_use_request(session_use_id(3), session_use_id(4), 17, 7);
         missing_fence.current_fence = None;
         let owner = SessionUseOwner(session_use_observation(
             missing_fence,

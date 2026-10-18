@@ -249,7 +249,7 @@ impl ChannelRuntimeV1 {
             ))?;
         let actor_ref = ActorRef {
             world_id: carrier.world_id,
-            channel_id: carrier.channel_id,
+            channel_id: self.continuity.channel_id,
             scope_generation: carrier.scope_generation,
             actor_local_id,
             actor_local_generation: ActorLocalGeneration(generation),

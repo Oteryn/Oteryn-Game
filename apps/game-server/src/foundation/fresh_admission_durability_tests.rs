@@ -240,6 +240,9 @@ impl AdmissionClaimOwningSourceV1 for Independent {
             AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } => {
                 Some(candidate.identity().game_session_id())
             }
+            AdmissionClaimLifecycleOperationV1::HouseScopeTransition { .. } => {
+                return Err(AdmissionAuthorityPublicationErrorV1::Unavailable);
+            }
         };
         for row in &mut successors {
             row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
@@ -1887,6 +1890,594 @@ fn fresh_terminal_release_after_remote_observation_expiry_still_relinquishes() -
             &Independent::new()?,
             &Independent::new()?.authorize()?,
             106
+        )
+        .is_err()
+    );
+    Ok(())
+}
+
+// D1362 component fixtures. These own independently established claim rows and
+// current session facts; the synthetic Instance below is not a native HouseId,
+// placement acknowledgement, runtime owner or admission capability.
+fn house_scope_claim_fixture() -> Result<
+    (
+        Independent,
+        AdmissionClaimLifecycleOperationV1,
+        AdmissionClaimTransitionEvidenceV1,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let destination = GameSessionId::decode(&id(10))?;
+    let operation = AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+        account_id: source.source.current.account_id.clone(),
+        current_session: source.snapshot,
+        handoff_id: id(20),
+        destination_game_session_id: destination,
+        destination_scope: RuntimeScopeRefV1::instance(source.source.current.world_id, id(30))
+            .map_err(|error| format!("{error:?}"))?,
+        destination_scope_ownership_generation: 1,
+        destination_house_key: "oteryn:content.house.component_fixture".into(),
+        reserved_entry_tile: vec![1, 2, 3],
+    };
+    let predecessors = source.rows[..2]
+        .iter()
+        .cloned()
+        .collect::<Option<Vec<_>>>()
+        .ok_or("missing independently owned claims")?;
+    let mut successors = predecessors.clone();
+    for row in &mut successors {
+        row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: row.publication_revision,
+        };
+        row.publication_revision += 1;
+        row.source.source_revision += 1;
+        row.source.decision_identity = "independent-house-entry-nine".into();
+        row.source.source_observed_at = 100;
+        match &mut row.state {
+            AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                security.provenance.publication_revision = row.publication_revision;
+                *presence = Some((source.source.current.character_id, destination));
+            }
+            AdmissionAuthorityGuardStateV1::Character {
+                lease_generation,
+                holder,
+                ..
+            } => {
+                *lease_generation += 1;
+                *holder = Some(destination);
+            }
+            _ => return Err("unexpected claim domain".into()),
+        }
+    }
+    Ok((
+        source,
+        operation,
+        AdmissionClaimTransitionEvidenceV1 {
+            predecessors,
+            successors,
+            prepared_at: 100,
+        },
+    ))
+}
+
+#[test]
+fn house_scope_transition_claims_bind_both_holders_and_one_lease_advance() -> TestResult {
+    let (source, operation, proposal) = house_scope_claim_fixture()?;
+    let owner = MutatedClaimOwner {
+        proposal,
+        current_session: source.snapshot,
+    };
+    let transition = HouseScopeTransitionClaimV1::prepare(&owner, operation.clone(), 100)
+        .map_err(|error| format!("{error:?}"))?;
+    let successors = transition
+        .validate_locked(&operation, &source.rows[..2], 100)
+        .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(successors.len(), 2);
+    let destination = GameSessionId::decode(&id(10))?;
+    assert!(matches!(
+        &successors[0].state,
+        AdmissionAuthorityGuardStateV1::Account {
+            presence: Some((character, session)), ..
+        } if *character == source.snapshot.commit().character_id() && *session == destination
+    ));
+    assert!(matches!(
+        &successors[1].state,
+        AdmissionAuthorityGuardStateV1::Character {
+            eligible: true, holder: Some(holder), lease_generation, ..
+        } if *holder == destination
+            && *lease_generation == source.snapshot.current_character_lease().generation() + 1
+    ));
+    // Preparing or checking historical effects has not changed either owner.
+    assert_eq!(
+        source.rows[..2],
+        transition
+            .evidence()
+            .transition
+            .predecessors
+            .iter()
+            .cloned()
+            .map(Some)
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        source.snapshot.current_game_session_id(),
+        GameSessionId::decode(&id(9))?
+    );
+    assert!(transition.evidence().validate_historical(100).is_ok());
+    Ok(())
+}
+
+#[test]
+fn house_scope_transition_rejects_every_independently_changed_handoff_binding() -> TestResult {
+    let (source, operation, proposal) = house_scope_claim_fixture()?;
+    let owner = MutatedClaimOwner {
+        proposal,
+        current_session: source.snapshot,
+    };
+    let transition = HouseScopeTransitionClaimV1::prepare(&owner, operation.clone(), 100)
+        .map_err(|error| format!("{error:?}"))?;
+    for field in 0..10 {
+        let mut current_operation = operation.clone();
+        let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            account_id,
+            current_session,
+            handoff_id,
+            destination_game_session_id,
+            destination_scope,
+            destination_scope_ownership_generation,
+            destination_house_key,
+            reserved_entry_tile,
+        } = &mut current_operation
+        else {
+            return Err("wrong fixture operation".into());
+        };
+        match field {
+            0 => account_id.push('x'),
+            1 => *handoff_id = id(21),
+            2 => *destination_game_session_id = GameSessionId::decode(&id(11))?,
+            3 => {
+                *destination_scope =
+                    RuntimeScopeRefV1::instance(source.source.current.world_id, id(31))
+                        .map_err(|error| format!("{error:?}"))?
+            }
+            4 => {
+                *destination_scope = RuntimeScopeRefV1::instance(
+                    crate::foundation::WorldId::decode(&id(40))?,
+                    id(30),
+                )
+                .map_err(|error| format!("{error:?}"))?
+            }
+            5 => *destination_scope_ownership_generation += 1,
+            6 => destination_house_key.push('x'),
+            7 => reserved_entry_tile.push(4),
+            8 => {
+                *current_session = GameSessionAuthoritySnapshot::from_current_facts(
+                    source.snapshot.commit(),
+                    source.snapshot.session_state(),
+                    ConnectionGeneration::new(2)?,
+                    source.snapshot.current_transport(),
+                    source.snapshot.current_character_lease(),
+                    source.snapshot.current_character_world_eligibility(),
+                    source.snapshot.current_runtime_scope(),
+                    source.snapshot.current_scope_generation(),
+                )
+                .map_err(|error| format!("{error:?}"))?
+            }
+            _ => {
+                *current_session = GameSessionAuthoritySnapshot::from_current_facts(
+                    source.snapshot.commit(),
+                    source.snapshot.session_state(),
+                    source.snapshot.current_connection_generation(),
+                    source.snapshot.current_transport(),
+                    source.snapshot.current_character_lease(),
+                    source.snapshot.current_character_world_eligibility(),
+                    source.snapshot.current_runtime_scope(),
+                    ScopeOwnershipGeneration::new(2)?,
+                )
+                .map_err(|error| format!("{error:?}"))?
+            }
+        }
+        assert!(
+            transition
+                .validate_locked(&current_operation, &source.rows[..2], 100)
+                .is_err(),
+            "changed native binding {field}"
+        );
+    }
+    assert!(
+        transition
+            .validate_locked(&operation, &source.rows[..2], 100)
+            .is_ok()
+    );
+    Ok(())
+}
+
+#[test]
+fn house_scope_transition_rejects_changed_complete_predecessors_at_same_revision() -> TestResult {
+    let (source, operation, proposal) = house_scope_claim_fixture()?;
+    let owner = MutatedClaimOwner {
+        proposal,
+        current_session: source.snapshot,
+    };
+    let transition = HouseScopeTransitionClaimV1::prepare(&owner, operation.clone(), 100)
+        .map_err(|error| format!("{error:?}"))?;
+    for field in 0..9 {
+        let mut independently_current = source.rows[..2].to_vec();
+        if field == 0 {
+            independently_current[1] = None;
+        } else {
+            let index = usize::from(field >= 5);
+            let row = independently_current[index]
+                .as_mut()
+                .ok_or("missing claim")?;
+            let revision = row.publication_revision;
+            match (&mut row.state, field) {
+                (_, 1) => row.source.decision_identity.push('x'),
+                (AdmissionAuthorityGuardStateV1::Account { presence, .. }, 2) => *presence = None,
+                (AdmissionAuthorityGuardStateV1::Account { security, .. }, 3) => {
+                    security.allowed = false
+                }
+                (AdmissionAuthorityGuardStateV1::Account { security, .. }, 4) => {
+                    security.provenance.source_revision += 1;
+                }
+                (AdmissionAuthorityGuardStateV1::Character { holder, .. }, 5) => *holder = None,
+                (
+                    AdmissionAuthorityGuardStateV1::Character {
+                        lease_generation, ..
+                    },
+                    6,
+                ) => {
+                    *lease_generation += 1;
+                }
+                (AdmissionAuthorityGuardStateV1::Character { eligible, .. }, 7) => {
+                    *eligible = false
+                }
+                (AdmissionAuthorityGuardStateV1::Character { world_id, .. }, 8) => {
+                    *world_id = crate::foundation::WorldId::decode(&id(40))?;
+                }
+                _ => return Err("wrong independent mutation".into()),
+            }
+            assert_eq!(row.publication_revision, revision);
+        }
+        assert!(
+            transition
+                .validate_locked(&operation, &independently_current, 100)
+                .is_err(),
+            "changed complete predecessor {field}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn house_scope_transition_rejects_malformed_successors_and_security_refresh() -> TestResult {
+    let (source, operation, baseline) = house_scope_claim_fixture()?;
+    for field in 0..10 {
+        let mut proposal = baseline.clone();
+        match field {
+            0 => {
+                if let AdmissionAuthorityGuardStateV1::Account { presence, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    *presence = Some((
+                        source.source.current.character_id,
+                        source.snapshot.current_game_session_id(),
+                    ));
+                }
+            }
+            1 => {
+                if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+                    &mut proposal.successors[1].state
+                {
+                    *holder = Some(source.snapshot.current_game_session_id());
+                }
+            }
+            2 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut proposal.successors[1].state
+                {
+                    *lease_generation -= 1;
+                }
+            }
+            3 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut proposal.successors[1].state
+                {
+                    *lease_generation += 1;
+                }
+            }
+            4 => {
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    security.provenance.source_observed_at += 1;
+                }
+            }
+            5 => proposal.successors[1].source.authority.push('x'),
+            6 => {
+                proposal.successors[0].source.decision_identity =
+                    proposal.predecessors[0].source.decision_identity.clone()
+            }
+            7 => {
+                proposal.successors[1].precondition =
+                    AdmissionPublicationPreconditionV1::CompareAndSet {
+                        expected_publication_revision: proposal.predecessors[1]
+                            .publication_revision
+                            + 1,
+                    }
+            }
+            8 => {
+                proposal.predecessors.pop();
+            }
+            _ => proposal.successors.push(proposal.successors[1].clone()),
+        }
+        let owner = MutatedClaimOwner {
+            proposal,
+            current_session: source.snapshot,
+        };
+        assert!(
+            HouseScopeTransitionClaimV1::prepare(&owner, operation.clone(), 100).is_err(),
+            "invalid successor {field}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn house_scope_transition_rejects_stale_security_without_reaging_platform_observation() -> TestResult
+{
+    let (source, operation, proposal) = house_scope_claim_fixture()?;
+    let owner = MutatedClaimOwner {
+        proposal,
+        current_session: source.snapshot,
+    };
+    let transition = HouseScopeTransitionClaimV1::prepare(&owner, operation.clone(), 100)
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(
+        transition
+            .validate_locked(&operation, &source.rows[..2], 99)
+            .is_err()
+    );
+    assert!(
+        transition
+            .validate_locked(&operation, &source.rows[..2], 106)
+            .is_err()
+    );
+    let mut expired = owner.proposal.clone();
+    expired.prepared_at = 106;
+    for row in &mut expired.successors {
+        row.source.source_observed_at = 106;
+    }
+    let expired_owner = MutatedClaimOwner {
+        proposal: expired,
+        current_session: source.snapshot,
+    };
+    assert!(HouseScopeTransitionClaimV1::prepare(&expired_owner, operation, 106).is_err());
+    Ok(())
+}
+
+#[test]
+fn house_scope_transition_refuses_unallocated_entry_shapes_and_wrong_live_source() -> TestResult {
+    let (source, operation, proposal) = house_scope_claim_fixture()?;
+    let owner = MutatedClaimOwner {
+        proposal: proposal.clone(),
+        current_session: source.snapshot,
+    };
+    for field in 0..7 {
+        let mut invalid = operation.clone();
+        let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            current_session,
+            handoff_id,
+            destination_game_session_id,
+            destination_scope,
+            destination_scope_ownership_generation,
+            destination_house_key,
+            reserved_entry_tile,
+            ..
+        } = &mut invalid
+        else {
+            return Err("wrong fixture operation".into());
+        };
+        match field {
+            0 => *handoff_id = [0; 16],
+            1 => *destination_game_session_id = source.snapshot.current_game_session_id(),
+            2 => *destination_scope = source.snapshot.current_runtime_scope(),
+            3 => *destination_scope_ownership_generation = 0,
+            4 => destination_house_key.clear(),
+            5 => reserved_entry_tile.clear(),
+            _ => {
+                *current_session = GameSessionAuthoritySnapshot::from_current_facts(
+                    source.snapshot.commit(),
+                    GameSessionState::Terminal,
+                    source.snapshot.current_connection_generation(),
+                    None,
+                    source.snapshot.current_character_lease(),
+                    source.snapshot.current_character_world_eligibility(),
+                    source.snapshot.current_runtime_scope(),
+                    source.snapshot.current_scope_generation(),
+                )
+                .map_err(|error| format!("{error:?}"))?
+            }
+        }
+        assert!(
+            HouseScopeTransitionClaimV1::prepare(&owner, invalid, 100).is_err(),
+            "unallocated entry shape {field}"
+        );
+    }
+    let stale_owner = MutatedClaimOwner {
+        proposal,
+        current_session: GameSessionAuthoritySnapshot::from_current_facts(
+            source.snapshot.commit(),
+            source.snapshot.session_state(),
+            ConnectionGeneration::new(2)?,
+            source.snapshot.current_transport(),
+            source.snapshot.current_character_lease(),
+            source.snapshot.current_character_world_eligibility(),
+            source.snapshot.current_runtime_scope(),
+            source.snapshot.current_scope_generation(),
+        )
+        .map_err(|error| format!("{error:?}"))?,
+    };
+    assert!(HouseScopeTransitionClaimV1::prepare(&stale_owner, operation, 100).is_err());
+    assert!(
+        HouseScopeTransitionClaimV1::prepare(
+            &owner,
+            AdmissionClaimLifecycleOperationV1::TerminalRelease {
+                account_id: source.source.current.account_id.clone(),
+                current_session: source.snapshot,
+            },
+            100
+        )
+        .is_err()
+    );
+    Ok(())
+}
+
+// Additional scope-generation-domain proposal, applied only with both guarded
+// comparison fixes. It follows the actual D1362 data flow into a later release;
+// it does not supply a native runtime assignment or House placement owner.
+fn house_scope_high_generation_source() -> Result<
+    (
+        Independent,
+        AdmissionClaimLifecycleOperationV1,
+        AdmissionClaimTransitionEvidenceV1,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let (mut source, mut operation, proposal) = house_scope_claim_fixture()?;
+    let old = source.snapshot;
+    let initial = FreshAdmissionCommit::from_facts(
+        old.commit().game_session_id(),
+        FreshAdmissionFacts::new(
+            [7; 32],
+            old.commit().character_id(),
+            old.commit().world_id(),
+            old.commit().channel_id(),
+            old.commit().character_lease_generation(),
+            5,
+        )?,
+        old.commit().initial_transport(),
+    )?;
+    source.snapshot = GameSessionAuthoritySnapshot::from_current_facts(
+        initial,
+        old.session_state(),
+        old.current_connection_generation(),
+        old.current_transport(),
+        old.current_character_lease(),
+        old.current_character_world_eligibility(),
+        old.current_runtime_scope(),
+        ScopeOwnershipGeneration::new(5)?,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+        current_session, ..
+    } = &mut operation
+    else {
+        return Err("wrong fixture operation".into());
+    };
+    *current_session = source.snapshot;
+    Ok((source, operation, proposal))
+}
+
+#[test]
+fn house_scope_transition_generation_domain_allows_successor_reload_then_release() -> TestResult {
+    let (mut source, operation, proposal) = house_scope_high_generation_source()?;
+    let owner = MutatedClaimOwner {
+        proposal,
+        current_session: source.snapshot,
+    };
+    let claims = HouseScopeTransitionClaimV1::prepare(&owner, operation.clone(), 100)
+        .map_err(|error| format!("{error:?}"))?;
+    let successor_rows = claims
+        .validate_locked(&operation, &source.rows[..2], 100)
+        .map_err(|error| format!("{error:?}"))?
+        .to_vec();
+    let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+        destination_game_session_id,
+        destination_scope,
+        destination_scope_ownership_generation,
+        ..
+    } = operation
+    else {
+        return Err("wrong fixture operation".into());
+    };
+    let old = source.snapshot;
+    // This is an independently persisted destination fixture: the original fresh
+    // Channel generation is 5; the distinct House scope starts at generation 1.
+    source.snapshot = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        destination_game_session_id,
+        old.commit(),
+        GameSessionState::Reconnectable,
+        ConnectionGeneration::new(1)?,
+        None,
+        CharacterLease::new(old.commit().character_id(), 3)?,
+        old.current_character_world_eligibility(),
+        destination_scope,
+        ScopeOwnershipGeneration::new(destination_scope_ownership_generation)?,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(source.snapshot.commit(), old.commit());
+    assert_eq!(source.snapshot.current_scope_generation().get(), 1);
+    for (row, next) in source.rows[..2].iter_mut().zip(successor_rows) {
+        *row = Some(next);
+    }
+    let release = TerminalReleaseClaimTransitionV1::prepare(
+        &source,
+        &source.source.current.account_id,
+        source.snapshot,
+        100,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    assert!(
+        release
+            .validate_locked(&source.rows[..2], source.snapshot, 100)
+            .is_ok()
+    );
+    Ok(())
+}
+
+#[test]
+fn house_scope_transition_generation_domain_keeps_same_scope_rollback_closed() -> TestResult {
+    let (mut source, _, _) = house_scope_high_generation_source()?;
+    let old = source.snapshot;
+    assert!(
+        GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            old.current_game_session_id(),
+            old.commit(),
+            old.session_state(),
+            old.current_connection_generation(),
+            old.current_transport(),
+            old.current_character_lease(),
+            old.current_character_world_eligibility(),
+            old.current_runtime_scope(),
+            ScopeOwnershipGeneration::new(4)?,
+        )
+        .is_err()
+    );
+    // Test-only unconstrained facts let the independent owner present a stale
+    // same-scope snapshot, so the separate lifecycle predicate must refuse too.
+    source.snapshot = GameSessionAuthoritySnapshot::from_current_facts(
+        old.commit(),
+        old.session_state(),
+        old.current_connection_generation(),
+        old.current_transport(),
+        old.current_character_lease(),
+        old.current_character_world_eligibility(),
+        old.current_runtime_scope(),
+        ScopeOwnershipGeneration::new(4)?,
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    assert!(
+        TerminalReleaseClaimTransitionV1::prepare(
+            &source,
+            &source.source.current.account_id,
+            source.snapshot,
+            100,
         )
         .is_err()
     );

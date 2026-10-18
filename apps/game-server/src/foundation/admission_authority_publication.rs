@@ -864,13 +864,28 @@ pub enum AdmissionClaimLifecycleOperationV1 {
         current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
         candidate: Box<ReconnectDurabilityRecordV1>,
     },
+    /// D1362: a native PREPARED Channel-to-House handoff, before controller bind.
+    /// The owning transaction must independently prove this handoff's exact native
+    /// House identity, access, assignment, incarnation and reservation. This value
+    /// and its historical claim rows do not provide those permissions.
+    HouseScopeTransition {
+        account_id: String,
+        current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        handoff_id: [u8; 16],
+        destination_game_session_id: GameSessionId,
+        destination_scope: RuntimeScopeRefV1,
+        destination_scope_ownership_generation: u64,
+        destination_house_key: String,
+        reserved_entry_tile: Vec<u8>,
+    },
 }
 impl AdmissionClaimLifecycleOperationV1 {
     #[must_use]
     pub fn account_id(&self) -> &str {
         match self {
             Self::TerminalRelease { account_id, .. }
-            | Self::TerminalReplacement { account_id, .. } => account_id,
+            | Self::TerminalReplacement { account_id, .. }
+            | Self::HouseScopeTransition { account_id, .. } => account_id,
         }
     }
     #[must_use]
@@ -882,6 +897,9 @@ impl AdmissionClaimLifecycleOperationV1 {
                 current_session, ..
             }
             | Self::TerminalReplacement {
+                current_session, ..
+            }
+            | Self::HouseScopeTransition {
                 current_session, ..
             } => *current_session,
         }
@@ -1020,6 +1038,66 @@ impl TerminalReplacementClaimTransitionV1 {
     }
 }
 
+/// Inert claim successors for an owning native House handoff. Only a registered
+/// source can prepare them; the adapter must still independently load the current
+/// handoff, session and canonical guard history inside the one physical transaction.
+/// Actor placement and reservation consumption must precede controller bind.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// fn forge(history: AdmissionClaimLifecycleEvidenceV1) -> HouseScopeTransitionClaimV1 {
+///     HouseScopeTransitionClaimV1::from(history)
+/// }
+/// ```
+#[derive(Debug, Clone)]
+pub struct HouseScopeTransitionClaimV1 {
+    evidence: AdmissionClaimLifecycleEvidenceV1,
+}
+
+impl HouseScopeTransitionClaimV1 {
+    pub fn prepare(
+        owner: &dyn AdmissionClaimOwningSourceV1,
+        operation: AdmissionClaimLifecycleOperationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        if !matches!(
+            operation,
+            AdmissionClaimLifecycleOperationV1::HouseScopeTransition { .. }
+        ) {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        Ok(Self {
+            evidence: prepare_lifecycle(owner, operation, now)?,
+        })
+    }
+
+    #[must_use]
+    pub const fn evidence(&self) -> &AdmissionClaimLifecycleEvidenceV1 {
+        &self.evidence
+    }
+
+    /// `current_operation` comes from the independently locked native handoff and
+    /// current session, never from `self.evidence()`. The guard loader must have
+    /// checked each complete projection against its immutable publication history.
+    pub fn validate_locked(
+        &self,
+        current_operation: &AdmissionClaimLifecycleOperationV1,
+        rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        now: i64,
+    ) -> Result<&[AdmissionAuthorityPublicationChangeV1], AdmissionAuthorityPublicationErrorV1>
+    {
+        if current_operation != &self.evidence.operation {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        validate_lifecycle_locked(
+            &self.evidence,
+            rows,
+            current_operation.current_session(),
+            now,
+        )?;
+        Ok(&self.evidence.transition.successors)
+    }
+}
+
 fn prepare_lifecycle(
     owner: &dyn AdmissionClaimOwningSourceV1,
     operation: AdmissionClaimLifecycleOperationV1,
@@ -1068,7 +1146,9 @@ fn validate_session_claims(
         || lease.character_id() != commit.character_id()
         || lease.generation() < commit.character_lease_generation()
         || snapshot.current_connection_generation().get() < commit.connection_generation().get()
-        || snapshot.current_scope_generation().get() < commit.scope_ownership_generation()
+        || (snapshot.current_runtime_scope()
+            == RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id())
+            && snapshot.current_scope_generation().get() < commit.scope_ownership_generation())
         || snapshot.current_runtime_scope().world_id() != commit.world_id()
         || !matches!(
             (snapshot.session_state(), snapshot.current_transport()),
@@ -1184,7 +1264,8 @@ fn validate_lifecycle_effects(
         AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => {
             validate_release_pair(evidence, now)?
         }
-        AdmissionClaimLifecycleOperationV1::TerminalReplacement { .. } => {
+        AdmissionClaimLifecycleOperationV1::TerminalReplacement { .. }
+        | AdmissionClaimLifecycleOperationV1::HouseScopeTransition { .. } => {
             validate_claim_pair(evidence, now)?
         }
     }
@@ -1194,6 +1275,63 @@ fn validate_lifecycle_effects(
         &evidence.predecessors,
     )?;
     match operation {
+        AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            current_session,
+            handoff_id,
+            destination_game_session_id,
+            destination_scope,
+            destination_scope_ownership_generation,
+            destination_house_key,
+            reserved_entry_tile,
+            ..
+        } => {
+            // This is only Channel-to-House entry. Reverse exit and first-login
+            // placement require their actual ADMIT owner; an arbitrary Instance
+            // must still be rejected by the native HouseId-bound handoff owner.
+            let RuntimeScopeRefV1::Channel { world_id, .. } =
+                current_session.current_runtime_scope()
+            else {
+                return Err(Invalid);
+            };
+            if !matches!(
+                current_session.session_state(),
+                GameSessionState::Active | GameSessionState::Reconnectable
+            ) || !matches!(destination_scope, RuntimeScopeRefV1::Instance { world_id: destination_world, .. } if *destination_world == world_id)
+                || *destination_scope_ownership_generation == 0
+                || destination_house_key.is_empty()
+                || reserved_entry_tile.is_empty()
+                || *destination_game_session_id == current_session.current_game_session_id()
+                || GameSessionId::decode(handoff_id).is_err()
+            {
+                return Err(Invalid);
+            }
+            let expected_lease = current_session
+                .current_character_lease()
+                .generation()
+                .checked_add(1)
+                .ok_or(Invalid)?;
+            match (&evidence.successors[0].state, &evidence.successors[1].state) {
+                (
+                    AdmissionAuthorityGuardStateV1::Account {
+                        presence: Some((character, session)),
+                        ..
+                    },
+                    AdmissionAuthorityGuardStateV1::Character {
+                        eligible: true,
+                        lease_generation,
+                        holder: Some(holder),
+                        ..
+                    },
+                ) if *character == current_session.commit().character_id()
+                    && *session == *destination_game_session_id
+                    && *holder == *destination_game_session_id
+                    && *lease_generation == expected_lease =>
+                {
+                    Ok(())
+                }
+                _ => Err(Invalid),
+            }
+        }
         AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => {
             match (
                 &evidence.successors[0].state,

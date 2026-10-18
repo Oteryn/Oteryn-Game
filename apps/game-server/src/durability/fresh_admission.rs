@@ -1515,6 +1515,8 @@ fn write_lifecycle(w: &mut Writer, evidence: &AdmissionClaimLifecycleEvidenceV1)
     w.tag(match &evidence.operation {
         AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => 1,
         AdmissionClaimLifecycleOperationV1::TerminalReplacement { .. } => 2,
+        // D1362 proposal only: re-cite the next free tag after #2187 before publication.
+        AdmissionClaimLifecycleOperationV1::HouseScopeTransition { .. } => 3,
     })?;
     w.text(evidence.operation.account_id())?;
     for id in [
@@ -1643,6 +1645,24 @@ fn write_lifecycle(w: &mut Writer, evidence: &AdmissionClaimLifecycleEvidenceV1)
             w.i64(expiration)?;
         };
     }
+    if let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+        handoff_id,
+        destination_game_session_id,
+        destination_scope,
+        destination_scope_ownership_generation,
+        destination_house_key,
+        reserved_entry_tile,
+        ..
+    } = &evidence.operation
+    {
+        w.bytes(handoff_id)?;
+        w.bytes(destination_game_session_id.as_bytes())?;
+        write_scope(w, *destination_scope)?;
+        w.u64(*destination_scope_ownership_generation)?;
+        w.text(destination_house_key)?;
+        w.u64(reserved_entry_tile.len() as u64)?;
+        w.bytes(reserved_entry_tile)?;
+    }
     write_changes(w, &evidence.transition.predecessors)?;
     write_changes(w, &evidence.transition.successors)?;
     w.i64(evidence.transition.prepared_at)?;
@@ -1659,6 +1679,138 @@ pub(super) fn encode_lifecycle(evidence: &AdmissionClaimLifecycleEvidenceV1) -> 
     encode_envelope(&writer.bytes, super::MAX_FRESH_OPERATION_BYTES)
 }
 
+// Historical-only decoder for the additive House lifecycle shape. The immutable
+// initial receipt is independently loaded by the adapter. None of these decoded
+// rows can construct the sealed HouseScopeTransitionClaimV1 preparation.
+fn decode_house_lifecycle(
+    encoded: &str,
+    initial: FreshAdmissionCommit<AuthenticatedTransportRefV1>,
+) -> Result<AdmissionClaimLifecycleEvidenceV1> {
+    let bytes = decode_envelope(encoded, super::MAX_FRESH_OPERATION_BYTES)?;
+    let mut reader = Reader::new(&bytes);
+    // D1362 proposal: this tag must be re-cited on the post-#2187 base.
+    if reader.tag()? != 3 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let account_id = reader.text()?;
+    for expected in [
+        initial.game_session_id().as_bytes(),
+        initial.character_id().as_bytes(),
+        initial.world_id().as_bytes(),
+        initial.channel_id().as_bytes(),
+    ] {
+        if reader.bytes::<16>()? != *expected {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+    let current_id = checked(GameSessionId::decode(&reader.bytes::<16>()?))?;
+    if reader.u64()? != initial.character_lease_generation()
+        || reader.u64()? != initial.scope_ownership_generation()
+        || reader.u64()? != initial.connection_generation().get()
+        || reader.bytes::<16>()? != initial.initial_transport().to_bytes()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let state = match reader.tag()? {
+        1 => GameSessionState::Active,
+        2 => GameSessionState::Reconnectable,
+        3 => GameSessionState::Terminal,
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
+    let connection = checked(ConnectionGeneration::new(reader.u64()?))?;
+    let transport = if reader.boolean()? {
+        Some(checked(AuthenticatedTransportRefV1::decode(
+            &reader.bytes::<16>()?,
+        ))?)
+    } else {
+        None
+    };
+    let lease = checked(CharacterLease::new(
+        checked(CharacterId::decode(&reader.bytes::<16>()?))?,
+        reader.u64()?,
+    ))?;
+    let eligibility = if reader.boolean()? {
+        Some(CharacterWorldEligibilityClaimV1::new(
+            checked(CharacterId::decode(&reader.bytes::<16>()?))?,
+            checked(WorldId::decode(&reader.bytes::<16>()?))?,
+        ))
+    } else {
+        None
+    };
+    let scope = read_scope(&mut reader)?;
+    let generation = checked(ScopeOwnershipGeneration::new(reader.u64()?))?;
+    let epoch = if reader.boolean()? {
+        Some(checked(ControlLossEpochRefV1::new(reader.u64()?))?)
+    } else {
+        None
+    };
+    let grace = if reader.boolean()? {
+        Some(reader.i64()?)
+    } else {
+        None
+    };
+    // This is a historical source snapshot, validated as data. Current authority
+    // and native House permission must still be independently re-read by owners.
+    let mut current_session = checked(GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        current_id,
+        initial,
+        state,
+        connection,
+        transport,
+        lease,
+        eligibility,
+        scope,
+        generation,
+    ))?;
+    match (epoch, grace) {
+        (None, None) => {}
+        (Some(epoch), Some(grace)) => {
+            current_session = checked(current_session.with_control_loss_continuity(epoch, grace))?;
+        }
+        _ => return Err(DurabilityError::InvalidStoredState),
+    }
+    let handoff_id = reader.bytes::<16>()?;
+    let destination_game_session_id = checked(GameSessionId::decode(&reader.bytes::<16>()?))?;
+    let destination_scope = read_scope(&mut reader)?;
+    let destination_scope_ownership_generation = reader.u64()?;
+    let destination_house_key = reader.text()?;
+    let tile_length = checked(usize::try_from(reader.u64()?))?;
+    if tile_length == 0 || tile_length > super::house_scope_handoff::HOUSE_TILE_MAX_BYTES {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let reserved_entry_tile = reader.take(tile_length)?.to_vec();
+    let house =
+        super::house_scope_handoff::HouseId::new(initial.world_id(), &destination_house_key)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+    if house.runtime_scope()? != destination_scope {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let evidence = AdmissionClaimLifecycleEvidenceV1 {
+        operation: AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            account_id,
+            current_session,
+            handoff_id,
+            destination_game_session_id,
+            destination_scope,
+            destination_scope_ownership_generation,
+            destination_house_key,
+            reserved_entry_tile,
+        },
+        transition: AdmissionClaimTransitionEvidenceV1 {
+            predecessors: read_changes(&mut reader)?,
+            successors: read_changes(&mut reader)?,
+            prepared_at: reader.i64()?,
+        },
+    };
+    reader.finish()?;
+    // Retain the complete byte identity, including every optional source fence,
+    // claim predecessor/successor, order, length and timestamp.
+    if encode_lifecycle(&evidence)? != encoded {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(evidence)
+}
+
 fn lifecycle_key(evidence: &AdmissionClaimLifecycleEvidenceV1) -> Vec<u8> {
     let mut key = b"claim-lifecycle-v1".to_vec();
     key.extend_from_slice(
@@ -1673,6 +1825,16 @@ fn lifecycle_key(evidence: &AdmissionClaimLifecycleEvidenceV1) -> Vec<u8> {
         AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } => {
             key.push(2);
             key.extend_from_slice(candidate.identity().game_session_id().as_bytes());
+        }
+        AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            handoff_id,
+            destination_game_session_id,
+            ..
+        } => {
+            // Same provisional tag as the complete envelope; no existing tag is rewritten.
+            key.push(3);
+            key.extend_from_slice(handoff_id);
+            key.extend_from_slice(destination_game_session_id.as_bytes());
         }
     }
     key
@@ -2271,6 +2433,612 @@ impl FreshAdmissionStore {
         sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
             .bind(lifecycle_key(evidence)).bind(&prepared.encoded).bind(prepared.decided_at).execute(&mut **tx).await?;
         Ok(())
+    }
+}
+
+// D1362: this adapter is an uninstalled post-#2187 component. Its real native
+// caller must place the House actor and consume the entry reservation before
+// applying the claim/bind/generation effects. No runtime caller is enabled here.
+struct NativeHouseClaimOwner {
+    operation: AdmissionClaimLifecycleOperationV1,
+    transition: AdmissionClaimTransitionEvidenceV1,
+}
+impl fresh_source_sealed::Sealed for NativeHouseClaimOwner {}
+impl AdmissionClaimOwningSourceV1 for NativeHouseClaimOwner {
+    fn prepare_lifecycle_claim(
+        &self,
+        operation: &AdmissionClaimLifecycleOperationV1,
+        _now: i64,
+    ) -> std::result::Result<
+        AdmissionClaimLifecycleResolutionV1,
+        AdmissionAuthorityPublicationErrorV1,
+    > {
+        if operation != &self.operation {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        Ok(AdmissionClaimLifecycleResolutionV1 {
+            current_session: self.operation.current_session(),
+            evidence: self.transition.clone(),
+        })
+    }
+    fn prepare_fresh_claim(
+        &self,
+        _binding: &FreshAdmissionAuditBindingV1,
+        _now: i64,
+    ) -> std::result::Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1>
+    {
+        Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+    }
+}
+
+/// Private same-transaction preparation, not a live placement capability and
+/// not constructible from historical receipt bytes or caller-supplied guards.
+pub(crate) struct PreparedHouseScopeTransitionClaims {
+    context: super::house_scope_handoff::PreparedHouseClaimContext,
+    transition: HouseScopeTransitionClaimV1,
+    rows: Vec<Option<AdmissionAuthorityPublicationChangeV1>>,
+    encoded_successors: Vec<String>,
+    encoded: String,
+    initial_fresh_replay_key: Vec<u8>,
+    native_actor_replay_key: FreshAdmissionReplayKey,
+    native_actor_generation: ScopeOwnershipGeneration,
+    predecessor_session_use_revision: u64,
+    transaction_id: String,
+}
+impl PreparedHouseScopeTransitionClaims {
+    /// Point-in-time native materialization input for the eventual House owner.
+    /// It cannot stand in for actual actor placement or current runtime authority.
+    pub(crate) fn interior(&self) -> &super::house_interior::HouseInteriorSnapshot {
+        self.context.interior()
+    }
+
+    pub(crate) fn source_authority(
+        &self,
+    ) -> GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1> {
+        self.transition.evidence().operation.current_session()
+    }
+}
+
+// Only this native, privately constructed PREPARED owner implements the
+// reservation binding in production. Its locked facts are not an active
+// Content or transport grant; the House consumer must still qualify the real
+// pinned tile/0047 identity, transfer the real player owner, and remain closed
+// until the allocated admission/activation chain is present.
+impl crate::foundation::house_actor_authority_seal::Sealed for PreparedHouseScopeTransitionClaims {}
+impl crate::foundation::HouseActorAuthorityV1 for PreparedHouseScopeTransitionClaims {
+    fn house(&self) -> &super::house_scope_handoff::HouseId {
+        &self.context.record().house
+    }
+    fn scope_generation(&self) -> ScopeOwnershipGeneration {
+        self.native_actor_generation
+    }
+    fn node_id(&self) -> crate::foundation::NodeId {
+        self.context.node_fact().node_id()
+    }
+    fn node_registration_revision(&self) -> u64 {
+        self.context.node_fact().registration_revision()
+    }
+    fn character_id(&self) -> CharacterId {
+        self.context.record().character_id
+    }
+    fn source_character_lease(&self) -> crate::foundation::CharacterLease {
+        self.source_authority().current_character_lease()
+    }
+    fn source_session(&self) -> GameSessionId {
+        self.context.source_session()
+    }
+    fn destination_session(&self) -> GameSessionId {
+        self.context.destination_session()
+    }
+    fn handoff_id(&self) -> [u8; 16] {
+        self.context.record().handoff_id
+    }
+    fn initial_receipt_key(&self) -> FreshAdmissionReplayKey {
+        self.native_actor_replay_key
+    }
+    fn reserved_tile(&self) -> &[u8] {
+        &self.context.record().reserved_tile
+    }
+    fn transaction_identity(&self) -> &str {
+        &self.transaction_id
+    }
+}
+
+impl FreshAdmissionStore {
+    pub(super) async fn prepare_house_scope_transition_claims(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        node: &super::runtime_scope_assignment::NodeIncarnationProof,
+        commit: &super::house_scope_handoff::HouseEntryCommit,
+    ) -> std::result::Result<
+        PreparedHouseScopeTransitionClaims,
+        super::house_scope_handoff::HouseHandoffError,
+    > {
+        use super::house_scope_handoff::HouseHandoffError;
+        let context = super::house_scope_handoff::prepare_house_claim_context_in_transaction(
+            tx, node, commit,
+        )
+        .await?;
+        // This lookup joins the actual immutable fresh receipt and validates
+        // the complete current session row; no expected DTO becomes authority.
+        let current = self
+            .current_session_locked(tx, context.source_session())
+            .await?;
+        let operation = context.operation(current)?;
+        let initial_fresh_replay_key: Option<Vec<u8>> = sqlx::query_scalar(
+            "SELECT COALESCE(fresh_replay_key,initial_fresh_replay_key) \
+             FROM game_durability_reconnect_sessions \
+             WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(current.current_game_session_id().as_bytes().as_slice())
+        .fetch_one(&mut **tx)
+        .await?;
+        let initial_fresh_replay_key =
+            initial_fresh_replay_key.ok_or(DurabilityError::InvalidStoredState)?;
+        let native_actor_replay_key =
+            checked(FreshAdmissionReplayKey::decode(&initial_fresh_replay_key))?;
+        let native_actor_generation =
+            ScopeOwnershipGeneration::new(context.interior().ownership_generation)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let predecessor_session_use_revision = unused_session_revision(
+            tx,
+            current.commit().character_id(),
+            commit.destination_game_session_id,
+        )
+        .await?;
+        let mut rows = Vec::with_capacity(2);
+        for key in [
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: operation.account_id().into(),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id()),
+        ] {
+            // load_locked verifies both complete mirrors and the immutable
+            // latest publication history, under the actual owner transaction.
+            rows.push(self.guards.load_locked(tx, &key).await?);
+        }
+        let predecessors = rows
+            .iter()
+            .cloned()
+            .collect::<Option<Vec<_>>>()
+            .ok_or(HouseHandoffError::AuthorityRejected)?;
+        let now: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&mut **tx)
+                .await?;
+        if commit.committed_at > now {
+            return Err(HouseHandoffError::InvalidInput);
+        }
+        let mut successors = predecessors.clone();
+        for row in &mut successors {
+            if row.source.authority
+                != super::fresh_admission_composition::COMPOSITION_SOURCE_AUTHORITY
+            {
+                return Err(HouseHandoffError::AuthorityRejected);
+            }
+            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: row.publication_revision,
+            };
+            row.publication_revision = row
+                .publication_revision
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            row.source.source_revision = row
+                .source
+                .source_revision
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            row.source.decision_identity = format!(
+                "house-scope-entry:{}:{}",
+                uuid_text(&commit.handoff_id),
+                row.source.source_revision
+            );
+            row.source.source_observed_at = now;
+            row.source.clock_uncertainty_seconds = 0;
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                    // Preserve the Platform observation, including its age.
+                    // Only its binding to this new Game publication changes.
+                    security.provenance.publication_revision = row.publication_revision;
+                    *presence = Some((
+                        current.commit().character_id(),
+                        commit.destination_game_session_id,
+                    ));
+                }
+                AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation,
+                    holder,
+                    ..
+                } => {
+                    *lease_generation = lease_generation
+                        .checked_add(1)
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    *holder = Some(commit.destination_game_session_id);
+                }
+                _ => return Err(DurabilityError::InvalidStoredState.into()),
+            }
+        }
+        let source = NativeHouseClaimOwner {
+            operation: operation.clone(),
+            transition: AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: now,
+            },
+        };
+        let transition = HouseScopeTransitionClaimV1::prepare(&source, operation.clone(), now)
+            .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        transition
+            .validate_locked(&operation, &rows, now)
+            .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        if !self
+            .guards
+            .successor_history_available(tx, &transition.evidence().transition.successors, &rows)
+            .await?
+        {
+            return Err(HouseHandoffError::AuthorityRejected);
+        }
+        let encoded_successors = transition
+            .evidence()
+            .transition
+            .successors
+            .iter()
+            .map(|row| encode_guard(row, self.guards.maximum_guard_bytes))
+            .collect::<Result<Vec<_>>>()?;
+        let encoded = encode_lifecycle(transition.evidence())?;
+        let transaction_id = sqlx::query_scalar("SELECT txid_current()::text")
+            .fetch_one(&mut **tx)
+            .await?;
+        Ok(PreparedHouseScopeTransitionClaims {
+            context,
+            transition,
+            rows,
+            encoded_successors,
+            encoded,
+            initial_fresh_replay_key,
+            predecessor_session_use_revision,
+            transaction_id,
+            native_actor_replay_key,
+            native_actor_generation,
+        })
+    }
+
+    /// Consume only a preparation from this exact physical transaction, after
+    /// the real native actor owner placed the actor and consumed its reservation.
+    /// This verifies the resulting durable shape; that shape is not itself an
+    /// actor-placement capability. Integration stays closed until that owner exists.
+    pub(super) async fn persist_house_scope_transition_claims(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        prepared: PreparedHouseScopeTransitionClaims,
+    ) -> std::result::Result<
+        GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        super::house_scope_handoff::HouseHandoffError,
+    > {
+        use super::house_scope_handoff::HouseHandoffError;
+        let transaction_id: String = sqlx::query_scalar("SELECT txid_current()::text")
+            .fetch_one(&mut **tx)
+            .await?;
+        if transaction_id != prepared.transaction_id {
+            return Err(HouseHandoffError::AuthorityRejected);
+        }
+        prepared.context.verify_durable_successor(tx).await?;
+        let evidence = prepared.transition.evidence();
+        let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            current_session,
+            destination_game_session_id,
+            destination_scope,
+            destination_scope_ownership_generation,
+            handoff_id,
+            ..
+        } = &evidence.operation
+        else {
+            return Err(DurabilityError::InvalidStoredState.into());
+        };
+        verify_house_session_use_in_transaction(
+            tx,
+            current_session.commit().character_id(),
+            *destination_game_session_id,
+            *handoff_id,
+            HouseSessionUseCheck::OwningSuccessor {
+                predecessor_revision: prepared.predecessor_session_use_revision,
+            },
+        )
+        .await?;
+        let mut rows = Vec::with_capacity(2);
+        for prior in &evidence.transition.predecessors {
+            rows.push(self.guards.load_locked(tx, &prior.key).await?);
+        }
+        if rows != prepared.rows
+            || !self
+                .guards
+                .successor_history_available(tx, &evidence.transition.successors, &rows)
+                .await?
+        {
+            return Err(HouseHandoffError::AuthorityRejected);
+        }
+        let decided_at: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&mut **tx)
+                .await?;
+        // The sealed predicate already validated the independent current
+        // predecessor before the owning effects in this same locked TX. It is
+        // never reconstructed from the expected payload after terminalization.
+        evidence
+            .validate_historical(decided_at)
+            .map_err(|_| HouseHandoffError::AuthorityRejected)?;
+        self.guards
+            .persist_locked(
+                tx,
+                &evidence.transition.successors,
+                &rows,
+                &prepared.encoded_successors,
+            )
+            .await?;
+        let inherited: Option<Vec<u8>> = sqlx::query_scalar(
+            "UPDATE game_durability_reconnect_sessions d \
+             SET initial_fresh_replay_key = (SELECT COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) \
+                 FROM game_durability_reconnect_sessions s \
+                 WHERE s.game_session_id = encode($1,'hex')::uuid) \
+             WHERE d.game_session_id = encode($2,'hex')::uuid \
+               AND d.fresh_replay_key IS NULL AND d.initial_fresh_replay_key IS NULL \
+             RETURNING d.initial_fresh_replay_key",
+        )
+        .bind(current_session.current_game_session_id().as_bytes().as_slice())
+        .bind(destination_game_session_id.as_bytes().as_slice())
+        .fetch_optional(&mut **tx).await?.flatten();
+        if inherited.as_deref() != Some(prepared.initial_fresh_replay_key.as_slice()) {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
+            .bind(lifecycle_key(evidence)).bind(&prepared.encoded).bind(decided_at)
+            .execute(&mut **tx).await?;
+        // Reload through the existing canonical fresh receipt + current-row
+        // reconciler. The result is actual persisted state, never a snapshot
+        // manufactured from the requested successor or copied fixture data.
+        let current = self
+            .current_session_locked(tx, *destination_game_session_id)
+            .await?;
+        if current.current_game_session_id() != *destination_game_session_id
+            || current.current_runtime_scope() != *destination_scope
+            || current.current_scope_generation().get() != *destination_scope_ownership_generation
+            || current.current_character_lease().generation()
+                != current_session
+                    .current_character_lease()
+                    .generation()
+                    .checked_add(1)
+                    .ok_or(DurabilityError::InvalidStoredState)?
+            || current.session_state() != GameSessionState::Reconnectable
+            || current.current_transport().is_some()
+            || current.current_connection_generation().get() != 1
+        {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        Ok(current)
+    }
+}
+
+struct HouseSessionUseMembership {
+    character: CharacterId,
+    session: GameSessionId,
+    revision: u64,
+    operation_binding: [u8; 16],
+}
+
+#[derive(Clone, Copy)]
+enum HouseSessionUseCheck {
+    OwningSuccessor { predecessor_revision: u64 },
+    HistoricalReceipt,
+}
+
+// Data validation shared by the actual post-write and historical read paths.
+// Its success is not a session-use grant: those paths still load the complete
+// native ledger and membership inside their protected transaction.
+fn validate_house_session_use_membership(
+    ledger: &SessionUseState,
+    membership: Option<&HouseSessionUseMembership>,
+    character: CharacterId,
+    session: GameSessionId,
+    operation_binding: [u8; 16],
+    check: HouseSessionUseCheck,
+) -> Result<()> {
+    let Some(membership) = membership else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    if !ledger.complete
+        || membership.character != character
+        || membership.session != session
+        || operation_binding == [0; 16]
+        || membership.operation_binding != operation_binding
+        || membership.revision == 0
+        || ledger.revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+        || membership.revision > ledger.revision
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    if let HouseSessionUseCheck::OwningSuccessor {
+        predecessor_revision,
+    } = check
+        && (predecessor_revision.checked_add(1) != Some(ledger.revision)
+            || membership.revision != ledger.revision)
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+async fn verify_house_session_use_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    session: GameSessionId,
+    operation_binding: [u8; 16],
+    check: HouseSessionUseCheck,
+) -> Result<()> {
+    use sqlx::Row;
+    // session_use_state checks the actual version, completeness, both high-water
+    // mirrors, complete membership count and maximum revision under the row lock.
+    let ledger = session_use_state(tx, character).await?;
+    let row = sqlx::query(
+        "SELECT uuid_send(character_id) AS character, uuid_send(game_session_id) AS session, \
+         membership_revision::text AS revision, \
+         CASE WHEN octet_length(operation_binding) = 16 THEN operation_binding END AS binding \
+         FROM game_durability_session_use_memberships WHERE game_session_id = encode($1,'hex')::uuid",
+    )
+    .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let membership = row
+        .map(|row| -> Result<HouseSessionUseMembership> {
+            let binding: Option<Vec<u8>> = row.try_get("binding")?;
+            Ok(HouseSessionUseMembership {
+                character: checked(CharacterId::decode(
+                    &row.try_get::<Vec<u8>, _>("character")?,
+                ))?,
+                session: checked(GameSessionId::decode(
+                    &row.try_get::<Vec<u8>, _>("session")?,
+                ))?,
+                revision: checked(row.try_get::<String, _>("revision")?.parse::<u64>())?,
+                operation_binding: checked(
+                    binding
+                        .ok_or(DurabilityError::InvalidStoredState)?
+                        .try_into(),
+                )?,
+            })
+        })
+        .transpose()?;
+    validate_house_session_use_membership(
+        &ledger,
+        membership.as_ref(),
+        character,
+        session,
+        operation_binding,
+        check,
+    )
+}
+
+/// A decoded committed result for retry/crash reconciliation. Its private
+/// history can be inspected, but it cannot prepare claims, place actors, bind a
+/// controller or establish the current scope owner after a restart.
+pub(super) struct HouseScopeClaimReceipt {
+    record: super::house_scope_handoff::HouseHandoffRecord,
+    evidence: AdmissionClaimLifecycleEvidenceV1,
+    decided_at: i64,
+}
+impl HouseScopeClaimReceipt {
+    pub(super) fn record(&self) -> &super::house_scope_handoff::HouseHandoffRecord {
+        &self.record
+    }
+    pub(super) fn evidence(&self) -> &AdmissionClaimLifecycleEvidenceV1 {
+        &self.evidence
+    }
+    pub(super) const fn decided_at(&self) -> i64 {
+        self.decided_at
+    }
+}
+
+impl FreshAdmissionStore {
+    /// Reconcile only existing durable history, without re-preparing or applying
+    /// a scope transition and without substituting it for current native ownership.
+    pub(super) async fn house_scope_transition_replay(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        commit: &super::house_scope_handoff::HouseEntryCommit,
+    ) -> std::result::Result<
+        Option<HouseScopeClaimReceipt>,
+        super::house_scope_handoff::HouseHandoffError,
+    > {
+        use sqlx::Row;
+        let Some(record) =
+            super::house_scope_handoff::house_claim_replay_record_in_transaction(tx, commit)
+                .await?
+        else {
+            return Ok(None);
+        };
+        // Only the key is derived from the independently retained native handoff.
+        // Expected guard rows and request DTOs never supply the stored operation.
+        let mut operation_key = b"claim-lifecycle-v1".to_vec();
+        operation_key.extend_from_slice(record.source_game_session_id.as_bytes());
+        operation_key.push(3); // D1362 provisional tag, re-cite after #2187.
+        operation_key.extend_from_slice(&record.handoff_id);
+        operation_key.extend_from_slice(commit.destination_game_session_id.as_bytes());
+        let stored = sqlx::query(
+            "SELECT CASE WHEN octet_length(operation_json) <= $2 THEN operation_json END AS payload, \
+             decided_at FROM game_durability_admission_lifecycle_receipts WHERE operation_key = $1",
+        )
+        .bind(&operation_key).bind(checked(i64::try_from(super::MAX_FRESH_OPERATION_BYTES))?)
+        .fetch_optional(&mut **tx).await?;
+        let Some(stored) = stored else {
+            // Legacy handoffs have no D1362 lifecycle history. Their existence
+            // cannot be upgraded into a completed claim transition during replay.
+            return Ok(None);
+        };
+        let encoded: Option<String> = stored.try_get("payload")?;
+        let encoded = encoded.ok_or(DurabilityError::InvalidStoredState)?;
+        let decided_at: i64 = stored.try_get("decided_at")?;
+        let initial_key: Option<Vec<u8>> = sqlx::query_scalar(
+            "SELECT COALESCE(fresh_replay_key,initial_fresh_replay_key) \
+             FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid",
+        )
+        .bind(record.source_game_session_id.as_bytes().as_slice())
+        .fetch_one(&mut **tx).await?;
+        let initial_key = initial_key.ok_or(DurabilityError::InvalidStoredState)?;
+        let initial_receipt = self
+            .receipt_locked(tx, &initial_key)
+            .await?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let initial = checked(initial_receipt.binding().initial_commit())?;
+        let evidence = decode_house_lifecycle(&encoded, initial)?;
+        if evidence.operation.account_id() != initial_receipt.binding().account_id
+            || lifecycle_key(&evidence) != operation_key
+        {
+            return Err(DurabilityError::InvalidStoredState.into());
+        }
+        checked(evidence.validate_historical(decided_at))?;
+        super::house_scope_handoff::validate_house_claim_history_in_transaction(
+            tx, &record, &evidence, decided_at,
+        )
+        .await?;
+        verify_house_session_use_in_transaction(
+            tx,
+            record.character_id,
+            commit.destination_game_session_id,
+            record.handoff_id,
+            HouseSessionUseCheck::HistoricalReceipt,
+        )
+        .await?;
+        // Both predecessor and successor historical payloads must still exist
+        // exactly, even if their current projections have since advanced. Such
+        // newer projections are not rolled back or reused as replay permission.
+        for change in evidence
+            .transition
+            .predecessors
+            .iter()
+            .chain(&evidence.transition.successors)
+        {
+            let encoded_change = encode_guard(change, self.guards.maximum_guard_bytes)?;
+            let mut key = Writer::new(self.guards.maximum_guard_bytes);
+            write_key(&mut key, &change.key)?;
+            let exact: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history \
+                 WHERE guard_key = $1 AND publication_revision = $2::text::numeric(20,0) \
+                   AND source_authority = $3 AND source_revision = $4::text::numeric(20,0) \
+                   AND decision_identity = $5 AND change_json = $6)",
+            )
+            .bind(&key.bytes)
+            .bind(change.publication_revision.to_string())
+            .bind(&change.source.authority)
+            .bind(change.source.source_revision.to_string())
+            .bind(&change.source.decision_identity)
+            .bind(&encoded_change)
+            .fetch_one(&mut **tx)
+            .await?;
+            if !exact {
+                return Err(DurabilityError::InvalidStoredState.into());
+            }
+        }
+        Ok(Some(HouseScopeClaimReceipt {
+            record,
+            evidence,
+            decided_at,
+        }))
     }
 }
 
@@ -3217,5 +3985,351 @@ mod resource_preflight_tests {
                 }
                 Ok(())
             })
+    }
+}
+
+#[cfg(test)]
+mod house_scope_transition_codec_tests {
+    use super::*;
+
+    // Literal historical fixtures only. No sealed owner implements any live
+    // actor/placement permission in this codec test module.
+    fn history() -> Result<AdmissionClaimLifecycleEvidenceV1> {
+        let id = |last| {
+            let mut bytes = [0; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = last;
+            bytes
+        };
+        let account_id = "00000000-0000-4000-8000-000000000001".to_owned();
+        let character = checked(CharacterId::decode(&id(1)))?;
+        let world = checked(WorldId::decode(&id(2)))?;
+        let channel = checked(ChannelId::decode(&id(3)))?;
+        let source = checked(GameSessionId::decode(&id(4)))?;
+        let destination = checked(GameSessionId::decode(&id(5)))?;
+        let transport = checked(AuthenticatedTransportRefV1::decode(&[7; 16]))?;
+        let initial = checked(FreshAdmissionCommit::from_facts(
+            source,
+            checked(FreshAdmissionFacts::new(
+                [7; 32], character, world, channel, 2, 1,
+            ))?,
+            transport,
+        ))?;
+        let current_session = checked(GameSessionAuthoritySnapshot::from_current_facts(
+            initial,
+            GameSessionState::Active,
+            checked(ConnectionGeneration::new(1))?,
+            Some(transport),
+            checked(CharacterLease::new(character, 2))?,
+            Some(CharacterWorldEligibilityClaimV1::new(character, world)),
+            RuntimeScopeRefV1::channel(world, channel),
+            checked(ScopeOwnershipGeneration::new(1))?,
+        ))?;
+        let house = super::super::house_scope_handoff::HouseId::new(
+            world,
+            "oteryn:content.house.codec_fixture",
+        )
+        .ok_or(DurabilityError::InvalidStoredState)?;
+        let row_source = |purpose| AdmissionPublicationSourceV1 {
+            authority: "component-history-game-owner".into(),
+            purpose,
+            source_revision: 8,
+            decision_identity: "existing-admission-eight".into(),
+            source_observed_at: 100,
+            clock_uncertainty_seconds: 0,
+        };
+        let predecessors = vec![
+            AdmissionAuthorityPublicationChangeV1 {
+                key: AdmissionAuthorityGuardKeyV1::Account {
+                    account_id: account_id.clone(),
+                },
+                source: row_source(AdmissionPublicationPurposeV1::AccountSecurityAndPresence),
+                precondition: AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: 1,
+                },
+                publication_revision: 2,
+                state: AdmissionAuthorityGuardStateV1::Account {
+                    security: FreshAccountSecurityObservationV1 {
+                        account_id: account_id.clone(),
+                        minimum_generation: 1,
+                        allowed: true,
+                        provenance: FreshEvidenceProvenanceV1 {
+                            source_authority: "component-history-platform".into(),
+                            purpose: FreshEvidencePurposeV1::PlatformSecurity,
+                            scope: Fnd04EvidenceScope::FreshAdmission,
+                            source_revision: 7,
+                            accepted_source_revision: 7,
+                            decision_identity: "platform-seven".into(),
+                            accepted_decision_identity: "platform-seven".into(),
+                            source_observed_at: 100,
+                            clock_uncertainty_seconds: 0,
+                            publication_revision: 2,
+                        },
+                    },
+                    presence: Some((character, source)),
+                },
+            },
+            AdmissionAuthorityPublicationChangeV1 {
+                key: AdmissionAuthorityGuardKeyV1::Character(character),
+                source: row_source(AdmissionPublicationPurposeV1::CharacterOwnershipAndLease),
+                precondition: AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: 1,
+                },
+                publication_revision: 2,
+                state: AdmissionAuthorityGuardStateV1::Character {
+                    account_id: account_id.clone(),
+                    world_id: world,
+                    eligible: true,
+                    lease_generation: 2,
+                    holder: Some(source),
+                },
+            },
+        ];
+        let mut successors = predecessors.clone();
+        for row in &mut successors {
+            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: 2,
+            };
+            row.publication_revision = 3;
+            row.source.source_revision = 9;
+            row.source.decision_identity = "house-entry-nine".into();
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                    security.provenance.publication_revision = 3;
+                    *presence = Some((character, destination));
+                }
+                AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation,
+                    holder,
+                    ..
+                } => {
+                    *lease_generation = 3;
+                    *holder = Some(destination);
+                }
+                _ => return Err(DurabilityError::InvalidStoredState),
+            }
+        }
+        Ok(AdmissionClaimLifecycleEvidenceV1 {
+            operation: AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+                account_id,
+                current_session,
+                handoff_id: id(6),
+                destination_game_session_id: destination,
+                destination_scope: house.runtime_scope()?,
+                destination_scope_ownership_generation: 1,
+                destination_house_key: house.house_key().into(),
+                reserved_entry_tile: vec![2, 3, 4],
+            },
+            transition: AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: 100,
+            },
+        })
+    }
+
+    #[test]
+    fn house_scope_transition_codec_retains_exact_history_and_rejects_corruption() -> Result<()> {
+        let evidence = history()?;
+        let initial = evidence.operation.current_session().commit();
+        let encoded = encode_lifecycle(&evidence)?;
+        assert_eq!(decode_house_lifecycle(&encoded, initial)?, evidence);
+        let bytes = decode_envelope(&encoded, super::super::MAX_FRESH_OPERATION_BYTES)?;
+        for mutation in 0..3 {
+            let mut changed = bytes.clone();
+            match mutation {
+                0 => changed[0] = 255,
+                1 => {
+                    changed.pop();
+                }
+                _ => changed.push(0),
+            }
+            let changed = encode_envelope(&changed, super::super::MAX_FRESH_OPERATION_BYTES)?;
+            assert!(
+                decode_house_lifecycle(&changed, initial).is_err(),
+                "wire mutation {mutation}"
+            );
+        }
+        // A different independently supplied immutable initial receipt must not
+        // be replaced by the historical initial fields from the payload.
+        let wrong_initial = checked(FreshAdmissionCommit::from_facts(
+            initial.game_session_id(),
+            checked(FreshAdmissionFacts::new(
+                [8; 32],
+                initial.character_id(),
+                initial.world_id(),
+                initial.channel_id(),
+                initial.character_lease_generation() + 1,
+                initial.scope_ownership_generation(),
+            ))?,
+            initial.initial_transport(),
+        ))?;
+        assert!(decode_house_lifecycle(&encoded, wrong_initial).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn house_scope_transition_codec_binds_native_house_identity_and_finite_tile() -> Result<()> {
+        let evidence = history()?;
+        let initial = evidence.operation.current_session().commit();
+        for mutation in 0..3 {
+            let mut changed = evidence.clone();
+            let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+                destination_house_key,
+                reserved_entry_tile,
+                ..
+            } = &mut changed.operation
+            else {
+                return Err(DurabilityError::InvalidStoredState);
+            };
+            match mutation {
+                0 => destination_house_key.push_str("_other"),
+                1 => {
+                    *reserved_entry_tile =
+                        vec![1; super::super::house_scope_handoff::HOUSE_TILE_MAX_BYTES + 1]
+                }
+                _ => *reserved_entry_tile = vec![1; super::super::MAX_FRESH_OPERATION_BYTES],
+            }
+            match encode_lifecycle(&changed) {
+                Ok(encoded) => assert!(
+                    decode_house_lifecycle(&encoded, initial).is_err(),
+                    "native identity/length mutation {mutation}"
+                ),
+                Err(_) => assert_eq!(mutation, 2, "unexpected failure before decode"),
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn house_scope_transition_membership_requires_one_bound_native_advance() -> Result<()> {
+        let evidence = history()?;
+        let AdmissionClaimLifecycleOperationV1::HouseScopeTransition {
+            current_session,
+            destination_game_session_id,
+            handoff_id,
+            ..
+        } = evidence.operation
+        else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        let character = current_session.commit().character_id();
+        let membership = HouseSessionUseMembership {
+            character,
+            session: destination_game_session_id,
+            revision: 8,
+            operation_binding: handoff_id,
+        };
+        let ledger = SessionUseState {
+            revision: 8,
+            complete: true,
+        };
+        let owning = HouseSessionUseCheck::OwningSuccessor {
+            predecessor_revision: 7,
+        };
+        validate_house_session_use_membership(
+            &ledger,
+            Some(&membership),
+            character,
+            destination_game_session_id,
+            handoff_id,
+            owning,
+        )?;
+        for mutation in 0..8 {
+            let mut changed_ledger = SessionUseState {
+                revision: ledger.revision,
+                complete: ledger.complete,
+            };
+            let mut changed = HouseSessionUseMembership {
+                character: membership.character,
+                session: membership.session,
+                revision: membership.revision,
+                operation_binding: membership.operation_binding,
+            };
+            let mut check = owning;
+            match mutation {
+                0 => changed_ledger.complete = false,
+                1 => changed_ledger.revision = 9,
+                2 => changed.revision = 7,
+                3 => changed.revision = 0,
+                4 => {
+                    changed.character = checked(CharacterId::decode(
+                        current_session.current_game_session_id().as_bytes(),
+                    ))?
+                }
+                5 => changed.session = current_session.current_game_session_id(),
+                6 => changed.operation_binding[15] ^= 1,
+                _ => {
+                    check = HouseSessionUseCheck::OwningSuccessor {
+                        predecessor_revision: u64::MAX,
+                    }
+                }
+            }
+            assert!(
+                validate_house_session_use_membership(
+                    &changed_ledger,
+                    Some(&changed),
+                    character,
+                    destination_game_session_id,
+                    handoff_id,
+                    check
+                )
+                .is_err(),
+                "changed native session-use effect {mutation}"
+            );
+        }
+        assert!(
+            validate_house_session_use_membership(
+                &ledger,
+                None,
+                character,
+                destination_game_session_id,
+                handoff_id,
+                owning
+            )
+            .is_err()
+        );
+        // A later complete ledger may retain this exact committed history. That
+        // is accepted only by the history path; it cannot satisfy owning CAS.
+        let later = SessionUseState {
+            revision: 9,
+            complete: true,
+        };
+        validate_house_session_use_membership(
+            &later,
+            Some(&membership),
+            character,
+            destination_game_session_id,
+            handoff_id,
+            HouseSessionUseCheck::HistoricalReceipt,
+        )?;
+        assert!(
+            validate_house_session_use_membership(
+                &later,
+                Some(&membership),
+                character,
+                destination_game_session_id,
+                handoff_id,
+                owning
+            )
+            .is_err()
+        );
+        let regressed = SessionUseState {
+            revision: 7,
+            complete: true,
+        };
+        assert!(
+            validate_house_session_use_membership(
+                &regressed,
+                Some(&membership),
+                character,
+                destination_game_session_id,
+                handoff_id,
+                HouseSessionUseCheck::HistoricalReceipt
+            )
+            .is_err()
+        );
+        Ok(())
     }
 }
