@@ -48,6 +48,12 @@ if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
   NODE_BOOT_SPELL_MANIFEST_REL="${NODE_BOOT_SPELL_MANIFEST#"$GAME_SOURCE"/}"
   NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
 fi
+# ADMIT-CAP-1: the entry-room seam stages run against a Channel that requires LOGOUT_V1 (21)
+# and prove the owner's capability refusals; the spell scenarios declare no required set.
+NODE_REQUIRED_CAPABILITIES='[21]'
+if [[ "$NODE_BOOT_SPELLS" == 1 ]]; then
+  NODE_REQUIRED_CAPABILITIES='[]'
+fi
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 if [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" != "$PLATFORM_SHA" ]]; then
   echo 'NODE_BOOT_RESULT=BLOCKED reason=exact_platform_checkout_missing'
@@ -315,6 +321,7 @@ ruleset_revision = "rules-s3b-1"
 content_revision = "content-s3b-1"
 map_revision = "map-s3b-1"
 world_policy_revision = "policy-s3b-1"
+required_gameplay_capabilities = $NODE_REQUIRED_CAPABILITIES
 offer_revision = "offer-s3b-1"
 [platform]
 source_authority = "platform"

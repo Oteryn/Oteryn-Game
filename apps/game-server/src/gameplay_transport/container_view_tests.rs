@@ -185,6 +185,60 @@ fn open_close_and_up_show_whole_views_with_inner_handles() {
     assert_eq!(view.continuity().views_revision, revision);
 }
 
+/// ITEM-LOOP-1: after a committed command 9 each open view shows its container's current
+/// observation; an item moved between two views keeps its handle, an unchanged tree sends
+/// nothing, and a view whose container left the tree or is not observed closes.
+#[test]
+fn a_committed_move_refreshes_every_open_view_and_closes_the_gone_ones() {
+    let mut view = session(2);
+    let mut state = ContainerViewState::default();
+    let (first, second) = (instance(1), instance(2));
+    for (bag, entries) in [(first, &[10_u16, 11][..]), (second, &[12][..])] {
+        let intent = open(handle_of(&view, bag));
+        let (outcome, _) = run(
+            &mut state,
+            &mut view,
+            intent,
+            Some(container(Some(instance(0)), entries)),
+        );
+        assert_eq!(outcome, ContainerViewOutcome::Opened);
+    }
+    assert_eq!(state.containers(), [first, second]);
+    let moved = handle_of(&view, instance(10));
+
+    // `instance(10)` moved from the first bag into the second.
+    let observed = [
+        (first, Some(container(Some(instance(0)), &[11]))),
+        (second, Some(container(Some(instance(0)), &[10, 12]))),
+    ];
+    let views = shown(
+        &state
+            .refresh(&mut view, &observed)
+            .expect("refresh")
+            .expect("delta"),
+    );
+    assert_eq!(views.views.len(), 2);
+    assert_eq!(views.views[0].entries.len(), 1);
+    assert_eq!(views.views[1].entries[0].handle, moved);
+    assert_eq!(view.resolve(moved), Some(instance(10)));
+
+    // The same tree again changes nothing.
+    let revision = view.continuity().views_revision;
+    assert_eq!(state.refresh(&mut view, &observed).expect("refresh"), None);
+    assert_eq!(view.continuity().views_revision, revision);
+
+    // The second bag left the carried tree and the first is not observed: both close.
+    let gone = [(first, None), (second, Some(ContainerObservation::Gone))];
+    let views = shown(
+        &state
+            .refresh(&mut view, &gone)
+            .expect("refresh")
+            .expect("delta"),
+    );
+    assert_eq!(views, ContainerViews::default());
+    assert_eq!(state.open_views(), 0);
+}
+
 #[test]
 fn every_refusal_leaves_the_views_unchanged() {
     let mut view = session(2);
@@ -580,6 +634,7 @@ mod connection {
         async fn observe_container(
             &self,
             _actor: ExactActorRef,
+            _fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
             target: ItemKey,
         ) -> Option<ContainerObservation> {
             self.container_reads.borrow_mut().push(target);

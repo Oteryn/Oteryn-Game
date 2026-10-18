@@ -2250,6 +2250,11 @@ mod item_transfer_postgres_cases;
 #[path = "support/corpse_transfer_postgres_cases.rs"]
 mod corpse_transfer_postgres_cases;
 
+// ITEM-LOOP-1 (CP D1438) live item loop: move, nest, split/merge, drop/pickup and the
+// derived-capacity pickup refusal, plus the STARTER-1 grant, through the same protected lane.
+#[path = "support/item_loop_postgres_cases.rs"]
+mod item_loop_postgres_cases;
+
 // D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
 // resumable from durable state) shares its cases with the focused standalone
 // target through the same protected lane.

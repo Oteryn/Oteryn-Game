@@ -103,6 +103,8 @@ pub struct ReadinessConfig {
     pub content_revision: String,
     pub map_revision: String,
     pub world_policy_revision: String,
+    /// ADMIT0: explicit registered IDs, fixed with this policy and ownership generation.
+    pub required_gameplay_capabilities: Vec<u32>,
     pub offer_revision: String,
 }
 
@@ -391,10 +393,25 @@ fn parse<T: serde::de::DeserializeOwned>(document: &[u8]) -> Result<T, ConfigErr
     toml::from_str(text).map_err(|_| ConfigError { key: "<document>" })
 }
 
+/// ADMIT0: a node document whose `[readiness]` omits the explicit capability declaration
+/// (an older template) fails closed naming that key, not the whole document. There is no
+/// default; the operator declares the set, possibly `[]`.
+fn missing_required_capabilities(document: &[u8]) -> Option<ConfigError> {
+    if document.len() > MAX_CONFIG_BYTES {
+        return None;
+    }
+    let table: toml::Table = toml::from_str(std::str::from_utf8(document).ok()?).ok()?;
+    let readiness = table.get("readiness")?.as_table()?;
+    (!readiness.contains_key("required_gameplay_capabilities")).then_some(ConfigError {
+        key: "readiness.required_gameplay_capabilities",
+    })
+}
+
 impl NodeConfig {
     /// Parse and validate one node configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
-        let config: Self = parse(document)?;
+        let config: Self = parse(document)
+            .map_err(|error| missing_required_capabilities(document).unwrap_or(error))?;
         config.validate()?;
         Ok(config)
     }
@@ -445,6 +462,12 @@ impl NodeConfig {
             return reject("control.socket_path");
         }
         let readiness = &self.readiness;
+        crate::gameplay_transport::world_required_capabilities::validate_declared(
+            &readiness.required_gameplay_capabilities,
+        )
+        .map_err(|_| ConfigError {
+            key: "readiness.required_gameplay_capabilities",
+        })?;
         if !token(&readiness.source_authority, 128, b"/") {
             return reject("readiness.source_authority");
         }
@@ -805,6 +828,7 @@ ruleset_revision = "ruleset-1"
 content_revision = "content-1"
 map_revision = "map-1"
 world_policy_revision = "policy-1"
+required_gameplay_capabilities = []
 offer_revision = "offer-1"
 
 [platform]
@@ -886,6 +910,35 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
                     .as_bytes()
             )
             .is_err()
+        );
+    }
+
+    #[test]
+    fn required_gameplay_capabilities_are_explicit_registered_and_canonical() {
+        let field = "required_gameplay_capabilities = []";
+        for ids in [
+            "[0]",
+            "[999]",
+            "[18, 6]",
+            "[18, 18]",
+            "[\"WORLD_SPATIAL_FIELDS\"]",
+        ] {
+            let changed = NODE.replace(field, &format!("required_gameplay_capabilities = {ids}"));
+            assert!(NodeConfig::parse(changed.as_bytes()).is_err(), "{ids}");
+        }
+        assert_eq!(
+            NodeConfig::parse(NODE.replace(field, "").as_bytes()),
+            Err(ConfigError {
+                key: "readiness.required_gameplay_capabilities"
+            })
+        );
+        let declared = NODE.replace(field, "required_gameplay_capabilities = [11, 18]");
+        assert_eq!(
+            NodeConfig::parse(declared.as_bytes())
+                .expect("registered IDs; offer checked at boot")
+                .readiness
+                .required_gameplay_capabilities,
+            [11, 18]
         );
     }
 

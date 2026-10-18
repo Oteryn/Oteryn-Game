@@ -258,6 +258,7 @@ fn native_requests_must_match_the_confirmed_kind_amount_and_recipient_binding() 
         platinum: definition("platinum"),
         crystal: definition("crystal"),
         backpack: ItemDefinitionFacts {
+            weight: None,
             definition: definition("backpack"),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(20),

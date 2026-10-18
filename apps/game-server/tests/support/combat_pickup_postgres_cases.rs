@@ -15,7 +15,7 @@ use crate::content::{
     REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinition, ReferenceDefinitionKind,
     ReferenceEquipmentPattern, ReferenceEquipmentSlot, ReferenceItemContainer,
     ReferenceItemDefinition, ReferenceItemDestination, ReferenceItemEquipment, ReferenceItemField,
-    ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStack,
+    ReferenceItemPhysical, ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStack,
     ReferenceItemStackClass, ReferencePlayableContentSource, Sha256HexDigest,
     TypedDefinitionRef as ContentTypedDefinitionRef, link_reference_playable,
 };
@@ -87,6 +87,12 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
         stack_class: ReferenceItemStackClass::StackCapable,
         legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
         semantics: ReferenceItemSemantics {
+            // Explicit test-only fixture weight; never a production Content fallback.
+            physical: Known(ReferenceItemPhysical {
+                weight: Known(1),
+                movable: Known(true),
+                pickupable: Known(true),
+            }),
             stack: Known(ReferenceItemStack {
                 stackable: Known(true),
                 stack_max: Known(30),
@@ -100,6 +106,12 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
         stack_class: ReferenceItemStackClass::NonStackable,
         legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
         semantics: ReferenceItemSemantics {
+            // Explicit test-only fixture weight; never a production Content fallback.
+            physical: Known(ReferenceItemPhysical {
+                weight: Known(1),
+                movable: Known(true),
+                pickupable: Known(true),
+            }),
             container: Known(ReferenceItemContainer {
                 capacity: Known(20),
             }),

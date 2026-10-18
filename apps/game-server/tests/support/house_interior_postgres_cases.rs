@@ -556,6 +556,7 @@ async fn funded(h: &native::Harness) -> TestResult<([u8; 16], [u8; 16])> {
     ));
     let item = h.mint(&a, "fixture:house.item", 1).await?;
     let facts = ItemDefinitionFacts {
+        weight: Some(1),
         definition: crate::durability::item_mint::TypedDefinitionRef {
             family: "Item".into(),
             production_key: "fixture:house.item".into(),
@@ -2110,6 +2111,18 @@ impl crate::durability::character_equipment::EquipmentMoveContent for EquipmentF
     }
     fn is_timed_item(&self, _key: &str, _revision: &str) -> bool {
         false
+    }
+    fn equipment_stack_class(
+        &self,
+        key: &str,
+        revision: &str,
+    ) -> crate::durability::item_transfer::ItemStackClass {
+        use crate::durability::item_transfer::ItemStackClass;
+        if revision == "definition-r1" && key == "fixture:house.item" {
+            ItemStackClass::NonStackable
+        } else {
+            ItemStackClass::Unknown
+        }
     }
 }
 #[test]
