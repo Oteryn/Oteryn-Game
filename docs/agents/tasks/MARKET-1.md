@@ -366,3 +366,28 @@ atomic place/accept/cancel/expiry writer, production migration and privileges,
 Bank ledger/fee (`FeeBurnCause::MarketFee`), Inbox delivery/return, custody,
 audit/outbox, the ending-metadata producer, Content facts, admission, jobs and wire.
 The acceptance criteria above remain unchecked.
+
+## Completion + wiring (post-checkpoint)
+
+Evidence base: origin/main `c55a92b4`. The checkpoint was merged unfinished; nothing in the running game calls it. This PR carries the completion. It must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain referenced below: `apps/game-server/src/gameplay_transport/connection.rs` (command `else if` chain, about lines 2550-3017) and the `GATED` table in `apps/game-server/src/gameplay_transport/capabilities.rs` (highest capability id on main: 28). Wire modules live in `crates/protocol-oteryn/src/` (none exists for this mechanic).
+
+### Present on main (#2134)
+- `domain/market.rs` (offer rules) and `durability/market.rs` (private storage/query/selection). `durability::market` is `pub(crate)`; its only consumer is `tests/support/market_postgres_cases.rs` (15 PG cases).
+- No migration, no protocol module, no capability, no handler, no job, no event, no content facts.
+
+### Checklist
+- [ ] **Persistence/migrations**: add `apps/game-server/migrations/NNNN_market.sql` (next free number after `0122_chat_relay_leases.sql`; check open PRs for leases): operations, offers, escrow, book-lock rows, ledger links, ending metadata, privileges for the game role. Install the same schema in the PG test harness instead of the private per-test DDL in `tests/support/market_postgres_cases.rs`.
+- [ ] **Atomic writers** in `durability/market.rs` (+ new `market_audit.rs`): place, accept, cancel, expiry/return. Escrow = Bank debit (`durability/bank.rs`) + offer row + ledger in one transaction; fee burn via `FeeBurnCause::MarketFee` with balance ceiling; item custody via `durability/character_inbox.rs` (delivery and return); losing concurrent writer typed; restart-safe expiry that returns escrow exactly once.
+- [ ] **Event/audit/outbox**: market event in `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json`, limits in `RESOURCE_LIMITS_REGISTRY.json`, ending-metadata producer.
+- [ ] **Content**: MARKET-CONTENT-1 `trade.marketable` / `trade.market_category` facts; regenerate content and pins via `tools/content-migration/regenerate_content.py`; reconcile with `apps/game-server/src/content/item_market_true_promotion.rs`.
+- [ ] **Protocol**: new `crates/protocol-oteryn/src/market.rs` (+tests): `CAPABILITY_MARKET_V1` (next free id), command types (browse, my offers, place, accept, cancel), state domain/delta types; register in `lib.rs` and `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`; error codes in `OTERYN_GAME_ERROR_CODE_REGISTRY.json`.
+- [ ] **Runtime hookup**: new `gameplay_transport/market.rs` handler; add the dispatch branch in `connection.rs` (alongside `COMMAND_TYPE_NPC_TRADE_INTENT`); add a `GATED` row in `capabilities.rs` for `MARKET_V1`; admission/session-generation checks as in `npc_trade_command.rs`; market-only-in-depot/NPC range rule from MARKET0.
+- [ ] **Jobs**: World job for offer expiry registered at node startup (`node/serve.rs`), restart-safe.
+- [ ] **Client/UI** (apps/client): market panel is not in scope here unless MARKET-WIRE-1 owner says otherwise; at minimum the server path must be drivable by a protocol-level test client.
+- [ ] **Tests**: unit (domain, wire codec); PG durability for every MARKET0 §8 delta; double-accept race; expiry-after-restart; **end-to-end through `connection.rs` dispatch**: login, place offer, second character accepts, gold and item moved, Inbox delivery, capability off => command refused.
+- [ ] Acceptance boxes in the Acceptance criteria section ticked only with evidence.
+
+### Blockers and dependencies
+- ITEM-LOOP-1 (#2190 open), NPC-ECON-1 (merged in #2197 per GUILD-1 card; re-verify), MARKET-CONTENT-1 (not started), DEPOT-1 / DEPOT-WIRE-1 (depot reads draft #2156), INBOX-1b.
+- No open MARKET-WIRE-1 PR exists; this PR owns the wire unless CP splits it.
+- MARKET-TIER-1 (ITEM-FORGE-1) depends on this.
