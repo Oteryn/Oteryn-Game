@@ -4,7 +4,17 @@
   "kind": "ruleset",
   "owner": "Character rules",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Skill/magic-level rules."
+  "notes": "Skill/magic-level rules.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/character/skills/reference-evidence.json",
+      "sha256": "aea3e915e3677f8ae17099abadb67a8c2ef29a189410a84acfa30488d37d1a1c"
+    }
+  ]
 }

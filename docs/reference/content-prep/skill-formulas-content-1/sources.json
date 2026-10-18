@@ -1,0 +1,76 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "SKILL-FORMULAS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "repo:docs/reference/tibia-manual/combat.md": {
+      "path": "docs/reference/tibia-manual/combat.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/combat.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "ef518113d52cc089185c6472b23556d7aba74b714a74d3ef1d529f6dc03d1d62",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:78086:1113308": {
+      "title": "Critical Hit",
+      "url": "https://tibia.fandom.com/wiki/Critical_Hit",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113308",
+      "revid": 1113308,
+      "revision_timestamp": "2025-07-24T17:19:22Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "eaec983a016db290ed19170f716ddcbf16c43e227f0abbba72b16c4bbf74f781",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "wiki:1092:1205374": {
+      "title": "Formulae",
+      "url": "https://tibia.fandom.com/wiki/Formulae",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1205374",
+      "revid": 1205374,
+      "revision_timestamp": "2026-09-07T17:28:39Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "dead5a3344eef4a7af05561f1893202052ef31c611e5de90676624c69bc9abf5",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Formulae%7CEquipment%20Upgrade%2FFusing%7CTemplate%3AInfobox%20Outfit%7CTemplate%3AInfobox%20Object%7CTemplate%3ATransportCell%7CTemplate%3ARaid%20Message%7CTemplate%3ACalculator%2FMana%20Per%20Second%7CTemplate%3ACalculator%2FHitpoints%20Per%20Second&redirects=1"
+    },
+    "wiki:78085:1101811": {
+      "title": "Life Leech",
+      "url": "https://tibia.fandom.com/wiki/Life_Leech",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1101811",
+      "revid": 1101811,
+      "revision_timestamp": "2025-05-04T17:01:12Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "507f3e067c027749e8e2de7b832d9473565d97a8436f0939d90bdce6c7049d35",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "wiki:78087:1101810": {
+      "title": "Mana Leech",
+      "url": "https://tibia.fandom.com/wiki/Mana_Leech",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1101810",
+      "revid": 1101810,
+      "revision_timestamp": "2025-05-04T17:01:10Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "560d6058c2c3e1da14dfe62bf77f318812bbece68eef833f3916b78d5fc826ac",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "wiki:2780:1200670": {
+      "title": "Skills",
+      "url": "https://tibia.fandom.com/wiki/Skills",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1200670",
+      "revid": 1200670,
+      "revision_timestamp": "2026-08-15T17:36:48Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e6a10f2d73871e8f63d5c3a1eaad199863e033148028528a06f1c11baf4aba12",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    }
+  }
+}

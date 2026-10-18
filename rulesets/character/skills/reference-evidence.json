@@ -1,0 +1,412 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SKILL-FORMULAS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "combat.critical",
+      "facts": {
+        "behaviour": {
+          "value": "Trigger chance and intensity are independent; applies to spells/runes as well as attacks.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.5"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "intrinsic_chance": {
+          "value": 5,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:78086:1113308",
+              "selector": "Opening paragraph"
+            }
+          ],
+          "note": "Summer 2025 intrinsic critical chance claim has no inspected official or controlled confirmation."
+        },
+        "intrinsic_extra_damage": {
+          "value": 10,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:78086:1113308",
+              "selector": "Opening paragraph"
+            }
+          ],
+          "note": "Wiki-only intrinsic extra critical damage claim."
+        }
+      }
+    },
+    {
+      "key": "combat.leech",
+      "facts": {
+        "behaviour": {
+          "value": "Chance to restore HP or mana as a fraction of damage dealt.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.5"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "life_formula": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Life Leech"
+            }
+          ],
+          "note": "Exact rounding, multi-target reduction, secondary damage and overkill semantics need official/controlled evidence."
+        },
+        "mana_formula": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Mana Leech"
+            }
+          ],
+          "note": "Exact rounding, multi-target reduction, secondary damage and overkill semantics need official/controlled evidence."
+        },
+        "damage_prey": {
+          "value": false,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:78085:1101811",
+              "selector": "Damage Preys do not affect leech"
+            }
+          ],
+          "note": "Current community observation; not independently controlled."
+        }
+      }
+    },
+    {
+      "key": "skills.knight",
+      "facts": {
+        "skill_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / vocation multipliers"
+            }
+          ],
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+        },
+        "magic_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Magic Level"
+            }
+          ],
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+        }
+      }
+    },
+    {
+      "key": "skills.paladin",
+      "facts": {
+        "skill_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / vocation multipliers"
+            }
+          ],
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+        },
+        "magic_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Magic Level"
+            }
+          ],
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+        }
+      }
+    },
+    {
+      "key": "skills.druid",
+      "facts": {
+        "skill_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / vocation multipliers"
+            }
+          ],
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+        },
+        "magic_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Magic Level"
+            }
+          ],
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+        }
+      }
+    },
+    {
+      "key": "skills.sorcerer",
+      "facts": {
+        "skill_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / vocation multipliers"
+            }
+          ],
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+        },
+        "magic_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Magic Level"
+            }
+          ],
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+        }
+      }
+    },
+    {
+      "key": "skills.monk",
+      "facts": {
+        "skill_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / vocation multipliers"
+            }
+          ],
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+        },
+        "magic_advance": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Magic Level"
+            }
+          ],
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+        }
+      }
+    },
+    {
+      "key": "skills.community_model",
+      "facts": {
+        "next_level_points": {
+          "value": "A * b^(skill-c)",
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills"
+            }
+          ],
+          "note": "Community candidate, no controlled or official formula proof."
+        },
+        "cumulative_points": {
+          "value": "A * (b^(skill-c)-1)/(b-1)",
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills"
+            }
+          ],
+          "note": "Community candidate, integer conventions and boundary conditions unproved."
+        },
+        "skill_constants": {
+          "value": {
+            "magic": 1600,
+            "melee": 50,
+            "distance": 30,
+            "shielding": 100,
+            "fishing": 20
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / Skill Constants"
+            }
+          ],
+          "note": "Community constants only."
+        },
+        "vocation_constants": {
+          "value": {
+            "None": [
+              3.0,
+              2.0,
+              1.5,
+              2.0,
+              1.5,
+              1.1
+            ],
+            "Knight": [
+              3.0,
+              1.1,
+              1.1,
+              1.4,
+              1.1,
+              1.1
+            ],
+            "Paladin": [
+              1.4,
+              1.2,
+              1.2,
+              1.1,
+              1.1,
+              1.1
+            ],
+            "Sorcerer": [
+              1.1,
+              2.0,
+              1.5,
+              2.0,
+              1.5,
+              1.1
+            ],
+            "Druid": [
+              1.1,
+              1.8,
+              1.5,
+              1.8,
+              1.5,
+              1.1
+            ],
+            "Monk": [
+              1.25,
+              1.4,
+              1.1,
+              1.5,
+              1.15,
+              1.1
+            ]
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills / Vocation Constants"
+            }
+          ],
+          "note": "Column order: magic, axe/club/sword, fist, distance, shielding, fishing. Community values only; includes Monk."
+        },
+        "offset": {
+          "value": {
+            "magic": 0,
+            "other_skills": 10
+          },
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Skills"
+            }
+          ],
+          "note": "Community convention; not an official advancement rule."
+        }
+      }
+    },
+    {
+      "key": "leech.community_model",
+      "facts": {
+        "mana_per_target": {
+          "value": "ceil(Dmg * Leech * (0.1*N+0.9) / N)",
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1092:1205374",
+              "selector": "Imbuing / Mana Leech"
+            }
+          ],
+          "note": "Community candidate; source says independently round each target up and includes overkill; no official or controlled proof."
+        }
+      }
+    }
+  ]
+}
