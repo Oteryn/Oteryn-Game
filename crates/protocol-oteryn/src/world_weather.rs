@@ -1,17 +1,17 @@
 //! WEATHER-1 candidate visual payload codec (CP D1111, D1026–D1027).
 //!
-//! Registered (not offered) in `PROTOCOL_OTERYN_V1_REGISTRY.json`; protocol-owner D1027 sign-off is pending.
+//! Registered in `PROTOCOL_OTERYN_V1_REGISTRY.json` (offered per connection, never from a static
+//! set); protocol-owner D1027 sign-off is pending.
 //! Candidate protobuf layout: required field 1 varint status (1 Unavailable, 2 Active);
 //! Active additionally requires field 2 bytes binding token (exactly 32 public, non-secret
-//! revision-identity bytes), field 3 uint64 absolute slot (present even at zero), and field 4
-//! uint32 preset index (1..16). Unavailable has no Active fields. Snapshot/change use the same
-//! full replacement value. The token is correlation data, never seed bytes or authority.
+//! revision-identity bytes), field 3 uint64 period start slot (present even at zero), field 4
+//! uint32 weather kind (1..=9) and field 5 uint32 intensity (1..=3). Unavailable has no Active
+//! fields. Snapshot/change use the same full replacement value. The token is correlation data,
+//! never seed bytes or authority. CP D1448: kind and intensity are Oteryn design values and the
+//! observation is visual only.
 //!
-//! The shape and 64-byte bound require D1027 approval before registration or production use.
-//! D1137 allocates capability 26 and state domain 22; their registration remains A2 after
-//! ITEM-LOOK-1 (#2182). No feature offer, current-owner check or binding derivation is
-//! implemented here. The eventual consumer must also admit the preset against its
-//! independently qualified policy. Unknown/repeated fields, mixed shapes and overflow refuse.
+//! D1137 allocates capability 26 and state domain 22. Unknown/repeated fields, mixed shapes and
+//! overflow refuse.
 
 pub use crate::charm_wire::CyclopediaWireError as WorldWeatherWireError;
 use crate::charm_wire::{
@@ -39,29 +39,43 @@ pub enum WorldWeather {
     Unavailable,
     Active {
         binding_token: [u8; 32],
+        /// The first absolute 900,000 ms slot of the weather period now in effect.
         absolute_slot: u64,
-        preset_index: u8,
+        kind: u8,
+        intensity: u8,
     },
 }
 
-/// Candidate encoding is at most 49 bytes, including the longest uint64 slot. Invalid server
+/// Wire weather kinds: 1 clear, 2 cloudy, 3 rain, 4 storm, 5 fog, 6 snow, 7 blizzard,
+/// 8 heat haze, 9 sandstorm.
+pub const WEATHER_KIND_MAX: u8 = 9;
+/// Wire intensity: 1 (light) to 3 (heavy).
+pub const WEATHER_INTENSITY_MAX: u8 = 3;
+
+fn valid_kind_and_intensity(kind: u8, intensity: u8) -> bool {
+    (1..=WEATHER_KIND_MAX).contains(&kind) && (1..=WEATHER_INTENSITY_MAX).contains(&intensity)
+}
+
+/// Candidate encoding is at most 51 bytes, including the longest uint64 slot. Invalid server
 /// values are refused before returning any output. Slot zero is explicitly present.
 pub fn encode_world_weather(weather: WorldWeather) -> WireResult<Vec<u8>> {
-    let mut output = Vec::with_capacity(49);
+    let mut output = Vec::with_capacity(51);
     match weather {
         WorldWeather::Unavailable => push_varint_field(&mut output, 1, 1),
         WorldWeather::Active {
             binding_token,
             absolute_slot,
-            preset_index,
+            kind,
+            intensity,
         } => {
-            if !(1..=16).contains(&preset_index) {
+            if !valid_kind_and_intensity(kind, intensity) {
                 return Err(WorldWeatherWireError::Malformed);
             }
             push_varint_field(&mut output, 1, 2);
             push_message_field(&mut output, 2, &binding_token);
             push_varint_field(&mut output, 3, absolute_slot);
-            push_varint_field(&mut output, 4, u64::from(preset_index));
+            push_varint_field(&mut output, 4, u64::from(kind));
+            push_varint_field(&mut output, 5, u64::from(intensity));
         }
     }
     Ok(output)
@@ -71,7 +85,8 @@ pub fn decode_world_weather(payload: &[u8]) -> WireResult<WorldWeather> {
     if payload.len() > MAX_WORLD_WEATHER_BYTES {
         return Err(WorldWeatherWireError::LimitExceeded);
     }
-    let (mut status, mut binding, mut slot, mut preset) = (None, None, None, None);
+    let (mut status, mut binding, mut slot) = (None, None, None);
+    let (mut kind, mut intensity) = (None, None);
     let mut cursor = 0;
     while cursor < payload.len() {
         match read_varint(payload, &mut cursor)? {
@@ -83,21 +98,25 @@ pub fn decode_world_weather(payload: &[u8]) -> WireResult<WorldWeather> {
                 set_once(&mut binding, token)?;
             }
             0x18 => set_once(&mut slot, read_varint(payload, &mut cursor)?)?,
-            0x20 => set_once(&mut preset, read_varint(payload, &mut cursor)?)?,
+            0x20 => set_once(&mut kind, read_varint(payload, &mut cursor)?)?,
+            0x28 => set_once(&mut intensity, read_varint(payload, &mut cursor)?)?,
             _ => return Err(WorldWeatherWireError::Malformed),
         }
     }
-    match (status, binding, slot, preset) {
-        (Some(1), None, None, None) => Ok(WorldWeather::Unavailable),
-        (Some(2), Some(binding_token), Some(absolute_slot), Some(index)) => {
-            let preset_index = u8::try_from(index).map_err(|_| WorldWeatherWireError::Malformed)?;
-            if !(1..=16).contains(&preset_index) {
+    match (status, binding, slot, kind, intensity) {
+        (Some(1), None, None, None, None) => Ok(WorldWeather::Unavailable),
+        (Some(2), Some(binding_token), Some(absolute_slot), Some(kind), Some(intensity)) => {
+            let narrow =
+                |value: u64| u8::try_from(value).map_err(|_| WorldWeatherWireError::Malformed);
+            let (kind, intensity) = (narrow(kind)?, narrow(intensity)?);
+            if !valid_kind_and_intensity(kind, intensity) {
                 return Err(WorldWeatherWireError::Malformed);
             }
             Ok(WorldWeather::Active {
                 binding_token,
                 absolute_slot,
-                preset_index,
+                kind,
+                intensity,
             })
         }
         _ => Err(WorldWeatherWireError::Malformed),
@@ -108,29 +127,33 @@ pub fn decode_world_weather(payload: &[u8]) -> WireResult<WorldWeather> {
 mod tests {
     use super::*;
 
-    fn active(absolute_slot: u64, preset_index: u8) -> WorldWeather {
+    fn active(absolute_slot: u64, kind: u8, intensity: u8) -> WorldWeather {
         WorldWeather::Active {
             binding_token: [0x31; 32],
             absolute_slot,
-            preset_index,
+            kind,
+            intensity,
         }
     }
 
     #[test]
-    fn full_replacement_shapes_round_trip_at_slot_and_preset_bounds() -> WireResult<()> {
+    fn full_replacement_shapes_round_trip_at_slot_kind_and_intensity_bounds() -> WireResult<()> {
         assert_eq!(encode_world_weather(WorldWeather::Unavailable)?, [0x08, 1]);
         for observation in [
             WorldWeather::Unavailable,
-            active(0, 1),
-            active(u64::MAX, 16),
+            active(0, 1, 1),
+            active(u64::MAX, WEATHER_KIND_MAX, WEATHER_INTENSITY_MAX),
         ] {
             let bytes = encode_world_weather(observation)?;
-            assert!(bytes.len() <= 49 && bytes.len() <= MAX_WORLD_WEATHER_BYTES);
+            assert!(bytes.len() <= 51 && bytes.len() <= MAX_WORLD_WEATHER_BYTES);
             assert_eq!(decode_world_weather(&bytes)?, observation);
         }
-        let zero = encode_world_weather(active(0, 1))?;
-        assert_eq!(&zero[36..], [0x18, 0, 0x20, 1]);
-        assert_eq!(encode_world_weather(active(u64::MAX, 16))?.len(), 49);
+        let zero = encode_world_weather(active(0, 1, 1))?;
+        assert_eq!(&zero[36..], [0x18, 0, 0x20, 1, 0x28, 1]);
+        assert_eq!(
+            encode_world_weather(active(u64::MAX, WEATHER_KIND_MAX, WEATHER_INTENSITY_MAX))?.len(),
+            51
+        );
         Ok(())
     }
 
@@ -138,7 +161,7 @@ mod tests {
     fn over_64_bytes_is_refused_before_parsing() -> WireResult<()> {
         // Existing protobuf helpers accept non-minimal varints. Pad only the first tags/status
         // to reach the exact resource boundary without inventing an unknown padding field.
-        let valid = encode_world_weather(active(0, 1))?;
+        let valid = encode_world_weather(active(0, 1, 1))?;
         let at_limit = [
             vec![0x88],
             vec![0x80; 8],
@@ -147,13 +170,13 @@ mod tests {
             vec![0x80; 8],
             vec![0],
             vec![0x92],
-            vec![0x80; 5],
+            vec![0x80; 3],
             vec![0],
             valid[3..].to_vec(),
         ]
         .concat();
         assert_eq!(at_limit.len(), 64);
-        assert_eq!(decode_world_weather(&at_limit)?, active(0, 1));
+        assert_eq!(decode_world_weather(&at_limit)?, active(0, 1, 1));
         let over_limit = [at_limit, vec![0]].concat();
         assert_eq!(
             decode_world_weather(&over_limit),
@@ -168,13 +191,14 @@ mod tests {
 
     #[test]
     fn unknown_repeated_and_wrong_wire_type_fields_are_refused() -> WireResult<()> {
-        let valid = encode_world_weather(active(0, 1))?;
+        let valid = encode_world_weather(active(0, 1, 1))?;
         for suffix in [
-            vec![0x28, 1], // unknown field 5
+            vec![0x30, 1], // unknown field 6
             vec![0x08, 2], // repeated status, including the same value
             vec![0x12, 0], // repeated binding key; two full tokens exceed the byte cap
             vec![0x18, 0],
             vec![0x20, 1],
+            vec![0x28, 1],
             vec![0x22, 1, 1], // field 4, wrong wire type
         ] {
             let bytes = [valid.as_slice(), suffix.as_slice()].concat();
@@ -188,8 +212,8 @@ mod tests {
 
     #[test]
     fn missing_mixed_truncated_and_overflowed_fields_are_refused() -> WireResult<()> {
-        let valid = encode_world_weather(active(0, 1))?;
-        for range in [0..2, 2..36, 36..38, 38..40] {
+        let valid = encode_world_weather(active(0, 1, 1))?;
+        for range in [0..2, 2..36, 36..38, 38..40, 40..42] {
             let bytes = [&valid[..range.start], &valid[range.end..]].concat();
             assert_eq!(
                 decode_world_weather(&bytes),
@@ -222,7 +246,7 @@ mod tests {
             let bytes = [
                 vec![0x08, 2, 0x12, length],
                 vec![0x31; usize::from(length)],
-                vec![0x18, 0, 0x20, 1],
+                vec![0x18, 0, 0x20, 1, 0x28, 1],
             ]
             .concat();
             assert_eq!(
@@ -234,22 +258,29 @@ mod tests {
     }
 
     #[test]
-    fn preset_zero_seventeen_and_integer_overflow_are_refused_in_both_directions() -> WireResult<()>
-    {
-        for index in [0, 17, u8::MAX] {
+    fn kind_and_intensity_out_of_range_and_integer_overflow_are_refused_in_both_directions()
+    -> WireResult<()> {
+        for (kind, intensity) in [
+            (0, 1),
+            (WEATHER_KIND_MAX + 1, 1),
+            (u8::MAX, 1),
+            (1, 0),
+            (1, WEATHER_INTENSITY_MAX + 1),
+            (1, u8::MAX),
+        ] {
             assert_eq!(
-                encode_world_weather(active(0, index)),
+                encode_world_weather(active(0, kind, intensity)),
                 Err(WorldWeatherWireError::Malformed)
             );
-            let mut bytes = encode_world_weather(active(0, 1))?;
-            bytes[39] = index;
+            let mut bytes = encode_world_weather(active(0, 1, 1))?;
+            (bytes[39], bytes[41]) = (kind, intensity);
             assert_eq!(
                 decode_world_weather(&bytes),
                 Err(WorldWeatherWireError::Malformed)
             );
         }
-        let valid = encode_world_weather(active(0, 1))?;
-        let overflow = [&valid[..38], &[0x20, 0x80, 0x02]].concat();
+        let valid = encode_world_weather(active(0, 1, 1))?;
+        let overflow = [&valid[..38], &[0x20, 0x80, 0x02], &valid[40..]].concat();
         assert_eq!(
             decode_world_weather(&overflow),
             Err(WorldWeatherWireError::Malformed)

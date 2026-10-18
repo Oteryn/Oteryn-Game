@@ -395,11 +395,11 @@ struct NegotiatingAuthority {
     /// ITEM-USE-1c: whether the backpack holds one direct entry, and the items used.
     backpack_entry: Cell<bool>,
     item_uses: RefCell<Vec<ItemKey>>,
-    /// WEATHER-1: the retained World weather source (fixture), whether its binding is readable
-    /// now, and the authority's UTC time fact.
-    weather: Option<crate::world_weather::WorldWeatherSource>,
+    /// WEATHER-1: whether the shipped weather source is readable now, the authority's UTC time
+    /// fact, and the admitted actor's position.
     weather_bound: Cell<bool>,
     clock_ms: Cell<u64>,
+    position: Cell<ActorPosition>,
 }
 
 impl NegotiatingAuthority {
@@ -412,9 +412,13 @@ impl NegotiatingAuthority {
             item_target: RefCell::new(None),
             backpack_entry: Cell::new(false),
             item_uses: RefCell::new(Vec::new()),
-            weather: None,
             weather_bound: Cell::new(true),
             clock_ms: Cell::new(NOON_UTC_MS),
+            position: Cell::new(ActorPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            }),
         }
     }
 }
@@ -465,17 +469,13 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
     }
 
     fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
-        self.weather.as_ref().filter(|_| self.weather_bound.get())
+        crate::world_weather::shipped().filter(|_| self.weather_bound.get())
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(WorldSpatialObservation {
             content_generation: [0x5c; 32],
-            actor_position: ActorPosition {
-                x: 0,
-                y: 0,
-                floor: 0,
-            },
+            actor_position: self.position.get(),
         })
     }
 
@@ -2367,13 +2367,12 @@ mod logout_wire {
     }
 }
 
-/// WEATHER-1 (D1023..D1026, D1446): capability 26 through the real admission and serve path.
-/// The source is a fixture identity policy; production has no sourced table and no World-config
-/// load, so it never holds a source and never offers 26.
+/// WEATHER-1 (D1023..D1026, D1448): capability 26 through the real admission and serve path.
+/// The source is the shipped Oteryn-designed `content/weather` data, exactly what production
+/// loads: production offers 26 once that data loads and fails closed when it does not.
 mod weather_wire {
     use super::*;
-    use crate::world_clock::RetainedWorldConfig;
-    use crate::world_weather::{WEATHER_SLOT_MS, WeatherPolicy, WorldWeatherSource};
+    use crate::world_weather::{WEATHER_SLOT_MS, shipped};
     use oteryn_protocol_oteryn::world_weather::{
         CAPABILITY_WORLD_WEATHER_V1, DELTA_TYPE_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1,
         STATE_DOMAIN_WORLD_WEATHER, WorldWeather, decode_world_weather,
@@ -2382,25 +2381,29 @@ mod weather_wire {
     use std::task::Poll;
     use std::time::Duration;
 
-    fn source(seed: u8) -> Result<WorldWeatherSource, Box<dyn Error>> {
-        let all: Vec<u8> = (1..=16).collect();
-        Ok(WorldWeatherSource::new(
-            WorldId::decode(&WORLD)?,
-            RetainedWorldConfig::for_tests(
-                WorldId::decode(&WORLD)?,
-                [seed; 32],
-                "clock-v1",
-                0,
-                "policy-7",
-            ),
-            WeatherPolicy::new(&all, &all).map_err(|error| format!("{error:?}"))?,
-        ))
+    const THAIS: ActorPosition = ActorPosition {
+        x: 32369,
+        y: 32241,
+        floor: 7,
+    };
+    const SVARGROND: ActorPosition = ActorPosition {
+        x: 32257,
+        y: 31159,
+        floor: 7,
+    };
+
+    /// The shipped source's observation for a position at the start of an absolute slot.
+    fn expected(position: ActorPosition, slot: u64) -> Result<WorldWeather, Box<dyn Error>> {
+        Ok(shipped()
+            .ok_or("the shipped weather data loads")?
+            .observe(position, slot * WEATHER_SLOT_MS))
     }
 
-    fn with_source(seed: u8) -> Result<NegotiatingAuthority, Box<dyn Error>> {
-        let mut authority = NegotiatingAuthority::new(None);
-        authority.weather = Some(source(seed)?);
-        Ok(authority)
+    fn with_position(position: ActorPosition, slot: u64) -> NegotiatingAuthority {
+        let authority = NegotiatingAuthority::new(None);
+        authority.position.set(position);
+        authority.clock_ms.set(slot * WEATHER_SLOT_MS + 17);
+        authority
     }
 
     /// Domain 22 in the frames: the snapshot entries `(revision, value)` and the deltas
@@ -2443,16 +2446,10 @@ mod weather_wire {
         Ok((snapshots, deltas))
     }
 
-    fn slot_of(weather: WorldWeather) -> Result<u64, Box<dyn Error>> {
-        match weather {
-            WorldWeather::Active { absolute_slot, .. } => Ok(absolute_slot),
-            WorldWeather::Unavailable => Err("expected Active".into()),
-        }
-    }
-
     #[test]
-    fn capability_26_is_offered_only_with_a_retained_binding_and_never_by_production()
+    fn production_offers_capability_26_with_the_shipped_data_and_fails_closed_without_it()
     -> Result<(), Box<dyn Error>> {
+        // Never from a static set: the registry keeps `offered: false` with an offer gate.
         for set in [
             PRODUCTION_OFFERED_CAPABILITIES,
             ITEM_VIEW_OFFERED_CAPABILITIES,
@@ -2462,33 +2459,35 @@ mod weather_wire {
                     .all(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
             );
         }
+        assert!(shipped().is_some());
         run(async {
-            // No binding: not offered, so a client asking for it gets 6 alone.
-            let bare = NegotiatingAuthority::new(None);
-            let (admitted, frames) = admit(&bare, &bootstrap(&[6, 26])?).await?;
-            assert!(admitted.is_ok());
-            assert_eq!(accepted_selection(&frames)?, [6]);
-            let (_, frames) = serve(&bare, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
-            assert!(weather_of(&frames)?.0.is_empty());
-            // A binding offers 26 (requiring 6); a client that does not ask for it never gets it.
-            let bound = with_source(0x31)?;
-            let (admitted, frames) = admit(&bound, &bootstrap(&[6, 26])?).await?;
+            // The production default authority exposes the shipped data, so 26 is offered
+            // (requiring 6); a client that does not ask for it never gets it.
+            let live = NegotiatingAuthority::new(None);
+            let (admitted, frames) = admit(&live, &bootstrap(&[6, 26])?).await?;
             assert!(admitted.is_ok());
             assert_eq!(accepted_selection(&frames)?, [6, 26]);
-            let (admitted, frames) = admit(&bound, &bootstrap(&[6])?).await?;
+            let (admitted, frames) = admit(&live, &bootstrap(&[6])?).await?;
             assert_eq!(accepted_selection(&frames)?, [6]);
-            let (_, frames) = serve(&bound, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            let (_, frames) = serve(&live, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert!(weather_of(&frames)?.0.is_empty());
+            // Missing or invalid data (no source) fails closed: not offered, so 6 alone.
+            let closed = NegotiatingAuthority::new(None);
+            closed.weather_bound.set(false);
+            let (admitted, frames) = admit(&closed, &bootstrap(&[6, 26])?).await?;
+            assert!(admitted.is_ok());
+            assert_eq!(accepted_selection(&frames)?, [6]);
+            let (_, frames) = serve(&closed, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
             assert!(weather_of(&frames)?.0.is_empty());
             Ok(())
         })
     }
 
     #[test]
-    fn admission_sends_the_domain_22_snapshot_at_the_carried_revision_and_never_rerolls()
+    fn admission_sends_the_domain_22_snapshot_of_the_actors_area_and_never_rerolls()
     -> Result<(), Box<dyn Error>> {
         run(async {
-            let authority = with_source(0x31)?;
-            authority.clock_ms.set(2 * WEATHER_SLOT_MS + 17);
+            let authority = with_position(THAIS, 2);
             let (admitted, _) = admit(&authority, &bootstrap(&[6, 26])?).await?;
             let mut admitted = admitted.map_err(|e| format!("{e:?}"))?;
             assert_eq!(admitted.continuity.world_weather_revision, 0);
@@ -2496,58 +2495,72 @@ mod weather_wire {
             let (end, frames) = serve(&authority, admitted, &[]).await?;
             let (snapshots, deltas) = weather_of(&frames)?;
             assert!(deltas.is_empty());
-            let [(revision, first)] = snapshots[..] else {
-                return Err("one weather snapshot".into());
-            };
-            assert_eq!(revision, 5);
-            assert_eq!(slot_of(first)?, 2);
+            let first = expected(THAIS, 2)?;
+            assert_eq!(snapshots, [(5, first)]);
+            assert!(matches!(first, WorldWeather::Active { .. }));
             // A resume or transfer never winds the revision back.
             let ConnectionEnd::AdmittedThenDisconnected(served) = end else {
                 return Err(format!("{end:?}").into());
             };
             assert_eq!(served.continuity.world_weather_revision, 5);
-            // Reconnect, a Channel move and a process restart (a new source from the same
-            // retained binding) show the same value for the same slot: no reroll.
-            let restarted = with_source(0x31)?;
-            restarted.clock_ms.set(2 * WEATHER_SLOT_MS + 899_000);
-            for (authority, other) in [(&authority, 0), (&restarted, 1)] {
-                let (admitted, _) = admit(authority, &bootstrap(&[6, 26])?).await?;
-                let admitted = admitted.map_err(|e| format!("{e:?}"))?;
-                let (_, frames) = serve(authority, admitted, &[]).await?;
-                assert_eq!(weather_of(&frames)?.0, [(0, first)], "{other}");
+            // Reconnect (later in the same slot) shows the same value: no reroll.
+            let again = with_position(THAIS, 2);
+            again.clock_ms.set(2 * WEATHER_SLOT_MS + 899_000);
+            let (admitted, _) = admit(&again, &bootstrap(&[6, 26])?).await?;
+            let (_, frames) = serve(&again, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert_eq!(weather_of(&frames)?.0, [(0, first)]);
+            // Each area draws independently: a far cold city differs in some slot.
+            let mut differs = None;
+            for slot in 0..200 {
+                if expected(THAIS, slot)? != expected(SVARGROND, slot)? {
+                    differs = Some(slot);
+                    break;
+                }
             }
-            // Another World seed selects independently, without sharing the token.
-            let other = with_source(0x77)?;
-            other.clock_ms.set(2 * WEATHER_SLOT_MS);
-            let (admitted, _) = admit(&other, &bootstrap(&[6, 26])?).await?;
-            let (_, frames) = serve(&other, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
-            assert_ne!(weather_of(&frames)?.0, [(0, first)]);
+            let slot = differs.ok_or("two areas never differ")?;
+            let cold = with_position(SVARGROND, slot);
+            let (admitted, _) = admit(&cold, &bootstrap(&[6, 26])?).await?;
+            let (_, frames) = serve(&cold, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert_eq!(weather_of(&frames)?.0, [(0, expected(SVARGROND, slot)?)]);
             Ok(())
         })
     }
 
     #[test]
-    fn a_new_slot_a_lost_binding_and_a_returned_binding_each_send_one_full_replacement()
+    fn a_new_period_a_lost_source_a_returned_source_and_an_area_change_each_send_one_full_replacement()
     -> Result<(), Box<dyn Error>> {
+        let first_slot = 2_u64;
+        let first = expected(THAIS, first_slot)?;
+        // A later slot inside a different period, then a slot where the two areas differ.
+        let mut next_slot = first_slot;
+        while expected(THAIS, next_slot)? == first {
+            next_slot += 1;
+        }
+        let mut return_slot = next_slot + 20;
+        while expected(THAIS, return_slot)? == expected(SVARGROND, return_slot)? {
+            return_slot += 1;
+        }
         run(async {
-            let authority = with_source(0x31)?;
-            authority.clock_ms.set(2 * WEATHER_SLOT_MS);
+            let authority = with_position(THAIS, first_slot);
             let (admitted, _) = admit(&authority, &bootstrap(&[6, 26])?).await?;
             let mut admitted = admitted.map_err(|e| format!("{e:?}"))?;
             admitted.continuity.world_weather_revision = 5;
             let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
             let driving = async {
                 let beat = Duration::from_millis(400);
-                // Within the same slot nothing is sent.
+                // Within the same period nothing is sent.
                 tokio::time::sleep(beat).await;
-                authority.clock_ms.set(3 * WEATHER_SLOT_MS);
+                authority.clock_ms.set(next_slot * WEATHER_SLOT_MS + 1);
                 tokio::time::sleep(beat).await;
                 authority.weather_bound.set(false);
                 tokio::time::sleep(beat).await;
-                // Still unbound in a later slot: nothing more (one Unavailable only).
-                authority.clock_ms.set(9 * WEATHER_SLOT_MS);
+                // Still unavailable in a later slot: nothing more (one Unavailable only).
+                authority.clock_ms.set(return_slot * WEATHER_SLOT_MS);
                 tokio::time::sleep(beat).await;
                 authority.weather_bound.set(true);
+                tokio::time::sleep(beat).await;
+                // The player walks into another area: one more full replacement.
+                authority.position.set(SVARGROND);
                 tokio::time::sleep(beat).await;
                 client.shutdown().await?;
                 let mut output = Vec::new();
@@ -2584,29 +2597,29 @@ mod weather_wire {
             };
             let frames = split(&output.ok_or("output")??)?;
             let (snapshots, deltas) = weather_of(&frames)?;
-            assert_eq!(snapshots.len(), 1);
-            assert_eq!(snapshots[0].0, 5);
-            assert_eq!(slot_of(snapshots[0].1)?, 2);
-            let [(b1, n1, slot3), (b2, n2, lost), (b3, n3, back)] = deltas[..] else {
-                return Err(format!("expected three deltas, got {deltas:?}").into());
-            };
-            assert_eq!((b1, n1, slot_of(slot3)?), (5, 6, 3));
-            assert_eq!((b2, n2, lost), (6, 7, WorldWeather::Unavailable));
-            assert_eq!((b3, n3, slot_of(back)?), (7, 8, 9));
-            assert_eq!(served.continuity.world_weather_revision, 8);
-            // Visual only: no gameplay domain moved with it.
-            let mut domains = Vec::new();
+            assert_eq!(snapshots, [(5, first)]);
+            assert_eq!(
+                deltas,
+                [
+                    (5, 6, expected(THAIS, next_slot)?),
+                    (6, 7, WorldWeather::Unavailable),
+                    (7, 8, expected(THAIS, return_slot)?),
+                    (8, 9, expected(SVARGROND, return_slot)?),
+                ]
+            );
+            assert_eq!(served.continuity.world_weather_revision, 9);
+            // Weather rides its own domain: exactly the four replacements above, no more.
+            let mut weather_deltas = 0;
             for frame in &frames {
                 let envelope = decode_wire_envelope(frame)?;
-                if envelope.message_type() == MessageType::StateDelta {
-                    domains.push(decode_state_delta(envelope.payload())?.domain_id);
+                if envelope.message_type() == MessageType::StateDelta
+                    && decode_state_delta(envelope.payload())?.domain_id
+                        == STATE_DOMAIN_WORLD_WEATHER
+                {
+                    weather_deltas += 1;
                 }
             }
-            assert!(
-                domains
-                    .iter()
-                    .all(|&domain| domain == STATE_DOMAIN_WORLD_WEATHER)
-            );
+            assert_eq!(weather_deltas, 4);
             Ok(())
         })
     }

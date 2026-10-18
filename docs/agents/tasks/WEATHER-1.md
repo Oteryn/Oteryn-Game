@@ -33,6 +33,8 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - crates/protocol-oteryn/src/lib.rs
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
+  - content/weather/**
+  - tools/content-schema/weather-authoring/**
 slot_only_paths: []
 public_contracts: []
 depends_on:
@@ -295,3 +297,32 @@ production never offers 26; an authority holding a retained binding offers it dy
 (`with_weather_offer`), sends the domain 22 snapshot at admission and one full-replacement delta per
 new absolute slot, lost binding (one `Unavailable`) or restored binding. Validation of the
 candidate is recorded in the PR status comment.
+
+
+### D1448 Oteryn-designed values, live in production (supersedes the D1446 "never offered" state)
+
+The owner chose Oteryn's own weather. Everything below is `OTERYN_DESIGN`, not Tibia reference data,
+and weather stays visual only (no gameplay effect).
+
+- Data: `content/weather/{index,climates,areas}.json`, validated by
+  `tools/content-schema/weather-authoring/validate_weather.py` and by the server loader.
+- Source: a stateless, public, sha256-based deterministic draw per area. Each of the 28 regions
+  and 22 cities draws independently. Periods run inside 12-slot blocks, last 15 to 45 minutes
+  (1 to 3 slots of 15 minutes, the last one truncated at the block end), and start on slot
+  boundaries. Intensity is uniform 1 to 3.
+- Weights per climate: temperate clear 55, cloudy 20, rain 15, storm 7, fog 3; cold clear 50, snow 35,
+  blizzard 15; desert clear 70, heat haze 20, sandstorm 10; jungle/swamp clear 40, rain 35, storm 15,
+  fog 10. Climates are assigned by area name (the weather content family #2246 has no climate
+  taxonomy, so everything else is temperate); this assignment is an Oteryn design guess.
+- Wire: `Active{binding_token, absolute_slot (period start), kind 1..9, intensity 1..3}`, at most 51 bytes.
+- Production: `FreshAdmissionAuthority::world_weather()` defaults to the shipped data. Capability 26
+  is offered once it loads and validates, and fails closed (never offered) when it is missing or
+  invalid. The registry keeps `offered: false` with an `offer_gate`, like capabilities 3 and 18.
+- Approximation: no area geometry exists server-side, so a player maps to the nearest area anchor
+  (region position or city hometown temple) by x and y; 12 areas have no anchor and never win.
+  Where a region and a city share an anchor, the city (lower key) wins.
+- Extension point: the `WeatherSource` trait and `real_world: null | {latitude, longitude}` per
+  area allow a later live real-world binding. It is not implemented.
+- CLIENT follow-up: rendering of kinds 1..9 with intensity 1..3 (and of `Unavailable`) is a client
+  task; the server only carries the values.
+- D1027 protocol-owner sign-off is still pending, so the card stays active.

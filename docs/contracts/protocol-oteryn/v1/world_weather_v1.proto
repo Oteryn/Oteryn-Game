@@ -2,22 +2,25 @@
 // domain 22 WORLD_WEATHER (snapshot type 1, delta type 1). The capability has no command type and
 // requires capability 6 WORLD_SPATIAL_ENTITIES. FND-02 envelopes own server sequence, domain ID
 // and revisions. The snapshot and the delta carry the same full replacement; there is no clear or
-// default preset. Weather is visual only and changes no gameplay state. Protocol-owner sign-off
-// (D1027) is pending. At most 64 bytes on decode; the encoder emits at most 49. Unknown or
-// repeated fields, mixed or missing fields, a binding token that is not 32 bytes, and a preset
-// of 0 or above 16 all fail closed.
+// default weather. Weather is visual only and changes no gameplay state. Protocol-owner sign-off
+// (D1027) is pending. At most 64 bytes on decode; the encoder emits at most 51. Unknown or
+// repeated fields, mixed or missing fields, a binding token that is not 32 bytes, a kind outside
+// 1..=9 and an intensity outside 1..=3 all fail closed.
 syntax = "proto3";
 
 package oteryn.protocol.v1.world_weather;
 
-// Field 1 is required: 1 UNAVAILABLE (no other field), 2 ACTIVE (fields 2, 3 and 4 all required).
+// Field 1 is required: 1 UNAVAILABLE (no other field), 2 ACTIVE (fields 2, 3, 4 and 5 all required).
 // Field 3 is written even when the slot is 0.
 message WorldWeatherV1 {
   uint32 status = 1;
   // Public revision-identity correlation token; never seed bytes and never authority.
   bytes binding_token = 2;
-  // Absolute slot: (now - World clock epoch) / 900,000 ms, not reduced modulo a Tibian day.
+  // First absolute slot of the weather period in effect: slot = now / 900,000 ms from the Unix
+  // epoch, not reduced modulo a Tibian day. A period lasts 1 to 3 slots (15 to 45 minutes).
   uint64 absolute_slot = 3;
-  // Policy preset index, 1..=16.
-  uint32 preset_index = 4;
+  // 1 clear, 2 cloudy, 3 rain, 4 storm, 5 fog, 6 snow, 7 blizzard, 8 heat haze, 9 sandstorm.
+  uint32 kind = 4;
+  // 1 (light) to 3 (heavy). Visual only; CP D1448 Oteryn design values.
+  uint32 intensity = 5;
 }

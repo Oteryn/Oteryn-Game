@@ -522,12 +522,12 @@ pub(crate) trait FreshAdmissionAuthority {
         crate::world_clock::now_utc_ms()
     }
 
-    /// WEATHER-1 (D1025/D1026/D1446): the retained World weather source, or `None`. With `None`
-    /// capability 26 is never offered at fresh admission, and a session that selected it earlier
-    /// is sent one full `Unavailable`. The default is `None`: production has no sourced preset
-    /// data or World-config load yet, so it never offers weather and no weather effect exists.
+    /// WEATHER-1 (D1025/D1026/D1448): the weather source, or `None`. With `None` capability 26 is
+    /// never offered at fresh admission, and a session that selected it earlier is sent one full
+    /// `Unavailable`. The default is the shipped Oteryn-designed data (`content/weather`), which
+    /// is `None` (fail closed) when that data is missing or invalid.
     fn world_weather(&self) -> Option<&WorldWeatherSource> {
-        None
+        crate::world_weather::shipped()
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
@@ -1234,7 +1234,7 @@ where
         ));
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
-    // WEATHER-1: capability 26 is offered only while the authority holds a retained binding.
+    // WEATHER-1: capability 26 is offered only while the authority holds a weather source.
     let offered = with_weather_offer(
         authority.offered_capabilities(),
         authority.world_weather().is_some(),
@@ -1440,11 +1440,15 @@ fn world_clock_delta(
     Some((delta_sequence, frame, new_revision))
 }
 
-/// WEATHER-1: the full-replacement domain 22 value at the authority's UTC time fact.
-/// `Unavailable` when the authority holds no binding (lost after selection) or no time fact.
-fn observe_weather<A: FreshAdmissionAuthority>(authority: &A) -> WorldWeather {
+/// WEATHER-1: the full-replacement domain 22 value for the actor's area at the authority's UTC
+/// time fact. `Unavailable` when the authority holds no source (lost after selection) or no time
+/// fact.
+fn observe_weather<A: FreshAdmissionAuthority>(
+    authority: &A,
+    position: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> WorldWeather {
     match (authority.world_weather(), authority.world_clock_utc_ms()) {
-        (Some(source), Some(now)) => source.observe(now),
+        (Some(source), Some(now)) => source.observe(position, now),
         _ => WorldWeather::Unavailable,
     }
 }
@@ -1913,7 +1917,7 @@ where
     let mut weather_sent = None;
     let weather_snapshot;
     if selected_capabilities.contains(CAPABILITY_WORLD_WEATHER_V1) {
-        let observed = observe_weather(authority);
+        let observed = observe_weather(authority, baseline.actor_position);
         let Ok(payload) = encode_world_weather(observed) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
@@ -2437,8 +2441,8 @@ where
                 // WEATHER-1: a full-replacement domain 22 delta only when the observation
                 // changed (a new absolute slot, or a lost or restored binding). Visual only: no
                 // gameplay owner is read or written.
-                if let Some(sent) = weather_sent {
-                    let observed = observe_weather(authority);
+                if let (Some(sent), Some(here)) = (weather_sent, authority.observe(actor).await) {
+                    let observed = observe_weather(authority, here.actor_position);
                     if observed != sent {
                         let Some((delta_sequence, frame, to)) = world_weather_delta(
                             generation,

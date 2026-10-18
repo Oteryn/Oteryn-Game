@@ -1,221 +1,252 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use super::*;
+use serde_json::{Value, json};
 
-#[test]
-fn slots_use_absolute_elapsed_and_checked_subtraction() {
-    let epoch = 18_000_000;
-    for (elapsed, slot) in [
-        (0, 0),
-        (WEATHER_SLOT_MS - 1, 0),
-        (WEATHER_SLOT_MS, 1),
-        (WEATHER_SLOT_MS + 1, 1),
-        (3_600_000, 4), // Tibian midnight must not reset weather's slot.
-        (WEATHER_SLOT_MS * 1_000_000, 1_000_000),
-    ] {
-        assert_eq!(absolute_weather_slot(epoch, epoch + elapsed), Some(slot));
-    }
-    assert_eq!(absolute_weather_slot(epoch, epoch - 1), None);
-    assert_eq!(absolute_weather_slot(u64::MAX, u64::MAX), Some(0));
-    assert_eq!(
-        absolute_weather_slot(1, u64::MAX),
-        Some((u64::MAX - 1) / WEATHER_SLOT_MS)
-    );
+const INDEX: &str = include_str!("../../../content/weather/index.json");
+const CLIMATES: &str = include_str!("../../../content/weather/climates.json");
+const AREAS: &str = include_str!("../../../content/weather/areas.json");
+
+fn load() -> WorldWeatherSource {
+    WorldWeatherSource::from_json(INDEX, CLIMATES, AREAS).expect("shipped data loads")
 }
 
-#[test]
-fn policy_requires_an_explicit_bounded_admission_and_selector() {
-    let all: Vec<u8> = (1..=16).collect();
-    assert!(WeatherPolicy::new(&all, &all).is_ok());
-    assert!(WeatherPolicy::new(&[16], &[16; 16]).is_ok());
-    for (admitted, selector, expected) in [
-        (vec![], vec![1; 16], WeatherPolicyError::PresetCount),
-        (vec![1; 17], vec![1; 16], WeatherPolicyError::PresetCount),
-        (vec![0], vec![1; 16], WeatherPolicyError::InvalidPreset),
-        (vec![17], vec![1; 16], WeatherPolicyError::InvalidPreset),
-        (vec![1, 1], vec![1; 16], WeatherPolicyError::DuplicatePreset),
-        (vec![1], vec![1; 15], WeatherPolicyError::SelectorLength),
-        (vec![1], vec![1; 17], WeatherPolicyError::SelectorLength),
-        (vec![1], vec![0; 16], WeatherPolicyError::InvalidPreset),
-        (vec![1], vec![17; 16], WeatherPolicyError::InvalidPreset),
-        (vec![1], vec![2; 16], WeatherPolicyError::UnadmittedPreset),
-    ] {
-        assert_eq!(WeatherPolicy::new(&admitted, &selector), Err(expected));
-    }
+fn edited(text: &str, edit: impl FnOnce(&mut Value)) -> String {
+    let mut value: Value = serde_json::from_str(text).expect("json");
+    edit(&mut value);
+    value.to_string()
 }
 
-#[test]
-fn every_draw_bucket_has_exact_boundaries_and_explicit_weights() -> Result<(), WeatherPolicyError> {
-    // Fixture weights only; this is not a shipped rain/fog/snow policy.
-    let entries = [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3];
-    let policy = WeatherPolicy::new(&[1, 2, 3], &entries)?;
-    for (bucket, expected) in entries.into_iter().enumerate() {
-        let low = (bucket as u64) << 60;
-        let high = low | ((1_u64 << 60) - 1);
-        assert_eq!(policy.preset_for_draw(low).index(), expected);
-        assert_eq!(policy.preset_for_draw(high).index(), expected);
-    }
-    Ok(())
+fn at(x: i32, y: i32) -> ActorPosition {
+    ActorPosition { x, y, floor: 7 }
 }
 
-#[test]
-fn selection_reuses_the_existing_sim_primitive_without_rng_state()
--> Result<(), Box<dyn std::error::Error>> {
-    let entries: Vec<u8> = (1..=16).collect();
-    let policy = WeatherPolicy::new(&entries, &entries)
-        .map_err(|error| format!("fixture policy: {error:?}"))?;
-    // Fixture bytes exercise the primitive only; they are not a production binding or the
-    // canonical World/clock/policy/slot occurrence derivation (owned by WEATHER-SEAM-1).
-    let root = GameplayDecisionRoot::from_bytes([0x31; 32]);
-    let occurrence = DecisionOccurrenceId::from_bytes([0x72; 16]);
-    let first = policy.select(&root, occurrence)?;
-    assert_eq!(
-        deterministic_decision_u64(&root, occurrence, WEATHER_PURPOSE, 0)?,
-        0x4081_aa16_50ad_23d9
-    );
-    assert_eq!(first.index(), 5);
-    for unrelated_draw in 0..32 {
-        let _ = deterministic_decision_u64(&root, occurrence, "other.visual.v1", unrelated_draw)?;
-        // Fresh model construction represents a retry/restart; no Channel is an input.
-        let restarted = WeatherPolicy::new(&entries, &entries)
-            .map_err(|error| format!("fixture policy: {error:?}"))?;
-        assert_eq!(restarted.select(&root, occurrence)?, first);
-    }
-    for (root_byte, occurrence_byte, golden_draw, preset) in [
-        (0x32, 0x72, 0x105d_272c_dd06_26aa, 2),
-        (0x31, 0x73, 0x3927_5574_1e88_25eb, 4),
-    ] {
-        let changed_root = GameplayDecisionRoot::from_bytes([root_byte; 32]);
-        let changed_occurrence = DecisionOccurrenceId::from_bytes([occurrence_byte; 16]);
-        assert_eq!(
-            deterministic_decision_u64(&changed_root, changed_occurrence, WEATHER_PURPOSE, 0)?,
-            golden_draw
-        );
-        assert_eq!(
-            policy.select(&changed_root, changed_occurrence)?.index(),
-            preset
-        );
-    }
-    Ok(())
-}
-
-fn test_world(last: u8) -> WorldId {
-    let mut bytes = [0; 16];
-    bytes[6] = 0x70;
-    bytes[8] = 0x80;
-    bytes[15] = last;
-    WorldId::decode(&bytes).expect("fixture World id")
-}
-
-/// Fixture policy only (CP D1446: no shipped table exists); it exercises the seam.
-fn test_source(seed: u8, world: u8, bound: u8) -> WorldWeatherSource {
-    let all: Vec<u8> = (1..=16).collect();
-    WorldWeatherSource::new(
-        test_world(world),
-        RetainedWorldConfig::for_tests(
-            test_world(bound),
-            [seed; 32],
-            "clock-v1",
-            18_000_000,
-            "policy-7",
-        ),
-        WeatherPolicy::new(&all, &all).expect("fixture policy"),
-    )
-}
-
-fn active(weather: WorldWeather) -> (u64, u8, [u8; 32]) {
+fn active(weather: WorldWeather) -> (u64, u8, u8) {
     match weather {
         WorldWeather::Active {
-            binding_token,
             absolute_slot,
-            preset_index,
-        } => (absolute_slot, preset_index, binding_token),
-        WorldWeather::Unavailable => panic!("expected Active"),
+            kind,
+            intensity,
+            ..
+        } => (absolute_slot, kind, intensity),
+        WorldWeather::Unavailable => panic!("expected an active observation"),
+    }
+}
+
+fn area<'a>(source: &'a WorldWeatherSource, key: &str) -> &'a WeatherArea {
+    source
+        .areas()
+        .iter()
+        .find(|candidate| candidate.key == key)
+        .expect("area exists")
+}
+
+#[test]
+fn the_shipped_data_loads_and_is_the_production_source() {
+    let source = load();
+    assert_eq!(source.areas().len(), 50);
+    assert!(shipped().is_some());
+}
+
+#[test]
+fn periods_are_aligned_one_to_three_slots_and_respect_the_climate() {
+    let source = load();
+    for area in source.areas() {
+        let mut previous: Option<WeatherPeriod> = None;
+        let mut run = 0_u64;
+        for slot in 0..(BLOCK_SLOTS * 40) {
+            let period = source.source().period(area, slot).expect("period");
+            assert!(period.start_slot <= slot && slot - period.start_slot < 3);
+            assert!((1..=WEATHER_KIND_MAX).contains(&period.kind));
+            assert!((1..=WEATHER_INTENSITY_MAX).contains(&period.intensity));
+            if slot % BLOCK_SLOTS == 0 {
+                assert_eq!(period.start_slot, slot);
+            }
+            if previous.is_some_and(|prior| prior.start_slot == period.start_slot) {
+                run += 1;
+                assert_eq!(previous.map(|prior| prior.kind), Some(period.kind));
+                assert_eq!(
+                    previous.map(|prior| prior.intensity),
+                    Some(period.intensity)
+                );
+                assert!(run < 3);
+            } else {
+                run = 0;
+            }
+            previous = Some(period);
+        }
+    }
+    // Cold areas never rain; desert areas never snow.
+    let cold = area(&source, "oteryn:content.area.city.svargrond");
+    let desert = area(&source, "oteryn:content.area.city.ankrahmun");
+    for slot in 0..5_000 {
+        let kind = source.source().period(cold, slot).expect("period").kind;
+        assert!([1, 6, 7].contains(&kind), "cold kind {kind}");
+        let kind = source.source().period(desert, slot).expect("period").kind;
+        assert!([1, 8, 9].contains(&kind), "desert kind {kind}");
     }
 }
 
 #[test]
-fn source_observation_is_direct_slot_stable_across_restart_and_seedless_in_the_token() {
-    let epoch = 18_000_000;
-    let first = test_source(0x31, 1, 1);
-    let (slot0, preset0, token) = active(first.observe(epoch));
-    assert_eq!(slot0, 0);
-    // P-1 stays in slot 0, P and P+1 are slot 1; an instant replacement, no history.
-    assert_eq!(
-        first.observe(epoch + WEATHER_SLOT_MS - 1),
-        first.observe(epoch)
-    );
-    let (slot1, _, token1) = active(first.observe(epoch + WEATHER_SLOT_MS));
-    assert_eq!(slot1, 1);
-    assert_eq!(token1, token);
-    assert_eq!(
-        first.observe(epoch + WEATHER_SLOT_MS),
-        first.observe(epoch + WEATHER_SLOT_MS + 1)
-    );
-    // A restarted process (fresh source from the same retained inputs) never rerolls, and the
-    // order of earlier observations does not matter.
-    let restarted = test_source(0x31, 1, 1);
-    for offset in [
-        5 * WEATHER_SLOT_MS,
-        0,
-        1_000_000 * WEATHER_SLOT_MS,
-        WEATHER_SLOT_MS,
-    ] {
+fn weather_is_a_pure_function_of_area_and_slot() {
+    let first = load();
+    let second = load();
+    for slot in 0..500 {
+        let now = slot * WEATHER_SLOT_MS + 17;
         assert_eq!(
-            restarted.observe(epoch + offset),
-            first.observe(epoch + offset)
+            first.observe(at(32369, 32241), now),
+            second.observe(at(32369, 32241), now)
         );
     }
-    assert_eq!(active(restarted.observe(epoch)).1, preset0);
-    // A different seed changes the draw stream but not the public token; the token is not seed.
-    let other_seed = test_source(0x32, 1, 1);
-    assert_eq!(active(other_seed.observe(epoch)).2, token);
-    assert!((0..64).any(|n| {
-        active(other_seed.observe(epoch + n * WEATHER_SLOT_MS)).1
-            != active(first.observe(epoch + n * WEATHER_SLOT_MS)).1
-    }));
-    assert!(!token.windows(32).any(|w| w == [0x31; 32]));
-    // Another World's binding yields a different token.
-    assert_ne!(active(test_source(0x31, 2, 2).observe(epoch)).2, token);
 }
 
 #[test]
-fn source_fails_closed_without_a_readable_binding_or_before_the_epoch() {
-    // The source's World differs from the retained config's World: not readable.
-    assert_eq!(
-        test_source(0x31, 1, 2).observe(18_000_000),
-        WorldWeather::Unavailable
-    );
-    assert_eq!(
-        test_source(0x31, 1, 1).observe(17_999_999),
-        WorldWeather::Unavailable
-    );
+fn areas_draw_independently() {
+    let source = load();
+    let a = area(&source, "oteryn:content.area.city.thais");
+    let b = area(&source, "oteryn:content.area.city.carlin");
+    let differing = (0..2_000)
+        .filter(|slot| source.source().period(a, *slot) != source.source().period(b, *slot))
+        .count();
+    assert!(differing > 400, "areas look correlated: {differing}");
 }
 
 #[test]
-fn visual_selection_does_not_mutate_native_clock_light_or_gameplay_decision()
--> Result<(), Box<dyn std::error::Error>> {
-    // This exercises the actual existing clock and SIM primitive in their native unit context.
-    // Transport, movement/combat/storage consumers are not present here; their isolation proof
-    // remains a real-caller integration gate, not a claim based on a fabricated gameplay struct.
-    let epoch = 18_000_000;
-    let time = epoch + 1_234_567;
-    let source = crate::world_clock::WorldClockSource::new(epoch);
-    let before = source.reading(time).ok_or("fixture clock before epoch")?;
-    let root = GameplayDecisionRoot::from_bytes([0x31; 32]);
-    let occurrence = DecisionOccurrenceId::from_bytes([0x72; 16]);
-    let gameplay_before = deterministic_decision_u64(&root, occurrence, "gameplay.fixture.v1", 0)?;
-    // Fixture policy only (CP D1446: no shipped table exists).
-    let all: Vec<u8> = (1..=16).collect();
-    let policy = WeatherPolicy::new(&all, &all).map_err(|error| format!("{error:?}"))?;
-    for bucket in 0..16_u64 {
-        let _visual = policy.preset_for_draw(bucket << 60);
-        let _selected = policy.select(&root, occurrence)?;
-        assert_eq!(source.reading(time), Some(before));
-        assert_eq!(
-            deterministic_decision_u64(&root, occurrence, "gameplay.fixture.v1", 0)?,
-            gameplay_before
-        );
+fn kind_frequencies_follow_the_temperate_weights() {
+    let source = load();
+    let thais = area(&source, "oteryn:content.area.city.thais");
+    let mut counts = [0_u32; 10];
+    let blocks = 20_000_u64;
+    for block in 0..blocks {
+        counts[usize::from(
+            source
+                .source()
+                .period(thais, block * BLOCK_SLOTS)
+                .expect("period")
+                .kind,
+        )] += 1;
     }
-    Ok(())
+    let share = |kind: usize| f64::from(counts[kind]) / blocks as f64;
+    assert!((share(1) - 0.55).abs() < 0.03, "clear {}", share(1));
+    assert!((share(2) - 0.20).abs() < 0.03, "cloudy {}", share(2));
+    assert!((share(3) - 0.15).abs() < 0.03, "rain {}", share(3));
+    assert!((share(4) - 0.07).abs() < 0.02, "storm {}", share(4));
+    assert!((share(5) - 0.03).abs() < 0.02, "fog {}", share(5));
+}
+
+#[test]
+fn intensity_is_uniform_one_to_three() {
+    let source = load();
+    let thais = area(&source, "oteryn:content.area.city.thais");
+    let mut counts = [0_u32; 4];
+    let blocks = 9_000_u64;
+    for block in 0..blocks {
+        counts[usize::from(
+            source
+                .source()
+                .period(thais, block * BLOCK_SLOTS)
+                .expect("period")
+                .intensity,
+        )] += 1;
+    }
+    assert_eq!(counts[0], 0);
+    for (intensity, count) in counts.iter().enumerate().skip(1) {
+        let share = f64::from(*count) / blocks as f64;
+        assert!((share - 1.0 / 3.0).abs() < 0.03, "intensity {intensity}");
+    }
+}
+
+#[test]
+fn a_position_maps_to_the_nearest_anchor_and_observes_that_area() {
+    let source = load();
+    let thais = area(&source, "oteryn:content.area.city.thais");
+    let anchor = thais.anchor.expect("thais is anchored");
+    let found = source
+        .area_at(at(anchor.0, anchor.1))
+        .expect("an area resolves");
+    assert_eq!(found.key, thais.key);
+    let now = 7 * WEATHER_SLOT_MS;
+    let (start, kind, intensity) = active(source.observe(at(anchor.0, anchor.1), now));
+    let expected = source.source().period(thais, 7).expect("period");
+    assert_eq!(
+        (start, kind, intensity),
+        (expected.start_slot, expected.kind, expected.intensity)
+    );
+    // Far from everything still resolves to some anchored area (never a fictitious default).
+    assert!(source.area_at(at(i32::MAX, i32::MIN)).is_some());
+}
+
+#[test]
+fn the_observation_changes_with_the_period_and_not_inside_it() {
+    let source = load();
+    let position = at(32369, 32241);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut last = None;
+    for slot in 0..300_u64 {
+        let observed = source.observe(position, slot * WEATHER_SLOT_MS + 5);
+        let (start, _, _) = active(observed);
+        if last == Some(start) {
+            // Inside one period the observation is identical to its first slot.
+            assert_eq!(observed, source.observe(position, start * WEATHER_SLOT_MS));
+        }
+        seen.insert(start);
+        last = Some(start);
+    }
+    assert!(seen.len() > 100 && seen.len() < 300);
+}
+
+#[test]
+fn invalid_or_missing_data_fails_closed() {
+    assert!(WorldWeatherSource::from_json("", CLIMATES, AREAS).is_err());
+    assert!(WorldWeatherSource::from_json(INDEX, "{", AREAS).is_err());
+    assert!(WorldWeatherSource::from_json(INDEX, CLIMATES, "[]").is_err());
+    let bad_index = edited(INDEX, |v| v["schema"] = json!("x"));
+    assert!(WorldWeatherSource::from_json(&bad_index, CLIMATES, AREAS).is_err());
+    let bad_slot = edited(INDEX, |v| v["slot_ms"] = json!(1000));
+    assert!(WorldWeatherSource::from_json(&bad_slot, CLIMATES, AREAS).is_err());
+    let not_design = edited(INDEX, |v| v["design_status"] = json!("REFERENCE"));
+    assert!(WorldWeatherSource::from_json(&not_design, CLIMATES, AREAS).is_err());
+    let unknown_kind = edited(CLIMATES, |v| v["climates"]["cold"]["hail"] = json!(5));
+    assert!(WorldWeatherSource::from_json(INDEX, &unknown_kind, AREAS).is_err());
+    let zero_weight = edited(CLIMATES, |v| v["climates"]["cold"]["snow"] = json!(0));
+    assert!(WorldWeatherSource::from_json(INDEX, &zero_weight, AREAS).is_err());
+    let long = edited(CLIMATES, |v| v["duration_slots"]["max"] = json!(13));
+    assert!(WorldWeatherSource::from_json(INDEX, &long, AREAS).is_err());
+    let zero_duration = edited(CLIMATES, |v| v["duration_slots"]["min"] = json!(0));
+    assert!(WorldWeatherSource::from_json(INDEX, &zero_duration, AREAS).is_err());
+    let strong = edited(CLIMATES, |v| v["intensity"]["max"] = json!(4));
+    assert!(WorldWeatherSource::from_json(INDEX, &strong, AREAS).is_err());
+    let unknown_climate = edited(AREAS, |v| v["areas"][0]["climate"] = json!("lava"));
+    assert!(WorldWeatherSource::from_json(INDEX, CLIMATES, &unknown_climate).is_err());
+    let duplicate = edited(AREAS, |v| {
+        let first = v["areas"][0].clone();
+        v["areas"].as_array_mut().expect("array").push(first);
+    });
+    assert!(WorldWeatherSource::from_json(INDEX, CLIMATES, &duplicate).is_err());
+    let no_anchor = edited(AREAS, |v| {
+        for entry in v["areas"].as_array_mut().expect("array") {
+            entry["anchor"] = Value::Null;
+        }
+    });
+    assert!(WorldWeatherSource::from_json(INDEX, CLIMATES, &no_anchor).is_err());
+    let extra = edited(AREAS, |v| v["areas"][0]["surprise"] = json!(1));
+    assert!(WorldWeatherSource::from_json(INDEX, CLIMATES, &extra).is_err());
+}
+
+#[test]
+fn real_world_coordinates_are_the_reserved_extension_point() {
+    let with_point = edited(AREAS, |v| {
+        v["areas"][0]["real_world"] = json!({"latitude": 52.2, "longitude": 21.0});
+    });
+    let source = WorldWeatherSource::from_json(INDEX, CLIMATES, &with_point).expect("valid");
+    assert_eq!(source.areas()[0].real_world, Some((52.2, 21.0)));
+    // Carrying coordinates changes nothing today: the design source ignores them.
+    assert_eq!(
+        source.observe(at(32369, 32241), 123_456_789),
+        load().observe(at(32369, 32241), 123_456_789)
+    );
+    let out_of_range = edited(AREAS, |v| {
+        v["areas"][0]["real_world"] = json!({"latitude": 91.0, "longitude": 0.0});
+    });
+    assert!(WorldWeatherSource::from_json(INDEX, CLIMATES, &out_of_range).is_err());
 }

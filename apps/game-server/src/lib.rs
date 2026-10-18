@@ -833,7 +833,7 @@ mod welter_consume;
 mod world_clock;
 #[allow(
     dead_code,
-    reason = "CP D1446: no sourced preset data and no production World-config source exist, so only the connection seam consumes the weather source; a data PR plus the A2 config load supply it"
+    reason = "CP D1448: the WeatherSource seam and the reserved real_world coordinates are an extension point for a later live binding; today only the shipped Oteryn design is consumed"
 )]
 mod world_weather;
 

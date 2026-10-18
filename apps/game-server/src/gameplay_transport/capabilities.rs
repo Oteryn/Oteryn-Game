@@ -75,15 +75,15 @@ const WORLD_LIGHT: OfferedCapability = OfferedCapability {
 };
 
 /// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. It is in no static
-/// set: a connection adds it only when its authority exposes a retained weather source
-/// (D1025/D1446), see [`with_weather_offer`].
+/// set: a connection adds it only when its authority exposes a weather source (the shipped
+/// Oteryn-designed data by default, CP D1448), see [`with_weather_offer`].
 pub(crate) const WORLD_WEATHER: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_WEATHER_V1,
     requires: &CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
 };
 
 /// The offered set of one connection: `base` without capability 26 unless `weather_bound`, plus
-/// 26 when `weather_bound` (no binding means no offer).
+/// 26 when `weather_bound` (no source means no offer: fail closed).
 pub(crate) fn with_weather_offer(
     base: &[OfferedCapability],
     weather_bound: bool,
@@ -290,7 +290,7 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         ],
     ),
     // WEATHER-1: capability 26 owns domain 22 and no command type; it is offered per connection
-    // only with a retained weather source (`with_weather_offer`).
+    // only with a weather source (`with_weather_offer`).
     (
         CAPABILITY_WORLD_WEATHER_V1,
         &[],
