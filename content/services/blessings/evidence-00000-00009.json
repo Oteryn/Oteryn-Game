@@ -1,0 +1,723 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "oteryn:service.blessing.the_spiritual_shielding",
+      "facts": {
+        "name": {
+          "value": "The Spiritual Shielding",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Norf"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "South of Thais",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "regular",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.the_embrace_of_tibia",
+      "facts": {
+        "name": {
+          "value": "The Embrace of Tibia",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Humphrey"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "North of Carlin",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "regular",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.the_fire_of_the_suns",
+      "facts": {
+        "name": {
+          "value": "The Fire of the Suns",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Edala"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "South of Ab'Dendriel",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "regular",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.the_spark_of_the_phoenix",
+      "facts": {
+        "name": {
+          "value": "The Spark of the Phoenix",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Kawill",
+            "Pydar"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "Kazordoon",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "regular",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.the_wisdom_of_solitude",
+      "facts": {
+        "name": {
+          "value": "The Wisdom of Solitude",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Eremo"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "Eremo's Island",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "regular",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.blood_of_the_mountain",
+      "facts": {
+        "name": {
+          "value": "Blood of the Mountain",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Kais"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "Northern Tiquanda",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "enhanced",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.heart_of_the_mountain",
+      "facts": {
+        "name": {
+          "value": "Heart of the Mountain",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Nomad"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "South of Bittermor on Hrodmir",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "enhanced",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.twist_of_fate",
+      "facts": {
+        "name": {
+          "value": "Twist of Fate",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npcs": {
+          "value": [
+            "Temple NPC"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "Temples",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / blessing table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "premium_to_buy_from_named_npc": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Premium column"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "price_family": {
+          "value": "pvp",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price; Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.inquisition",
+      "facts": {
+        "name": {
+          "value": "Blessing of the Inquisition",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "npc": {
+          "value": "Henricus",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "location": {
+          "value": "Thais",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "requirements": {
+          "value": [
+            "The Inquisition Quest completed"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "effect": {
+          "value": "Five original blessings together; not an eighth regular blessing.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "surcharge_percent": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:service.blessing.adventurer",
+      "facts": {
+        "name": {
+          "value": "Adventurer's Blessing",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "purchase": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "expiry": {
+          "value": "Level 21 or first initiated attack on another player.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        }
+      }
+    }
+  ],
+  "family": "Service.BlessingEvidence",
+  "shard": {
+    "index": 0,
+    "start": 0,
+    "end": 9,
+    "count": 10
+  }
+}
