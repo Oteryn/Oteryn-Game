@@ -216,3 +216,60 @@ fn scalar_extremes_sort_without_subtraction_or_score_arithmetic() {
     assert_eq!(ranked[0].row.value, u64::MAX);
     assert_eq!(ranked[1].row.value, 0);
 }
+
+#[test]
+fn one_sort_yields_each_filters_exact_ranked_list() {
+    const VOCATIONS: [&str; 7] = [
+        "knight",
+        "elite_knight",
+        "paladin",
+        "sorcerer",
+        "master_sorcerer",
+        "druid",
+        "monk",
+    ];
+    let names: Vec<String> = (0..2_600_u32).map(|n| format!("Name {}", n % 97)).collect();
+    // Values tie across vocations and names, and every list runs past the 1,000 cap.
+    let rows: Vec<_> = names
+        .iter()
+        .zip(0_u32..)
+        .map(|(name, n)| {
+            row(
+                n + 1,
+                name,
+                VOCATIONS[(n as usize * 5) % VOCATIONS.len()],
+                u64::from(n % 41),
+            )
+        })
+        .collect();
+    let filters = [
+        None,
+        Some("knight"),
+        Some("paladin"),
+        Some("sorcerer"),
+        Some("druid"),
+        Some("monk"),
+    ];
+    let lists = ranked_lists(&rows, &filters).expect("eligible unique rows");
+    assert_eq!(lists.len(), filters.len());
+    for (filter, list) in filters.iter().zip(&lists) {
+        let single = ranked_list(&rows, *filter).expect("eligible unique rows");
+        assert_eq!(
+            list.iter()
+                .map(|r| (r.global_rank, r.row.character_id))
+                .collect::<Vec<_>>(),
+            single
+                .iter()
+                .map(|r| (r.global_rank, r.row.character_id))
+                .collect::<Vec<_>>(),
+            "{filter:?}"
+        );
+    }
+    assert_eq!(lists[0].len(), RANKING_ROWS_MAX);
+    assert!(lists.iter().all(|list| !list.is_empty()));
+    assert!(matches!(
+        ranked_lists(&rows, &[None, Some("elite_knight")]),
+        Err(RankingError::InvalidVocationFilter)
+    ));
+    assert!(ranked_lists(&rows, &[]).expect("no filter").is_empty());
+}

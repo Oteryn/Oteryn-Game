@@ -79,6 +79,7 @@ pub(crate) fn highscores_reply(
         Err(
             SnapshotError::InvalidQuery
             | SnapshotError::RetryableConflict
+            | SnapshotError::CapacityExceeded
             | SnapshotError::Unavailable(_),
         ) => return HighscoresReply::Rejected,
     };

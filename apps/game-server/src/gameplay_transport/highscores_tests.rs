@@ -88,6 +88,7 @@ fn the_snapshot_outcomes_fail_closed_with_their_registered_codes() {
     for error in [
         SnapshotError::InvalidQuery,
         SnapshotError::RetryableConflict,
+        SnapshotError::CapacityExceeded,
         SnapshotError::Unavailable(DurabilityError::InvalidStoredState),
     ] {
         assert_eq!(highscores_reply_for(Err(error)), HighscoresReply::Rejected);

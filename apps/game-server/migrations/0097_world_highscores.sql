@@ -16,10 +16,11 @@
 --     writes and deletes the snapshot tables and reads their committed sources. A pre-existing
 --     role is refused unless it is a plain NOLOGIN NOINHERIT group that is a member of no role
 --     and whose only members are the runtime group (WITH INHERIT FALSE, without ADMIN) and the
---     migration role's own ADMIN-only creator grant. The runtime group is its member WITH
---     INHERIT FALSE, SET TRUE: a runtime login holds none of its privileges and gains them only
---     for the job's own transaction (`SET LOCAL ROLE`). The runtime and control roles SELECT the
---     snapshot tables only.
+--     migration role's own ADMIN-only creator grant, and that owns nothing and holds no
+--     privilege in this database or on a shared object beyond exactly the highscore grants
+--     below. The runtime group is its member WITH INHERIT FALSE, SET TRUE: a runtime login
+--     holds none of its privileges and gains them only for the job's own transaction
+--     (`SET LOCAL ROLE`). The runtime and control roles SELECT the snapshot tables only.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration that drops the
 -- trigger, the three tables and the two guard functions, and revokes the job role's grants (the
@@ -68,6 +69,54 @@ BEGIN
           )
     ) THEN
         RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job has a member other than the runtime group'
+            USING ERRCODE = '42501';
+    END IF;
+    -- A direct privilege would reach beyond the highscore grants below. pg_shdepend records
+    -- every object the group owns and every ACL, default ACL or policy naming it (as grantee or
+    -- grantor), in this database and on shared objects (databases, tablespaces, parameters);
+    -- another Game database's own highscore grants are its business. The group may own nothing
+    -- and appear in no ACL except the exact table-level grants below, without GRANT OPTION and
+    -- never as a grantor; the highscore tables and their sequence do not exist yet on a first
+    -- run.
+    IF EXISTS (
+        WITH job AS (
+            SELECT oid FROM pg_roles WHERE rolname = 'oteryn_game_highscore_job'
+        ), expected AS (
+            SELECT to_regclass(t.name)::oid AS relation, t.privileges
+            FROM (VALUES
+                ('game_world_highscore_snapshots', ARRAY['SELECT', 'INSERT', 'DELETE']),
+                ('game_world_highscore_rows', ARRAY['SELECT', 'INSERT', 'DELETE']),
+                ('game_world_highscore_heads', ARRAY['SELECT', 'INSERT', 'UPDATE']),
+                ('game_character_roots', ARRAY['SELECT']),
+                ('game_character_build_state', ARRAY['SELECT']),
+                ('game_character_progression_state', ARRAY['SELECT']),
+                ('game_account_achievements', ARRAY['SELECT']),
+                ('game_account_achievement_grant_requests', ARRAY['SELECT']),
+                ('game_character_bestiary_progress', ARRAY['SELECT'])
+            ) AS t(name, privileges)
+            WHERE to_regclass(t.name) IS NOT NULL
+            UNION ALL
+            SELECT d.objid, ARRAY['USAGE']
+            FROM pg_depend d
+            WHERE d.classid = 'pg_class'::regclass
+              AND d.refclassid = 'pg_class'::regclass
+              AND d.refobjid = to_regclass('game_world_highscore_snapshots')::oid
+              AND d.deptype = 'i'
+              AND EXISTS (SELECT 1 FROM pg_class q WHERE q.oid = d.objid AND q.relkind = 'S')
+        )
+        SELECT 1 FROM pg_shdepend s, job
+        WHERE s.refclassid = 'pg_authid'::regclass AND s.refobjid = job.oid
+          AND s.dbid IN (0, (SELECT oid FROM pg_database WHERE datname = current_database()))
+          AND NOT (s.deptype = 'a' AND s.classid = 'pg_class'::regclass AND s.objsubid = 0
+                   AND EXISTS (SELECT 1 FROM expected e WHERE e.relation = s.objid))
+        UNION ALL
+        SELECT 1 FROM expected e JOIN pg_class c ON c.oid = e.relation
+        CROSS JOIN LATERAL aclexplode(c.relacl) a, job
+        WHERE a.grantor = job.oid
+           OR (a.grantee = job.oid
+               AND (a.is_grantable OR NOT (a.privilege_type = ANY (e.privileges))))
+    ) THEN
+        RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job holds a privilege outside the highscore grants'
             USING ERRCODE = '42501';
     END IF;
 END $$;

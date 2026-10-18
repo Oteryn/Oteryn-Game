@@ -39,11 +39,32 @@ pub enum RankingError {
 /// `None` selects all rows; a filter must be a base vocation key, not a promotion. Supply the
 /// entire eligible cut, not a previous capped list: ranks and filtered membership need every row.
 /// Equal values alone share rank; name/identity only order their positions. No source is mutated.
+#[allow(
+    dead_code,
+    reason = "the cut ranks every filter at once with `ranked_lists`; tests check one filter"
+)]
 pub fn ranked_list<'a, Value: Ord>(
     rows: &'a [RankingRow<'a, Value>],
     vocation_filter: Option<&str>,
 ) -> Result<Vec<RankedRow<'a, Value>>, RankingError> {
-    if vocation_filter.is_some_and(|filter| base_vocation(filter) != Some(filter)) {
+    Ok(ranked_lists(rows, &[vocation_filter])?
+        .into_iter()
+        .next()
+        .unwrap_or_default())
+}
+
+/// [`ranked_list`] for every filter of `vocation_filters` from one sort of the cut: the list of
+/// each filter, in the given order, is exactly that filter's [`ranked_list`]. The pass stops once
+/// every list holds `RANKING_ROWS_MAX` rows, so a cut costs one sort, not one per filter.
+pub fn ranked_lists<'a, Value: Ord>(
+    rows: &'a [RankingRow<'a, Value>],
+    vocation_filters: &[Option<&str>],
+) -> Result<Vec<Vec<RankedRow<'a, Value>>>, RankingError> {
+    if vocation_filters
+        .iter()
+        .flatten()
+        .any(|filter| base_vocation(filter) != Some(*filter))
+    {
         return Err(RankingError::InvalidVocationFilter);
     }
     let mut identities = BTreeSet::new();
@@ -61,20 +82,28 @@ pub fn ranked_list<'a, Value: Ord>(
             .then_with(|| left.character_id.cmp(&right.character_id))
     });
 
-    let mut result = Vec::new();
+    let mut lists: Vec<Vec<RankedRow<'a, Value>>> =
+        vocation_filters.iter().map(|_| Vec::new()).collect();
+    let mut open = lists.len();
     let mut previous_value = None;
     let mut global_rank = 0;
     for (position, row) in ordered.into_iter().enumerate() {
+        if open == 0 {
+            break;
+        }
         if previous_value != Some(&row.value) {
             global_rank = position + 1;
         }
         previous_value = Some(&row.value);
-        if vocation_filter.is_none_or(|filter| base_vocation(row.vocation) == Some(filter)) {
-            result.push(RankedRow { global_rank, row });
-            if result.len() == RANKING_ROWS_MAX {
-                break;
+        let base = base_vocation(row.vocation);
+        for (filter, list) in vocation_filters.iter().zip(lists.iter_mut()) {
+            if list.len() < RANKING_ROWS_MAX && filter.is_none_or(|wanted| base == Some(wanted)) {
+                list.push(RankedRow { global_rank, row });
+                if list.len() == RANKING_ROWS_MAX {
+                    open -= 1;
+                }
             }
         }
     }
-    Ok(result)
+    Ok(lists)
 }

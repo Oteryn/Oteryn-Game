@@ -19,7 +19,7 @@ use super::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
 use super::db::commit_semantic_transaction;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, WorldId};
-use ranking::{RankingRow, ranked_list};
+use ranking::{RankingRow, ranked_lists};
 use serde::Serialize;
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
@@ -37,6 +37,53 @@ pub(crate) const FILTERS: [Option<&str>; 6] = [
 ];
 const PAGE_ROWS: u64 = 50;
 const SNAPSHOT_INTERVAL_MS: i64 = 30 * 60 * 1000;
+/// HIGHSCORES0-RL-04: eligible Characters, and separately ranked accounts, of one World cut.
+/// A larger World fails its cut closed with [`SnapshotError::CapacityExceeded`] and keeps the
+/// previous snapshot; the cut never truncates its sources, which would falsify global ranks.
+pub(crate) const CUT_CHARACTERS_MAX: usize = 50_000;
+/// HIGHSCORES0-RL-04: rows of one keyset-paged source read inside the cut.
+pub(crate) const CUT_SOURCE_PAGE_ROWS: usize = 1_000;
+
+/// The bounds of one World cut. Production uses [`CutLimits::REGISTERED`]; a fixture may only
+/// tighten them, never pass the registered hard maximums.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CutLimits {
+    characters_max: usize,
+    page_rows: usize,
+}
+impl CutLimits {
+    pub(crate) const REGISTERED: Self = Self {
+        characters_max: CUT_CHARACTERS_MAX,
+        page_rows: CUT_SOURCE_PAGE_ROWS,
+    };
+    /// Tighter bounds, or `None` above a registered hard maximum or for an empty page.
+    #[allow(
+        dead_code,
+        reason = "the PostgreSQL highscore suites page and bound a small cut with it"
+    )]
+    pub(crate) fn tighter(characters_max: usize, page_rows: usize) -> Option<Self> {
+        (characters_max <= CUT_CHARACTERS_MAX && (1..=CUT_SOURCE_PAGE_ROWS).contains(&page_rows))
+            .then_some(Self {
+                characters_max,
+                page_rows,
+            })
+    }
+    /// The next page's row limit: at most one row past the bound, so the refusal is exact and
+    /// a cut never holds more than `characters_max + 1` rows of one source.
+    fn next_page(self, held: usize) -> Result<i64> {
+        let rows = self
+            .page_rows
+            .min(self.characters_max.saturating_add(1).saturating_sub(held));
+        i64::try_from(rows).map_err(|_| corrupt())
+    }
+    fn admit(self, held: usize) -> Result<()> {
+        if held > self.characters_max {
+            Err(SnapshotError::CapacityExceeded)
+        } else {
+            Ok(())
+        }
+    }
+}
 
 /// The account achievement point owner (category 10). The composition root implements it with
 /// the activated achievement catalogue; this module stays independent of that content owner.
@@ -115,6 +162,9 @@ pub(crate) enum SnapshotError {
     SnapshotExpired,
     /// A concurrent publisher won the repeatable-read race. No automatic retry.
     RetryableConflict,
+    /// The World's cut exceeds HIGHSCORES0-RL-04; nothing is published and the previous
+    /// snapshot stays current.
+    CapacityExceeded,
     Unavailable(DurabilityError),
 }
 impl From<DurabilityError> for SnapshotError {
@@ -218,7 +268,7 @@ impl DurabilityRoot {
         &self,
         world: WorldId,
     ) -> Result<Vec<SnapshotInfo>> {
-        self.publish_highscore_cut(world, None, false)
+        self.publish_highscore_cut(world, None, false, CutLimits::REGISTERED)
             .await
             .map(|refresh| refresh.snapshots)
     }
@@ -246,8 +296,30 @@ impl DurabilityRoot {
         catalogues: SnapshotCatalogues,
         planned_reset: bool,
     ) -> Result<SnapshotRefresh> {
-        self.publish_highscore_cut(world, Some(catalogues), !planned_reset)
+        self.publish_highscore_cut(
+            world,
+            Some(catalogues),
+            !planned_reset,
+            CutLimits::REGISTERED,
+        )
+        .await
+    }
+
+    /// A planned-reset cut under tighter `limits`, so a fixture can cross page boundaries and
+    /// the World bound with a handful of Characters.
+    #[allow(
+        dead_code,
+        reason = "the PostgreSQL highscore suites page and bound a small cut with it"
+    )]
+    pub(crate) async fn refresh_highscore_world_within(
+        &self,
+        world: WorldId,
+        catalogues: SnapshotCatalogues,
+        limits: CutLimits,
+    ) -> Result<Vec<SnapshotInfo>> {
+        self.publish_highscore_cut(world, Some(catalogues), false, limits)
             .await
+            .map(|refresh| refresh.snapshots)
     }
 
     async fn publish_highscore_cut(
@@ -255,12 +327,15 @@ impl DurabilityRoot {
         world: WorldId,
         catalogues: Option<SnapshotCatalogues>,
         only_if_due: bool,
+        limits: CutLimits,
     ) -> Result<SnapshotRefresh> {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_projection(holder, deadline).await?;
-                    match publish_cut(&mut tx, world, catalogues.as_ref(), only_if_due).await {
+                    match publish_cut(&mut tx, world, catalogues.as_ref(), only_if_due, limits)
+                        .await
+                    {
                         Ok(value) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(value))
@@ -337,136 +412,197 @@ fn character(row: &PgRow) -> Result<CharacterId> {
     CharacterId::decode(&bytes).map_err(|_| corrupt())
 }
 
+fn uuid_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// The eligible Characters of categories 1-9 and 11 at the cut, under the registered bounds.
+#[allow(
+    dead_code,
+    reason = "the PostgreSQL highscore suites read the source of a cut with it"
+)]
 pub(crate) async fn read_source(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
 ) -> Result<Vec<Source>> {
-    // No row means native vocation `none`, excluded. Do not silently drop an eligible
-    // non-none build whose required XP row is missing: fail and retain the prior generation.
-    let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none'")
-        .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    rows.into_iter()
-        .map(|row| {
-            let mut skills = [(0, 0); 7];
-            for (index, skill) in SKILLS.iter().enumerate() {
-                let level: i32 = row.try_get(format!("{skill}_level").as_str())?;
-                skills[index] = (
-                    u16::try_from(level).map_err(|_| corrupt())?,
-                    nonnegative(&row, format!("{skill}_tries").as_str())?,
-                );
-            }
-            let build = DurableBuildState::new(
-                row.try_get::<String, _>("vocation")?,
-                (
-                    u16::try_from(row.try_get::<i32, _>("magic_level")?).map_err(|_| corrupt())?,
-                    nonnegative(&row, "mana_spent")?,
-                ),
-                skills,
-            )
-            .map_err(|_| corrupt())?;
-            let mut values = [(0, 0); 9];
-            values[0] = (nonnegative(&row, "total_experience")?, 0);
-            let magic = build.magic();
-            values[1] = (u64::from(magic.0), magic.1);
-            for (slot, (level, tries)) in values[2..].iter_mut().zip(build.skills()) {
-                *slot = (u64::from(level), tries);
-            }
-            let level = u32::try_from(nonnegative(&row, "level")?).map_err(|_| corrupt())?;
-            if level == 0 {
-                return Err(corrupt());
-            }
-            Ok(Source {
-                character_id: character(&row)?,
-                name: row.try_get("name")?,
-                vocation: build.vocation().to_owned(),
-                level,
-                values,
-            })
-        })
-        .collect()
+    read_source_within(tx, world, CutLimits::REGISTERED).await
+}
+
+/// Keyset pages in CharacterId order, all inside the caller's repeatable-read cut, so the pages
+/// are one consistent set. More than `limits` eligible Characters refuse the whole cut.
+async fn read_source_within(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    limits: CutLimits,
+) -> Result<Vec<Source>> {
+    let mut sources = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let wanted = limits.next_page(sources.len())?;
+        // No row means native vocation `none`, excluded. Do not silently drop an eligible
+        // non-none build whose required XP row is missing: fail and retain the prior generation.
+        let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3")
+            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted)
+            .fetch_all(&mut **tx).await?;
+        let fetched = rows.len();
+        for row in rows {
+            sources.push(source_row(&row)?);
+        }
+        limits.admit(sources.len())?;
+        if i64::try_from(fetched).map_err(|_| corrupt())? < wanted {
+            return Ok(sources);
+        }
+        after = sources
+            .last()
+            .map(|last| uuid_hex(last.character_id.as_bytes()));
+    }
+}
+
+fn source_row(row: &PgRow) -> Result<Source> {
+    let mut skills = [(0, 0); 7];
+    for (index, skill) in SKILLS.iter().enumerate() {
+        let level: i32 = row.try_get(format!("{skill}_level").as_str())?;
+        skills[index] = (
+            u16::try_from(level).map_err(|_| corrupt())?,
+            nonnegative(row, format!("{skill}_tries").as_str())?,
+        );
+    }
+    let build = DurableBuildState::new(
+        row.try_get::<String, _>("vocation")?,
+        (
+            u16::try_from(row.try_get::<i32, _>("magic_level")?).map_err(|_| corrupt())?,
+            nonnegative(row, "mana_spent")?,
+        ),
+        skills,
+    )
+    .map_err(|_| corrupt())?;
+    let mut values = [(0, 0); 9];
+    values[0] = (nonnegative(row, "total_experience")?, 0);
+    let magic = build.magic();
+    values[1] = (u64::from(magic.0), magic.1);
+    for (slot, (level, tries)) in values[2..].iter_mut().zip(build.skills()) {
+        *slot = (u64::from(level), tries);
+    }
+    let level = u32::try_from(nonnegative(row, "level")?).map_err(|_| corrupt())?;
+    if level == 0 {
+        return Err(corrupt());
+    }
+    Ok(Source {
+        character_id: character(row)?,
+        name: row.try_get("name")?,
+        vocation: build.vocation().to_owned(),
+        level,
+        values,
+    })
 }
 
 /// Both additional categories use their actual source owners inside the same MVCC cut.
 /// Category 10 selects its representative before the vocation filter, including vocation none.
+/// Every read is keyset paged in the cut; more than `limits` ranked accounts refuse the cut.
 async fn read_extra_sources(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     characters: &[Source],
     catalogues: &SnapshotCatalogues,
+    limits: CutLimits,
 ) -> Result<[Vec<Source>; 2]> {
-    // Migration 0009 keeps a bootstrap-only Character (revision one, no progression row) valid:
-    // it has no level to rank, so it never represents its account and never fails the cut.
-    let representatives = sqlx::query("SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 ORDER BY r.account_id,p.level DESC,r.character_id")
-        .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    // All account facts, not only achievements earned in this World or by its representative.
-    let rows = sqlx::query("SELECT f.account_id::text AS account_id,f.achievement_key,g.earned_at FROM game_account_achievements f JOIN game_account_achievement_grant_requests g USING(account_id,achievement_key,source_kind,source_event_id) WHERE EXISTS(SELECT 1 FROM game_character_roots r WHERE r.account_id=f.account_id AND r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1) ORDER BY f.account_id,f.achievement_key")
-        .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    let mut facts: BTreeMap<String, Vec<EarnedAchievement>> = BTreeMap::new();
-    for row in rows {
-        facts
-            .entry(row.try_get("account_id")?)
-            .or_default()
-            .push(EarnedAchievement {
-                achievement_key: row.try_get("achievement_key")?,
-                earned_at_unix_ms: row.try_get("earned_at")?,
-            });
-    }
-    let mut achievements = Vec::with_capacity(representatives.len());
-    for row in representatives {
-        let account: String = row.try_get("account_id")?;
-        let earned = facts.remove(&account).unwrap_or_default();
-        // The owner handles retired/unknown entries and checked point addition over ALL facts.
-        let points = catalogues
-            .achievements
-            .total_points(&earned)
-            .ok_or_else(corrupt)?;
-        let level = u32::try_from(nonnegative(&row, "level")?).map_err(|_| corrupt())?;
-        if level == 0 {
-            return Err(corrupt());
+    let mut achievements = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let wanted = limits.next_page(achievements.len())?;
+        // Migration 0009 keeps a bootstrap-only Character (revision one, no progression row)
+        // valid: it has no level to rank, so it never represents its account and never fails
+        // the cut.
+        let representatives = sqlx::query("SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3")
+            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted)
+            .fetch_all(&mut **tx).await?;
+        let fetched = representatives.len();
+        let accounts = representatives
+            .iter()
+            .map(|row| row.try_get::<String, _>("account_id"))
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        // All facts of this page's accounts, not only achievements earned in this World or by
+        // the representative. The page's accounts are exactly those with a ranked root here.
+        let rows = sqlx::query("SELECT f.account_id::text AS account_id,f.achievement_key,g.earned_at FROM game_account_achievements f JOIN game_account_achievement_grant_requests g USING(account_id,achievement_key,source_kind,source_event_id) WHERE f.account_id=ANY($1::text[]::uuid[]) ORDER BY f.account_id,f.achievement_key")
+            .bind(&accounts).fetch_all(&mut **tx).await?;
+        let mut facts: BTreeMap<String, Vec<EarnedAchievement>> = BTreeMap::new();
+        for row in rows {
+            facts
+                .entry(row.try_get("account_id")?)
+                .or_default()
+                .push(EarnedAchievement {
+                    achievement_key: row.try_get("achievement_key")?,
+                    earned_at_unix_ms: row.try_get("earned_at")?,
+                });
         }
-        let mut values = [(0, 0); 9];
-        values[0] = (u64::from(points), 0);
-        achievements.push(Source {
-            character_id: character(&row)?,
-            name: row.try_get("name")?,
-            vocation: row.try_get("vocation")?,
-            level,
-            values,
-        });
+        for (row, account) in representatives.iter().zip(&accounts) {
+            let earned = facts.remove(account).unwrap_or_default();
+            // The owner handles retired/unknown entries and checked point addition over ALL
+            // facts.
+            let points = catalogues
+                .achievements
+                .total_points(&earned)
+                .ok_or_else(corrupt)?;
+            let level = u32::try_from(nonnegative(row, "level")?).map_err(|_| corrupt())?;
+            if level == 0 {
+                return Err(corrupt());
+            }
+            let mut values = [(0, 0); 9];
+            values[0] = (u64::from(points), 0);
+            achievements.push(Source {
+                character_id: character(row)?,
+                name: row.try_get("name")?,
+                vocation: row.try_get("vocation")?,
+                level,
+                values,
+            });
+        }
+        limits.admit(achievements.len())?;
+        if i64::try_from(fetched).map_err(|_| corrupt())? < wanted {
+            break;
+        }
+        after = accounts.last().cloned();
     }
     // Without a Charm point source category 11 is not published, so its counters are not read.
     if !catalogues.charm_points {
         return Ok([achievements, Vec::new()]);
     }
-    // One set-based read of the native kill counters, avoiding a network call per Character.
-    // Both consumers use the owning BestiaryRace::is_complete predicate and content points;
-    // spent unlock currency is deliberately irrelevant to the earned-points category.
-    let rows = sqlx::query("SELECT uuid_send(p.character_id) AS character_id,p.race_key,p.kill_count FROM game_character_bestiary_progress p JOIN game_character_roots r USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 ORDER BY p.character_id,p.race_key")
-        .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
-    let mut earned: BTreeMap<CharacterId, u64> = BTreeMap::new();
-    for row in rows {
-        let key: String = row.try_get("race_key")?;
-        let count = u32::try_from(nonnegative(&row, "kill_count")?).map_err(|_| corrupt())?;
-        if let Some(entry) = catalogues.bestiary.get(&key)
-            && entry.race.is_complete(count)
-        {
-            let sum = earned.entry(character(&row)?).or_default();
-            *sum = sum
-                .checked_add(u64::from(entry.charm_points))
-                .ok_or_else(corrupt)?;
-        }
-    }
+    // One set-based read of the native kill counters per page of the already bounded Characters,
+    // avoiding a network call per Character. Both consumers use the owning
+    // BestiaryRace::is_complete predicate and content points; spent unlock currency is
+    // deliberately irrelevant to the earned-points category.
     let mut charms = Vec::with_capacity(characters.len());
-    for source in characters {
-        let mut values = [(0, 0); 9];
-        values[0] = (earned.remove(&source.character_id).unwrap_or(0), 0);
-        charms.push(Source {
-            character_id: source.character_id,
-            name: source.name.clone(),
-            vocation: source.vocation.clone(),
-            level: source.level,
-            values,
-        });
+    for page in characters.chunks(limits.page_rows) {
+        let ids: Vec<String> = page
+            .iter()
+            .map(|source| uuid_hex(source.character_id.as_bytes()))
+            .collect();
+        let rows = sqlx::query("SELECT uuid_send(character_id) AS character_id,race_key,kill_count FROM game_character_bestiary_progress WHERE character_id=ANY($1::text[]::uuid[]) ORDER BY character_id,race_key")
+            .bind(&ids).fetch_all(&mut **tx).await?;
+        let mut earned: BTreeMap<CharacterId, u64> = BTreeMap::new();
+        for row in rows {
+            let key: String = row.try_get("race_key")?;
+            let count = u32::try_from(nonnegative(&row, "kill_count")?).map_err(|_| corrupt())?;
+            if let Some(entry) = catalogues.bestiary.get(&key)
+                && entry.race.is_complete(count)
+            {
+                let sum = earned.entry(character(&row)?).or_default();
+                *sum = sum
+                    .checked_add(u64::from(entry.charm_points))
+                    .ok_or_else(corrupt)?;
+            }
+        }
+        for source in page {
+            let mut values = [(0, 0); 9];
+            values[0] = (earned.remove(&source.character_id).unwrap_or(0), 0);
+            charms.push(Source {
+                character_id: source.character_id,
+                name: source.name.clone(),
+                vocation: source.vocation.clone(),
+                level: source.level,
+                values,
+            });
+        }
     }
     Ok([achievements, charms])
 }
@@ -495,23 +631,16 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
         })
         .collect();
     let mut result = Vec::new();
-    for (filter, vocation) in FILTERS.iter().enumerate() {
-        for (position, ranked) in ranked_list(&input, *vocation)
-            .map_err(|_| corrupt())?
-            .into_iter()
-            .enumerate()
-        {
+    // One sort of the cut serves all six filter lists.
+    let lists = ranked_lists(&input, &FILTERS).map_err(|_| corrupt())?;
+    for (filter, list) in lists.into_iter().enumerate() {
+        for (position, ranked) in list.into_iter().enumerate() {
             let row = ranked.row;
             result.push(StoredRow {
                 filter: i16::try_from(filter).map_err(|_| corrupt())?,
                 position: i32::try_from(position + 1).map_err(|_| corrupt())?,
                 rank: i64::try_from(ranked.global_rank).map_err(|_| corrupt())?,
-                character_id: row
-                    .character_id
-                    .as_bytes()
-                    .iter()
-                    .map(|b| format!("{b:02x}"))
-                    .collect(),
+                character_id: uuid_hex(row.character_id.as_bytes()),
                 name: row.name.to_owned(),
                 vocation: row.vocation.to_owned(),
                 level: i64::from(*levels.get(&row.character_id).ok_or_else(corrupt)?),
@@ -531,7 +660,7 @@ pub(crate) async fn publish_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
 ) -> Result<Vec<SnapshotInfo>> {
-    publish_cut(tx, world, None, false)
+    publish_cut(tx, world, None, false, CutLimits::REGISTERED)
         .await
         .map(|refresh| refresh.snapshots)
 }
@@ -541,6 +670,7 @@ async fn publish_cut(
     world: WorldId,
     catalogues: Option<&SnapshotCatalogues>,
     only_if_due: bool,
+    limits: CutLimits,
 ) -> Result<SnapshotRefresh> {
     // HIGHSCORES0 §4: only the job's role writes the snapshot tables. The runtime login is its
     // member without inheritance, so these privileges last for this transaction only.
@@ -581,9 +711,9 @@ async fn publish_cut(
             });
         }
     }
-    let source = read_source(tx, world).await?;
+    let source = read_source_within(tx, world, limits).await?;
     let extra = match catalogues {
-        Some(catalogues) => Some(read_extra_sources(tx, world, &source, catalogues).await?),
+        Some(catalogues) => Some(read_extra_sources(tx, world, &source, catalogues, limits).await?),
         None => None,
     };
     let mut published = Vec::new();

@@ -17,7 +17,8 @@ use crate::durability::character_progression::{
 use crate::durability::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
 use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_highscores};
 use crate::durability::highscore_snapshot::{
-    AchievementPoints, SnapshotCatalogues, SnapshotError, SnapshotPage, activated_charm_points,
+    AchievementPoints, CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS, CutLimits, FILTERS,
+    SnapshotCatalogues, SnapshotError, SnapshotPage, SnapshotRow, activated_charm_points,
     begin_projection, job, publish_in_transaction, read_source, served_categories,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
@@ -1437,6 +1438,200 @@ fn job_role_guard_refuses_an_unexpected_member_of_the_group() -> TestResult {
         ));
         settable.push(as_migrator);
         guard_in_rollback(h, &settable, refusal).await?;
+        Ok(())
+    })
+}
+
+#[test]
+fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestResult {
+    run("hsjobprivileges", async |h| {
+        let guard = job_role_guard();
+        assert!(guard.contains("pg_shdepend"));
+        // Provisioned: exactly the table-level grants of 0097 in this database, none on a
+        // shared object, and the group owns nothing.
+        let grants: Vec<(String, String)> = sqlx::query_as(
+            "SELECT c.relname::text, string_agg(a.privilege_type, ',' ORDER BY a.privilege_type COLLATE \"C\") \
+             FROM pg_class c CROSS JOIN LATERAL aclexplode(c.relacl) a \
+             WHERE a.grantee = 'oteryn_game_highscore_job'::regrole AND NOT a.is_grantable \
+             GROUP BY c.relname ORDER BY c.relname::text COLLATE \"C\"",
+        )
+        .fetch_all(&h.pool)
+        .await?;
+        let expected = [
+            ("game_account_achievement_grant_requests", "SELECT"),
+            ("game_account_achievements", "SELECT"),
+            ("game_character_bestiary_progress", "SELECT"),
+            ("game_character_build_state", "SELECT"),
+            ("game_character_progression_state", "SELECT"),
+            ("game_character_roots", "SELECT"),
+            ("game_world_highscore_heads", "INSERT,SELECT,UPDATE"),
+            ("game_world_highscore_rows", "DELETE,INSERT,SELECT"),
+            ("game_world_highscore_snapshots", "DELETE,INSERT,SELECT"),
+            ("game_world_highscore_snapshots_snapshot_id_seq", "USAGE"),
+        ];
+        assert_eq!(
+            grants,
+            expected.map(|(relation, privileges)| (relation.to_owned(), privileges.to_owned()))
+        );
+        let dependencies: (i64, i64) = sqlx::query_as(
+            "SELECT count(*) FILTER (WHERE deptype = 'a' AND classid = 'pg_class'::regclass \
+                                     AND objsubid = 0), count(*) \
+             FROM pg_shdepend WHERE refclassid = 'pg_authid'::regclass \
+             AND refobjid = 'oteryn_game_highscore_job'::regrole \
+             AND dbid IN (0, (SELECT oid FROM pg_database WHERE datname = current_database()))",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(dependencies, (10, 10));
+        h.pool.execute(guard).await?;
+        let refusal = Some("holds a privilege outside the highscore grants");
+        let job = "oteryn_game_highscore_job";
+        let probe = format!("hs_jobprivilege_{}", std::process::id());
+        let schema: String = sqlx::query_scalar("SELECT quote_ident(current_schema())")
+            .fetch_one(&h.pool)
+            .await?;
+        let database: String = sqlx::query_scalar("SELECT quote_ident(current_database())")
+            .fetch_one(&h.pool)
+            .await?;
+        let table = format!("CREATE TABLE {probe}(value integer)");
+        let function =
+            format!("CREATE FUNCTION {probe}() RETURNS integer LANGUAGE sql AS 'SELECT 1'");
+        // Ownership, an ACL on any other object, a wider or re-grantable privilege on an
+        // expected object, a column ACL, a default ACL, a policy and a privilege on this
+        // database are each refused.
+        for statements in [
+            vec![table.clone(), format!("GRANT SELECT ON {probe} TO {job}")],
+            vec![table.clone(), format!("ALTER TABLE {probe} OWNER TO {job}")],
+            vec![
+                function.clone(),
+                format!("GRANT EXECUTE ON FUNCTION {probe}() TO {job}"),
+            ],
+            vec![function, format!("ALTER FUNCTION {probe}() OWNER TO {job}")],
+            vec![format!("GRANT UPDATE ON game_character_roots TO {job}")],
+            vec![format!(
+                "GRANT TRUNCATE ON game_world_highscore_rows TO {job}"
+            )],
+            vec![format!(
+                "GRANT SELECT ON game_world_highscore_heads TO {job} WITH GRANT OPTION"
+            )],
+            vec![format!(
+                "GRANT UPDATE (name) ON game_character_roots TO {job}"
+            )],
+            vec![format!("GRANT USAGE ON SCHEMA {schema} TO {job}")],
+            vec![format!(
+                "ALTER DEFAULT PRIVILEGES IN SCHEMA {schema} GRANT SELECT ON TABLES TO {job}"
+            )],
+            vec![format!(
+                "CREATE POLICY {probe} ON game_character_roots TO {job} USING (true)"
+            )],
+            vec![format!("GRANT TEMPORARY ON DATABASE {database} TO {job}")],
+        ] {
+            guard_in_rollback(h, &statements, refusal).await?;
+        }
+        // A privilege that PUBLIC holds is not the group's own and passes.
+        guard_in_rollback(
+            h,
+            &[table, format!("GRANT SELECT ON {probe} TO PUBLIC")],
+            None,
+        )
+        .await?;
+        Ok(())
+    })
+}
+
+/// Page 1 of every (category, filter) list of the current snapshots.
+async fn every_list(h: &Harness) -> TestResult<Vec<(u64, Vec<SnapshotRow>)>> {
+    let mut lists = Vec::new();
+    for category in 1..=11 {
+        for filter in FILTERS {
+            let current = page(h, category, filter, 1, 0).await?;
+            lists.push((current.snapshot.snapshot_id, current.rows));
+        }
+    }
+    Ok(lists)
+}
+
+#[test]
+fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> TestResult {
+    run("hscutbound", async |h| {
+        let limits = |characters, page| {
+            CutLimits::tighter(characters, page).ok_or("tighter highscore cut limits")
+        };
+        // A fixture may only tighten the registered bounds, and a page holds at least one row.
+        assert_eq!(
+            CutLimits::tighter(CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS),
+            Some(CutLimits::REGISTERED)
+        );
+        assert!(CutLimits::tighter(CUT_CHARACTERS_MAX + 1, 1).is_none());
+        assert!(CutLimits::tighter(1, CUT_SOURCE_PAGE_ROWS + 1).is_none());
+        assert!(CutLimits::tighter(1, 0).is_none());
+        // A second account whose only live Character has vocation none: one eligible Character
+        // (the template knight) and two ranked accounts.
+        let rows = serde_json::to_string(&serde_json::json!([
+            {"id":hex(&generated(300)),"account":hex(&generated(500)),"level":60,"name":"Unchosen Rival"}
+        ]))?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
+            .bind(generated(500).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT x.id::uuid,x.account::uuid,r.world_id,1,1,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,x.name FROM jsonb_to_recordset($1::jsonb) AS x(id TEXT,account TEXT,name TEXT) CROSS JOIN game_character_roots r WHERE r.character_id=encode($2,'hex')::uuid")
+            .bind(&rows).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_progression_state SELECT (jsonb_populate_record(NULL::game_character_progression_state,to_jsonb(p)||jsonb_build_object('character_id',x.id,'character_revision',1,'level',x.level))).* FROM jsonb_to_recordset($1::jsonb) AS x(id TEXT,level BIGINT) CROSS JOIN game_character_progression_state p WHERE p.character_id=encode($2,'hex')::uuid")
+            .bind(&rows).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        // Two ranked accounts above a bound of one refuse the cut before anything is written.
+        let refused = h
+            .root
+            .refresh_highscore_world_within(world(), complete_catalogues()?, limits(1, 1)?)
+            .await;
+        assert!(
+            matches!(refused, Err(SnapshotError::CapacityExceeded)),
+            "{refused:?}"
+        );
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 0);
+        // Exactly at the bound, one row per page, the cut publishes both accounts.
+        let published = h
+            .root
+            .refresh_highscore_world_within(world(), complete_catalogues()?, limits(2, 1)?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(published.len(), 11);
+        assert_eq!(page(h, 10, None, 1, 0).await?.rows.len(), 2);
+        // Five more eligible Characters (six in all) cross several page boundaries of every
+        // source; the paged cut at its exact bound equals the registered cut.
+        dataset(h, 100, 5, "paladin", 1000, world()).await?;
+        h.root
+            .refresh_highscore_world_within(world(), complete_catalogues()?, limits(6, 4)?)
+            .await
+            .map_err(debug)?;
+        let paged = every_list(h).await?;
+        h.root
+            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        let registered = every_list(h).await?;
+        assert_eq!(
+            paged.iter().map(|(_, rows)| rows).collect::<Vec<_>>(),
+            registered.iter().map(|(_, rows)| rows).collect::<Vec<_>>()
+        );
+        assert_eq!(registered[0].1.len(), 6);
+        assert_eq!(registered[2].1.len(), 5);
+        // One Character above the bound refuses the whole cut; the current snapshots and the
+        // retained rows stay exactly as they were.
+        let snapshots = h.count("game_world_highscore_snapshots").await?;
+        let stored = h.count("game_world_highscore_rows").await?;
+        let refused = h
+            .root
+            .refresh_highscore_world_within(world(), complete_catalogues()?, limits(5, 2)?)
+            .await;
+        assert!(
+            matches!(refused, Err(SnapshotError::CapacityExceeded)),
+            "{refused:?}"
+        );
+        assert_eq!(every_list(h).await?, registered);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, snapshots);
+        assert_eq!(h.count("game_world_highscore_rows").await?, stored);
         Ok(())
     })
 }
