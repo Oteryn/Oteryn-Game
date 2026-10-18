@@ -1141,3 +1141,24 @@ These cases stay unqualified until that stack composes. Nothing here is skipped 
 four compiles. Activation (registration, migration from the first free number at or above 0124,
 harness enablement) belongs in one slot commit, after #2141 and #2147. The proposed owner of that slot is #2153 GUILDHALL-1.
 The composition order is in the #2136 status comment.
+
+## Completion + wiring (post-checkpoint)
+
+Evidence base: origin/main `c55a92b4`. The checkpoint was merged unfinished; nothing in the running game calls it. This PR carries the completion. It must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain referenced below: `apps/game-server/src/gameplay_transport/connection.rs` (command `else if` chain, about lines 2550-3017) and the `GATED` table in `apps/game-server/src/gameplay_transport/capabilities.rs` (highest capability id on main: 28). Wire modules live in `crates/protocol-oteryn/src/` (none exists for this mechanic).
+
+### Present on main (#2136)
+- `domain/guild.rs`, `durability/guild.rs`, `durability/guild_audit.rs`, `durability/guild_tests.rs`, `node/guild_jobs.rs` and `tests/guild_postgres.rs` exist but are **not registered**: no `mod guild` in `durability/mod.rs`, `domain/mod.rs` or `node/mod.rs`, and the PG harness is `#![cfg(any())]`, so CI compiles none of it. No guild migration exists. No wire, no job registration.
+- Per the card's last checkpoint (2026-10-17): the four modules (guild, Bank, Hall, House) import each other and compile only together; with #2137, #2139 and #2153 overlaid the lib checks and 101 of 104 PG cases pass; 3 `disband_terminal_tests` fail because House release SQL (`game_house_guild_reserve`) is missing.
+
+### Checklist
+- [ ] **Compose the stack** (one slot commit): land or merge in the dependency PRs (below), then register `guild`, `guild_audit`, `guild_jobs` modules in `durability/mod.rs`, `domain/mod.rs`, `node/mod.rs`; remove `#![cfg(any())]` from `tests/guild_postgres.rs` (or mount its cases from `character_authority_postgres.rs` per the PG-COVERAGE-1 pattern).
+- [ ] **Migration**: guild, rank, member, invitation, account-leadership, deadline/disband checkpoint tables, from the first free number at or above 0124, plus the House guild-fence ABI migration from #2141 (0121) it requires. Privileges for the game role.
+- [ ] **Runtime job hookup**: call `node::guild_jobs::run_guild_deadline_pass` and `run_guild_disband_pass` from a registered World job in `node/serve.rs` (node job list), with `NodeIncarnationProof` and reconciled authority; restart-safe checkpoints.
+- [ ] **Command transactions reachable from a session**: found, invite, join, leave, exclude, set rank, resign, edit ranks, disband, title/message (`commit_guild_*` in `durability/guild.rs`) invoked from a `gameplay_transport/guild.rs` handler; premium gate via `premium_current(account)`.
+- [ ] **Protocol**: new `crates/protocol-oteryn/src/guild.rs` with `CAPABILITY_GUILD_V1` (id above 28), commands, state domain; registries (`PROTOCOL_OTERYN_V1_REGISTRY.json`, `GAME_EVENT_FOUNDATION_REGISTRY.json` guild event with retention `GUILD_ACTIVITY_RETENTION_V1`, error codes). Draft #2159 GUILD-WIRE-1 holds the skeleton; reconcile ownership.
+- [ ] **Dispatch**: branch in `connection.rs`, `GATED` row in `capabilities.rs`.
+- [ ] **Consumers**: guild chat membership (`read_guild_chat_membership`, draft #2142), `combat/pvp/legality.rs` guild-mate checks, `native_admission_source/public_projections.rs` guild fields, GUILDHALL bid funding (#2153), sealed payout ports (#2139).
+- [ ] **Tests**: all 104 PG cases pass (no skips, including the 3 House-port cases); concurrent invite/join and leader resign; disband leaves no orphan rows; **end-to-end through `connection.rs` dispatch**: found, invite, join, rank change, resign/disband, capability-off refusal; deadline pass driven by the real job registration after restart.
+
+### Blockers and dependencies
+- HOUSE-1b #2141 (guild fence ABI + migration 0121), BED-1 #2147 (revision hook), HOUSE-1a #2137, GUILD-BANK-1 #2139, GUILDHALL-1 #2153 (proposed owner of the activation slot), GUILD-WIRE-1 #2159, GUILD-CHAT-1 #2142 (all open drafts).
