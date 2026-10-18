@@ -1226,7 +1226,9 @@ impl crate::durability::world_reset_port::WorldDrainWitness for ResetRunDrain {
 /// crash after one frozen candidate, a content entry of a Ground container: it resumes that
 /// exact identity, retires every content before its container and every Ground item,
 /// leaves the real HouseInterior custody untouched, activates epoch N+1 atomically within
-/// `MAP01-RESET-RETIRE-MS`, and a second boot finds no RETIRING reset.
+/// `MAP01-RESET-RETIRE-MS`, and a second boot finds no RETIRING reset. The map reset epoch
+/// boot hands its map consumers is 0 while the reset is RETIRING, then the activated record's
+/// N+1 on this boot and on the next.
 #[test]
 fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates() -> TestResult {
     let Some(admin) = configured_admin() else {
@@ -1319,6 +1321,7 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
             .await
             .map_err(debug)?;
         assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, Some(0));
+        assert_eq!(h.root.read_map_reset_epoch(world()?).await.map_err(debug)?, 0);
         let binding = h
             .root
             .read_world_drain_binding(&h.node, world()?)
@@ -1335,8 +1338,15 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
             run.retired,
             run.elapsed.as_millis()
         );
-        assert!(matches!(run.disposition, WorldResetActivationDisposition::NewEpoch(_)));
-        assert_eq!((run.reset_epoch, run.retired), (0, 5));
+        let WorldResetActivationDisposition::NewEpoch(activated) = &run.disposition else {
+            return Err("NewEpoch disposition".into());
+        };
+        assert_eq!((run.reset_epoch, activated.epoch, run.retired), (0, 1, 5));
+        // Boot hands the map consumers the activated epoch N+1, not epoch 0.
+        assert_eq!(
+            h.root.read_map_reset_epoch(world()?).await.map_err(debug)?,
+            activated.epoch
+        );
         assert!(run.within_budget());
         for retired in [first_content, second_content, corpse, stone, coin] {
             assert_eq!(h.item_state(retired).await?, (0, 2));
@@ -1382,6 +1392,8 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
             .map_err(debug)?
             .is_none());
         assert_eq!(footprint(&h).await?, after);
+        // The next boot's map consumers stay on N+1.
+        assert_eq!(h.root.read_map_reset_epoch(world()?).await.map_err(debug)?, 1);
         drop(authority);
         drop(seal);
         h.cleanup().await

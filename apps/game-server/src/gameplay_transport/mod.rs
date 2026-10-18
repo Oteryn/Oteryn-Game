@@ -210,13 +210,27 @@ pub(crate) async fn serve_listener<A, I, O>(
 /// listener: accepting stops and entry work is cancelled. Every served session then loses
 /// playable control at once and runs its whole loss and grace-release lifecycle, so its durable
 /// reconnect session ends. `completed` follows only once no connection or lifecycle remains.
+///
+/// It also carries the World's map reset epoch this serve lifetime binds, so the reset that
+/// drains this listener is the one after it.
 #[derive(Default)]
 pub struct GameplayDrain {
     requested: CancellationToken,
     completed: CancellationToken,
+    reset_epoch: u64,
 }
 
 impl GameplayDrain {
+    /// The drain of a listener whose map consumers are on World reset epoch `reset_epoch`, the
+    /// active epoch read at boot after reset recovery (N+1 after an activated reset). Domain 17
+    /// map views and their object handles bind it, so a handle of an earlier epoch is stale. The
+    /// default drain is on epoch 0, a World never reset.
+    pub fn at_reset_epoch(reset_epoch: u64) -> Self {
+        Self {
+            reset_epoch,
+            ..Self::default()
+        }
+    }
     pub fn request(&self) {
         self.requested.cancel();
     }
@@ -665,6 +679,7 @@ pub async fn serve_gameplay_draining(
             owners.world_id,
             owners.channel_id,
         ),
+        reset_epoch: drain.reset_epoch,
     };
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
@@ -905,6 +920,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel's spell lane (ARCH-SPELL-LOCK-2 §1.2): taken before `runtime` by every
     /// key-33 caller and never while a Channel guard is held.
     pub(crate) spell_lane: crate::durability::spell_owner_commit::SpellLane,
+    /// See [`GameplayDrain::at_reset_epoch`]; 0 on a World never reset.
+    pub(crate) reset_epoch: u64,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -3020,8 +3037,8 @@ fn operator_event(line: &str) {
 
 /// MAP-CUTOVER-1b: domain 17 of the bundle World `movement_cells` carry, at `actor`'s current
 /// position in `runtime`; `None` on a fixture World or when the actor has no current position.
-/// The overlay stays empty (§1.2) and the reset epoch is 0 until MAP-CUTOVER-1c. The node
-/// itself reads the position under the runtime lock and updates after release.
+/// The overlay stays empty (§1.2) and the map is on reset epoch 0. The node itself reads the
+/// position under the runtime lock, with its boot reset epoch, and updates after release.
 #[cfg(test)]
 fn bundle_world_map(
     runtime: &mut ChannelRuntimeV1,
@@ -3030,7 +3047,7 @@ fn bundle_world_map(
     view: &mut world_map::SessionMapView,
     items: &mut item_view::SessionItemView,
 ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
-    let at = bundle_map_position(runtime, movement_cells, actor)?;
+    let at = bundle_map_position(runtime, movement_cells, actor, 0)?;
     Some(at.update(view, items))
 }
 
@@ -3041,6 +3058,7 @@ struct BundleMapPosition<'a> {
     map: &'a crate::map::boot::BundleMap,
     at: ActorPosition,
     content_generation: [u8; 32],
+    reset_epoch: u64,
 }
 
 impl BundleMapPosition<'_> {
@@ -3056,18 +3074,19 @@ impl BundleMapPosition<'_> {
             overlay: &self.map.overlay,
             facts: &facts,
             content_generation: self.content_generation,
-            reset_epoch: 0,
+            reset_epoch: self.reset_epoch,
         };
         view.update(items, &source, self.at)
     }
 }
 
-/// The bundle map and `actor`'s current native position in `runtime`; `None` on a fixture World
-/// or when the actor has no current position.
+/// The bundle map and `actor`'s current native position in `runtime`, on map reset epoch
+/// `reset_epoch`; `None` on a fixture World or when the actor has no current position.
 fn bundle_map_position<'a>(
     runtime: &mut ChannelRuntimeV1,
     movement_cells: &'a NativeEntryMovementCells,
     actor: ExactActorRef,
+    reset_epoch: u64,
 ) -> Option<BundleMapPosition<'a>> {
     let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
         movement_cells.index()
@@ -3088,6 +3107,7 @@ fn bundle_map_position<'a>(
             floor: position.floor.checked_neg()?,
         },
         content_generation: runtime.content_pin().client_artifact_digest(),
+        reset_epoch,
     })
 }
 
@@ -3200,7 +3220,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
         let at = {
             let mut runtime = self.runtime.lock().await;
-            bundle_map_position(&mut runtime, self.movement_cells, actor)?
+            bundle_map_position(&mut runtime, self.movement_cells, actor, self.reset_epoch)?
         };
         Some(at.update(view, items))
     }

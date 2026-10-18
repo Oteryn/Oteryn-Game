@@ -240,6 +240,7 @@ impl Dependencies {
                 self.admitted.world_id,
                 self.admitted.channel_id,
             ),
+            reset_epoch: 0,
         }
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {

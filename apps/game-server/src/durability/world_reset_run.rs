@@ -47,6 +47,39 @@ impl WorldResetRun {
 }
 
 impl DurabilityRoot {
+    /// The reset epoch the World's map consumers bind (map view sources and their object
+    /// handles): the active epoch pointer, so after an activated reset it is N+1. Control
+    /// initializes the pointer at epoch 0 and only an activated reset advances it, so a World
+    /// without one has never been reset and its map stays on epoch 0. Read once at boot, after
+    /// reset recovery and before any Channel runtime; data only, it grants no reset authority.
+    pub(crate) async fn read_map_reset_epoch(
+        &self,
+        world: WorldId,
+    ) -> Result<u64, WorldResetError> {
+        let epoch: Option<String> = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    let epoch = sqlx::query_scalar(
+                        "SELECT reset_epoch::text FROM game_world_reset_active_epochs \
+                         WHERE world_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(world.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(epoch)
+                })
+            })
+            .await?;
+        epoch.map_or(Ok(0), |value| {
+            value
+                .parse()
+                .map_err(|_| WorldResetError::InvalidStoredState)
+        })
+    }
+
     /// The World's RETIRING reset epoch, if any. Data only: the census and every retirement
     /// recheck the job under their own locks.
     pub(crate) async fn read_retiring_world_reset(

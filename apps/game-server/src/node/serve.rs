@@ -1636,6 +1636,10 @@ const fn world_reset_refusal(error: &WorldResetError) -> &'static str {
 /// Channel and for every reconnect session to be released; any other refusal fails readiness
 /// (retryable) and the next boot resumes the same durable run. The House catalogues are the
 /// active qualified room's, so only a same-digest target can activate.
+///
+/// Returns the World's map reset epoch (`read_map_reset_epoch`) for the map consumers of this
+/// serve lifetime: N+1 after an activation here, which must equal the active pointer read
+/// afterwards, otherwise the epoch already active.
 async fn recover_world_reset(
     root: &DurabilityRoot,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -1643,13 +1647,13 @@ async fn recover_world_reset(
     world: WorldId,
     channel: ChannelId,
     wait: Duration,
-) -> Result<(), BootError> {
+) -> Result<u64, BootError> {
     let Some(epoch) = root
         .read_retiring_world_reset(world)
         .await
         .map_err(|_| BootError::Readiness("world reset read"))?
     else {
-        return Ok(());
+        return map_reset_epoch(root, world).await;
     };
     event(&format!(
         "event=world_reset state=resume reset_epoch={epoch}"
@@ -1671,7 +1675,7 @@ async fn recover_world_reset(
             Err(error) => Err(error),
         };
         match attempt {
-            Ok(None) => return Ok(()),
+            Ok(None) => return map_reset_epoch(root, world).await,
             Ok(Some(run)) => {
                 let elapsed_ms = run.elapsed.as_millis();
                 event(&format!(
@@ -1688,7 +1692,13 @@ async fn recover_world_reset(
                         "event=world_reset_alarm limit=MAP01-RESET-RETIRE-MS elapsed_ms={elapsed_ms} budget_ms={MAP01_RESET_RETIRE_MS}"
                     ));
                 }
-                return Ok(());
+                let (WorldResetActivationDisposition::NewEpoch(activated)
+                | WorldResetActivationDisposition::Historical(activated)) = &run.disposition;
+                let active = map_reset_epoch(root, world).await?;
+                if active != activated.epoch {
+                    return Err(BootError::Readiness("world reset activated epoch"));
+                }
+                return Ok(active);
             }
             Err(error @ (WorldResetError::NotCurrent | WorldResetError::Unavailable(_)))
                 if tokio::time::Instant::now() < deadline =>
@@ -1708,6 +1718,18 @@ async fn recover_world_reset(
             }
         }
     }
+}
+
+/// The map reset epoch of `world` once no reset is RETIRING; a failed read fails readiness.
+async fn map_reset_epoch(root: &DurabilityRoot, world: WorldId) -> Result<u64, BootError> {
+    let epoch = root
+        .read_map_reset_epoch(world)
+        .await
+        .map_err(|_| BootError::Readiness("world reset epoch read"))?;
+    event(&format!(
+        "event=world_reset state=map_epoch reset_epoch={epoch}"
+    ));
+    Ok(epoch)
 }
 
 /// Ends once the World has a RETIRING reset; read failures are retried on the next tick.
@@ -2586,8 +2608,9 @@ async fn boot_and_serve(
     let generation = assignment.ownership_generation;
     let fact = proof.fact();
     // MAP-OVERLAY-1c (ADR-0021 §4.7): a RETIRING World reset completes before this
-    // incarnation activates content or builds any Channel runtime.
-    if first(
+    // incarnation activates content or builds any Channel runtime. Its map consumers bind the
+    // resulting epoch (N+1 after a reset) for the whole serve lifetime.
+    let Some(reset_epoch) = first(
         recover_world_reset(
             root,
             &authority,
@@ -2600,11 +2623,10 @@ async fn boot_and_serve(
     )
     .await
     .transpose()?
-    .is_none()
-    {
+    else {
         stopped_before_ready();
         return Ok(());
-    }
+    };
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
     let (active_content, content) =
@@ -2864,7 +2886,8 @@ async fn boot_and_serve(
     let loops_stop = CancellationToken::new();
     // MAP-OVERLAY-1c (ADR-0021 §4.7 step 1): a RETIRING reset of this World drains the listener;
     // once every session is released the node stops and its next boot runs the reset.
-    let drain = GameplayDrain::default();
+    // Its map consumers bind the epoch boot recovery left active.
+    let drain = GameplayDrain::at_reset_epoch(reset_epoch);
     let mut gameplay = pin!(serve_gameplay_draining(
         &listener,
         listener_config,

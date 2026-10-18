@@ -55,6 +55,17 @@ merge_authority: CP_ONLY (builder never marks ready)
   entry's parent is a backpack slot item (FK), never Ground; the PG case asserts 23503.
   Such a row under a Ground root is refused as `InvalidStoredState` and the root is not
   attempted.
+- Codex P1 (reset epoch plumbing): `recover_world_reset` returns the World's map reset
+  epoch, read from the active epoch pointer (`read_map_reset_epoch`; no pointer means
+  never reset, epoch 0). After an activation it must equal the activated record's N+1,
+  otherwise readiness fails. Boot passes it in `GameplayDrain::at_reset_epoch`, and
+  `serve_gameplay_draining` binds it into the domain 17 map view source, so an epoch-0
+  object handle is stale after a reset. Doors resolve targets by digest, placement and
+  revision and do not read the epoch. The PG case asserts 0 while RETIRING, then N+1 = 1
+  after the run (equal to the `NewEpoch` record) and on the second boot. The new
+  `ComposedFreshAdmission` field forces `reset_epoch: 0` in two test-only constructors
+  outside owned_paths (`monk_save_postgres_tests.rs`, `kill_reward_postgres_e2e_tests.rs`);
+  this is a lead-directed compile fix, disclosed as a scope extension.
 - Spell lane pin: `world_reset_phase` (holds a `SpellLanePermit`) deletes corpse entries, so
   it is added to the reviewed key-33 inventory in `spell_lane_key33_pin.rs`.
 - Remaining fail-closed seams (not in this packet):
@@ -68,6 +79,11 @@ merge_authority: CP_ONLY (builder never marks ready)
     same-server-digest target activates.
   - A crash-left reconnect session in state 1 or 2 blocks the cohort until it is released.
   - The control-owned reset publisher is not built.
+  - `cross_domain_finding` (LOOP-GROUND-1, REPORT_ONLY): native map source-item receipts
+    (`game_native_map_item_receipts`, migration 0049, `native_map_items.rs`) are keyed
+    without a reset epoch. So a source item the reset retired is treated as a historical
+    replay and is not reminted on epoch N+1. Fixing it needs an epoch in the receipt key
+    (a migration) or a reset-time re-materialization, which is a LOOP-GROUND-1/CP decision.
   - `MAP01-RESET-RETIRE-MS` (600,000 ms) needs a real-data measurement.
 
 ## Current authoring checkpoint — D1260/D1269/D1270/D1272/D1283
