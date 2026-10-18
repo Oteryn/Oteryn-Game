@@ -1,0 +1,52 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "PREY-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "wiki:79924:1168706": {
+      "title": "Prey System",
+      "url": "https://tibia.fandom.com/wiki/Prey_System",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1168706",
+      "revid": 1168706,
+      "revision_timestamp": "2026-03-20T15:43:27Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "9c5cb60809a288b17ee01847ae87d6ee58c480c7873070d2778d9bff0ba5ff0a",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "repo:docs/reference/tibia-manual/combat.md": {
+      "path": "docs/reference/tibia-manual/combat.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/combat.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "ef518113d52cc089185c6472b23556d7aba74b714a74d3ef1d529f6dc03d1d62",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:86349:1090711": {
+      "title": "Prey System/Creature List",
+      "url": "https://tibia.fandom.com/wiki/Prey_System%2FCreature_List",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1090711",
+      "revid": 1090711,
+      "revision_timestamp": "2025-02-11T11:04:18Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "327fd4fc2650e3961dd8549f872a0b7670e7082da737648cae5a5062ccd66aad",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "wiki:109860:1187430": {
+      "title": "Task Board",
+      "url": "https://tibia.fandom.com/wiki/Task_Board",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1187430",
+      "revid": 1187430,
+      "revision_timestamp": "2026-05-26T22:45:44Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "54bb6e7c8d0702f68ea0b0c90b8dbdcb652b86bbe4127cb449059800b6518661",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    }
+  }
+}

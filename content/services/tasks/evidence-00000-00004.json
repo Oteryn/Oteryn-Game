@@ -1,0 +1,341 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "PREY-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "task_board.beginner",
+      "facts": {
+        "tier": {
+          "value": "Beginner",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "kill_count_range": {
+          "value": [
+            50,
+            100
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "bounty_points": {
+          "value": 3,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "reroll_tokens": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "experience_reward": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exact per-creature current XP reward formula qualified."
+        }
+      }
+    },
+    {
+      "key": "task_board.adept",
+      "facts": {
+        "tier": {
+          "value": "Adept",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "kill_count_range": {
+          "value": [
+            100,
+            200
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "bounty_points": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "reroll_tokens": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "experience_reward": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exact per-creature current XP reward formula qualified."
+        }
+      }
+    },
+    {
+      "key": "task_board.expert",
+      "facts": {
+        "tier": {
+          "value": "Expert",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "kill_count_range": {
+          "value": [
+            200,
+            400
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "bounty_points": {
+          "value": 16,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "reroll_tokens": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "experience_reward": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exact per-creature current XP reward formula qualified."
+        }
+      }
+    },
+    {
+      "key": "task_board.master",
+      "facts": {
+        "tier": {
+          "value": "Master",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "kill_count_range": {
+          "value": [
+            300,
+            600
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "bounty_points": {
+          "value": 27,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "reroll_tokens": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "experience_reward": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exact per-creature current XP reward formula qualified."
+        }
+      }
+    },
+    {
+      "key": "task_board.current_system",
+      "facts": {
+        "status": {
+          "value": "Hunting Task Points replaced by Task Board in Winter Update 2025.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Introduction"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "silver_multiplier": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "gold_multiplier": {
+          "value": 4,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:109860:1187430",
+              "selector": "Bounty Tasks"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "eligibility": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "DPL category queries must be resolved against current creature templates before claiming a complete eligible creature list."
+        }
+      }
+    }
+  ],
+  "family": "Service.TaskBoardEvidence",
+  "shard": {
+    "index": 0,
+    "start": 0,
+    "end": 4,
+    "count": 5
+  }
+}

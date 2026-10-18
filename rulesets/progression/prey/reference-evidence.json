@@ -1,0 +1,1870 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "PREY-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "prey.damage_boost.grade1",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 1,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 7,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade2",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 2,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 9,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade3",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 3,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 11,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade4",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 4,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 13,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade5",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 5,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 15,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade6",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 6,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 17,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade7",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 7,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 19,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade8",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 8,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 21,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade9",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 9,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 23,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_boost.grade10",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_boost",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 10,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 25,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade1",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 1,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 12,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade2",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 2,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 14,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade3",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 3,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 16,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade4",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 4,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 18,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade5",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 5,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 20,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade6",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 6,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 22,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade7",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 7,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade8",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 8,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 26,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade9",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 9,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 28,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.damage_reduction.grade10",
+      "facts": {
+        "bonus_type": {
+          "value": "damage_reduction",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 10,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 30,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade1",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 1,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 13,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade2",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 2,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 16,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade3",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 3,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 19,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade4",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 4,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 22,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade5",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 5,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 25,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade6",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 6,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 28,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade7",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 7,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 31,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade8",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 8,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 34,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade9",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 9,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 37,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.bonus_experience.grade10",
+      "facts": {
+        "bonus_type": {
+          "value": "bonus_experience",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 10,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 40,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade1",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 1,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 13,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade2",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 2,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 16,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade3",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 3,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 19,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade4",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 4,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 22,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade5",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 5,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 25,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade6",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 6,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 28,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade7",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 7,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 31,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade8",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 8,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 34,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade9",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 9,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 37,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.improved_loot.grade10",
+      "facts": {
+        "bonus_type": {
+          "value": "improved_loot",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses"
+            }
+          ],
+          "note": "Local key for the named source bonus."
+        },
+        "grade": {
+          "value": 10,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ten steps"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "value_percent": {
+          "value": 40,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Bonuses / ranges and steps"
+            }
+          ],
+          "note": "Arithmetic progression from the explicitly given minimum and increment."
+        }
+      }
+    },
+    {
+      "key": "prey.costs",
+      "facts": {
+        "list_reroll": {
+          "value": "150 * character_level gold",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Available Creatures"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "free_list_reroll_hours": {
+          "value": 20,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.9"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "free_select_wildcards": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.9"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "automatic_bonus_reroll_wildcards": {
+          "value": 1,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.9"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "lock_extension_wildcards": {
+          "value": 5,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.9"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "duration_hunting_hours": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.9"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "reroll_upgrade": {
+          "value": null,
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [
+            {
+              "source": "wiki:79924:1168706",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Current Wiki says wildcard always improves grade except max; official manual says value is at least current. Strict improvement and nondecrease are not equivalent."
+        }
+      }
+    }
+  ]
+}
