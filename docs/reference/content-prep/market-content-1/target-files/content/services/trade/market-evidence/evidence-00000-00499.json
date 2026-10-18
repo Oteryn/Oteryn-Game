@@ -73458,17 +73458,21 @@
       "key": "oteryn:item.tibia.i23517",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "CONTROLLED_UI_CAPTURE_NOT_FUTURE_SERVER_GUARANTEE",
           "sources": [
             {
-              "source": "wiki:78281:1016301",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:market:20261018:bona:i23517",
+              "selector": "Selected exact item / positive current server Buy or Sell rows"
+            },
+            {
+              "source": "official-client:15.33.9d148f:501594e8",
+              "selector": "object/id=23517/name and market trade_as_object_id/show_as_object_id; full object-family name uniqueness scan"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Positive live Market offers establish this item type as listable at capture time. Exact native-ID attribution uses the unique full-client display name and matching trade-as/show-as IDs. This does not prove eligibility of every individual instance or seller; all global and item-specific restrictions remain separately qualified."
         },
         "trade.market_category": {
           "value": "Creature Products",

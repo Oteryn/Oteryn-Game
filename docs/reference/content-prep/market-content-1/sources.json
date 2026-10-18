@@ -24848,6 +24848,1394 @@
       "selector": "ITEM_CATEGORY_NAMES",
       "fetched_at": "2026-10-18",
       "qualification": "Category labels normalize existing native tokens; only category numbers are direct client facts. Newer Quivers/Soul Cores/Fist labels are not claimed to have been read from the live Market window."
+    },
+    "official-ui:market:2026-10-18:controlled-session": {
+      "title": "Owner-authorized live official Tibia Market UI session, 2026-10-18",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "capture_start_utc": "2026-10-18T13:24:25Z",
+      "capture_end_utc": "2026-10-18T13:32:55Z",
+      "world_context": {
+        "world": "Bona",
+        "attribution": "Corroborated by a public TibiaData character lookup matching the owner-designated live character and visible level; not read from an in-client world selector. Character identity and lookup response are retained privately."
+      },
+      "filters": {
+        "category_selection": "No category selected; global search validated with Magic Plate Armor positive control",
+        "vocation": "All",
+        "tier": "Tier 0",
+        "show_locker_only": false,
+        "level_vocation_and_handedness_buttons": "Inactive"
+      },
+      "method": "Normal Market search and item-list selection followed by direct X11 framebuffer inspection. Read-only: no Accept, Create, My Offers or trade actions. Search substrings can return additional names; the selected item was visually checked before affirmative use.",
+      "name_binding_method": "Read-only full object-family scan of the identical installed appearance asset; affirmative native-ID mapping requires the exact selected name to occur once across all object IDs, plus self-consistent trade-as/show-as IDs. Duplicate names remain held.",
+      "name_scan_sha256": "6efdd066b01d61a24eb9feb9912aafa892fe7d4faedace6b49eaf7ef8c7c08b1",
+      "qualification": "Positive current server Buy/Sell rows establish observed type-level eligibility, not exhaustive instance predicates, seller permissions, stable prices or future server continuity. Empty results and empty offer panes never prove false. Screenshots, proprietary assets, account data, credentials and personal session details are not redistributed."
+    },
+    "official-ui:market:20261018:bona:positive-control": {
+      "title": "Live Market UI: magic plate armor",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:32:55Z",
+      "screenshot_sha256": "823ee4c785af4b137c61de85fca925cf8a766e302aa15fe78dd09f8898d5a397",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "magic plate armor",
+      "selected_display_name": "magic plate armor",
+      "native_name_matches": null,
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_SEARCH_CONTROL_NOT_TARGET_ID",
+      "literal_observation": "Magic Plate Armor positive control: selected item and current buy/sell rows are visible with the same filters.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i4852": {
+      "title": "Live Market UI: ectoplasm container",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:47Z",
+      "screenshot_sha256": "ca0f3af961089b7de1bbda09be976d9eae5dbfc1da6961b2865e16557b7483de",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "ectoplasm container",
+      "selected_display_name": "ectoplasm container",
+      "native_name_matches": [
+        131,
+        4852,
+        4853
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i4867": {
+      "title": "Live Market UI: botanist's container",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:51Z",
+      "screenshot_sha256": "544f3b0970b343a92635608b6def41f191610acbe0dd49f04089927b9f620bd5",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "botanist's container",
+      "selected_display_name": "botanist's container",
+      "native_name_matches": [
+        4867,
+        4868,
+        4869,
+        4870,
+        22704
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i5080": {
+      "title": "Live Market UI: panda teddy",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:23Z",
+      "screenshot_sha256": "5e74caacecf385e73dcc8b23f40826e18575027fd106b4cb05be32ee302b23da",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "panda teddy",
+      "selected_display_name": "panda teddy",
+      "native_name_matches": [
+        5080,
+        6568
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i5791": {
+      "title": "Live Market UI: stuffed dragon",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:26Z",
+      "screenshot_sha256": "2cadfc0758f4f97bb977d4b6378dda18ca49d7c65fc42eef18f61812b2597ca4",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "stuffed dragon",
+      "selected_display_name": "stuffed dragon",
+      "native_name_matches": [
+        5791,
+        6566
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i6092": {
+      "title": "Live Market UI: very noble-looking watch",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:40Z",
+      "screenshot_sha256": "fc0b47e85b026d277eaeb3bed6a78263d19278fdbaad883f391f113c9ce93a33",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "very noble-looking watch",
+      "selected_display_name": "very noble-looking watch",
+      "native_name_matches": [
+        6091,
+        6092
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i6572": {
+      "title": "Live Market UI: party trumpet",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:29Z",
+      "screenshot_sha256": "2529e3bfb0001efc4e9fd5522cee3fae0ef677b290637b200303e23bc573c988",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "party trumpet",
+      "selected_display_name": "party trumpet",
+      "native_name_matches": [
+        6572,
+        6573
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i9616": {
+      "title": "Live Market UI: bejeweled ship's telescope",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:44Z",
+      "screenshot_sha256": "5c8c6bf40a160728a55165abd281316f60df9d72693ab5e75c61039ee8ed86fc",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "bejeweled ship's telescope",
+      "selected_display_name": "bejeweled ship's telescope",
+      "native_name_matches": [
+        9616,
+        9617,
+        9618,
+        9619
+      ],
+      "positive_offer_sides": null,
+      "review_result": "HELD_AMBIGUOUS_NATIVE_VARIANT",
+      "literal_observation": "Query and selected display name are visible, but the appearance asset contains multiple native IDs with this exact name. No native-ID tradeability conclusion is admitted.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i23517": {
+      "title": "Live Market UI: solid rage",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:32:47Z",
+      "screenshot_sha256": "e42b2c19d4aa30d21cc786aa683239a17eeb76b1415290d9b0417ab5a9353cd9",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "solid rage",
+      "selected_display_name": "solid rage",
+      "native_name_matches": [
+        23517
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item solid rage; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i25689": {
+      "title": "Live Market UI: golden brush",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:10Z",
+      "screenshot_sha256": "d957c2bc9353f351b160335ba45b5d228aeecc45400b30cd0c75c41001815e65",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "golden brush",
+      "selected_display_name": "golden brush",
+      "native_name_matches": [
+        25689
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item golden brush; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i29348": {
+      "title": "Live Market UI: poison gland",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:03Z",
+      "screenshot_sha256": "9635ed0bc1e72a0b2418640e216aa72ca4822473d40eee0dd57c4f3e012da53b",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "poison gland",
+      "selected_display_name": "poison gland",
+      "native_name_matches": [
+        29348
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item poison gland; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i32010": {
+      "title": "Live Market UI: meat hammer",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:24:39Z",
+      "screenshot_sha256": "ed7dc057b344410214af0e4f8ffc2097ef18565b1c1bb79595f64850ec666545",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "meat hammer",
+      "selected_display_name": "meat hammer",
+      "native_name_matches": [
+        32010
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item meat hammer; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i32011": {
+      "title": "Live Market UI: milk churn",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:07Z",
+      "screenshot_sha256": "d35c041ef1682b59fec184314111543c393d538ca57f675012c3e0a1832ccab4",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "milk churn",
+      "selected_display_name": "milk churn",
+      "native_name_matches": [
+        32011
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item milk churn; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i37613": {
+      "title": "Live Market UI: Morshabaal's brain",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:24:46Z",
+      "screenshot_sha256": "f27871b8c4638a64120b850563456b5bc5df91b433bdba81bd697c23a143af51",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "Morshabaal's brain",
+      "selected_display_name": "Morshabaal's brain",
+      "native_name_matches": [
+        37613
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item Morshabaal's brain; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i37810": {
+      "title": "Live Market UI: Morshabaal's extract",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:24:49Z",
+      "screenshot_sha256": "c9135171650971a34df23c59b8b8216a1f05e97389fdf6326c0700866662c80e",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "Morshabaal's extract",
+      "selected_display_name": "Morshabaal's extract",
+      "native_name_matches": [
+        37810
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item Morshabaal's extract; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39037": {
+      "title": "Live Market UI: cobalt ridge",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:13Z",
+      "screenshot_sha256": "177c6caf00c99ed6e8690e1411e0694294107a83e58246a603b5d13a47e58845",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "cobalt ridge",
+      "selected_display_name": "cobalt ridge",
+      "native_name_matches": [
+        39037
+      ],
+      "positive_offer_sides": [],
+      "review_result": "HELD_NO_POSITIVE_LISTING",
+      "literal_observation": "Matching item is present in the client catalog, but both server offer panes are empty in this capture. This does not prove nonmarketability.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39038": {
+      "title": "Live Market UI: royal almandine",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:16Z",
+      "screenshot_sha256": "0af80dce40e952f0f6c6886bb341800679a26391362951f7e00e435625179d70",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "royal almandine",
+      "selected_display_name": "royal almandine",
+      "native_name_matches": [
+        39038
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item royal almandine; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39040": {
+      "title": "Live Market UI: fiery tear",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:19Z",
+      "screenshot_sha256": "2682ae59bdf6cf6b03e2ab8a410cf3647415387426957415e65cd75372111a45",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "fiery tear",
+      "selected_display_name": "fiery tear",
+      "native_name_matches": [
+        39040
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item fiery tear; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39375": {
+      "title": "Live Market UI: sulphider shell",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:01Z",
+      "screenshot_sha256": "ed894471757ddcf4305d0a857ea6402af3046fb3424d966c508b732ac3925455",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "sulphider shell",
+      "selected_display_name": "sulphider shell",
+      "native_name_matches": [
+        39375
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item sulphider shell; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39376": {
+      "title": "Live Market UI: sulphur powder",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:32:51Z",
+      "screenshot_sha256": "3d13cd0cb8afe458dafbece9e194906eef1d879b72505f6c3db804a31a0bc939",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "sulphur powder",
+      "selected_display_name": "sulphur powder",
+      "native_name_matches": [
+        39376
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item sulphur powder; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39377": {
+      "title": "Live Market UI: gore horn",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:04Z",
+      "screenshot_sha256": "88cba6ef8615a689c0bed92fe71ed9c5f7a269c7cc0a08c9fad81080566262e7",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "gore horn",
+      "selected_display_name": "gore horn",
+      "native_name_matches": [
+        39377
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item gore horn; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39378": {
+      "title": "Live Market UI: sabretooth fur",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:08Z",
+      "screenshot_sha256": "5619b3ca3e9c7639926a07bcc376aa57171b506826d27d6277d367ed327a0071",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "sabretooth fur",
+      "selected_display_name": "sabretooth fur",
+      "native_name_matches": [
+        39378
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item sabretooth fur; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39379": {
+      "title": "Live Market UI: emerald tortoise shell",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:11Z",
+      "screenshot_sha256": "3a7354fcca100b40161e97082442ca1de6f1f2af2d24ac3759bd0b1b0c8f1604",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "emerald tortoise shell",
+      "selected_display_name": "emerald tortoise shell",
+      "native_name_matches": [
+        39379
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item emerald tortoise shell; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39380": {
+      "title": "Live Market UI: undertaker fangs",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:24:25Z",
+      "screenshot_sha256": "0b308398f0af1fe3f4d67521c35bc4cadcdc8e3ab0a465458fd2e51b52b98e7c",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "undertaker fangs",
+      "selected_display_name": "undertaker fangs",
+      "native_name_matches": [
+        39380
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item undertaker fangs; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39381": {
+      "title": "Live Market UI: nighthunter wing",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:14Z",
+      "screenshot_sha256": "1335905b16db1bc43b15a6a69ad5c1b3672533c289606bd862b4e9b2ba53203b",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "nighthunter wing",
+      "selected_display_name": "nighthunter wing",
+      "native_name_matches": [
+        39381
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item nighthunter wing; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39382": {
+      "title": "Live Market UI: prehemoth horns",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:18Z",
+      "screenshot_sha256": "b29c8faae101e4f99018a12c2dd9192c1f67aa8d65d69190036702fafd1228c2",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "prehemoth horns",
+      "selected_display_name": "prehemoth horns",
+      "native_name_matches": [
+        39382
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item prehemoth horns; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39383": {
+      "title": "Live Market UI: prehemoth claw",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:21Z",
+      "screenshot_sha256": "113e56ac90d94d0590341b062743a50a296a044dc0101a9ba00fd07da1aac843",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "prehemoth claw",
+      "selected_display_name": "prehemoth claw",
+      "native_name_matches": [
+        39383
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item prehemoth claw; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39386": {
+      "title": "Live Market UI: mantosaurus jaw",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:24Z",
+      "screenshot_sha256": "8f0486c539cd898adae125dd2284aaea928f88a8adb40378525ee8a9a8b0705b",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "mantosaurus jaw",
+      "selected_display_name": "mantosaurus jaw",
+      "native_name_matches": [
+        39386
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item mantosaurus jaw; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39387": {
+      "title": "Live Market UI: headpecker beak",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:27Z",
+      "screenshot_sha256": "fa54d81ec84d91b838471e62a310c7dbf8a144a2381ba62a1d4c5227aee543bd",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "headpecker beak",
+      "selected_display_name": "headpecker beak",
+      "native_name_matches": [
+        39387
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item headpecker beak; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39388": {
+      "title": "Live Market UI: headpecker feather",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:31Z",
+      "screenshot_sha256": "c236dd7eddd7863e44bab533a56bcae155b39d48664493e44c3372f115f137a2",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "headpecker feather",
+      "selected_display_name": "headpecker feather",
+      "native_name_matches": [
+        39388
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item headpecker feather; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39389": {
+      "title": "Live Market UI: ripptor claw",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:34Z",
+      "screenshot_sha256": "21f5f003e5f71435dcbf5d201972c8ed7e8f47b5a76e4a834bacfbdf29a45996",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "ripptor claw",
+      "selected_display_name": "ripptor claw",
+      "native_name_matches": [
+        39389
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item ripptor claw; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39391": {
+      "title": "Live Market UI: ripptor scales",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:38Z",
+      "screenshot_sha256": "e93348a3ae3dab4d885dcb68c6e4f92b4c8159440c560455936ed2d074ec70e0",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "ripptor scales",
+      "selected_display_name": "ripptor scales",
+      "native_name_matches": [
+        39391
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item ripptor scales; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39392": {
+      "title": "Live Market UI: gorerilla mane",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:24:29Z",
+      "screenshot_sha256": "440a8d7a106858f602d859eaad56e6e8c8a30bdaf802f6b053d6e5b08e4c5032",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "gorerilla mane",
+      "selected_display_name": "gorerilla mane",
+      "native_name_matches": [
+        39392
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item gorerilla mane; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39393": {
+      "title": "Live Market UI: gorerilla tail",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:42Z",
+      "screenshot_sha256": "1c5d7914b22d66e608ba29f912c3c56e357d652573b5eb49a98260da473f692e",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "gorerilla tail",
+      "selected_display_name": "gorerilla tail",
+      "native_name_matches": [
+        39393
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item gorerilla tail; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39394": {
+      "title": "Live Market UI: cry-stal",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:45Z",
+      "screenshot_sha256": "f49e6148c98cfe4485e96580238aacf799a8844a8918b4d97df9b436b76f9579",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "cry-stal",
+      "selected_display_name": "cry-stal",
+      "native_name_matches": [
+        39394
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item cry-stal; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39395": {
+      "title": "Live Market UI: mercurial wing",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:48Z",
+      "screenshot_sha256": "d5f82b798e81b9639499f224b2860478dec57dbb7775fcc255fe310bf71495f7",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "mercurial wing",
+      "selected_display_name": "mercurial wing",
+      "native_name_matches": [
+        39395
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item mercurial wing; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39399": {
+      "title": "Live Market UI: one of Timira's many heads",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:52Z",
+      "screenshot_sha256": "0ef7850e12868ec3378c08f27f71ff8bc0d202b26e0e15d05aa930e59e306d54",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "one of Timira's many heads",
+      "selected_display_name": "one of Timira's many heads",
+      "native_name_matches": [
+        39399
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item one of Timira's many heads; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39400": {
+      "title": "Live Market UI: piece of Timira's sensors",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:56Z",
+      "screenshot_sha256": "4c173580da9f26ab3857479bfcc83408cc8af26198c281ddc6fca269d81e251f",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "piece of Timira's sensors",
+      "selected_display_name": "piece of Timira's sensors",
+      "native_name_matches": [
+        39400
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item piece of Timira's sensors; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39401": {
+      "title": "Live Market UI: makara fin",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:26:59Z",
+      "screenshot_sha256": "7d3e68c4300c4a151b86b2ab4f7b024495162879c475d54b755bc27ae564c990",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "makara fin",
+      "selected_display_name": "makara fin",
+      "native_name_matches": [
+        39401
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item makara fin; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39402": {
+      "title": "Live Market UI: makara tongue",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:02Z",
+      "screenshot_sha256": "19cd174d1627968b796c31e971374afbccedc8f96b5377861df91c7469f8458d",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "makara tongue",
+      "selected_display_name": "makara tongue",
+      "native_name_matches": [
+        39402
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item makara tongue; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39403": {
+      "title": "Live Market UI: jungle moa feather",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:06Z",
+      "screenshot_sha256": "67167f2a13f6517ee3ba47bf027c1e9dd4e8dd71adaf7970324e15167bbb101d",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "jungle moa feather",
+      "selected_display_name": "jungle moa feather",
+      "native_name_matches": [
+        39403
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item jungle moa feather; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39404": {
+      "title": "Live Market UI: jungle moa claw",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:09Z",
+      "screenshot_sha256": "129a37ea2f4014ad4bd8f6b2c34b45299a1dae0a6295d48404113a3aa1e0eb92",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "jungle moa claw",
+      "selected_display_name": "jungle moa claw",
+      "native_name_matches": [
+        39404
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item jungle moa claw; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39405": {
+      "title": "Live Market UI: jungle moa egg",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:13Z",
+      "screenshot_sha256": "ab631ea6be4cecaaa87e2159c196210cb0d082115b8888e026eb212768346df6",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "jungle moa egg",
+      "selected_display_name": "jungle moa egg",
+      "native_name_matches": [
+        39405
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item jungle moa egg; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39406": {
+      "title": "Live Market UI: coral branch",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:16Z",
+      "screenshot_sha256": "881232d8940cd14ea9865714245a470874eff5dfc593c2c42f952b55ed0af845",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "coral branch",
+      "selected_display_name": "coral branch",
+      "native_name_matches": [
+        39406
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item coral branch; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39407": {
+      "title": "Live Market UI: flotsam",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:19Z",
+      "screenshot_sha256": "e989e38b1d618b21f1be1d5d8eb9a58073a53cc7c0850f38c81a1a7de020cf19",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "flotsam",
+      "selected_display_name": "flotsam",
+      "native_name_matches": [
+        39407
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item flotsam; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39408": {
+      "title": "Live Market UI: small tropical fish",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:22Z",
+      "screenshot_sha256": "c5fbd3442366da9230e2df0ee90bf009baac866083a28c7a231d21ead600556a",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "small tropical fish",
+      "selected_display_name": "small tropical fish",
+      "native_name_matches": [
+        39408
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item small tropical fish; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39409": {
+      "title": "Live Market UI: two-headed turtle heads",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:25Z",
+      "screenshot_sha256": "79f5cc1ebe4514e64daf7395f41d4046fb125f14de9cdb02de4d62e3d7dd7aac",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "two-headed turtle heads",
+      "selected_display_name": "two-headed turtle heads",
+      "native_name_matches": [
+        39409
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item two-headed turtle heads; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39410": {
+      "title": "Live Market UI: hydrophytes",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:28Z",
+      "screenshot_sha256": "4913b2fd232facce84f9b324febf4b9f559f7c1e75f5075f6e76cca33bb8b0df",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "hydrophytes",
+      "selected_display_name": "hydrophytes",
+      "native_name_matches": [
+        39410
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item hydrophytes; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39414": {
+      "title": "Live Market UI: naga warrior scales",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:32Z",
+      "screenshot_sha256": "8fa113fec4afd0939c5808f5f1328c382a69c292bc4c327f8d5a608e44ae0f08",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "naga warrior scales",
+      "selected_display_name": "naga warrior scales",
+      "native_name_matches": [
+        39414
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item naga warrior scales; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39415": {
+      "title": "Live Market UI: corrupt naga scales",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:35Z",
+      "screenshot_sha256": "1d2aef7306f05ba5d738a3f0470fda82d34c9718e5f3e281e67efc3eb3d6410f",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "corrupt naga scales",
+      "selected_display_name": "corrupt naga scales",
+      "native_name_matches": [
+        39415
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item corrupt naga scales; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39416": {
+      "title": "Live Market UI: rogue naga scales",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:38Z",
+      "screenshot_sha256": "112b7dd071676e4aa0bb41008dd98b3ec2f9f317049f543a92c02664d8464335",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "rogue naga scales",
+      "selected_display_name": "rogue naga scales",
+      "native_name_matches": [
+        39416
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item rogue naga scales; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39417": {
+      "title": "Live Market UI: parder tooth",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:42Z",
+      "screenshot_sha256": "740c45fa9d0fad55ccc61f53b570d7f14520e95afe1f52e56347caa7575e3d16",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "parder tooth",
+      "selected_display_name": "parder tooth",
+      "native_name_matches": [
+        39417
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item parder tooth; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39418": {
+      "title": "Live Market UI: parder fur",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:45Z",
+      "screenshot_sha256": "06c6ceb923c6d75a7aea8ba7b140d4560b7f4a4e8b5dd9fb038e97fa70f0282f",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "parder fur",
+      "selected_display_name": "parder fur",
+      "native_name_matches": [
+        39418
+      ],
+      "positive_offer_sides": [
+        "buy",
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item parder fur; at least one nonempty current server row is visible in buy and sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39543": {
+      "title": "Live Market UI: smoldering eye",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:27:49Z",
+      "screenshot_sha256": "b2eb4024e956f90c45bbae4b825c46dc7cef8ecd966a4e8d7698e9ef12b35964",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "smoldering eye",
+      "selected_display_name": "smoldering eye",
+      "native_name_matches": [
+        39543
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item smoldering eye; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i39577": {
+      "title": "Live Market UI: bag with naga eggs",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:24:32Z",
+      "screenshot_sha256": "0f6a217e431b89b4c589b681508eaec9aa49e4ab1a810026bc35d2e20c468fb2",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "bag with naga eggs",
+      "selected_display_name": null,
+      "native_name_matches": [
+        39577
+      ],
+      "positive_offer_sides": [],
+      "review_result": "HELD_NO_QUERY_RESULT",
+      "literal_observation": "This captured query has no displayed item-list result. Absence from one query is not a negative eligibility receipt.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i50171": {
+      "title": "Live Market UI: jo staff",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:32:43Z",
+      "screenshot_sha256": "733836442d57c8d2cbbdfb91baf3f134791f17efcbad01052def7ca762258f56",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "jo staff",
+      "selected_display_name": "jo staff",
+      "native_name_matches": [
+        50171
+      ],
+      "positive_offer_sides": [],
+      "review_result": "HELD_NO_POSITIVE_LISTING",
+      "literal_observation": "Matching item is present in the client catalog, but both server offer panes are empty in this capture. This does not prove nonmarketability.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i50269": {
+      "title": "Live Market UI: legs of enlightenment",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:37Z",
+      "screenshot_sha256": "6617e8bdafcefcb37eec37b550a272a8e6afb92666170d5250ae13caf41a6c8e",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "legs of enlightenment",
+      "selected_display_name": "legs of enlightenment",
+      "native_name_matches": [
+        50269
+      ],
+      "positive_offer_sides": [
+        "buy"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item legs of enlightenment; at least one nonempty current server row is visible in buy offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:market:20261018:bona:i51119": {
+      "title": "Live Market UI: simple jo staff",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:market:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T13:29:33Z",
+      "screenshot_sha256": "8ecc80bc09f7779df5a53582af19af4a2ad2b281f93dd0bf6ad27c545528a2bd",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "simple jo staff",
+      "selected_display_name": "simple jo staff",
+      "native_name_matches": [
+        51119
+      ],
+      "positive_offer_sides": [
+        "sell"
+      ],
+      "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
+      "literal_observation": "Selected exact item simple jo staff; at least one nonempty current server row is visible in sell offers.",
+      "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
     }
   }
 }

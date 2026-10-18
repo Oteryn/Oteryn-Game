@@ -2,9 +2,9 @@
   "task": "MARKET-CONTENT-1",
   "review_date": "2026-10-18",
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "SUPPLEMENTAL_SOURCES_EXTRACTED_REMAINING_FIELDS_EXPLICIT",
+  "research_status": "CONTROLLED_UI_SUPPLEMENT_WITH_REMAINING_FIELDS_EXPLICIT",
   "runtime_admission": "BLOCKED",
-  "coverage": "All 324 original trade services and 2076 distinct offered Item identities remain covered. Fresh read-only extraction from the owner-installed CipSoft client 15.33.9d148f (appearance SHA256 501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f) supplies 1868 positive category/display observations, including trade-as/show-as identity and level/profession filters where explicitly present. A market submessage is not proof of server listing permission. Current own-ID Wiki tradeability, explicit non-portable exclusions and inapplicable categories are distinguished. Complete state-dependent listing predicates remain held where unavailable.",
+  "coverage": "All 324 original trade services and 2076 distinct offered Item identities remain covered. Fresh read-only extraction from the owner-installed CipSoft client 15.33.9d148f (appearance SHA256 501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f) supplies 1868 positive category/display observations, including trade-as/show-as identity and level/profession filters where explicitly present. A market submessage is not proof of server listing permission. Current own-ID Wiki tradeability, explicit non-portable exclusions and inapplicable categories are distinguished. Complete state-dependent listing predicates remain held where unavailable. Controlled owner-authorized official-client Market observations on 2026-10-18 resolve 47 previously UNKNOWN trade.marketable fields. Each admitted native ID has positive current server Buy/Sell rows, an exact selected display name unique across the complete installed appearance object family, and matching trade-as/show-as IDs. The live Linux client version and appearance digest match the existing 15.33.9d148f evidence. 57 target queries plus a Magic Plate Armor positive control were visually reviewed. Seven duplicate-name identities, two empty-listing identities and one absent query result remain held. Solid Rage returned positive listings on the repeated check; its earlier empty result was never promoted to a negative fact. No trades were performed, and no price, balance, character identity, screenshot, proprietary asset or credential is redistributed. Exhaustive item-instance predicates and runtime admission remain held.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/market-content-1/listing-restrictions.json": 1,
@@ -18,8 +18,8 @@
   "evidence_field_counts": {
     "PROVEN": 5634,
     "CONFLICT": 1,
-    "DERIVED": 9251,
-    "UNKNOWN": 2300
+    "DERIVED": 9298,
+    "UNKNOWN": 2253
   },
   "unresolved_fields": [
     {
@@ -4873,18 +4873,6 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00000-00499.json/records/493/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:78281:1016301",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00000-00499.json/records/493/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6071,18 +6059,6 @@
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/79/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:81690:1115738",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/79/facts/trade.per_item_restrictions",
@@ -7705,18 +7681,6 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/250/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:86850:1115919",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/250/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
@@ -9316,35 +9280,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/429/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:89635:1136242",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/429/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/430/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:89632:1013868",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/430/facts/trade.per_item_restrictions",
@@ -13427,35 +13367,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/401/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:95997:1013948",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/401/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/402/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:96286:1208148",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/402/facts/trade.per_item_restrictions",
@@ -13484,35 +13400,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/404/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98624:1076818",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/404/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/405/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98628:1096525",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/405/facts/trade.per_item_restrictions",
@@ -13592,35 +13484,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/408/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98661:1203160",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/408/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/409/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98663:1203161",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/409/facts/trade.per_item_restrictions",
@@ -13630,35 +13498,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/410/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98793:1202981",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/410/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/411/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98665:1203111",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/411/facts/trade.per_item_restrictions",
@@ -13668,35 +13512,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/412/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98667:1202942",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/412/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/413/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98669:1203178",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/413/facts/trade.per_item_restrictions",
@@ -13706,18 +13526,6 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/414/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98671:1203067",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/414/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
@@ -13725,35 +13533,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/415/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98673:1203087",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/415/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/416/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98675:1203088",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/416/facts/trade.per_item_restrictions",
@@ -13770,35 +13554,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/418/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98681:1203045",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/418/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/419/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98683:1202994",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/419/facts/trade.per_item_restrictions",
@@ -13808,35 +13568,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/420/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98685:1202996",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/420/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/421/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98687:1203103",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/421/facts/trade.per_item_restrictions",
@@ -13846,35 +13582,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/422/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98689:1203102",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/422/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/423/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98691:1202983",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/423/facts/trade.per_item_restrictions",
@@ -13884,35 +13596,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/424/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98693:1202984",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/424/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/425/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98695:1202894",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/425/facts/trade.per_item_restrictions",
@@ -13922,35 +13610,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/426/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98697:1203047",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/426/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/427/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98702:1014207",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/427/facts/trade.per_item_restrictions",
@@ -13960,35 +13624,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/428/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98704:943999",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/428/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/429/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98706:1203040",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/429/facts/trade.per_item_restrictions",
@@ -13998,35 +13638,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/430/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98708:1203041",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/430/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/431/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98710:944043",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/431/facts/trade.per_item_restrictions",
@@ -14036,35 +13652,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/432/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98711:944014",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/432/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/433/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98712:943998",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/433/facts/trade.per_item_restrictions",
@@ -14074,35 +13666,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/434/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98713:1202889",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/434/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/435/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98714:1202962",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/435/facts/trade.per_item_restrictions",
@@ -14112,18 +13680,6 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/436/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98715:1203136",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/436/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
@@ -14131,35 +13687,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/437/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98716:1203177",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/437/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/438/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98717:1203007",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/438/facts/trade.per_item_restrictions",
@@ -14190,35 +13722,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/442/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98724:1203062",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/442/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/443/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98726:944067",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/443/facts/trade.per_item_restrictions",
@@ -14228,35 +13736,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/444/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98728:943951",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/444/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/445/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98730:943942",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/445/facts/trade.per_item_restrictions",
@@ -14266,35 +13750,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/446/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98732:944090",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/446/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/447/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98734:1016253",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/447/facts/trade.per_item_restrictions",
@@ -15476,13 +14936,6 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/69/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/69/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
@@ -15599,13 +15052,6 @@
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/80/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/80/facts/trade.per_item_restrictions",

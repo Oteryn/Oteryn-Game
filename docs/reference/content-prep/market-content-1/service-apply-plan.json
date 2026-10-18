@@ -8,22 +8,22 @@
     {
       "target_path": "content/services/trade/market-evidence/evidence-00000-00499.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00000-00499.json",
-      "sha256": "7e141f4dedf5dd0a25f3523bb435150f1b2467ecd2ce75a2dcdfb569876533c5"
+      "sha256": "6d397180042f78e31af266f4bcd5663ba7a03fc2aa18cfc2f3d07b2764656b43"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-00500-00999.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json",
-      "sha256": "305d39ad9c5ecb47417b89c15d92cd660006f290f6b8b404117adab309d78474"
+      "sha256": "7d6de1f10dd551226d04cf7c9858d1eb950eff6df703b07b216dd7b1f3971878"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-01000-01499.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json",
-      "sha256": "378412a15eadd5b6a00526425770407ecdd6d8545ae70b896da69a0314c3439f"
+      "sha256": "e3e971de5acb01b381a14379c624eb4557d9c8ab5be4ed77c49b4e2818855664"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-01500-01999.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json",
-      "sha256": "73c8309794a4deed9532172e9e7663f4404fa8542ede734a3a8b22dddf2fd3c7"
+      "sha256": "c214d54a42835a81cc48c73b54c323380693b7e71c8796a9bc9dbefb7394cb82"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-02000-02075.json",
