@@ -4,7 +4,7 @@
 task_id: ADMIT-CAP-1
 title: "ADMIT-CAP-1: World capability admission authority (skeleton)"
 mode: IMPLEMENT
-status: NOT_FULLY_QUALIFIED
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/admit-cap-1
@@ -19,7 +19,7 @@ owner: Admission family I (user-delegated; CP D1081-D1084)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
 updated_at: 2026-10-18
-candidate_state: AUTHORING
+candidate_state: READY_FOR_REVIEW
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/world_required_capabilities.rs (new)
@@ -41,7 +41,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs (module, owner fields, fresh admit check only)
   - apps/game-server/src/gameplay_transport/capabilities.rs (D1442 constants and gated rows only)
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs (ADMIT0 transport cases only)
-  - apps/game-server/src/gameplay_transport/qualification.rs (owner binding only)
+  - apps/game-server/src/gameplay_transport/qualification.rs (owner binding; D1452 seam capability stages)
   - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (owner binding only)
   - apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs (owner binding only)
   - apps/game-server/tests/wp5_s3b_composition.rs (commit capability argument only)
@@ -51,12 +51,14 @@ owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json (ADMIT0-RL-01)
   # 2026-10-18 CI follow-up (lead; D1324 canonical mount, PG-COVERAGE-1).
   - apps/game-server/tests/durability_postgres.rs (world_required_capabilities cases mount only)
+  # 2026-10-18 D1452 (lead): owned_paths widened to what the wiring and its CI-lane e2e need.
+  # Used: qualification.rs seam capability stages and node_boot/run.sh required set (both listed above).
 slot_only_paths: []
 public_contracts: []
 depends_on:
   - "ADMIT0 decision ACCEPTED: satisfied on main e2da9805 via ACCEPT-BATCH-2026-10-15"
   - "D1083 resolves map successor WORLD_MAP_VIEW_V1=18 and closed WORLD_INTERACTION_V1=11; FIELD has no ID and stays excluded until registered/offered"
-  - "D1322: A2 slot after #2197 and #2181 merge, reconciled against then-current main and shared-file order below"
+  - "D1322: A2 slot after #2197 and #2181 merge, reconciled against then-current main and shared-file order below (satisfied 2026-10-18: A2 hand-authored on the main merge, D1442/D1452)"
   - "D1324: canonical PostgreSQL aggregate mount after #2181 merges; CP alone writes the Cargo test=false entry"
   - "D1442: MAP_STATE_V1=29 and WORLD_SPATIAL_FIELDS=30 take the next free registry numbers (next_unallocated 31)"
 blocks: []
@@ -146,14 +148,61 @@ which main's durability NPC travel fixture needs.
 - **Owner answers (lead).** Registry ID 29 (`MAP_STATE_V1`) stays reserved and is never
   offered. The 1117 `RECONNECT_CAPABILITY_REQUIRED` caller belongs to lane G2.
 
+**D1452 completion (2026-10-18, head after `b95e9aa3`).** Lead: finish the card in this PR.
+- **A2 integration: done.** The A2 hunks are hand-authored in this PR (D1442 packet above),
+  not a later slot. D1322's ordering preconditions held: #2197 and #2181 are on main, and this
+  branch carries the main merge `c3a1adab`. The frozen bundle below stays recovery data only.
+- **Runtime/registry acceptance (live login path).**
+  - Config: `node/config.rs` `ReadinessConfig::required_gameplay_capabilities` is a required
+    key, validated by `validate_declared`.
+  - Boot: `node/serve.rs` `BoundRequiredCapabilities::for_channel_boot` binds it to scope,
+    generation, policy and the real `offered_for_scope` offer before readiness.
+    `GameplaySeamOwners.required_capabilities` hands it to `serve_gameplay`.
+  - Admission: `gameplay_transport/connection.rs` passes the bootstrap's
+    `supported_capabilities` to `ComposedFreshAdmission::admit` (`gameplay_transport/mod.rs`).
+    That method checks `matches_current`, then `authenticate_support` (1116), and commits with
+    `current_check()`, which is rechecked under the commit locks.
+  - Resume: `resume.rs` checks the same binding before PREPARE (1118).
+  - Registry: the build registry is `PROTOCOL_OTERYN_V1_REGISTRY.json` (`include_str!`).
+    `capabilities_tests.rs` pins `GATED` and the offered sets against it, and
+    `world_required_capabilities_tests.rs` pins the registry rows, closure and floor.
+- **E2E through the real dispatch/admission path, in CI lanes.** `seam_clients`
+  (`gameplay_transport/qualification.rs`) is the client side of two Merge Queue lanes, both
+  required whenever `server_qualification` applies:
+  - **Server Seam over TCP+TLS**: the in-process `serve_gameplay`, with real owners and
+    PostgreSQL 17.6.
+  - **Node boot against the real Platform**: the shipped node binary, whose
+    `node_boot/run.sh` config sets `required_gameplay_capabilities = [21]`, through
+    `NodeConfig::parse`, then `serve.rs`, then `serve_gameplay`.
+
+  Both Channels require 21 `LOGOUT_V1`. It is offered in both, requires nothing and gates only
+  command type 23, which no stage sends. The spell scenarios declare `[]`. Each seam bootstrap
+  and resume declares support for 21. The new stages:
+  - **`capability_negatives`.** A bootstrap with a valid, current, signed grant and no support
+    gets exactly one 1116 frame and then a close. It commits no admission. The admission that
+    follows presents the same grant, so its nonce was not consumed, and it must select exactly
+    `[21]`.
+  - **`resume`.** An authenticated V2 recovery without support gets exactly one 1118 frame and
+    then a close, with no admission. The same credential then resumes the same GameSession,
+    and `ServerResumeAccepted` selects `[21]`.
+
+  Merge Queue runs only on the exact queue candidate. On this head the two lanes were
+  dispatched on the PR branch (`gameplay-server-seam.yml`, `node-boot-qualification.yml`).
+- **PG-COVERAGE-1: closed.** The `postgres_target_aggregation` guard passes on `b95e9aa3`
+  (green CI), and the cases run in the CI-run `durability_postgres`. The archived task
+  `archive/OTV2-20260930-pg-coverage-1.md` needs no change from this PR.
+
 **Tests.**
 - **Wire handshake** (`capabilities_tests.rs`, through `admit_frame`). A bundle World refuses a
   client lacking any closure member with exactly one 1116 and admits one that has them. A
   recovery lacking one gets exactly one 1118 and resumes once it supports them.
-- **PostgreSQL** (`world_required_capabilities_postgres`). Fresh and V2 refusals leave the
-  nonce, claims, reservations and receipts unchanged, and then admit the same nonce.
-- **Not covered.** No in-process test drives `ComposedFreshAdmission::admit` itself, because it
-  needs a live mTLS Platform evidence producer. The `login_local` qualification covers that.
+- **PostgreSQL** (`durability_postgres`, `world_required_capabilities` cases). Fresh and V2
+  refusals leave the nonce, claims, reservations and receipts unchanged, and then admit the
+  same nonce.
+- **Real owners over TCP+TLS** (`seam_clients`, D1452 above). These tests drive
+  `ComposedFreshAdmission::admit` and `resume_lost` with a live mTLS Platform evidence
+  producer, in the Merge Queue Server Seam and Node boot lanes. They supersede the earlier
+  "not covered" note.
 
 ## D1322–D1324 checkpoint — partial / NOT_FULLY_QUALIFIED (2026-10-17)
 
@@ -195,7 +244,8 @@ the support module is
 No native build, Clippy, PostgreSQL, duplicate-source guard or S3-B run is
 attributed to this checkpoint; the formatter check does not establish compilation.
 
-**D1322 — A2 remains a later integration slot:** reconcile the allocated hunks
+**D1322 — A2 remains a later integration slot** (historical; superseded 2026-10-18 by the
+D1442/D1452 packets above, which hand-author A2 on the main merge): reconcile the allocated hunks
 against then-current main after #2197 and #2181 merge, not against recovered
 `d0a262f4`. Shared-file order is binding:
 
@@ -385,6 +435,8 @@ wire+registry+capability+handler+tests in one PR.
 - [x] Registry entries and `capabilities_tests.rs` agree.
 - [x] Negative cases: each required capability missing alone.
 - [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
+- [x] Runtime: `readiness.required_gameplay_capabilities` is bound at boot and enforced by `ComposedFreshAdmission::admit` and `resume_lost` on the live login path (D1452 packet).
+- [x] E2E through the real dispatch/admission path, in a CI lane: the Merge Queue Server Seam and Node boot lanes, through `seam_clients` (1116 and 1118 refusals, nonce and credential preserved).
 
 ## Validation
 
@@ -408,11 +460,11 @@ ADMIT0 §2-§4; plan App. 7 ADMIT; Reference login capability negotiation is not
 ## Context checkpoint
 
 ```yaml
-last_progress: D1442 completion packet hand-authored on the main merge; fmt, clippy -D warnings and the affected native/PostgreSQL lanes run on Molehill-PC (2026-10-18)
-status: validating
+last_progress: D1452 completion. The A2 wiring is on the live login path, with seam/node-boot e2e capability stages in Merge Queue lanes and PG-COVERAGE-1 closed (2026-10-18)
+status: ready
 branch: skeleton/admit-cap-1
 blocker: none in this packet; native fast/post-grace reconnect (1117 caller) is lane G2-owned per D1084
-next_action: CI and one Codex round on the pushed head; CP merge-queue turn
+next_action: CI, the dispatched seam/node-boot runs and one Codex round on the pushed head; CP merge-queue turn
 ```
 
 ## Historical local authoring packet (2026-10-15, draft #2187)
