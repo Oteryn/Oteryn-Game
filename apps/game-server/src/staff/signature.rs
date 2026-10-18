@@ -454,8 +454,8 @@ fn verify_link(
 /// row inserted directly with runtime credentials can never become a
 /// predecessor of operator-signed work. Earlier links were checked when they
 /// were the head; `audit verify` still checks the whole retained chain.
-pub fn verify_head_link(trust: &VerifierTrust, link: &ChainLink) -> Result<(), Error> {
-    verify_link(trust, link, link.digest == trust.activation_digest()).map(|_| ())
+pub fn verify_head_link(trust: &VerifierTrust, link: &ChainLink) -> Result<VerifiedLink, Error> {
+    verify_link(trust, link, link.digest == trust.activation_digest())
 }
 
 impl History {

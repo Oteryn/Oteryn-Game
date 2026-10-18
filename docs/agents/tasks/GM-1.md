@@ -49,7 +49,47 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — Codex review 5559897716 repairs, REPORT_ONLY (2026-10-18)
+## Current checkpoint — Codex review of `39fa9d3b` repairs, REPORT_ONLY (2026-10-18)
+
+Parent `39fa9d3b`, not behind `main` `afa97ba0`, so no merge. Both findings were accepted:
+
+- [P1 4305145537](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4305145537):
+  a member LOGIN could pair a genuinely signed REQUEST head link with forged
+  unsigned rows (`requires_receipt=false` for a mutation, or a forged audit
+  event). Before a request, `staff prepare` or a receipt extends a REQUEST head,
+  `verify_head_operation_in_transaction` now binds its operation row through
+  `audit::verify_stored_operation`, which derives the receipt requirement from
+  the signed action. It also binds its outbox event through
+  `audit::verify_stored_event`. The event may be absent only after its signed
+  retention expiry.
+- [P2 4305145538](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4305145538):
+  migration 0116 refuses an ACTIVATION link (`23514`, `staff activation awaits
+  pending receipt`) while any receipt-requiring operation lacks its receipt, so
+  a rotation cannot strand the pending receipt.
+
+New canonical cases `staff_pg_member_logins_cannot_get_genuine_links_with_forged_rows_extended`
+(runtime and control LOGINs, both forgeries) and
+`staff_pg_activation_waits_for_the_pending_mutation_receipt`. Both fail on the
+parent and pass on this tree. Integration-rest run 39080056876 belongs to
+#2167, not this PR: its head has every check green.
+
+Validation of the four source files at this commit (Ubuntu/mole, shared `~/oteryn-cache`, one
+CP D1429 `slot-run.sh` slot per run, `apps/game-server/src/lib.rs` touched
+before every cargo run, PG through the unchanged `in-pg-netns.sh` against
+shared PostgreSQL 17.6, `PRE-ROUTING` skips 0):
+
+| Check | Result |
+| --- | --- |
+| RED: the two new cases on the parent's `src` and migration | 2 failed (all 8 forged-row probes admitted; activation stranded the receipt) |
+| `cargo fmt --all --check` | pass |
+| strict Clippy `-p oteryn-game-server --all-targets -D warnings` | pass |
+| lib `-- staff` | 18 passed, 0 failed |
+| `staff_audit_postgres` | 1169 passed, 0 failed |
+| canonical `durability_postgres staff_pg_` | 20 passed, 0 failed |
+
+Runtime remains REPORT_ONLY.
+
+## Previous checkpoint — Codex review 5559897716 repairs, REPORT_ONLY (2026-10-18)
 
 Parent `c05cd337`, merged with `main` `f094e032` and `afa97ba0` (resource registry: main
 plus the two GM1 staff entries; World pin `inputs_digest` recomputed). All

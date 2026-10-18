@@ -103,7 +103,7 @@ async fn verify_head_in_transaction(
     head: &Head,
 ) -> Result<(), StaffError> {
     let row=sqlx::query("SELECT previous_link_sha256,link_sha256,roster_sha256,key_fingerprint,signed_bytes,principal,signature,link_kind FROM game_staff_control_links WHERE environment=$1 AND control_seq=$2::text::numeric")
-        .bind(environment).bind(head.sequence.to_string()).fetch_optional(connection).await?.ok_or(Error::Chain)?;
+        .bind(environment).bind(head.sequence.to_string()).fetch_optional(&mut *connection).await?.ok_or(Error::Chain)?;
     let link = signature::ChainLink {
         sequence: head.sequence,
         previous: row.try_get(0)?,
@@ -125,7 +125,58 @@ async fn verify_head_in_transaction(
     if head.activation_digest != trust.activation_digest() || link.digest != head.digest {
         return Err(Error::Binding.into());
     }
-    Ok(signature::verify_head_link(trust, &link)?)
+    match signature::verify_head_link(trust, &link)? {
+        signature::VerifiedLink::Request(request) => {
+            verify_head_operation_in_transaction(connection, &request, link.kind).await
+        }
+        signature::VerifiedLink::Receipt(_) => Ok(()),
+    }
+}
+
+/// A signed REQUEST link authenticates only the request. Its outcome, receipt
+/// requirement and audit event are unsigned rows written beside it, so before
+/// the head is extended they must bind to that signed request: the receipt
+/// requirement is derived from the signed action, never read from SQL.
+async fn verify_head_operation_in_transaction(
+    connection: &mut PgConnection,
+    request: &VerifiedRequest,
+    kind: signature::LinkKind,
+) -> Result<(), StaffError> {
+    let row=sqlx::query("SELECT environment,operation_id::text,request_sha256,request_bytes,outcome_bytes,outcome_sha256,principal,key_fingerprint,action_id::text,transaction_id::text,control_seq::text,requires_receipt,occurred_at FROM game_staff_operations WHERE environment=$1 AND request_sha256=$2")
+        .bind(&request.request().environment).bind(request.digest()).fetch_optional(&mut *connection).await?;
+    let Some(row) = row else {
+        // Owner-provisioned activations carry no operation row.
+        return if kind == signature::LinkKind::Activation {
+            Ok(())
+        } else {
+            Err(Error::MissingMaterial.into())
+        };
+    };
+    let record = stored_operation(&row)?;
+    let outcome = audit::verify_stored_operation(request, &record)?;
+    let event=sqlx::query("SELECT environment,operation_id::text,envelope,event_id::text,transaction_id::text,event_type_id,schema_revision,retention_profile_id,occurred_at,expires_at,envelope_sha256,publication_state FROM game_staff_action_outbox WHERE event_id=$1::text::uuid")
+        .bind(&record.action_id).fetch_optional(&mut *connection).await?;
+    if let Some(row) = event {
+        let event = audit::StoredEvent {
+            environment: row.try_get(0)?,
+            operation_id: row.try_get(1)?,
+            envelope: row.try_get(2)?,
+            event_id: row.try_get(3)?,
+            transaction_id: row.try_get(4)?,
+            event_type: row.try_get(5)?,
+            schema_revision: row.try_get(6)?,
+            retention_profile: row.try_get(7)?,
+            occurred_at: row.try_get(8)?,
+            expires_at: row.try_get(9)?,
+            envelope_sha256: row.try_get(10)?,
+            publication_state: row.try_get(11)?,
+        };
+        audit::verify_stored_event(Contract::registered()?, request, &outcome, &event)?;
+    } else if signature::synchronized_now_ms()? < audit::evidence_expiry(request, &outcome, None)? {
+        // Only an audit event past its signed retention bound may be absent.
+        return Err(Error::MissingMaterial.into());
+    }
+    Ok(())
 }
 
 /// Retry lookup precedes freshness and predecessor checks. It returns evidence,
@@ -643,7 +694,17 @@ async fn historical_outcome_in_transaction(
     {
         return Err(StaffError::OperationConflict);
     }
-    let record = audit::StoredOperation {
+    let record = stored_operation(&row)?;
+    let outcome = audit::verify_stored_operation(request, &record)?;
+    Ok(Some(StoredOutcome {
+        bytes: record.outcome_bytes,
+        outcome,
+    }))
+}
+
+/// Columns in the order both operation queries select them.
+fn stored_operation(row: &sqlx::postgres::PgRow) -> Result<audit::StoredOperation, StaffError> {
+    Ok(audit::StoredOperation {
         environment: row.try_get(0)?,
         operation_id: row.try_get(1)?,
         request_sha256: row.try_get(2)?,
@@ -660,10 +721,5 @@ async fn historical_outcome_in_transaction(
             .map_err(|_| Error::Invalid)?,
         requires_receipt: row.try_get(11)?,
         occurred_at: row.try_get(12)?,
-    };
-    let outcome = audit::verify_stored_operation(request, &record)?;
-    Ok(Some(StoredOutcome {
-        bytes: record.outcome_bytes,
-        outcome,
-    }))
+    })
 }

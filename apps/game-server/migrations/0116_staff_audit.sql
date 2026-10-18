@@ -100,6 +100,11 @@ BEGIN
  IF NOT FOUND OR NEW.control_seq<>h.control_seq+1 OR NEW.previous_link_sha256<>h.link_sha256 THEN
    RAISE EXCEPTION 'staff predecessor conflict' USING ERRCODE='23514';
  END IF;
+ -- A rotation would strand a pending receipt: it could no longer take the
+ -- consumed sequence, and its signer may leave the roster. Reconcile first.
+ IF NEW.link_kind='ACTIVATION' AND EXISTS(SELECT 1 FROM game_staff_operations o WHERE o.environment=NEW.environment
+ AND o.requires_receipt AND NOT EXISTS(SELECT 1 FROM game_staff_action_receipts r WHERE r.environment=o.environment AND r.operation_id=o.operation_id))
+ THEN RAISE EXCEPTION 'staff activation awaits pending receipt' USING ERRCODE='23514'; END IF;
  RETURN NEW;
 END $$;
 CREATE FUNCTION game_staff_link_has_outcome() RETURNS trigger LANGUAGE plpgsql AS $$
