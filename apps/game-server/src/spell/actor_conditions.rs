@@ -1244,6 +1244,29 @@ impl PlayerSpellState {
             source: self.conditions.effective_attributes(now_us),
         })
     }
+    /// Current seven skills from the already loaded durable build and live conditions.
+    /// Missing build data never falls back to the creation-time starting skill.
+    pub(crate) fn owned_effective_skills(
+        &self,
+        build: &crate::durability::character_build::DurableBuildState,
+        now_us: u64,
+    ) -> Result<[u32; 7], SpellCastDisposition> {
+        let base = build.skills().map(|(level, _)| level);
+        if self.owned_skills != Some(base)
+            || super::Vocation::from_key(build.vocation()) != Some(self.facts.vocation)
+            || u32::from(build.magic().0) != self.facts.magic_level
+        {
+            return rejected();
+        }
+        let adjustments = self.owned_skill_adjustments(now_us)?;
+        let mut effective = [0; 7];
+        for (index, level) in base.into_iter().enumerate() {
+            effective[index] = adjustments
+                .adjust_skill(u32::from(level), index)
+                .ok_or(SpellCastDisposition::Rejected)?;
+        }
+        Ok(effective)
+    }
     pub(crate) fn owned_effective_magic_level(
         &self,
         now_us: u64,
@@ -1383,6 +1406,52 @@ mod source_attribute_projection_tests {
         assert_eq!(read.adjust_shielding(53), Some(53));
         assert_eq!(read.adjust_skill(53, 7), None);
     }
+    #[test]
+    fn current_skills_require_loaded_matching_build_and_apply_live_modifiers() {
+        use crate::durability::character_build::DurableBuildState;
+        let mut state = actor(10);
+        let build = DurableBuildState::new(
+            "knight".to_owned(),
+            (10, 0),
+            [
+                (11, 0),
+                (31, 0),
+                (53, 0),
+                (71, 0),
+                (89, 0),
+                (97, 0),
+                (19, 0),
+            ],
+        )
+        .unwrap();
+        assert!(state.owned_effective_skills(&build, 0).is_err());
+        state.load_owned_build(&build).unwrap();
+        apply(
+            &mut state,
+            AttributeModifiers {
+                melee: Some(M::PercentOfBase(40)),
+                distance: Some(M::Add(-15)),
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            state.owned_effective_skills(&build, 0),
+            Ok([11, 13, 22, 29, 74, 97, 19])
+        );
+        // Expiry is exact even before the condition cleanup pass.
+        assert_eq!(
+            state.owned_effective_skills(&build, 1_000_000),
+            Ok([11, 31, 53, 71, 89, 97, 19])
+        );
+        let mut changed = build.skills();
+        changed[2].0 += 1;
+        let changed = DurableBuildState::new("knight".to_owned(), (10, 0), changed).unwrap();
+        assert!(state.owned_effective_skills(&changed, 0).is_err());
+        let changed_magic =
+            DurableBuildState::new("knight".to_owned(), (11, 0), build.skills()).unwrap();
+        assert!(state.owned_effective_skills(&changed_magic, 0).is_err());
+    }
+
     #[test]
     fn composed_deltas_clamp_once_and_overflow_or_clock_regression_refuse() {
         let mut state = actor(10);

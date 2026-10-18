@@ -3080,9 +3080,14 @@ mod npc_econ_bank_postgres_cases;
 #[path = "support/mail_postgres_cases.rs"]
 mod mail_postgres_cases;
 
+#[path = "support/market_postgres_cases.rs"]
+mod market_postgres_cases;
+
 // NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
 #[path = "support/npc_trade_postgres_cases.rs"]
 mod npc_trade_postgres_cases;
+#[path = "support/npc_travel_postgres_cases.rs"]
+mod npc_travel_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.
@@ -3404,6 +3409,12 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
+// Private native LIMIT_RAISE continuation on the actual item-transfer harness.
+#[path = "support/forge_dust_limit_postgres_cases.rs"]
+mod forge_dust_limit_postgres_cases;
+// Private ITEM-FORGE-1 tier schema/read cases (formerly the standalone forge_postgres target).
+#[path = "support/forge_cases.rs"]
+mod forge_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 
