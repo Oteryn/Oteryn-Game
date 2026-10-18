@@ -94,9 +94,9 @@ pub(crate) trait PresenceSink: Send + Sync {
 /// The VIP presence owner consumes the relay. Its errors drop the input: the hint is advisory,
 /// and a lost listener transition or watcher is corrected by its own reconcile and expiry.
 impl PresenceSink for crate::durability::vip_presence::PresenceOwner {
-    fn hint(&self, character: CharacterId, _online: bool) {
+    fn hint(&self, character: CharacterId, online: bool) {
         if let Ok(target) = crate::domain::CharacterId::from_bytes(*character.as_bytes()) {
-            let _ = self.target_hint(target);
+            let _ = self.target_hint(target, online);
         }
     }
 

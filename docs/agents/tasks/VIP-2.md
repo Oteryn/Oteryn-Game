@@ -29,7 +29,7 @@ owned_paths:
   - "apps/game-server/src/gameplay_transport/mod.rs (login/logout presence feed, owner install)"
   - "apps/game-server/src/gameplay_transport/logout_postgres_tests.rs (offline hint on the real logout path)"
   # Widened by CP D1444 (2026-10-18): VIP is one mechanic; VIP-1b and the VIP_V1 wire land here.
-  - "apps/game-server/migrations/0124_vip_lists.sql (VIP-1b production schema and grants)"
+  - "apps/game-server/migrations/0130_vip_lists.sql (VIP-1b production schema and grants; renumbered from 0124 by CP D1453)"
   - "apps/game-server/src/domain/vip.rs + domain/mod.rs (registration only)"
   - "apps/game-server/src/durability/vip.rs + durability/vip_tests.rs"
   - "apps/game-server/src/vip/presence_tests.rs (end-to-end watcher client case)"
@@ -38,10 +38,10 @@ owned_paths:
   - "apps/game-server/src/gameplay_transport/connection.rs (domain 21 snapshot, deltas, command 31)"
   - "apps/game-server/src/gameplay_transport/capabilities.rs + capabilities_tests.rs (capability 31)"
   - "crates/protocol-oteryn/src/vip.rs + vip_tests.rs (new), lib.rs (pub mod), item_look_tests.rs (capability count)"
-  - "crates/session/src/lib.rs (capability 31 gated route and client test)"
+  - "crates/session/src/lib.rs (capability 31 gated command route, typed VIP store, default offer, client tests)"
   - "docs/contracts/protocol-oteryn/v1/vip_v1.proto (new)"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (capability 31, command 31, domain 21)"
-  - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json (VIP0-RL rows)"
+  - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json (VIP0-RL rows, VIP0-RL-11 included)"
 slot_only_paths:
   - "apps/game-server/src/chat/ relay wiring"
   - "apps/game-server/src/gameplay_transport/connection.rs (presence push)"
@@ -663,3 +663,112 @@ this PR. The monk_save timing test is left to DEATH-ML-LOSS-1.
 
 Remaining listed dependency: HOUSE-RUNTIME-1b #2165 (Instance/House scope stays
 `AuthorityRejected` until the named-House fence exists).
+
+## CP decisions on the D1444 questions — 2026-10-18
+
+- Q1, owner sign-off: the owner answered "tak" (2026-10-18), relayed by the control plane.
+  `VIP_V1` (capability 31) is offered by default. The server already offers it in every set.
+  The client now adds it to `CLIENT_SUPPORTED_CAPABILITIES` (`[4, 6, 7, 13, 17, 21, 31]`, closed
+  under `requires`, since 31 requires nothing). That needed a typed VIP store in
+  `crates/session`:
+  - the admission snapshot is decoded into `Session::vip`;
+  - every domain-21 delta (entry, removal, groups, status, consent) is checked against the one
+    domain revision, decoded, and applied before anything is stored;
+  - an unsolicited push during `service_liveness` or a command becomes `SessionEvent::Vip`
+    instead of failing the session;
+  - `read_gated_delta` keeps the store in step;
+  - the store holds at most `MAX_VIP_ENTRIES` entries;
+  - codec refusals are reported as the foundation payload errors, so the public `SessionError`
+    set (which `tools/dev-client` matches exhaustively) is unchanged.
+  The session case now reads the entry as the claimed delta and the two status changes as idle
+  pushes.
+- Q2: yes. The registry reservation (capability 31, command type 31, state domain 21) is
+  recorded on the #162 ledger. #162 is closed to comments, so the entry goes on its
+  continuation, #1622.
+- Q3: yes. `VIP0-RL-11` has its own row in `RESOURCE_LIMITS_REGISTRY.json`:
+  - the status delta after a login or logout, in milliseconds;
+  - hard maximum 60 000, which is the RL-09 reconcile that bounds a lost or refused hint;
+  - the p99 is measured by the relay meter and the end-to-end case.
+- Q4: migration numbers are assigned by the CP wave D1453. `0124` stays until then (D1453 later
+  assigned `0130`).
+- Q5: both fail-closed choices stay. Writes are `VIP_UNAVAILABLE` without the relay listener,
+  and an unknown outcome disconnects.
+
+Announce (core VIP, required by the CP): production now produces login and logout notices.
+- `PresenceSink::hint` (the relay listener) calls `PresenceOwner::target_hint`. The hint is
+  remembered per watcher with the serial at which it arrived, and the watcher is marked due.
+- The connection's next delivery read announces a transition that read confirms, as long as the
+  hint came before the read.
+- A hint that arrives during an in-flight read survives that read's finish and is consumed by
+  the next one. This also fixes a lost-hint race, where the finish cleared `dirty`.
+- A stale hint, one the read contradicts, announces nothing.
+- The PG end-to-end case drives the real path: the relay sink's hint, `is_due`, then
+  `next_current_update`. It asserts an Offline announce on logout and an Online announce on
+  login.
+- Unit cases: `a_recorded_hint_announces_on_the_next_delivery_read` and
+  `a_hint_during_a_read_survives_it_and_announces_on_the_next`.
+- This removes the D1444 risk "production never builds `Refresh::PresenceHint`".
+
+## CI and review round on aa17f1ce — 2026-10-18
+
+- Governance E8002 (error codes 1117/1118 reported removed): the branch predated ADMIT-CAP-1
+  (#2187). Main is merged again (merge commit, no rebase). The registry now holds main's 29
+  `MAP_STATE_V1`, 30 `WORLD_SPATIAL_FIELDS` and codes 1117/1118 next to VIP's 31, with
+  `next_unallocated` 32. `REGISTERED_CAPABILITY_IDS_V1` and the gated table carry all three.
+- Clippy `explicit_counter_loop` in the session VIP case: the sequence and revision are derived
+  from the delta's offset.
+- Codex P1 (`connection.rs`): an `ONLINE` write is bounded by its confirmation deadline.
+  - `PresenceOwner::write_bound` returns the time left before the update's deadline. It returns
+    zero once the listener is down, the epoch has moved or the clock is unusable. Other statuses
+    get no bound.
+  - The connection writes an `ONLINE` frame under `tokio::time::timeout` with that bound. It
+    closes the connection, rather than finish a stale frame, on expiry or a zero bound.
+  - Unit case: `an_online_write_is_bounded_by_its_confirmation_deadline`.
+- Codex P2 (`chat_relay.rs`): the hint keeps its online/offline kind (the announce paragraph
+  above).
+- `VIP_V1` default offer: owner sign-off "tak" on 2026-10-18 (CP relay). Capability 31 is in
+  `CLIENT_SUPPORTED_CAPABILITIES` and every offered set.
+- Closeout is deferred. The CP wave D1453 still assigns the migration number for `0124`, so this
+  card stays active until that renumber push (done: `0130`, see the wave1 section below).
+- Main merged a second time after ITEM-LOOP-1 (#2190). 31 stays last in the bundle World offered
+  set after ITEM-LOOP-1's 12 and 14. `durability::vip` sits beside `starter_grant`. The ITEM-LOOK
+  acceptance case probed 31 as unregistered; it now probes the lowest unregistered ID.
+
+## Official limit check — 2026-10-18
+
+- Source: <https://www.tibia.com/abouttibia/?subtopic=premiumfeatures>, class CIPSOFT_OFFICIAL.
+  It was fetched on 2026-10-18 (Molehill snapshot `tibia-premiumfeatures-20261018.md`). The page
+  says the list is not exhaustive.
+- VIP list entries are 20 free and 100 Premium. They match `VIP0-RL-02` (`MAX_VIP_ENTRIES` 100
+  is the Premium cap; the free cap is 20).
+- VIP groups are 3 free and 3+5 Premium. They match `VIP0-RL-03`: 5 custom groups with Premium
+  and none without, so `LAST_VIP_GROUP` 8 = 3 built-in + 5 custom.
+- Private chat channels are Premium only. That is outside VIP_V1, so no limit changes.
+- Result: no difference and no scope change.
+
+## Pre-push self-review (CP D1456) — 2026-10-18
+
+- Items 1–17 of the CODEX-CHECKLIST were checked against `git diff origin/main...HEAD`.
+- Item 1: the group-name writer's group read is now `LIMIT 6`. The schema already bounded it at 5
+  rows (PK plus `group_no BETWEEN 4 AND 8`). Every other VIP collection read had its LIMIT.
+- Item 15: the ITEM-LOOK registry assertion is exact again (`next_unallocated` 32), not `>= 29`.
+- Item 13, partly open: `presence.rs` keeps its reasoned `dead_code` allow. The batched RL-11
+  reader (`refresh_batch_current`, `due_sessions`) has no production caller. It waits on a node
+  scheduler in `node/serve.rs`, which is outside this packet's owned paths. The per-session read
+  covers RL-11 in the meantime.
+- Pre-push review (BUILD-RULES L10, done in a separate cold pass because this worker cannot spawn
+  a subagent), round 1, one P2: while the store was unavailable, `vip_follow` sent nothing, so a
+  shown `ONLINE` stayed shown. It now falls back to `next_withdrawal_candidate`, which yields only
+  `UNCONFIRMED`, and the session fence check still binds the update. Round 2: no P1/P2.
+
+## Wave1 report and D1453 numbering — 2026-10-18
+
+- CP D1453 final numbering: `0124_vip_lists.sql` is now `0130_vip_lists.sql` (main keeps 0113 and
+  0128; the wave numbers from 0129). The doc references in `durability/vip.rs`, `vip_tests.rs` and
+  `vip/presence_tests.rs` follow. No registry row names the file, and no test pins its version.
+- Wave1 report section (b) #2164: item 1 (the ITEM-LOOK probe) is already covered by the lowest
+  unregistered ID probe, which is 32 on this tree. Items 2 and 3 (26 at its ascending place below
+  31, and `Box::pin` in the capabilities test `run`) land in WEATHER #2202, which merges first;
+  this branch has no capability 26 offer yet, so 31 is the highest offered ID here. After #2202 is
+  on main this branch merges main again and keeps #2202's versions.
+- Closeout stays deferred until the review round on this head is clean.

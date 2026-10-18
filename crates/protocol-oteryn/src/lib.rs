@@ -61,6 +61,12 @@ pub enum FoundationProtocolError {
     AdmissionIncumbentProtected = 1114,
     AdmissionCapacityExceeded = 1115,
     AdmissionCapabilityRequired = 1116,
+    /// ADMIT0 §5 (CP D1187): an authenticated same-GameSession reconnect lacks a required
+    /// capability; the candidate ends and current authority is preserved.
+    ReconnectCapabilityRequired = 1117,
+    /// ADMIT0 §5 (CP D1187): an authenticated recovery lacks a required capability; nothing
+    /// is mutated and no recovery grant is consumed.
+    RecoveryCapabilityRequired = 1118,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,7 +118,9 @@ impl FoundationProtocolError {
             | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
             Self::PayloadLimitExceeded
             | Self::TooManyOutstandingCommands
-            | Self::AccountDataIntegrity => ProtocolDisposition::OperationTerminal,
+            | Self::AccountDataIntegrity
+            | Self::ReconnectCapabilityRequired
+            | Self::RecoveryCapabilityRequired => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
             | Self::CommandSequenceGap
             | Self::ServerSequenceGap
@@ -168,14 +176,17 @@ impl Display for FoundationProtocolError {
             Self::AdmissionIncumbentProtected => "character is already active",
             Self::AdmissionCapacityExceeded => "admission capacity exceeded",
             Self::AdmissionCapabilityRequired => "a required capability is missing",
+            Self::ReconnectCapabilityRequired => "a required reconnect capability is missing",
+            Self::RecoveryCapabilityRequired => "a required recovery capability is missing",
         })
     }
 }
 
 impl Error for FoundationProtocolError {}
 
-/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); 1117..
-/// 1199 are reserved for later admission rows and never reused.
+/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2), and
+/// the ADMIT0 §5 reconnect (1117) and recovery (1118) rows; 1119..1199 are reserved for later
+/// admission rows and never reused.
 pub const ADMISSION_REFUSAL_CODES: std::ops::RangeInclusive<u32> = 1100..=1199;
 
 /// FND-04A §11 progression of one admission refusal: what the client may do next on its own.
@@ -205,7 +216,7 @@ const ADMISSION_REFUSAL_ROWS: [(
     FoundationProtocolError,
     AdmissionProgression,
     AdmissionPublicClass,
-); 17] = {
+); 19] = {
     use AdmissionProgression::{Retryable, SecurityTerminal, Terminal};
     use AdmissionPublicClass::{
         AuthenticationRequired, CharacterAlreadyActive, ClientUpdateRequired, RetryLogin,
@@ -279,6 +290,16 @@ const ADMISSION_REFUSAL_ROWS: [(
         ),
         (
             E::AdmissionCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::ReconnectCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::RecoveryCapabilityRequired,
             Terminal,
             ClientUpdateRequired,
         ),
@@ -373,12 +394,13 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
 // LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
 // 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
-// capability requirement was assigned. 31 VIP_V1 (VIP-2, CP D1444) is offered with its command
-// handler and state domain 21; 29 and 30 are claimed by ADMIT-CAP-1 (CP D1442). Next unallocated
-// capability is 32.
+// capability requirement was assigned. CP D1442 registers 29 MAP_STATE_V1 (never offered: D1083
+// serves the map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field
+// payloads are composed); both require 6. 31 VIP_V1 (VIP-2, CP D1444) is offered with its
+// command handler and state domain 21. Next unallocated capability is 32.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28, 31,
+    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28, 29, 30, 31,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -715,6 +737,9 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     ),
     // CP D1240/D1240a assigns no additional requirements for ITEM_LOOK_V1.
     (28, &[]),
+    // CP D1442: MAP_STATE_V1 and WORLD_SPATIAL_FIELDS each require 6 WORLD_SPATIAL_ENTITIES.
+    (29, &[6]),
+    (30, &[6]),
 ];
 
 fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
@@ -4127,6 +4152,14 @@ mod tests {
                 E::AdmissionCapabilityRequired,
                 "ADMISSION_CAPABILITY_REQUIRED",
             ),
+            (
+                E::ReconnectCapabilityRequired,
+                "RECONNECT_CAPABILITY_REQUIRED",
+            ),
+            (
+                E::RecoveryCapabilityRequired,
+                "RECOVERY_CAPABILITY_REQUIRED",
+            ),
         ]
         .into_iter()
         .map(|(error, name)| {
@@ -4161,7 +4194,13 @@ mod tests {
                 assert_eq!(admission_refusal_class(code), None, "{code}");
                 continue;
             }
-            assert_eq!(entry["default_disposition"], "TRANSPORT_FATAL");
+            // CP D1187: the ADMIT0 reconnect/recovery rows end the operation, not the transport.
+            let disposition = if matches!(code, 1117 | 1118) {
+                "OPERATION_TERMINAL"
+            } else {
+                "TRANSPORT_FATAL"
+            };
+            assert_eq!(entry["default_disposition"], disposition, "{code}");
             let (crate_progression, crate_class) =
                 admission_refusal_class(code).expect("admission code");
             let crate_progression = match crate_progression {
@@ -4184,7 +4223,7 @@ mod tests {
             );
             admission.push(code);
         }
-        assert_eq!(admission, (1100..=1116).collect::<Vec<_>>());
+        assert_eq!(admission, (1100..=1118).collect::<Vec<_>>());
         assert_eq!(
             ADMISSION_REFUSAL_ROWS
                 .map(|(error, _, _)| error.code())
@@ -4193,7 +4232,7 @@ mod tests {
         );
     }
 
-    /// The 17 rows of §1.2, written out once more so a table edit cannot pass unnoticed.
+    /// The 17 rows of §1.2 and the two ADMIT0 §5 rows, written out once more so a table edit cannot pass unnoticed.
     #[test]
     fn admission_refusal_class_table() {
         use AdmissionProgression::{Retryable as R, SecurityTerminal as S, Terminal as T};
@@ -4216,12 +4255,14 @@ mod tests {
             (1114, T, CharacterAlreadyActive),
             (1115, R, TemporarilyUnavailable),
             (1116, T, ClientUpdateRequired),
+            (1117, T, ClientUpdateRequired),
+            (1118, T, ClientUpdateRequired),
         ];
         for (code, progression, class) in rows {
             assert_eq!(admission_refusal_class(code), Some((progression, class)));
         }
         // Unassigned in range: generic, no retry. Outside the range: not an admission refusal.
-        for code in [1117, 1150, 1199] {
+        for code in [1119, 1150, 1199] {
             assert_eq!(
                 admission_refusal_class(code),
                 Some((T, TemporarilyUnavailable))

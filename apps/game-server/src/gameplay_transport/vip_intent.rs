@@ -275,6 +275,14 @@ impl VipRuntime {
         }
     }
 
+    /// How long the connection may take to write the presence update it holds: `None` when it
+    /// holds none or one that is not `ONLINE`.
+    pub(crate) fn write_bound(&self, session: GameSessionId) -> Option<std::time::Duration> {
+        let update = self.lock().get(&session)?.inflight.clone()?;
+        self.presence()
+            .map_or(Some(std::time::Duration::ZERO), |p| p.write_bound(&update))
+    }
+
     /// The presence update the connection just wrote was delivered.
     pub(crate) fn delivered(&self, session: GameSessionId) {
         let update = {
@@ -679,9 +687,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let presence = self.chat.vip.presence()?;
         let update = if presence.is_due(session).unwrap_or(false) {
-            presence
+            match presence
                 .next_current_update(self.character, self.holder, fence, seen)
                 .await
+            {
+                Ok(update) => Ok(update),
+                // VIP0 §8.2: without a current read (the store is unavailable) a shown ONLINE
+                // is withdrawn to UNCONFIRMED. This path never yields ONLINE or OFFLINE, and the
+                // fence check below binds the update to this exact session.
+                Err(_) => presence.next_withdrawal_candidate(session, seen),
+            }
         } else {
             presence.next_queued(session)
         }

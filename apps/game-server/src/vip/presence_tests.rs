@@ -63,6 +63,77 @@ fn acknowledge(s: &mut State, at: u64) -> StatusUpdate {
     update
 }
 
+/// VIP0 §8.2, the production hint path: a relay hint recorded on the owner (no explicit
+/// `Refresh::PresenceHint`) makes the watcher's next delivery read announce the transition.
+#[test]
+fn a_recorded_hint_announces_on_the_next_delivery_read() {
+    let mut s = state();
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    assert!(!acknowledge(&mut s, 100).announce);
+    s.hint(character(61), false).expect("hint");
+    let session = item_fence().expect("fence").game_session_id;
+    assert!(s.sessions[&session].dirty);
+    install(
+        &mut s,
+        read(data(Visibility::Shown, false)),
+        200,
+        Refresh::Delivery,
+    );
+    let out = acknowledge(&mut s, 200);
+    assert_eq!((out.status, out.announce), (Status::Offline, true));
+    assert!(s.sessions[&session].hints.is_empty());
+    // A hint whose advisory value the read does not confirm is consumed without a notice.
+    s.hint(character(61), false).expect("stale hint");
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        300,
+        Refresh::Delivery,
+    );
+    let out = acknowledge(&mut s, 300);
+    assert_eq!((out.status, out.announce), (Status::Online, false));
+}
+/// A hint that arrives while a read is in flight is not consumed by it: the watcher stays dirty
+/// and the next read announces.
+#[test]
+fn a_hint_during_a_read_survives_it_and_announces_on_the_next() {
+    let mut s = state();
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    acknowledge(&mut s, 100);
+    let f = item_fence().expect("fence");
+    let (t, e, _) = s.reserve(f, 0, 200).expect("reserve");
+    s.hint(character(61), false).expect("hint");
+    s.finish(
+        f.game_session_id,
+        t,
+        e,
+        read(data(Visibility::Shown, true)),
+        200,
+        200,
+        Refresh::Delivery,
+    )
+    .expect("finish");
+    assert!(s.sessions[&f.game_session_id].dirty);
+    assert_eq!(s.sessions[&f.game_session_id].hints.len(), 1);
+    install(
+        &mut s,
+        read(data(Visibility::Shown, false)),
+        300,
+        Refresh::Delivery,
+    );
+    let out = acknowledge(&mut s, 300);
+    assert_eq!((out.status, out.announce), (Status::Offline, true));
+}
 #[test]
 fn initial_statuses_use_explicit_consent_visibility_and_coarse_truth() {
     for (visibility, online, expected) in [
@@ -119,6 +190,38 @@ fn online_expires_at_ten_seconds_and_late_read_cannot_renew_it() {
         s.sessions[&f.game_session_id].entries[&1].desired,
         Status::Online
     );
+}
+/// Codex P1 on #2164: the write of an ONLINE update is bounded by its confirmation deadline and
+/// refused once the listener is down; other statuses carry no bound.
+#[test]
+fn an_online_write_is_bounded_by_its_confirmation_deadline() {
+    let mut s = state();
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    let session = item_fence().expect("fence").game_session_id;
+    let online = s.next(session, 100).expect("next").expect("candidate");
+    assert_eq!(online.status, Status::Online);
+    assert_eq!(
+        s.write_bound(&online, 3_100),
+        Some(std::time::Duration::from_millis(7_000))
+    );
+    assert_eq!(
+        s.write_bound(&online, 10_100),
+        Some(std::time::Duration::ZERO)
+    );
+    assert_eq!(
+        s.write_bound(&online, 20_000),
+        Some(std::time::Duration::ZERO)
+    );
+    s.listener_down(101).expect("outage");
+    assert_eq!(s.write_bound(&online, 102), Some(std::time::Duration::ZERO));
+    let withdrawal = acknowledge(&mut s, 102);
+    assert_eq!(withdrawal.status, Status::Unconfirmed);
+    assert_eq!(s.write_bound(&withdrawal, 102), None);
 }
 #[test]
 fn timely_privacy_read_invalidates_inflight_online_before_deadline() {
@@ -491,7 +594,7 @@ fn malformed_read_or_revision_overflow_cannot_partially_replace_index() {
     assert!(s.index[&character(61)].contains(&f.game_session_id));
 }
 
-// The VIP tables are the installed migration 0124; fixture rows are administrative DATA, not a
+// The VIP tables are the installed migration 0130; fixture rows are administrative DATA, not a
 // production invitation/acceptance producer or a current-authority substitute.
 async fn fixture_character(h: &Harness, seed: u8, owner: u8) -> TestResult {
     sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING").bind(id(owner).as_slice()).execute(&h.pool).await?;
@@ -1824,7 +1927,7 @@ impl super::super::vip::VipPremiumGate for NotCurrentGate {
     }
 }
 
-/// VIP-2 end to end (CP D1444) on the installed migration 0124 and the real writers: the watcher
+/// VIP-2 end to end (CP D1444) on the installed migration 0130 and the real writers: the watcher
 /// (character 64, session 93) sends the client `VIP_INTENT` add frame for the harness character;
 /// the target accepts from its own admitted view; the watcher's owner then confirms ONLINE, and
 /// the target's logout and login reach the watcher as domain 21 status deltas the client decodes.
@@ -1992,16 +2095,11 @@ fn native_vip_add_accept_and_presence_reach_the_watcher_client_end_to_end() -> T
             let started = std::time::Instant::now();
             sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=$1 WHERE game_session_id=encode($2,'hex')::uuid")
                 .bind(state).bind(id(native::SESSION).as_slice()).execute(&h.pool).await?;
-            owner
-                .refresh_current(
-                    &authority,
-                    &h.node,
-                    watcher,
-                    0,
-                    Refresh::PresenceHint { target, online },
-                )
-                .await
-                .map_err(debug)?;
+            // The production path: the relay's sink records the hint (`PresenceSink::hint`
+            // calls `target_hint`), and the connection's next delivery reads because the
+            // watcher is due, announcing the transition the read confirms.
+            owner.target_hint(target, online).map_err(debug)?;
+            assert!(owner.is_due(watcher.game_session_id).map_err(debug)?);
             let update = owner
                 .next_current_update(&authority, &h.node, watcher, 0)
                 .await

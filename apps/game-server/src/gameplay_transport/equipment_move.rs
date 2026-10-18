@@ -1,5 +1,6 @@
 //! EQUIP-WIRE-1 (ITEM-MOVE-WIRE-1 §4, ITEM-MOVE-2a slice): the production equipment owner seam
-//! of command type 9. Equip moves one direct main-backpack entry into a free equipment slot;
+//! of command type 9. Equip moves one direct main-backpack entry into an equipment slot;
+//! an occupied slot exchanges whole items under the owner's qualified stack policy;
 //! unequip moves one equipped item into the main backpack. Both commit in one fenced semantic
 //! transaction through `apply_equipment_in_transaction`, keyed by the command's CommandRef, under
 //! the spell lane (key-33 writer) and with the Channel content pin of the active generation.
@@ -30,6 +31,21 @@ use oteryn_protocol_oteryn::item_view::EquipmentSlot;
 /// A plain item names a Known definition with container semantics `NotApplicable`; a container
 /// or an item with unknown container semantics never enters a slot in this slice.
 impl EquipmentMoveContent for NativeGameplayState {
+    fn equipment_stack_class(
+        &self,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> crate::durability::item_transfer::ItemStackClass {
+        let definition = crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".to_owned(),
+            production_key: production_key.to_owned(),
+            revision_ref: revision_ref.to_owned(),
+        };
+        super::item_ref_admission::generation_item_facts(self, &definition)
+            .map(|facts| facts.stack)
+            .unwrap_or(crate::durability::item_transfer::ItemStackClass::Unknown)
+    }
+
     fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool {
         self.item_policy(production_key, revision_ref)
             .is_some_and(|policy| {
@@ -309,6 +325,10 @@ mod tests {
             .expect("native gameplay");
         assert!(native.is_timed_item("fixture:unknown", "definition-r1"));
         assert!(native.is_timed_item("", ""));
+        assert_eq!(
+            native.equipment_stack_class("fixture:unknown", "definition-r1"),
+            crate::durability::item_transfer::ItemStackClass::Unknown
+        );
     }
 
     #[test]

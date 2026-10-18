@@ -44,10 +44,10 @@ pub use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::logout;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
-/// VIP-2 (CP D1444) list, consent and presence types of capability 31 `VIP_V1`, routed through
-/// the gated table (`Session::gated_command`, `Session::gated_snapshot`,
-/// `Session::read_gated_delta`), re-exported with their codecs so a client needs no direct
-/// `protocol-oteryn` edge (ADR-0020 section 1).
+/// VIP-2 (CP D1444) list, consent and presence types of capability 31 `VIP_V1`: the command goes
+/// through the gated table (`Session::gated_command`), the domain-21 snapshot and deltas apply to
+/// the typed store (`Session::vip`, `SessionEvent::Vip`). Re-exported with their codecs so a
+/// client needs no direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::vip::{
     DELTA_TYPE_VIP_CONSENT_V1, DELTA_TYPE_VIP_ENTRY_REMOVED_V1, DELTA_TYPE_VIP_ENTRY_V1,
     DELTA_TYPE_VIP_GROUPS_V1, DELTA_TYPE_VIP_STATUS_V1, SNAPSHOT_TYPE_VIP_V1, VipConsentView,
@@ -103,7 +103,7 @@ use oteryn_protocol_oteryn::{
         self, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemViewWireError,
         STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
     },
-    vip::{CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, STATE_DOMAIN_VIP},
+    vip::{CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, MAX_VIP_ENTRIES, STATE_DOMAIN_VIP},
 };
 /// CHARM-5 view and command types (registered under capability 1 `BESTIARY_CHARMS_V1`, not yet
 /// routed by this crate), re-exported for the client views the same way.
@@ -139,8 +139,10 @@ impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 /// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
 /// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
 /// domain 12), 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`) and 17 `ATTACK_V1` (command
-/// types 11 and 12, domain 10; requires 6) and 21 `LOGOUT_V1` (command type 23). Add an ID here only
-/// together with its routing, and keep the set closed under the registry's `requires`.
+/// types 11 and 12, domain 10; requires 6), 21 `LOGOUT_V1` (command type 23) and 31 `VIP_V1`
+/// (command type 31 through the gated table, domain 21 in the typed VIP store; offered by default
+/// on the owner's sign-off of 2026-10-18, VIP-2). Add an ID here only together with its routing,
+/// and keep the set closed under the registry's `requires`.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -148,6 +150,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_PACED_MOVEMENT_V1,
     CAPABILITY_ATTACK_V1,
     logout::CAPABILITY_LOGOUT_V1,
+    CAPABILITY_VIP_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -155,9 +158,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// domain 1 and command types 1 and 9, whose codecs gate the extension on the selected set.
 /// Capabilities 4 and 7 are routed by typed code (`Session::use_item`, `Session::move_item`, the
 /// item stores; `Session::chat`, the chat log), not through this table. Capability 31 `VIP_V1`
-/// (command type 31, domain 21) is routed here and is not in [`CLIENT_SUPPORTED_CAPABILITIES`]:
-/// its status deltas are unsolicited pushes, so a client that advertises it reads them with
-/// `Session::read_gated_delta` until it has a typed VIP store.
+/// sends command type 31 through this table; its domain 21 is listed here for the selection
+/// checks but applies to the typed VIP store (`Session::vip`), because its status deltas are
+/// unsolicited pushes that `Session::service_liveness` must accept.
 const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
@@ -711,6 +714,9 @@ pub enum SessionEvent {
     /// Domain 11 `OPEN_CONTAINER`: the open corpse, replaced whole (the default means closed).
     /// [`Session::open_container`] already holds it.
     OpenContainer(AppliedDelta<OpenContainer>),
+    /// Domain 21 `VIP` (capability 31): one entry, removal, group set, status or consent view.
+    /// [`Session::vip`] already holds the result.
+    Vip(AppliedDelta<VipDelta>),
 }
 
 impl SessionEvent {
@@ -726,6 +732,7 @@ impl SessionEvent {
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
+            Self::Vip(_) => STATE_DOMAIN_VIP,
         }
     }
 }
@@ -957,6 +964,8 @@ pub struct Session<S> {
     open_container: Option<OpenContainer>,
     /// `Some` exactly when capability 7 is selected.
     chat: Option<ChatLog>,
+    /// `Some` exactly when capability 31 is selected and the server sent its domain-21 snapshot.
+    vip: Option<VipSnapshot>,
 }
 
 /// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
@@ -1320,6 +1329,25 @@ impl<S: SessionStream> Session<S> {
             }
         }
 
+        let vip = match gated_snapshots
+            .iter()
+            .find(|snapshot| snapshot.domain_id == STATE_DOMAIN_VIP)
+        {
+            Some(snapshot) if snapshot.snapshot_type == SNAPSHOT_TYPE_VIP_V1 => {
+                let value = decode_vip_snapshot(&snapshot.payload).map_err(vip_refused)?;
+                if value.entries.len() > MAX_VIP_ENTRIES {
+                    return Err(vip_refused(VipWireError::LimitExceeded));
+                }
+                Some(value)
+            }
+            Some(snapshot) => {
+                return Err(SessionError::UnregisteredSnapshotType {
+                    domain_id: STATE_DOMAIN_VIP,
+                    snapshot_type: snapshot.snapshot_type,
+                });
+            }
+            None => None,
+        };
         if attack_selected && combat_state.is_none() {
             return Err(SessionError::MissingDomain(
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
@@ -1366,6 +1394,7 @@ impl<S: SessionStream> Session<S> {
             inventory,
             open_container,
             chat,
+            vip,
         })
     }
 
@@ -1425,21 +1454,15 @@ impl<S: SessionStream> Session<S> {
                 capability: capability_of_domain(domain_id).unwrap_or(0),
             })?;
         debug_assert!(self.is_selected(capability));
-        let applied = self
-            .gated_revisions
-            .iter()
-            .find(|(id, _)| *id == domain_id)
-            .map_or(0, |(_, revision)| *revision);
+        let applied = self.gated_revision(domain_id);
         let outcome = self.read_delta(domain_id, delta_type, applied).await;
         let delta = self.poison_on_error(outcome)?;
-        match self
-            .gated_revisions
-            .iter_mut()
-            .find(|(id, _)| *id == domain_id)
-        {
-            Some(entry) => entry.1 = delta.new_revision,
-            None => self.gated_revisions.push((domain_id, delta.new_revision)),
+        if domain_id == STATE_DOMAIN_VIP {
+            // The typed store follows every domain-21 delta, however it was read.
+            let outcome = self.apply_vip(delta_type, &delta.payload).map(|_| ());
+            self.poison_on_error(outcome)?;
         }
+        self.set_gated_revision(domain_id, delta.new_revision);
         Ok(GatedDelta {
             server_sequence: delta.server_sequence,
             base_revision: delta.base_revision,
@@ -1466,6 +1489,69 @@ impl<S: SessionStream> Session<S> {
     /// capability 7 is selected.
     pub fn chat_log(&self) -> Option<&ChatLog> {
         self.chat.as_ref()
+    }
+
+    /// The VIP list, groups and consent view after every domain-21 delta applied so far; `Some`
+    /// exactly when capability 31 is selected and the server sent its snapshot.
+    pub fn vip(&self) -> Option<&VipSnapshot> {
+        self.vip.as_ref()
+    }
+
+    fn gated_revision(&self, domain_id: u32) -> u64 {
+        self.gated_revisions
+            .iter()
+            .find(|(id, _)| *id == domain_id)
+            .map_or(0, |(_, revision)| *revision)
+    }
+
+    fn set_gated_revision(&mut self, domain_id: u32, revision: u64) {
+        match self
+            .gated_revisions
+            .iter_mut()
+            .find(|(id, _)| *id == domain_id)
+        {
+            Some(entry) => entry.1 = revision,
+            None => self.gated_revisions.push((domain_id, revision)),
+        }
+    }
+
+    /// Decodes one domain-21 delta and applies it to the VIP store (when the snapshot came). A
+    /// status for an entry the store does not hold (one removed since the server's read) changes
+    /// nothing. Nothing is stored unless the decode and the entry bound pass.
+    fn apply_vip(&mut self, delta_type: u32, payload: &[u8]) -> Result<VipDelta, SessionError> {
+        let delta = decode_vip_delta(delta_type, payload).map_err(vip_refused)?;
+        if let Some(store) = self.vip.as_mut() {
+            match &delta {
+                VipDelta::Entry(entry) => {
+                    if let Some(i) = store
+                        .entries
+                        .iter()
+                        .position(|e| e.entry_no == entry.entry_no)
+                    {
+                        store.entries[i] = entry.clone();
+                    } else if store.entries.len() < MAX_VIP_ENTRIES {
+                        store.entries.push(entry.clone());
+                    } else {
+                        return Err(vip_refused(VipWireError::LimitExceeded));
+                    }
+                }
+                VipDelta::EntryRemoved { entry_no } => {
+                    store.entries.retain(|e| e.entry_no != *entry_no);
+                }
+                VipDelta::Groups(groups) => store.groups.clone_from(groups),
+                VipDelta::Status(update) => {
+                    if let Some(entry) = store
+                        .entries
+                        .iter_mut()
+                        .find(|e| e.entry_no == update.entry_no)
+                    {
+                        entry.status = update.status;
+                    }
+                }
+                VipDelta::Consent(consent) => store.consent.clone_from(consent),
+            }
+        }
+        Ok(delta)
     }
 
     /// The inventory after every delta applied so far; `Some` exactly when capability 4 is
@@ -2328,6 +2414,26 @@ impl<S: SessionStream> Session<S> {
                 Ok(event)
             }
             STATE_DOMAIN_CHAT => Err(SessionError::UnselectedDomain { domain_id }),
+            STATE_DOMAIN_VIP if self.is_selected(CAPABILITY_VIP_V1) => {
+                // Five delta types are registered for domain 21; each is checked against the one
+                // stored revision and decoded before anything is stored.
+                let delta_type = delta.delta_type;
+                if !(DELTA_TYPE_VIP_ENTRY_V1..=DELTA_TYPE_VIP_CONSENT_V1).contains(&delta_type) {
+                    return Err(SessionError::UnregisteredDeltaType {
+                        domain_id,
+                        delta_type,
+                    });
+                }
+                check_delta(&delta, delta_type, self.gated_revision(STATE_DOMAIN_VIP))?;
+                let value = self.apply_vip(delta_type, delta.payload)?;
+                self.set_gated_revision(STATE_DOMAIN_VIP, new_revision);
+                Ok(SessionEvent::Vip(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
             STATE_DOMAIN_CHARACTER_INVENTORY if self.inventory.is_some() => {
                 check_delta(
                     &delta,
@@ -2486,6 +2592,16 @@ struct ReceivedResult {
 
 /// Checks a decoded `StateDelta` carries the registered `delta_type` and is based on exactly the
 /// stored revision.
+/// A capability-31 snapshot or delta the VIP codec or the typed store refused (more than
+/// `MAX_VIP_ENTRIES` entries is over the bound). Reported as the foundation payload errors, so the
+/// public `SessionError` set stays as its consumers match it.
+const fn vip_refused(error: VipWireError) -> SessionError {
+    SessionError::Protocol(match error {
+        VipWireError::Malformed => FoundationProtocolError::MalformedEnvelope,
+        VipWireError::LimitExceeded => FoundationProtocolError::PayloadLimitExceeded,
+    })
+}
+
 fn check_delta(
     delta: &oteryn_protocol_oteryn::StateDeltaView<'_>,
     delta_type: u32,
@@ -3999,8 +4115,8 @@ mod tests {
         fn wire<T>(value: Result<T, VipWireError>) -> Result<T, BoxError> {
             value.map_err(|error| format!("{error:?}").into())
         }
-        // Not advertised by default until the client keeps a typed VIP store.
-        assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_VIP_V1));
+        // Offered by default (owner sign-off 2026-10-18): the typed store accepts the pushes.
+        assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_VIP_V1));
         block_on(async {
             let snapshot = wire(encode_vip_snapshot(&VipSnapshot::default()))?;
             let (client, mut server) = tokio::io::duplex(64 * 1024);
@@ -4031,9 +4147,7 @@ mod tests {
                     &encode_command_result(1, 41, 7, CommandStatus::Accepted, &ok)?,
                 )
                 .await?;
-                let mut revision = 4;
-                let mut sequence = 41;
-                for delta in [
+                for (offset, delta) in (0u64..).zip([
                     VipDelta::Entry(entry(VipStatus::Unconfirmed)),
                     VipDelta::Status(VipStatusUpdate {
                         entry_no: 1,
@@ -4045,13 +4159,13 @@ mod tests {
                         status: VipStatus::Offline,
                         announce: true,
                     }),
-                ] {
-                    sequence += 1;
+                ]) {
+                    let revision = 4 + offset;
                     write_frame(
                         &mut server,
                         &encode_state_delta(
                             1,
-                            sequence,
+                            42 + offset,
                             STATE_DOMAIN_VIP,
                             revision,
                             revision + 1,
@@ -4060,12 +4174,15 @@ mod tests {
                         )?,
                     )
                     .await?;
-                    revision += 1;
                 }
+                // Held open until the client drops, so the idle reads see no early close.
+                let mut rest = Vec::new();
+                let _ = server.read_to_end(&mut rest).await;
                 Ok::<(), BoxError>(())
             });
             let mut session =
                 Session::admit(client, admission_with(&[13, CAPABILITY_VIP_V1])?).await?;
+            assert_eq!(session.vip(), Some(&VipSnapshot::default()));
             let joined = session
                 .gated_snapshot(STATE_DOMAIN_VIP)
                 .ok_or("domain 21 snapshot")?;
@@ -4088,20 +4205,32 @@ mod tests {
                 wire(decode_vip_intent_result(&result.payload))?,
                 VipIntentResult::of(VipResultCode::Ok)
             );
+            // The entry is read as the add's claimed delta; the two status changes are
+            // unsolicited pushes that the idle service applies to the typed store.
             let mut seen = Vec::new();
-            for delta_type in [
-                DELTA_TYPE_VIP_ENTRY_V1,
-                DELTA_TYPE_VIP_STATUS_V1,
-                DELTA_TYPE_VIP_STATUS_V1,
-            ] {
-                let delta = session
-                    .read_gated_delta(STATE_DOMAIN_VIP, delta_type)
-                    .await?;
-                seen.push((
-                    delta.new_revision,
-                    wire(decode_vip_delta(delta_type, &delta.payload))?,
-                ));
+            let delta = session
+                .read_gated_delta(STATE_DOMAIN_VIP, DELTA_TYPE_VIP_ENTRY_V1)
+                .await?;
+            seen.push((
+                delta.new_revision,
+                wire(decode_vip_delta(DELTA_TYPE_VIP_ENTRY_V1, &delta.payload))?,
+            ));
+            assert_eq!(
+                session.vip().map(|vip| vip.entries.clone()),
+                Some(vec![entry(VipStatus::Unconfirmed)])
+            );
+            session.service_liveness(Duration::from_millis(100)).await?;
+            for event in session.take_events() {
+                match event {
+                    SessionEvent::Vip(applied) => seen.push((applied.new_revision, applied.value)),
+                    other => return Err(format!("unexpected event {other:?}").into()),
+                }
             }
+            assert_eq!(
+                session.vip().map(|vip| vip.entries.clone()),
+                Some(vec![entry(VipStatus::Offline)])
+            );
+            drop(session);
             peer.await??;
             assert_eq!(
                 seen,
@@ -4727,7 +4856,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21],
+                &[4, 6, 7, 13, 17, 21, 31],
                 selected,
                 &[],
                 snapshot,
@@ -5204,8 +5333,8 @@ mod tests {
     #[test]
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
-        // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 21]);
+        // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing; 31 (VIP) neither.
+        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 21, 31]);
     }
 
     #[test]
@@ -5802,7 +5931,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21],
+                &[4, 6, 7, 13, 17, 21, 31],
                 ITEM_SELECTED,
                 &[],
                 snapshot,

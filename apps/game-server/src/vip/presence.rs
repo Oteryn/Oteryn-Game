@@ -9,8 +9,9 @@
 //! until HOUSE-RUNTIME-1b (#2165) gives House sessions a native scope proof.
 #![allow(
     dead_code,
-    reason = "Production reads per session (`next_current_update`); the batched RL-11 reader, the \
-              visibility refresh and the DB-outage withdrawal path wait on the node scheduler"
+    reason = "Production reads per session (`next_current_update`, and \
+              `next_withdrawal_candidate` when the store is unavailable); the batched RL-11 \
+              reader and the visibility refresh wait on the node scheduler"
 )]
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, uuid_text};
@@ -345,6 +346,10 @@ struct Watcher {
     dirty: bool,
     reading: bool,
     retry_at: u64,
+    /// Relay hints not yet consumed by a read: target -> (advisory online, hint serial). A read
+    /// reserved after a hint consumes it (and may announce from it); a later hint survives it.
+    /// Bounded by the session's indexed targets (at most `LIST_MAX`).
+    hints: BTreeMap<CharacterId, (bool, u64)>,
 }
 struct Completion {
     session: GameSessionId,
@@ -432,6 +437,7 @@ impl State {
             dirty: true,
             reading: false,
             retry_at: 0,
+            hints: BTreeMap::new(),
         });
         watcher.ticket = ticket;
         watcher.reading = true;
@@ -469,6 +475,22 @@ impl State {
                 }
             },
         ))
+    }
+    /// Records a relay hint on every watcher that indexes `target`, stamped with a serial so a
+    /// read reserved before it cannot consume it.
+    fn hint(&mut self, target: CharacterId, online: bool) -> Result<()> {
+        let sessions = self.index.get(&target).cloned().unwrap_or_default();
+        if sessions.is_empty() {
+            return Ok(());
+        }
+        let at = self.next_serial()?;
+        for id in sessions {
+            if let Some(w) = self.sessions.get_mut(&id) {
+                w.dirty = true;
+                w.hints.insert(target, (online, at));
+            }
+        }
+        Ok(())
     }
     fn replace_watcher(&mut self, session: GameSessionId, next: Option<Watcher>) {
         // Only accepted entries (shown or hidden) are indexed: a pending, rejected or absent
@@ -654,6 +676,20 @@ impl State {
         let timely = now
             .checked_sub(started)
             .is_some_and(|elapsed| elapsed < CONFIRM_MS);
+        // Hints this read consumes: received before its reservation (serial below its ticket).
+        let hints = std::mem::take(&mut w.hints);
+        let consumed = |target: CharacterId, online: bool| {
+            hints
+                .get(&target)
+                .is_some_and(|(hinted, at)| *hinted == online && *at < ticket)
+        };
+        for (target, hint) in hints.iter().filter(|(_, (_, at))| *at > ticket) {
+            w.hints.insert(*target, *hint);
+        }
+        if !w.hints.is_empty() {
+            // A hint that arrived during this read still needs its own read.
+            w.dirty = true;
+        }
         for e in read.entries {
             if !read.complete
                 && w.entries
@@ -675,7 +711,9 @@ impl State {
                 status = Status::Unconfirmed;
                 w.dirty = true;
             }
-            let announce = matches!(reason,Refresh::PresenceHint{target,online} if target==e.target && online==e.online)
+            let hinted = matches!(reason,Refresh::PresenceHint{target,online} if target==e.target && online==e.online)
+                || consumed(e.target, e.online);
+            let announce = hinted
                 && e.notify
                 && e.visibility == Visibility::Shown
                 && compatible
@@ -1053,6 +1091,20 @@ impl State {
         w.inflight = None;
         Ok(())
     }
+    /// How long the write of `update` may take: an `ONLINE` frame must be fully written before
+    /// its confirmation deadline, and not at all once the listener is down or its epoch has
+    /// passed (VIP0 §8.2). `None` for the other statuses, which disclose nothing stale.
+    fn write_bound(&self, update: &StatusUpdate, now: u64) -> Option<std::time::Duration> {
+        if update.status != Status::Online {
+            return None;
+        }
+        if !self.listener || self.epoch != update.epoch {
+            return Some(std::time::Duration::ZERO);
+        }
+        Some(std::time::Duration::from_millis(
+            update.deadline_ms.saturating_sub(now),
+        ))
+    }
 }
 
 /// Native root-bound owner. No externally supplied current/consent/visibility predicate.
@@ -1080,8 +1132,8 @@ impl PresenceOwner {
         reason: Refresh,
     ) -> Result<()> {
         let started = clock()?;
-        if let Refresh::PresenceHint { target, .. } = reason {
-            self.target_hint(target)?;
+        if let Refresh::PresenceHint { target, online } = reason {
+            self.target_hint(target, online)?;
         }
         let (ticket, epoch, selection) = self.state.lock().map_err(|_| corrupt())?.reserve(
             fence,
@@ -1188,6 +1240,17 @@ impl PresenceOwner {
             .map_err(|_| corrupt())?
             .delivered(update, clock()?)
     }
+    /// The time left to write `update` to the client (see `State::write_bound`); zero for an
+    /// `ONLINE` update when the clock or the state is unusable.
+    pub(crate) fn write_bound(&self, update: &StatusUpdate) -> Option<std::time::Duration> {
+        let online = (update.status == Status::Online).then_some(std::time::Duration::ZERO);
+        let Ok(now) = clock() else {
+            return online;
+        };
+        self.state
+            .lock()
+            .map_or(online, |s| s.write_bound(update, now))
+    }
     /// The relay listener is up: the node can confirm presence (VIP-0 §8.2).
     pub(crate) fn listening(&self) -> bool {
         self.state.lock().is_ok_and(|s| s.listener)
@@ -1205,15 +1268,13 @@ impl PresenceOwner {
             .map_err(|_| corrupt())?
             .listener_reconnected(clock()?)
     }
-    pub(crate) fn target_hint(&self, target: CharacterId) -> Result<()> {
-        let mut s = self.state.lock().map_err(|_| corrupt())?;
-        let sessions = s.index.get(&target).cloned().unwrap_or_default();
-        for id in sessions {
-            if let Some(w) = s.sessions.get_mut(&id) {
-                w.dirty = true;
-            }
-        }
-        Ok(())
+    /// A relay hint for `target` (VIP0 §8.2): each indexed watcher reads before its next update,
+    /// and that read may announce the transition when it confirms the hinted `online`.
+    pub(crate) fn target_hint(&self, target: CharacterId, online: bool) -> Result<()> {
+        self.state
+            .lock()
+            .map_err(|_| corrupt())?
+            .hint(target, online)
     }
     pub(crate) fn forget(&self, session: GameSessionId) -> Result<()> {
         let mut s = self.state.lock().map_err(|_| corrupt())?;

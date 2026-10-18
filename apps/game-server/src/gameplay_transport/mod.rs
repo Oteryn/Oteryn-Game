@@ -34,6 +34,7 @@ mod last_position;
 mod logout;
 #[cfg(test)]
 mod logout_tests;
+mod loop_move;
 pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
@@ -68,6 +69,8 @@ mod tcp_tls;
 mod vip_intent;
 mod world_map;
 pub(crate) mod world_object;
+/// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
+pub(crate) mod world_required_capabilities;
 pub(crate) mod world_spatial;
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
@@ -411,6 +414,10 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// ADMIT0 §3.2: the requirements boot validated against this generation's real offer
+    /// before readiness. Immutable data; it never stands in for current scope authority.
+    pub(crate) required_capabilities:
+        std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     /// First-slice runtime authority remains crate-owned and cannot be supplied
     /// by a transport or client caller.
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
@@ -537,6 +544,7 @@ pub async fn serve_gameplay(
         evidence: owners.evidence,
         world_id: owners.world_id,
         channel_id: owners.channel_id,
+        required_capabilities: owners.required_capabilities,
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
         door: owners.door,
@@ -581,6 +589,7 @@ pub async fn serve_gameplay(
             owners.world_id,
             owners.channel_id,
         ),
+        loop_ground: loop_move::LoopGroundCache::default(),
     };
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
@@ -747,6 +756,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) evidence: &'a FreshEvidenceSource,
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
+    /// See [`GameplaySeamOwners::required_capabilities`].
+    pub(crate) required_capabilities:
+        std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
     pub(crate) movement_cells: &'a NativeEntryMovementCells,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
@@ -829,6 +841,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel's spell lane (ARCH-SPELL-LOCK-2 §1.2): taken before `runtime` by every
     /// key-33 caller and never while a Channel guard is held.
     pub(crate) spell_lane: crate::durability::spell_owner_commit::SpellLane,
+    /// ITEM-LOOP-1: the Channel's loop Ground items as a map overlay, rebuilt after each drop or
+    /// pickup. A leaf lock, never held across an await.
+    pub(crate) loop_ground: loop_move::LoopGroundCache,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -3149,7 +3164,7 @@ fn bundle_world_map(
     items: &mut item_view::SessionItemView,
 ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
     let at = bundle_map_position(runtime, movement_cells, actor)?;
-    Some(at.update(view, items))
+    Some(at.update(view, items, None))
 }
 
 /// What domain 17 needs from the Channel runtime: the bundle map, the actor's native position
@@ -3162,21 +3177,38 @@ struct BundleMapPosition<'a> {
 }
 
 impl BundleMapPosition<'_> {
+    /// The view update over the bundle map and, when given, the Channel's loop Ground items
+    /// (ITEM-LOOP-1).
     fn update(
         &self,
         view: &mut world_map::SessionMapView,
         items: &mut item_view::SessionItemView,
+        ground: Option<&loop_move::LoopGroundOverlay>,
     ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
         // MAP-DOOR-1 (Codex 4239177726): one read of every door's state, so each door's
         // appearance and object revision in this update agree.
         let facts = self.map.facts.pinned();
-        let source = world_map::MapViewSource {
-            overlay: &self.map.overlay,
-            facts: &facts,
-            content_generation: self.content_generation,
-            reset_epoch: 0,
-        };
-        view.update(items, &source, self.at)
+        match ground {
+            Some(ground) => {
+                let facts = ground.facts(&facts);
+                let source = world_map::MapViewSource {
+                    overlay: ground.overlay(),
+                    facts: &facts,
+                    content_generation: self.content_generation,
+                    reset_epoch: 0,
+                };
+                view.update(items, &source, self.at)
+            }
+            None => {
+                let source = world_map::MapViewSource {
+                    overlay: &self.map.overlay,
+                    facts: &facts,
+                    content_generation: self.content_generation,
+                    reset_epoch: 0,
+                };
+                view.update(items, &source, self.at)
+            }
+        }
     }
 }
 
@@ -3264,6 +3296,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.vip_follow(session).await
     }
 
+    async fn vip_write_bound(&self, session: GameSessionId) -> Option<std::time::Duration> {
+        self.chat.vip.write_bound(session)
+    }
+
     async fn vip_delivered(&self, session: GameSessionId) {
         self.chat.vip.delivered(session);
     }
@@ -3321,20 +3357,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         npc_trade_command::npc_trade(self, actor, command, intent).await
     }
 
-    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
-    /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
-    /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
+    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18.
+    /// MAP-ITEM-REF-1: any other World offers capability 4 (once Part B sets its gate) only when
+    /// the active generation pins a non-empty Item key set. ADMIT0: boot validated
+    /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
+    /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        if self.bundle_map().is_some() {
-            capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
-        } else {
-            item_ref_admission::offered_capabilities(self.active_generation)
-        }
-    }
-
-    fn required_capability(&self) -> Option<u32> {
-        self.bundle_map()
-            .map(|_| oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+        world_required_capabilities::offered_for_scope(
+            self.bundle_map().is_some(),
+            self.active_generation,
+        )
     }
 
     /// MAP-CUTOVER-1b: domain 17 of a bundle World at the actor's current position. The position
@@ -3346,11 +3378,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         view: &mut world_map::SessionMapView,
         items: &mut item_view::SessionItemView,
     ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
-        let at = {
+        let (at, index) = {
             let mut runtime = self.runtime.lock().await;
-            bundle_map_position(&mut runtime, self.movement_cells, actor)?
+            let index = item_ref_admission::pinned_index(&runtime, self.active_generation);
+            (
+                bundle_map_position(&mut runtime, self.movement_cells, actor)?,
+                index,
+            )
         };
-        Some(at.update(view, items))
+        // ITEM-LOOP-1: the dropped items, read after the runtime lock is released.
+        let ground = loop_move::loop_ground(self, at.map.overlay.base(), index).await;
+        Some(at.update(view, items, ground.as_deref()))
     }
 
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -3400,6 +3438,33 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         request: item_move::EquipmentMove,
     ) -> item_move::EquipmentMoveResult {
         equipment_move::move_equipment(self, actor, command, request).await
+    }
+
+    async fn committed_loop_move(
+        &self,
+        _actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<item_move::LoopMoveReplay> {
+        loop_move::committed_loop_move(self, command).await
+    }
+
+    async fn move_loop_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        request: item_move::LoopMove,
+    ) -> item_move::LoopMoveResult {
+        loop_move::move_loop_item(self, actor, command, request).await
+    }
+
+    /// BAGS-1: a container of the carried tree (capability 14).
+    async fn observe_container(
+        &self,
+        _actor: ExactActorRef,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+        target: item_view::ItemKey,
+    ) -> Option<container_view::ContainerObservation> {
+        loop_move::observe_container(self, fence, target).await
     }
 
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
@@ -4266,6 +4331,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             let transition =
                 FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
                     .map_err(|_| Rejected)?;
+            // ADMIT0 §4 / FND-04A §7 step 14: only now, after grant authentication and the
+            // safe ownership/world classification, may a missing requirement be revealed.
+            // The binding is this composition's independently resolved observation; the
+            // commit below rechecks it under the deciding transaction's locks. Refusing here
+            // precedes capacity reservation and the durable commit: no nonce is consumed.
+            let (scope, generation, policy) = composition.runtime_capability_binding();
+            if !self
+                .required_capabilities
+                .matches_current(scope, generation, policy)
+            {
+                return Err(Rejected);
+            }
+            let capabilities = self
+                .required_capabilities
+                .authenticate_support(attempt.supported_capabilities)
+                .map_err(|error| match error {
+                    world_required_capabilities::SessionCapabilityError::MissingSupport(_) => {
+                        Classified(N8::AdmissionCapabilityRequired)
+                    }
+                    _ => Unavailable,
+                })?;
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);
@@ -4282,6 +4368,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     self.holder,
                     &composition,
                     &request,
+                    capabilities.current_check(),
                 )
                 .await
             {
@@ -5011,6 +5098,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 #[cfg(test)]
                 stage(&format!("equipment_refused:{_error:?}"));
+                return (FirstEntryOutcome::RefusedUnavailable, None, None);
+            }
+            // STARTER-1 (CP D1438): the starter grant of the Character's first entry, once per
+            // Character and template; a replay writes nothing.
+            if self
+                .root
+                .grant_starter_items(
+                    self.character,
+                    self.holder,
+                    &fence,
+                    native,
+                    &crate::durability::starter_grant::StarterTemplate::main(),
+                )
+                .await
+                .is_err()
+            {
                 return (FirstEntryOutcome::RefusedUnavailable, None, None);
             }
             let gameplay =

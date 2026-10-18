@@ -395,12 +395,18 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     // Actual acceptance validator used by native ServerAccepted/ServerResumeAccepted codecs.
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[28]), Ok(()));
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[]), Ok(()));
+    // An unregistered ID is refused alone and beside 28. VIP-2 (CP D1444) registered 31, so the
+    // probe is the lowest ID above 28 that the registry leaves unregistered. It must stay above 28
+    // so that `[28, probe]` is ascending and the refusal is the mismatch, not the set order.
+    let unregistered = (29u32..)
+        .find(|id| !crate::REGISTERED_CAPABILITY_IDS_V1.contains(id))
+        .unwrap();
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[29]),
+        crate::validate_acceptance_value(1, 1, 1, &[unregistered]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[28, 29]),
+        crate::validate_acceptance_value(1, 1, 1, &[28, unregistered]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
@@ -427,12 +433,10 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(entry["requires"], serde_json::json!([]));
     assert_eq!(entry["command_types"], serde_json::json!([30]));
     assert_eq!(entry["state_domains"], serde_json::json!([]));
-    // 29 stayed unallocated by ITEM-LOOK; later gates (VIP-2 took 31 under CP D1444) only move
-    // the next free ID upward.
-    assert!(
-        registry["allocation_ranges"]["capability_id"]["next_unallocated"]
-            .as_u64()
-            .is_some_and(|next| next >= 29)
+    // ITEM-LOOK left 29 unallocated; ADMIT-CAP-1 took 29 and 30 and VIP-2 (CP D1444) took 31.
+    assert_eq!(
+        registry["allocation_ranges"]["capability_id"]["next_unallocated"],
+        32
     );
     // CP D1268/D1292: command 30 is registered once, gated by 28, with the codec's byte bounds.
     let commands: Vec<_> = registry["command_types"]

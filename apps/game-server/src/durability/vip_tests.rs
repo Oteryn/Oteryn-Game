@@ -1,4 +1,4 @@
-//! VIP-1b (CP D1444): the VIP writers against the installed migration `0124_vip_lists.sql`,
+//! VIP-1b (CP D1444): the VIP writers against the installed migration `0130_vip_lists.sql`,
 //! with the real native recovery and session checks. Mounted by the library's test target only
 //! (`gameplay_transport::vip_intent`), which owns the real Premium coordinator; without a
 //! configured PostgreSQL route each test returns without running.

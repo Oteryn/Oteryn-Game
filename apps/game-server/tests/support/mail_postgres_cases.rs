@@ -183,6 +183,7 @@ async fn mint_text_retirement_item(h: &native_items::Harness) -> TestResult<[u8;
         .mint_definition(&authority, text_retirement_definition(), 1)
         .await?;
     let facts = ItemDefinitionFacts {
+        weight: Some(1),
         definition: text_retirement_definition(),
         stack: ItemStackClass::Stackable {
             proven_maximum: None,

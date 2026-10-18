@@ -2,7 +2,7 @@
 //! of an Account in one World, and the admission producer of the character's baseline and
 //! snapshot (VIP-1b, CP D1444).
 //!
-//! Storage is migration `0124_vip_lists.sql`; the runtime role has exactly the column grants
+//! Storage is migration `0130_vip_lists.sql`; the runtime role has exactly the column grants
 //! these writers use. Every writer runs the native recovery, session, scope and node checks
 //! unchanged. Accept changes an existing pending consent only under the target's own native
 //! fence. No CharacterRevision, item or presence state is written. Premium is read by the
@@ -1470,7 +1470,7 @@ async fn mutate_list(
             let Some((name, _)) = vip_group_name(name) else {
                 return Ok((VipListResult::Rejected, None));
             };
-            let rows = sqlx::query("SELECT group_no,name,lower(name)=lower($3) AS same_name FROM game_vip_groups WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid ORDER BY group_no")
+            let rows = sqlx::query("SELECT group_no,name,lower(name)=lower($3) AS same_name FROM game_vip_groups WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid ORDER BY group_no LIMIT 6")
                 .bind(account).bind(world).bind(&name).fetch_all(&mut **tx).await?;
             let mut groups = BTreeSet::new();
             let mut taken = false;
