@@ -524,3 +524,39 @@ exist on main. They are the held semantic-pass/RevisionSlot integration in
 authored here. Because the lib does not compile, the integration-test targets that
 hold the E0005 sites were not compiler-checked; only rustfmt passed. Canonical
 full-package, PG and runtime qualification remain **NOT_RUN**.
+
+## 2026-10-18 — promotion NPC wired through dispatch: QUALIFIED_LOCAL (blessings fail closed)
+
+`origin/main` (`64d5e4da`) is merged with a merge commit. Migration
+`0137_character_promotion_purchases.sql` adds the promotion and blessing
+fee-burn causes, the receipt tables, promotion state and the progression and
+purchase-consistency guards (answers the Codex P1 on the missing fee-cause
+schema). The purchase context lives in `durability::npc_purchase`. The
+promotion gate runs through the native Premium coordinator. NPC talk prompts and
+confirmations reach the purchase through `FreshAdmissionAuthority::npc_talk`.
+Blessing offers fail closed behind the purchase seam: there is no qualified
+blessing catalogue or price source, and no values are invented.
+
+E2E: `gameplay_transport::monk_save::postgres_tests::promotion_npc_e2e::promotion_talk_through_dispatch_burns_fee_and_promotes`.
+It covers the prompt, the confirm, one receipt, the 20000 gold fee burn,
+promoted state, revision +1, replay without a second burn, the
+already-promoted refusal and the blessing topic failing closed.
+
+Qualification on the exact pushed tree (owner PC, Rust 1.95.0, shared PG 17.6
+via `in-pg-netns.sh`):
+
+- `cargo fmt --all --check` passed.
+- Strict all-target Clippy for `oteryn-game-server` passed.
+- The filtered lib tests, e2e included: 230 passed, 0 failed.
+- `character_authority_postgres`: 170 passed, 0 failed. The filter covered
+  death_receipt, item_fee_burn, gold_fee_bank, progression, premium,
+  check_function_privileges, promotion, blessing, wheel, grant and migration.
+- `character_death_receipts_postgres`: 6 passed, 0 failed.
+- `promotion_policy`: 1 passed, 0 failed.
+- `wp5_s3b_composition`: compiled with `--no-run`.
+- The routing contract is healthy.
+
+The standalone `item_fee_burn_postgres` target (`test = false`) does not compile
+on main since #2157: `npc_travel` path-loads a fixture that needs
+`crate::bestiary_postgres_harness`. That target is not owned here and was not
+changed; its cases ran through `character_authority_postgres` instead.
