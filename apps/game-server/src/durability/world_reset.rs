@@ -580,12 +580,19 @@ impl DurabilityRoot {
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&generation).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
             if !local {return Ok(Err(WorldResetError::NotCurrent));}
 
-            // Select a root, then its first actual live corpse entry. Character backpack
-            // entries cannot have Ground parents under the current native FK.
+            // Select a root, then its first live content entry: every content of a Ground
+            // container retires before the container itself, in placement order, so a crash
+            // resumes the same frozen entry. Ground containers hold contents only in the corpse
+            // entry family; a character container entry's parent is a backpack slot item (FK),
+            // never Ground (DUR-03 exclusive location). A row of that family under a Ground
+            // root is therefore corrupt state: refuse it rather than retire the root first.
             let ground = sqlx::query("SELECT g.item_instance_id::text,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,g.runtime_scope_ownership_generation::text FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY g.item_instance_id LIMIT 1")
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
             let Some(ground) = ground else { if !matches!(phase,Phase::Freeze) {return Ok(Err(WorldResetError::NotCurrent));} tx.commit(deadline).await?; return Ok(Ok(PhaseResult::Frozen(None))); };
             let parent = uuid(ground.try_get(0)?)?;
+            let character_contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+                .bind(parent.as_slice()).fetch_one(&mut **tx).await?;
+            if character_contents { return Ok(Err(WorldResetError::InvalidStoredState)); }
             let entry = sqlx::query("SELECT e.item_instance_id::text,e.placement_ordinal::text FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal,e.item_instance_id LIMIT 1")
                 .bind(parent.as_slice()).fetch_optional(&mut **tx).await?;
             let item = match &entry { Some(row)=>uuid(row.try_get(0)?)?,None=>parent };

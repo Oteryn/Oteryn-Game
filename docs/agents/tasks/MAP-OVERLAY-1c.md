@@ -47,12 +47,20 @@ merge_authority: CP_ONLY (builder never marks ready)
 - Integration case `reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates`
   runs the real path through PG: a crash after one frozen candidate, Ground items, a real
   HouseInterior placement, NewEpoch, and a second boot that does nothing.
-  Fixture measurement: 2 items retired in 317 ms.
+  The case also holds a Ground container with two contents. The crash leaves its first
+  content frozen, and resume retires both contents (ordinal order) before the container.
+  Fixture measurement: 5 items retired in 678 ms.
+- Codex P1 (retire order): every content of a Ground container retires before the
+  container. Ground contents exist only in the corpse entry family. A character container
+  entry's parent is a backpack slot item (FK), never Ground; the PG case asserts 23503.
+  Such a row under a Ground root is refused as `InvalidStoredState` and the root is not
+  attempted.
 - Spell lane pin: `world_reset_phase` (holds a `SpellLanePermit`) deletes corpse entries, so
   it is added to the reviewed key-33 inventory in `spell_lane_key33_pin.rs`.
 - Remaining fail-closed seams (not in this packet):
   - The production login must be granted `oteryn_game_world_reset`. Until then
-    activation refuses with 42501 and the node stays not ready.
+    activation refuses with 42501 and the node stays not ready. Follow-up (CP D1447): the
+    grant goes into the oteryn-vps batch deploy task (no Synology change).
   - The bundle-world House catalogue is Unknown, so a bundle World reset refuses
     (HOUSE-RUNTIME owner).
   - Only one Channel per node: a multi-Channel World waits as `NotCurrent`.

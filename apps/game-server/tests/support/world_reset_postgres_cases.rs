@@ -1223,7 +1223,8 @@ impl crate::durability::world_reset_port::WorldDrainWitness for ResetRunDrain {
 }
 
 /// MAP-OVERLAY-1c: the node boot path `run_world_reset` completes a RETIRING reset left by a
-/// crash after one frozen candidate: it resumes that exact identity, retires every Ground item,
+/// crash after one frozen candidate, a content entry of a Ground container: it resumes that
+/// exact identity, retires every content before its container and every Ground item,
 /// leaves the real HouseInterior custody untouched, activates epoch N+1 atomically within
 /// `MAP01-RESET-RETIRE-MS`, and a second boot finds no RETIRING reset.
 #[test]
@@ -1242,9 +1243,27 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        // A Ground container holding two items; minted first, so its contents are the first
+        // candidates of the run.
+        let corpse = crate::corpse_transfer_postgres_cases::mint_corpse(
+            &h,
+            &authority,
+            400,
+            id(crate::item_transfer_postgres_cases::CHARACTER),
+        )
+        .await?;
+        let first_content = crate::corpse_transfer_postgres_cases::put_loot(&h, corpse, 400, 1, 80).await?;
+        let second_content = crate::corpse_transfer_postgres_cases::put_loot(&h, corpse, 400, 2, 81).await?;
         let stone = h.mint(&authority, "fixture:b3.stone", 2).await?;
         let coin = h.mint(&authority, "fixture:b3.coin", 3).await?;
         drop(authority);
+        // A character container entry can never sit under a Ground container: its parent must
+        // be a backpack slot item (FK), so the corpse family is the only Ground content.
+        let refused = sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,9,game_character_uuid_v7())")
+            .bind(coin.as_slice()).bind(id(WORLD).as_slice()).bind(id(crate::item_transfer_postgres_cases::CHARACTER).as_slice()).bind(corpse.as_slice())
+            .execute(&h.pool).await;
+        let code = match &refused { Err(sqlx::Error::Database(error)) => error.code().map(|code| code.into_owned()), _ => None };
+        assert_eq!(code.as_deref(), Some("23503"), "{refused:?}");
         let (backpack, item) = house_custody::funded(&h).await?;
         house_custody::seed(&h).await?;
         house_custody::place(&h, backpack, item).await?;
@@ -1292,6 +1311,7 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
                 .map_err(debug)?
                 .ok_or("frozen candidate")?
         };
+        assert_eq!(frozen.identity().item_instance_id, first_content);
         drop(authority);
         let authority = h
             .root
@@ -1316,10 +1336,25 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
             run.elapsed.as_millis()
         );
         assert!(matches!(run.disposition, WorldResetActivationDisposition::NewEpoch(_)));
-        assert_eq!((run.reset_epoch, run.retired), (0, 2));
+        assert_eq!((run.reset_epoch, run.retired), (0, 5));
         assert!(run.within_budget());
-        assert_eq!(h.item_state(stone).await?, (0, 2));
-        assert_eq!(h.item_state(coin).await?, (0, 2));
+        for retired in [first_content, second_content, corpse, stone, coin] {
+            assert_eq!(h.item_state(retired).await?, (0, 2));
+        }
+        assert_eq!(h.count("game_item_corpse_container_entries").await?, 0);
+        // Each content's receipt names its container and ordinal; the container's names itself.
+        let receipts: Vec<(Vec<u8>, Option<String>)> = sqlx::query_as("SELECT uuid_send(reset_parent_item),placement_ordinal::text FROM game_item_decay_retire_receipts WHERE cause_kind='WORLD_RESET' AND item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) ORDER BY placement_ordinal NULLS LAST")
+            .bind(first_content.as_slice()).bind(second_content.as_slice()).bind(corpse.as_slice())
+            .fetch_all(&h.pool).await?;
+        let container = corpse.to_vec();
+        assert_eq!(
+            receipts,
+            vec![
+                (container.clone(), Some("1".to_owned())),
+                (container.clone(), Some("2".to_owned())),
+                (container, None),
+            ]
+        );
         assert_eq!(
             h.root
                 .read_world_reset_retirement(&authority, frozen.identity().item_instance_id)
