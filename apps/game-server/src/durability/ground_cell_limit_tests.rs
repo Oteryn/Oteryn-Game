@@ -312,6 +312,7 @@ mod postgres {
     use crate::durability::item_transfer::{
         ItemDefinitionFacts, ItemStackClass, ItemTransferDestination, ItemTransferRequest,
     };
+    use crate::durability::item_weight_lookup::TEST_WEIGHTS;
     use crate::durability::spell_item_transaction::SpellItemError;
     use crate::durability::spell_item_transaction::{
         SpellItemScopeAuthority, assert_spell_item_scope_in_transaction,
@@ -845,6 +846,7 @@ mod postgres {
                             .ok_or("native placement key")?,
                         reset_epoch: 1,
                         item: ItemDefinitionFacts {
+                            weight: None,
                             definition,
                             stack: ItemStackClass::NonStackable,
                             container_capacity: None,
@@ -1072,10 +1074,12 @@ mod postgres {
                     &h.node,
                     fence,
                     ItemTransferRequest {
+                        weight_generation_digest: [0xD1; 32],
                         command: command(800)?,
                         source_item_instance_id: backpack_id,
                         destination: ItemTransferDestination::ContainerSlot,
                         item: ItemDefinitionFacts {
+                            weight: Some(1),
                             definition: definition(),
                             stack: ItemStackClass::NonStackable,
                             container_capacity: Some(20),
@@ -1086,12 +1090,20 @@ mod postgres {
                         ruleset_revision: "ruleset-1".into(),
                         sim_revision: "sim-1".into(),
                     },
+                    &TEST_WEIGHTS,
                 )
                 .await
                 .map_err(debug)?;
             let permit = SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
             h.root
-                .commit_item_transfer(&permit, &recovery, &h.node, fence, &mut transfer)
+                .commit_item_transfer(
+                    &permit,
+                    &recovery,
+                    &h.node,
+                    fence,
+                    &mut transfer,
+                    &TEST_WEIGHTS,
+                )
                 .await
                 .map_err(debug)?;
             drop(permit);
@@ -1183,6 +1195,7 @@ mod postgres {
                         .ok_or("native placement key")?,
                     reset_epoch: 1,
                     item: ItemDefinitionFacts {
+                        weight: None,
                         definition: definition(),
                         stack: ItemStackClass::NonStackable,
                         container_capacity: None,
@@ -1477,6 +1490,7 @@ mod postgres {
             // Genuine current-fenced Ground→container-slot transfer removes one root.
             // The definition's equipment facts are explicit fixture Content DATA.
             let request = ItemTransferRequest {
+                weight_generation_digest: [0xD1; 32],
                 command: CommandRef::new(
                     GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?,
                     CommandId::new(1).map_err(debug)?,
@@ -1484,6 +1498,7 @@ mod postgres {
                 source_item_instance_id: ids[0],
                 destination: ItemTransferDestination::ContainerSlot,
                 item: ItemDefinitionFacts {
+                    weight: Some(1),
                     definition: definition(),
                     stack: ItemStackClass::NonStackable,
                     container_capacity: Some(20),
@@ -1497,12 +1512,19 @@ mod postgres {
             let fence = harness::item_fence()?;
             let mut candidate = h
                 .root
-                .freeze_item_transfer(&recovery, &h.node, fence, request)
+                .freeze_item_transfer(&recovery, &h.node, fence, request, &TEST_WEIGHTS)
                 .await
                 .map_err(debug)?;
             let permit = SpellLanePermit::of_fresh_scope(harness::scope()?).await?;
             h.root
-                .commit_item_transfer(&permit, &recovery, &h.node, fence, &mut candidate)
+                .commit_item_transfer(
+                    &permit,
+                    &recovery,
+                    &h.node,
+                    fence,
+                    &mut candidate,
+                    &TEST_WEIGHTS,
+                )
                 .await
                 .map_err(debug)?;
             drop(permit);

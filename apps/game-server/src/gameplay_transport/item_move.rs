@@ -1,6 +1,6 @@
 //! ITEM-MOVE-1: command 9 (`ItemMoveIntentV1`, ITEM-MOVE-WIRE-0 §5) taking an entry of the open
 //! corpse into the Character's main backpack, and (EQUIP-WIRE-1, ITEM-MOVE-WIRE-1 §4) equipping
-//! a main backpack entry into a free slot or unequipping a slot's item into the main backpack.
+//! a main backpack entry into a slot or unequipping a slot's item into the main backpack.
 //!
 //! - **Replay first.** The committed TRANSFER of the CommandRef, then its equipment receipt, is
 //!   looked up before the handle is resolved, so a command that committed before a reconnect
@@ -8,10 +8,10 @@
 //! - **Source.** Only an entry of the open corpse, shown in it and in reach on the Channel owner's
 //!   observation (`corpse_open::within_reach`); the TRANSFER (`settle_corpse_pickup`) decides the
 //!   rest. Ground and container destinations answer `NOT_SUPPORTED`.
-//! - **Equipment (capability 12).** A main backpack entry to a free slot, or a slot's item to the
-//!   main backpack, through the equipment owner in one transaction. An occupied slot (the swap),
-//!   a slot-to-slot move and any other source answer `NOT_SUPPORTED`; the main backpack itself is
-//!   a container (`SLOT_MISMATCH`).
+//! - **Equipment (capability 12).** A main backpack entry to a slot, or a slot's item to the main
+//!   backpack, through the equipment owner in one transaction. Into an occupied slot the owner
+//!   swaps the whole items atomically (ITEM-MOVE-2a) or refuses. A slot-to-slot move and any other
+//!   source answer `NOT_SUPPORTED`; the main backpack itself is a container (`SLOT_MISMATCH`).
 //! - **Deltas.** After `MOVED` the open corpse's domain 11 delta and then the domain 9 delta
 //!   follow the result; under capability 12 domain 9 carries the equipment.
 //! - **Unknown outcome.** When the TRANSFER or the replay read cannot tell whether the command
@@ -144,7 +144,11 @@ pub(super) fn outcome_of(
                 Refusal::CorpseExclusiveWindow => ItemMoveOutcome::NotOwner,
                 Refusal::CorpseNotPickupable => ItemMoveOutcome::NotPickupable,
                 Refusal::ContainerNotEmpty => ItemMoveOutcome::NotSupported,
-                Refusal::DefinitionMismatch
+                Refusal::WeightUnknown
+                | Refusal::WeightGenerationMismatch
+                | Refusal::WeightDefinitionMismatch
+                | Refusal::Overweight
+                | Refusal::DefinitionMismatch
                 | Refusal::UnknownStackClass
                 | Refusal::UnsupportedStackMaximum
                 | Refusal::QuantityAboveStackMaximum
@@ -202,12 +206,9 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
             if view.is_main_backpack(&source) {
                 return ItemMoveStep::Result(ItemMoveOutcome::SlotMismatch, Vec::new());
             }
-            // Swap (an occupied slot) is ITEM-MOVE-2a's next slice; a view that does not show
-            // the slots never moves into one.
-            if !view.equip_drop()
-                || !view.is_backpack_entry(&source)
-                || view.equipped_item(to).is_some()
-            {
+            // An occupied slot reaches the owner, which swaps atomically or refuses
+            // (ITEM-MOVE-2a); a view that does not show the slots never moves into one.
+            if !view.equip_drop() || !view.is_backpack_entry(&source) {
                 return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
             }
             EquipmentMove::Equip { item: source, to }

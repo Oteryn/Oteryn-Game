@@ -11512,6 +11512,98 @@
       "notes": "SPELL-PRESENT-0 \u00a79 and \u00a713. Registered by PRESENT-WIRE-1 (MAGIC-CAST-1, #1622)."
     },
     {
+      "id": "DUR03-RL-01-EQUIP-SWAP",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md",
+      "resource": "Item instances touched by one occupied-slot whole-item exchange",
+      "unit": "item instances per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The equipment owner admits only this fixed two-item/four-location swap shape before writes; unsupported larger shapes are refused, never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: occupied_slot_swap_is_atomic_at_full_backpack_and_replay_bound (authored; execution NOT_RUN)",
+        "max+1=3: no larger shape is admitted by the fixed swap constructor (source invariant; no execution claim)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_equipment.rs occupied-slot swap and equipment_event",
+        "apps/game-server/migrations/0113_equipment_swap.sql receipt-bound swap guards"
+      ],
+      "notes": "ITEM-MOVE-WIRE-1 section 6.3; CP D1282 #2131/6227784667. Whole-item exchange only; stack merge/top-up unfinished. DUR03-RL-07 unchanged; actual worst-case measurement NOT_RUN. SQL Content class parity PARITY_PENDING."
+    },
+    {
+      "id": "DUR03-RL-02-EQUIP-SWAP",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md",
+      "resource": "Location lines of one occupied-slot exchange: two removals and two placements",
+      "unit": "location lines per logical transaction",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The equipment owner admits only this fixed two-item/four-location swap shape before writes; unsupported larger shapes are refused, never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4: occupied_slot_swap_is_atomic_at_full_backpack_and_replay_bound (authored; execution NOT_RUN)",
+        "max+1=5: no larger shape is admitted by the fixed swap constructor (source invariant; no execution claim)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_equipment.rs occupied-slot swap and equipment_event",
+        "apps/game-server/migrations/0113_equipment_swap.sql receipt-bound swap guards"
+      ],
+      "notes": "ITEM-MOVE-WIRE-1 section 6.3; CP D1282 #2131/6227784667. Whole-item exchange only; stack merge/top-up unfinished. DUR03-RL-07 unchanged; actual worst-case measurement NOT_RUN. SQL Content class parity PARITY_PENDING."
+    },
+    {
+      "id": "DUR03-RL-06-EQUIP-SWAP-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md",
+      "resource": "Participating item instances of one occupied-slot exchange",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The equipment owner admits only this fixed two-item/four-location swap shape before writes; unsupported larger shapes are refused, never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: occupied_slot_swap_is_atomic_at_full_backpack_and_replay_bound (authored; execution NOT_RUN)",
+        "max+1=3: no larger shape is admitted by the fixed swap constructor (source invariant; no execution claim)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_equipment.rs occupied-slot swap and equipment_event",
+        "apps/game-server/migrations/0113_equipment_swap.sql receipt-bound swap guards"
+      ],
+      "notes": "ITEM-MOVE-WIRE-1 section 6.3; CP D1282 #2131/6227784667. Whole-item exchange only; stack merge/top-up unfinished. DUR03-RL-07 unchanged; actual worst-case measurement NOT_RUN. SQL Content class parity PARITY_PENDING."
+    },
+    {
+      "id": "DUR03-RL-06-EQUIP-SWAP-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE1_EQUIP_AND_DROP_DECISION_2026-09-30.md",
+      "resource": "Effect work units of one occupied-slot exchange: each participant plus removal and placement",
+      "unit": "effect work units per logical transaction",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The equipment owner admits only this fixed two-item/four-location swap shape before writes; unsupported larger shapes are refused, never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=6: occupied_slot_swap_is_atomic_at_full_backpack_and_replay_bound (authored; execution NOT_RUN)",
+        "max+1=7: no larger shape is admitted by the fixed swap constructor (source invariant; no execution claim)"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/character_equipment.rs occupied-slot swap and equipment_event",
+        "apps/game-server/migrations/0113_equipment_swap.sql receipt-bound swap guards"
+      ],
+      "notes": "ITEM-MOVE-WIRE-1 section 6.3; CP D1282 #2131/6227784667. Whole-item exchange only; stack merge/top-up unfinished. DUR03-RL-07 unchanged; actual worst-case measurement NOT_RUN. SQL Content class parity PARITY_PENDING."
+    },
+    {
       "id": "LOGOUT-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md",
       "resource": "LOGOUT_INTENT commands (command type 23, capability 21) outstanding per GameSession",

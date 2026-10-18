@@ -74,6 +74,7 @@ impl Fixture {
             gold: definition(Coin::Gold.production_key()),
             crystal: definition(Coin::Crystal.production_key()),
             backpack: ItemDefinitionFacts {
+                weight: None,
                 definition: definition("fixture:backpack"),
                 stack: ItemStackClass::NonStackable,
                 container_capacity: Some(20),

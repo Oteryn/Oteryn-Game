@@ -5,6 +5,8 @@
 // equipped through the real B3-1 TRANSFER path; its definition is the same
 // test-only fixture as the B3-1 cases.
 
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
@@ -533,6 +535,7 @@ impl Harness {
             other => return Err(format!("unexpected MINT outcome {other:?}").into()),
         };
         let request = ItemTransferRequest {
+            weight_generation_digest: [0xD1; 32],
             command: command(command_id)?,
             source_item_instance_id: backpack,
             destination: ItemTransferDestination::ContainerSlot,
@@ -555,7 +558,7 @@ impl Harness {
     ) -> TestResult {
         let mut candidate = self
             .root
-            .freeze_item_transfer(authority, &self.node, fence, request)
+            .freeze_item_transfer(authority, &self.node, fence, request, &TEST_WEIGHTS)
             .await
             .map_err(debug)?;
         match self
@@ -566,6 +569,7 @@ impl Harness {
                 &self.node,
                 fence,
                 &mut candidate,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?
@@ -757,6 +761,7 @@ fn definition(family: &str, key: &str) -> TypedDefinitionRef {
 
 fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", key),
         stack,
         container_capacity: None,
@@ -767,6 +772,7 @@ fn facts(key: &str, stack: ItemStackClass) -> ItemDefinitionFacts {
 /// Test-only backpack: capacity 20 and a complete `container`-slot pattern.
 fn backpack_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: definition("Item", BACKPACK),
         stack: ItemStackClass::NonStackable,
         container_capacity: Some(20),
@@ -828,6 +834,7 @@ fn pickup(command: CommandRef, key: u64, epoch: u64, quantity: u32) -> MapItemMi
 /// The B3-1 pickup of a minted item from Ground into the main backpack.
 fn into_backpack(command: CommandRef, item: [u8; 16]) -> ItemTransferRequest {
     ItemTransferRequest {
+        weight_generation_digest: [0xD1; 32],
         command,
         source_item_instance_id: item,
         destination: ItemTransferDestination::MainBackpack,
@@ -1182,6 +1189,7 @@ fn map_item_mint_refusals_and_invalid_input_write_nothing() -> TestResult {
                 "not an Item definition",
                 MapItemMintRequest {
                     item: ItemDefinitionFacts {
+                        weight: Some(1),
                         definition: definition("Outfit", COIN),
                         ..facts(COIN, STACKABLE)
                     },

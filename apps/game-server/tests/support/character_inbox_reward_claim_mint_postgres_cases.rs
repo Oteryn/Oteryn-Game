@@ -72,6 +72,7 @@ pub(super) fn request(count: u8) -> RewardClaimInboxMintRequest {
             .map(|i| RewardClaimInboxMintOutput {
                 source_line: u32::from(i),
                 item: ItemDefinitionFacts {
+                    weight: None,
                     definition: TypedDefinitionRef {
                         family: "Item".into(),
                         production_key: format!("fixture:reward.{i}"),
