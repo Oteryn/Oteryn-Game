@@ -291,10 +291,10 @@ impl Fixture {
         sqlx::migrate!("./migrations").run(&pool).await?;
         // D1343 installs the real migration through the shared SQLx ledger.
         // Never apply a second, fixture-only copy of the staff schema.
-        let installed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM _sqlx_migrations WHERE version=116 AND success) AND to_regclass('game_staff_operations') IS NOT NULL")
+        let installed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM _sqlx_migrations WHERE version=133 AND success) AND to_regclass('game_staff_operations') IS NOT NULL")
             .fetch_one(&pool)
             .await?;
-        assert!(installed, "staff migration 0116 must be installed");
+        assert!(installed, "staff migration 0133 must be installed");
         sqlx::raw_sql("CREATE TABLE staff_fixture_domain(operation_id text PRIMARY KEY); GRANT SELECT,INSERT ON staff_fixture_domain TO oteryn_game_runtime").execute(&pool).await?;
         let signer = Signer::with_role(role);
         let (trust, activation) = signer.activation();
@@ -303,6 +303,13 @@ impl Fixture {
         sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,link_sha256,previous_link_sha256,roster_sha256,link_kind,signed_bytes,principal,key_fingerprint,signature,created_xact_id) VALUES('alpha-test',1,$1,$2,$3,'ACTIVATION',$4,$5,$6,$7,txid_current())")
             .bind(checked.digest()).bind("0".repeat(64)).bind(trust.roster_digest()).bind(&activation.bytes).bind(&activation.principal).bind(checked.fingerprint()).bind(&activation.signature).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_staff_control_heads(environment,control_seq,link_sha256,activation_sha256) VALUES('alpha-test',1,$1,$1)").bind(trust.activation_digest()).execute(&mut *tx).await?;
+        // Owner provisioning stores the activated roster with its activation;
+        // the moderation bindings read the signer's role from it.
+        sqlx::query("INSERT INTO game_staff_rosters(environment,roster_sha256,roster) VALUES('alpha-test',$1,$2)")
+            .bind(trust.roster_digest())
+            .bind(&signer.roster)
+            .execute(&mut *tx)
+            .await?;
         tx.commit().await?;
         // D1412: the reviewed activation history pins the first roster at 1.
         let history = History::from_reviewed(
@@ -2614,10 +2621,11 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             match made {
                 Ok(root) => Ok(Some(Self {
                     head: f.trust.activation_digest().to_owned(),
+                    // As the node builds it from its staff trust.
+                    desk: StaffDesk::for_environment(Some(f.trust.environment())),
                     f,
                     root,
                     login,
-                    desk: StaffDesk::new(),
                     sequence: 1,
                     operation: 1,
                     last: None,
@@ -2932,7 +2940,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             // A restarted node reads the durable sanction back.
             assert_eq!(
                 e.root
-                    .staff_active_mute_until(target, NOW)
+                    .staff_active_mute_until(e.f.trust.environment(), target, NOW)
                     .await
                     .map_err(debug)?,
                 Some(1_060_000)
@@ -3026,6 +3034,73 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 e.scalar("SELECT count(*) FROM game_staff_action_receipts")
                     .await?,
                 4
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_active_mutes_are_scoped_to_the_staff_environment() -> TestResult {
+        exec_case("muteenv", Some("GM"), async |e| {
+            let target = id(TARGET);
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let sanction = muted
+                .data
+                .as_ref()
+                .and_then(|data| data["sanction_id"].as_str())
+                .ok_or("sanction id")?
+                .to_owned();
+            let environment = e.f.trust.environment().to_owned();
+            // The same Character's sanction moves to another staff environment
+            // (written as the owner with the replica role, as a shared
+            // database holding several environments would have it).
+            let mut tx = e.f.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_sanctions SET environment='other-env' \
+                 WHERE sanction_id=$1::uuid",
+            )
+            .bind(&sanction)
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            // Chat admission in this environment loads no mute from it ...
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(&environment, target, NOW)
+                    .await
+                    .map_err(debug)?,
+                None
+            );
+            // ... while its own environment still sees it.
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until("other-env", target, NOW)
+                    .await
+                    .map_err(debug)?,
+                Some(NOW + 60_000)
+            );
+            // INSPECT reports no foreign mute, and a new MUTE answers only
+            // its own end.
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            let data = seen.data.ok_or("inspect data")?;
+            assert_eq!(
+                data["active_mutes"].as_array().map(Vec::len),
+                Some(0),
+                "foreign mutes: {data}"
+            );
+            let again = e.send(mute(TARGET, 30_000)).await.map_err(debug)?;
+            assert_eq!(of(&again), COMMITTED);
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(&environment, target, NOW)
+                    .await
+                    .map_err(debug)?,
+                Some(NOW + 30_000)
             );
             Ok(())
         })
@@ -3655,7 +3730,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             assert_eq!(state().await?, (1, 1));
             assert_eq!(
                 e.root
-                    .staff_active_mute_until(id(REPORTER), NOW)
+                    .staff_active_mute_until(e.f.trust.environment(), id(REPORTER), NOW)
                     .await
                     .map_err(debug)?,
                 None
@@ -3804,6 +3879,122 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             item_instance: id(&item(n)),
             text_revision: 1,
         }
+    }
+
+    /// The signer tier holds at the database, not only in the executor: a
+    /// runtime member LOGIN that drives the audit participant directly with a
+    /// GM's genuinely signed REPORT_CLEAR_TEXT cannot commit the clear, while
+    /// the same direct path commits a REPORT_CLOSE the GM tier allows.
+    #[test]
+    fn staff_pg_member_logins_cannot_commit_a_moderation_write_above_the_signer_tier() -> TestResult
+    {
+        exec_case("tierdirect", Some("GM"), async |e| {
+            let mut reports = Vec::new();
+            for n in 0..2 {
+                reports.push(admitted(
+                    e.root
+                        .create_item_text_report(reported(n), REPORTED, OPEN_SNAPSHOTS_PER_WORLD)
+                        .await
+                        .map_err(debug)?,
+                )?);
+            }
+            let mut connection = e.member("tierdirect", "oteryn_game_runtime").await?;
+            let clear = (
+                Action::ReportClearText {
+                    report_id: reports[0].clone(),
+                    text_revision: Decimal(1),
+                },
+                "UPDATE game_item_text_reports SET cleared_action_id=$2::uuid \
+                 WHERE report_id=$1::uuid AND created_at>$3",
+            );
+            let close = (
+                Action::ReportClose {
+                    report_id: reports[1].clone(),
+                },
+                "UPDATE game_item_text_reports SET state='CLOSED',revision=revision+1,\
+                 ended_at=GREATEST($3,created_at),closed_action_id=$2::uuid \
+                 WHERE report_id=$1::uuid",
+            );
+            let mut answers = Vec::new();
+            for (action, statement) in [clear, close] {
+                e.operation += 1;
+                let mut request = e.f.signer.request(e.operation, e.sequence + 1, &e.head);
+                request.action = action;
+                let signed =
+                    e.f.signer
+                        .sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+                let digest = signature::sha256(&signed.bytes);
+                let verified = e.f.trust.verify_request(signed).map_err(debug)?;
+                let mut tx = connection.begin().await?;
+                let Begin::Fresh(pending) = owner::fixture_begin_in_transaction(
+                    &mut tx,
+                    &e.f.trust,
+                    &e.f.history,
+                    verified,
+                    Ok(NOW),
+                )
+                .await
+                .map_err(debug)?
+                else {
+                    return Err("direct request replayed".into());
+                };
+                let outcome = Outcome {
+                    disposition: Disposition::Committed,
+                    result: ResultCode::Ok,
+                    action_id: node::uuid_text(&node::operator_files::uuid_v7().map_err(debug)?),
+                    transaction_id: node::uuid_text(
+                        &node::operator_files::uuid_v7().map_err(debug)?,
+                    ),
+                    occurred_at: Decimal(NOW),
+                };
+                let written = sqlx::query(statement)
+                    .bind(&reports[answers.len()])
+                    .bind(&outcome.action_id)
+                    .bind(i64::try_from(NOW)?)
+                    .execute(&mut *tx)
+                    .await?
+                    .rows_affected();
+                assert_eq!(written, 1);
+                owner::finish_in_transaction(
+                    &mut tx,
+                    pending,
+                    Contract::registered().map_err(debug)?,
+                    outcome,
+                    "staff-test",
+                )
+                .await
+                .map_err(debug)?;
+                let committed = tx.commit().await;
+                if committed.is_ok() {
+                    e.sequence += 1;
+                    e.head = digest;
+                }
+                answers.push(committed.err().as_ref().and_then(sql_state));
+            }
+            connection.close().await?;
+            assert_eq!(
+                answers,
+                [
+                    Some((
+                        "23514".to_owned(),
+                        "report transition is not its signed staff action".to_owned()
+                    )),
+                    None
+                ]
+            );
+            let rows: Vec<(String, Option<String>, Option<String>)> = sqlx::query_as(
+                "SELECT state,closed_action_id::text,cleared_action_id::text \
+                 FROM game_item_text_reports WHERE report_id=ANY($1::uuid[]) \
+                 ORDER BY report_id=$2::uuid DESC",
+            )
+            .bind(&reports)
+            .bind(&reports[0])
+            .fetch_all(&e.f.pool)
+            .await?;
+            assert_eq!(rows[0], ("OPEN".into(), None, None));
+            assert_eq!(rows[1].0, "CLOSED");
+            Ok(())
+        })
     }
 
     /// A report is closed or cleared only as the effect of its own signed
@@ -4162,7 +4353,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             assert_eq!(sanctions(e, TARGET).await?, 1);
             assert_eq!(
                 e.root
-                    .staff_active_mute_until(id(TARGET), NOW)
+                    .staff_active_mute_until(e.f.trust.environment(), id(TARGET), NOW)
                     .await
                     .map_err(debug)?,
                 Some(NOW + 60_000)
@@ -4258,6 +4449,68 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             assert_eq!(answer, stored);
             assert_eq!(head_of(e).await?, top);
             assert_eq!(sanctions(e, FOREIGN).await?, 0);
+            Ok(())
+        })
+    }
+
+    /// The restore replay qualifies its restored prefix as `audit-verify`
+    /// does, not by chain digests alone: a request at the restored head may
+    /// await its retained receipt, but an operation row below the head that
+    /// was rewritten with recomputed hashes stops the replay before anything
+    /// above it is applied.
+    #[test]
+    fn staff_pg_restore_verifies_operation_evidence_below_the_head() -> TestResult {
+        exec_case("restoreproof", Some("GM"), async |e| {
+            let first = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&first), COMMITTED);
+            let (operation, _, stored) = e.last.clone().ok_or("first mute")?;
+            let second = e.send(mute(REPORTER, 30_000)).await.map_err(debug)?;
+            assert_eq!(of(&second), COMMITTED);
+            let (_, request_head, _) = e.last.clone().ok_or("second mute")?;
+            let top = (e.sequence, e.head.clone());
+            // A backup taken between the second mute and its receipt: the
+            // request at the head awaits the retained receipt above it.
+            let between = (e.sequence - 1, request_head);
+            let retained = e.retained.clone();
+            e.restore_to(between.0, &between.1).await?;
+            let steps = e.replay(retained.clone()).await.map_err(debug)?;
+            assert_eq!(kinds(&steps), [RestoreKind::Receipt]);
+            assert_eq!(head_of(e).await?, top);
+
+            // The first mute's stored outcome is rewritten below the head as a
+            // refusal, every SQL digest recomputed, as a tampered restore holds it.
+            let mut forged: Outcome =
+                serde_json::from_slice(&stored).map_err(|_| "stored outcome")?;
+            forged.disposition = Disposition::Refused;
+            forged.result = ResultCode::TargetNotFound;
+            let forged = forged.canonical_bytes().map_err(debug)?;
+            let mut tx = e.f.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let changed = sqlx::query(
+                "UPDATE game_staff_operations SET outcome_bytes=$3,outcome_sha256=$4,\
+                 requires_receipt=false,created_xact_id=txid_current() \
+                 WHERE environment=$1 AND operation_id=$2::uuid",
+            )
+            .bind(e.f.trust.environment())
+            .bind(&operation)
+            .bind(&forged)
+            .bind(signature::sha256(&forged))
+            .execute(&mut *tx)
+            .await?
+            .rows_affected();
+            tx.commit().await?;
+            assert_eq!(changed, 1);
+            e.restore_to(between.0, &between.1).await?;
+            let before = e.f.counts().await?;
+            let replayed = e.replay(retained).await;
+            assert!(
+                matches!(replayed, Err(RestoreError::Staff(StaffError::Rejected(_)))),
+                "a rewritten restored outcome replayed: {replayed:?}"
+            );
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(head_of(e).await?, between);
             Ok(())
         })
     }

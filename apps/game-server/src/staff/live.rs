@@ -63,6 +63,9 @@ pub struct StaffDesk {
     /// CharacterId to the end (Unix ms) of its longest active staff mute.
     mutes: Mutex<HashMap<[u8; 16], u64>>,
     next: AtomicU64,
+    /// The staff environment whose durable sanctions apply on this node; a
+    /// node without staff trust has none and loads no durable mute.
+    environment: Option<String>,
 }
 
 /// The registration of one connection; dropping it unregisters that connection
@@ -111,6 +114,19 @@ pub fn account_ref(environment: &str, account: &[u8; 16]) -> String {
 impl StaffDesk {
     pub fn new() -> Arc<Self> {
         Arc::new(Self::default())
+    }
+
+    /// The desk of a node whose staff trust names `environment`.
+    pub fn for_environment(environment: Option<&str>) -> Arc<Self> {
+        Arc::new(Self {
+            environment: environment.map(str::to_owned),
+            ..Self::default()
+        })
+    }
+
+    /// The staff environment whose durable sanctions apply on this node.
+    pub fn environment(&self) -> Option<&str> {
+        self.environment.as_deref()
     }
 
     /// Registers the connection serving `session`, replacing an older one.

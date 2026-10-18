@@ -6,6 +6,89 @@
 -- the staff writer inserts later in the same transaction, so those foreign
 -- keys are deferred to commit.
 
+-- GM-1 (Codex P1): the signer tier is enforced at the database too, so a
+-- runtime or control member LOGIN cannot commit a moderation effect for a
+-- genuinely signed request that its signer's role does not allow. The roster
+-- the head's activation names is stored here by owner provisioning, with the
+-- same identity guard as an ACTIVATION link; no runtime or control member may
+-- add, change or remove one. A missing roster refuses every moderation write.
+CREATE TABLE game_staff_rosters (
+ environment text NOT NULL CHECK(length(environment) BETWEEN 1 AND 128),
+ roster_sha256 text NOT NULL CHECK(roster_sha256 ~ '^[0-9a-f]{64}$'),
+ roster bytea NOT NULL CHECK(octet_length(roster) BETWEEN 1 AND 65536
+  AND encode(sha256(roster),'hex')=roster_sha256),
+ PRIMARY KEY(environment,roster_sha256));
+CREATE FUNCTION game_staff_roster_owner_only() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER AS $$
+BEGIN
+ -- As game_staff_link_extends_head: authenticated and effective identities,
+ -- indirect LOGIN members included; superusers keep owner authority.
+ IF EXISTS (
+   SELECT 1 FROM pg_catalog.pg_roles r
+   WHERE r.rolname IN (session_user,current_user) AND NOT r.rolsuper
+     AND (pg_catalog.pg_has_role(r.oid,'oteryn_game_runtime','MEMBER')
+       OR pg_catalog.pg_has_role(r.oid,'oteryn_game_control','MEMBER'))
+ ) THEN
+   RAISE EXCEPTION 'runtime roster forbidden' USING ERRCODE='23514';
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_staff_roster_owner_only BEFORE INSERT ON game_staff_rosters
+ FOR EACH ROW EXECUTE FUNCTION game_staff_roster_owner_only();
+CREATE TRIGGER game_staff_roster_immutable BEFORE UPDATE OR DELETE ON game_staff_rosters
+ FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();
+CREATE TRIGGER game_staff_roster_no_truncate BEFORE TRUNCATE ON game_staff_rosters
+ FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();
+-- Role::allows (staff::signature) for a signed action kind: every role runs
+-- the ALPHA moderation actions, clearing report text needs SENIOR_GM, and any
+-- other kind needs ADMIN. An unknown role allows nothing.
+CREATE FUNCTION game_staff_role_allows(p_role text, p_kind text) RETURNS boolean
+ LANGUAGE sql IMMUTABLE AS $$
+ SELECT CASE
+  WHEN p_role IS NULL OR p_role NOT IN ('GM','SENIOR_GM','ADMIN') OR p_kind IS NULL THEN false
+  WHEN p_kind IN ('INSPECT','REPORTS_LIST','KICK','MUTE','UNMUTE','REPORT_CLOSE') THEN true
+  WHEN p_kind='REPORT_CLEAR_TEXT' THEN p_role IN ('SENIOR_GM','ADMIN')
+  ELSE p_role='ADMIN' END
+$$;
+-- Whether `p_principal`, signing a request against roster `p_roster`, holds a
+-- role allowing `p_kind` under the roster the head's activation names. The
+-- request must name that roster, and the principal exactly one role line
+-- (`# oteryn-staff-role <principal> <role>`, as VerifierTrust::roles parses).
+CREATE FUNCTION game_staff_signer_allows(p_environment text, p_principal text, p_roster text,
+ p_kind text) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY INVOKER AS $$
+DECLARE
+ active text;
+ roster bytea;
+ line text;
+ fields text[];
+ signer_role text;
+ matched integer:=0;
+BEGIN
+ SELECT convert_from(l.signed_bytes,'UTF8')::jsonb->'action'->>'roster_sha256' INTO active
+  FROM game_staff_control_heads h JOIN game_staff_control_links l
+   ON l.environment=h.environment AND l.link_sha256=h.activation_sha256 AND l.link_kind='ACTIVATION'
+  WHERE h.environment=p_environment;
+ IF active IS NULL OR active IS DISTINCT FROM p_roster THEN
+  RETURN false;
+ END IF;
+ SELECT r.roster INTO roster FROM game_staff_rosters r
+  WHERE r.environment=p_environment AND r.roster_sha256=active;
+ IF NOT FOUND THEN
+  RETURN false;
+ END IF;
+ FOREACH line IN ARRAY regexp_split_to_array(convert_from(roster,'UTF8'),E'\n') LOOP
+  line:=regexp_replace(line,E'^\\s+|\\s+$','','g');
+  CONTINUE WHEN left(line,19)<>'# oteryn-staff-role';
+  fields:=regexp_split_to_array(regexp_replace(substr(line,20),E'^\\s+','',''),E'\\s+');
+  CONTINUE WHEN fields[1] IS DISTINCT FROM p_principal;
+  IF array_length(fields,1)<>2 THEN
+   RETURN false;
+  END IF;
+  signer_role:=fields[2];
+  matched:=matched+1;
+ END LOOP;
+ RETURN matched=1 AND game_staff_role_allows(signer_role,p_kind);
+END $$;
+
 CREATE TABLE game_character_sanctions (
  sanction_id uuid PRIMARY KEY CHECK(game_character_is_uuid_v7(sanction_id)),
  environment text NOT NULL CHECK(length(environment) BETWEEN 1 AND 128),
@@ -46,7 +129,8 @@ CREATE TRIGGER game_character_sanction_no_truncate BEFORE TRUNCATE ON game_chara
 -- start and duration, and a lift to a COMMITTED UNMUTE of that sanction at the
 -- lift time. The operation must be written by the executor in this same
 -- transaction, so no row can borrow the action id of another (or an older)
--- operation. Deferred: the executor writes the operation row after its effect.
+-- operation. Its signer must hold a roster role allowing the action. Deferred:
+-- the executor writes the operation row after its effect.
 CREATE FUNCTION game_character_sanction_bound() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
  bound uuid;
@@ -71,7 +155,8 @@ BEGIN
    OR signer IS DISTINCT FROM NEW.actor_principal))
   OR (TG_OP='UPDATE' AND (r->'action'->>'kind' IS DISTINCT FROM 'UNMUTE'
    OR lower(r->'action'->>'sanction_id') IS DISTINCT FROM NEW.sanction_id::text
-   OR o->>'occurred_at' IS DISTINCT FROM NEW.lifted_at::text)) THEN
+   OR o->>'occurred_at' IS DISTINCT FROM NEW.lifted_at::text))
+  OR NOT game_staff_signer_allows(NEW.environment,signer,r->>'roster_sha256',r->'action'->>'kind') THEN
   RAISE EXCEPTION 'sanction is not its signed staff action' USING ERRCODE='23514';
  END IF;
  RETURN NULL;
@@ -156,11 +241,13 @@ CREATE TRIGGER game_item_text_report_transition BEFORE UPDATE OR DELETE ON game_
 -- of its own signed staff action: a close binds to a COMMITTED REPORT_CLOSE of
 -- this report and World at its end time, a clear to a COMMITTED
 -- REPORT_CLEAR_TEXT of this report, World and revision, each written by the
--- executor in this same transaction. Deferred like the sanction binding.
+-- executor in this same transaction, by a signer whose roster role allows it.
+-- Deferred like the sanction binding.
 CREATE FUNCTION game_item_text_report_bound() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
  bound uuid;
  op_environment text;
+ signer text;
  r jsonb;
  o jsonb;
  kind text;
@@ -175,8 +262,8 @@ BEGIN
    ('REPORT_CLOSE',CASE WHEN OLD.closed_action_id IS NULL THEN NEW.closed_action_id END),
    ('REPORT_CLEAR_TEXT',CASE WHEN OLD.cleared_action_id IS NULL THEN NEW.cleared_action_id END)) v
   WHERE v.column2 IS NOT NULL LOOP
-  SELECT op.environment,convert_from(op.request_bytes,'UTF8')::jsonb,
-   convert_from(op.outcome_bytes,'UTF8')::jsonb INTO op_environment,r,o FROM game_staff_operations op
+  SELECT op.environment,op.principal,convert_from(op.request_bytes,'UTF8')::jsonb,
+   convert_from(op.outcome_bytes,'UTF8')::jsonb INTO op_environment,signer,r,o FROM game_staff_operations op
    WHERE op.action_id=bound AND op.created_xact_id=txid_current();
   IF NOT FOUND OR r->>'environment' IS DISTINCT FROM op_environment
    OR o->>'disposition' IS DISTINCT FROM 'COMMITTED' OR o->>'result' IS DISTINCT FROM 'OK'
@@ -186,7 +273,8 @@ BEGIN
    OR (kind='REPORT_CLOSE' AND (NEW.state IS DISTINCT FROM 'CLOSED'
     OR NEW.ended_at IS DISTINCT FROM GREATEST((o->>'occurred_at')::bigint,NEW.created_at)))
    OR (kind='REPORT_CLEAR_TEXT'
-    AND r->'action'->>'text_revision' IS DISTINCT FROM NEW.text_revision::text) THEN
+    AND r->'action'->>'text_revision' IS DISTINCT FROM NEW.text_revision::text)
+   OR NOT game_staff_signer_allows(op_environment,signer,r->>'roster_sha256',kind) THEN
    RAISE EXCEPTION 'report transition is not its signed staff action' USING ERRCODE='23514';
   END IF;
  END LOOP;
@@ -210,8 +298,10 @@ CREATE TABLE game_item_text_report_worlds (
  world_id uuid PRIMARY KEY,
  open_snapshots integer NOT NULL CHECK(open_snapshots BETWEEN 0 AND 100000));
 
-REVOKE ALL ON game_character_sanctions,game_item_text_reports,game_item_text_report_hourly,
- game_item_text_report_accounts,game_item_text_report_worlds FROM PUBLIC;
+REVOKE ALL ON game_staff_rosters,game_character_sanctions,game_item_text_reports,
+ game_item_text_report_hourly,game_item_text_report_accounts,game_item_text_report_worlds FROM PUBLIC;
+-- The bindings read the roster as the writer; nothing but the owner inserts one.
+GRANT SELECT ON game_staff_rosters TO oteryn_game_runtime,oteryn_game_control;
 -- Only the node's staff executor (the runtime role) writes sanctions.
 GRANT SELECT ON game_character_sanctions TO oteryn_game_runtime,oteryn_game_control;
 GRANT INSERT,UPDATE(status,revision,lifted_at,lift_action_id) ON game_character_sanctions
@@ -226,3 +316,8 @@ REVOKE ALL ON SEQUENCE game_item_text_report_entry_seq FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_character_sanction_lift_only(),game_character_sanction_bound(),
  game_item_text_report_entry(),game_item_text_report_transition(),game_item_text_report_bound()
  FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_staff_roster_owner_only(),game_staff_role_allows(text,text),
+ game_staff_signer_allows(text,text,text,text) FROM PUBLIC;
+-- Called from the deferred bindings as the writer.
+GRANT EXECUTE ON FUNCTION game_staff_role_allows(text,text),
+ game_staff_signer_allows(text,text,text,text) TO oteryn_game_runtime;

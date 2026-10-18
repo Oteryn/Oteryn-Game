@@ -1,5 +1,5 @@
 //! D1088: one participant in the existing semantic transaction owner.
-//! D1343: migration 0116 installs the staff audit schema.
+//! D1343: migration 0133 installs the staff audit schema.
 //! Initial provisioning imports the independently reviewed signed activation
 //! as link 1 plus its signed COMMITTED receipt before seeding the head.
 //! No genesis=0, runtime ROSTER_ACTIVATE, or automatic trust bootstrapping.
@@ -60,6 +60,64 @@ pub struct OperationEvidence {
     pub receipt: Option<SignedBytes>,
     pub receipt_link: Option<Vec<u8>>,
     pub receipt_sequence: Option<u64>,
+}
+
+/// The per-request evidence check of one verified request link in a retained
+/// prefix, shared by `oteryn-game-ops staff audit-verify` and the restore
+/// replay so both qualify the same rows. A request (other than an imported
+/// roster activation) needs its operation row; that row must match the signed
+/// request, its receipt (when present) must be the chained receipt link and
+/// verify under the activation at its sequence, and its audit envelope must
+/// verify unless its retention has provably expired at `now`.
+///
+/// `receipt_pending` admits a COMMITTED mutation with no receipt yet: only
+/// the restore replay passes it, and only for the request at the restored
+/// head, whose receipt may be one of the retained links above it (the receipt
+/// fence keeps every earlier mutation receipted). Such a request must still
+/// hold its audit envelope, since its retention cannot have run.
+pub fn verify_request_evidence(
+    history: &History,
+    contract: Contract,
+    request: &VerifiedRequest,
+    operation: Option<&OperationEvidence>,
+    receipt_pending: bool,
+    now: impl FnOnce() -> Result<u64, Error>,
+) -> Result<(), Error> {
+    let Some(operation) = operation else {
+        return if matches!(
+            request.request().action,
+            signature::Action::RosterActivate { .. }
+        ) {
+            Ok(())
+        } else {
+            Err(Error::MissingMaterial)
+        };
+    };
+    let outcome = audit::verify_stored_operation(request, &operation.record)?;
+    let receipt = match &operation.receipt {
+        Some(receipt) => {
+            if operation.receipt_link.as_ref() != Some(&receipt.bytes) {
+                return Err(Error::Receipt);
+            }
+            Some(history.receipt_at(
+                receipt.clone(),
+                operation.receipt_sequence.ok_or(Error::MissingMaterial)?,
+            )?)
+        }
+        None => None,
+    };
+    let expiry =
+        if receipt.is_none() && receipt_pending && audit::requires_receipt(request, &outcome) {
+            signature::check_execution_stamp(request.request(), outcome.occurred_at)?;
+            None
+        } else {
+            Some(audit::evidence_expiry(request, &outcome, receipt.as_ref())?)
+        };
+    match (&operation.envelope, expiry) {
+        (Some(row), _) => audit::verify_stored_event(contract, request, &outcome, row),
+        (None, Some(expiry)) if now()? >= expiry => Ok(()),
+        (None, _) => Err(Error::MissingMaterial),
+    }
 }
 pub(crate) enum Begin {
     Replay(StoredOutcome),

@@ -887,11 +887,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .map_or(1, |progression| progression.level);
         // GM-1: a durable staff mute (a restart, a reconnect, another node's mute) is loaded with
-        // the name; an unreadable one leaves the session unadmitted like a failed name read.
-        if let Some(desk) = self.chat.staff_desk() {
+        // the name; an unreadable one leaves the session unadmitted like a failed name read. Only
+        // the node's own staff environment applies; a node without staff trust loads none.
+        if let Some(desk) = self.chat.staff_desk()
+            && let Some(environment) = desk.environment()
+        {
             let until = self
                 .root
-                .staff_active_mute_until(character, crate::staff::live::wall_ms())
+                .staff_active_mute_until(environment, character, crate::staff::live::wall_ms())
                 .await
                 .ok()?;
             desk.set_mute(character, until);

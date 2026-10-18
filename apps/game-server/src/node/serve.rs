@@ -2799,7 +2799,10 @@ async fn boot_and_serve(
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
-    let staff_desk = crate::staff::live::StaffDesk::new();
+    // GM-1: chat admission loads only the durable mutes of this node's staff environment.
+    let staff_desk = crate::staff::live::StaffDesk::for_environment(
+        staff_trust.as_ref().map(|(trust, _)| trust.environment()),
+    );
     // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
     // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.

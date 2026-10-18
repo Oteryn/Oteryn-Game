@@ -1665,7 +1665,8 @@ fn retain_staff(operator: &Operator, name: &str, bytes: &[u8]) -> Outcome {
 /// already signed on the operator's device. Local verification is diagnostic;
 /// the real node handler must independently verify before its transaction.
 async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
-    use oteryn_game_server::staff::audit::{self, Contract};
+    use oteryn_game_server::durability::staff_action::verify_request_evidence;
+    use oteryn_game_server::staff::audit::Contract;
     use oteryn_game_server::staff::signature::{
         self as signature, Action, ActivationConfig, ControlMessage, Decimal, History,
         Outcome as StaffOutcome, Receipt, SignedBytes, TrustConfig, VerifiedLink,
@@ -1936,41 +1937,17 @@ async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
                     if let VerifiedLink::Request(request) =
                         cursor.push(&row.link).map_err(staff_failure)?
                     {
-                        if matches!(request.request().action, Action::RosterActivate { .. })
-                            && row.operation.is_none()
-                        {
-                            continue;
-                        }
-                        let operation = row
-                            .operation
-                            .ok_or_else(|| staff_failure("missing operation evidence"))?;
-                        let outcome = audit::verify_stored_operation(&request, &operation.record)
-                            .map_err(staff_failure)?;
-                        let receipt = if let Some(receipt) = operation.receipt.clone() {
-                            if operation.receipt_link.as_ref() != Some(&receipt.bytes) {
-                                return Err(staff_failure("receipt differs from chain"));
-                            }
-                            Some(
-                                history
-                                    .receipt_at(
-                                        receipt,
-                                        operation.receipt_sequence.ok_or_else(|| {
-                                            staff_failure("receipt sequence missing")
-                                        })?,
-                                    )
-                                    .map_err(staff_failure)?,
-                            )
-                        } else {
-                            None
-                        };
-                        let expiry = audit::evidence_expiry(&request, &outcome, receipt.as_ref())
-                            .map_err(staff_failure)?;
-                        if let Some(row) = operation.envelope {
-                            audit::verify_stored_event(contract, &request, &outcome, &row)
-                                .map_err(staff_failure)?;
-                        } else if now < expiry {
-                            return Err(staff_failure("missing audit not yet provably expired"));
-                        }
+                        // The same check the restore replay runs over its
+                        // restored prefix; no receipt is pending here.
+                        verify_request_evidence(
+                            &history,
+                            contract,
+                            &request,
+                            row.operation.as_ref(),
+                            false,
+                            || Ok(now),
+                        )
+                        .map_err(staff_failure)?;
                     }
                 }
             }

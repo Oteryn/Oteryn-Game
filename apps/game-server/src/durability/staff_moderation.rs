@@ -6,7 +6,7 @@
 //! included, rolls the effect back. A live effect (a kick, a mute pushed to
 //! chat) and any disclosed data happen only after that commit.
 //!
-//! Sanctions are staff records (migration 0123), never Character aggregate
+//! Sanctions are staff records (migration 0134), never Character aggregate
 //! writes; no action creates value. Item-text reports follow WRITE0 §6.
 use super::DurabilityRoot;
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
@@ -157,18 +157,21 @@ async fn begin_at(
     begin_in_transaction(connection, trust, history, request).await
 }
 
-/// The ACTIVE staff mutes of `character` still running at `now`, longest end.
+/// The ACTIVE staff mutes of `character` in the staff `environment` still
+/// running at `now`, longest end. Another environment's sanctions never apply.
 async fn active_mute_until(
     connection: &mut PgConnection,
+    environment: &str,
     character: &str,
     now: i64,
 ) -> Result<Option<u64>, StaffError> {
     let until: Option<i64> = sqlx::query_scalar(
         "SELECT max(ends_at) FROM game_character_sanctions \
-         WHERE character_id=$1::uuid AND status='ACTIVE' AND ends_at>$2",
+         WHERE character_id=$1::uuid AND status='ACTIVE' AND ends_at>$2 AND environment=$3",
     )
     .bind(character)
     .bind(now)
+    .bind(environment)
     .fetch_one(&mut *connection)
     .await?;
     until.map(ms).transpose()
@@ -215,10 +218,11 @@ async fn decide(
             let mutes = sqlx::query(
                 "SELECT sanction_id::text,ends_at FROM game_character_sanctions \
                  WHERE character_id=$1::uuid AND status='ACTIVE' AND ends_at>$2 \
-                 ORDER BY ends_at DESC LIMIT 16",
+                 AND environment=$3 ORDER BY ends_at DESC LIMIT 16",
             )
             .bind(character_id)
             .bind(now)
+            .bind(trust.environment())
             .fetch_all(&mut *connection)
             .await?
             .iter()
@@ -295,7 +299,8 @@ async fn decide(
             .bind(action_id)
             .execute(&mut *connection)
             .await?;
-            let until = active_mute_until(connection, character_id, now).await?;
+            let until =
+                active_mute_until(connection, trust.environment(), character_id, now).await?;
             Ok(Decision {
                 result: ResultCode::Ok,
                 data: Some(json!({"sanction_id": sanction, "ends_at": ends_at.to_string()})),
@@ -339,7 +344,7 @@ async fn decide(
             if changed != 1 {
                 return Ok(Decision::refused(ResultCode::AlreadyReleased));
             }
-            let until = active_mute_until(connection, &character, now).await?;
+            let until = active_mute_until(connection, trust.environment(), &character, now).await?;
             Ok(Decision {
                 result: ResultCode::Ok,
                 data: None,
@@ -360,7 +365,7 @@ async fn decide(
                 None => None,
             };
             // Every report enters a state under its World row lock (migration
-            // 0123); waiting on it here lets each writer still in flight commit
+            // 0134); waiting on it here lets each writer still in flight commit
             // first, and the read below then sees every entry drawn before.
             sqlx::query(
                 "SELECT 1 FROM game_item_text_report_worlds WHERE world_id=$1::uuid FOR SHARE",
@@ -946,18 +951,21 @@ impl DurabilityRoot {
         Ok(answer(&executed.stored, data.as_ref()))
     }
 
-    /// The end (Unix ms) of `character`'s longest staff mute running at `now`.
+    /// The end (Unix ms) of `character`'s longest staff mute in the staff
+    /// `environment` running at `now`.
     pub async fn staff_active_mute_until(
         &self,
+        environment: &str,
         character: [u8; 16],
         now: u64,
     ) -> Result<Option<u64>, StaffError> {
         let now = i64::try_from(now).map_err(|_| Error::Clock)?;
+        let environment = environment.to_owned();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    Ok(active_mute_until(&mut tx, &uuid(&character), now).await)
+                    Ok(active_mute_until(&mut tx, &environment, &uuid(&character), now).await)
                 })
             })
             .await?
@@ -996,7 +1004,7 @@ impl DurabilityRoot {
     /// transaction (the close lock order); then ended snapshots past it are
     /// deleted and hourly rows of finished hours removed. Returns reports expired.
     /// Retention ends at the earlier of `now` and the database clock, which
-    /// migration 0123 enforces on every snapshot removal.
+    /// migration 0134 enforces on every snapshot removal.
     pub async fn expire_item_text_reports(&self, now: u64) -> Result<u64, StaffError> {
         let now = i64::try_from(now).map_err(|_| Error::Clock)?;
         let mut expired = 0_u64;
@@ -1296,7 +1304,11 @@ impl DurabilityRoot {
                 None => pool.push(Some(candidate)),
             }
         }
-        // The whole restored chain verifies before anything above it counts.
+        // The whole restored chain verifies before anything above it counts:
+        // every link chains and every request carries the same operation,
+        // receipt and audit evidence `oteryn-game-ops staff audit-verify`
+        // requires, so a rewritten restored row stops the replay.
+        let contract = Contract::registered()?;
         let mut cursor = history.cursor();
         let mut after = 0;
         loop {
@@ -1308,7 +1320,18 @@ impl DurabilityRoot {
             }
             for row in rows {
                 after = row.link.sequence;
-                cursor.push(&row.link)?;
+                if let signature::VerifiedLink::Request(request) = cursor.push(&row.link)? {
+                    // Only the request at the restored head may still await its
+                    // receipt, which then is a retained link above the head.
+                    super::staff_action::verify_request_evidence(
+                        &history,
+                        contract,
+                        &request,
+                        row.operation.as_ref(),
+                        row.link.sequence == head.sequence,
+                        signature::synchronized_now_ms,
+                    )?;
+                }
                 if let Some(retained) = below.get(&row.link.sequence)
                     && retained
                         .iter()
@@ -1417,7 +1440,6 @@ impl DurabilityRoot {
         if !ambiguous.is_empty() {
             return Err(RestoreError::Ambiguous(ambiguous));
         }
-        let contract = Contract::registered()?;
         let applied = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {

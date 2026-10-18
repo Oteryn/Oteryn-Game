@@ -28,7 +28,7 @@ owned_paths:
   - "apps/game-server/tests/staff_audit_postgres.rs (new)"
   - "apps/game-server/tests/support/staff_audit_postgres_cases.rs (D1343: canonical production-type cases)"
   - "apps/game-server/tests/durability_postgres.rs (D1343: additive staff case mount only)"
-  - "apps/game-server/migrations/0116_staff_audit.sql (D1343a: current migration lease)"
+  - "apps/game-server/migrations/0133_staff_audit.sql (D1343a: current migration lease)"
   - "apps/game-server/src/node/{config,serve}.rs (D1343d: exact staff config/control hunks; D1352: test-only spawn correction)"
   - "apps/game-server/Cargo.toml (D1343e: staff_audit_postgres test=false target entry only)"
   - "docs/contracts/game-events/v1/staff_action.proto (D1343b/c: STAFF_ACTION ID 5, schema revision 1)"
@@ -41,20 +41,69 @@ owned_paths:
   - "apps/game-server/src/{lib.rs,durability/mod.rs} (D1160: own module registration line only)"
   - "apps/game-server/tests/*.rs (D1161: 26 exact production node/staff forwarding lines only)"
   - "content/world/pins/oteryn.json (D1328: compiler-derived inputs_digest correction only)"
-  - "apps/game-server/migrations/0123_staff_moderation.sql (D1437: minimal moderation writers; WRITE-MOD-1 not on main)"
+  - "apps/game-server/migrations/0134_staff_moderation.sql (D1437: minimal moderation writers; WRITE-MOD-1 not on main)"
   - "apps/game-server/src/durability/staff_moderation.rs (D1437: staff executor, sanctions, item-text reports)"
   - "apps/game-server/src/staff/live.rs (D1437: live staff desk, kick and mute fan-out)"
   - "apps/game-server/src/gameplay_transport/{chat_intent,connection,mod,qualification,capabilities_tests}.rs (D1437: staff mute refusal, kick-to-fenced-logout and desk registration hunks only)"
   - "apps/game-server/src/node/serve.rs (D1437: staff executor and desk wiring hunks)"
 slot_only_paths:
   - "Cargo.toml and further apps/game-server/Cargo.toml integration outside the exact D1343e test-target hunk (CP grant required; D1328 integration already landed in 647053e9)"
-  - "migrations: game_staff_roles, game_player_reports (D1437: sanctions and item-text reports landed in 0123; roles stay in the signed roster)"
+  - "migrations: game_staff_roles, game_player_reports (D1437: sanctions and item-text reports landed in 0134; roles stay in the signed roster)"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (staff panel)"
   - "apps/game-server/src/gameplay_transport/capabilities.rs, crates/protocol-oteryn/src/lib.rs (connection.rs and mod.rs GM-1 hunks are owned under D1437)"
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — Codex review of `7e2f70bc` repairs and staff restore replay, REPORT_ONLY (2026-10-18)
+## Current checkpoint — merge-up, Codex review of `4b23100d`, renumbering to 0133/0134 (2026-10-18)
+
+Parent `4b23100d`. In this round:
+
+- `origin/main` was merged with a merge commit, and the conflicts in
+  `durability/mod.rs`, `node/config.rs`, `tests/durability_postgres.rs`
+  and `RESOURCE_LIMITS_REGISTRY.json` were resolved. Both sides are kept.
+- D1453 renumbered the migrations: `0116_staff_audit.sql` is now
+  `0133_staff_audit.sql` (`version=133`) and `0123_staff_moderation.sql`
+  is now `0134_staff_moderation.sql`. Every reference was updated.
+- The integration-test wrappers re-export `production_server::{node, staff}`
+  (wave1 fix). These four lines exceed the D1161 line count, so they need a CP note.
+
+Open findings on `4b23100d`, all accepted:
+
+- [P1 PRRT_kwDOT8SzxM6tscmJ](https://github.com/Oteryn/Oteryn-Game/pull/2181):
+  signer tiers were not enforced on direct moderation writes. A member LOGIN
+  could commit a REPORT_CLEAR_TEXT or an ADMIN-only sanction signed by a GM.
+  The fix has three parts:
+  - Migration 0134 adds the owner-only, immutable table `game_staff_rosters`,
+    which holds the roster bytes for each `(environment, roster_sha256)`.
+  - It adds `game_staff_signer_allows(environment, principal, roster, kind)`.
+    This function resolves the active roster from the head's ACTIVATION
+    link, takes the principal's one `# oteryn-staff-role` line and applies
+    the same tier table as `Role::allows`.
+  - The sanction and report bound triggers now refuse any write whose signer
+    tier does not allow the action.
+
+  Test: `staff_pg_member_logins_cannot_commit_a_moderation_write_above_the_signer_tier`.
+
+  **Provisioning:** the owner must now insert the roster row along with each
+  activation. Without it, every moderation write fails closed at commit.
+- [P1 PRRT_kwDOT8SzxM6tscmL](https://github.com/Oteryn/Oteryn-Game/pull/2181):
+  restore checked operation evidence only at the head. The restore loop now
+  runs `staff_action::verify_request_evidence` for every request link in the
+  restored prefix. The ops `audit-verify` command uses the same check.
+  Test: `staff_pg_restore_verifies_operation_evidence_below_the_head`.
+- [P2 PRRT_kwDOT8SzxM6tscmN](https://github.com/Oteryn/Oteryn-Game/pull/2181):
+  active-mute lookups were not scoped to the staff environment. The Mute,
+  Unmute and Inspect paths and the live chat mute check now filter on the
+  environment. `StaffDesk` carries the trust environment for this. Test:
+  `staff_pg_active_mutes_are_scoped_to_the_staff_environment`.
+
+Wiring: production staff requests reach the executor through `control_loop`,
+then `ControlInput::Staff`, then `serve_staff_control`. The e2e case is
+`staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,
+run by the `durability_postgres` job (`pr-postgres-harness.yml` and
+`merge-group-gate.yml`). Follow-ups: DATA-RESTORE-OPS-2 and ARCH-CONTROL-ANCHOR-0.
+
+## Previous checkpoint — Codex review of `7e2f70bc` repairs and staff restore replay, REPORT_ONLY (2026-10-18)
 
 Parent `7e2f70bc`. This round has three parts.
 
@@ -171,7 +220,7 @@ Parent `adc0e0a5`. All three findings were accepted:
 
 - [P1 PRRT_kwDOT8SzxM6tqCoh](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4306858434):
   a member LOGIN could insert an ACTIVE mute that named any staff action id,
-  for example an INSPECT. Migration 0123 now binds every sanction row to its
+  for example an INSPECT. Migration 0134 now binds every sanction row to its
   own signed action through the deferred constraint trigger
   `game_character_sanction_bound` (`23514`, `sanction is not its signed staff
   action`). The trigger requires that the named operation row:
@@ -251,7 +300,7 @@ resolved the architect UNKNOWNs; where the PR already implied a choice it is kep
   the action: GM may Inspect, ReportsList, Kick, Mute, Unmute and ReportClose;
   SENIOR_GM may also ReportClearText; ADMIN may run every action.
 - **Writers.** WRITE-MOD-1 is not on `main`, so this PR owns the minimal
-  writers: migration `0123_staff_moderation.sql` (sanctions, item-text reports
+  writers: migration `0134_staff_moderation.sql` (sanctions, item-text reports
   and the WRITE0-RL-04..06 counters) and `durability/staff_moderation.rs`.
 
 What runs in the game now:
@@ -372,7 +421,7 @@ Parent `39fa9d3b`, not behind `main` `afa97ba0`, so no merge. Both findings were
   `audit::verify_stored_event`. The event may be absent only after its signed
   retention expiry.
 - [P2 4305145538](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4305145538):
-  migration 0116 refuses an ACTIVATION link (`23514`, `staff activation awaits
+  migration 0133 refuses an ACTIVATION link (`23514`, `staff activation awaits
   pending receipt`) while any receipt-requiring operation lacks its receipt, so
   a rotation cannot strand the pending receipt.
 
@@ -413,7 +462,7 @@ three findings were accepted:
   `activation_sha256` is not writable by those LOGINs, so the current
   activation covers every link from it to the head.
 - [P2 4304344321](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4304344321):
-  migration 0116 adds `game_staff_head_successor`, a BEFORE UPDATE trigger: the
+  migration 0133 adds `game_staff_head_successor`, a BEFORE UPDATE trigger: the
   head may only move to the exact successor link written in the same
   transaction, and only an ACTIVATION link may change `activation_sha256`.
 - [P2 4304344325](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4304344325):
@@ -452,7 +501,7 @@ correctly refused. Runtime remains REPORT_ONLY.
 returns this lane to AUTHORING for
 [P2 4303796136](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4303796136)
 on parent `cf0bf62ad333df8091b6c536f5829d96a124856d`. The finding is accepted:
-the pending-receipt fence released on row existence alone, and migration 0116
+the pending-receipt fence released on row existence alone, and migration 0133
 checks only structure, so a runtime or control LOGIN could commit a
 forged-signature receipt, its RECEIPT link and the head advance in one valid
 transaction and reopen staff control.
@@ -700,7 +749,7 @@ CP first merged main into the task branch: authoring predecessor
 `ce7bccab973625d5d3d0d0c566426903229d2373`, tree
 `5b21979b90dc5c1412dc94ff61bf5aa699c811da`. Root verified the fetched ancestry,
 complete source inventory and unchanged preimages of both owned code leaves.
-The package contains only migration `0116_staff_audit.sql`, the existing
+The package contains only migration `0133_staff_audit.sql`, the existing
 `tests/support/staff_audit_postgres_cases.rs` and this task card. Existing
 shared mounts, registries and node/control behavior are unchanged by this delta.
 
@@ -805,7 +854,7 @@ it does not turn their historical tests into evidence for this package.
 
 ### Installed contract and composition
 
-- Migration `0116_staff_audit.sql` is the single DDL source, embedded by the real
+- Migration `0133_staff_audit.sql` is the single DDL source, embedded by the real
   `sqlx::migrate!("./migrations")` ledger. Historical 0092 is not installed or
   reused, and the old public proposal string is removed. The inherited LOGIN
   membership guard from P1 4302394369 remains intact.
@@ -1255,7 +1304,7 @@ family path inventory below does not allocate a child or authorize slot work.
 - workspace-boundaries.toml (D1091's exact inventory/edge additions only)
 - apps/game-server/src/bin/oteryn-game-ops.rs (existing executable, signed requests)
 - docs/agents/tasks/GM-1.md
-- D1437 additions: apps/game-server/migrations/0123_staff_moderation.sql,
+- D1437 additions: apps/game-server/migrations/0134_staff_moderation.sql,
   apps/game-server/src/durability/staff_moderation.rs,
   apps/game-server/src/staff/live.rs, the GM-1 hunks of
   apps/game-server/src/gameplay_transport/{chat_intent,connection,mod,qualification,capabilities_tests}.rs
