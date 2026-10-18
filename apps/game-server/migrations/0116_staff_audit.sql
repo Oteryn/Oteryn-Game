@@ -123,6 +123,19 @@ BEGIN
  THEN RAISE EXCEPTION 'staff receipt has no same-transaction link' USING ERRCODE='23514'; END IF;
  RETURN NULL;
 END $$;
+-- The head only moves to the exact successor link written in the same
+-- transaction; only that ACTIVATION link may change the activation digest.
+CREATE FUNCTION game_staff_head_advances() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.environment<>OLD.environment OR NEW.control_seq<>OLD.control_seq+1
+ OR NOT EXISTS(SELECT 1 FROM game_staff_control_links l WHERE l.environment=NEW.environment AND l.control_seq=NEW.control_seq
+ AND l.link_sha256=NEW.link_sha256 AND l.previous_link_sha256=OLD.link_sha256 AND l.created_xact_id=txid_current()
+ AND NEW.activation_sha256=CASE WHEN l.link_kind='ACTIVATION' THEN l.link_sha256 ELSE OLD.activation_sha256 END)
+ THEN RAISE EXCEPTION 'staff head must advance to its exact successor' USING ERRCODE='23514'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_staff_head_successor BEFORE UPDATE ON game_staff_control_heads
+ FOR EACH ROW EXECUTE FUNCTION game_staff_head_advances();
 CREATE TRIGGER game_staff_link_predecessor BEFORE INSERT ON game_staff_control_links
  FOR EACH ROW EXECUTE FUNCTION game_staff_link_extends_head();
 CREATE CONSTRAINT TRIGGER game_staff_link_outcome AFTER INSERT ON game_staff_control_links
@@ -142,4 +155,4 @@ GRANT SELECT,INSERT ON game_staff_control_links,game_staff_operations,game_staff
 GRANT SELECT ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;
 GRANT UPDATE(control_seq,link_sha256) ON game_staff_control_heads TO oteryn_game_runtime,oteryn_game_control;
 REVOKE ALL ON FUNCTION game_staff_immutable(),game_staff_operation_has_audit(),game_staff_link_extends_head(),game_staff_link_has_outcome() FROM PUBLIC;
-REVOKE ALL ON FUNCTION game_staff_receipt_has_link() FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_staff_receipt_has_link(),game_staff_head_advances() FROM PUBLIC;

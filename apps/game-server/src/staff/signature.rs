@@ -175,8 +175,9 @@ impl Request {
         {
             return Err(Error::Invalid);
         }
-        // Only the typed, restart-pinned roster activation is environment-wide.
-        if self.scope.is_none() && !matches!(&self.action, Action::RosterActivate { .. }) {
+        // Only the typed, restart-pinned roster activation is environment-wide,
+        // and it never names a scope: the chain applies it to every later link.
+        if self.scope.is_none() != matches!(&self.action, Action::RosterActivate { .. }) {
             return Err(Error::Invalid);
         }
         if let Some(scope) = &self.scope
@@ -372,36 +373,11 @@ impl HistoryCursor<'_> {
             self.active += 1;
         }
         let activation = &self.history.activations[self.active];
-        let is_activation = activation.sequence == link.sequence;
-        if link.roster != activation.trust.roster_digest()
-            || (link.kind == LinkKind::Activation) != is_activation
-            || (is_activation && link.digest != activation.trust.activation_digest())
-        {
-            return Err(Error::Binding);
-        }
-        let verified = if link.kind == LinkKind::Receipt {
-            let value = activation.trust.verify_receipt(link.signed.clone())?;
-            if value.receipt.control_seq.0 != link.sequence
-                || value.receipt.previous_link_sha256 != link.previous
-                || value.fingerprint() != link.fingerprint
-            {
-                return Err(Error::Binding);
-            }
-            VerifiedLink::Receipt(value)
-        } else {
-            let value = activation.trust.verify_request(link.signed.clone())?;
-            if value.request.control_seq.0 != link.sequence
-                || value.request.previous_link_sha256 != link.previous
-                || value.fingerprint() != link.fingerprint
-            {
-                return Err(Error::Binding);
-            }
-            let activation_kind = matches!(value.request.action, Action::RosterActivate { .. });
-            if activation_kind != (link.kind == LinkKind::Activation) {
-                return Err(Error::Binding);
-            }
-            VerifiedLink::Request(value)
-        };
+        let verified = verify_link(
+            &activation.trust,
+            link,
+            activation.sequence == link.sequence,
+        )?;
         self.next = Some(link.sequence.checked_add(1).ok_or(Error::Chain)?);
         self.previous = Some(link.digest.clone());
         if let VerifiedLink::Request(request) = &verified
@@ -431,7 +407,62 @@ impl HistoryCursor<'_> {
         })
     }
 }
+/// One link under the activation in effect at its sequence; `is_activation`
+/// says whether that activation was recorded at exactly this sequence.
+fn verify_link(
+    trust: &VerifierTrust,
+    link: &ChainLink,
+    is_activation: bool,
+) -> Result<VerifiedLink, Error> {
+    if sha256(&link.signed.bytes) != link.digest {
+        return Err(Error::Chain);
+    }
+    if link.roster != trust.roster_digest()
+        || (link.kind == LinkKind::Activation) != is_activation
+        || (is_activation && link.digest != trust.activation_digest())
+    {
+        return Err(Error::Binding);
+    }
+    if link.kind == LinkKind::Receipt {
+        let value = trust.verify_receipt(link.signed.clone())?;
+        if value.receipt.control_seq.0 != link.sequence
+            || value.receipt.previous_link_sha256 != link.previous
+            || value.fingerprint() != link.fingerprint
+        {
+            return Err(Error::Binding);
+        }
+        Ok(VerifiedLink::Receipt(value))
+    } else {
+        let value = trust.verify_request(link.signed.clone())?;
+        if value.request.control_seq.0 != link.sequence
+            || value.request.previous_link_sha256 != link.previous
+            || value.fingerprint() != link.fingerprint
+        {
+            return Err(Error::Binding);
+        }
+        let activation_kind = matches!(value.request.action, Action::RosterActivate { .. });
+        if activation_kind != (link.kind == LinkKind::Activation) {
+            return Err(Error::Binding);
+        }
+        Ok(VerifiedLink::Request(value))
+    }
+}
+
+/// The current head link was appended under the current activation: the head
+/// row names that activation and the chain places it at or below the head.
+/// A new link may extend the head only after the head itself verifies, so a
+/// row inserted directly with runtime credentials can never become a
+/// predecessor of operator-signed work. Earlier links were checked when they
+/// were the head; `audit verify` still checks the whole retained chain.
+pub fn verify_head_link(trust: &VerifierTrust, link: &ChainLink) -> Result<(), Error> {
+    verify_link(trust, link, link.digest == trust.activation_digest()).map(|_| ())
+}
+
 impl History {
+    /// The reviewed activation currently in effect (the last one).
+    pub fn current(&self) -> &VerifierTrust {
+        &self.activations[self.activations.len() - 1].trust
+    }
     pub fn cursor(&self) -> HistoryCursor<'_> {
         HistoryCursor {
             history: self,
@@ -1033,6 +1064,23 @@ pub(crate) mod tests {
             activation.request().action,
             Action::RosterActivate { .. }
         ));
+        // A signature naming one world/channel never authorizes the
+        // environment-wide roster rotation, at preparation or verification.
+        let mut scoped = activation.request().clone();
+        scoped.scope = Some(Scope {
+            world_id: "00000000-0000-7000-8000-000000000010".into(),
+            channel_id: "00000000-0000-7000-8000-000000000011".into(),
+        });
+        if !matches!(scoped.canonical_bytes(), Err(Error::Invalid)) {
+            unexpected.push("scoped activation: prepare".into());
+        }
+        let signed = signer.sign(
+            jcs::encode(&scoped, MAX_REQUEST_BYTES).expect("adversarial JCS"),
+            REQUEST_NAMESPACE,
+        );
+        if !matches!(activation_trust.verify_request(signed), Err(Error::Invalid)) {
+            unexpected.push("scoped activation: verify".into());
+        }
         assert!(
             unexpected.is_empty(),
             "scope validation failures: {unexpected:?}"
@@ -1216,6 +1264,7 @@ pub(crate) mod tests {
                 .is_err()
         );
         let mut activation_request = signer.request(3, 2, &initial.digest);
+        activation_request.scope = None;
         activation_request.reason = Reason::Roster;
         activation_request.action = Action::RosterActivate {
             roster_sha256: trust.roster_digest().into(),
@@ -1258,6 +1307,7 @@ pub(crate) mod tests {
             kind: LinkKind::Activation,
         };
         let mut next = new.request(3, 2, &initial.digest);
+        next.scope = None;
         next.reason = Reason::Roster;
         next.action = Action::RosterActivate {
             roster_sha256: sha256(&new.roster),
@@ -1369,6 +1419,7 @@ pub(crate) mod tests {
         let new = Signer::new();
         let (old_trust, first) = old.activation();
         let mut next = new.request(3, 2, &sha256(&first.bytes));
+        next.scope = None;
         next.reason = Reason::Roster;
         next.action = Action::RosterActivate {
             roster_sha256: sha256(&new.roster),

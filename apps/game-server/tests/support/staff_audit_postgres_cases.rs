@@ -751,6 +751,7 @@ fn staff_pg_old_loaded_config_rejects_new_work_after_recorded_activation_and_ret
         // Independently provision another personal key/roster, sign and record
         // its activation outside the runtime role (ALPHA has no activation API).
         let replacement=Signer::new();let mut activation=replacement.request(3,3,&old_digest);
+        activation.scope=None;
         activation.reason=staff::audit::Reason::Roster;
         activation.action=Action::RosterActivate {roster_sha256:signature::sha256(&replacement.roster)};
         let signed=replacement.sign(activation.canonical_bytes().map_err(debug)?,REQUEST_NAMESPACE);
@@ -994,7 +995,7 @@ fn staff_pg_member_logins_cannot_insert_activations() -> TestResult {
             .bind(&signed.signature)
             .execute(&mut *connection)
             .await?;
-        let updated = sqlx::query("UPDATE game_staff_control_heads SET control_seq=2,link_sha256=$1 WHERE environment='alpha-test'")
+        let updated = sqlx::query("UPDATE game_staff_control_heads SET control_seq=2,link_sha256=$1,activation_sha256=$1 WHERE environment='alpha-test'")
             .bind(request.digest())
             .execute(&mut *connection)
             .await?;
@@ -1018,6 +1019,7 @@ fn staff_pg_member_logins_cannot_insert_activations() -> TestResult {
             let head_before: (String, String, String) = sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
                 .fetch_one(&f.pool).await?;
             let mut activation = f.signer.request(2, 2, f.trust.activation_digest());
+            activation.scope = None;
             activation.reason = staff::audit::Reason::Roster;
             activation.action = Action::RosterActivate {
                 roster_sha256: f.trust.roster_digest().into(),
@@ -1934,5 +1936,257 @@ fn staff_pg_valid_receipt_across_rotation_releases_fence_under_its_own_activatio
         .await;
         f.cleanup().await?;
         result
+    })
+}
+
+#[test]
+fn staff_pg_member_logins_cannot_roll_back_head_or_get_forged_links_extended() -> TestResult {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Next {
+        Request,
+        Receipt,
+    }
+
+    async fn head_row(pool: &sqlx::PgPool) -> TestResult<(String, String, String)> {
+        Ok(sqlx::query_as("SELECT control_seq::text,link_sha256,activation_sha256 FROM game_staff_control_heads WHERE environment='alpha-test'")
+            .fetch_one(pool).await?)
+    }
+
+    async fn run_role(label: &str, group: &str, next: Next) -> TestResult<Vec<String>> {
+        let Some(f) = Fixture::create(label).await? else {
+            return Ok(Vec::new());
+        };
+        let mut admin = sqlx::PgConnection::connect(&f.admin).await?;
+        let mut created_roles = Vec::new();
+        let result: TestResult<Vec<String>> = async {
+            let nonce = f.name.rsplit('_').next().ok_or("fixture name")?;
+            let login = format!("oteryn_gm_2181_{label}_{nonce}");
+            let password = signature::sha256(&node::operator_files::random_bytes::<32>()?);
+            // Only generated ASCII fixture identifiers/passwords are interpolated.
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE ROLE {login} LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '{password}'"
+            )))
+            .execute(&mut admin)
+            .await?;
+            created_roles.push(login.clone());
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "GRANT {group} TO {login} WITH INHERIT TRUE"
+            )))
+            .execute(&mut admin)
+            .await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "GRANT CONNECT ON DATABASE {} TO {login}",
+                f.name
+            )))
+            .execute(&mut admin)
+            .await?;
+            let options = f
+                .url
+                .parse::<sqlx::postgres::PgConnectOptions>()?
+                .username(&login)
+                .password(&password);
+            let mut connection = sqlx::PgConnection::connect_with(&options).await?;
+            let identity: (String, String, bool, bool) = sqlx::query_as("SELECT current_user::text,session_user::text,pg_has_role(current_user,$1::name,'USAGE'),pg_has_role(current_user,'oteryn_test_admin','USAGE')")
+                .bind(group).fetch_one(&mut connection).await?;
+            if identity != (login.clone(), login, true, false) {
+                return Err(format!("invalid forged-link LOGIN fixture: {label}").into());
+            }
+            let mut failures = Vec::new();
+
+            // Two lawful links, then a direct rollback of the head to the older one.
+            let second = f.signed(2, 2, f.trust.activation_digest(), false);
+            let second_digest = signature::sha256(&second.bytes);
+            f.execute(second, Ok(1_000_000), false).await.map_err(debug)?;
+            let third = f.signed(3, 3, &second_digest, false);
+            let third_digest = signature::sha256(&third.bytes);
+            f.execute(third, Ok(1_000_000), false).await.map_err(debug)?;
+            let before = (f.counts().await?, head_row(&f.pool).await?);
+            for (case, sequence, digest) in [
+                ("rollback", 2, second_digest.clone()),
+                ("stay", 3, third_digest.clone()),
+            ] {
+                let mut tx = connection.begin().await?;
+                let moved = sqlx::query("UPDATE game_staff_control_heads SET control_seq=$1::text::numeric,link_sha256=$2 WHERE environment='alpha-test'")
+                    .bind(sequence.to_string()).bind(&digest).execute(&mut *tx).await;
+                tx.rollback().await?;
+                match moved {
+                    Ok(_) => failures.push(format!("{label}: head {case} accepted")),
+                    Err(error) => {
+                        let database = error.as_database_error().ok_or_else(|| debug(&error))?;
+                        if database.code().as_deref() != Some("23514")
+                            || database.message() != "staff head must advance to its exact successor"
+                        {
+                            failures.push(format!("{label}: head {case}: {error:?}"));
+                        }
+                    }
+                }
+            }
+            if (f.counts().await?, head_row(&f.pool).await?) != before {
+                return Err(format!("head rollback changed retained state: {label}").into());
+            }
+
+            let (mut previous, mut sequence) = (third_digest, 4);
+            let mut pending = None;
+            if next == Next::Receipt {
+                // A lawful mutation whose receipt the operator signs later.
+                let mutation = f.signed(4, 4, &previous, true);
+                let digest = signature::sha256(&mutation.bytes);
+                let stored = f.execute(mutation, Ok(1_000_000), true).await.map_err(debug)?;
+                pending = Some((digest.clone(), stored));
+                (previous, sequence) = (digest, 5);
+            }
+
+            // The LOGIN commits a structurally complete REQUEST link, operation
+            // and outbox row whose signature is a donor over other bytes.
+            let request = f.signer.request(40, sequence, &previous);
+            let mut other = request.clone();
+            other.issued_at = Decimal(1_000_001);
+            let donor = f.signer.sign(other.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+            let fingerprint = f
+                .trust
+                .verify_request(donor.clone())
+                .map_err(debug)?
+                .fingerprint()
+                .to_owned();
+            let forged = signature::SignedBytes {
+                bytes: request.canonical_bytes().map_err(debug)?,
+                signature: donor.signature,
+                principal: donor.principal,
+            };
+            if !matches!(f.trust.verify_request(forged.clone()), Err(Error::Signature)) {
+                return Err(format!("forged request verified: {label}").into());
+            }
+            let forged_digest = signature::sha256(&forged.bytes);
+            let uuid = || -> TestResult<String> {
+                Ok(node::uuid_text(
+                    &node::operator_files::uuid_v7().map_err(debug)?,
+                ))
+            };
+            let (action_id, transaction_id) = (uuid()?, uuid()?);
+            let mut tx = connection.begin().await?;
+            sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,link_sha256,previous_link_sha256,roster_sha256,link_kind,signed_bytes,principal,key_fingerprint,signature,created_xact_id) VALUES('alpha-test',$1::text::numeric,$2,$3,$4,'REQUEST',$5,$6,$7,$8,txid_current())")
+                .bind(sequence.to_string()).bind(&forged_digest).bind(&previous).bind(f.trust.roster_digest()).bind(&forged.bytes).bind(&forged.principal).bind(&fingerprint).bind(&forged.signature)
+                .execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_staff_operations(environment,operation_id,request_sha256,request_bytes,outcome_bytes,outcome_sha256,principal,key_fingerprint,action_id,transaction_id,control_seq,requires_receipt,occurred_at,created_xact_id) VALUES('alpha-test',$1::text::uuid,$2,$3,$4,encode(sha256($4),'hex'),$5,$6,$7::text::uuid,$8::text::uuid,$9::text::numeric,false,1000000,txid_current())")
+                .bind(&request.operation_id).bind(&forged_digest).bind(&forged.bytes).bind(b"{}".to_vec()).bind(&forged.principal).bind(&fingerprint).bind(&action_id).bind(&transaction_id).bind(sequence.to_string())
+                .execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_staff_action_outbox(environment,operation_id,event_id,transaction_id,event_type_id,schema_revision,retention_profile_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state,created_xact_id) VALUES('alpha-test',$1::text::uuid,$2::text::uuid,$3::text::uuid,5,1,'STAFF_ACTION_AUDIT_RETENTION_V1',1000000,1000000+31536000000,$4,encode(sha256($4),'hex'),1,txid_current())")
+                .bind(&request.operation_id).bind(&action_id).bind(&transaction_id).bind(b"forged envelope".to_vec())
+                .execute(&mut *tx).await?;
+            let advanced = sqlx::query("UPDATE game_staff_control_heads SET control_seq=$1::text::numeric,link_sha256=$2 WHERE environment='alpha-test'")
+                .bind(sequence.to_string()).bind(&forged_digest)
+                .execute(&mut *tx).await?;
+            if advanced.rows_affected() != 1 {
+                return Err(format!("forged head advance missed: {label}").into());
+            }
+            tx.commit()
+                .await
+                .map_err(|error| format!("forged request COMMIT refused: {label}: {error:?}"))?;
+
+            let before = (f.counts().await?, head_row(&f.pool).await?);
+            if before.1.1 != forged_digest {
+                return Err(format!("forged head was not committed: {label}").into());
+            }
+            let root = durability::DurabilityRoot::connect_test_runtime(&f.url)?;
+            if !root.maintain_ready_once().await? {
+                return Err(format!("fixture root not ready: {label}").into());
+            }
+            // With a pending mutation the fence refuses first; otherwise the
+            // forged head itself must fail verification.
+            let refusal = if next == Next::Receipt { Error::Receipt } else { Error::Signature };
+            if let Some((mutation_digest, stored)) = &pending {
+                let receipt = Receipt {
+                    version: 1,
+                    environment: f.trust.environment().into(),
+                    roster_sha256: f.trust.roster_digest().into(),
+                    operation_id: f.signer.request(4, 4, mutation_digest).operation_id,
+                    request_sha256: mutation_digest.clone(),
+                    outcome_sha256: signature::sha256(&stored.bytes),
+                    disposition: Disposition::Committed,
+                    issued_at: Decimal(1_000_000),
+                    control_seq: Decimal(sequence + 1),
+                    previous_link_sha256: forged_digest.clone(),
+                };
+                let bytes = oteryn_release_manifest::jcs::encode(&receipt, signature::MAX_REQUEST_BYTES)
+                    .map_err(debug)?;
+                let verified = f
+                    .trust
+                    .verify_receipt(f.signer.sign(bytes, RECEIPT_NAMESPACE))
+                    .map_err(debug)?;
+                let mut tx = f.pool.begin().await?;
+                sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+                let stored = owner::receipt_in_transaction(&mut tx, &f.trust, &verified).await;
+                tx.rollback().await?;
+                match stored {
+                    Ok(()) => failures.push(format!("{label}: receipt extended the forged link")),
+                    Err(StaffError::Rejected(Error::Signature)) => {}
+                    Err(error) => failures.push(format!("{label}: receipt: {error:?}")),
+                }
+            }
+            match root
+                .staff_prepare_head(f.trust.environment().into(), Arc::clone(&f.history))
+                .await
+            {
+                Ok(_) => failures.push(format!("{label}: preparation admitted")),
+                Err(StaffError::Rejected(error)) if error == refusal => {}
+                Err(error) => failures.push(format!("{label}: preparation: {error:?}")),
+            }
+            let following = f.signed(41, sequence + 1, &forged_digest, false);
+            let request = f.trust.verify_request(following).map_err(debug)?;
+            let mut probe = connection.begin().await?;
+            let begun = owner::fixture_begin_in_transaction(
+                &mut probe,
+                &f.trust,
+                &f.history,
+                request,
+                Ok(1_000_000),
+            )
+            .await;
+            probe.rollback().await?;
+            match begun {
+                Ok(Begin::Fresh(_)) => failures.push(format!("{label}: next request extended the forged link")),
+                Ok(Begin::Replay(_)) => return Err(format!("next request replayed: {label}").into()),
+                Err(StaffError::Rejected(error)) if error == refusal => {}
+                Err(error) => failures.push(format!("{label}: next request: {error:?}")),
+            }
+            if (f.counts().await?, head_row(&f.pool).await?) != before {
+                return Err(format!("refusal changed retained state: {label}").into());
+            }
+            drop(root);
+            connection.close().await?;
+            Ok(failures)
+        }
+        .await;
+
+        // These are the only database/cluster roles owned by this invocation.
+        let database_cleanup = f.cleanup().await;
+        let mut role_cleanup = Ok(());
+        for role in created_roles.iter().rev() {
+            let removed = sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {role}")))
+                .execute(&mut admin)
+                .await;
+            if let Err(error) = removed {
+                role_cleanup = Err(error);
+            }
+        }
+        let admin_cleanup = admin.close().await;
+        database_cleanup?;
+        role_cleanup?;
+        admin_cleanup?;
+        result
+    }
+
+    runtime()?.block_on(async {
+        let mut failures = Vec::new();
+        for (label, group, next) in [
+            ("runtime_forged_req", "oteryn_game_runtime", Next::Request),
+            ("control_forged_req", "oteryn_game_control", Next::Request),
+            ("runtime_forged_rcpt", "oteryn_game_runtime", Next::Receipt),
+            ("control_forged_rcpt", "oteryn_game_control", Next::Receipt),
+        ] {
+            failures.extend(run_role(label, group, next).await?);
+        }
+        assert!(failures.is_empty(), "forged link failures: {failures:?}");
+        Ok(())
     })
 }

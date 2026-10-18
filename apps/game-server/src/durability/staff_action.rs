@@ -92,6 +92,42 @@ pub(crate) async fn lock_head(
     })
 }
 
+/// The caller holds the locked head in this same transaction and has checked
+/// that it names `trust`'s activation. The head link itself must verify under
+/// that activation before any new link may name it as predecessor, so links
+/// written directly with runtime credentials are never extended.
+async fn verify_head_in_transaction(
+    connection: &mut PgConnection,
+    trust: &VerifierTrust,
+    environment: &str,
+    head: &Head,
+) -> Result<(), StaffError> {
+    let row=sqlx::query("SELECT previous_link_sha256,link_sha256,roster_sha256,key_fingerprint,signed_bytes,principal,signature,link_kind FROM game_staff_control_links WHERE environment=$1 AND control_seq=$2::text::numeric")
+        .bind(environment).bind(head.sequence.to_string()).fetch_optional(connection).await?.ok_or(Error::Chain)?;
+    let link = signature::ChainLink {
+        sequence: head.sequence,
+        previous: row.try_get(0)?,
+        digest: row.try_get(1)?,
+        roster: row.try_get(2)?,
+        fingerprint: row.try_get(3)?,
+        signed: SignedBytes {
+            bytes: row.try_get(4)?,
+            principal: row.try_get(5)?,
+            signature: row.try_get(6)?,
+        },
+        kind: match row.try_get::<String, _>(7)?.as_str() {
+            "REQUEST" => signature::LinkKind::Request,
+            "RECEIPT" => signature::LinkKind::Receipt,
+            "ACTIVATION" => signature::LinkKind::Activation,
+            _ => return Err(Error::Invalid.into()),
+        },
+    };
+    if head.activation_digest != trust.activation_digest() || link.digest != head.digest {
+        return Err(Error::Binding.into());
+    }
+    Ok(signature::verify_head_link(trust, &link)?)
+}
+
 /// Retry lookup precedes freshness and predecessor checks. It returns evidence,
 /// never a fresh authority capability or another domain execution permission.
 pub(crate) async fn begin_in_transaction(
@@ -150,6 +186,7 @@ async fn begin_with_clock(
     }
     // Refuse a new request until the latest operator mutation is reconciled.
     receipt_fence_in_transaction(connection, history, trust.environment()).await?;
+    verify_head_in_transaction(connection, trust, trust.environment(), &head).await?;
     let physical_transaction = physical_transaction(connection).await?;
     // Sample after every awaited prerequisite. Terminal replay never calls it.
     let now = clock();
@@ -386,6 +423,7 @@ pub(crate) async fn receipt_in_transaction(
     {
         return Err(StaffError::Conflict);
     }
+    verify_head_in_transaction(connection, trust, trust.environment(), &head).await?;
     insert_link(
         connection,
         trust.environment(),
@@ -544,6 +582,13 @@ impl DurabilityRoot {
                         let head = lock_head(&mut tx, &environment).await?;
                         if let Some(history) = &receipt_fence {
                             receipt_fence_in_transaction(&mut tx, history, &environment).await?;
+                            verify_head_in_transaction(
+                                &mut tx,
+                                history.current(),
+                                &environment,
+                                &head,
+                            )
+                            .await?;
                         }
                         Ok(head)
                     }

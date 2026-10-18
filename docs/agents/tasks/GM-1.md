@@ -14,7 +14,7 @@ issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-18
 owner: "chat I / root lead; admission_2187, gmaudit_2181 and sec_2188 collaborators"
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 6 row GM-1 (row 136); App. 7 GM-1; §5 Wave 5"
 class: "hard (child graph)"
@@ -49,7 +49,55 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — D1412 verified receipt releases the fence, REPORT_ONLY (2026-10-17)
+## Current checkpoint — Codex review 5559897716 repairs, REPORT_ONLY (2026-10-18)
+
+Parent `c05cd337`, merged with `main` `f094e032` and `afa97ba0` (resource registry: main
+plus the two GM1 staff entries; World pin `inputs_digest` recomputed). All
+three findings were accepted:
+
+- [P1 4304344319](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4304344319):
+  a member LOGIN could commit a forged link plus the head advance without a
+  receipt-requiring operation, and the next request chained after it.
+  `verify_head_in_transaction` now re-verifies the stored head link (digest,
+  roster, kind, signature, activation binding) under the current trust before
+  a request, `staff prepare` or a receipt extends it. The head's
+  `activation_sha256` is not writable by those LOGINs, so the current
+  activation covers every link from it to the head.
+- [P2 4304344321](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4304344321):
+  migration 0116 adds `game_staff_head_successor`, a BEFORE UPDATE trigger: the
+  head may only move to the exact successor link written in the same
+  transaction, and only an ACTIVATION link may change `activation_sha256`.
+- [P2 4304344325](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4304344325):
+  a roster activation must carry no scope, and every other action must carry
+  one, at both prepare and verify.
+
+New canonical case
+`staff_pg_member_logins_cannot_roll_back_head_or_get_forged_links_extended`
+covers the runtime and control LOGINs: head rollback and stay are refused with
+`23514`, and a committed forged head link is refused by the next receipt,
+`staff prepare` and the next request. Counts and head stay unchanged. The
+owner activation fixture in `staff_pg_member_logins_cannot_insert_activations`
+now also advances `activation_sha256`, as every lawful activation must. The
+`[staff.trust]` + `activation_history_file` shape is unchanged (CP decision).
+
+Validation of tree `0034b7de`, before this card edit (Ubuntu/mole, shared `~/oteryn-cache`, one
+CP D1429 `slot-run.sh` slot per run, `apps/game-server/src/lib.rs` touched
+before every cargo run, PG through the unchanged `in-pg-netns.sh` against
+shared PostgreSQL 17.6, `PRE-ROUTING` skips 0):
+
+| Check | Result |
+| --- | --- |
+| `cargo fmt --all --check` | pass |
+| strict Clippy `-p oteryn-game-server --all-targets -D warnings` (tree `63714405`) | pass |
+| lib (tree `63714405`) | 3413 passed, 0 failed (29 ignored, pre-existing) |
+| `staff_audit_postgres` | 1167 passed, 0 failed (18 `staff_pg_` ok) |
+| canonical `durability_postgres staff_pg_` | 18 passed, 0 failed |
+
+Tree `63714405` differs from `0034b7de` only by the one-line fixture SQL above;
+its first PG run failed exactly that owner fixture, which the new trigger
+correctly refused. Runtime remains REPORT_ONLY.
+
+## Previous checkpoint — D1412 verified receipt releases the fence, REPORT_ONLY (2026-10-17)
 
 [D1412](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6238311581)
 returns this lane to AUTHORING for
