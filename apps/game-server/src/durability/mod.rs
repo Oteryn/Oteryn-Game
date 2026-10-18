@@ -3438,3 +3438,11 @@ mod terminal_replacement_foundation_red_tests {
 }
 
 pub(crate) mod house_spell_acl;
+
+pub mod guild;
+pub mod guild_audit;
+pub mod guild_bank;
+pub mod guild_bank_audit;
+pub mod guildhall;
+pub(crate) mod house_ownership;
+pub mod bed_sleeper;

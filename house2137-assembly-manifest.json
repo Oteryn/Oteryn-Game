@@ -1,0 +1,340 @@
+{
+  "evidence_class": "SOURCE ASSEMBLY ONLY; no uncomposed published PR qualification",
+  "base_head": "c65dd10af69ce6d2263175a35736fbe531f01a01",
+  "payload_sha256": "f48dab99d1eb92485e2bb788350dfe0a3655f35f35363ae4a992bd14064d2137",
+  "inputs": [
+    {
+      "pr": 2136,
+      "head": "e26f3480c08b14e5b97b2131afec0a2623b9d168",
+      "path": "apps/game-server/src/domain/guild.rs",
+      "blob": "6156e25c67a73f19699404cb7ffd061a4bee230c",
+      "sha256": "d056bf3f95962d1ff6f6625f7feaae7dd1aacd94fd498864cc41f01be9cbf4cf",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2136,
+      "head": "e26f3480c08b14e5b97b2131afec0a2623b9d168",
+      "path": "apps/game-server/src/durability/guild.rs",
+      "blob": "b377023613764bdc8366c1b74df0d016657d019b",
+      "sha256": "4285cadf338b2aac96d8a2255ac9a360b90324788a4c3b9d102d49d3d043cd06",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2136,
+      "head": "e26f3480c08b14e5b97b2131afec0a2623b9d168",
+      "path": "apps/game-server/src/durability/guild_audit.rs",
+      "blob": "8fa14d37be0347978852c16e41c520b923d905d5",
+      "sha256": "4e30a664a5d6e809eed1e9e4108fa6e8f6f883e1a1df516326ab7c9479d356ea",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2136,
+      "head": "e26f3480c08b14e5b97b2131afec0a2623b9d168",
+      "path": "apps/game-server/src/durability/guild_tests.rs",
+      "blob": "56006151d9be9737c1bfbb4f659582124946fa29",
+      "sha256": "f4a345b49754d50a90d9d9127caa55b8fd0dc1ebed5545ae581a40e68ac2a91e",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2136,
+      "head": "e26f3480c08b14e5b97b2131afec0a2623b9d168",
+      "path": "apps/game-server/src/node/guild_jobs.rs",
+      "blob": "5294d38c071b071c8e3dd445381196e54c155e6f",
+      "sha256": "754bbb7d89184c729faabb747fc204baae109a05ed67924a304814fbee4f2190",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2139,
+      "head": "65a834fe536cd04c53d59189a35af032328e8f67",
+      "path": "apps/game-server/src/durability/guild_bank.rs",
+      "blob": "b664a3c4ea4ff38e956270bc84ecdbd5bd0d285b",
+      "sha256": "0a9c9de2bb890b66e921af9c967ddf893409a69135fc8792d0779b602a2abd6f",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2139,
+      "head": "65a834fe536cd04c53d59189a35af032328e8f67",
+      "path": "apps/game-server/src/durability/guild_bank_audit.rs",
+      "blob": "1362e5d54eeaa9748b2a52b5b3d827f52c0ce214",
+      "sha256": "24722179ccf40659fe9d4b4766e3d081acbb55408669036bc87cb0bd243dc075",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2139,
+      "head": "65a834fe536cd04c53d59189a35af032328e8f67",
+      "path": "apps/game-server/src/durability/guild_bank_tests.rs",
+      "blob": "7f95cef1828201025dae2916bacd898673644d7a",
+      "sha256": "df8e757fa4ce1a9abc6dd6cdff770679585cf9d0f3fc10a7642abe9291610ab9",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2153,
+      "head": "4b435e05143f6ea66b90ecb2e2df26174c945d6d",
+      "path": "apps/game-server/src/durability/guildhall.rs",
+      "blob": "8ed3c55e1dc1a53b7e4dd88cfc90b40dd2b3f097",
+      "sha256": "594742dee704d707608b19fcdab3446529fc680d8e98142321560b8a6a9679fa",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2153,
+      "head": "4b435e05143f6ea66b90ecb2e2df26174c945d6d",
+      "path": "apps/game-server/src/guild/guildhall.rs",
+      "blob": "cdb74d526c663684eedfd09595ed7ac7d3a722d7",
+      "sha256": "5de0137f65c3f6566990061b8faee41cd722ad60acec512081d6186e612a2295",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2153,
+      "head": "4b435e05143f6ea66b90ecb2e2df26174c945d6d",
+      "path": "apps/game-server/src/guild/guildhall_tests.rs",
+      "blob": "7825ef08f3677d92abfd8619165a77d6dd3b313b",
+      "sha256": "f8476a0bdedd9d522b2d3e33c5c510d3bcc80f86996e8091b68176999d350bb1",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": "main",
+      "head": "f010472bcb6794a2cbc56dfaf755bd122c10225e",
+      "path": "apps/game-server/tests/support/item_transfer_postgres_cases.rs",
+      "blob": "209cf5f9d77395e5977ee9fd3b8aa17b663824d1",
+      "sha256": "a7fffd0bebb7035af4d962e96bf0c0be64db217694398ca29c10761167e46f69",
+      "source_class": "unchanged exact Git blob"
+    },
+    {
+      "pr": 2147,
+      "head": "87674e53cd4be954b19dfb049a5d41013182fc03",
+      "path": "apps/game-server/src/durability/bed_sleeper.rs",
+      "blob": "d15c64b976f1ce9250eb30d8601546b266bef71d",
+      "sha256": "7a4d88ce68e80e7ce7638bd329050f006b8dd16d2c77c43cda2dabf9d5f4d39f",
+      "source_class": "published BED production/source fixture"
+    },
+    {
+      "pr": 2147,
+      "head": "87674e53cd4be954b19dfb049a5d41013182fc03",
+      "path": "apps/game-server/src/house_bed/sleeper.rs",
+      "blob": "c23d1fcd3e6ef32f11db9d7b17459bf0d3ef3456",
+      "sha256": "06ec9e07e3328998dfedc33ba1c6db072a5dfdc3165a1f0d3c6395520a5fc3ca",
+      "source_class": "published BED production/source fixture"
+    },
+    {
+      "pr": 2147,
+      "head": "87674e53cd4be954b19dfb049a5d41013182fc03",
+      "path": "apps/game-server/src/house_bed/sleeper_tests.rs",
+      "blob": "92f4c51775fa13827b3fb2c128c978a57d080f5c",
+      "sha256": "5c4cae6da93e572fc6880afb32404fc00ead2750f776fa6abcb8884328e997d6",
+      "source_class": "published BED production/source fixture"
+    },
+    {
+      "pr": 2137,
+      "head": "5effcbb66072bf5ff4857dd2c25f6b6f6d607fc9",
+      "path": "apps/game-server/src/durability/house_ownership.rs",
+      "blob": "040ee24800595239fb8a5b1564aa7492ed8415ed",
+      "sha256": "266da4942c58cf14a52933254b7ec9d95e9f0aef982321a0c42647ebfc8b50d7",
+      "preimage_blob": "17f0144db243b0b0a562cc0c6c4b0b6ce2f5f82d",
+      "source_class": "owned native cleanup/import follow-up candidate"
+    },
+    {
+      "pr": 2137,
+      "head": "5effcbb66072bf5ff4857dd2c25f6b6f6d607fc9",
+      "path": "apps/game-server/src/house/guildhall_release.rs",
+      "blob": "1ce3e3e6bec3c53f6603aac45ebad817dc1aa2ec",
+      "sha256": "5e45ea7f179c61e863fc6b0bca0db6cef80800738696a9f53f3b7c0f8d7fff7b",
+      "preimage_blob": "1ce3e3e6bec3c53f6603aac45ebad817dc1aa2ec",
+      "source_class": "published source unchanged"
+    },
+    {
+      "pr": 2137,
+      "head": "5effcbb66072bf5ff4857dd2c25f6b6f6d607fc9",
+      "path": "apps/game-server/src/house/guildhall_release_tests.rs",
+      "blob": "007c44a61f58b2cae25fe8cfff3704a96782b566",
+      "sha256": "a572d7f1d04b26ad0e60192d2af169eab4233831ae2c83f6d777dd0ee8b96db6",
+      "preimage_blob": "36c81314b517f4f62a6e4e466086daed38f77be9",
+      "source_class": "owned native cleanup/import follow-up candidate"
+    },
+    {
+      "pr": 2141,
+      "head": "c65dd10af69ce6d2263175a35736fbe531f01a01",
+      "path": "apps/game-server/src/house/move_out.rs",
+      "blob": "c417b4ca6aa6d0a879d2f3e43db16ed389ee8106",
+      "sha256": "e87364f62bacad8c43e88ee11e5c0dda032ca1f7d083e042070365ea937cd5f3",
+      "preimage_blob": "7a1dce3261134e1cbee804e867ac37e43b2f5df3",
+      "source_class": "owned native compile-repair candidate on published canonical bridge"
+    },
+    {
+      "pr": 2141,
+      "head": "c65dd10af69ce6d2263175a35736fbe531f01a01",
+      "path": "apps/game-server/src/house/transfer.rs",
+      "blob": "c1f1d0383f5ab36b61b397213e2846e36eb281ab",
+      "sha256": "a80ef04c58a018edfffc95506c0ee2759f0e618438b908f5c1c3ec78b0a65954",
+      "preimage_blob": "ff15d1f009335dd3aba4fcb6c6f1d7f1d202d781",
+      "source_class": "owned native compile-repair candidate on published canonical bridge"
+    }
+  ],
+  "mounts": [
+    {
+      "path": "apps/game-server/src/domain/mod.rs",
+      "pre_sha256": "50aa3bd82b8663468eed73a705f6a2a281b33d168f7ca355d56aef6cb986d4d4",
+      "post_sha256": "658687d6be2f2f113abec6df8cb06abc61ec5e734e507b64cacf64cf305c4917",
+      "change": "literal native registration only"
+    },
+    {
+      "path": "apps/game-server/src/node/mod.rs",
+      "pre_sha256": "881880dd1cff529bc02616c7c39393e125e3509fca0a11e39e022c2fff6632da",
+      "post_sha256": "25a42674d0d99b6861ad925779e05d5df99cd6e9cc31498587408a2a5de0dcca",
+      "change": "literal native registration only"
+    },
+    {
+      "path": "apps/game-server/src/durability/mod.rs",
+      "pre_sha256": "af1948ba904ffb21fa28a486b7059ea4a712dfbe2a042c7cbb94a3a71b44ab12",
+      "post_sha256": "3a6bd82044935fce33eabb578fa7569e01ce78814f5b65b3d0d54c87c950952a",
+      "change": "literal native registration only"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "pre_sha256": "ecfe164b4107864e345efd1a2688c62654b5531bbbe93013c0f4a4234386225f",
+      "post_sha256": "a4cdc41b9e3a97c6d886c6c43b9a48813cdf7924f7035ecb2f16ab61101697cb",
+      "change": "literal native registration only"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild.rs",
+      "pre_sha256": "4285cadf338b2aac96d8a2255ac9a360b90324788a4c3b9d102d49d3d043cd06",
+      "post_sha256": "9c69fe25ae35576ee0e77d59c9d486dfe86f4be6cf01652521db58fcedeb6611",
+      "change": "literal native registration only"
+    }
+  ],
+  "final_files": [
+    {
+      "path": "apps/game-server/src/domain/guild.rs",
+      "sha256": "d056bf3f95962d1ff6f6625f7feaae7dd1aacd94fd498864cc41f01be9cbf4cf"
+    },
+    {
+      "path": "apps/game-server/src/domain/mod.rs",
+      "sha256": "658687d6be2f2f113abec6df8cb06abc61ec5e734e507b64cacf64cf305c4917"
+    },
+    {
+      "path": "apps/game-server/src/durability/bed_sleeper.rs",
+      "sha256": "7a4d88ce68e80e7ce7638bd329050f006b8dd16d2c77c43cda2dabf9d5f4d39f"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild.rs",
+      "sha256": "9c69fe25ae35576ee0e77d59c9d486dfe86f4be6cf01652521db58fcedeb6611"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild_audit.rs",
+      "sha256": "4e30a664a5d6e809eed1e9e4108fa6e8f6f883e1a1df516326ab7c9479d356ea"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild_bank.rs",
+      "sha256": "0a9c9de2bb890b66e921af9c967ddf893409a69135fc8792d0779b602a2abd6f"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild_bank_audit.rs",
+      "sha256": "24722179ccf40659fe9d4b4766e3d081acbb55408669036bc87cb0bd243dc075"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild_bank_tests.rs",
+      "sha256": "df8e757fa4ce1a9abc6dd6cdff770679585cf9d0f3fc10a7642abe9291610ab9"
+    },
+    {
+      "path": "apps/game-server/src/durability/guild_tests.rs",
+      "sha256": "f4a345b49754d50a90d9d9127caa55b8fd0dc1ebed5545ae581a40e68ac2a91e"
+    },
+    {
+      "path": "apps/game-server/src/durability/guildhall.rs",
+      "sha256": "594742dee704d707608b19fcdab3446529fc680d8e98142321560b8a6a9679fa"
+    },
+    {
+      "path": "apps/game-server/src/durability/house_ownership.rs",
+      "sha256": "266da4942c58cf14a52933254b7ec9d95e9f0aef982321a0c42647ebfc8b50d7"
+    },
+    {
+      "path": "apps/game-server/src/durability/mod.rs",
+      "sha256": "3a6bd82044935fce33eabb578fa7569e01ce78814f5b65b3d0d54c87c950952a"
+    },
+    {
+      "path": "apps/game-server/src/guild/guildhall.rs",
+      "sha256": "5de0137f65c3f6566990061b8faee41cd722ad60acec512081d6186e612a2295"
+    },
+    {
+      "path": "apps/game-server/src/guild/guildhall_tests.rs",
+      "sha256": "f8476a0bdedd9d522b2d3e33c5c510d3bcc80f86996e8091b68176999d350bb1"
+    },
+    {
+      "path": "apps/game-server/src/house/guildhall_release.rs",
+      "sha256": "5e45ea7f179c61e863fc6b0bca0db6cef80800738696a9f53f3b7c0f8d7fff7b"
+    },
+    {
+      "path": "apps/game-server/src/house/guildhall_release_tests.rs",
+      "sha256": "a572d7f1d04b26ad0e60192d2af169eab4233831ae2c83f6d777dd0ee8b96db6"
+    },
+    {
+      "path": "apps/game-server/src/house/move_out.rs",
+      "sha256": "e87364f62bacad8c43e88ee11e5c0dda032ca1f7d083e042070365ea937cd5f3"
+    },
+    {
+      "path": "apps/game-server/src/house/transfer.rs",
+      "sha256": "a80ef04c58a018edfffc95506c0ee2759f0e618438b908f5c1c3ec78b0a65954"
+    },
+    {
+      "path": "apps/game-server/src/house_bed/sleeper.rs",
+      "sha256": "06ec9e07e3328998dfedc33ba1c6db072a5dfdc3165a1f0d3c6395520a5fc3ca"
+    },
+    {
+      "path": "apps/game-server/src/house_bed/sleeper_tests.rs",
+      "sha256": "5c4cae6da93e572fc6880afb32404fc00ead2750f776fa6abcb8884328e997d6"
+    },
+    {
+      "path": "apps/game-server/src/lib.rs",
+      "sha256": "a4cdc41b9e3a97c6d886c6c43b9a48813cdf7924f7035ecb2f16ab61101697cb"
+    },
+    {
+      "path": "apps/game-server/src/node/guild_jobs.rs",
+      "sha256": "754bbb7d89184c729faabb747fc204baae109a05ed67924a304814fbee4f2190"
+    },
+    {
+      "path": "apps/game-server/src/node/mod.rs",
+      "sha256": "25a42674d0d99b6861ad925779e05d5df99cd6e9cc31498587408a2a5de0dcca"
+    },
+    {
+      "path": "apps/game-server/tests/support/item_transfer_postgres_cases.rs",
+      "sha256": "a7fffd0bebb7035af4d962e96bf0c0be64db217694398ca29c10761167e46f69"
+    }
+  ],
+  "test_sets": [
+    {
+      "selector": "durability::house_ownership::tests::",
+      "expected": 6,
+      "cases": [
+        "house_ownership_release_retains_instance_and_receipt_after_reload",
+        "house_ownership_unsynchronized_release_rolls_back",
+        "house_ownership_legacy_acl_revision_is_atomic_and_has_no_runtime_property_grant",
+        "house_ownership_concurrent_properties_compete_for_one_account_world_slot",
+        "house_ownership_retired_property_cannot_be_reopened",
+        "house_ownership_refuses_unreconciled_legacy_rows_without_guessing_rent"
+      ],
+      "domain_test_suffix_sha256": "58682ac91fd22a8c3c8ed448c2b3906e5bae3c06e82afa2068d06c1c4ca890a8",
+      "domain_test_suffix_matches_published": true
+    },
+    {
+      "selector": "durability::guild::disband_terminal_tests::house_release_tests::",
+      "expected": 13,
+      "cases": [
+        "guild_house_real_inbox_release_rollback_then_commit_reload",
+        "guild_house_bounded_101_retains_actual_fence_until_final_real_delivery",
+        "guild_house_reservation_and_release_proof_reject_savepoint_rollback",
+        "guild_house_runtime_exact_ports_without_direct_table_writes",
+        "guild_house_native_delivery_error_restores_participant_before_caller_commit",
+        "guild_house_missing_actual_native_hook_refuses_before_freeze",
+        "guild_house_missing_bed_revision_hook_rolls_back_the_participant",
+        "guild_house_real_d_context_after_rollback_reacquires_guild_lock",
+        "guild_house_real_context_rechecks_recovery_after_reservation",
+        "guild_house_real_context_rejects_foreign_world_and_canonical_resnapshot",
+        "guild_house_direct_sql_cannot_replace_root_possession_with_public_current_facts",
+        "guild_house_disposition_preserves_prior_freed_bed_cause_and_time",
+        "guild_house_missing_protected_abi_refuses_before_recipient_marker"
+      ],
+      "domain_test_suffix_sha256": "43ae5fefa77d41dbe2b98ed0247d2874d581687d2ddd6a865be875bf2770f4dd",
+      "domain_test_suffix_matches_published": true
+    }
+  ],
+  "state": "SOURCE ASSEMBLED; formatting/compile/native19 NOT_RUN"
+}

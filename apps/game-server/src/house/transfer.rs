@@ -41,11 +41,12 @@ pub(crate) async fn step(
     generation: u64,
     step: u64,
 ) -> Result<HouseMoveOutOutcome> {
+    let step_items = i64::try_from(owner::DISPOSITION_STEP_ITEMS).map_err(|_| E::InvalidCustody)?;
     // Native admission relation EXCLUSIVE locks serialize cursor writers. Resolve the actual
     // immutable census subjects and protect roots before the property, as HOUSE-OWN0 §9
     // requires; neither a caller-selected recipient nor a provenance cache is used.
-    sqlx::query("SELECT r.character_id FROM game_character_roots r WHERE r.character_id IN(SELECT (source_provenance->>'reclaim_subject_character_id')::uuid FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT 100) ORDER BY r.character_id FOR KEY SHARE")
-        .bind(operation.as_slice()).fetch_all(&mut **tx).await?;
+    sqlx::query("SELECT r.character_id FROM game_character_roots r WHERE r.character_id IN(SELECT (source_provenance->>'reclaim_subject_character_id')::uuid FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT $2) ORDER BY r.character_id FOR KEY SHARE")
+        .bind(operation.as_slice()).bind(step_items).fetch_all(&mut **tx).await?;
     // Same ordering as freeze and the native-location fence trigger.
     sqlx::query("SELECT 1 FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR UPDATE").bind(house.world_id().as_bytes().as_slice()).bind(house.house_key()).execute(&mut **tx).await?;
     let row = owner::load(tx, operation, house).await?;
@@ -89,17 +90,17 @@ pub(crate) async fn step(
     if snapshot.frozen_count != Some(all.len() as u64) || snapshot.frozen_digest != Some(digest) {
         return Err(E::InvalidCustody);
     }
-    let items=sqlx::query("SELECT uuid_send(item_instance_id) AS item FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT 100 FOR UPDATE")
-        .bind(operation.as_slice()).fetch_all(&mut **tx).await?;
+    let items=sqlx::query("SELECT uuid_send(item_instance_id) AS item FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT $2 FOR UPDATE")
+        .bind(operation.as_slice()).bind(step_items).fetch_all(&mut **tx).await?;
     // Item locks precede counters in the accepted order; avoid opposite item orders across
     // subjects when each SQL delivery later reacquires its already-held item/root lock.
     for item in &items {
         sqlx::query("SELECT 1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR NO KEY UPDATE").bind(owner::bytes(item,"item")?.as_slice()).execute(&mut **tx).await?;
     }
-    sqlx::query("INSERT INTO game_character_inbox_counters(character_id) SELECT DISTINCT (source_provenance->>'reclaim_subject_character_id')::uuid FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND item_instance_id IN(SELECT item_instance_id FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT 100) ORDER BY 1 ON CONFLICT DO NOTHING")
-        .bind(operation.as_slice()).execute(&mut **tx).await?;
-    sqlx::query("SELECT character_id FROM game_character_inbox_counters WHERE character_id IN(SELECT (source_provenance->>'reclaim_subject_character_id')::uuid FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT 100) ORDER BY character_id FOR UPDATE")
-        .bind(operation.as_slice()).fetch_all(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_character_inbox_counters(character_id) SELECT DISTINCT (source_provenance->>'reclaim_subject_character_id')::uuid FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND item_instance_id IN(SELECT item_instance_id FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT $2) ORDER BY 1 ON CONFLICT DO NOTHING")
+        .bind(operation.as_slice()).bind(step_items).execute(&mut **tx).await?;
+    sqlx::query("SELECT character_id FROM game_character_inbox_counters WHERE character_id IN(SELECT (source_provenance->>'reclaim_subject_character_id')::uuid FROM game_house_disposition_items WHERE operation_id=encode($1,'hex')::uuid AND moved_step IS NULL ORDER BY item_instance_id LIMIT $2) ORDER BY character_id FOR UPDATE")
+        .bind(operation.as_slice()).bind(step_items).fetch_all(&mut **tx).await?;
     for item in &items {
         sqlx::query("SELECT * FROM game_house_disposition_deliver(encode($1,'hex')::uuid,$2::text::numeric(20,0),encode($3,'hex')::uuid)")
             .bind(operation.as_slice()).bind(step.to_string()).bind(owner::bytes(item,"item")?.as_slice()).fetch_one(&mut **tx).await?;
@@ -122,6 +123,7 @@ pub(crate) async fn step(
 }
 
 /// Private definer and commit-time native-source/Inbox/step proofs; not a production grant.
+#[cfg(test)]
 pub const PRIVATE_DISPOSITION_TRANSFER_SCHEMA: &str = r#"
 CREATE FUNCTION game_house_disposition_census_proven() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN

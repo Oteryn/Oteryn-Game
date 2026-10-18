@@ -420,6 +420,7 @@ pub(crate) async fn freeze(
 }
 
 /// Delegated private design, deliberately not a numbered migration or production install.
+#[cfg(test)]
 pub const PRIVATE_DISPOSITION_SCHEMA: &str = r#"
 CREATE TABLE game_house_dispositions (
  operation_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(operation_id)),

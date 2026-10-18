@@ -854,3 +854,10 @@ mod creature_source_items;
 // D1287: selection-source component tests, without a production runtime caller.
 #[cfg(test)]
 mod world_change;
+
+pub(crate) mod guild { pub(crate) mod guildhall; }
+pub mod house_bed { pub mod sleeper; }
+#[cfg(test)]
+#[allow(dead_code, unused_imports, clippy::expect_used, reason = "literal shared PG fixture uses the original native test expectation context")]
+#[path = "../tests/support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
