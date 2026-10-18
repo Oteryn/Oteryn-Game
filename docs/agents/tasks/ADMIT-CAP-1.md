@@ -134,6 +134,15 @@ which main's durability NPC travel fixture needs.
   template. A node document whose `[readiness]` omits the field now fails closed with
   the key `readiness.required_gameplay_capabilities` (no default). The
   VPS batch deploy adds the field: `[18]` for a bundle World, `[]` for a fixture World.
+- **Duplicate test sources (Codex P1 on `0ef5910e`).** With the new mount the cases and
+  `support/postgres.rs` compiled into two test harnesses, the CI-run `durability_postgres` and
+  the auto-discovered `tests/world_required_capabilities_postgres.rs` wrapper, which also
+  path-loaded test-bearing `../src` modules. `check_duplicate_test_sources.py` rejects that.
+  The wrapper is removed (it was within this task's owned paths), so the cases are mounted
+  only by `durability_postgres` and no `Cargo.toml` `test = false` entry is needed (D1324 keeps
+  that entry with CP). Focused run: `cargo test -p oteryn-game-server --test durability_postgres
+  world_required_capabilities`. Earlier `--test world_required_capabilities_postgres` counts
+  above are historical.
 - **Owner answers (lead).** Registry ID 29 (`MAP_STATE_V1`) stays reserved and is never
   offered. The 1117 `RECONNECT_CAPABILITY_REQUIRED` caller belongs to lane G2.
 
