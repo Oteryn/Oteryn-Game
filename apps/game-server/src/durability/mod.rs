@@ -39,6 +39,7 @@ pub mod charm_state;
 pub mod content_activation;
 mod db;
 pub(crate) mod equipment_policy_abi;
+pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub(crate) mod ground_cell_limit;

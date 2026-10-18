@@ -1,7 +1,8 @@
 //! Forge dust (IMBUE-FORGE-0 §9, FORGE-1a): a per-Character balance from 0 to the dust limit,
-//! and a limit from 100 to 225 (`IMBFORGE0-RL-08`). A gain above the limit credits up to the
-//! limit and loses the rest; a spend above the balance is refused. Raising the limit is a forge
-//! operation (FORGE-1b), so nothing here changes it.
+//! and the D1230 limit `100 + 20*n` for `n` in 0..=225. The general next cost `25+n`
+//! and maximum are PARITY_WIKI; the base and increment are GUI/CIPSOFT evidence.
+//! Gain and Spend preserve the unlocked limit. LimitRaise is a checked value plan;
+//! only its native receipt/ledger owner may commit it.
 
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -9,12 +10,16 @@ use std::fmt::{self, Display, Formatter};
 /// `IMBFORGE0-RL-08`: the initial and lowest dust limit.
 pub const DUST_LIMIT_MIN: u16 = 100;
 /// `IMBFORGE0-RL-08`: the highest dust limit.
-pub const DUST_LIMIT_MAX: u16 = 225;
+pub const DUST_LIMIT_MAX: u16 = 4_600;
+pub const DUST_LIMIT_UPGRADES_MAX: u16 = 225;
+const DUST_LIMIT_STEP: u16 = 20;
+const DUST_LIMIT_FIRST_COST: u32 = 25;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ForgeDustError {
-    /// The limit is outside 100-225.
+    /// The limit is outside the exact D1230 progression or its count is invalid.
     InvalidLimit,
+    MaximumLimitReached,
     /// The balance is above the limit.
     BalanceAboveLimit,
     /// A gain or spend of zero.
@@ -26,7 +31,8 @@ pub enum ForgeDustError {
 impl Display for ForgeDustError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
-            Self::InvalidLimit => "forge dust limit must be within 100-225",
+            Self::InvalidLimit => "forge dust limit must be an exact D1230 stage from 100 to 4600",
+            Self::MaximumLimitReached => "forge dust limit is already at its maximum",
             Self::BalanceAboveLimit => "forge dust balance must not exceed its limit",
             Self::ZeroAmount => "forge dust amount must be positive",
             Self::InsufficientDust => "forge dust balance is below the amount",
@@ -44,7 +50,9 @@ impl DustLimit {
     pub const INITIAL: Self = Self(DUST_LIMIT_MIN);
 
     pub fn new(value: u16) -> Result<Self, ForgeDustError> {
-        if (DUST_LIMIT_MIN..=DUST_LIMIT_MAX).contains(&value) {
+        if (DUST_LIMIT_MIN..=DUST_LIMIT_MAX).contains(&value)
+            && (value - DUST_LIMIT_MIN).is_multiple_of(DUST_LIMIT_STEP)
+        {
             Ok(Self(value))
         } else {
             Err(ForgeDustError::InvalidLimit)
@@ -53,6 +61,35 @@ impl DustLimit {
 
     pub fn get(self) -> u16 {
         self.0
+    }
+
+    pub fn from_upgrade_count(upgrades: u16) -> Result<Self, ForgeDustError> {
+        if upgrades > DUST_LIMIT_UPGRADES_MAX {
+            return Err(ForgeDustError::InvalidLimit);
+        }
+        let limit = upgrades
+            .checked_mul(DUST_LIMIT_STEP)
+            .and_then(|increase| DUST_LIMIT_MIN.checked_add(increase))
+            .ok_or(ForgeDustError::InvalidLimit)?;
+        Self::new(limit)
+    }
+
+    /// Only a validated D1230 value has a count. Historical persisted rows must
+    /// first pass the migration's complete legacy-history check; never round them.
+    pub fn upgrade_count(self) -> u16 {
+        (self.0 - DUST_LIMIT_MIN) / DUST_LIMIT_STEP
+    }
+
+    pub fn next_upgrade(self) -> Result<(u32, Self), ForgeDustError> {
+        let count = self.upgrade_count();
+        if count == DUST_LIMIT_UPGRADES_MAX {
+            return Err(ForgeDustError::MaximumLimitReached);
+        }
+        let next = count.checked_add(1).ok_or(ForgeDustError::InvalidLimit)?;
+        let cost = DUST_LIMIT_FIRST_COST
+            .checked_add(u32::from(count))
+            .ok_or(ForgeDustError::InvalidLimit)?;
+        Ok((cost, Self::from_upgrade_count(next)?))
     }
 }
 
@@ -127,6 +164,21 @@ impl ForgeDustBalance {
             amount,
         })
     }
+
+    /// Quote one indivisible debit and +20 limit transition. The caller cannot
+    /// supply a cost, resulting limit, or a fabricated earlier unlock count.
+    pub fn raise_limit(self) -> Result<DustLimitRaise, ForgeDustError> {
+        let (amount, limit) = self.limit.next_upgrade()?;
+        let spent = self.spend(amount)?;
+        Ok(DustLimitRaise {
+            before: self,
+            after: Self {
+                balance: spent.after.balance,
+                limit,
+            },
+            amount,
+        })
+    }
 }
 
 /// One planned gain: `amount` requested, `amount - lost` credited.
@@ -146,16 +198,26 @@ pub struct DustSpend {
     pub amount: u32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DustLimitRaise {
+    pub before: ForgeDustBalance,
+    pub after: ForgeDustBalance,
+    pub amount: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn limit_accepts_100_to_225_only() {
+    fn limit_accepts_only_exact_d1230_stages() {
         assert_eq!(DustLimit::new(99), Err(ForgeDustError::InvalidLimit));
         assert_eq!(DustLimit::new(100).map(DustLimit::get), Ok(100));
-        assert_eq!(DustLimit::new(225).map(DustLimit::get), Ok(225));
+        assert_eq!(DustLimit::new(4_600).map(DustLimit::get), Ok(4_600));
+        assert_eq!(DustLimit::new(101), Err(ForgeDustError::InvalidLimit));
+        assert_eq!(DustLimit::new(225), Err(ForgeDustError::InvalidLimit));
         assert_eq!(DustLimit::new(226), Err(ForgeDustError::InvalidLimit));
+        assert_eq!(DustLimit::new(4_601), Err(ForgeDustError::InvalidLimit));
         assert_eq!(DustLimit::INITIAL.get(), 100);
     }
 
@@ -188,7 +250,7 @@ mod tests {
 
     #[test]
     fn spend_above_balance_is_refused() -> Result<(), ForgeDustError> {
-        let balance = ForgeDustBalance::new(40, DustLimit::new(225)?)?;
+        let balance = ForgeDustBalance::new(40, DustLimit::new(220)?)?;
         assert_eq!(balance.spend(40)?.after.balance(), 0);
         assert_eq!(balance.spend(41), Err(ForgeDustError::InsufficientDust));
         assert_eq!(
