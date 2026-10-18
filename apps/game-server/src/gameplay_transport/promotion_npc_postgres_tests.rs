@@ -45,8 +45,8 @@ const PLAYER: MovementLocalPosition = MovementLocalPosition {
     y: 11,
     floor: 7,
 };
-const NPC_KEY: &str = "oteryn:npc.promotion-test";
-const SERVICE_KEY: &str = "oteryn:service.promotion-test";
+const NPC_KEY: &str = "oteryn:npc.promotion-guide";
+const SERVICE_KEY: &str = "oteryn:service.promotion-guide";
 /// The fixture Character root's Content revision (`seed_character`).
 const CONTENT_REVISION: &str = "content-1";
 /// One intent per step stays well inside the `NPC0-RL-05` window of four per second.
