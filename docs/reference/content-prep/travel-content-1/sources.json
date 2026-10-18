@@ -82,7 +82,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "0009a4647726a8d51a1fa68702f044962dab432ad03ff855277c3cb14e0a1d4d",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Anderson%7CBrodrosch%7CCaptain+Bluebear%7CCaptain+Breezelda%7CCaptain+Chelop%7CCaptain+Cookie%7CCaptain+Corsarah%7CCaptain+Fearless%7CCaptain+Greyhound%7CCaptain+Gulliver&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests-2.json"
     },
     "wiki:110740:1195603": {
       "title": "Captain Corsarah",
@@ -154,7 +154,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "d5609f9c032163bb9b8488dd63bf4e08d1b17a11799ef165df1fff0512eefdd2",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Captain+Harava%7CCaptain+Jack%7CCaptain+Max%7CCaptain+Pelagia%7CCaptain+Seagull%7CCaptain+Seahorse%7CCaptain+Sinbeard%7CCaptain+Waverider%7CCarlson%7CCornell&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:8982:1178788": {
       "title": "Captain Max",
@@ -166,7 +166,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "9aec757986741a4a3887b7ac5750de18aff8bfa22b102bd669678321c4262a71",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Captain+Harava%7CCaptain+Jack%7CCaptain+Max%7CCaptain+Pelagia%7CCaptain+Seagull%7CCaptain+Seahorse%7CCaptain+Sinbeard%7CCaptain+Waverider%7CCarlson%7CCornell&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:77054:1178804": {
       "title": "Captain Pelagia",
@@ -250,7 +250,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "5f9805a77f5269602c5ef722d5c77630539b653c69fc621fdf78daf88b11e40d",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Captain+Harava%7CCaptain+Jack%7CCaptain+Max%7CCaptain+Pelagia%7CCaptain+Seagull%7CCaptain+Seahorse%7CCaptain+Sinbeard%7CCaptain+Waverider%7CCarlson%7CCornell&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:36677:851735": {
       "title": "Ferryman Kamil",
@@ -262,7 +262,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "bbe1b5d231304c9df1eb914438271d5b4aa9b836feec3d7b9cfccfdb1232bd58",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Ferryman+Kamil%7CGewen%7CGurbasch%7CHarlow%7CHawkhurst%7CImbul%7CIyad%7CJack+Fate%7CJunkar%7CKendra&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:61735:933420": {
       "title": "Gewen",
@@ -322,7 +322,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "36aa96cd447b15948f997ac325a81c5ef50b7cd81afe73ddae02e4dd95ad9416",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Ferryman+Kamil%7CGewen%7CGurbasch%7CHarlow%7CHawkhurst%7CImbul%7CIyad%7CJack+Fate%7CJunkar%7CKendra&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:5156:765788": {
       "title": "Imbul",
@@ -382,7 +382,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "987d385fdd7faa77d257153aec90e7048b6a385ed11876f8a53e3471f8441bdf",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Ferryman+Kamil%7CGewen%7CGurbasch%7CHarlow%7CHawkhurst%7CImbul%7CIyad%7CJack+Fate%7CJunkar%7CKendra&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:5158:851933": {
       "title": "Lorek",
@@ -538,7 +538,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "aae4662bbef6f61c360731d36143f2b066abc390634f2ea4775cae7281c89067",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Tanyt%7CThorgrin%7CTonar%7CUrks+The+Mute%7CUzon%7CZiyad&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:98763:938305": {
       "title": "Urks The Mute",
@@ -550,7 +550,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "803f0b42cafe722e287a280a6f6d0cb9ca36650ea396666932ceea6a248b1cca",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Tanyt%7CThorgrin%7CTonar%7CUrks+The+Mute%7CUzon%7CZiyad&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
     },
     "wiki:4689:1114022": {
       "title": "Uzon",
@@ -587,6 +587,126 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "8040aaefd9c442fa484fe9c6c2ce5e54a56b93d477685f6ad965dedf18a98538",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Offline%20Training%7CExercise%20Weapons%7CBoat%7CMagic%20Carpet&redirects=1"
+    },
+    "wiki:4320:1122503": {
+      "title": "Free Account",
+      "url": "https://tibia.fandom.com/wiki/Free_Account",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1122503",
+      "revid": 1122503,
+      "revision_timestamp": "2025-08-18T02:58:28Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "99c56b89e7c22b62558885692a442182871b32899d26a1254537065e0b97cfdb",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests-2.json"
+    },
+    "wiki:12746:855118": {
+      "title": "Steamship",
+      "url": "https://tibia.fandom.com/wiki/Steamship",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=855118",
+      "revid": 855118,
+      "revision_timestamp": "2021-06-13T12:58:16Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "5eb8ac15743e89f7ae448b783e34497f6d6f4e0bd520e3b6529ccb7b6ad18525",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
+    },
+    "wiki:21134:825541": {
+      "title": "Port Hope Ferries",
+      "url": "https://tibia.fandom.com/wiki/Port_Hope_Ferries",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=825541",
+      "revid": 825541,
+      "revision_timestamp": "2021-01-02T20:11:35Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "1171ddcf057e46e9e09d79a0c957a4fc6ce81ab3c87fa1e3068502615f504405",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
+    },
+    "wiki:56626:845104": {
+      "title": "Gray Island",
+      "url": "https://tibia.fandom.com/wiki/Gray_Island",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=845104",
+      "revid": 845104,
+      "revision_timestamp": "2021-05-26T21:33:00Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "d5ee18c4a4ea4074807e70346c364d79353fcf3de38185dcd74aaec502c92082",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-npcs.json"
+    },
+    "wiki:7110:1114179": {
+      "title": "Marriage",
+      "url": "https://tibia.fandom.com/wiki/Marriage",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1114179",
+      "revid": 1114179,
+      "revision_timestamp": "2025-07-26T09:40:32Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "51a13434ddb784995163fdd4c2d83a278434a4dff39d19ca2963a240236b7995",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests-2.json"
+    },
+    "wiki:36667:855958": {
+      "title": "Meluna",
+      "url": "https://tibia.fandom.com/wiki/Meluna",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=855958",
+      "revid": 855958,
+      "revision_timestamp": "2021-06-13T13:18:02Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "c30cd38895d3f61510b022e69fbb8240c34c0bceedaba7fdc95051a425d7603f",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests.json"
+    },
+    "wiki:101100:981405": {
+      "title": "The Cradle of Monsters Quest",
+      "url": "https://tibia.fandom.com/wiki/The_Cradle_of_Monsters_Quest",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=981405",
+      "revid": 981405,
+      "revision_timestamp": "2022-11-28T11:21:01Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "b7e8160fa336f0b8e98b7cd95a080d5825ebdedee056834ce5045ee482cbcebf",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests-2.json"
+    },
+    "wiki:101101:1058599": {
+      "title": "The Cradle of Monsters Quest/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/The_Cradle_of_Monsters_Quest%2FSpoiler",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1058599",
+      "revid": 1058599,
+      "revision_timestamp": "2024-04-21T09:48:48Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "e8b0314a863710f0715e462383344418854d8fe0d7e59c1e1e772bc733b66b11",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests-2.json"
+    },
+    "wiki:75274:1103828": {
+      "title": "Grimvale Quest/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/Grimvale_Quest%2FSpoiler",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1103828",
+      "revid": 1103828,
+      "revision_timestamp": "2025-06-01T15:34:32Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "37225215a29c3df1de2507b083260947f86594db536426415ad3bd238ed7f20c",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests-2.json"
+    },
+    "wiki:98586:1173532": {
+      "title": "Primal Ordeal Quest/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/Primal_Ordeal_Quest%2FSpoiler",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1173532",
+      "revid": 1173532,
+      "revision_timestamp": "2026-04-09T20:34:51Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "ff66ea4bce1de2d91199356d0b77b5321e2431136c2587f19c32ec222e4b066f",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests.json"
     }
   }
 }

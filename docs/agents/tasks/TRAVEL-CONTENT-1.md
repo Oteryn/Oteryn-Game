@@ -67,3 +67,9 @@ Service evidence is staged under docs/reference with an explicit apply plan. Wor
 All 56 original travel services and 195 route declarations are covered. Current NPC fares, directional carpet fares, explicit quest conditions, Free mainland boat eligibility and Premium carpet rules are extracted separately. Native historical candidates remain visible. Multiple NPC placements, omitted/obsolete route keywords and undocumented arrival tiles remain explicitly held. An NPC standing tile is never substituted for a destination arrival tile.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Supplemental source completion — 2026-10-18
+
+All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical.
+
+This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.

@@ -749,17 +749,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -883,17 +887,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1017,17 +1025,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1151,17 +1163,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1285,17 +1301,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1419,17 +1439,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1553,17 +1577,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4857:1178870",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1821,17 +1849,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17120:1178790",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -1955,17 +1987,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17120:1178790",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -2089,17 +2125,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17120:1178790",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -2223,17 +2263,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:65988:1178801",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -2357,17 +2401,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:65988:1178801",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -2491,17 +2539,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:30720:1178793",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -3027,17 +3079,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -3295,17 +3351,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -3563,17 +3623,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -3697,17 +3761,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -3831,17 +3899,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -3965,17 +4037,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -4099,17 +4175,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4856:1194684",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -4501,17 +4581,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4624:1178764",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -4635,17 +4719,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4624:1178764",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -5037,17 +5125,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:67946:1178802",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": [
@@ -5188,17 +5280,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:67946:1178802",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": [
@@ -5473,17 +5569,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:88953:1178805",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -5607,17 +5707,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:88953:1178805",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -5741,17 +5845,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:88953:1178805",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -5875,17 +5983,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:88953:1178805",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6147,17 +6259,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:8982:1178788",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6282,17 +6398,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:77054:1178804",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6416,17 +6536,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:77054:1178804",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6550,17 +6674,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:77054:1178804",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6684,17 +6812,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:77054:1178804",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6818,17 +6950,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:77054:1178804",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -6952,17 +7088,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:77054:1178804",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -7220,17 +7360,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4853:1178769",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -7341,17 +7485,17 @@
           "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 150,
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:4853:1178769",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:56626:845104",
+              "selector": "Introduction / reached by boat from Ab'Dendriel, Venore, Darashia and Edron for 150 gp"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
           "value": null,
@@ -7756,17 +7900,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -7890,17 +8038,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8024,17 +8176,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8158,17 +8314,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8279,30 +8439,34 @@
           "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 150,
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:56626:845104",
+              "selector": "Introduction / reached by boat from Ab'Dendriel, Venore, Darashia and Edron for 150 gp"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8426,17 +8590,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8560,17 +8728,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8694,17 +8866,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8828,17 +9004,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -8962,17 +9142,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:3108:1178717",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -9096,17 +9280,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:3108:1178717",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -9230,17 +9418,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:3108:1178717",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -9364,17 +9556,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:3108:1178717",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -9498,17 +9694,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:3108:1178717",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -9632,17 +9832,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:8554:1178786",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -10168,17 +10372,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:75233:1178803",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -10302,17 +10510,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:75233:1178803",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -10436,30 +10648,31 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:36677:851735",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:7110:1114179",
+              "selector": "Marriage / no Premium needed; honeymoon ferry to Meluna"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Marriage and the described honeymoon access are explicitly available without Premium. The expiry window remains a separate gate."
         },
         "quest_requirements": {
           "value": {
+            "system": "Marriage",
             "condition": "newlywed",
-            "system": "Marriage"
+            "maximum_hours_since_wedding": 24
           },
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:36677:851735",
-              "selector": "notes / newlyweds to Meluna and back"
+              "source": "wiki:36667:855958",
+              "selector": "Travel / can only travel here within 24 hours of wedding"
             }
           ],
           "note": "Current source observation; native/runtime qualification remains separate."
@@ -10574,17 +10787,17 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:36677:851735",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:7110:1114179",
+              "selector": "Marriage / no Premium needed; honeymoon ferry to Meluna"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Marriage and the described honeymoon access are explicitly available without Premium. The expiry window remains a separate gate."
         },
         "quest_requirements": {
           "value": {
@@ -11732,30 +11945,38 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4855:1178780",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Primal Ordeal Quest",
+            "npc": "Gnomcruiter",
+            "action": "join Operation Challenger"
+          },
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:4855:1178780",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:98586:1173532",
+              "selector": "The Island that time forgot / talk to Gnomcruiter before Cormaya steamboat"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "minimum_level": {
           "value": null,
@@ -11870,17 +12091,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4855:1178780",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -12004,17 +12229,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:30907:1178796",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": {
@@ -12104,43 +12333,43 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Can be found in Cormaya ({{Mapper Coords|131.173|127.90|6|8|text=here}}) and Ingol ({{Mapper Coords|130.76|124.241|7|8|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Cormaya",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:101087:1154346",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:101101:1058599",
+              "selector": "Introduction / Hawkhurst on Cormaya northeastern shore"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "destination": {
-          "value": "passage",
-          "classification": "DERIVED",
+          "value": "Ingol",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:content/services/travel/travel-00000-00055.json",
-              "selector": "declaration.routes/0/key"
+              "source": "wiki:101101:1058599",
+              "selector": "Introduction / passage to Ingol"
             }
           ],
-          "note": "Preserved route keyword; aliases do not establish an arrival tile."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "transport": {
           "value": "boat",
-          "classification": "DERIVED",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:101087:1154346",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:101101:1058599",
+              "selector": "Introduction / smuggler ferries to Ingol"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "fare_gold": {
           "value": null,
@@ -12156,30 +12385,38 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:101087:1154346",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "The Cradle of Monsters Quest",
+            "unlock_npc": "Ysbasra",
+            "unlock_action": "accept passage mission"
+          },
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:101087:1154346",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:101101:1058599",
+              "selector": "Introduction and Transcript / Ysbasra passage"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "minimum_level": {
           "value": null,
@@ -12206,6 +12443,19 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "access_unlock_minimum_level": {
+          "value": 250,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:101100:981405",
+              "selector": "Infobox Quest / lvl"
+            }
+          ],
+          "note": "Level 250 is the quest-start prerequisite. It is not promoted to a proven level recheck by the ferry after access has been unlocked."
         }
       },
       "existing_candidate": {
@@ -12238,43 +12488,43 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Can be found in Cormaya ({{Mapper Coords|131.173|127.90|6|8|text=here}}) and Ingol ({{Mapper Coords|130.76|124.241|7|8|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Ingol",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:101087:1154346",
-              "selector": "Infobox NPC / location"
+              "selector": "Infobox NPC / second placement"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "The native service suffix explicitly selects Ingol from the two source-described locations."
         },
         "destination": {
-          "value": "passage",
+          "value": "Cormaya",
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:content/services/travel/travel-00000-00055.json",
-              "selector": "declaration.routes/0/key"
+              "source": "wiki:101087:1154346",
+              "selector": "Infobox NPC / two-location return service"
             }
           ],
-          "note": "Preserved route keyword; aliases do not establish an arrival tile."
+          "note": "Return endpoint identified from paired NPC placements and native service identity; fare and arrival tile remain held."
         },
         "transport": {
           "value": "boat",
-          "classification": "DERIVED",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:101087:1154346",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:101101:1058599",
+              "selector": "Introduction / smuggler ferries to Ingol"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "fare_gold": {
           "value": null,
@@ -12290,30 +12540,38 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:101087:1154346",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "The Cradle of Monsters Quest",
+            "unlock_npc": "Ysbasra",
+            "unlock_action": "accept passage mission"
+          },
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:101087:1154346",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:101101:1058599",
+              "selector": "Introduction and Transcript / Ysbasra passage"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "minimum_level": {
           "value": null,
@@ -12340,6 +12598,19 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "access_unlock_minimum_level": {
+          "value": 250,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:101100:981405",
+              "selector": "Infobox Quest / lvl"
+            }
+          ],
+          "note": "Level 250 is the quest-start prerequisite. It is not promoted to a proven level recheck by the ferry after access has been unlocked."
         }
       },
       "existing_candidate": {
@@ -12398,17 +12669,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5156:765788",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -12424,17 +12695,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5156:765788",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -12532,17 +12807,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5156:765788",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -12558,17 +12833,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5156:765788",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -14002,17 +14281,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17715:1178791",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -14136,17 +14419,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17715:1178791",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -14270,17 +14557,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17715:1178791",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -14404,17 +14695,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17715:1178791",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -14538,17 +14833,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:17715:1178791",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -14620,17 +14919,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Sunken Mines",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / sunken_mines"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_mines"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "kazordoon",
@@ -14665,24 +14968,24 @@
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "TransportCell / kazordoon"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / sunken_mines -> kazordoon"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Placement-specific directional fare table. Generic multi-location NPC TransportCells are not applied to every origin."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -14722,6 +15025,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -14754,17 +15073,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Sunken Mines",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / sunken_mines"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_mines"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "robsons_isle",
@@ -14799,24 +15122,24 @@
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "TransportCell / robsons_isle"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / sunken_mines -> robsons_isle"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Placement-specific directional fare table. Generic multi-location NPC TransportCells are not applied to every origin."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -14871,6 +15194,22 @@
             }
           ],
           "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -14903,17 +15242,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Sunken Mines",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / sunken_mines"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_mines"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "thais",
@@ -14948,24 +15291,24 @@
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "TransportCell / thais"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / sunken_mines -> thais"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Placement-specific directional fare table. Generic multi-location NPC TransportCells are not applied to every origin."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15005,6 +15348,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15037,17 +15396,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Robson's Isle",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / robsons_isle"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_robsons"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "kazordoon",
@@ -15076,30 +15439,37 @@
           "note": "Steamship subtype preserved; route availability remains independently held where omitted from current page."
         },
         "fare_gold": {
-          "value": 10,
-          "classification": "PROVEN",
+          "value": {
+            "placement_table_gold": 80,
+            "generic_npc_page_gold": 10
+          },
+          "classification": "CONFLICT",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / robsons_isle -> kazordoon"
+            },
             {
               "source": "wiki:53948:1178799",
               "selector": "TransportCell / kazordoon"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15139,6 +15509,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15171,17 +15557,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Robson's Isle",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / robsons_isle"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_robsons"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "mines",
@@ -15210,30 +15600,30 @@
           "note": "Steamship subtype preserved; route availability remains independently held where omitted from current page."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / robsons_isle -> mines"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Placement-specific directional fare table. Generic multi-location NPC TransportCells are not applied to every origin."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15273,6 +15663,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15305,17 +15711,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Robson's Isle",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / robsons_isle"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_robsons"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "thais",
@@ -15344,30 +15754,37 @@
           "note": "Steamship subtype preserved; route availability remains independently held where omitted from current page."
         },
         "fare_gold": {
-          "value": 90,
-          "classification": "PROVEN",
+          "value": {
+            "placement_table_gold": 80,
+            "generic_npc_page_gold": 90
+          },
+          "classification": "CONFLICT",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / robsons_isle -> thais"
+            },
             {
               "source": "wiki:53948:1178799",
               "selector": "TransportCell / thais"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15407,6 +15824,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15439,17 +15872,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Thais",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / thais"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_thais"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "kazordoon",
@@ -15478,30 +15915,37 @@
           "note": "Steamship subtype preserved; route availability remains independently held where omitted from current page."
         },
         "fare_gold": {
-          "value": 10,
-          "classification": "PROVEN",
+          "value": {
+            "placement_table_gold": 100,
+            "generic_npc_page_gold": 10
+          },
+          "classification": "CONFLICT",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / thais -> kazordoon"
+            },
             {
               "source": "wiki:53948:1178799",
               "selector": "TransportCell / kazordoon"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15541,6 +15985,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15573,17 +16033,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Thais",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / thais"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_thais"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "mines",
@@ -15612,30 +16076,30 @@
           "note": "Steamship subtype preserved; route availability remains independently held where omitted from current page."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 90,
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / thais -> mines"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Placement-specific directional fare table. Generic multi-location NPC TransportCells are not applied to every origin."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15675,6 +16139,22 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15707,17 +16187,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Thais",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:12746:855118",
+              "selector": "Steamship locations and operators / thais"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity / junkar_thais"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Source names each Junkar placement; the existing native service suffix selects the explicit source place, without asserting an arrival tile."
         },
         "destination": {
           "value": "robsons_isle",
@@ -15746,30 +16230,37 @@
           "note": "Steamship subtype preserved; route availability remains independently held where omitted from current page."
         },
         "fare_gold": {
-          "value": 70,
-          "classification": "PROVEN",
+          "value": {
+            "placement_table_gold": 80,
+            "generic_npc_page_gold": 70
+          },
+          "classification": "CONFLICT",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / thais -> robsons_isle"
+            },
             {
               "source": "wiki:53948:1178799",
               "selector": "TransportCell / robsons_isle"
             }
           ],
-          "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
+          "note": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": false,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:53948:1178799",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:12746:855118",
+              "selector": "Table of steamship fares / Free Account footnotes"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "The source explicitly opens Thais/Robson's Isle/Sunken Mines world-change routes to Free accounts; destination Kazordoon is also a Free city."
         },
         "quest_requirements": {
           "value": null,
@@ -15824,6 +16315,22 @@
             }
           ],
           "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "world_change_requirements": {
+          "value": {
+            "thais_route": "Steamship World Change requires server coal delivery",
+            "sunken_mines_route": "Awash World Change requires server coal delivery"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12746:855118",
+              "selector": "Table footnotes / Steamship and Awash World Changes"
+            }
+          ],
+          "note": "World-state dependencies are preserved separately; they are not personal quest completion requirements."
         }
       },
       "existing_candidate": {
@@ -15958,6 +16465,19 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "current_availability": {
+          "value": "HISTORICAL_20TH_ANNIVERSARY_EVENT",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:80191:766394",
+              "selector": "notes / could transport during Tibia's 20th Anniversary"
+            }
+          ],
+          "note": "Historical event route is not presented as a currently available general ferry. The old native keyword nostalgia is retained as a candidate, not proof of current destination."
         }
       },
       "existing_candidate": {
@@ -16092,6 +16612,19 @@
             }
           ],
           "note": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+        },
+        "current_availability": {
+          "value": "HISTORICAL_20TH_ANNIVERSARY_EVENT",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:80191:766394",
+              "selector": "notes / could transport during Tibia's 20th Anniversary"
+            }
+          ],
+          "note": "Historical event route is not presented as a currently available general ferry. The old native keyword nostalgia is retained as a candidate, not proof of current destination."
         }
       },
       "existing_candidate": {
@@ -16150,17 +16683,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5158:851933",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -16176,17 +16709,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5158:851933",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -16284,17 +16821,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5158:851933",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -16310,17 +16847,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5158:851933",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -16418,17 +16959,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5158:851933",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 30,
@@ -16437,24 +16978,28 @@
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5158:851933",
-              "selector": "notes / Darama mountain pass"
+              "source": "wiki:21134:825541",
+              "selector": "Prices Table / East -> Mountain Pass"
             }
           ],
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5158:851933",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": {
@@ -16466,8 +17011,8 @@
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5158:851933",
-              "selector": "notes / Ranger or higher"
+              "source": "wiki:21134:825541",
+              "selector": "East ferry / Mountain Pass footnote"
             }
           ],
           "note": "Current source observation; native/runtime qualification remains separate."
@@ -16555,17 +17100,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5158:851933",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -16581,17 +17126,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5158:851933",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -19552,17 +20101,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5157:852028",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -19578,17 +20127,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5157:852028",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -19686,17 +20239,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:5157:852028",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:21134:825541",
+              "selector": "Port Hope local ferrymen"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit local ferry network; no cart/carpet inferred."
         },
         "fare_gold": {
           "value": 7,
@@ -19712,17 +20265,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:5157:852028",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -19846,17 +20403,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4854:1178771",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -19980,17 +20541,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4854:1178771",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -20114,17 +20679,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:4852:1178768",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -21558,17 +22127,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:9052:1178789",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": [
@@ -21710,17 +22283,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:9052:1178789",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -21844,17 +22421,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:9052:1178789",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": [
@@ -21996,17 +22577,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:9052:1178789",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -23842,17 +24427,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:41415:1178797",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": [
@@ -23993,17 +24582,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:41415:1178797",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -24127,17 +24720,21 @@
           "note": "Current NPC source fare. Historical native candidate is retained separately and does not constitute a conflicting current source."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:41415:1178797",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": [
@@ -24226,43 +24823,43 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "Ankrahmun",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:102858:1099216",
-              "selector": "Infobox NPC / location"
+              "source": "wiki:75274:1103828",
+              "selector": "Paradise Lost / Oskayaat / find Tonar in Ankrahmun"
             }
           ],
-          "note": "Page may have multiple NPC placements; exact service-instance origin remains held."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "destination": {
-          "value": "passage",
-          "classification": "DERIVED",
+          "value": "Oskayaat",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:content/services/travel/travel-00000-00055.json",
-              "selector": "declaration.routes/0/key"
+              "source": "wiki:75274:1103828",
+              "selector": "Paradise Lost / Oskayaat / passage destination"
             }
           ],
-          "note": "Preserved route keyword; aliases do not establish an arrival tile."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "boat",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:102858:1099216",
-              "selector": "Infobox NPC / job"
+              "source": "wiki:75274:1103828",
+              "selector": "Paradise Lost / Tonar sails to Oskayaat"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "fare_gold": {
           "value": null,
@@ -24291,17 +24888,21 @@
           "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Grimvale Quest",
+            "chapter": "Paradise Lost",
+            "requirement": "return the stolen Ocarina to Tonar"
+          },
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:102858:1099216",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki:75274:1103828",
+              "selector": "Paradise Lost / Oskayaat"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "minimum_level": {
           "value": null,
@@ -24360,43 +24961,43 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
-          "sources": [
-            {
-              "source": "wiki:102858:1099216",
-              "selector": "Infobox NPC / location"
-            }
-          ],
-          "note": "Page may have multiple NPC placements; exact service-instance origin remains held."
-        },
-        "destination": {
-          "value": "passage",
+          "value": "Oskayaat",
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
-          "sources": [
-            {
-              "source": "repo:content/services/travel/travel-00000-00055.json",
-              "selector": "declaration.routes/0/key"
-            }
-          ],
-          "note": "Preserved route keyword; aliases do not establish an arrival tile."
-        },
-        "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:102858:1099216",
-              "selector": "Infobox NPC / job"
+              "selector": "Infobox NPC / Oskayaat placement"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Native service suffix selects the source placement."
+        },
+        "destination": {
+          "value": "Ankrahmun",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:75274:1103828",
+              "selector": "Paradise Lost / Oskayaat / paired Tonar placements"
+            }
+          ],
+          "note": "Source describes the outbound ferry; native return service pairs the same locations. Return-specific fee remains unknown."
+        },
+        "transport": {
+          "value": "boat",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:75274:1103828",
+              "selector": "Paradise Lost / Tonar sails to Oskayaat"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
         },
         "fare_gold": {
           "value": null,
@@ -24520,17 +25121,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": "boat",
+          "value": "steamship",
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98763:938305",
-              "selector": "Infobox NPC / job = Ship Captain"
+              "source": "wiki:98586:1173532",
+              "selector": "The Island that time forgot / steamboat to Gnomprona"
             }
           ],
-          "note": "General vessel family derived from explicit NPC job. Current source does not establish a steamship subtype."
+          "note": "Steamship route to the named Gnomprona hub is explicit in the quest source, not inferred from dwarf race."
         },
         "fare_gold": {
           "value": null,
@@ -24546,17 +25147,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:98763:938305",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,
@@ -24654,17 +25259,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": "boat",
+          "value": "steamship",
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98763:938305",
-              "selector": "Infobox NPC / job = Ship Captain"
+              "source": "wiki:98586:1173532",
+              "selector": "The Island that time forgot / steamboat to Gnomprona"
             }
           ],
-          "note": "General vessel family derived from explicit NPC job. Current source does not establish a steamship subtype."
+          "note": "Steamship route to the named Gnomprona hub is explicit in the quest source, not inferred from dwarf race."
         },
         "fare_gold": {
           "value": null,
@@ -24680,17 +25285,21 @@
           "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
         },
         "premium_required": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
+              "source": "wiki:4320:1122503",
+              "selector": "Free Account / only listed major cities are accessible; all other major cities require Premium"
+            },
+            {
               "source": "wiki:98763:938305",
-              "selector": "Full NPC page / travel notes and location"
+              "selector": "Infobox NPC / city, location"
             }
           ],
-          "note": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Journey requires access to the Premium-only endpoint city. This derives an account-access prerequisite, not an independently observed NPC script check. NPC city/location supplies the endpoint qualification."
         },
         "quest_requirements": {
           "value": null,

@@ -2,18 +2,19 @@
   "task": "TRAVEL-CONTENT-1",
   "review_date": "2026-10-18",
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "research_status": "SUPPLEMENTAL_SOURCES_EXTRACTED_REMAINING_FIELDS_EXPLICIT",
   "runtime_admission": "BLOCKED",
-  "coverage": "All 56 original travel services and 195 route declarations are covered. Current NPC fares, directional carpet fares, explicit quest conditions, Free mainland boat eligibility and Premium carpet rules are extracted separately. Native historical candidates remain visible. Multiple NPC placements, omitted/obsolete route keywords and undocumented arrival tiles remain explicitly held. An NPC standing tile is never substituted for a destination arrival tile.",
+  "coverage": "All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json": 195,
     "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/evidence-00000-00055.json": 56
   },
   "evidence_field_counts": {
-    "PROVEN": 639,
-    "DERIVED": 428,
-    "UNKNOWN": 811
+    "PROVEN": 670,
+    "DERIVED": 531,
+    "UNKNOWN": 686,
+    "CONFLICT": 4
   },
   "unresolved_fields": [
     {
@@ -257,18 +258,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/5/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/5/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -317,18 +306,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/6/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/6/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -363,18 +340,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/7/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/7/facts/quest_requirements",
@@ -413,18 +378,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/8/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/8/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -459,18 +412,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/9/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/9/facts/quest_requirements",
@@ -509,18 +450,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/10/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/10/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -555,18 +484,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/11/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4857:1178870",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/11/facts/quest_requirements",
@@ -641,18 +558,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/13/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17120:1178790",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/13/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -687,18 +592,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/14/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17120:1178790",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/14/facts/quest_requirements",
@@ -737,18 +630,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/15/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17120:1178790",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/15/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -783,18 +664,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/16/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:65988:1178801",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/16/facts/quest_requirements",
@@ -845,18 +714,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/17/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:65988:1178801",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/17/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -891,18 +748,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/18/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:30720:1178793",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/18/facts/quest_requirements",
@@ -1121,18 +966,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/22/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/22/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1203,18 +1036,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/24/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/24/facts/quest_requirements",
@@ -1301,18 +1122,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/26/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/26/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1347,18 +1156,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/27/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/27/facts/quest_requirements",
@@ -1397,18 +1194,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/28/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/28/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1445,18 +1230,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/29/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/29/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1491,18 +1264,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/30/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4856:1194684",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/30/facts/quest_requirements",
@@ -1613,18 +1374,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/33/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4624:1178764",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/33/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1659,18 +1408,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/34/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4624:1178764",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/34/facts/quest_requirements",
@@ -1781,18 +1518,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/37/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:67946:1178802",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/37/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1815,18 +1540,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/38/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:67946:1178802",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/38/facts/minimum_level",
@@ -1901,18 +1614,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/40/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:88953:1178805",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/40/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -1947,18 +1648,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/41/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:88953:1178805",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/41/facts/quest_requirements",
@@ -1997,18 +1686,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/42/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:88953:1178805",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/42/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2043,18 +1720,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/43/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:88953:1178805",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/43/facts/quest_requirements",
@@ -2165,18 +1830,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/45/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:8982:1178788",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/45/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2211,18 +1864,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/46/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:77054:1178804",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/46/facts/quest_requirements",
@@ -2261,18 +1902,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/47/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:77054:1178804",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/47/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2309,18 +1938,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/48/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:77054:1178804",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/48/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2355,18 +1972,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/49/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:77054:1178804",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/49/facts/quest_requirements",
@@ -2417,18 +2022,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/50/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:77054:1178804",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/50/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2463,18 +2056,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/51/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:77054:1178804",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/51/facts/quest_requirements",
@@ -2549,18 +2130,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/53/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4853:1178769",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/53/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2595,18 +2164,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/54/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4853:1178769",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/54/facts/premium_required",
@@ -2729,18 +2286,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/57/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/57/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2775,18 +2320,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/58/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/58/facts/quest_requirements",
@@ -2825,18 +2358,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/59/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/59/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2873,18 +2394,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/60/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/60/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2919,30 +2428,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/61/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/61/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/61/facts/quest_requirements",
@@ -2993,18 +2478,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/62/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/62/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3039,18 +2512,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/63/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/63/facts/quest_requirements",
@@ -3089,18 +2550,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/64/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/64/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3135,18 +2584,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/65/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/65/facts/quest_requirements",
@@ -3185,18 +2622,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/66/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3108:1178717",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/66/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3231,18 +2656,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/67/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3108:1178717",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/67/facts/quest_requirements",
@@ -3281,18 +2694,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/68/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3108:1178717",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/68/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3329,18 +2730,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/69/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3108:1178717",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/69/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3375,18 +2764,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/70/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3108:1178717",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/70/facts/quest_requirements",
@@ -3447,18 +2824,6 @@
         }
       ],
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/71/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:8554:1178786",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/71/facts/quest_requirements",
@@ -3665,18 +3030,6 @@
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/75/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:75233:1178803",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/75/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3735,18 +3088,6 @@
         }
       ],
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/76/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:75233:1178803",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/76/facts/quest_requirements",
@@ -3821,18 +3162,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/77/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:36677:851735",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/77/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3891,18 +3220,6 @@
         }
       ],
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/78/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:36677:851735",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/78/facts/minimum_level",
@@ -4205,30 +3522,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/86/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4855:1178780",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/86/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4855:1178780",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/86/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -4251,18 +3544,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/87/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4855:1178780",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/87/facts/quest_requirements",
@@ -4325,18 +3606,6 @@
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/88/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:30907:1178796",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/88/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -4361,18 +3630,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/89/facts/origin",
-      "candidate": "Can be found in Cormaya ({{Mapper Coords|131.173|127.90|6|8|text=here}}) and Ingol ({{Mapper Coords|130.76|124.241|7|8|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:101087:1154346",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/89/facts/fare_gold",
       "candidate": null,
       "status": "UNKNOWN",
@@ -4383,30 +3640,6 @@
         }
       ],
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/89/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:101087:1154346",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/89/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:101087:1154346",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/89/facts/minimum_level",
@@ -4433,18 +3666,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/90/facts/origin",
-      "candidate": "Can be found in Cormaya ({{Mapper Coords|131.173|127.90|6|8|text=here}}) and Ingol ({{Mapper Coords|130.76|124.241|7|8|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:101087:1154346",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/90/facts/fare_gold",
       "candidate": null,
       "status": "UNKNOWN",
@@ -4455,30 +3676,6 @@
         }
       ],
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/90/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:101087:1154346",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/90/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:101087:1154346",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/90/facts/minimum_level",
@@ -4503,30 +3700,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/91/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5156:765788",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/91/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5156:765788",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/91/facts/quest_requirements",
@@ -4563,30 +3736,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/92/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5156:765788",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/92/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5156:765788",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/92/facts/quest_requirements",
@@ -4973,18 +4122,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/102/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17715:1178791",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/102/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5031,18 +4168,6 @@
         }
       ],
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/103/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17715:1178791",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/103/facts/quest_requirements",
@@ -5093,18 +4218,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/104/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17715:1178791",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/104/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5151,18 +4264,6 @@
         }
       ],
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/105/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17715:1178791",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/105/facts/quest_requirements",
@@ -5213,18 +4314,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/106/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17715:1178791",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/106/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5259,30 +4348,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/107/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/107/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/107/facts/quest_requirements",
@@ -5321,30 +4386,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/108/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/108/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/108/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5379,30 +4420,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/109/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/109/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/109/facts/quest_requirements",
@@ -5441,28 +4458,23 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/110/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
+      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/110/facts/fare_gold",
+      "candidate": {
+        "placement_table_gold": 80,
+        "generic_npc_page_gold": 10
+      },
+      "status": "CONFLICT",
       "sources": [
         {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/110/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
+          "source": "wiki:12746:855118",
+          "selector": "Table of steamship fares / robsons_isle -> kazordoon"
+        },
         {
           "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
+          "selector": "TransportCell / kazordoon"
         }
       ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+      "limitation": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/110/facts/quest_requirements",
@@ -5501,42 +4513,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/111/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/111/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/111/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/111/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5573,28 +4549,23 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/112/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
+      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/112/facts/fare_gold",
+      "candidate": {
+        "placement_table_gold": 80,
+        "generic_npc_page_gold": 90
+      },
+      "status": "CONFLICT",
       "sources": [
         {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/112/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
+          "source": "wiki:12746:855118",
+          "selector": "Table of steamship fares / robsons_isle -> thais"
+        },
         {
           "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
+          "selector": "TransportCell / thais"
         }
       ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+      "limitation": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/112/facts/quest_requirements",
@@ -5633,28 +4604,23 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/113/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
+      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/113/facts/fare_gold",
+      "candidate": {
+        "placement_table_gold": 100,
+        "generic_npc_page_gold": 10
+      },
+      "status": "CONFLICT",
       "sources": [
         {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/113/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
+          "source": "wiki:12746:855118",
+          "selector": "Table of steamship fares / thais -> kazordoon"
+        },
         {
           "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
+          "selector": "TransportCell / kazordoon"
         }
       ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+      "limitation": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/113/facts/quest_requirements",
@@ -5693,42 +4659,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/114/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/114/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/114/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/114/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5765,28 +4695,23 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/115/facts/origin",
-      "candidate": "Near the Steamship in Thais ({{Mapper Coords|126.110|125.202|13|2|text=here}}), Robson Isle ({{Mapper Coords|127.14|125.36|14|2|text=here}}) and Sunken Mines ({{Mapper Coords|127.43|125.68|10|2|text=here}}).",
-      "status": "UNKNOWN",
+      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/115/facts/fare_gold",
+      "candidate": {
+        "placement_table_gold": 80,
+        "generic_npc_page_gold": 70
+      },
+      "status": "CONFLICT",
       "sources": [
         {
-          "source": "wiki:53948:1178799",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/115/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
+          "source": "wiki:12746:855118",
+          "selector": "Table of steamship fares / thais -> robsons_isle"
+        },
         {
           "source": "wiki:53948:1178799",
-          "selector": "Full NPC page / travel notes and location"
+          "selector": "TransportCell / robsons_isle"
         }
       ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+      "limitation": "Current placement-specific Steamship table disagrees with generic multi-location Junkar page. Both current source observations are retained; exact fare must be reconciled before runtime use."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/115/facts/quest_requirements",
@@ -5993,30 +4918,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/118/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/118/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/118/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6051,30 +4952,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/119/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/119/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/119/facts/quest_requirements",
@@ -6113,30 +4990,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/120/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/120/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/120/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6159,30 +5012,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/121/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/121/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5158:851933",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/121/facts/quest_requirements",
@@ -7085,30 +5914,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/141/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5157:852028",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/141/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5157:852028",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/141/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7143,30 +5948,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/142/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5157:852028",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/142/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:5157:852028",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/142/facts/quest_requirements",
@@ -7205,18 +5986,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/143/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4854:1178771",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/143/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7253,18 +6022,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/144/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4854:1178771",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/144/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7299,18 +6056,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/145/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4852:1178768",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/145/facts/quest_requirements",
@@ -7709,18 +6454,6 @@
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/155/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/155/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7767,18 +6500,6 @@
         }
       ],
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/156/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/156/facts/quest_requirements",
@@ -7841,18 +6562,6 @@
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/157/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/157/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7899,18 +6608,6 @@
         }
       ],
       "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/158/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/158/facts/quest_requirements",
@@ -8477,18 +7174,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/171/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41415:1178797",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/171/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -8535,18 +7220,6 @@
         }
       ],
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/172/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41415:1178797",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/172/facts/quest_requirements",
@@ -8597,18 +7270,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/173/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41415:1178797",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/173/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -8631,30 +7292,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/174/facts/origin",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:102858:1099216",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Page may have multiple NPC placements; exact service-instance origin remains held."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/174/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:102858:1099216",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/174/facts/fare_gold",
@@ -8681,18 +7318,6 @@
       "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/174/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:102858:1099216",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/174/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -8715,30 +7340,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/175/facts/origin",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:102858:1099216",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Page may have multiple NPC placements; exact service-instance origin remains held."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/175/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:102858:1099216",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/175/facts/fare_gold",
@@ -8813,18 +7414,6 @@
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/176/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98763:938305",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/176/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -8871,18 +7460,6 @@
         }
       ],
       "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/177/facts/premium_required",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98763:938305",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Cannot derive per-route Premium from generic travel or an absent NPC flag; Free mainland routes and Yalahar access require route-specific qualification. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/177/facts/quest_requirements",
@@ -9749,5 +8326,5 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     }
   ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion."
 }
