@@ -757,54 +757,79 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 }
 
 #[test]
-fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6()
+fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
-    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 18 before its
-    // last entries 19 and 21 (LOGOUT-WIRE-1); 18's crate and registry `requires` stay [4, 6] and
-    // the registry keeps 18 `offered: false`.
-    let (weather, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
-        .split_last()
-        .ok_or("empty bundle set")?;
+    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 3 and 18;
+    // ITEM-LOOP-1 (CP D1438) adds 12 (requires 4) and 14 (requires 4 and 12). 18's crate and
+    // registry `requires` stay [4, 6] and the registry keeps 3, 12, 14 and 18 `offered: false`.
+    use oteryn_protocol_oteryn::container_tree::{
+        CAPABILITY_CONTAINER_TREE_V1, CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
+    };
+    use oteryn_protocol_oteryn::item_view::{
+        CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES,
+    };
+    let bundle_only = [
+        oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
+        CAPABILITY_ITEM_EQUIP_DROP_V1,
+        CAPABILITY_CONTAINER_TREE_V1,
+        CAPABILITY_WORLD_MAP_VIEW_V1,
+    ];
+    let shared: Vec<OfferedCapability> = BUNDLE_WORLD_OFFERED_CAPABILITIES
+        .iter()
+        .filter(|offer| !bundle_only.contains(&offer.id))
+        .copied()
+        .collect();
+    assert_eq!(shared, ITEM_VIEW_OFFERED_CAPABILITIES);
+    let requires = |id: u32| {
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+            .iter()
+            .find(|offer| offer.id == id)
+            .map(|offer| offer.requires)
+    };
+    assert_eq!(requires(bundle_only[0]), Some(&[][..]));
     assert_eq!(
-        weather.id,
-        oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1
+        requires(CAPABILITY_ITEM_EQUIP_DROP_V1),
+        Some(CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES)
     );
-    let (logout, rest) = rest.split_last().ok_or("empty bundle set")?;
-    let (light, rest) = rest.split_last().ok_or("empty bundle set")?;
-    let (last, rest) = rest.split_last().ok_or("empty bundle set")?;
-    let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
-    let (_item_weather, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
-        .split_last()
-        .ok_or("empty item view set")?;
-    let (item_logout, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
-    let (item_light, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
-    assert_eq!(light, item_light);
-    assert_eq!(light.id, 19);
-    assert_eq!(logout, item_logout);
-    assert_eq!((logout.id, logout.requires), (21, &[][..]));
     assert_eq!(
-        (npc.id, npc.requires),
-        (
-            oteryn_protocol_oteryn::npc_service::CAPABILITY_NPC_SERVICE_V1,
-            &[][..]
-        )
+        requires(CAPABILITY_CONTAINER_TREE_V1),
+        Some(CAPABILITY_CONTAINER_TREE_V1_REQUIRES)
     );
-    assert_eq!(item_view, item_rest);
-    assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
-    assert_eq!(last.requires, [4, 6]);
+    assert_eq!(requires(CAPABILITY_WORLD_MAP_VIEW_V1), Some(&[4, 6][..]));
+    // WEATHER-1: the bundle set offers 26 (shared with the Item view set) with its own `requires`.
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1),
+        Some(WORLD_WEATHER.requires)
+    );
+    assert_eq!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len(), shared.len() + 4);
     assert!(
         BUNDLE_WORLD_OFFERED_CAPABILITIES
             .windows(2)
             .all(|pair| pair[0].id < pair[1].id)
     );
+    // Every requirement of an offered capability is offered.
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.iter().all(|offer| {
+        offer
+            .requires
+            .iter()
+            .all(|required| requires(*required).is_some())
+    }));
     assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
     let registry = registry_capabilities()?;
+    for id in bundle_only {
+        let entry = registry
+            .iter()
+            .find(|capability| capability["id"].as_u64() == Some(u64::from(id)))
+            .ok_or("bundle-only capability")?;
+        assert_eq!(entry["offered"].as_bool(), Some(false));
+        let gate = entry["offer_gate"].as_str().ok_or("offer_gate")?;
+        assert!(gate.contains("BUNDLE_WORLD_OFFERED_CAPABILITIES"), "{id}");
+    }
     let entry = registry
         .iter()
         .find(|capability| capability["id"].as_u64() == Some(18))
         .ok_or("capability 18")?;
     assert_eq!(ids(&entry["requires"])?, [4, 6]);
-    assert_eq!(entry["offered"].as_bool(), Some(false));
     Ok(())
 }
 
