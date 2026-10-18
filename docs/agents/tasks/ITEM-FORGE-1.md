@@ -19,6 +19,7 @@ needs_migration: true
 needs_registry: true
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
+MERGE_AUTHORITY: CP_ONLY
 ```
 
 ## Goal
@@ -56,7 +57,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 - `apps/game-server/src/gameplay_transport/forge_tests.rs`
 - `crates/protocol-oteryn/src/forge.rs`
 - `crates/protocol-oteryn/src/forge_tests.rs`
-- `apps/game-server/tests/forge_postgres.rs`
+- `apps/game-server/tests/support/forge_cases.rs` (was `tests/forge_postgres.rs`, removed by D1430)
 - `docs/agents/tasks/ITEM-FORGE-1.md` (this record: status and notes only)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
@@ -793,3 +794,22 @@ DustLimit success DATA. Native tree qualification is complete for the scope
 above; final card governance, remote successor identity and that exact head's
 CI are separate publication evidence. This remains an authoring draft with
 family acceptance checkboxes unchanged.
+
+## Bounded checkpoint — 2026-10-17 (CP D1430)
+
+MERGE_AUTHORITY: CP_ONLY. Draft retained; the builder never marks ready.
+
+- Merged `main` into the branch (additive conflicts only; both sides kept).
+- The branch carries `main` bytes for `.github/workflows/merge-group-gate.yml`,
+  `tools/repository/validate_repository_policy_core.py` and
+  `tools/repository/test_validate_merge_group_pg_sim.py`; the earlier
+  `forge_postgres` gate registration was dropped (it failed the protected-base
+  Merge authority audit).
+- PG-COVERAGE-1 pattern: the four private tier cases moved unchanged to
+  `apps/game-server/tests/support/forge_cases.rs` and are mounted by
+  `character_authority_postgres.rs`. The standalone `forge_postgres.rs` target
+  was removed. `domain::forge` and `durability::forge` are registered as
+  modules (registration lines, re-applied by the slot commit) so the cases use
+  the production types.
+- Scope unchanged: native DustLimit and its DATA history reader; no numbered
+  migration, no gameplay admission.

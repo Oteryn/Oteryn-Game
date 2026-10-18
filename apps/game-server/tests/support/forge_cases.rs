@@ -1,28 +1,7 @@
 //! Private tier schema/read qualification only; no forge operation or authority is simulated.
-// Path-load the exact unregistered owned modules so this target also compiles
-// before CP registration. All borrowed native APIs are actual production types/functions.
-extern crate oteryn_game_server as production_server;
-extern crate self as oteryn_game_server;
-pub use production_server::content;
-// The path-loaded Forge quote module delegates to the actual native dust policy.
-pub use production_server::domain::forge_dust;
-pub use production_server::durability::item_mint_audit;
-#[path = "../src/domain/forge.rs"]
-pub mod forge_domain;
-#[path = "../src/durability/forge.rs"]
-pub mod forge_storage;
-pub mod domain {
-    pub use crate::forge_domain as forge;
-}
-pub mod durability {
-    pub use crate::forge_storage as forge;
-    pub use production_server::durability::{item_mint, item_transfer};
-}
-
-use oteryn_game_server::domain::forge::ItemTier;
-use oteryn_game_server::durability::forge::{
-    PRIVATE_TIER_SCHEMA_SQL, TierReadError, read_item_tier,
-};
+//! Mounted by character_authority_postgres (PG-COVERAGE-1), on the actual native migration chain.
+use crate::domain::forge::ItemTier;
+use crate::durability::forge::{PRIVATE_TIER_SCHEMA_SQL, TierReadError, read_item_tier};
 use sqlx::{Connection, PgConnection};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

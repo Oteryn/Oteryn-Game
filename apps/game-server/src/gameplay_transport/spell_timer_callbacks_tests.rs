@@ -122,6 +122,7 @@ fn hit(f: &mut Fixture, sequence: u64, magnitude: i64) -> CombatBatchReceipt {
         },
         binding: b"source-qualified:due-step".to_vec(),
         anchor: None,
+        now_us: None,
         now_ms: 100,
         effects: vec![OwnerCombatEffect {
             target: f.rat,
