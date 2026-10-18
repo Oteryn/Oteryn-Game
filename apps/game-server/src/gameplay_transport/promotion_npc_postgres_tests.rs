@@ -185,8 +185,9 @@ async fn current_premium(harness: &Harness) -> TestResult<SpellPremiumCoordinato
     ));
     Ok(SpellPremiumCoordinator::new(
         consumer,
-        Some(Arc::new(PremiumClock(TrustedNow::new(PREMIUM_TEST_NOW, 1)))
-            as Arc<dyn RegisteredPremiumClock>),
+        Some(Arc::new(PremiumClock(
+            TrustedNow::new(PREMIUM_TEST_NOW, 1).ok_or("trusted now")?,
+        )) as Arc<dyn RegisteredPremiumClock>),
         Some(PremiumActivation {
             activation_id: "prem-5-blessing-test".into(),
             switch_over_us: PREMIUM_TEST_NOW - 60_000_000,

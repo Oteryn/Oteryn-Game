@@ -36,6 +36,7 @@ mod logout;
 mod logout_tests;
 #[path = "../interaction/npc_promotion.rs"]
 pub(crate) mod npc_promotion;
+#[cfg(test)]
 #[path = "../premium/blessing_catalogue.rs"]
 pub(crate) mod premium_blessing_catalogue;
 #[path = "../premium/blessing_purchase.rs"]
