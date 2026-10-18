@@ -1,6 +1,6 @@
 //! HIGHSCORES0 §§3–6: rebuildable committed-state projections, never gameplay authority.
 //!
-//! RANK-1: migration 0097 installs the tables; the node's serve loop runs one
+//! RANK-1: migration 0129 installs the tables; the node's serve loop runs one
 //! [`job::HighscoreWorldJob`] per World and the HS-WIRE-1 handler reads pages through
 //! [`DurabilityRoot::read_highscore_page`]. A Root pass supplies its real connection and deadline;
 //! it does not attest a caller's World or job permission.

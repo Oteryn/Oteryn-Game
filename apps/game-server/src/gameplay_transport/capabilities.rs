@@ -116,38 +116,61 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     LOGOUT,
 ];
 
-/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a): capability 3
-/// `NPC_SERVICE_V1` (a bundle World places the NPCs), then the Item view set (which offers 4
-/// `ITEM_VIEW_MOVE_V1`) up to 17, then capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6,
-/// then 19 and 21. A bundle
-/// World boots only against a generation whose Item key set names every bundle Item. Only a
-/// bundle World returns it; the registry entries of 3 and 18 stay `offered: false` and their
-/// `offer_gate` names this offer. 3 is below every other offered ID and 18 between the Item view
-/// set's 17 and 19, so the set is ascending.
-pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
-    const NPC_SERVICE: OfferedCapability = OfferedCapability {
+/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
+/// ascending by ID: capability 3 `NPC_SERVICE_V1` (a bundle World places the NPCs), 4
+/// `ITEM_VIEW_MOVE_V1`, 6, 7, 9 `HIGHSCORES_V1`, 12 `ITEM_EQUIP_DROP_V1` (requires 4), 13, 14
+/// `CONTAINER_TREE_V1` (requires 4 and 12), 17, 18 `WORLD_MAP_VIEW_V1` (requires 4 and 6), 19
+/// and 21. A bundle World boots only against a generation whose Item key set names every
+/// bundle Item. ITEM-LOOP-1 (CP D1438) offers 12 and 14 here because only a bundle World
+/// composes their command type 9 equipment, ground and container destinations (equip, drop,
+/// pickup and the container tree) and the command type 21 container views. Only a bundle World
+/// returns it; the registry entries of 3, 12, 14 and 18 stay `offered: false` and their
+/// `offer_gate` names this offer. A test keeps it equal to the Item view set plus 3, 12, 14
+/// and 18.
+pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
+    OfferedCapability {
         id: CAPABILITY_NPC_SERVICE_V1,
         requires: &[],
-    };
-    const WORLD_MAP_VIEW: OfferedCapability = OfferedCapability {
+    },
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_CHAT_V1,
+        requires: &[],
+    },
+    HIGHSCORES,
+    OfferedCapability {
+        id: CAPABILITY_ITEM_EQUIP_DROP_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+    },
+    OfferedCapability {
+        id: CAPABILITY_PACED_MOVEMENT_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_CONTAINER_TREE_V1,
+        requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_ITEM_EQUIP_DROP_V1],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ATTACK_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+    },
+    OfferedCapability {
         id: CAPABILITY_WORLD_MAP_VIEW_V1,
         requires: &[
             CAPABILITY_ITEM_VIEW_MOVE_V1,
             CAPABILITY_WORLD_SPATIAL_ENTITIES,
         ],
-    };
-    const LEN: usize = ITEM_VIEW_OFFERED_CAPABILITIES.len() + 2;
-    let mut set = [WORLD_MAP_VIEW; LEN];
-    set[0] = NPC_SERVICE;
-    let mut index = 0;
-    while index + 2 < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
-        set[index + 1] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
-        index += 1;
-    }
-    set[LEN - 2] = WORLD_LIGHT;
-    set[LEN - 1] = LOGOUT;
-    set
-};
+    },
+    WORLD_LIGHT,
+    LOGOUT,
+];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
 /// requires 6, for a generation that pins a non-empty Item key set: the registry's whole
@@ -183,6 +206,10 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
 const CAPABILITY_ITEM_LOOK_V1: u32 = 28;
 /// `ITEM_LOOK_INTENT`, registry command type 30, gated by capability 28.
 const COMMAND_TYPE_ITEM_LOOK_INTENT: u32 = 30;
+/// `MAP_STATE_V1`, registry capability 29 (CP D1442): never offered, superseded by 18.
+const CAPABILITY_MAP_STATE_V1: u32 = 29;
+/// `WORLD_SPATIAL_FIELDS`, registry capability 30 (CP D1442): not offered before FIELD-WIRE-1.
+const CAPABILITY_WORLD_SPATIAL_FIELDS: u32 = 30;
 
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
@@ -287,6 +314,10 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[COMMAND_TYPE_ITEM_LOOK_INTENT],
         &[],
     ),
+    // CP D1442: registered for the ADMIT0 floor names; neither owns a command type or domain
+    // and neither is offered, so no session selects them.
+    (CAPABILITY_MAP_STATE_V1, &[], &[]),
+    (CAPABILITY_WORLD_SPATIAL_FIELDS, &[], &[]),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

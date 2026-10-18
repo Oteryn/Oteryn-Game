@@ -21,6 +21,9 @@ use crate::durability::item_transfer::{CommittedItemTransfer, TransferShape};
 use crate::foundation::{
     ChannelId, CommandStatus, GameSessionId, WorldId, encode_command_result, encode_state_delta,
 };
+use oteryn_protocol_oteryn::container_tree::{
+    CAPABILITY_CONTAINER_TREE_V1, CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
+};
 use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES, COMMAND_TYPE_ITEM_MOVE_INTENT, EquipmentSlot,
@@ -210,6 +213,10 @@ fn not_supported_is_a_non_empty_container() {
 fn rejected_is_every_other_refusal_and_error() {
     maps(
         vec![
+            refused(ItemTransferRefusal::WeightUnknown),
+            refused(ItemTransferRefusal::WeightGenerationMismatch),
+            refused(ItemTransferRefusal::WeightDefinitionMismatch),
+            refused(ItemTransferRefusal::Overweight),
             refused(ItemTransferRefusal::DefinitionMismatch),
             refused(ItemTransferRefusal::UnknownStackClass),
             refused(ItemTransferRefusal::UnsupportedStackMaximum),
@@ -265,6 +272,12 @@ struct MoveAuthority {
     /// Equipment reads answered in order before `equipment`, and the inventory reads counted.
     equipment_reads: RefCell<VecDeque<Option<Slots>>>,
     inventory_reads: Cell<u32>,
+    /// ITEM-LOOP-1: the loop replay read, one loop move result and the inventory the owner
+    /// shows after it commits.
+    loop_replay: Option<LoopMoveReplay>,
+    loop_result: Cell<Option<LoopMoveResult>>,
+    loop_moves: RefCell<Vec<(u64, LoopMove)>>,
+    after_loop: Option<InventoryItems>,
 }
 
 impl MoveAuthority {
@@ -284,7 +297,25 @@ impl MoveAuthority {
             after_equip: None,
             equipment_reads: RefCell::new(VecDeque::new()),
             inventory_reads: Cell::new(0),
+            loop_replay: Some(LoopMoveReplay::Absent),
+            loop_result: Cell::new(None),
+            loop_moves: RefCell::new(Vec::new()),
+            after_loop: None,
         }
+    }
+
+    /// The owner shows `shown` and answers the next loop move with `result`, showing `after`
+    /// once it commits.
+    fn looping(
+        mut self,
+        shown: InventoryItems,
+        result: LoopMoveResult,
+        after: Option<InventoryItems>,
+    ) -> Self {
+        self.show(Some(shown));
+        self.loop_result = Cell::new(Some(result));
+        self.after_loop = after;
+        self
     }
 
     /// The owner shows `shown` (backpack and slots) and answers the next move with `result`,
@@ -382,6 +413,30 @@ impl FreshAdmissionAuthority for MoveAuthority {
         let result = self.equip_result.take().expect("one equipment move");
         if result == EquipmentMoveResult::Committed {
             self.show(self.after_equip.clone());
+        }
+        result
+    }
+
+    async fn committed_loop_move(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> Option<LoopMoveReplay> {
+        self.loop_replay
+    }
+
+    async fn move_loop_item(
+        &self,
+        _actor: ExactActorRef,
+        command: UseCommand,
+        request: LoopMove,
+    ) -> LoopMoveResult {
+        self.loop_moves
+            .borrow_mut()
+            .push((command.command_id, request));
+        let result = self.loop_result.take().expect("one loop move");
+        if result == LoopMoveResult::Committed {
+            self.show(self.after_loop.clone());
         }
         result
     }
@@ -587,7 +642,7 @@ fn a_malformed_intent_is_rejected_before_any_read() -> TestResult {
 }
 
 #[test]
-fn equipment_and_inventory_sources_are_not_supported() -> TestResult {
+fn a_corpse_entry_never_enters_a_slot() -> TestResult {
     run(async {
         let mut view = opened();
         let source = entry(&view, 5);
@@ -609,19 +664,8 @@ fn equipment_and_inventory_sources_are_not_supported() -> TestResult {
             step(&authority, &mut view, &to_head, selection).await,
             result(ItemMoveOutcome::NotSupported)
         );
-        // A backpack entry is not an entry of the open corpse.
-        let backpack_entry = entry(&view, 1);
-        assert_eq!(
-            step(
-                &authority,
-                &mut view,
-                &into_backpack(backpack_entry),
-                CORPSE_ONLY
-            )
-            .await,
-            result(ItemMoveOutcome::NotSupported)
-        );
         assert!(authority.takes.borrow().is_empty());
+        assert!(authority.loop_moves.borrow().is_empty());
         Ok(())
     })
 }
@@ -907,8 +951,96 @@ fn a_refused_equipment_move_answers_its_outcome_without_deltas() -> TestResult {
     })
 }
 
+/// ITEM-MOVE-2a: an equip into an occupied slot reaches the equipment owner, which swaps the
+/// whole items atomically; both items keep their handles across the domain 9 delta.
 #[test]
-fn an_occupied_slot_or_the_main_backpack_never_reaches_the_owner() -> TestResult {
+fn an_equip_into_an_occupied_slot_swaps_through_the_owner() -> TestResult {
+    run(async {
+        let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
+        let after = worn(&[1, 4], &[(EquipmentSlot::RightHand, 2)]);
+        let mut view = wearing(shown.clone());
+        let incoming = entry(&view, 2);
+        let occupant = entry(&view, 4);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+            shown.clone(),
+            EquipmentMoveResult::Committed,
+            Some(after.clone()),
+        );
+        let moved = step(
+            &authority,
+            &mut view,
+            &into_slot(incoming, EquipmentSlot::RightHand),
+            EQUIP,
+        )
+        .await;
+        let mut mirror = wearing(shown);
+        let delta = mirror
+            .inventory_committed(after)
+            .map_err(fault)?
+            .expect("domain 9");
+        assert_eq!(
+            moved,
+            ItemMoveStep::Result(ItemMoveOutcome::Moved, vec![delta])
+        );
+        assert_eq!(
+            *authority.equip_moves.borrow(),
+            [(
+                1,
+                EquipmentMove::Equip {
+                    item: instance(2),
+                    to: EquipmentSlot::RightHand
+                }
+            )]
+        );
+        assert_eq!(
+            view.equipped_slot(&instance(2)),
+            Some(EquipmentSlot::RightHand)
+        );
+        assert_eq!(view.equipped_slot(&instance(4)), None);
+        assert!(view.is_backpack_entry(&instance(4)));
+        assert_eq!(view.table().handle(&instance(2)), Some(incoming));
+        assert_eq!(view.table().handle(&instance(4)), Some(occupant));
+        Ok(())
+    })
+}
+
+/// A swap the owner refuses (for example same-definition stack semantics) answers its outcome
+/// without deltas.
+#[test]
+fn a_refused_swap_answers_its_outcome_without_deltas() -> TestResult {
+    run(async {
+        for (refusal, outcome) in [
+            (EquipmentMoveRefusal::Rejected, ItemMoveOutcome::Rejected),
+            (
+                EquipmentMoveRefusal::SlotMismatch,
+                ItemMoveOutcome::SlotMismatch,
+            ),
+            (EquipmentMoveRefusal::Stale, ItemMoveOutcome::Stale),
+        ] {
+            let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
+            let mut view = wearing(shown.clone());
+            let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
+                shown,
+                EquipmentMoveResult::Refused(refusal),
+                None,
+            );
+            let swap = into_slot(entry(&view, 2), EquipmentSlot::RightHand);
+            assert_eq!(
+                step(&authority, &mut view, &swap, EQUIP).await,
+                result(outcome)
+            );
+            assert_eq!(authority.equip_moves.borrow().len(), 1);
+            assert_eq!(
+                view.equipped_slot(&instance(4)),
+                Some(EquipmentSlot::RightHand)
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_slot_to_slot_move_or_the_main_backpack_never_reaches_the_owner() -> TestResult {
     run(async {
         let shown = worn(&[1, 2], &[(EquipmentSlot::RightHand, 4)]);
         let mut view = wearing(shown.clone());
@@ -916,12 +1048,6 @@ fn an_occupied_slot_or_the_main_backpack_never_reaches_the_owner() -> TestResult
             shown,
             EquipmentMoveResult::Committed,
             None,
-        );
-        // Swap is not in this slice.
-        let into_occupied = into_slot(entry(&view, 2), EquipmentSlot::RightHand);
-        assert_eq!(
-            step(&authority, &mut view, &into_occupied, EQUIP).await,
-            result(ItemMoveOutcome::NotSupported)
         );
         // The main backpack never enters a slot of its own.
         let backpack = into_slot(entry(&view, 0), EquipmentSlot::Armor);
@@ -940,37 +1066,268 @@ fn an_occupied_slot_or_the_main_backpack_never_reaches_the_owner() -> TestResult
     })
 }
 
+const TILE: WorldTilePosition = WorldTilePosition {
+    x: 10,
+    y: 10,
+    floor: 7,
+};
+
+fn onto_ground(source: ItemHandle, selection: ItemMoveSelection) -> Vec<u8> {
+    encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Ground(TILE),
+        },
+        selection,
+    )
+    .expect("intent")
+}
+
+/// ITEM-LOOP-1: capability 14 with its requirement 12.
+const TREE: ItemMoveSelection = ItemMoveSelection {
+    equip_drop: true,
+    container_tree: true,
+    world_interaction: false,
+};
+
+fn into_container(source: ItemHandle, container: ItemHandle) -> Vec<u8> {
+    encode_item_move_intent_for(
+        &ItemMoveIntent {
+            source,
+            destination: ItemMoveDestination::Container(container),
+        },
+        TREE,
+    )
+    .expect("intent")
+}
+
+/// ITEM-MOVE-2b: a backpack entry onto the Ground goes to the loop owner; an equipped item
+/// never does (it is unequipped first).
 #[test]
-fn ground_stays_not_supported_under_capability_12() -> TestResult {
+fn a_ground_drop_goes_to_the_loop_owner_and_an_equipped_item_is_not_supported() -> TestResult {
     run(async {
         let shown = worn(&[1, 2], &[(EquipmentSlot::Head, 4)]);
+        let after = worn(&[1], &[(EquipmentSlot::Head, 4)]);
         let mut view = wearing(shown.clone());
-        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).equipping(
-            shown,
-            EquipmentMoveResult::Committed,
-            None,
+        let source = entry(&view, 2);
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+            shown.clone(),
+            LoopMoveResult::Committed,
+            Some(after.clone()),
         );
-        for n in [2, 4] {
-            let payload = encode_item_move_intent_for(
-                &ItemMoveIntent {
-                    source: entry(&view, n),
-                    destination: ItemMoveDestination::Ground(
-                        oteryn_protocol_oteryn::item_view::WorldTilePosition {
-                            x: 10,
-                            y: 10,
-                            floor: 7,
-                        },
-                    ),
-                },
-                EQUIP,
-            )
-            .map_err(fault)?;
+        let equipped = entry(&view, 4);
+        assert_eq!(
+            step(&authority, &mut view, &onto_ground(equipped, EQUIP), EQUIP).await,
+            result(ItemMoveOutcome::NotSupported)
+        );
+        assert!(authority.loop_moves.borrow().is_empty());
+        let moved = step(&authority, &mut view, &onto_ground(source, EQUIP), EQUIP).await;
+        let mut mirror = wearing(shown);
+        let delta = mirror
+            .inventory_committed(after)
+            .map_err(fault)?
+            .expect("domain 9");
+        assert_eq!(
+            moved,
+            ItemMoveStep::Result(ItemMoveOutcome::Moved, vec![delta])
+        );
+        assert_eq!(
+            *authority.loop_moves.borrow(),
+            [(
+                1,
+                LoopMove {
+                    item: instance(2),
+                    target: LoopTarget::Ground(TILE),
+                }
+            )]
+        );
+        assert!(!view.is_backpack_entry(&instance(2)));
+        assert!(authority.equip_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+/// ITEM-MOVE-2a, BAGS-1, STACK-1: a backpack entry into a container of the tree, into the main
+/// backpack by its own handle, and a nested entry back into the main backpack, each through
+/// the loop owner; the owner decides the merge.
+#[test]
+fn a_container_move_goes_to_the_loop_owner_by_its_server_internal_keys() -> TestResult {
+    run(async {
+        let shown = inventory(&[1, 2]);
+        for (payload, target) in [
+            ((1_u16, Some(2_u16)), LoopTarget::Container(instance(2))),
+            ((1, Some(0)), LoopTarget::MainBackpack),
+            ((1, None), LoopTarget::MainBackpack),
+        ] {
+            let mut view = wearing(shown.clone());
+            let source = entry(&view, payload.0);
+            let intent = match payload.1 {
+                Some(container) => into_container(source, entry(&view, container)),
+                None => into_backpack(source),
+            };
+            let after = inventory(&[2]);
+            let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+                shown.clone(),
+                LoopMoveResult::Committed,
+                Some(after.clone()),
+            );
+            let moved = step(&authority, &mut view, &intent, TREE).await;
+            let mut mirror = wearing(shown.clone());
+            let delta = mirror
+                .inventory_committed(after)
+                .map_err(fault)?
+                .expect("domain 9");
             assert_eq!(
-                step(&authority, &mut view, &payload, EQUIP).await,
-                result(ItemMoveOutcome::NotSupported)
+                moved,
+                ItemMoveStep::Result(ItemMoveOutcome::Moved, vec![delta]),
+                "{target:?}"
+            );
+            assert_eq!(
+                *authority.loop_moves.borrow(),
+                [(
+                    1,
+                    LoopMove {
+                        item: instance(1),
+                        target,
+                    }
+                )]
             );
         }
-        assert!(authority.equip_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+/// The main backpack and a stale container never reach the loop owner.
+#[test]
+fn the_main_backpack_itself_or_a_stale_container_never_reaches_the_loop_owner() -> TestResult {
+    run(async {
+        let shown = inventory(&[1, 2]);
+        let mut view = wearing(shown.clone());
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+            shown,
+            LoopMoveResult::Committed,
+            None,
+        );
+        let backpack = into_container(entry(&view, 0), entry(&view, 2));
+        assert_eq!(
+            step(&authority, &mut view, &backpack, TREE).await,
+            result(ItemMoveOutcome::NotSupported)
+        );
+        let stale = into_container(entry(&view, 1), handle(999));
+        assert_eq!(
+            step(&authority, &mut view, &stale, TREE).await,
+            result(ItemMoveOutcome::Stale)
+        );
+        assert!(authority.loop_moves.borrow().is_empty());
+        Ok(())
+    })
+}
+
+/// Every refusal of the loop owner answers its section 4 outcome without deltas: the wire has
+/// no weight result, so an over-capacity or unknown-weight pickup is `REJECTED`; `BLOCKED` needs
+/// capability 12 or 11; a cell out of reach is `TOO_FAR`; an unknown outcome disconnects.
+#[test]
+fn a_refused_loop_move_answers_its_outcome_without_deltas() -> TestResult {
+    run(async {
+        use LoopMoveRefusal as Refusal;
+        for (selection, answer, outcome) in [
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::Overweight),
+                Some(ItemMoveOutcome::Rejected),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::WeightUnknown),
+                Some(ItemMoveOutcome::Rejected),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::NoRoom),
+                Some(ItemMoveOutcome::NoRoom),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::Stale),
+                Some(ItemMoveOutcome::Stale),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::NoBackpack),
+                Some(ItemMoveOutcome::NoBackpack),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::NotSupported),
+                Some(ItemMoveOutcome::NotSupported),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::Blocked),
+                Some(ItemMoveOutcome::Blocked),
+            ),
+            (
+                CORPSE_ONLY,
+                LoopMoveResult::Refused(Refusal::Blocked),
+                Some(ItemMoveOutcome::Rejected),
+            ),
+            (
+                EQUIP,
+                LoopMoveResult::Refused(Refusal::Rejected),
+                Some(ItemMoveOutcome::Rejected),
+            ),
+            (EQUIP, LoopMoveResult::TooFar, Some(ItemMoveOutcome::TooFar)),
+            (EQUIP, LoopMoveResult::Unknown, None),
+        ] {
+            let shown = inventory(&[1, 2]);
+            let mut view = wearing(shown.clone());
+            let authority =
+                MoveAuthority::new(Replay::Nothing, Vec::new()).looping(shown, answer, None);
+            let payload = into_backpack(entry(&view, 1));
+            let expected = outcome.map_or(ItemMoveStep::Disconnect, result);
+            assert_eq!(
+                step(&authority, &mut view, &payload, selection).await,
+                expected,
+                "{answer:?}"
+            );
+            assert_eq!(authority.loop_moves.borrow().len(), 1);
+            assert!(view.is_backpack_entry(&instance(1)));
+        }
+        Ok(())
+    })
+}
+
+/// Replay first: a committed loop receipt answers `MOVED` for a stale handle without a move, a
+/// receipt of another Character is `REJECTED` and an unreadable one disconnects.
+#[test]
+fn the_loop_replay_answers_moved_for_a_stale_handle_without_a_move() -> TestResult {
+    run(async {
+        for (replay, expected) in [
+            (
+                Some(LoopMoveReplay::Conflicting),
+                result(ItemMoveOutcome::Rejected),
+            ),
+            (None, ItemMoveStep::Disconnect),
+        ] {
+            let mut view = wearing(inventory(&[1]));
+            let mut authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+            authority.loop_replay = replay;
+            assert_eq!(
+                step(&authority, &mut view, &into_backpack(handle(999)), EQUIP).await,
+                expected
+            );
+            assert!(authority.loop_moves.borrow().is_empty());
+        }
+        let shown = inventory(&[1]);
+        let mut view = wearing(shown.clone());
+        let mut authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+        authority.show(Some(shown));
+        authority.loop_replay = Some(LoopMoveReplay::Moved);
+        assert_eq!(
+            step(&authority, &mut view, &into_backpack(handle(999)), EQUIP).await,
+            result(ItemMoveOutcome::Moved)
+        );
+        assert!(authority.loop_moves.borrow().is_empty());
         Ok(())
     })
 }
@@ -1376,6 +1733,106 @@ fn capability_12_equips_a_backpack_entry_by_command_9() -> TestResult {
         let ended = ended(end)?;
         assert_eq!(ended.next_command_id, 2);
         assert_eq!(ended.item_view, mirror.continuity());
+        Ok(())
+    })
+}
+
+/// ITEM-LOOP-1 (CP D1438) through the live dispatch: with capabilities 12 and 14 a backpack
+/// entry nests into a container of the tree, then drops onto the Ground, each by command 9,
+/// each answered `MOVED` and the domain 9 delta; an overweight pickup answers `REJECTED`.
+#[test]
+fn capabilities_12_and_14_nest_drop_and_refuse_by_command_9() -> TestResult {
+    run(async {
+        const TREE_OFFERED: &[OfferedCapability] = &[
+            OfferedCapability {
+                id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+                requires: CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES,
+            },
+            OfferedCapability {
+                id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                requires: &[],
+            },
+            OfferedCapability {
+                id: CAPABILITY_ITEM_EQUIP_DROP_V1,
+                requires: &[CAPABILITY_ITEM_VIEW_MOVE_V1],
+            },
+            OfferedCapability {
+                id: CAPABILITY_CONTAINER_TREE_V1,
+                requires: CAPABILITY_CONTAINER_TREE_V1_REQUIRES,
+            },
+        ];
+        let selected = SelectedCapabilities::select(TREE_OFFERED, &[4, 6, 12, 14]).expect("select");
+        assert_eq!(selected.as_slice(), [4, 6, 12, 14]);
+        for (answer, after, outcome) in [
+            (
+                LoopMoveResult::Committed,
+                Some(inventory(&[2])),
+                ItemMoveOutcome::Moved,
+            ),
+            (
+                LoopMoveResult::Refused(LoopMoveRefusal::Overweight),
+                None,
+                ItemMoveOutcome::Rejected,
+            ),
+        ] {
+            for nest in [true, false] {
+                let shown = inventory(&[1, 2]);
+                let mut mirror = wearing(shown.clone());
+                // Capability 14 opens the connection with the domain 14 snapshot.
+                mirror.views_snapshot().map_err(fault)?;
+                let source = entry(&mirror, 1);
+                let (payload, target) = if nest {
+                    (
+                        into_container(source, entry(&mirror, 2)),
+                        LoopTarget::Container(instance(2)),
+                    )
+                } else {
+                    (onto_ground(source, TREE), LoopTarget::Ground(TILE))
+                };
+                let delta = match &after {
+                    Some(after) => mirror.inventory_committed(after.clone()).map_err(fault)?,
+                    None => None,
+                };
+                let authority = MoveAuthority::new(Replay::Nothing, Vec::new()).looping(
+                    shown,
+                    answer,
+                    after.clone(),
+                );
+                let mut admitted = session(ItemViewContinuity::default())?;
+                admitted.continuity.selected_capabilities = selected;
+                let (end, frames) = serve(
+                    &authority,
+                    admitted,
+                    &[command(1, COMMAND_TYPE_ITEM_MOVE_INTENT, &payload)?],
+                )
+                .await?;
+                let mut expected = vec![encode_command_result(
+                    1,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &encode_item_move_result_with_equip_drop(outcome, true).map_err(fault)?,
+                )?];
+                if let Some(delta) = &delta {
+                    expected.push(delta_frame(2, delta)?);
+                }
+                assert!(frames.len() > expected.len());
+                assert_eq!(frames[frames.len() - expected.len()..], expected[..]);
+                assert_eq!(
+                    *authority.loop_moves.borrow(),
+                    [(
+                        1,
+                        LoopMove {
+                            item: instance(1),
+                            target,
+                        }
+                    )]
+                );
+                let ended = ended(end)?;
+                assert_eq!(ended.next_command_id, 2);
+                assert_eq!(ended.item_view, mirror.continuity());
+            }
+        }
         Ok(())
     })
 }

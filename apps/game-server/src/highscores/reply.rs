@@ -1,5 +1,5 @@
 //! RANK-1 (HS-WIRE-1, HIGHSCORES0 §6, CP D1155): command type 14 `HIGHSCORES_QUERY_V1` under
-//! capability 9. The handler reads one page of a persisted World snapshot (migration 0097) and
+//! capability 9. The handler reads one page of a persisted World snapshot (migration 0129) and
 //! never computes ranks. The World and the asking Character come from the admitted session, never
 //! from the payload. A category this server does not publish (outside 1..=11, or 11 while no Charm
 //! point source is activated) is `NOT_SUPPORTED` (1200) and an echoed token that

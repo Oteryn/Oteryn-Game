@@ -2249,6 +2249,11 @@ mod item_transfer_postgres_cases;
 #[path = "support/corpse_transfer_postgres_cases.rs"]
 mod corpse_transfer_postgres_cases;
 
+// ITEM-LOOP-1 (CP D1438) live item loop: move, nest, split/merge, drop/pickup and the
+// derived-capacity pickup refusal, plus the STARTER-1 grant, through the same protected lane.
+#[path = "support/item_loop_postgres_cases.rs"]
+mod item_loop_postgres_cases;
+
 // D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
 // resumable from durable state) shares its cases with the focused standalone
 // target through the same protected lane.
@@ -2317,7 +2322,7 @@ mod bestiary_progress_postgres_cases;
 #[path = "../src/durability/ground_cell_limit_tests.rs"]
 mod ground_cell_limit_tests;
 
-// RANK-1 HS-1 World highscore snapshots (migration 0097): the job, its 11 categories and the
+// RANK-1 HS-1 World highscore snapshots (migration 0129): the job, its 11 categories and the
 // reader, on the CHARM-2 harness included above; HS-WIRE-1's query handler runs against them.
 #[path = "support/highscores_postgres_cases.rs"]
 mod highscores_postgres_cases;

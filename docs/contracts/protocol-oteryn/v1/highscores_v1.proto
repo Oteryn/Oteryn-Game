@@ -1,7 +1,7 @@
 // HIGHSCORES-0 HIGHSCORES0-WORLD-HIGHSCORES-V1 §6 (docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md):
 // typed payloads of capability 9 HIGHSCORES_V1 (no requirement, no state domain) and command
 // type 14 HIGHSCORES_QUERY_V1, registered by RANK-1 (HS-WIRE-1) under CP D1155. The query reads
-// one page of a persisted World snapshot (migration 0097); it never computes ranks. The World and
+// one page of a persisted World snapshot (migration 0129); it never computes ranks. The World and
 // the asking Character come from the admitted session, never from the payload. FND-02 envelopes
 // own CommandRef, server sequence and the command status; these payloads never duplicate them.
 // NOT_SUPPORTED (1200, a category outside 1..=11) and SNAPSHOT_EXPIRED (1201, an echoed token no

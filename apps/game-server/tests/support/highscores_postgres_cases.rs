@@ -1,4 +1,4 @@
-//! RANK-1 HS-1 (migration 0097): real native tables/guards and Root projection APIs, run in the
+//! RANK-1 HS-1 (migration 0129): real native tables/guards and Root projection APIs, run in the
 //! protected PostgreSQL lane on the CHARM-2 harness. Administrative source dataset rows are
 //! committed fixture DATA, not gameplay writes or current authority for those Characters.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
@@ -743,7 +743,7 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
 
 #[test]
 fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> TestResult {
-    // Migration 0097 attaches 0091's snapshot trigger; no fixture SQL installs it.
+    // Migration 0129 attaches 0091's snapshot trigger; no fixture SQL installs it.
     run("hsoutbox", async |h| {
         h.root
             .refresh_highscore_world(world(), complete_catalogues()?, true)
@@ -1258,12 +1258,12 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
     })
 }
 
-/// Migration 0097's guard on the cluster-global job group, as the migration runs it.
+/// Migration 0129's guard on the cluster-global job group, as the migration runs it.
 fn job_role_guard() -> &'static str {
-    const MIGRATION: &str = include_str!("../../migrations/0097_world_highscores.sql");
+    const MIGRATION: &str = include_str!("../../migrations/0129_world_highscores.sql");
     let start = MIGRATION
         .find("DO $$")
-        .expect("0097 opens with its role guard");
+        .expect("0129 opens with its role guard");
     let end = start
         + MIGRATION[start..]
             .find("END $$;")
@@ -1272,7 +1272,7 @@ fn job_role_guard() -> &'static str {
     &MIGRATION[start..end]
 }
 
-/// Runs `statements` and then the 0097 guard in one transaction. With `refusal` the guard must
+/// Runs `statements` and then the 0129 guard in one transaction. With `refusal` the guard must
 /// refuse with 42501 and that message, otherwise it must pass. The changes to the cluster-global
 /// group exist only in this transaction, so no other database on the shared cluster ever sees
 /// them; after the rollback the provisioned group passes the guard again.
@@ -1447,7 +1447,7 @@ fn job_role_guard_refuses_a_pre_existing_group_with_direct_privileges() -> TestR
     run("hsjobprivileges", async |h| {
         let guard = job_role_guard();
         assert!(guard.contains("pg_shdepend"));
-        // Provisioned: exactly the table-level grants of 0097 in this database, none on a
+        // Provisioned: exactly the table-level grants of 0129 in this database, none on a
         // shared object, and the group owns nothing.
         let grants: Vec<(String, String)> = sqlx::query_as(
             "SELECT c.relname::text, string_agg(a.privilege_type, ',' ORDER BY a.privilege_type COLLATE \"C\") \

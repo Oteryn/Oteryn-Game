@@ -1065,7 +1065,7 @@ async fn public_projections_loop(
 
 /// RANK-1 (HIGHSCORES0 §4): this World's highscore snapshot job for the serve lifetime. It
 /// never gates serving and its end is not a shutdown reason. The job publishes under its own
-/// group role (migration 0097) and schedules from durable database time, so a restart or a second
+/// group role (migration 0129) and schedules from durable database time, so a restart or a second
 /// Channel of the World never publishes early. Category 10 reads the activated Achievement
 /// catalogue. Category 11 is published only with an activated per-race Charm point source; none
 /// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. The planned World
@@ -2504,6 +2504,20 @@ async fn boot_and_serve(
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
     }
+    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
+    // The generation is the operator assignment just resolved above, not config.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
+    let required_capabilities =
+        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &config.readiness.required_gameplay_capabilities,
+            scope,
+            generation,
+            &config.readiness.world_policy_revision,
+            crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                bundle.is_some(), active_content.active(),
+            ),
+        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -2722,6 +2736,7 @@ async fn boot_and_serve(
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        required_capabilities: required_capabilities.clone(),
         runtime: &runtime,
         movement_cells: &movement_cells,
         door: &door,

@@ -49,10 +49,12 @@ pub(crate) mod highscore_snapshot;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;
+pub(crate) mod item_capacity;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
+pub(crate) mod item_loop_move;
 pub mod item_mint;
 pub mod item_mint_audit;
 pub(crate) mod item_text;
@@ -62,6 +64,9 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
+#[cfg(test)]
+#[path = "../../tests/support/item_weight_lookup.rs"]
+pub mod item_weight_lookup;
 pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
@@ -95,6 +100,7 @@ pub(crate) mod spell_parameter_result;
 pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
+pub(crate) mod starter_grant;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
 

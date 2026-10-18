@@ -60,7 +60,7 @@ Rows marked BLOCKING must merge (or be accepted) before the builder's slot commi
 
 Widened by CP D1441 (integration slot, 2026-10-18):
 
-- `apps/game-server/migrations/0097_world_highscores.sql`
+- `apps/game-server/migrations/0129_world_highscores.sql` (0097 until the CP D1453 wave numbering)
 - `apps/game-server/src/highscores/reply.rs` (the command type 14 handler core)
 - `apps/game-server/src/gameplay_transport/highscores_tests.rs`
 - `apps/game-server/src/gameplay_transport/capabilities.rs`, `capabilities_tests.rs`,
@@ -596,7 +596,7 @@ resource/allocation gates.
 ### Remaining integration boundary
 
 The one-line native validation overlay does not complete the CP D1155 shared
-slot. Migration 0097, projection-role credentials/grants and snapshot spawn
+slot. Migration 0129, projection-role credentials/grants and snapshot spawn
 remain allocated integration work. After #2198, the PostgreSQL bodies must use
 `tests/support/highscores_postgres_cases.rs` and the canonical
 `character_authority_postgres.rs` root; final integration must remove the
@@ -680,7 +680,7 @@ execution. Formatting was the only subsequent source transformation.
 The matching `highscores_v1.proto` proposal and module mount remain an explicit
 held integration packet. CP owns the shared IDL/registry/error/capability rows
 and authenticated session handler slot under capability 9 / command 14. The
-existing database qualification, migration 0097, projection-role grants,
+existing database qualification, migration 0129, projection-role grants,
 snapshot spawn and reset notifications retain their separate gates. The
 protocol checks above do not qualify the game-server all-target graph, every
 ranking/PostgreSQL case or complete runtime/E2E delivery.
@@ -693,7 +693,7 @@ This draft remains partial, with no ready or merge action requested.
 CP D1441 opened the shared slot on draft #2168 after merging main. It installs the integration
 the sections above held:
 
-- [x] Migration 0097: snapshot tables, the NOLOGIN job role and its grants, the AFTER INSERT
+- [x] Migration 0129: snapshot tables, the NOLOGIN job role and its grants, the AFTER INSERT
   public-outbox snapshot trigger (0091 §11).
 - [x] Snapshot job: one `HighscoreWorldJob` per World in the node serve loop
   (`node/serve.rs::highscores_loop`); immediate first check, then every 30 minutes from durable

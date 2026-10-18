@@ -96,7 +96,7 @@ fn progression(character: u8, level: u32) -> String {
     )
 }
 
-/// A HIGHSCORES-0 snapshot run (HS-1's job, migration 0097): the snapshot insert fires the
+/// A HIGHSCORES-0 snapshot run (HS-1's job, migration 0129): the snapshot insert fires the
 /// attached trigger. The fixture pins the identity so the expected outbox rows stay exact.
 fn snapshot(id: i64, world: u8, category: i16) -> String {
     format!(
@@ -406,7 +406,7 @@ async fn projection_cases(database: &Database) -> TestResult {
     // Highscores: no HIGHSCORES-0 snapshot yet, so a resync queues nothing.
     assert_eq!(resync(&pool, "highscores", false).await?, 1);
     assert_eq!(highscores(&pool).await?, vec![]);
-    // The HS-1 interface (contract §11, attached by migration 0097): a snapshot insert advances
+    // The HS-1 interface (contract §11, attached by migration 0129): a snapshot insert advances
     // the (World, category) revision in the job's own transaction, whatever role the job runs as.
     let mut tx = pool.begin().await?;
     sqlx::raw_sql(sqlx::AssertSqlSafe(snapshot(1, 0x90, 1)))
@@ -1083,7 +1083,7 @@ pub(crate) async fn bootstrap_reads(
     assert_eq!(
         facts.highscores,
         Some(None),
-        "migration 0097's source with nothing undelivered"
+        "migration 0129's source with nothing undelivered"
     );
     assert!(
         root.next_public_highscores(authority, &[])
@@ -1212,7 +1212,7 @@ pub(crate) async fn bootstrap_reads(
         }
     );
 
-    // HS-1's tables (migration 0097, contract §11 interface): its trigger and runtime SELECT.
+    // HS-1's tables (migration 0129, contract §11 interface): its trigger and runtime SELECT.
     let facts = root.public_outbox_facts(authority).await.map_err(error)?;
     assert_eq!(
         facts.highscores,

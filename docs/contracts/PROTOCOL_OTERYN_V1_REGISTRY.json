@@ -107,7 +107,7 @@
       "id": 9,
       "name": "HIGHSCORES_V1",
       "owner_decision": "HIGHSCORES-0 HIGHSCORES0-WORLD-HIGHSCORES-V1 §6 (docs/architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md, accepted through #2209); numbers leased to HS-WIRE-1 by the #1622 control plane (cap 9, cmd 14; the leased domain 14 stays unclaimed), registered by RANK-1 under CP D1155",
-      "owner": "Highscores module (persisted World snapshots of migration 0097, never live state)",
+      "owner": "Highscores module (persisted World snapshots of migration 0129, never live state)",
       "requires": [],
       "command_types": [14],
       "state_domains": [],
@@ -146,7 +146,7 @@
       "command_types": [],
       "state_domains": [],
       "offered": false,
-      "offer_gate": "ITEM-MOVE-2a: the server does not offer this capability before command type 9 equips. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
+      "offer_gate": "ITEM-MOVE-2a, ITEM-LOOP-1 (CP D1438): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), where command type 9 equips, swaps an occupied slot, drops onto a reachable ground cell and picks up from one; a fixture World never offers it, so this entry stays offered false. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
     },
     {
       "id": 13,
@@ -167,7 +167,7 @@
       "command_types": [21],
       "state_domains": [14],
       "offered": false,
-      "offer_gate": "BAGS-1: the server does not offer this capability before command type 9 moves an item within the container tree. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
+      "offer_gate": "BAGS-1, ITEM-LOOP-1 (CP D1438): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), where command type 9 moves an item within the durable container tree (depth and size bounded) and command type 21 observes durable containers; a fixture World never offers it, so this entry stays offered false. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
     },
     {
       "id": 15,
@@ -266,6 +266,28 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "Not offered: command type 30 ITEM_LOOK_INTENT is registered (CP D1268, D1292) and gated on this capability, but no command handler, rate limiter or runtime negotiation composition is installed, so the server never selects 28 and never dispatches 30. Only a session selecting capability28 may send Creature field2 EntityRef (identity16B,generationu64,max31B) or receive extended refusals3 NotVisible/4 NotReachable/5 RateLimited. Without28 Creature is malformed and server extended refusals map to existing2 NotAvailable; legacy resultdecode rejects3–5. Item field1 remains unchanged; text field1 is nonempty UTF-8 at most512B. Generation0 means unknown and requires NotVisible before runtime binding. D1240 assigns no additional capability dependency; requires stays empty."
+    },
+    {
+      "id": 29,
+      "name": "MAP_STATE_V1",
+      "owner_decision": "CP D1442 (#2187 ADMIT-CAP-1): next free capability number for the MAP-WIRE-1 candidate name that ADMIT0 references; CP D1083 (#2131 comment6218747873) accepts WORLD_MAP_VIEW_V1=18 as its served successor",
+      "owner": "none; superseded by capability 18 WORLD_MAP_VIEW_V1",
+      "requires": [6],
+      "command_types": [],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "Never offered: D1083 makes 18 WORLD_MAP_VIEW_V1 the served map capability and the ADMIT0 map floor. This number exists so the superseded MAP-WIRE-1 name is never reused; it gates no command type or state domain. It requires 6 WORLD_SPATIAL_ENTITIES (the MAP-WIRE-1 candidate requirement). A client or World configuration naming 29 cannot be satisfied: no node offers it, so declaring it fails boot closed (ADMIT0 D1)."
+    },
+    {
+      "id": 30,
+      "name": "WORLD_SPATIAL_FIELDS",
+      "owner_decision": "CP D1442 (#2187 ADMIT-CAP-1): next free capability number for the RUNE-USE-0 \u00a711.4 and WORLD-INTERACTION-0 field capability that ADMIT0 names in its mandatory floor",
+      "owner": "current ChannelRuntime (the field visibility rules, FIELD-WIRE-1)",
+      "requires": [6],
+      "command_types": [],
+      "state_domains": [],
+      "offered": false,
+      "offer_gate": "FIELD-WIRE-1: the server does not offer this capability before the field payloads and their domain are registered and composed. It requires 6 WORLD_SPATIAL_ENTITIES (RUNE-USE-0 \u00a711.4). While unoffered it is not in the ADMIT0 mandatory floor (registered AND offered), and a World declaring it fails boot closed."
     }
   ],
   "command_types": [
@@ -957,11 +979,13 @@
     {"code": 1113, "name": "ADMISSION_ACCOUNT_CHARACTER_CONFLICT", "category": "CONFLICT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "SESSION_UNAVAILABLE"},
     {"code": 1114, "name": "ADMISSION_INCUMBENT_PROTECTED", "category": "CONFLICT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CHARACTER_ALREADY_ACTIVE"},
     {"code": 1115, "name": "ADMISSION_CAPACITY_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
-    {"code": 1116, "name": "ADMISSION_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"}
+    {"code": 1116, "name": "ADMISSION_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"},
+    {"code": 1117, "name": "RECONNECT_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "OPERATION_TERMINAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"},
+    {"code": 1118, "name": "RECOVERY_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "OPERATION_TERMINAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"}
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},
-    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 29},
+    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 31},
     "command_type": {"invalid": 0, "assignable": [1, 2147483647]},
     "state_domain_id": {"invalid": 0, "assignable": [1, 2147483647]},
     "delta_type": {"invalid": 0, "scope": "state_domain", "assignable": [1, 2147483647]},
