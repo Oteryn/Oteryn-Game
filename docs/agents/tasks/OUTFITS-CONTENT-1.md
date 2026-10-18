@@ -3,21 +3,22 @@
 ```yaml
 task_id: OUTFITS-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/outfits-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2245
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
-  - content/cosmetics/outfits/evidence-00000-00136.json
   - content/cosmetics/outfits/index.json
   - docs/reference/content-prep/outfits-content-1/sources.json
   - docs/reference/content-prep/outfits-content-1/README.md
   - docs/agents/tasks/OUTFITS-CONTENT-1.md
+  - content/cosmetics/outfits/evidence-00000-00135.json
+  - docs/reference/content-prep/outfits-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -53,3 +54,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+There are 136 real outfit records: 69 Store outfits, 59 quest outfits and 8 special outfits. The template itself and navigation page are excluded. Both look types and explicit Premium flags are captured. Separate acquisition stages retain quantities, items, ranks/quests and sex-dependent addon numbers; Yalaharian choices are mutually exclusive. Store bundles and special/event methods are distinct. Afflicted/Captains exact addon-number mappings and Monk addon availability remain held where current source pages do not establish them.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

@@ -1,0 +1,90 @@
+{
+  "task": "OUTFITS-CONTENT-1",
+  "review_date": "2026-10-18",
+  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
+  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "There are 136 real outfit records: 69 Store outfits, 59 quest outfits and 8 special outfits. The template itself and navigation page are excluded. Both look types and explicit Premium flags are captured. Separate acquisition stages retain quantities, items, ranks/quests and sex-dependent addon numbers; Yalaharian choices are mutually exclusive. Store bundles and special/event methods are distinct. Afflicted/Captains exact addon-number mappings and Monk addon availability remain held where current source pages do not establish them.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "content/cosmetics/outfits/evidence-00000-00135.json": 136
+  },
+  "evidence_field_counts": {
+    "PROVEN": 1043,
+    "DERIVED": 317,
+    "UNKNOWN": 4
+  },
+  "unresolved_fields": [
+    {
+      "field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/1/facts/addon_specific_requirements",
+      "candidate": {
+        "method": "USE_ITEMS",
+        "items": [
+          "Plague Mask",
+          "Plague Bell"
+        ],
+        "source_of_items": "Belongings of a Deceased, exchanged by Ottokar for Medicine Pouches",
+        "may_buy_items_from_players": true,
+        "addon_number_mapping": null
+      },
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:54474:1035122",
+          "selector": "Bell and Mask Addons"
+        }
+      ],
+      "limitation": "Both acquisition items and use method are explicit, but this source shows only full-addon images (Addon 3), and own item pages do not establish addon 1 versus 2. Exact numbering is held."
+    },
+    {
+      "field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/16/facts/addon_specific_requirements",
+      "candidate": {
+        "method": "EVENT_REWARD_ITEM",
+        "items": [
+          {
+            "name": "Captain's Sabre",
+            "cost_event_points": 280
+          },
+          {
+            "name": "Captain's Hat",
+            "cost_event_points": 560
+          }
+        ],
+        "addon_number_mapping": null
+      },
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:111212:1200358",
+          "selector": "Rewards / Outfit and Mount"
+        }
+      ],
+      "limitation": "Source gives both addon reward items and their prices but their item pages are currently missing. Exact addon-number mapping is not asserted."
+    },
+    {
+      "field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:108263:1102608",
+          "selector": "Infobox Outfit / addons (empty)"
+        }
+      ],
+      "limitation": "Current Monk outfit infobox has no addon declaration. No explicit availability or acquisition proof was found; empty source field is not treated as absence."
+    },
+    {
+      "field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_account_eligibility",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:108263:1102608",
+          "selector": "Infobox Outfit / addons"
+        }
+      ],
+      "limitation": "No proven value in inspected sources."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+}
