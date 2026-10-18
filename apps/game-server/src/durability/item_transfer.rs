@@ -1496,8 +1496,13 @@ async fn check_transfer_capacity(
            UNION ALL \
            SELECT e.item_instance_id,e.world_id,c.path||e.item_instance_id, \
                   e.item_instance_id=ANY(c.path) \
-             FROM carried c JOIN game_item_container_entries e \
-               ON e.parent_item_instance_id=c.item_instance_id WHERE NOT c.cycle \
+             FROM carried c JOIN ( \
+                  SELECT item_instance_id,world_id,parent_item_instance_id \
+                    FROM game_item_container_entries \
+                  UNION ALL \
+                  SELECT item_instance_id,world_id,parent_item_instance_id \
+                    FROM game_item_nested_entries \
+                  ) e ON e.parent_item_instance_id=c.item_instance_id WHERE NOT c.cycle \
          ) \
          SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key, \
                 i.definition_revision_ref,i.quantity,i.lifecycle,i.world_id::text AS item_world, \
@@ -1560,7 +1565,7 @@ fn weight_refusal(error: ItemWeightRefused) -> ItemTransferRefusal {
 
 /// D1199 base capacity from the actual locked progression/build, never a client capacity.
 /// Called only after the native current item fence in admit.
-async fn read_derived_transfer_capacity_centi_oz(
+pub(super) async fn read_derived_transfer_capacity_centi_oz(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
 ) -> std::result::Result<u64, DurabilityError> {

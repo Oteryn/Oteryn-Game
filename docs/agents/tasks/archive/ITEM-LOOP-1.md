@@ -4,7 +4,7 @@
 task_id: ITEM-LOOP-1
 title: "ITEM-LOOP-1: equip, drop/pickup, containers, stacks, cap, starter pack on the bundle (skeleton)"
 mode: IMPLEMENT
-status: in_progress
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: skeleton/item-loop-1
@@ -18,7 +18,7 @@ registry: maybe
 owner: unassigned (builder)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/item_move.rs
@@ -27,6 +27,34 @@ owned_paths:
   - apps/game-server/src/durability/item_transfer.rs
   - apps/game-server/src/durability/ (new item-loop writers)
   - apps/game-server/tests/item_loop_*.rs (new)
+  # CP D1438 widens owned_paths: every ITEM-LOOP-1 child lands in PR #2190.
+  - apps/game-server/migrations/0113_equipment_swap.sql (provisional number, renumbered at the queue turn)
+  - apps/game-server/migrations/0128_item_loop_move.sql (provisional number, renumbered at the queue turn)
+  - apps/game-server/src/durability/reward_claim_mint.rs
+  - apps/game-server/src/durability/character_inbox_reward_claim_mint_tests.rs
+  - apps/game-server/src/durability/ground_cell_limit_tests.rs
+  - apps/game-server/src/durability/forge_tests.rs (merge of main #2146: the `weight` field of the facts fixture)
+  - apps/game-server/src/gameplay_transport/item_ref_admission.rs
+  - apps/game-server/src/gameplay_transport/item_ref_admission_tests.rs
+  - apps/game-server/tests/support/*_postgres_cases.rs and item_weight_lookup.rs (weighted-transfer fixtures)
+  - apps/game-server/src/durability/item_loop_move.rs
+  - apps/game-server/src/durability/starter_grant.rs
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/src/durability/character_equipment.rs
+  - apps/game-server/src/gameplay_transport/loop_move.rs
+  - apps/game-server/src/gameplay_transport/item_move_tests.rs
+  - apps/game-server/src/gameplay_transport/container_view_tests.rs
+  - apps/game-server/src/gameplay_transport/capabilities.rs
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
+  - apps/game-server/src/gameplay_transport/connection.rs
+  - apps/game-server/src/gameplay_transport/mod.rs
+  - apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs
+  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs
+  - apps/game-server/tests/character_authority_postgres.rs
+  - apps/game-server/tests/support/item_loop_postgres_cases.rs
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
+  - docs/agents/tasks/ITEM-LOOP-1.md -> docs/agents/tasks/archive/ITEM-LOOP-1.md
 slot_only_paths:
   - migration number (chain #1: ITEM-LOOP-1 -> DAWNPORT-1 -> LOOP-PROGRESS-1 -> DEATH-ML-LOSS-1)
   - connection.rs
@@ -42,7 +70,7 @@ depends_on:
   - "ITEM-USE-1c: MERGED #2082"
   - "ITEM-MOVE-2a: PARTIAL: EQUIP-WIRE-1 slice #2009; residue here"
   - "BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED: effective acceptance #2209 on main e2da9805"
-  - "MAP-PICKUP-1 (rows 62-63 base-map pickup): BLOCKING: not merged"
+  - "MAP-PICKUP-1 (base-map authored items): not required (CP D1438); drop/pickup here covers loop Ground items only"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -65,7 +93,7 @@ The item loop works end to end on the bundle World: equip/unequip, drop/pickup (
 | ITEM-USE-1c | MERGED #2082 |
 | ITEM-MOVE-2a | PARTIAL: EQUIP-WIRE-1 slice #2009; residue here |
 | BAGS0, ITEM_MOVE_WIRE1, STACK0, STARTER_BACKPACK0, B3 ACCEPTED | Effective acceptance #2209 on main e2da9805 |
-| MAP-PICKUP-1 (rows 62-63 base-map pickup) | BLOCKING: not merged |
+| MAP-PICKUP-1 (base-map authored items) | Not required (CP D1438): drop/pickup here covers loop Ground items only |
 
 **BLOCKING for integration:** MAP-PICKUP-1 (rows 62-63 base-map pickup), applicable child/source and slot gates. Acceptance #2209 resolves the historical CANDIDATE gate above; B3-3 still requires accepted item weights and the character capacity source. This batch prepares only a detached conditional weight planner and does not enable weight checks in existing writers.
 
@@ -79,6 +107,11 @@ The item loop works end to end on the bundle World: equip/unequip, drop/pickup (
 - `apps/game-server/tests/support/equipment_move_postgres_cases.rs` — existing registered owner cases
 - apps/game-server/src/durability/ (new item-loop writers)
 - apps/game-server/tests/item_loop_*.rs (new)
+- CP D1438 widening (the full list is in the YAML `owned_paths`): migration
+  `0128_item_loop_move.sql`, `durability/item_loop_move.rs`, `durability/starter_grant.rs`,
+  `gameplay_transport/loop_move.rs`, the dispatch wiring in `connection.rs` and `mod.rs`,
+  `capabilities.rs`, the three contract registries and the PostgreSQL cases
+  `tests/support/item_loop_postgres_cases.rs`.
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -104,17 +137,21 @@ migration+writer+durability; mint/burn+ledger for starter pack (STARTER-1 MINT).
 
 ## Acceptance criteria
 
-- [ ] Each child: RED then GREEN, PostgreSQL 17.6 durability tests, restart/replay.
-- [ ] Overweight refusal (B3-3) only after B3 acceptance.
+- [x] Each child: RED then GREEN, PostgreSQL 17.6 durability tests, restart/replay.
+- [x] Overweight refusal (B3-3) only after B3 acceptance.
 - [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
 
-- `cargo fmt --all --check`
-- `cargo clippy --locked -p oteryn-game-server --all-targets --quiet -- -D warnings` (and `-p protocol-oteryn` when the wire changes)
-- `cargo test --locked -p oteryn-game-server --quiet`; PostgreSQL 17.6 targets for durable state (`OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test --locked -p oteryn-game-server --test <target>`)
-- content: the loading package's tests and the path validator; `python tools/content-migration/regenerate_content.py` at the slot only
-- `python tools/agents/validate_governance.py`; `python -m unittest discover -s tools/agents/tests`
+Ran on Molehill-PC on the exact tree of the head, Rust 1.94.0; PG per D1329 through the unchanged `in-pg-netns.sh` against the shared PostgreSQL 17.6. Per D1445 only what the diff can break ran locally; CI runs the full lanes.
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -j 4 -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib -j 4 -- capabilities item_move container_view loop_move item_loop starter_grant item_transfer character_equipment kill_reward monk_save world_map_domain`: pass (167 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --test character_authority_postgres -j 4 -- item_loop`: pass (4 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
 
 ## Reference evidence
 
@@ -130,11 +167,11 @@ plan App. 7 ITEM-LOOP-1; Reference item move rules. Plan: `docs/architecture/rev
 ## Context checkpoint
 
 ```yaml
-last_progress: D1408 bounded checkpoint; main merged; B3-3 cap/weight and ITEM-MOVE-2a equip/unequip/swap land
-status: authoring
+last_progress: CP D1438 complete item loop; every child lands in #2190 and is wired into the live command 9 / USE dispatch
+status: completed
 branch: skeleton/item-loop-1
-blocker: rows 62-63 carved out to MAP-PICKUP-1 follow-up (D1408); rows 64/65/68 children need CP allocation or wider owned paths
-next_action: CP review of the bounded checkpoint head; CP allocates the carved-out children
+blocker: none
+next_action: CP review of the final head; migration 0128 renumbered at the queue turn
 ```
 
 ## Bounded B3-3 local preparation (2026-10-15)
@@ -697,6 +734,9 @@ open. The PR remains a draft.
 
 ## D1408 bounded checkpoint (2026-10-17)
 
+**Superseded by CP D1438** (see *CP D1438 complete item loop*): the carve-outs
+below are reversed and every child lands in this PR.
+
 CP decision D1408 splits this task. This PR lands a bounded checkpoint; the
 task stays open for the carved-out children.
 
@@ -733,3 +773,67 @@ task stays open for the carved-out children.
 The capacity tests stay in `tests/item_loop_capacity.rs` through a `#[path]`
 mount. An in-crate `#[cfg(test)]` module would also compile in every test crate
 that mounts `src/durability/mod.rs`, and those crates do not mount `content`.
+
+## CP D1438 complete item loop (2026-10-18)
+
+CP decision D1438 reverses the D1408 split: the owner rule is "merge only when
+the mechanic is complete and wired into the running game", so every child lands
+in PR #2190 and `owned_paths` widen to the files listed in the YAML header.
+
+**Lands in this PR (all on the live command 9 / USE / domain 14 / domain 17 path)**
+
+- ITEM-MOVE-2a residue: a main-backpack or nested entry moves to the main
+  backpack or to any container of the carried tree (`durability/item_loop_move.rs`,
+  one fenced receipt per CommandRef, replay-first).
+- BAGS-1: nested containers below the main backpack's direct entries; depth
+  <= 8, at most min(capacity, 20) entries per container, at most 500 items per
+  carried tree; cycles refused. Command type 21 observes a durable container
+  (capability 14).
+- ITEM-MOVE-2b: drop onto a reachable base-tile Ground cell (Chebyshev <= 1 on
+  the actor's floor) and pickup of a whole loop Ground item; the map view
+  (domain 17) shows loop Ground items over the bundle map.
+- STACK-1: a whole move tops up the newest compatible stack with room (a full
+  merge retires the source); a partial move splits a fresh stack.
+- B3-3 weight on pickup: carried graph plus incoming stack in centi-oz against
+  the capacity derived from vocation and level progression; unknown weight is
+  refused as `WeightUnknown`.
+- STARTER-1: first entry grants the starter template once per Character
+  (`durability/starter_grant.rs`, outcome MINTED or SKIPPED, replay writes
+  nothing). The template's backpack is `oteryn:item.tibia.i2854`
+  `definition-r1`: `content/items/definitions/items-16000-16499.json`
+  `records[494]`, presentation name `backpack`, container capacity 20,
+  physical weight 1800 (the plain backpack).
+- Capabilities 12 and 14 are offered only by a node serving a World booted
+  from a bundle (`BUNDLE_WORLD_OFFERED_CAPABILITIES`); a fixture World never
+  offers them. The registry `offer_gate` text says so.
+- Migration `0128_item_loop_move.sql` (additive; nested entries, move receipt
+  and lines, starter grants) is provisional and is renumbered at the queue
+  turn, as is `0113_equipment_swap.sql`.
+
+**Known limits, recorded as follow-ups**
+
+- The wire carries no stack counts: a client cannot ask for a partial move
+  (STACK-WIRE-1, protocol crate).
+- `Overweight`, `WeightUnknown` and `Rejected` all reach the wire as
+  `Rejected`; there is no distinct overweight result code yet.
+- No Ground merge: a dropped stack never merges into a Ground stack on the
+  same cell.
+- Base-map authored items (MAP-PICKUP-1) are not pickable; only loop Ground
+  items are.
+- #2187 (ADMIT-CAP-1) also edits `capabilities.rs`, `capabilities_tests.rs`,
+  `connection.rs`, `mod.rs` and the protocol and resource-limit registries.
+  Whichever PR merges second resolves the conflict in favour of the one
+  merged first.
+
+## Closeout
+
+- status: completed (pending CP review and squash merge)
+- pr: 2190
+- merge commit/result: squash merge of #2190
+- Delivered: the item loop above, wired into command 9 (move, drop, pickup),
+  USE of a container (domain 14) and the first-entry admission (starter grant).
+- Review state: no open Codex threads on the previous head; one Codex review
+  requested on the final head.
+- Follow-ups: STACK-WIRE-1 (stack counts on the wire), a distinct overweight
+  result code, Ground stack merge, MAP-PICKUP-1 base-map pickup, and the
+  migration renumbering at the queue turn.

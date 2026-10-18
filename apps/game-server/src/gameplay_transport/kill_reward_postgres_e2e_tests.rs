@@ -260,6 +260,7 @@ fn scenario() -> TestResult {
             premium_sessions: std::sync::Mutex::default(),
             fence_holders: Default::default(),
             spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
+            loop_ground: Default::default(),
         };
         {
             let runtime = owner.runtime.lock().await;

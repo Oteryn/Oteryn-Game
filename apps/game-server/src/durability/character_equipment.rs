@@ -1154,7 +1154,7 @@ async fn precheck_move(
             {
                 return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
             }
-            let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+            let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
                 .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
             if contents {
                 return Ok(Some(EquipmentMoveRefusal::SlotMismatch));

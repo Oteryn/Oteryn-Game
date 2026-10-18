@@ -240,6 +240,7 @@ impl Dependencies {
                 self.admitted.world_id,
                 self.admitted.channel_id,
             ),
+            loop_ground: Default::default(),
         }
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {
