@@ -914,7 +914,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "a725c2644e261e05150878bea14789782f19e5c4eff3b375e25b25ce4d65e0f8",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Munster%7CNecromancer%7CNightfiend%7CNomad+%28Basic%29%7COrc%7COrc+Berserker%7COrc+Leader%7COrc+Marauder%7COrc+Rider%7COrc+Shaman"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-final-raid-flags.json"
     },
     "wiki:8462:1191795": {
       "title": "Pirate Buccaneer",
@@ -1082,7 +1082,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "857d81259260897385a0f3c11a40792d1a4856043c75ec46b6135a8042c13c2a",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Orc+Spearman%7COrc+Warlord%7COrc+Warrior%7COrcsoberfest%7COrshabaal%7CPirate+Buccaneer%7CPirate+Corsair%7CPirate+Cutthroat%7CPirate+Marauder%7CPriestess"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-final-raid-flags.json"
     },
     "wiki:30534:1192198": {
       "title": "Zombie",
@@ -2126,7 +2126,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "9c1384f07aa3b1f34d274960eae3d0f2e4629671b496408c8249be37ae2be730",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&redirects=1&titles=Furious+Fire+Elemental%7CGCTS%7CHorse+%28Brown%29%7CHorse+%28Gray%29%7CHorse+%28Taupe%29%7CMonk+%28Creature%29%7CNightslayer%7CNomad+%28Basic%29"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-remaining-creature-gaps.json"
     },
     "wiki:59519:1192012": {
       "title": "Crystalcrusher",
@@ -2180,6 +2180,42 @@
       ],
       "response_sha256": "aaabc5b3785798511f4602faff3a84f831842a4c5823af14874260be6e598bcd",
       "qualification": "Secondary static creature-attribute cross-check, not proof of prey eligibility, raid membership or spawn counts."
+    },
+    "wiki:104492:1058810": {
+      "title": "Nimmersatt's Lair/Spoiler",
+      "url": "https://tibia.fandom.com/wiki/Nimmersatt%27s_Lair%2FSpoiler",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1058810",
+      "revid": 1058810,
+      "revision_timestamp": "2024-04-29T08:07:11Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "5d08daa5ff16d81b0a1a40be93e72c3bd45ee290de7a9919bbb9f41d29b542bb",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-nimmersatt.json"
+    },
+    "wiki:103960:1082105": {
+      "title": "Nimmersatt's Lair",
+      "url": "https://tibia.fandom.com/wiki/Nimmersatt%27s_Lair",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1082105",
+      "revid": 1082105,
+      "revision_timestamp": "2024-11-14T07:23:50Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "02f36169ebb5afcd3e38bff26f7fe65a530fa3b1e7812e7d215da3f73478ca04",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-remaining-creature-gaps.json"
+    },
+    "wiki:1252:1191781": {
+      "title": "Warlock",
+      "url": "https://tibia.fandom.com/wiki/Warlock",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1191781",
+      "revid": 1191781,
+      "revision_timestamp": "2026-06-25T06:54:13Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "445d638bb02551e9833f5667d0d374c6f614a513a9ae9713fb3258e8439305a0",
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-final-raid-flags.json"
     }
   }
 }

@@ -66,3 +66,7 @@ Task status `ready` refers only to the data/docs handoff. The PR remains draft; 
 All 122 actual raid descriptions remain covered. Supplemental structured evidence gives the explicit Necromancer waves (1, then 5, then 4 Liches), Draconia spatial group composition, five Ghostlands waves with two unannounced, and source-qualified Terramite counts. Spatial groups are not inferred to be temporal waves. Approximate counts remain approximate; undocumented exact spawn configurations and intervals remain held.
 
 This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.
+
+### Final source-gap sweep
+
+Linked Nimmersatt quest sources now establish Dragon Bride as the sole creature type and a source-stated six-month recurrence (exact dates unproven). Explicit isboss=no flags resolve the Monks and Warlocks source-listed creature set.

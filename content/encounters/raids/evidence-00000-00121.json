@@ -1460,17 +1460,19 @@
           "note": "Explicit subarea where present; otherwise page scope, not a coordinate."
         },
         "creatures": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": [
+            "Dragon Bride"
+          ],
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:20163:1107807",
-              "selector": "Nimmersat's Lair raid North of Carlin / full section"
+              "source": "wiki:104492:1058810",
+              "selector": "Introduction / the place only has Dragon Brides"
             }
           ],
-          "note": "No static CreatureList in this raid section."
+          "note": "The quest explicitly says only Dragon Brides inhabit the event; their Dragon/Dragon Lord/Frost Dragon visual forms are not separate creature identities. Exact headcount and boss flag remain unknown."
         },
         "broadcast_timeline": {
           "value": [
@@ -1517,17 +1519,20 @@
           "note": "No independently resolved boss identity; a heading or a strong creature is not sufficient for an exact boss binding."
         },
         "schedule": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "source_frequency": "occurs every 6 months",
+            "exact_calendar_dates": null
+          },
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:20163:1107807",
-              "selector": "Nimmersat's Lair raid North of Carlin / full section"
+              "source": "wiki:103960:1082105",
+              "selector": "Infobox Quest / time"
             }
           ],
-          "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+          "note": "Source-stated six-month recurrence; no exact calendar dates, durations or fixed number of seconds are inferred."
         },
         "historical_status": {
           "value": "SOURCE_LISTED",
@@ -2395,17 +2400,29 @@
           "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
         },
         "boss": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": [],
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:20157:1112936",
-              "selector": "Monks and Warlocks Raid / full section"
+              "source": "wiki:1244:1192356",
+              "selector": "Infobox Creature / isboss"
+            },
+            {
+              "source": "wiki:1245:1191780",
+              "selector": "Infobox Creature / isboss"
+            },
+            {
+              "source": "wiki:1246:1191786",
+              "selector": "Infobox Creature / isboss"
+            },
+            {
+              "source": "wiki:1252:1191781",
+              "selector": "Infobox Creature / isboss"
             }
           ],
-          "note": "No independently resolved boss identity; a heading or a strong creature is not sufficient for an exact boss binding."
+          "note": "Every explicitly listed creature has an explicit isboss=no flag, including the newly fetched Monk (Creature) page. No boss absence is inferred from a missing flag."
         },
         "schedule": {
           "value": null,
