@@ -1,0 +1,357 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "TRAINING-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "training.offline",
+      "facts": {
+        "statues": {
+          "value": [
+            "Magic Level + Shielding",
+            "Distance + Shielding",
+            "Sword + Shielding",
+            "Axe + Shielding",
+            "Club + Shielding",
+            "Fist + Shielding for Monks"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "activation": {
+          "value": "Use a statue to log off or select a training skill while sleeping in an owned bed.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "selector": "5.1.5"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "maximum_hours": {
+          "value": 12,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "delay_minutes": {
+          "value": 10,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "pool_regeneration": {
+          "value": "One second of pool per second online or offline without training; logging in and choosing a statue again is required after the pool expires.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Offline Training"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "free_account_caps": {
+          "value": {
+            "weapon_skills": 50,
+            "magic_level": 30
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Opening paragraph"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "exact_skill_rates": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59605:1101626",
+              "selector": "Mathematics"
+            }
+          ],
+          "note": "The source explicitly labels its efficiency rates observed and formulas estimated. These are not official or controlled vocation formulas."
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.training",
+      "facts": {
+        "charges": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 100,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.exercise",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 1000,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.durable",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 3600,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.charges.lasting",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "charge_interval_seconds": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "duration_seconds": {
+          "value": 28800,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs; Types of Weapons"
+            }
+          ],
+          "note": "charges * 2 seconds"
+        }
+      }
+    },
+    {
+      "key": "exercise.efficiency",
+      "facts": {
+        "melee_hits_per_charge": {
+          "value": 7.2,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Community rate without controlled/official evidence."
+        },
+        "mana_per_charge": {
+          "value": 600,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Types of Weapons"
+            }
+          ],
+          "note": "Community rate without controlled/official evidence."
+        },
+        "bow_rate": {
+          "value": null,
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Same current article says 3.6 hits per charge in introduction, 2.16 blood/4.32 miss later, and 2160 hits per 500-charge bow. These measures must not be collapsed into a single proven skill rate."
+        },
+        "stamina_use": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "Hunting stamina and offline training pool are distinct. No current controlled exercise-stamina consumption rule."
+        },
+        "expert_dummy_bonus_percent": {
+          "value": 10,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84906:1126820",
+              "selector": "Opening paragraphs"
+            }
+          ],
+          "note": "Wiki-only efficiency bonus; do not promote to a proven skill formula."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Item.ExerciseWeaponEvidence",
+  "record_count": 21,
+  "shard_size": 500,
+  "shards": [
+    "content/items/exercise-weapon-evidence/evidence-00000-00020.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS"
+}

@@ -1,0 +1,395 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "TRAINING-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i28552",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84892:1066091",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28553",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84895:1066086",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28554",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84896:1066088",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28555",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84897:1066087",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28556",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84898:1066089",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i28557",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:84899:1066092",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35279",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92768:1066098",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35280",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92769:1066093",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35281",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92770:1066095",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35282",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92771:1066094",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35283",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92772:1066096",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35284",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92773:1066099",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35285",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92774:1066105",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35286",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92775:1066100",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35287",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92776:1066102",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35288",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92777:1066101",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35289",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92778:1066103",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i35290",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:92779:1066106",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i44065",
+      "facts": {
+        "charges": {
+          "value": 500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:103807:1066090",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i44066",
+      "facts": {
+        "charges": {
+          "value": 1800,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:103808:1066097",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i44067",
+      "facts": {
+        "charges": {
+          "value": 14400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:103814:1066104",
+              "selector": "Infobox Object / charges"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    }
+  ],
+  "family": "Item.ExerciseWeaponEvidence",
+  "shard": {
+    "index": 0,
+    "start": 0,
+    "end": 20,
+    "count": 21
+  }
+}
