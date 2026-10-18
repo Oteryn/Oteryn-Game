@@ -18,6 +18,7 @@ fn item(key: &str) -> ItemDefinitionFacts {
             production_key: key.into(),
             revision_ref: "item-definition-1".into(),
         },
+        weight: None,
         stack: ItemStackClass::NonStackable,
         container_capacity: None,
         container_slot_equip_pattern: false,

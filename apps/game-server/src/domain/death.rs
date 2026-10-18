@@ -4,9 +4,92 @@
 //! The caller supplies only PvE deaths (D60). The Character transaction that commits this outcome
 //! and the DUR-03 item moves that follow it are separate children (DEATH-1b, DEATH-3).
 
+use crate::durability::character_build::{
+    BuildFormula, DurableBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL,
+    cumulative_progress, relevel,
+};
 use oteryn_simulation_determinism::{
     DecisionError, DecisionOccurrenceId, ExactI64, GameplayDecisionRoot, deterministic_decision_u64,
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeathBuildLossError {
+    InvalidExperienceLoss,
+    InvalidBuild,
+}
+
+/// SKILLS-0 §3.6 (accepted through ACCEPT-BATCH-2026-10-15 §6): each of the eight
+/// families loses `floor(cumulative_progress * experience_lost / experience_before)`.
+/// The caller supplies the actual capped XP loss and the current content formula;
+/// this calculation neither resolves current authority nor writes a receipt.
+/// Growth, saturation and re-levelling reuse the existing native build arithmetic.
+/// Vocation stays unchanged. An unchanged result requires NULL death-build fields.
+pub fn calculate_death_build_loss(
+    formula: &dyn BuildFormula,
+    before: &DurableBuildState,
+    experience_before: ExactI64,
+    experience_lost: ExactI64,
+) -> Result<DurableBuildState, DeathBuildLossError> {
+    let mut families = [(0, 0); 8];
+    families[0] = before.magic();
+    families[1..].copy_from_slice(&before.skills());
+    let families = calculate_death_build_family_loss(
+        families,
+        experience_before,
+        experience_lost,
+        |family, next| formula.required(before.vocation(), family, next),
+    )?;
+    let mut skills = [(0, 0); 7];
+    skills.copy_from_slice(&families[1..]);
+    DurableBuildState::new(before.vocation(), families[0], skills)
+        .map_err(|_| DeathBuildLossError::InvalidBuild)
+}
+
+/// Persistence-neutral value boundary of [`calculate_death_build_loss`]. Native
+/// writers compiled in an independent test crate use the same arithmetic without
+/// substituting a second copy of the durable Rust types for the library's types.
+pub fn calculate_death_build_family_loss(
+    mut families: [(u16, u64); 8],
+    experience_before: ExactI64,
+    experience_lost: ExactI64,
+    required: impl Fn(usize, u16) -> Option<u64>,
+) -> Result<[(u16, u64); 8], DeathBuildLossError> {
+    let experience = u64::try_from(experience_before.get())
+        .map_err(|_| DeathBuildLossError::InvalidExperienceLoss)?;
+    let lost = u64::try_from(experience_lost.get())
+        .map_err(|_| DeathBuildLossError::InvalidExperienceLoss)?;
+    if lost > experience {
+        return Err(DeathBuildLossError::InvalidExperienceLoss);
+    }
+    for (family, (level, progress)) in families.iter_mut().enumerate() {
+        let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
+        let required = |next| required(family, next);
+        // A missing requirement above the current level is the accepted ceiling,
+        // but an unreachable current level or already-paid next level is invalid.
+        if !(floor..=MAX_BUILD_LEVEL).contains(level)
+            || *progress > MAX_BUILD_PROGRESS
+            || !(floor.saturating_add(1)..=*level)
+                .all(|next| required(next).is_some_and(|value| value > 0))
+            || (*level < MAX_BUILD_LEVEL
+                && required(*level + 1).is_some_and(|value| value == 0 || *progress >= value))
+        {
+            return Err(DeathBuildLossError::InvalidBuild);
+        }
+        // Preserve exact values when no progress is taken, including states whose
+        // cumulative sum saturates. Zero XP has ratio zero, never division by zero.
+        if lost == 0 {
+            continue;
+        }
+        let total = cumulative_progress(*level, *progress, floor, required);
+        // Each operand is at most i64::MAX, so the product fits in u128.
+        let removed = u64::try_from(u128::from(total) * u128::from(lost) / u128::from(experience))
+            .map_err(|_| DeathBuildLossError::InvalidExperienceLoss)?;
+        if removed != 0 {
+            (*level, *progress) = relevel(total - removed, floor, required);
+        }
+    }
+    Ok(families)
+}
 
 /// Global has 7 regular blessings (tibia.com products 6-3.1); Twist of Fate is PvP-only.
 pub const MAX_REGULAR_BLESSINGS: u8 = 7;
@@ -250,6 +333,177 @@ mod tests {
     #![allow(clippy::expect_used)]
 
     use super::*;
+    use crate::durability::character_build::MAX_BUILD_PROGRESS;
+
+    // Deliberately small requirement oracles; these are arithmetic fixtures, not
+    // a content formula or a new source of vocation rates.
+    struct LossFormula(fn(usize, u16) -> Option<u64>);
+
+    impl BuildFormula for LossFormula {
+        fn required(&self, _vocation: &str, family: usize, level: u16) -> Option<u64> {
+            (self.0)(family, level)
+        }
+
+        fn digest(&self) -> [u8; 32] {
+            [0; 32]
+        }
+
+        fn content_revision(&self) -> &str {
+            "arithmetic-fixture"
+        }
+    }
+
+    fn loss_build(magic: (u16, u64), skills: [(u16, u64); 7]) -> DurableBuildState {
+        DurableBuildState::new("knight", magic, skills).expect("bounded arithmetic fixture")
+    }
+
+    fn build_loss(
+        formula: &dyn BuildFormula,
+        before: &DurableBuildState,
+        experience: i64,
+        lost: i64,
+    ) -> Result<DurableBuildState, DeathBuildLossError> {
+        calculate_death_build_loss(
+            formula,
+            before,
+            ExactI64::new(experience),
+            ExactI64::new(lost),
+        )
+    }
+
+    #[test]
+    fn build_loss_floors_each_family_and_relevels_with_its_own_requirements() {
+        let formula = LossFormula(|family, _| Some(100 * (family as u64 + 1)));
+        let before = loss_build((2, 50), [(12, 50); 7]);
+        let after = build_loss(&formula, &before, 3, 1).expect("valid capped loss");
+        assert_eq!(after.vocation(), "knight");
+        assert_eq!(after.magic(), (1, 67));
+        assert_eq!(
+            after.skills(),
+            [
+                (11, 100),
+                (11, 134),
+                (11, 167),
+                (11, 200),
+                (11, 234),
+                (11, 267),
+                (11, 300)
+            ]
+        );
+    }
+
+    #[test]
+    fn full_build_loss_stops_at_each_family_seed() {
+        let formula = LossFormula(|_, _| Some(100));
+        let before = loss_build((2, 50), [(12, 50); 7]);
+        let after = build_loss(&formula, &before, 40, 40).expect("full capped loss");
+        assert_eq!(after.magic(), (0, 0));
+        assert_eq!(after.skills(), [(10, 0); 7]);
+        assert_eq!(after.vocation(), before.vocation());
+        let seed = loss_build((0, 0), [(10, 0); 7]);
+        assert_eq!(build_loss(&formula, &seed, 40, 40), Ok(seed));
+    }
+
+    #[test]
+    fn zero_experience_and_rounded_zero_build_loss_preserve_exact_values() {
+        let formula = LossFormula(|_, _| Some(100));
+        let before = loss_build((0, 2), [(10, 2); 7]);
+        for (experience, lost) in [(0, 0), (100, 0), (3, 1)] {
+            assert_eq!(
+                build_loss(&formula, &before, experience, lost),
+                Ok(before.clone())
+            );
+        }
+    }
+
+    #[test]
+    fn build_loss_uses_the_actual_capped_death_experience() {
+        let mut death = input(&[], 0);
+        death.total_experience = ExactI64::new(40);
+        let death = calculate_pve_death(&death, &ROOT, occurrence(90)).expect("capped death");
+        assert_eq!(death.experience_lost.get(), 40);
+        let before = loss_build((0, 50), [(10, 50); 7]);
+        let after = calculate_death_build_loss(
+            &LossFormula(|_, _| Some(100)),
+            &before,
+            ExactI64::new(40),
+            death.experience_lost,
+        )
+        .expect("same loss ratio as the death");
+        assert_eq!(after.magic(), (0, 0));
+        assert_eq!(after.skills(), [(10, 0); 7]);
+    }
+
+    #[test]
+    fn build_loss_rejects_negative_or_uncapped_experience_loss() {
+        let formula = LossFormula(|_, _| Some(100));
+        let before = DurableBuildState::default();
+        for (experience, lost) in [(-1, 0), (1, -1), (0, 1), (1, 2)] {
+            assert_eq!(
+                build_loss(&formula, &before, experience, lost),
+                Err(DeathBuildLossError::InvalidExperienceLoss)
+            );
+        }
+    }
+
+    #[test]
+    fn build_loss_rejects_unreachable_or_unnormalized_builds() {
+        let before = loss_build((2, 50), [(12, 50); 7]);
+        for invalid_family in 0..8 {
+            // Each mutation targets one family of otherwise reachable build state.
+            struct MissingFamily(usize);
+            impl BuildFormula for MissingFamily {
+                fn required(&self, _: &str, family: usize, _: u16) -> Option<u64> {
+                    (family != self.0).then_some(100)
+                }
+                fn digest(&self) -> [u8; 32] {
+                    [0; 32]
+                }
+                fn content_revision(&self) -> &str {
+                    "arithmetic-fixture"
+                }
+            }
+            assert_eq!(
+                build_loss(&MissingFamily(invalid_family), &before, 10, 1),
+                Err(DeathBuildLossError::InvalidBuild)
+            );
+        }
+        for formula in [LossFormula(|_, _| Some(0)), LossFormula(|_, _| Some(50))] {
+            assert_eq!(
+                build_loss(&formula, &before, 10, 1),
+                Err(DeathBuildLossError::InvalidBuild)
+            );
+        }
+    }
+
+    #[test]
+    fn build_loss_preserves_saturated_progress_when_no_loss_is_taken() {
+        let formula = LossFormula(|_, _| Some(MAX_BUILD_PROGRESS - 1));
+        let before = loss_build((2, 0), [(12, 0); 7]);
+        assert_eq!(build_loss(&formula, &before, 100, 0), Ok(before.clone()));
+        let after = build_loss(&formula, &before, 2, 1).expect("saturated cumulative sum");
+        assert_eq!(after.magic(), (0, MAX_BUILD_PROGRESS / 2 + 1));
+        assert_eq!(after.skills(), [(10, MAX_BUILD_PROGRESS / 2 + 1); 7]);
+    }
+
+    #[test]
+    fn build_loss_handles_signed_storage_maxima_without_overflow() {
+        let formula = LossFormula(|_, _| Some(MAX_BUILD_PROGRESS));
+        let before = loss_build(
+            (0, MAX_BUILD_PROGRESS - 1),
+            [(10, MAX_BUILD_PROGRESS - 1); 7],
+        );
+        let after = build_loss(&formula, &before, i64::MAX, i64::MAX - 1)
+            .expect("exact product wider than u64");
+        assert_eq!(after.magic(), (0, 1));
+        assert_eq!(after.skills(), [(10, 1); 7]);
+        let ceiling = LossFormula(|_, level| (level < 12).then_some(100));
+        let before = loss_build((1, 50), [(11, MAX_BUILD_PROGRESS); 7]);
+        let after =
+            build_loss(&ceiling, &before, 1, 1).expect("unreachable next level is a ceiling");
+        assert_eq!(after.magic(), (0, 0));
+        assert_eq!(after.skills(), [(10, 0); 7]);
+    }
 
     const ROOT: GameplayDecisionRoot = GameplayDecisionRoot::from_bytes([7; 32]);
 

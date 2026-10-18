@@ -39,6 +39,8 @@ mod item_timed_postgres_cases;
 mod item_timed_state_postgres_cases;
 #[path = "support/postgres.rs"]
 mod postgres;
+#[path = "support/world_required_capabilities_postgres_cases.rs"]
+mod world_required_capabilities_postgres_cases;
 use sqlx::Connection;
 
 static PROCESS_ROOT_LEDGER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());

@@ -223,6 +223,16 @@ fn scenario() -> TestResult {
             evidence: &evidence,
             world_id: world,
             channel_id: channel,
+            // Gameplay-only fixture: it never admits through this owner, so the ADMIT0 binding
+            // declares nothing and only has to be a valid Channel boot binding.
+            required_capabilities: crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[],
+                crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+                1,
+                "policy-1",
+                crate::gameplay_transport::world_required_capabilities::offered_for_scope(false, None),
+            )
+            .expect("an empty declared set binds"),
             runtime: &runtime,
             movement_cells: room.movement_cells(),
             door: &door,
@@ -261,6 +271,7 @@ fn scenario() -> TestResult {
             fence_holders: Default::default(),
             spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
             reset_epoch: 0,
+            loop_ground: Default::default(),
         };
         {
             let runtime = owner.runtime.lock().await;
