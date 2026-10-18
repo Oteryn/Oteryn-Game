@@ -3083,6 +3083,8 @@ mod mail_postgres_cases;
 // NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
 #[path = "support/npc_trade_postgres_cases.rs"]
 mod npc_trade_postgres_cases;
+#[path = "support/npc_travel_postgres_cases.rs"]
+mod npc_travel_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.
