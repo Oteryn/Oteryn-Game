@@ -12,6 +12,8 @@
 // set_materialized_ago, equip_backpack, take, ...) lets the D3-6 decay cases
 // (`corpse_decay_postgres_cases.rs`) reuse them; behavior is unchanged.
 
+use crate::durability::item_weight_lookup::TEST_WEIGHTS;
+
 use crate::domain::CharacterId;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -53,6 +55,7 @@ pub(crate) fn typed(family: &str, key: &str, revision: &str) -> TypedDefinitionR
 
 fn corpse_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: None,
         definition: typed("ItemType", "fixture:corpse.rat", "corpse-r1"),
         stack: ItemStackClass::NonStackable,
         container_capacity: None,
@@ -63,6 +66,7 @@ fn corpse_facts() -> ItemDefinitionFacts {
 /// The loot entry definition `put_loot` forges.
 pub(crate) fn loot_facts() -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: Some(1),
         definition: typed("ItemType", "fixture:corpse-loot", "rev-1"),
         stack: ItemStackClass::NonStackable,
         container_capacity: None,
@@ -109,7 +113,7 @@ fn second_bootstrap_binding() -> Vec<u8> {
 }
 
 /// A second player in the same World and Channel: Character 61 (account 60)
-/// with an active GameSession 62, its admission guards and nothing else; the
+/// with progression state, an active GameSession 62 and its admission guards; the
 /// runtime-scope assignment and readiness are the harness's, shared.
 async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
     sqlx::query("INSERT INTO game_character_account_guards VALUES (encode($1,'hex')::uuid)")
@@ -124,6 +128,16 @@ async fn seed_second_character(pool: &sqlx::PgPool) -> TestResult {
     .bind(id(SECOND_CHARACTER).as_slice())
     .bind(id(SECOND_ACCOUNT).as_slice())
     .bind(id(WORLD).as_slice())
+    .execute(pool)
+    .await?;
+    // Match the first Character's native fixture progression. Incoming capacity
+    // reads this row after the Character root; a missing row is invalid state.
+    sqlx::query(
+        "INSERT INTO game_character_progression_state VALUES \
+         (encode($1,'hex')::uuid,1,50,1000,'profile-1','ruleset-1','content-1',\
+          'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+    )
+    .bind(id(SECOND_CHARACTER).as_slice())
     .execute(pool)
     .await?;
     // `open_character_authority` verifies Character integrity: every root needs
@@ -990,6 +1004,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                 &harness.node,
                 owner_fence,
                 take(SESSION, 2, item)?,
+                &TEST_WEIGHTS,
             )
             .await
             .map_err(debug)?;
@@ -1000,6 +1015,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                     &harness.node,
                     other_fence,
                     take(SECOND_SESSION, 2, item)?,
+                    &TEST_WEIGHTS,
                 )
                 .await,
             ItemTransferRefusal::CorpseExclusiveWindow,
@@ -1013,6 +1029,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                     &harness.node,
                     other_fence,
                     take(SECOND_SESSION, 2, item)?,
+                    &TEST_WEIGHTS,
                 )
                 .await
             {
@@ -1038,6 +1055,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                 &harness.node,
                 owner_fence,
                 &mut owner_candidate,
+                &TEST_WEIGHTS,
             ),
             second_root.commit_item_transfer(
                 &SpellLanePermit::of_fresh_scope((other_fence).runtime_scope)
@@ -1047,6 +1065,7 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
                 &harness.node,
                 other_fence,
                 &mut other_candidate,
+                &TEST_WEIGHTS,
             ),
         )
         .await;

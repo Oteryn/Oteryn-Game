@@ -45,6 +45,7 @@ pub(crate) mod ground_cell_limit;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_scope_handoff;
+pub(crate) mod item_capacity;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
@@ -58,6 +59,9 @@ pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
+#[cfg(test)]
+#[path = "../../tests/support/item_weight_lookup.rs"]
+pub mod item_weight_lookup;
 pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;

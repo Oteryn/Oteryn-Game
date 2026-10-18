@@ -526,6 +526,7 @@ fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
                 platinum: def(c.platinum),
                 crystal: def(c.crystal),
                 backpack: ItemDefinitionFacts {
+                    weight: None,
                     definition: def(c.backpack),
                     stack,
                     container_capacity: c.capacity,
@@ -2528,6 +2529,7 @@ mod tests {
             platinum: definition(Coin::Platinum.production_key()),
             crystal: definition(Coin::Crystal.production_key()),
             backpack: ItemDefinitionFacts {
+                weight: None,
                 definition: definition("oteryn:item.tibia.i2854"),
                 stack: ItemStackClass::NonStackable,
                 container_capacity: Some(20),
