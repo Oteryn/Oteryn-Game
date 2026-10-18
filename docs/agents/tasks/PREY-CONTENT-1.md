@@ -3,11 +3,11 @@
 ```yaml
 task_id: PREY-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/prey-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2239
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -22,6 +22,7 @@ owned_paths:
   - docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json
   - docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/index.json
   - docs/reference/content-prep/prey-content-1/service-apply-plan.json
+  - docs/reference/content-prep/prey-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -61,3 +62,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 ## Service placement constraint
 
 Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.
+
+## Reference delivery boundary
+
+All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

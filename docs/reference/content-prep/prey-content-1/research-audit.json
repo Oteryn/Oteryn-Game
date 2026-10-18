@@ -1,0 +1,203 @@
+{
+  "task": "PREY-CONTENT-1",
+  "review_date": "2026-10-18",
+  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
+  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "rulesets/progression/prey/reference-evidence.json": 41,
+    "rulesets/progression/prey/creature-eligibility.json": 649,
+    "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json": 5
+  },
+  "evidence_field_counts": {
+    "DERIVED": 1408,
+    "PROVEN": 683,
+    "CONFLICT": 6,
+    "UNKNOWN": 11
+  },
+  "unresolved_fields": [
+    {
+      "field_path": "rulesets/progression/prey/reference-evidence.json/records/40/facts/reroll_upgrade",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:79924:1168706",
+          "selector": "Conflicting statements identified in note"
+        },
+        {
+          "source": "official:manual:combat:2026-10-18",
+          "selector": "Conflicting statements identified in note"
+        }
+      ],
+      "limitation": "Current Wiki says wildcard always improves grade except max; official manual says value is at least current. Strict improvement and nondecrease are not equivalent."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:86349:1090711",
+          "selector": "Creatures that can be rolled for free/gold"
+        }
+      ],
+      "limitation": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:86349:1090711",
+          "selector": "Creatures that can be rolled for free/gold"
+        }
+      ],
+      "limitation": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:86349:1090711",
+          "selector": "Creatures that can be rolled for free/gold"
+        }
+      ],
+      "limitation": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:86349:1090711",
+          "selector": "Creatures that can be rolled for free/gold"
+        }
+      ],
+      "limitation": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
+      "candidate": null,
+      "status": "CONFLICT",
+      "sources": [
+        {
+          "source": "wiki:86349:1090711",
+          "selector": "Creatures that can be rolled for free/gold"
+        }
+      ],
+      "limitation": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Full existing 1863-record native creature index checked; no unique supported binding for Berrypest. Source eligibility is retained; no native identity invented."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Full existing 1863-record native creature index checked; no unique supported binding for Cake Golem. Source eligibility is retained; no native identity invented."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Full existing 1863-record native creature index checked; no unique supported binding for Elder Forest Fury. Source eligibility is retained; no native identity invented."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Full existing 1863-record native creature index checked; no unique supported binding for Furious Fire Elemental. Source eligibility is retained; no native identity invented."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Full existing 1863-record native creature index checked; no unique supported binding for Nightslayer. Source eligibility is retained; no native identity invented."
+    },
+    {
+      "field_path": "rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Full existing 1863-record native creature index checked; no unique supported binding for Undead Jester. Source eligibility is retained; no native identity invented."
+    },
+    {
+      "field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "No exact per-creature current XP reward formula qualified."
+    },
+    {
+      "field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "No exact per-creature current XP reward formula qualified."
+    },
+    {
+      "field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "No exact per-creature current XP reward formula qualified."
+    },
+    {
+      "field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "No exact per-creature current XP reward formula qualified."
+    },
+    {
+      "field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+      "candidate": {
+        "delivery_piecewise": [
+          {
+            "level_max": 82,
+            "experience": "25*L^2-75*L+100"
+          },
+          {
+            "level_min_exclusive": 82,
+            "level_max_exclusive": 1000,
+            "experience": "ROUND(1994.008*L)"
+          },
+          {
+            "level_min": 1000,
+            "experience": "2*L^2-6*L+8"
+          }
+        ],
+        "kill_task_caps": {
+          "beginner": 200000,
+          "adept": 800000,
+          "expert": 3000000,
+          "master": null
+        }
+      },
+      "status": "UNKNOWN",
+      "sources": [
+        {
+          "source": "wiki:109860:1187430",
+          "selector": "Weekly Task Rewards / Experience"
+        }
+      ],
+      "limitation": "Community XP reward formula is fully retained; exact rounding and gameplay formula require official or controlled qualification. Bounty task XP is a different reward and is not equated to this weekly formula."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+}

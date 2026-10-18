@@ -14,11 +14,11 @@
   "payloads": [
     {
       "path": "rulesets/progression/prey/reference-evidence.json",
-      "sha256": "e5a662b891c0f03cd00ca56c97b11112bee95fe6e14ab4c86aef94b4f0d1d41d"
+      "sha256": "87b6bfb99ed2e862d071f565dfa4be6a06b2d8b2ed931cc85b6425d6be2ce048"
     },
     {
       "path": "rulesets/progression/prey/creature-eligibility.json",
-      "sha256": "fc54d42971525881d00b0d2de79229f33548ef48c85681319d0f60f390ed7c08"
+      "sha256": "9dfa32646f17c94f6af45106840aee319b7661d3661ccefddca6fb7a31eb92f4"
     }
   ]
 }

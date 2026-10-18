@@ -47,6 +47,71 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "54bb6e7c8d0702f68ea0b0c90b8dbdcb652b86bbe4127cb449059800b6518661",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "repo:content/creatures/definitions/creatures-00000-00499.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-00000-00499.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "790bf6b275f52977026e243f3405a2ae7cd7d1c9fd6180d74670c73aff5a2234",
+      "fetched_at": "2026-10-18"
+    },
+    "repo:content/creatures/definitions/creatures-00500-00999.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-00500-00999.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "a450f654319808f39dac810b936c20154672a795549fdddb0e4aab5ac12ea246",
+      "fetched_at": "2026-10-18"
+    },
+    "repo:content/creatures/definitions/creatures-01000-01499.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-01000-01499.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "d39b9f8a970826f424332d99c1812befa972dd2ad552ade9e328e341eba7555a",
+      "fetched_at": "2026-10-18"
+    },
+    "repo:content/creatures/definitions/creatures-01500-01862.json": {
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/creatures/definitions/creatures-01500-01862.json",
+      "source_class": "NATIVE_IDENTITY_SNAPSHOT",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "6cc26f42b45a939f72198451e884f2062f746cab4e0d930ed8470dbadecd8461",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki-render:task-board:1187430:2026-10-18": {
+      "title": "Task Board rendered creature eligibility tables",
+      "url": "https://tibia.fandom.com/api.php?action=parse&page=Task%20Board&prop=text%7Crevid&format=json&formatversion=2",
+      "revid": 1187430,
+      "source_class": "COMMUNITY_WIKI_RENDERED_SNAPSHOT",
+      "fetched_at": "2026-10-18",
+      "rendered_html_sha256": "9d1f48c583b7cea5113cda4a6384918d591c841050abe19597cde43ec85139ab",
+      "continuity": "RENDERED_AT_FETCH_INCLUDES_UNPINNED_CATEGORY_TEMPLATE_DEPENDENCIES"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "tibiadata:v4:creature:rat:2026-10-18": {
+      "title": "TibiaData v4 creature: Rats",
+      "url": "https://api.tibiadata.com/v4/creature/rat",
+      "source_class": "TIBIADATA_V4_CROSSCHECK",
+      "fetched_at": "2026-10-18",
+      "api_timestamp": "2026-10-18T10:30:36Z",
+      "api_version": {
+        "version": 4,
+        "release": "4.10.0",
+        "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75"
+      },
+      "official_upstream_urls": [
+        "https://www.tibia.com/library/?subtopic=creatures&race=rat"
+      ],
+      "response_sha256": "aaabc5b3785798511f4602faff3a84f831842a4c5823af14874260be6e598bcd",
+      "qualification": "Secondary static creature-attribute cross-check, not proof of prey eligibility, raid membership or spawn counts."
     }
   }
 }
