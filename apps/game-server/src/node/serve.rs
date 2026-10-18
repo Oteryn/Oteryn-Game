@@ -2479,7 +2479,8 @@ async fn boot_and_serve(
     }
     // ADMIT0/D1081: validate the real scope offer before any readiness publication.
     // The generation is the operator assignment just resolved above, not config.
-    // D1083 supplies no FIELD number and keeps WORLD_INTERACTION's gate closed.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
     let required_capabilities =
         crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
             &config.readiness.required_gameplay_capabilities,

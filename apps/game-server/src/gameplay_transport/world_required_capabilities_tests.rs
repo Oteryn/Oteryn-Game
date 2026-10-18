@@ -392,12 +392,30 @@ fn real_scope_offer_enforces_the_registered_d1083_floor() {
         .unwrap_err(),
         BootCapabilityError::Unoffered(11)
     );
-    assert!(
-        build_registry()
-            .unwrap()
-            .rows
-            .iter()
-            .all(|row| row.name != "WORLD_SPATIAL_FIELDS")
+    // D1442: 29 MAP_STATE_V1 and 30 WORLD_SPATIAL_FIELDS are registered, require 6 and are
+    // offered by no scope, so neither joins the floor and declaring either fails boot closed.
+    let registry = build_registry().unwrap();
+    for (id, name) in [(29, "MAP_STATE_V1"), (30, "WORLD_SPATIAL_FIELDS")] {
+        let row = registry.rows.iter().find(|row| row.id == id).unwrap();
+        assert_eq!(
+            (row.name.as_str(), row.requires.as_slice()),
+            (name, &[6][..])
+        );
+        for offered in [
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            PRODUCTION_OFFERED_CAPABILITIES,
+        ] {
+            assert!(offered.iter().all(|node| node.id != id));
+            assert_eq!(
+                BoundRequiredCapabilities::for_channel_boot(&[id], scope, 7, "policy-7", offered)
+                    .unwrap_err(),
+                BootCapabilityError::Unoffered(id)
+            );
+        }
+    }
+    assert_eq!(
+        build_floor(&registry.rows, BUNDLE_WORLD_OFFERED_CAPABILITIES).unwrap(),
+        [18]
     );
     assert!(
         BoundRequiredCapabilities::for_channel_boot(
@@ -477,4 +495,82 @@ fn independently_current_binding_is_required_by_the_durable_callback() {
             Err(SessionCapabilityError::StaleScopeBinding)
         );
     }
+}
+
+#[test]
+fn a_floor_name_missing_from_the_build_registry_fails_boot_closed() {
+    let registry = build_registry().unwrap();
+    let offered = super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    for missing in MANDATORY_FLOOR_NAMES {
+        let rows: Vec<_> = registry
+            .rows
+            .iter()
+            .filter(|row| row.name != missing)
+            .map(|row| RegistryCapability {
+                id: row.id,
+                name: row.name.clone(),
+                requires: row.requires.clone(),
+            })
+            .collect();
+        assert_eq!(
+            build_floor(&rows, offered),
+            Err(BootCapabilityError::InvalidFloorList),
+            "{missing}"
+        );
+    }
+    // Every floor name is registered in this build: 18, 30 and 11.
+    let mut ids: Vec<_> = MANDATORY_FLOOR_NAMES
+        .iter()
+        .map(|name| {
+            registry
+                .rows
+                .iter()
+                .find(|row| row.name == *name)
+                .unwrap()
+                .id
+        })
+        .collect();
+    ids.sort_unstable();
+    assert_eq!(ids, [11, 18, 30]);
+}
+
+#[test]
+fn the_declared_limit_is_registered_and_applies_before_closure() {
+    let registry: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+    ))
+    .unwrap();
+    let rows: Vec<_> = registry["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|row| row["id"] == "ADMIT0-RL-01")
+        .collect();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(
+        rows[0]["hard_maximum"].as_u64(),
+        Some(MAX_DECLARED_REQUIRED_CAPABILITIES as u64)
+    );
+    assert_eq!(rows[0]["configurable_range"]["minimum"].as_u64(), Some(0));
+    assert_eq!(
+        rows[0]["configurable_range"]["maximum"].as_u64(),
+        Some(MAX_DECLARED_REQUIRED_CAPABILITIES as u64)
+    );
+    // The bound is on the declaration itself, before any registry lookup or closure.
+    let over_bound: Vec<u32> = (1..=17).collect();
+    assert_eq!(
+        validate_declared(&over_bound),
+        Err(BootCapabilityError::DeclaredLimitExceeded)
+    );
+}
+
+/// ADMIT0 §4 transfers: no wire satisfies the lifting conditions yet, so every transfer into a
+/// Channel scope stays refused. The only such transfer on main is the House exit (and its
+/// §4.3 fallback), refused before any handoff is prepared.
+#[test]
+fn every_transfer_into_a_channel_scope_stays_refused() {
+    assert!(matches!(
+        crate::house_scope::exit_into_channel(),
+        Err(crate::house_scope::HouseHandoffError::ExitNotAdmitted)
+    ));
 }

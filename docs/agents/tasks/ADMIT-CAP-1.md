@@ -18,7 +18,7 @@ registry: yes
 owner: Admission family I (user-delegated; CP D1081-D1084)
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-18
 candidate_state: AUTHORING
 execution_policy: continuous_progress
 owned_paths:
@@ -36,16 +36,27 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md (D1083 map successor correction only)
   - docs/agents/tasks/ADMIT-CAP-1.md (task packet/notes)
   - apps/game-server/src/gameplay_transport/map_bundle_domain_postgres_tests.rs (D1164: two callers and matching fixture binding only)
-slot_only_paths:
-  - capabilities.rs (required set)
-  - connection.rs admit path (`admit_frame` l.1101, `required_capability` l.363)
-  - PROTOCOL_OTERYN_V1_REGISTRY.json
+  # 2026-10-18 completion directive (lead; D1442): the A2 integration paths, hand-authored.
+  - apps/game-server/src/gameplay_transport/connection.rs (admit/resume refusal wiring only)
+  - apps/game-server/src/gameplay_transport/mod.rs (module, owner fields, fresh admit check only)
+  - apps/game-server/src/gameplay_transport/capabilities.rs (D1442 constants and gated rows only)
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs (ADMIT0 transport cases only)
+  - apps/game-server/src/gameplay_transport/qualification.rs (owner binding only)
+  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (owner binding only)
+  - apps/game-server/src/gameplay_transport/kill_reward_postgres_e2e_tests.rs (owner binding only)
+  - apps/game-server/tests/wp5_s3b_composition.rs (commit capability argument only)
+  - crates/protocol-oteryn/src/lib.rs (1117/1118 and capability rows 29/30)
+  - crates/protocol-oteryn/src/item_look_tests.rs (unregistered probe moved to 31)
+  - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (capabilities 29/30, errors 1117/1118)
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json (ADMIT0-RL-01)
+slot_only_paths: []
 public_contracts: []
 depends_on:
   - "ADMIT0 decision ACCEPTED: satisfied on main e2da9805 via ACCEPT-BATCH-2026-10-15"
   - "D1083 resolves map successor WORLD_MAP_VIEW_V1=18 and closed WORLD_INTERACTION_V1=11; FIELD has no ID and stays excluded until registered/offered"
   - "D1322: A2 slot after #2197 and #2181 merge, reconciled against then-current main and shared-file order below"
   - "D1324: canonical PostgreSQL aggregate mount after #2181 merges; CP alone writes the Cargo test=false entry"
+  - "D1442: MAP_STATE_V1=29 and WORLD_SPATIAL_FIELDS=30 take the next free registry numbers (next_unallocated 31)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -54,6 +65,70 @@ external_repositories: []
 Skeleton task record (parallel work model, owner-approved 2026-10-15). The builder fills `owned_paths`;
 `slot_only_paths` are touched only in the final commit at this PR's merge-queue turn, after merging main.
 CP and architect do the final review.
+
+## D1442 completion packet (2026-10-18)
+
+Lead directive: merge only when the mechanic is complete and wired into the running game.
+Every change below is hand-authored on the main merge `c3a1adab`; the frozen A2 bundle further
+down is recovery data only and was not applied.
+
+**D1442 registry numbers.** `PROTOCOL_OTERYN_V1_REGISTRY.json` gives `MAP_STATE_V1` 29 and
+`WORLD_SPATIAL_FIELDS` 30, the next free numbers (`next_unallocated` 29 -> 31). Both require
+`[6]` and are `offered: false`. 29 is registered only so the name is never reused: D1083 keeps
+18 `WORLD_MAP_VIEW_V1` as the accepted map successor, so 29 is never offered. 30 stays behind
+the FIELD-WIRE gate. `protocol-oteryn` `REGISTERED_CAPABILITY_IDS_V1` and
+`CAPABILITY_REQUIREMENTS_V1`, and `capabilities.rs` `GATED`, carry the same rows.
+
+**Build-floor adapter.** The minimal adapter that matches the existing admission code is
+name-based. The floor is every `MANDATORY_FLOOR_NAMES` row (`WORLD_MAP_VIEW_V1`,
+`WORLD_SPATIAL_FIELDS`, `WORLD_INTERACTION_V1`) that is registered AND offered by the scope's
+real offer (`offered_for_scope`). It fails closed in three ways:
+- A floor name missing from the build registry fails boot with `InvalidFloorList`.
+- A closed gate contributes nothing until its offer opens, and then it binds automatically.
+- Declaring an unoffered ID (11, 29, 30) fails boot with `Unoffered`.
+
+Today a bundle World's floor is `[18]` (closure 4, 6, 18). A fixture World's floor is empty.
+
+**Wiring (running game).**
+- **D1 configuration.** `readiness.required_gameplay_capabilities` is a required field. Boot
+  (`serve.rs`) binds it to scope, generation and policy against the real offer before readiness,
+  and any error is `BootError::Readiness`. `login_local` declares `[18]` for the bundle World.
+- **Fresh admission.** The pre-authentication `CAPABILITY_MISMATCH` singleton is removed.
+  `ComposedFreshAdmission::admit` checks after grant authentication and before capacity
+  reservation or commit, so no nonce is consumed. The refusal is
+  `ADMISSION_CAPABILITY_REQUIRED` (1116). The commit rechecks under its locks.
+- **Recovery (authenticated V2 same-session).** `resume.rs` refuses before PREPARE and before
+  the legacy release. `connection.rs` sends one `RECOVERY_CAPABILITY_REQUIRED` (1118,
+  `OPERATION_TERMINAL`, D1187).
+- **Reconnect.** `RECONNECT_CAPABILITY_REQUIRED` (1117) is registered in the registry and
+  `protocol-oteryn`. Main has no native fast/post-grace reconnect transport path; per D1084
+  lane G2 owns those callers and must use 1117.
+- **Transfer.** The only transfer into a Channel scope on main is the House exit (and its §4.3
+  fallback), refused with `ExitNotAdmitted`. The test
+  `every_transfer_into_a_channel_scope_stays_refused` pins it, as ADMIT0 §4 requires until the
+  lifting conditions hold.
+- **ADMIT0-RL-01.** Registered in `RESOURCE_LIMITS_REGISTRY.json` (hard maximum 16, applied
+  before closure).
+
+**Validation (2026-10-18, Molehill-PC, shared PG 17.6 via `in-pg-netns.sh`).**
+`cargo fmt --all --check` clean; `cargo clippy -p oteryn-game-server -p oteryn-protocol-oteryn
+--all-targets -- -D warnings` clean. Tests: `protocol-oteryn` 260/260; `--test
+world_required_capabilities_postgres` 1180/1180; `--test wp5_s3b_composition` 1161 passed, 1
+ignored (pre-existing); `--test durability_postgres` 1298/1298; `oteryn-game-server --lib`
+3489 passed, 3 failed in untouched files. The two `node::secure_file` cases fail only under the
+netns uid mapping and pass outside it (4/4); the `party::shared_xp_postgres_tests` block-limit
+case passed on its rerun (1/1). The
+`world_required_capabilities_postgres` wrapper now also mounts `bestiary_postgres_harness`,
+which main's durability NPC travel fixture needs.
+
+**Tests.**
+- **Wire handshake** (`capabilities_tests.rs`, through `admit_frame`). A bundle World refuses a
+  client lacking any closure member with exactly one 1116 and admits one that has them. A
+  recovery lacking one gets exactly one 1118 and resumes once it supports them.
+- **PostgreSQL** (`world_required_capabilities_postgres`). Fresh and V2 refusals leave the
+  nonce, claims, reservations and receipts unchanged, and then admit the same nonce.
+- **Not covered.** No in-process test drives `ComposedFreshAdmission::admit` itself, because it
+  needs a live mTLS Platform evidence producer. The `login_local` qualification covers that.
 
 ## D1322–D1324 checkpoint — partial / NOT_FULLY_QUALIFIED (2026-10-17)
 
@@ -252,7 +327,7 @@ Authoritative allocation: https://github.com/Oteryn/Oteryn-Game/pull/2131#issuec
 A1 authoring is allocated now. Node configuration/boot/effective-set hunks have one author.
 Do not merge main until #2208 is merged. A2 shared paths stay untouched until #2197 and #2163 are merged or closed.
 D1083 accepts WORLD_MAP_VIEW_V1=18 as the map successor; WORLD_INTERACTION_V1=11 requires [15,18] and remains unoffered.
-WORLD_SPATIAL_FIELDS has no number; no alias to 6 or unknown-name configuration is permitted.
+WORLD_SPATIAL_FIELDS has no number; no alias to 6 or unknown-name configuration is permitted. *(Superseded 2026-10-18 by CP D1442: it is 30, registered and unoffered.)*
 The floor and native-profile requirements are derived solely from registered, actually offered build/scope facts.
 ADMISSION_CAPABILITY_REQUIRED=1116 and FND-04 tables already exist; leave them unchanged.
 
@@ -281,9 +356,9 @@ wire+registry+capability+handler+tests in one PR.
 
 ## Acceptance criteria
 
-- [ ] A session missing any World-required capability is refused at admission with the ADMIT0 code; no partial admission.
-- [ ] Registry entries and `capabilities_tests.rs` agree.
-- [ ] Negative cases: each required capability missing alone.
+- [x] A session missing any World-required capability is refused at admission with the ADMIT0 code; no partial admission.
+- [x] Registry entries and `capabilities_tests.rs` agree.
+- [x] Negative cases: each required capability missing alone.
 - [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue').
 
 ## Validation
@@ -308,11 +383,11 @@ ADMIT0 §2-§4; plan App. 7 ADMIT; Reference login capability negotiation is not
 ## Context checkpoint
 
 ```yaml
-last_progress: D1081 real boot/config and locked fresh/V2 owners implemented locally; native tests authored, not executed
-status: authoring
+last_progress: D1442 completion packet hand-authored on the main merge; fmt, clippy -D warnings and the affected native/PostgreSQL lanes run on Molehill-PC (2026-10-18)
+status: validating
 branch: skeleton/admit-cap-1
-blocker: A2 shared slot/main merge and actual native Rust/PostgreSQL qualification remain pending
-next_action: independent source review; approved native full-context assembly and owner tests; final A2 protocol/registry integration at CP slot
+blocker: none in this packet; native fast/post-grace reconnect (1117 caller) is lane G2-owned per D1084
+next_action: CI and one Codex round on the pushed head; CP merge-queue turn
 ```
 
 ## Historical local authoring packet (2026-10-15, draft #2187)

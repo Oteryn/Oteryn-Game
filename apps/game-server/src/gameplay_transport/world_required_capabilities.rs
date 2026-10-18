@@ -10,7 +10,7 @@ use std::sync::{Arc, OnceLock};
 
 use crate::foundation::RuntimeScopeRefV1;
 
-/// ADMIT0-RL-01 (§3.1); registry/configuration integration remains slot-only.
+/// ADMIT0-RL-01 (§3.1), registered in RESOURCE_LIMITS_REGISTRY.json.
 pub(crate) const MAX_DECLARED_REQUIRED_CAPABILITIES: usize = 16;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,6 +119,45 @@ pub(crate) fn offered_for_scope(
     }
 }
 
+/// ADMIT0 §3.2 mandatory floor, by registry name. D1083: 18 WORLD_MAP_VIEW_V1 is the accepted
+/// map successor (29 MAP_STATE_V1 is registered by D1442 only so its name is never reused, and
+/// is never offered). D1442 registers 30 WORLD_SPATIAL_FIELDS.
+pub(crate) const MANDATORY_FLOOR_NAMES: [&str; 3] = [
+    "WORLD_MAP_VIEW_V1",
+    "WORLD_SPATIAL_FIELDS",
+    "WORLD_INTERACTION_V1",
+];
+
+fn offered_named(
+    rows: &[RegistryCapability],
+    offered: &[OfferedCapability],
+    names: &[&str],
+) -> Vec<u32> {
+    rows.iter()
+        .filter(|row| {
+            names.contains(&row.name.as_str()) && offered.iter().any(|node| node.id == row.id)
+        })
+        .map(|row| row.id)
+        .collect()
+}
+
+/// Build-floor adapter (D1442): the floor is every mandatory name that is registered AND
+/// offered by this scope's real offer, so a closed offer gate contributes nothing yet and its
+/// opening adds it automatically. A floor name absent from the build registry fails boot
+/// closed: the floor is never silently shrunk by a renamed or missing registry row.
+fn build_floor(
+    rows: &[RegistryCapability],
+    offered: &[OfferedCapability],
+) -> Result<Vec<u32>, BootCapabilityError> {
+    if MANDATORY_FLOOR_NAMES
+        .iter()
+        .any(|name| !rows.iter().any(|row| row.name == *name))
+    {
+        return Err(BootCapabilityError::InvalidFloorList);
+    }
+    Ok(offered_named(rows, offered, &MANDATORY_FLOOR_NAMES))
+}
+
 /// The immutable requirements actually validated before this generation publishes readiness.
 #[derive(Debug)]
 pub(crate) struct BoundRequiredCapabilities {
@@ -170,25 +209,12 @@ impl BoundRequiredCapabilities {
                 return Err(BootCapabilityError::OfferRegistryMismatch(node.id));
             }
         }
-        // D1083: 18 is the accepted map successor. FIELD-WIRE-1 has not registered
-        // WORLD_SPATIAL_FIELDS: it contributes nothing until registered AND offered.
-        let offered_named = |names: &[&str]| -> Vec<u32> {
-            registry
-                .rows
-                .iter()
-                .filter(|row| {
-                    names.contains(&row.name.as_str())
-                        && offered.iter().any(|node| node.id == row.id)
-                })
-                .map(|row| row.id)
-                .collect()
-        };
-        let floor = offered_named(&[
-            "WORLD_MAP_VIEW_V1",
-            "WORLD_SPATIAL_FIELDS",
-            "WORLD_INTERACTION_V1",
-        ]);
-        let native_profile = offered_named(&["CLIENT_INTEGRITY_V1", "INPUT_TELEMETRY_V1"]);
+        let floor = build_floor(&registry.rows, offered)?;
+        let native_profile = offered_named(
+            &registry.rows,
+            offered,
+            &["CLIENT_INTEGRITY_V1", "INPUT_TELEMETRY_V1"],
+        );
         let required = RequiredCapabilities::for_boot(declared, &registry.ids, offered, &floor)?;
         Ok(Arc::new(Self {
             required,

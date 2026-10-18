@@ -67,6 +67,8 @@ pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresent
 mod tcp_tls;
 mod world_map;
 pub(crate) mod world_object;
+/// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
+pub(crate) mod world_required_capabilities;
 pub(crate) mod world_spatial;
 
 use crate::achievement_catalogue::AccountAchievementsRequest;
@@ -410,6 +412,10 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// ADMIT0 §3.2: the requirements boot validated against this generation's real offer
+    /// before readiness. Immutable data; it never stands in for current scope authority.
+    pub(crate) required_capabilities:
+        std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     /// First-slice runtime authority remains crate-owned and cannot be supplied
     /// by a transport or client caller.
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
@@ -536,6 +542,7 @@ pub async fn serve_gameplay(
         evidence: owners.evidence,
         world_id: owners.world_id,
         channel_id: owners.channel_id,
+        required_capabilities: owners.required_capabilities,
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
         door: owners.door,
@@ -731,6 +738,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) evidence: &'a FreshEvidenceSource,
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
+    /// See [`GameplaySeamOwners::required_capabilities`].
+    pub(crate) required_capabilities:
+        std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
     pub(crate) movement_cells: &'a NativeEntryMovementCells,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
@@ -3081,20 +3091,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         npc_trade_command::npc_trade(self, actor, command, intent).await
     }
 
-    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
-    /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
-    /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
+    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18.
+    /// MAP-ITEM-REF-1: any other World offers capability 4 (once Part B sets its gate) only when
+    /// the active generation pins a non-empty Item key set. ADMIT0: boot validated
+    /// `required_capabilities` against this same offer; a bundle World's floor holds 18, so
+    /// admission requires it through the authenticated check in `admit`, not here.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        if self.bundle_map().is_some() {
-            capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
-        } else {
-            item_ref_admission::offered_capabilities(self.active_generation)
-        }
-    }
-
-    fn required_capability(&self) -> Option<u32> {
-        self.bundle_map()
-            .map(|_| oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+        world_required_capabilities::offered_for_scope(
+            self.bundle_map().is_some(),
+            self.active_generation,
+        )
     }
 
     /// MAP-CUTOVER-1b: domain 17 of a bundle World at the actor's current position. The position
@@ -4026,6 +4032,27 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             let transition =
                 FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
                     .map_err(|_| Rejected)?;
+            // ADMIT0 §4 / FND-04A §7 step 14: only now, after grant authentication and the
+            // safe ownership/world classification, may a missing requirement be revealed.
+            // The binding is this composition's independently resolved observation; the
+            // commit below rechecks it under the deciding transaction's locks. Refusing here
+            // precedes capacity reservation and the durable commit: no nonce is consumed.
+            let (scope, generation, policy) = composition.runtime_capability_binding();
+            if !self
+                .required_capabilities
+                .matches_current(scope, generation, policy)
+            {
+                return Err(Rejected);
+            }
+            let capabilities = self
+                .required_capabilities
+                .authenticate_support(attempt.supported_capabilities)
+                .map_err(|error| match error {
+                    world_required_capabilities::SessionCapabilityError::MissingSupport(_) => {
+                        Classified(N8::AdmissionCapabilityRequired)
+                    }
+                    _ => Unavailable,
+                })?;
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);
@@ -4042,6 +4069,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     self.holder,
                     &composition,
                     &request,
+                    capabilities.current_check(),
                 )
                 .await
             {

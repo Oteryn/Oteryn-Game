@@ -27,6 +27,10 @@ pub mod native_admission_source;
 )]
 #[path = "support/postgres.rs"]
 mod postgres;
+// The durability mount's NPC travel fixture needs the shared harness; it uses a subset.
+#[allow(dead_code)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
 
 // The shared PostgreSQL support module includes its existing reconnect contract tests.
 // Their root data builders are reused verbatim from durability_postgres.rs
