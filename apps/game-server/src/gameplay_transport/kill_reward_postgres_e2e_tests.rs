@@ -223,6 +223,17 @@ fn scenario() -> TestResult {
             evidence: &evidence,
             world_id: world,
             channel_id: channel,
+            // This kill-only fixture has no admission caller; its explicit empty-floor build
+            // does not stand in for the new capability-admission qualification.
+            required_capabilities:
+                crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                    &[],
+                    crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+                    1,
+                    "policy-1",
+                    crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+                )
+                .map_err(debug)?,
             runtime: &runtime,
             movement_cells: room.movement_cells(),
             door: &door,

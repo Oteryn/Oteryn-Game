@@ -42,8 +42,8 @@ REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56}
-SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1}
+SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank")}
 
 class ValidationError(RuntimeError):
     pass
@@ -455,8 +455,33 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     return sum(family_counts.values()), len(migrated_profiles), len(migrated_bindings)
 
 
+def validate_native_bank_admission(declarations: Any) -> None:
+    """One closed native admission; profession and arbitrary source callbacks grant no service."""
+    raw = (ROOT / "docs/agents/evidence/OTV2-20261015-npc-bank-services/native-bank-admission.json").read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == "fa6edea043748245172dfd2cc70efb859d60d15a6ffe03bc78524cec42fb91ee", "BANK_ADMISSION_PACKET_DIGEST")
+    packet = json.loads(raw)
+    require(packet["schema"] == "OTERYN_NATIVE_BANK_ADMISSION/v1"
+            and packet["scope"] == ["oteryn:npc.paulie"], "BANK_ADMISSION_PACKET_SCOPE")
+    bank = [row for row in declarations["records"] if row.get("kind") == "Service"
+            and ("bank" in row or row["identity"]["key"].startswith("oteryn:service.bank."))]
+    require(bank == [packet["service"]], "BANK_SERVICE_CLOSED_ADMISSION")
+    reference = {"family": "Service", **packet["service"]["identity"]}
+    expected_npc = json.loads(json.dumps(packet["before_npc"]))
+    expected_npc["services"].append(reference)
+    consumers = [row for row in declarations["records"] if row.get("kind") == "NPC"
+                 and reference in row.get("services", [])]
+    require(consumers == [expected_npc], "BANK_NPC_CLOSED_CONSUMER")
+    expected_dialogue = json.loads(json.dumps(packet["before_dialogue"]))
+    expected_dialogue["greet"] = packet["original_oteryn_authored_dialogue"]["greet"]
+    expected_dialogue["keywords"] = [packet["original_oteryn_authored_dialogue"]["bank_keyword"]]
+    dialogue = [row for row in declarations["records"] if row.get("kind") == "Dialogue"
+                and row["identity"] == expected_dialogue["identity"]]
+    require(dialogue == [expected_dialogue], "BANK_DIALOGUE_PRESERVES_ADMITTED_FACTS")
+
+
 def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, int]:
     """Round-trip the admitted NPC declarations (with source bindings) and Service declarations."""
+    validate_native_bank_admission(declarations)
     legacy_npcs = [row for row in declarations["records"] if row.get("kind") == "NPC"]
     require(len(legacy_npcs) == NPC_COUNT, "LEGACY_NPC_COUNT")
     legacy_npc_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "NPC"]
@@ -492,7 +517,7 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     migrated_service_count = 0
     for family, count in SERVICE_FAMILY_COUNTS.items():
         node, field = SERVICE_FAMILY_NODES[family]
-        stem = "trade" if family == "Service.Trade" else "travel"
+        stem = family.split(".", 1)[1].lower()
         legacy = [row for row in legacy_services
                   if field in row or row["identity"]["key"].startswith(f"oteryn:service.{stem}.")]
         require(len(legacy) == count, f"LEGACY_{family.upper()}_COUNT")

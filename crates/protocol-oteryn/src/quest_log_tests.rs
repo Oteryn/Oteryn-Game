@@ -400,7 +400,7 @@ fn registries_bind_capability_16_and_its_limits() {
     let capability = find("capabilities", CAPABILITY_QUEST_LOG_V1);
     assert_eq!(capability["name"], "QUEST_LOG_V1");
     assert_eq!(capability["offered"], false);
-    assert!(capability.get("requires").is_none());
+    assert_eq!(capability["requires"], serde_json::json!([]));
     assert_eq!(
         capability["command_types"],
         serde_json::json!([COMMAND_TYPE_QUEST_LOG_QUERY])

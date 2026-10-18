@@ -882,7 +882,9 @@ fn composition_flow(
                 now,
             )?;
             let store = FreshAdmissionStore::from_root(root.clone());
-            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request,
+                std::sync::Arc::new(move |current, generation, policy| current == scope
+                    && generation == first.assignment.ownership_generation && policy == "policy-s3b-1")).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 1 not committed: {other:?}").into()),
             }
@@ -962,7 +964,9 @@ fn composition_flow(
             // An owner change between composition and commit (a newer S2 floor)
             // is caught at the commit boundary: the prepared request is stale.
             ingest(&root, &node_b, descriptor, &accounts[1], &key_id).await?;
-            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request,
+                std::sync::Arc::new(move |current, generation, policy| current == scope
+                    && generation == second.assignment.ownership_generation && policy == "policy-s3b-1")).await? {
                 FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority => {}
                 other => return Err(format!("owner change not revalidated at commit: {other:?}").into()),
             }
@@ -979,7 +983,9 @@ fn composition_flow(
                 AuthenticatedTransportRefV1::decode(&[0x53; 16])?,
                 now,
             )?;
-            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request,
+                std::sync::Arc::new(move |current, generation, policy| current == scope
+                    && generation == second.assignment.ownership_generation && policy == "policy-s3b-1")).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 2 not committed: {other:?}").into()),
             }

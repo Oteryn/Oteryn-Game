@@ -356,6 +356,8 @@ fn enrich_provisional(draft: ProjectV2Draft) -> Result<ProjectV2Draft, Box<dyn s
     finish_provisional(draft)
 }
 
+#[path = "npc_materializer/bank_services.rs"]
+mod npc_bank_services;
 #[path = "npc_materializer/qualified_bounded.rs"]
 mod npc_qualified_bounded;
 #[path = "npc_materializer/qualified_nine.rs"]
@@ -654,6 +656,7 @@ fn promote_ranged_on_consumables_admitted(
     }
     let applied = apply_item_ranged_promotion_v1(&mut draft)?;
     draft.core.project_revision = RANGED_PROJECT_REVISION.to_owned();
+    npc_bank_services::apply(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
     let tree_sha256 = write_documents(output, &documents)?;
     println!(

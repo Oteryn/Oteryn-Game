@@ -61,6 +61,10 @@ pub enum FoundationProtocolError {
     AdmissionIncumbentProtected = 1114,
     AdmissionCapacityExceeded = 1115,
     AdmissionCapabilityRequired = 1116,
+    /// D1187 / ADMIT0: terminal for the reconnect candidate; current authority is preserved.
+    ReconnectCapabilityRequired = 1117,
+    /// D1187 / ADMIT0: terminal recovery refusal with no authority mutation.
+    RecoveryCapabilityRequired = 1118,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,7 +114,9 @@ impl FoundationProtocolError {
             | Self::SnapshotLimitExceeded
             | Self::BootstrapLimitExceeded
             | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
-            Self::PayloadLimitExceeded
+            Self::ReconnectCapabilityRequired
+            | Self::RecoveryCapabilityRequired
+            | Self::PayloadLimitExceeded
             | Self::TooManyOutstandingCommands
             | Self::AccountDataIntegrity => ProtocolDisposition::OperationTerminal,
             Self::CommandOutcomeExpired
@@ -168,13 +174,15 @@ impl Display for FoundationProtocolError {
             Self::AdmissionIncumbentProtected => "character is already active",
             Self::AdmissionCapacityExceeded => "admission capacity exceeded",
             Self::AdmissionCapabilityRequired => "a required capability is missing",
+            Self::ReconnectCapabilityRequired => "a required reconnect capability is missing",
+            Self::RecoveryCapabilityRequired => "a required recovery capability is missing",
         })
     }
 }
 
 impl Error for FoundationProtocolError {}
 
-/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); 1117..
+/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); 1119..
 /// 1199 are reserved for later admission rows and never reused.
 pub const ADMISSION_REFUSAL_CODES: std::ops::RangeInclusive<u32> = 1100..=1199;
 
@@ -205,7 +213,7 @@ const ADMISSION_REFUSAL_ROWS: [(
     FoundationProtocolError,
     AdmissionProgression,
     AdmissionPublicClass,
-); 17] = {
+); 19] = {
     use AdmissionProgression::{Retryable, SecurityTerminal, Terminal};
     use AdmissionPublicClass::{
         AuthenticationRequired, CharacterAlreadyActive, ClientUpdateRequired, RetryLogin,
@@ -279,6 +287,16 @@ const ADMISSION_REFUSAL_ROWS: [(
         ),
         (
             E::AdmissionCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::ReconnectCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::RecoveryCapabilityRequired,
             Terminal,
             ClientUpdateRequired,
         ),
@@ -4119,6 +4137,14 @@ mod tests {
                 E::AdmissionCapabilityRequired,
                 "ADMISSION_CAPABILITY_REQUIRED",
             ),
+            (
+                E::ReconnectCapabilityRequired,
+                "RECONNECT_CAPABILITY_REQUIRED",
+            ),
+            (
+                E::RecoveryCapabilityRequired,
+                "RECOVERY_CAPABILITY_REQUIRED",
+            ),
         ]
         .into_iter()
         .map(|(error, name)| {
@@ -4153,7 +4179,12 @@ mod tests {
                 assert_eq!(admission_refusal_class(code), None, "{code}");
                 continue;
             }
-            assert_eq!(entry["default_disposition"], "TRANSPORT_FATAL");
+            let expected_disposition = if matches!(code, 1117 | 1118) {
+                "OPERATION_TERMINAL"
+            } else {
+                "TRANSPORT_FATAL"
+            };
+            assert_eq!(entry["default_disposition"], expected_disposition);
             let (crate_progression, crate_class) =
                 admission_refusal_class(code).expect("admission code");
             let crate_progression = match crate_progression {
@@ -4176,7 +4207,7 @@ mod tests {
             );
             admission.push(code);
         }
-        assert_eq!(admission, (1100..=1116).collect::<Vec<_>>());
+        assert_eq!(admission, (1100..=1118).collect::<Vec<_>>());
         assert_eq!(
             ADMISSION_REFUSAL_ROWS
                 .map(|(error, _, _)| error.code())
@@ -4185,7 +4216,7 @@ mod tests {
         );
     }
 
-    /// The 17 rows of §1.2, written out once more so a table edit cannot pass unnoticed.
+    /// The 17 fresh rows and two D1187 recovery rows, written out once more so a table edit cannot pass unnoticed.
     #[test]
     fn admission_refusal_class_table() {
         use AdmissionProgression::{Retryable as R, SecurityTerminal as S, Terminal as T};
@@ -4208,12 +4239,14 @@ mod tests {
             (1114, T, CharacterAlreadyActive),
             (1115, R, TemporarilyUnavailable),
             (1116, T, ClientUpdateRequired),
+            (1117, T, ClientUpdateRequired),
+            (1118, T, ClientUpdateRequired),
         ];
         for (code, progression, class) in rows {
             assert_eq!(admission_refusal_class(code), Some((progression, class)));
         }
         // Unassigned in range: generic, no retry. Outside the range: not an admission refusal.
-        for code in [1117, 1150, 1199] {
+        for code in [1119, 1150, 1199] {
             assert_eq!(
                 admission_refusal_class(code),
                 Some((T, TemporarilyUnavailable))

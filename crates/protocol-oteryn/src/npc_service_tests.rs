@@ -681,7 +681,7 @@ fn the_registries_bind_the_npc_service_constants() {
     let capability = find("capabilities", CAPABILITY_NPC_SERVICE_V1);
     assert_eq!(capability["name"], "NPC_SERVICE_V1");
     assert_eq!(capability["offered"], false);
-    assert!(capability.get("requires").is_none());
+    assert_eq!(capability["requires"], serde_json::json!([]));
     assert!(
         capability["offer_gate"]
             .as_str()

@@ -129,6 +129,17 @@ impl ChatRuntime {
         }
     }
 
+    /// The actual chat owner's engagement generation. Display-only binding data; this does
+    /// not qualify a session, current NPC, range, Content or durable mutation authority.
+    pub(crate) fn npc_conversation_generation(&self, session: GameSessionId) -> Option<u64> {
+        self.sessions
+            .lock()
+            .ok()?
+            .get(&session)
+            .map(|entry| entry.joined)
+            .filter(|joined| *joined != 0)
+    }
+
     /// The NPC `session` is in conversation with.
     pub(crate) fn engaged(&self, session: GameSessionId) -> Option<ExactActorRef> {
         self.sessions

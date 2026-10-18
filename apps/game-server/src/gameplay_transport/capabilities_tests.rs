@@ -386,8 +386,10 @@ impl ConnectionIdentifiers for Identifiers {
 /// connection's own refusal is observable. `offered` is `None` for the production set.
 struct NegotiatingAuthority {
     offered: Option<&'static [OfferedCapability]>,
-    /// MAP-CUTOVER-1b: the capability a bundle World requires at fresh admission.
-    required: Option<u32>,
+    /// Immutable requirements for this transport fixture; production authenticates first.
+    required: Option<
+        std::sync::Arc<super::super::world_required_capabilities::BoundRequiredCapabilities>,
+    >,
     lost: Cell<Option<AdmittedSession>>,
     steps: Cell<u32>,
     /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
@@ -432,8 +434,17 @@ fn session(continuity: SessionContinuity) -> Result<AdmittedSession, Box<dyn Err
 impl FreshAdmissionAuthority for NegotiatingAuthority {
     async fn admit(
         &self,
-        _attempt: FreshAdmissionAttempt<'_>,
+        attempt: FreshAdmissionAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
+        // The fixture owner consumes the same forwarded support as the real authenticated
+        // owner. This verifies transport refusal/selection, not grant authentication.
+        if let Some(required) = &self.required {
+            required.authenticate_support(attempt.supported_capabilities).map_err(|error| match error {
+                super::super::world_required_capabilities::SessionCapabilityError::MissingSupport(_) =>
+                    AdmissionRefusal::Classified(FoundationProtocolError::AdmissionCapabilityRequired),
+                _ => AdmissionRefusal::Unavailable,
+            })?;
+        }
         session(SessionContinuity::FRESH).map_err(|_| AdmissionRefusal::Unavailable)
     }
 
@@ -446,10 +457,6 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         self.offered.unwrap_or(PRODUCTION_OFFERED_CAPABILITIES)
-    }
-
-    fn required_capability(&self) -> Option<u32> {
-        self.required
     }
 
     fn world_clock_utc_ms(&self) -> Option<u64> {
@@ -770,8 +777,21 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6(
 fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
     run(async {
         let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
-        authority.required = Some(CAPABILITY_WORLD_MAP_VIEW_V1);
-        let mismatch = encode_protocol_error(FoundationProtocolError::CapabilityMismatch, 0)?;
+        authority.required = Some(
+            super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[CAPABILITY_WORLD_MAP_VIEW_V1],
+                crate::foundation::RuntimeScopeRefV1::channel(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                1,
+                "capability-transport-fixture",
+                BUNDLE_WORLD_OFFERED_CAPABILITIES,
+            )
+            .map_err(|error| format!("capability fixture boot: {error:?}"))?,
+        );
+        let mismatch =
+            encode_protocol_error(FoundationProtocolError::AdmissionCapabilityRequired, 0)?;
         // 4, 6 and 18 select 18 with the rest of the production set the client supports.
         let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
         assert_eq!(accepted_selection(&frames)?, [4, 6, 13, 17, 18]);
@@ -782,14 +802,16 @@ fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn E
                 .selected_capabilities
                 .contains(CAPABILITY_WORLD_MAP_VIEW_V1)
         );
-        // A client without 18, and one selecting 18 without its required 4, are refused with
-        // exactly one CAPABILITY_MISMATCH before the owner admits anything.
-        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[]] {
+        // Missing 18 or either transitive requirement is refused by the fixture owner with
+        // exactly one ADMISSION_CAPABILITY_REQUIRED, preserving negotiated transport behavior.
+        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[4, 13, 17, 18], &[]] {
             let (refused, frames) = admit(&authority, &bootstrap(supported)?).await?;
             assert!(matches!(
                 refused,
                 Err(ConnectionEnd::AdmissionRefused(
-                    AdmissionRefusal::Classified(FoundationProtocolError::CapabilityMismatch)
+                    AdmissionRefusal::Classified(
+                        FoundationProtocolError::AdmissionCapabilityRequired
+                    )
                 ))
             ));
             assert_eq!(frames, std::slice::from_ref(&mismatch));
@@ -807,7 +829,7 @@ fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<()
             authority.offered_capabilities(),
             PRODUCTION_OFFERED_CAPABILITIES
         );
-        assert_eq!(authority.required_capability(), None);
+        assert!(authority.required.is_none());
         let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
         let selected = accepted_selection(&frames)?;
         assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));

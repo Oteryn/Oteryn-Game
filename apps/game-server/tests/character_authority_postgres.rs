@@ -3069,6 +3069,8 @@ mod item_fee_burn_postgres_cases;
 mod bank_postgres_cases;
 #[path = "support/gold_fee_bank_postgres_cases.rs"]
 mod gold_fee_bank_postgres_cases;
+#[path = "support/npc_econ_bank_postgres_cases.rs"]
+mod npc_econ_bank_postgres_cases;
 
 // NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
 #[path = "support/npc_trade_postgres_cases.rs"]
@@ -3396,3 +3398,8 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 mod character_proficiency_postgres_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
+
+#[path = "support/house_interior_postgres_cases.rs"]
+mod house_interior_postgres_cases;
+#[path = "support/house_test_fixture.rs"]
+mod house_test_fixture;

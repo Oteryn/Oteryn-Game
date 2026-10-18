@@ -45,6 +45,7 @@
     {
       "id": 1,
       "name": "BESTIARY_CHARMS_V1",
+      "requires": [],
       "owner_decision": "CHARM-5 wire, CHARM5_BESTIARY_CHARM_WIRE_PROPOSAL_V1 (Sol protocol acceptance #162 5907282001; CharmViewV1 bound and effect_active: Sol ruling #162 5913269950, owner D235)",
       "owner": "Character Authority",
       "command_types": [4, 5],
@@ -55,6 +56,7 @@
     {
       "id": 3,
       "name": "NPC_SERVICE_V1",
+      "requires": [],
       "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
       "owner": "current ChannelRuntime (the NPC conversations and trade windows of the channel)",
       "command_types": [7, 8],
@@ -76,6 +78,7 @@
     {
       "id": 6,
       "name": "WORLD_SPATIAL_ENTITIES",
+      "requires": [],
       "owner_decision": "MOVE-RL-11-VISIBILITY-V1 (D84-D87, #162 comment 5875312123), VIS-2",
       "owner": "current ChannelRuntime",
       "command_types": [],
@@ -86,6 +89,7 @@
     {
       "id": 7,
       "name": "CHAT_V1",
+      "requires": [],
       "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
       "owner": "World communication (current ChannelRuntime for local speech)",
       "command_types": [13],
@@ -96,6 +100,7 @@
     {
       "id": 8,
       "name": "ACHIEVEMENT_NOTICES_V1",
+      "requires": [],
       "owner_decision": "ACHIEVEMENT-0 ACHIEVEMENT0-GRANT-RUNTIME-V1 §5 (docs/architecture/reviews/OTERYN_GAME_ACHIEVEMENT0_ACHIEVEMENT_GRANT_RUNTIME_DECISION_2026-10-03.md, D292); numbers leased to ACH-NOTIFY-1 by the #1622 control plane",
       "owner": "Achievement domain module",
       "command_types": [],
@@ -106,6 +111,7 @@
     {
       "id": 10,
       "name": "ANALYSER_V1",
+      "requires": [],
       "owner_decision": "ANALYSERS-0 ANALYSERS0-HUNTING-ANALYSERS-V1 \u00a74 and \u00a76 (docs/architecture/reviews/OTERYN_GAME_ANALYSERS0_HUNTING_ANALYSERS_DECISION_2026-10-03.md, D298); numbers leased to ANALYSER-WIRE-1 by the #1622 control plane",
       "owner": "Analyser module (facts derived from committed combat, loot, item-use and progression outcomes)",
       "command_types": [],
@@ -140,6 +146,7 @@
     {
       "id": 13,
       "name": "PACED_MOVEMENT_V1",
+      "requires": [],
       "owner_decision": "CONDITIONS-0 §4.3 (docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md, as amended by CREATURE-AI-0 §5.1); number allocated by the #1622 control plane and registered by SPEED-1; result field step_wait_ms by the owner's acceptance of OQ-1 (CLIENT-COMPLETION R1), registered by STEP-PACE-WIRE-0",
       "owner": "current ChannelRuntime (Movement owner step pacing)",
       "command_types": [],
@@ -172,6 +179,7 @@
     {
       "id": 16,
       "name": "QUEST_LOG_V1",
+      "requires": [],
       "owner_decision": "QUEST-GATE-0 \u00a77 (docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane (D485) and registered by QUEST-LOG-WIRE-1",
       "owner": "current ChannelRuntime (the projection of the session's quest copy)",
       "command_types": [22],
@@ -913,7 +921,9 @@
     {"code": 1113, "name": "ADMISSION_ACCOUNT_CHARACTER_CONFLICT", "category": "CONFLICT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "SESSION_UNAVAILABLE"},
     {"code": 1114, "name": "ADMISSION_INCUMBENT_PROTECTED", "category": "CONFLICT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CHARACTER_ALREADY_ACTIVE"},
     {"code": 1115, "name": "ADMISSION_CAPACITY_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
-    {"code": 1116, "name": "ADMISSION_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"}
+    {"code": 1116, "name": "ADMISSION_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"},
+    {"code": 1117, "name": "RECONNECT_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "OPERATION_TERMINAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"},
+    {"code": 1118, "name": "RECOVERY_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "OPERATION_TERMINAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"}
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},

@@ -1589,6 +1589,20 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
+            required_capabilities:
+                super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                    &[],
+                    scope,
+                    scope_generation,
+                    "policy-s3b-1",
+                    super::world_required_capabilities::offered_for_scope(
+                        false,
+                        spell_input
+                            .as_ref()
+                            .and_then(|_| content_controller.active()),
+                    ),
+                )
+                .map_err(|error| format!("capability boot: {error:?}"))?,
             runtime: &runtime,
             movement_cells: &movement_cells,
             door: &door,

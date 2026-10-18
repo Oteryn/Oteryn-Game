@@ -203,6 +203,19 @@ impl Dependencies {
             evidence: &self.evidence,
             world_id: self.admitted.world_id,
             channel_id: self.admitted.channel_id,
+            // Explicit no-floor build for this save-only fixture; no admission is performed.
+            required_capabilities:
+                crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                    &[],
+                    crate::foundation::RuntimeScopeRefV1::channel(
+                        self.admitted.world_id,
+                        self.admitted.channel_id,
+                    ),
+                    1,
+                    "policy-1",
+                    crate::gameplay_transport::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+                )
+                .expect("explicit save fixture build"),
             runtime: &self.runtime,
             movement_cells: self.room.movement_cells(),
             door: &self.door,

@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[path = "../interaction/bank_npc.rs"]
+mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
@@ -25,6 +27,7 @@ mod last_position;
 mod logout;
 #[cfg(test)]
 mod logout_tests;
+pub(crate) mod world_required_capabilities;
 pub(crate) use last_position::LastPositionFlush;
 mod map_door;
 mod monk_save;
@@ -398,6 +401,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    pub(crate) required_capabilities: Arc<world_required_capabilities::BoundRequiredCapabilities>,
     /// First-slice runtime authority remains crate-owned and cannot be supplied
     /// by a transport or client caller.
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
@@ -524,6 +528,7 @@ pub async fn serve_gameplay(
         evidence: owners.evidence,
         world_id: owners.world_id,
         channel_id: owners.channel_id,
+        required_capabilities: owners.required_capabilities,
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
         door: owners.door,
@@ -703,6 +708,7 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) evidence: &'a FreshEvidenceSource,
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
+    pub(crate) required_capabilities: Arc<world_required_capabilities::BoundRequiredCapabilities>,
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
     pub(crate) movement_cells: &'a NativeEntryMovementCells,
     /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
@@ -3005,6 +3011,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if !self.chat.knows(session) {
             self.chat_open(session).await;
         }
+        self.npc_conversations.cancel_bank(session);
         self.chat.set_npc_service(session);
     }
 
@@ -3019,22 +3026,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .follow(&self.chat, &runtime, session, shown)
     }
 
+    async fn resume_npc_bank(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<npc_command::NpcTalkOutcome> {
+        npc_command::resume_bank_talk(self, actor, command).await
+    }
+
     async fn npc_talk(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        let runtime = self.runtime.lock().await;
-        self.npc_conversations.talk_in(
-            &self.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-            self.owner_now(),
-            item_ref_admission::pinned_index(&runtime, self.active_generation),
-        )
+        npc_command::npc_bank_talk(self, actor, command, intent).await
     }
 
     async fn npc_trade(
@@ -3050,16 +3056,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
     /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        if self.bundle_map().is_some() {
-            capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
-        } else {
-            item_ref_admission::offered_capabilities(self.active_generation)
-        }
-    }
-
-    fn required_capability(&self) -> Option<u32> {
-        self.bundle_map()
-            .map(|_| oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+        world_required_capabilities::offered_for_scope(
+            self.bundle_map().is_some(),
+            self.active_generation,
+        )
     }
 
     /// MAP-CUTOVER-1b: domain 17 of a bundle World at the actor's current position. The position
@@ -3976,6 +3976,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             let transition =
                 FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
                     .map_err(|_| Rejected)?;
+            // ADMIT0: authenticated grant, equal revisions and safe current ownership/world
+            // precede any capability-specific refusal. The deciding transaction repeats it.
+            let (scope, generation, policy) = composition.runtime_capability_binding();
+            if !self
+                .required_capabilities
+                .matches_current(scope, generation, policy)
+            {
+                return Err(Rejected);
+            }
+            let capabilities = self
+                .required_capabilities
+                .authenticate_support(attempt.supported_capabilities)
+                .map_err(|error| match error {
+                    world_required_capabilities::SessionCapabilityError::MissingSupport(_) => {
+                        Classified(N8::AdmissionCapabilityRequired)
+                    }
+                    _ => Unavailable,
+                })?;
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);
@@ -3992,6 +4010,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     self.holder,
                     &composition,
                     &request,
+                    capabilities.current_check(),
                 )
                 .await
             {
