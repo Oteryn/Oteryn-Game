@@ -8,7 +8,11 @@ pub mod currency;
 pub mod cyclopedia;
 pub mod death;
 pub mod equipment;
+pub mod forge;
 pub mod forge_dust;
+#[cfg(test)]
+#[path = "../durability/forge_tests.rs"]
+mod forge_tests;
 pub mod mail;
 pub mod market;
 pub mod premium;

@@ -3407,6 +3407,12 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
+// Private native LIMIT_RAISE continuation on the actual item-transfer harness.
+#[path = "support/forge_dust_limit_postgres_cases.rs"]
+mod forge_dust_limit_postgres_cases;
+// Private ITEM-FORGE-1 tier schema/read cases (formerly the standalone forge_postgres target).
+#[path = "support/forge_cases.rs"]
+mod forge_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 
