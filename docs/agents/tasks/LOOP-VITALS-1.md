@@ -112,11 +112,12 @@ DUR-02; CHAR-VITALS-0; Reference regen tables. Plan: `docs/architecture/reviews/
 ## Context checkpoint
 
 ```yaml
-last_progress: pure stamina settlement arithmetic prepared; source-bound tests 8/0 and Clippy pass
-status: authoring
+last_progress: CP bounded checkpoint; stamina arithmetic and Soul policy registered and tested
+status: bounded_checkpoint
 branch: skeleton/loop-vitals-1
-blocker: OFFLINE-1 current marker/lease and build integration; LOOP-PROGRESS-1; other full-task vitals work
-next_action: root reviews local packet; CP qualifies and wires the owning settlement transaction
+merge_authority: CP_ONLY
+blocker: none for the checkpoint; full task held on the 0094-class residual bundle, OFFLINE-1 settlement, Soul window writer
+next_action: CP reviews and merges the checkpoint; residual writer returns with its migration bundle
 ```
 
 ## Bounded authoring packet (2026-10-15, draft #2196)
@@ -290,3 +291,33 @@ No new columns, migrations, clock producer or fake current-authority facts are
 introduced. D1264 live stamina remains **NotWired x1**; no active hunting time is
 invented. This source proposal is **NFQ**, not complete-task or runtime delivery.
 Root reviews/publishes to the existing draft; worker made no commit or push.
+
+## CP bounded checkpoint — 2026-10-17
+
+MERGE_AUTHORITY: CP_ONLY. CP takeover (D1379) turns this draft into a mergeable bounded
+checkpoint so LOOP-TRAIN-1 (#2174) can import
+`durability::character_vitals_stamina::regenerate_stamina_minutes`. main is merged with a merge
+commit (no rebase).
+
+- `durability/mod.rs` (this task's slot path; LOOP-PROGRESS-1 and #2163 are merged) registers
+  `character_vitals_stamina` and `character_vitals_soul`. Nothing else shared is touched.
+- `character_vitals_stamina.rs` now only re-exports the shared OFFLINE-0 arithmetic leaf.
+- `character_vitals_soul.rs` is registered unchanged apart from its module comment; its five
+  inline tests now run.
+- The durable food/HP/mana residual writer (save/reconcile/read, receipt, history check) is taken
+  out of this checkpoint. It needs its migration, guards, integrity-history hook and death reset
+  as one bundle, so it could not compile against a schema or be PG-tested here. Its source is
+  retained at commit `9659ed8b4b0a9a5687e4ad5db1e9993f8da471f2`. When it returns it must carry
+  both Codex findings on `6fbd7025`: the fresh-admission read takes the current gameplay fence
+  and node proof, locks admission relations and validates session/lease/scope before returning
+  residuals (P1); stored food time is bounded exclusively below `FOOD_REGENERATION_CAP_MS`,
+  matching the runtime refusal of `total >= cap` (P2).
+
+Validation on the PC (shared PostgreSQL untouched; this checkpoint has no PG cases):
+`cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`;
+`cargo test --locked -p oteryn-game-server --lib character_vitals`;
+`cargo test --locked -p oteryn-game-server --test loop_vitals_stamina`. Results are in the PR
+status comment.
+
+Acceptance "regen survives restart" stays open: no durable residual, food ingress, Soul window
+or stamina settlement runtime is delivered by this checkpoint.

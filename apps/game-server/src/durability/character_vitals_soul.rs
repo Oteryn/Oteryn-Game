@@ -1,4 +1,4 @@
-//! Rebuilt Soul R5 policy proposal; deliberately unregistered (NFQ / NOT RUN).
+//! Soul R5 pure policy: cap, regeneration interval and the typed kill-receipt participant.
 //! D1251: cap reads the current PremiumGate; fast regeneration also needs stored promotion.
 //! The kill writer must create the participant from its actual applied XP inside its own
 //! fenced transaction. This pure proposal neither commits a receipt nor proves authority.
@@ -98,6 +98,16 @@ pub const fn soul_kill_participant(facts: AppliedKillSoulFacts) -> SoulKillRecei
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::premium::PremiumStatus;
+
+    // The public status owner's gate; integration test crates cannot reach `from_fence_read`.
+    fn gate(premium: bool) -> PremiumGate {
+        if premium {
+            PremiumStatus::Current.gate()
+        } else {
+            PremiumStatus::NotCurrent.gate()
+        }
+    }
 
     #[test]
     fn premium_alone_controls_cap_but_promotion_is_also_required_for_fast_regeneration() {
@@ -108,7 +118,7 @@ mod tests {
             (true, true, 200, 15),
         ] {
             assert_eq!(
-                soul_schedule(promoted, PremiumGate::from_fence_read(premium)),
+                soul_schedule(promoted, gate(premium)),
                 SoulSchedule {
                     maximum,
                     interval_seconds,
@@ -120,7 +130,7 @@ mod tests {
 
     #[test]
     fn premium_expiry_reverts_both_benefits_on_the_next_resolution() {
-        let open = soul_schedule(true, PremiumGate::from_fence_read(true));
+        let open = soul_schedule(true, gate(true));
         let expired = soul_schedule(true, PremiumGate::CLOSED);
         assert_eq!((open.maximum, open.interval_seconds), (200, 15));
         assert_eq!((expired.maximum, expired.interval_seconds), (100, 120));

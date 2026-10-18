@@ -34,6 +34,8 @@ pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
 pub mod character_stance;
+pub mod character_vitals_soul;
+pub mod character_vitals_stamina;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
