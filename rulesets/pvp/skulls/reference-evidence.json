@@ -1,0 +1,205 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SKULL-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "skull.white",
+      "facts": {
+        "rule": {
+          "value": "Attacking an unmarked character marks the attacker. White mark persists with linked logout block and is extended by further offenses.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "duration_seconds": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "Official notes do not give a numeric white-skull timer."
+        }
+      }
+    },
+    {
+      "key": "skull.red",
+      "facts": {
+        "duration_days": {
+          "value": 30,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "reset": {
+          "value": "New unjustified points reset to a fresh 30-day duration.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "thresholds": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "Official notes only give rule-of-thumb ranges: 3–5/24h, 5–9/7d, 10–19/30d. Exact frag-point thresholds and assist weights are not proven."
+        }
+      }
+    },
+    {
+      "key": "skull.black",
+      "facts": {
+        "duration_days": {
+          "value": 45,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "respawn_hp": {
+          "value": 40,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "respawn_mana": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "restrictions": {
+          "value": [
+            "cannot_attack_unmarked",
+            "no_red_fist_mode",
+            "full_equipment_loss"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "thresholds": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "Wiki 6/10/20 kill thresholds are not controlled evidence; official notes call these rule-of-thumb values."
+        }
+      }
+    },
+    {
+      "key": "skull.orange",
+      "facts": {
+        "duration_days": {
+          "value": 7,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "revenge": {
+          "value": "Private per-kill revenge mark, expires on revenge or after seven days; multiple unavenged kills keep it alive.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        }
+      }
+    },
+    {
+      "key": "skull.frag_windows",
+      "facts": {
+        "windows": {
+          "value": [
+            "24 hours",
+            "7 days",
+            "30 days"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.12.b"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "clock_boundaries": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "Rolling-vs-calendar accounting and exact reset/server-save boundaries require official or controlled evidence."
+        }
+      }
+    }
+  ]
+}
