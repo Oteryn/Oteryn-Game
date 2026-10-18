@@ -103,6 +103,12 @@ pub(crate) mod world_party;
     reason = "test crates mount durability without the node boot caller (D1416)"
 )]
 pub(crate) mod world_reset;
+// D1451: the operator `world-reset` command of `oteryn-game-ops` (through `node::serve`).
+#[allow(
+    dead_code,
+    reason = "test crates mount durability without the ops command caller (D1451)"
+)]
+pub(crate) mod world_reset_command;
 #[allow(
     dead_code,
     reason = "test crates mount durability without the node boot caller (D1416)"

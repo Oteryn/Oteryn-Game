@@ -77,8 +77,8 @@ merge_authority: CP_ONLY (builder never marks ready)
   - Only one Channel per node: a multi-Channel World waits as `NotCurrent`.
   - A crash-left reconnect session in state 1 or 2 blocks the cohort until it is released.
   - The reset owner login must also be granted EXECUTE use of `game_world_reset_publish`
-    through `oteryn_game_world_reset` (same D1447 deploy grant); no operator command calls
-    `publish_world_reset` yet (follow-up wiring, not in this packet).
+    through `oteryn_game_world_reset` (same D1447 deploy grant), and the ops config needs its
+    `[world_reset.database]` credential for `world-reset publish`.
   - `MAP01-RESET-RETIRE-MS` (600,000 ms) needs a real-data measurement.
 - D1451 (CP, option a; replaces the LOOP-GROUND-1 cross_domain_finding): source-map Item
   receipts are keyed by the active reset epoch. Migration `0123_native_map_item_reset_epoch.sql`
@@ -92,6 +92,28 @@ merge_authority: CP_ONLY (builder never marks ready)
   source Item in epoch 0, the reset retires it, the first initialization after activation
   mints it again under epoch 1, and the second boot replays it with no duplicate. The
   owned_paths widening below is approved under D1451.
+- D1451 operator wiring (CP: a mechanic is wired before merge). The chosen dispatch is
+  `oteryn-game-ops` (`src/bin/oteryn-game-ops.rs`, the existing operator/control command
+  dispatch), new command `world-reset`:
+  - `world-reset initialize --world <uuid> --calendar-revision <n>` records epoch 0 through
+    `initialize_world_reset_epoch` with the operator's control-plane login (`[database]`).
+  - `world-reset publish --world <uuid> --epoch <n> --calendar-revision <n>` calls
+    `publish_world_reset`, the only RETIRING publisher, with only the reset owner's login
+    (new optional `[world_reset.database]`; it must differ from the operator login).
+  - Like `projection resync`, each connects its one root before, and instead of, the
+    operator state. Bundle identity comes only from qualified content: the active room is
+    qualified as `content activate` does (`OTERYN_NATIVE_GAMEPLAY_MANIFEST`), the target as
+    boot recovery does (`OTERYN_WORLD_RESET_TARGET_MANIFEST`, else the active room). The map
+    revision is the qualified House catalogue's. The retirement binding is a domain-separated
+    SHA-256 of the whole target, so the identical re-run after an unknown outcome is the
+    replay (`replayed=true`); another cause is rejected. The node completes the reset at its
+    next boot (`recover_world_reset`).
+  - Parse and execution live in `durability/world_reset_command.rs`, with the
+    content-qualifying glue `node::serve::world_reset_command`, so the PG suite runs the same
+    dispatch. The PG case `reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_plus_one`
+    covers initialize → publish (RETIRING, replay, conflict) → boot reset run → source Item
+    reminted under epoch 1 → a stale publication is rejected. Bin unit tests pin which login
+    each command connects and that malformed commands connect none.
 - Codex P1 4307187662: boot reads the Target House catalogue from the operator-staged
   bundle `OTERYN_WORLD_RESET_TARGET_MANIFEST` (qualified before recovery; a refused
   manifest refuses readiness), and Active from the currently issued room. Once the
@@ -102,6 +124,17 @@ merge_authority: CP_ONLY (builder never marks ready)
   House preflight of the proposed target under the admission fence, and the SQL owner
   rechecks its House evidence before inserting the job and its Channel cohort in the same
   TX. Runtime and control keep SELECT only on jobs and scopes.
+- Codex P1 4307633900 (ADR-0021 §4.7 step 1): the committed RETIRING job is itself the
+  admission closure of its World. The 0096 trigger `game_world_reset_admission_closed`
+  (BEFORE INSERT on `game_durability_reconnect_sessions` and
+  `game_durability_reconnect_attempts`) refuses every new Game session, House entry session
+  and reconnect attempt of a World with a RETIRING job (OTR03) until activation. Publication
+  holds every admission relation EXCLUSIVE, so no admission straddles its commit, and the
+  closure needs no write to the runtime readiness guards, whose history stays owned by the
+  readiness publisher. The step-2 reassignment then closes those guards as before. The
+  publication PG case and the operator e2e case assert that admission is open before
+  publication and after any refused publication, closed once RETIRING commits, and open
+  again after activation.
 
 ## Current authoring checkpoint — D1260/D1269/D1270/D1272/D1283
 
@@ -257,6 +290,9 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/migrations/0123_native_map_item_reset_epoch.sql` (D1451; provisional number)
 - `apps/game-server/src/durability/native_map_items.rs` (D1451 reset-epoch receipt key)
 - `apps/game-server/src/spell/world_execution.rs` (D1451 active-epoch receipt lookup)
+- `apps/game-server/src/bin/oteryn-game-ops.rs` (D1451 `world-reset` operator command)
+- `apps/game-server/src/durability/world_reset_command.rs` (D1451 command parse and execution)
+- `apps/game-server/src/node/config.rs` (D1451 `[world_reset]` ops credential)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 

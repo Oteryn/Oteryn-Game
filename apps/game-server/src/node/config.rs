@@ -279,6 +279,17 @@ pub struct OpsConfig {
     pub projection: Option<ProjectionOpsConfig>,
     /// `public-projection resync`: absent, the command refuses.
     pub public_projection: Option<ProjectionOpsConfig>,
+    /// `world-reset publish`: absent, the command refuses.
+    pub world_reset: Option<WorldResetOpsConfig>,
+}
+
+/// The operator-only World reset publication (MAP-OVERLAY-1c D1451). Its database login is
+/// the reset owner's, a member of `oteryn_game_world_reset`, never the operator's
+/// control-plane login.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorldResetOpsConfig {
+    pub database: DatabaseConfig,
 }
 
 /// The operator-only projection resync (`oteryn-game-list-characters-for-account-v1`
@@ -725,6 +736,14 @@ impl OpsConfig {
             check_database(&public.database).map_err(|_| ConfigError {
                 key: "public_projection.database",
             })?;
+        }
+        if let Some(reset) = &config.world_reset {
+            check_database(&reset.database)
+                .ok()
+                .filter(|()| reset.database.username != config.database.username)
+                .ok_or(ConfigError {
+                    key: "world_reset.database",
+                })?;
         }
         Ok(config)
     }
@@ -1418,6 +1437,54 @@ root_ca_file = "/etc/oteryn/ops/db-ca.pem"
             assert_eq!(
                 OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
                 Some("public_projection.epoch_fence_file")
+            );
+        }
+        let reset = format!(
+            "{ops}{}",
+            r#"
+[world_reset.database]
+transport_ip = "127.0.0.1"
+port = 5432
+tls_server_name = "db.internal"
+database = "oteryn"
+username = "world_reset_owner"
+password_file = "/etc/oteryn/ops/world-reset-pg-password"
+root_ca_file = "/etc/oteryn/ops/db-ca.pem"
+"#
+        );
+        assert_eq!(
+            OpsConfig::parse(reset.as_bytes())
+                .expect("world reset")
+                .world_reset
+                .map(|reset| reset.database.username),
+            Some("world_reset_owner".to_owned())
+        );
+        assert!(
+            OpsConfig::parse(ops.as_bytes())
+                .expect("ops")
+                .world_reset
+                .is_none()
+        );
+        let operator = OpsConfig::parse(ops.as_bytes())
+            .expect("ops")
+            .database
+            .username;
+        let shared = format!("username = \"{operator}\"");
+        for (from, to) in [
+            (
+                "username = \"world_reset_owner\"",
+                "username = \"bad user\"",
+            ),
+            (
+                "/etc/oteryn/ops/world-reset-pg-password",
+                "world-reset-pg-password",
+            ),
+            ("username = \"world_reset_owner\"", shared.as_str()),
+        ] {
+            let changed = reset.replace(from, to);
+            assert_eq!(
+                OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
+                Some("world_reset.database")
             );
         }
         let root = ops.replace("service_uid = 990", "service_uid = 0");

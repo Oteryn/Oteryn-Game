@@ -147,6 +147,18 @@ BEGIN
  RETURN NULL;
 END $$;
 CREATE TRIGGER game_world_reset_receipt_revision AFTER INSERT ON game_item_decay_retire_receipts FOR EACH ROW WHEN (NEW.cause_kind='WORLD_RESET') EXECUTE FUNCTION game_world_reset_receipt_revision();
+-- ADR-0021 §4.7 step 1 (Codex P1 4307633900): the committed RETIRING record is itself the
+-- admission closure of every Channel of its World. Until activation no Game session and no
+-- reconnect attempt of that World can be created, whatever the readiness guards still say.
+-- Publication holds every admission relation EXCLUSIVE, so no admission straddles its commit.
+CREATE FUNCTION game_world_reset_admission_closed() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM game_world_reset_jobs WHERE world_id=NEW.world_id AND phase='RETIRING')
+ THEN RAISE EXCEPTION 'World reset is RETIRING: admission is closed' USING ERRCODE='OTR03'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_world_reset_admission_closed BEFORE INSERT ON game_durability_reconnect_sessions FOR EACH ROW EXECUTE FUNCTION game_world_reset_admission_closed();
+CREATE TRIGGER game_world_reset_admission_closed BEFORE INSERT ON game_durability_reconnect_attempts FOR EACH ROW EXECUTE FUNCTION game_world_reset_admission_closed();
 
 CREATE FUNCTION game_world_reset_cohort_current(w UUID,e NUMERIC,n UUID,r NUMERIC) RETURNS BOOLEAN
 LANGUAGE SQL SECURITY DEFINER AS $$
@@ -195,7 +207,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 DO $$ DECLARE f TEXT; BEGIN
- FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()'] LOOP
+ FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()','game_world_reset_admission_closed()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);
@@ -389,7 +401,8 @@ END $$;
 -- D1272 publication: the only writer of a RETIRING job and its Channel cohort. The reset
 -- owner's Rust preflight binds both House catalogues first; this owner rechecks that House
 -- evidence under the SHARE House locks, so a refused preflight leaves no job and closes no
--- admission. Same owner capability as activation: no Game group may hold it.
+-- admission. The committed job closes admission to the whole World in this same TX
+-- (game_world_reset_admission_closed). Same owner capability as activation: no Game group may hold it.
 CREATE FUNCTION game_world_reset_publish(w UUID,e NUMERIC,b BYTEA,tm TEXT,ts BYTEA,tc BYTEA,tf BYTEA,
  cp TEXT,cr NUMERIC,hk TEXT[],hp BYTEA[],hs TEXT[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$

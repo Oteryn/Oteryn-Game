@@ -1411,6 +1411,49 @@ async fn public_projection(
     resync_outcome(public_resync(&root, &family, raise, &mut fence).await)
 }
 
+/// `world-reset initialize|publish` (MAP-OVERLAY-1c D1451): the operator path of the World
+/// reset. `initialize` records epoch 0 with the operator's control-plane login; `publish`, the
+/// only RETIRING publisher, connects only the reset owner's login (`[world_reset]`). Like
+/// `projection resync`, each connects its one root before, and instead of, the operator's
+/// state: both inputs are derived from qualified content, so the identical re-run after an
+/// unknown outcome is the replay. The node completes a published reset at its next boot.
+async fn world_reset(
+    config: &OpsConfig,
+    mut arguments: Arguments,
+    connect: impl AsyncFn(&DatabaseConfig) -> Result<DurabilityRoot, Failure>,
+) -> Outcome {
+    use oteryn_game_server::node::serve::{
+        WorldResetCommand, WorldResetCommandFailure, world_reset_command,
+    };
+    let failure = |failure: WorldResetCommandFailure| match failure {
+        WorldResetCommandFailure::Usage(detail) => Failure::Usage(detail),
+        WorldResetCommandFailure::Input(detail) => Failure::Input(detail),
+        WorldResetCommandFailure::Rejected(detail) => Failure::Rejected(detail),
+        WorldResetCommandFailure::Unavailable(detail) => Failure::Unavailable(detail),
+        WorldResetCommandFailure::Ambiguous(detail) => Failure::Ambiguous(detail),
+    };
+    let command =
+        WorldResetCommand::parse(&arguments.words, &mut arguments.options).map_err(failure)?;
+    let database = if command.publishes() {
+        &config
+            .world_reset
+            .as_ref()
+            .ok_or(Failure::Usage(
+                "world-reset publish requires the [world_reset] section",
+            ))?
+            .database
+    } else {
+        &config.database
+    };
+    let root = connect(database).await?;
+    event(
+        &world_reset_command(&root, &command)
+            .await
+            .map_err(failure)?,
+    );
+    Ok(())
+}
+
 fn resync_outcome(result: Result<u64, oteryn_game_server::node::serve::ResyncError>) -> Outcome {
     use oteryn_game_server::node::serve::ResyncError;
     match result {
@@ -1475,6 +1518,9 @@ async fn dispatch(
     if arguments.words.first().map(String::as_str) == Some("public-projection") {
         return public_projection(&config, arguments, connect).await;
     }
+    if arguments.words.first().map(String::as_str) == Some("world-reset") {
+        return world_reset(&config, arguments, connect).await;
+    }
     let state = secure_file::open_state_directory(&config.operator.state_directory, invoking)
         .map_err(|error| Failure::Input(format!("operator.state_directory: {error:?}")))?;
     let root = connect(&config.database).await?;
@@ -1491,7 +1537,7 @@ async fn dispatch(
         Some("assignment") => assignment(&operator, arguments).await,
         Some("content") => content(&operator, arguments).await,
         _ => Err(Failure::Usage(
-            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection|public-projection ...",
+            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection|public-projection|world-reset ...",
         )),
     }
 }
@@ -1633,6 +1679,139 @@ mod tests {
         let other = words(&["content", "activate"]);
         let outcome = block_on(dispatch(config, 0, other, &connect));
         assert!(matches!(outcome, Err(Failure::Input(_))));
+        assert!(connected.borrow().is_empty());
+    }
+
+    #[test]
+    fn world_reset_connects_only_its_own_login_and_refuses_before_any() {
+        use oteryn_game_server::node::serve::WORLD_RESET_USAGE;
+        let database = |username: &str, password: &str| {
+            format!(
+                "transport_ip = \"127.0.0.1\"\nport = 5432\ntls_server_name = \"db.internal\"\n\
+                 database = \"oteryn\"\nusername = \"{username}\"\n\
+                 password_file = \"/etc/oteryn/ops/{password}\"\n\
+                 root_ca_file = \"/etc/oteryn/ops/db-ca.pem\"\n"
+            )
+        };
+        let base = format!(
+            "[operator]\nstate_directory = \"/nonexistent/oteryn-ops-state\"\nservice_uid = 990\n\
+             [database]\n{}\
+             [character]\nfence_directory = \"/var/lib/oteryn/character-fence\"\n\
+             authority_scope_id = \"character-primary\"\nissuer_identity = \"game-ops\"\n",
+            database("control_login", "pg-password"),
+        );
+        let with_reset = format!(
+            "{base}[world_reset.database]\n{}",
+            database("world_reset_owner", "world-reset-pg-password"),
+        );
+        let config = OpsConfig::parse(with_reset.as_bytes()).unwrap();
+        let without = OpsConfig::parse(base.as_bytes()).unwrap();
+        let block_on = |future| {
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap()
+                .block_on(future)
+        };
+        let connected = RefCell::new(Vec::new());
+        let connect = async |database: &DatabaseConfig| {
+            connected.borrow_mut().push(database.username.clone());
+            Err(Failure::Unavailable("not connected in tests".into()))
+        };
+        let words = |words: &[&str]| {
+            Arguments::parse(words.iter().map(|word| (*word).to_owned()).collect()).unwrap()
+        };
+        const WORLD: &str = "019a0000-0000-7000-8000-000000000001";
+        let publish = || {
+            words(&[
+                "world-reset",
+                "publish",
+                "--world",
+                WORLD,
+                "--epoch",
+                "0",
+                "--calendar-revision",
+                "1",
+            ])
+        };
+        // Publication opens only the reset owner's root: no operator root and no state.
+        let outcome = block_on(dispatch(config.clone(), 0, publish(), &connect));
+        assert!(
+            matches!(outcome, Err(Failure::Unavailable(_))),
+            "{outcome:?}"
+        );
+        assert_eq!(*connected.borrow(), ["world_reset_owner"]);
+        connected.borrow_mut().clear();
+        let initialize = words(&[
+            "world-reset",
+            "initialize",
+            "--world",
+            WORLD,
+            "--calendar-revision",
+            "1",
+        ]);
+        let outcome = block_on(dispatch(config.clone(), 0, initialize, &connect));
+        assert!(
+            matches!(outcome, Err(Failure::Unavailable(_))),
+            "{outcome:?}"
+        );
+        assert_eq!(*connected.borrow(), ["control_login"]);
+        connected.borrow_mut().clear();
+        // Without the reset owner's section, and for any malformed command, nothing connects.
+        let outcome = block_on(dispatch(without, 0, publish(), &connect));
+        assert!(
+            matches!(outcome, Err(Failure::Usage(text)) if text.contains("[world_reset]")),
+            "{outcome:?}"
+        );
+        for refused in [
+            &[
+                "world-reset",
+                "publish",
+                "--world",
+                WORLD,
+                "--calendar-revision",
+                "1",
+            ][..],
+            &[
+                "world-reset",
+                "activate",
+                "--world",
+                WORLD,
+                "--calendar-revision",
+                "1",
+            ][..],
+            &[
+                "world-reset",
+                "publish",
+                "--world",
+                WORLD,
+                "--epoch",
+                "0",
+                "--calendar-revision",
+                "1",
+                "--map-revision",
+                "map-2",
+            ][..],
+        ] {
+            let outcome = block_on(dispatch(config.clone(), 0, words(refused), &connect));
+            assert!(
+                matches!(outcome, Err(Failure::Usage(text)) if text == WORLD_RESET_USAGE),
+                "{refused:?}: {outcome:?}"
+            );
+        }
+        let outcome = block_on(dispatch(
+            config,
+            0,
+            words(&[
+                "world-reset",
+                "initialize",
+                "--world",
+                "x",
+                "--calendar-revision",
+                "1",
+            ]),
+            &connect,
+        ));
+        assert!(matches!(outcome, Err(Failure::Input(_))), "{outcome:?}");
         assert!(connected.borrow().is_empty());
     }
 

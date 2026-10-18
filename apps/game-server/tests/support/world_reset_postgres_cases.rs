@@ -1641,6 +1641,232 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
     })
 }
 
+/// One `oteryn-game-ops` argument vector after `--config`, split into command words and
+/// `--name value` options as the ops tool splits it, then parsed and run by the same
+/// `world-reset` dispatch. The fixture bundles stand in for the qualified rooms: the active
+/// one is the epoch-0 history's (map-1, 1/2/3), the target the qualified one (map-2, 4/5/6).
+async fn operator(
+    h: &Harness,
+    argv: &[&str],
+) -> Result<String, crate::durability::world_reset_command::WorldResetCommandFailure> {
+    use crate::durability::world_reset::WorldResetArtifactDigests;
+    use crate::durability::world_reset_command::{WorldResetCommand, execute_world_reset_command};
+    let mut words = Vec::new();
+    let mut options = std::collections::BTreeMap::new();
+    let mut argv = argv.iter();
+    while let Some(argument) = argv.next() {
+        match argument.strip_prefix("--") {
+            Some(name) => {
+                let value = argv
+                    .next()
+                    .map_or_else(String::new, |value| (*value).to_owned());
+                assert!(options.insert(name.to_owned(), value).is_none());
+            }
+            None => words.push((*argument).to_owned()),
+        }
+    }
+    let command = WorldResetCommand::parse(&words, &mut options)?;
+    execute_world_reset_command(
+        &h.root,
+        &command,
+        WorldResetArtifactDigests {
+            server: [1; 32],
+            client: [2; 32],
+            frame: [3; 32],
+        },
+        WorldResetArtifactDigests {
+            server: [4; 32],
+            client: [5; 32],
+            frame: [6; 32],
+        },
+        &ResetRunHouses,
+    )
+    .await
+}
+
+/// Codex P1 4307633900: the SQLSTATEs of a new Game session and a new reconnect attempt of
+/// the World. A committed RETIRING job refuses both before any column or key check (OTR03);
+/// without one the same inserts reach the NOT NULL checks (23502).
+async fn admission_codes(h: &Harness) -> TestResult<[Option<String>; 2]> {
+    let mut codes = [None, None];
+    let statements = [
+        "INSERT INTO game_durability_reconnect_sessions(world_id) VALUES(encode($1,'hex')::uuid)",
+        "INSERT INTO game_durability_reconnect_attempts(world_id) VALUES(encode($1,'hex')::uuid)",
+    ];
+    for (code, statement) in codes.iter_mut().zip(statements) {
+        let inserted = sqlx::query(statement)
+            .bind(id(WORLD).as_slice())
+            .execute(&h.pool)
+            .await;
+        *code = match inserted {
+            Err(sqlx::Error::Database(error)) => error.code().map(|code| code.into_owned()),
+            other => Some(format!("{other:?}")),
+        };
+    }
+    Ok(codes)
+}
+fn admission(code: &str) -> [Option<String>; 2] {
+    [Some(code.to_owned()), Some(code.to_owned())]
+}
+
+/// MAP-OVERLAY-1c D1451 operator path, end to end through the `world-reset` dispatch of
+/// `oteryn-game-ops`: `initialize` records epoch 0, `publish` closes admission with a
+/// RETIRING job of the qualified target (an identical re-run replays it, another cause is
+/// refused), the node's boot run retires the epoch-0 source Item and activates N+1, and the
+/// source map comes back once under epoch 1. A publication of the retired epoch is not current.
+#[test]
+fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_plus_one()
+-> TestResult {
+    use crate::durability::world_reset_command::{WorldResetCommandFailure, retirement_binding};
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        use crate::durability::world_reset::WorldResetActivationDisposition;
+        let h = Harness::create(admin, "house_interior_reset_ops").await?;
+        install(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let source = initialize_source_map(&h, &authority, 1).await?;
+        let source_item = source[0].item_instance_id;
+        assert_eq!(source_map_receipts(&h).await?, vec![("0".to_owned(), source_item.to_vec())]);
+        drop(authority);
+        let hex: String = id(WORLD).iter().map(|byte| format!("{byte:02x}")).collect();
+        let world_text = format!(
+            "{}-{}-{}-{}-{}",
+            &hex[0..8],
+            &hex[8..12],
+            &hex[12..16],
+            &hex[16..20],
+            &hex[20..32]
+        );
+        let publish = |revision: &'static str| {
+            [
+                "world-reset",
+                "publish",
+                "--world",
+                world_text.as_str(),
+                "--epoch",
+                "0",
+                "--calendar-revision",
+                revision,
+            ]
+        };
+        let jobs = || async {
+            let jobs: Vec<(String, String, Vec<u8>)> = sqlx::query_as("SELECT reset_epoch::text,phase,target_digest FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid ORDER BY reset_epoch")
+                .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
+            Ok::<_, Box<dyn std::error::Error>>(jobs)
+        };
+        // Before Control initializes the World there is no active epoch to publish from.
+        let early = operator(&h, &publish("1")).await;
+        assert!(matches!(early, Err(WorldResetCommandFailure::Rejected(_))), "{early:?}");
+        assert!(jobs().await?.is_empty());
+        assert_eq!(admission_codes(&h).await?, admission("23502"));
+        let initialize = [
+            "world-reset",
+            "initialize",
+            "--world",
+            world_text.as_str(),
+            "--calendar-revision",
+            "1",
+        ];
+        let line = operator(&h, &initialize).await.map_err(debug)?;
+        assert!(line.starts_with("world_reset=initialized reset_epoch=0 map_revision=map-1 "), "{line}");
+        // The initializer is exact: the identical re-run replays it.
+        assert_eq!(operator(&h, &initialize).await.map_err(debug)?, line);
+        assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, None);
+        // Publication: the job of exactly the qualified target and its binding; admission closes.
+        let line = operator(&h, &publish("1")).await.map_err(debug)?;
+        let binding = retirement_binding(&qualified_target()?);
+        let binding_hex: String = binding.iter().map(|byte| format!("{byte:02x}")).collect();
+        assert!(line.starts_with("world_reset=published phase=RETIRING reset_epoch=0 map_revision=map-2 "), "{line}");
+        assert!(line.ends_with(&format!("retirement_binding={binding_hex} replayed=false")), "{line}");
+        assert_eq!(jobs().await?, vec![("0".to_owned(), "RETIRING".to_owned(), binding.to_vec())]);
+        assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, Some(0));
+        assert_eq!(admission_codes(&h).await?, admission("OTR03"));
+        let mut tx = h.pool.begin().await?;
+        let job = crate::durability::world_reset::read_locked_world_reset_target(&mut tx, world()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(job, qualified_target()?);
+        tx.rollback().await?;
+        // The identical re-run (an unknown outcome's retry) replays; another cause is refused.
+        let replayed = operator(&h, &publish("1")).await.map_err(debug)?;
+        assert_eq!(replayed, line.replace("replayed=false", "replayed=true"));
+        let other = operator(&h, &publish("2")).await;
+        assert!(matches!(other, Err(WorldResetCommandFailure::Rejected(_))), "{other:?}");
+        assert_eq!(jobs().await?, vec![("0".to_owned(), "RETIRING".to_owned(), binding.to_vec())]);
+        // The node's boot run completes the published reset (as `recover_world_reset`).
+        replace(&h).await?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN(1,2)")
+            .bind(id(61).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
+        let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
+        let previous = previous.map(|value| value.parse::<u64>()).transpose()?;
+        let next = previous.unwrap_or(0).checked_add(1).ok_or("sequence exhausted")?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+            .bind(next.to_string()).bind(previous.map(|value| value.to_string()))
+            .bind([1_u8; 32].as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
+            .execute(&h.pool).await?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let binding = h
+            .root
+            .read_world_drain_binding(&h.node, world()?)
+            .await
+            .map_err(debug)?;
+        let run = h
+            .root
+            .run_world_reset(&authority, &h.node, world()?, &ResetRunHouses, &ResetRunDrain(binding))
+            .await
+            .map_err(debug)?
+            .ok_or("published RETIRING reset")?;
+        let WorldResetActivationDisposition::NewEpoch(activated) = &run.disposition else {
+            return Err("NewEpoch disposition".into());
+        };
+        assert_eq!((run.reset_epoch, activated.epoch, run.retired), (0, 1, 1));
+        assert_eq!(activated.map_revision, "map-2");
+        assert_eq!(h.item_state(source_item).await?, (0, 2));
+        assert_eq!(h.root.read_map_reset_epoch(world()?).await.map_err(debug)?, 1);
+        assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, None);
+        // Activation reopens admission.
+        assert_eq!(admission_codes(&h).await?, admission("23502"));
+        // N+1: the source map comes back once, as a new Item under epoch 1.
+        publish_ready(&h, 2).await?;
+        let restored = initialize_source_map(&h, &authority, 2).await?;
+        assert_eq!(restored.len(), 1);
+        assert!(!restored[0].replayed);
+        let restored_item = restored[0].item_instance_id;
+        assert_ne!(restored_item, source_item);
+        assert_eq!(
+            source_map_receipts(&h).await?,
+            vec![
+                ("0".to_owned(), source_item.to_vec()),
+                ("1".to_owned(), restored_item.to_vec()),
+            ]
+        );
+        assert_eq!(h.item_state(restored_item).await?, (1, 1));
+        assert!(h.on_ground(restored_item).await?);
+        // The retired epoch can no longer be published.
+        let stale = operator(&h, &publish("1")).await;
+        assert!(matches!(stale, Err(WorldResetCommandFailure::Rejected(_))), "{stale:?}");
+        assert_eq!(jobs().await?.len(), 1);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
 /// Codex P1 4307187667: a RETIRING job closes admission, so it is published only through the
 /// reset owner, after the House preflight of the proposed target and in the same TX. Runtime
 /// and control hold no publication path; an incompatible House catalogue, a direct owner call
@@ -1723,7 +1949,10 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
         tx.rollback().await?;
         assert_eq!(published().await?, (0, 0, None));
         assert_eq!(house_snapshot(&h, item).await?, house_before);
-        // The checked publisher commits the job and its Channel cohort together.
+        // Every refusal above left admission open.
+        assert_eq!(admission_codes(&h).await?, admission("23502"));
+        // The checked publisher commits the job and its Channel cohort together, and that
+        // committed job closes admission to the World (Codex P1 4307633900).
         h.root
             .publish_world_reset(&target, [7; 32], &ResetRunHouses)
             .await
@@ -1732,6 +1961,7 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
             .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(channels, 1);
         assert_eq!(published().await?, (1, channels, Some(0)));
+        assert_eq!(admission_codes(&h).await?, admission("OTR03"));
         let cohort: Vec<(Vec<u8>, String)> = sqlx::query_as("SELECT uuid_send(channel_id),predecessor_generation::text FROM game_world_reset_scopes WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
             .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
         assert_eq!(cohort, vec![(id(CHANNEL).to_vec(), "1".to_owned())]);

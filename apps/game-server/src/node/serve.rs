@@ -1577,6 +1577,55 @@ fn world_reset_target_tiles<'a>(
     staged.map_or(active, |target| target.room.movement_cells().house_tiles())
 }
 
+pub use crate::durability::world_reset_command::{
+    WORLD_RESET_USAGE, WorldResetCommand, WorldResetCommandFailure,
+};
+
+/// MAP-OVERLAY-1c (D1451) operator `world-reset` command of `oteryn-game-ops`: qualifies the
+/// active bundle exactly as `content activate` does (`OTERYN_NATIVE_GAMEPLAY_MANIFEST`) and the
+/// staged reset target exactly as the node's boot recovery does
+/// (`OTERYN_WORLD_RESET_TARGET_MANIFEST`, or the active bundle), then runs the command on
+/// `root`: the operator's root for `initialize`, the reset owner's for `publish`. Returns the
+/// operator event line.
+pub async fn world_reset_command(
+    root: &DurabilityRoot,
+    command: &WorldResetCommand,
+) -> Result<String, WorldResetCommandFailure> {
+    let world = command.world();
+    let active = match std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST") {
+        Some(path) => crate::content::qualify_native_entry_room_from_gameplay_manifest(
+            world,
+            Path::new(&path),
+        ),
+        None => crate::content::qualify_native_entry_room(world),
+    }
+    .map_err(|error| WorldResetCommandFailure::Input(format!("native entry room: {error}")))?;
+    let staged =
+        qualify_world_reset_target(world, std::env::var_os(WORLD_RESET_TARGET_MANIFEST))
+            .map_err(|_| WorldResetCommandFailure::Input("world reset target manifest".into()))?;
+    let digests = |room: &crate::content::QualifiedNativeEntryRoom| {
+        crate::durability::world_reset::WorldResetArtifactDigests {
+            server: room.compiled().server_digest(),
+            client: room.compiled().client_digest(),
+            frame: room.frame_binding().digest(),
+        }
+    };
+    let active_tiles = active.movement_cells().house_tiles();
+    let houses = QualifiedHouseResetSources::new(
+        active_tiles,
+        world_reset_target_tiles(active_tiles, staged.as_ref()),
+    );
+    let target = staged.as_ref().map_or(&active, |target| &target.room);
+    crate::durability::world_reset_command::execute_world_reset_command(
+        root,
+        command,
+        digests(&active),
+        digests(target),
+        &houses,
+    )
+    .await
+}
+
 /// The manifest qualifying the current issuance: the staged reset target once the issuance
 /// is its server artifact (the reset activated it), otherwise the operator's gameplay one.
 fn activation_manifest(
