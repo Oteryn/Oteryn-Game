@@ -129,3 +129,24 @@ pr: 2188
 blocker: null
 next_action: CP reviews CI and Codex on the new head, then decides on merge (CP_ONLY)
 ```
+
+## Completion + wiring (post-checkpoint)
+
+Evidence base: origin/main `c55a92b4`. The checkpoint was merged unfinished; nothing in the running game calls it. This PR carries the completion. It must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain referenced below: `apps/game-server/src/gameplay_transport/connection.rs` (command `else if` chain, about lines 2550-3017) and the `GATED` table in `apps/game-server/src/gameplay_transport/capabilities.rs` (highest capability id on main: 28). Wire modules live in `crates/protocol-oteryn/src/` (none exists for this mechanic).
+
+### Present on main (#2188)
+- Five pure predicates in `apps/game-server/src/security/` (`trust_policy.rs`: `check_record_advance`, `check_checkpoint_metadata`, `check_applied_head`, `backward_step_exceeds_skew`, `check_fetch_after_step`; `release_policy.rs`: `check_signer_role`, `check_release_key_membership`) with 17 unit tests. `lib.rs` declares the module as `#[cfg(test)] mod security;`, so the production binary does not contain it. Nothing calls it.
+- The card excludes: signature verification, trust store/fetch/clock latch (SEC-TRUST-1), signed artifact schema (SEC-REL-1), challenge/telemetry/detection children, and all runtime wiring.
+
+### Checklist
+- [ ] **Remove the test-only gate**: change `#[cfg(test)] mod security;` in `lib.rs` to `mod security;` only once a non-test caller exists (otherwise strict Clippy `dead_code` fails, per D1427).
+- [ ] **SEC-TRUST-1**: trust store (migration + durable checkpoint/head record), signed-bytes verification (crypto crate decision), fetch and clock latch using `check_fetch_after_step` / `backward_step_exceeds_skew`, restore bootstrap using `check_applied_head`.
+- [ ] **SEC-REL-1**: signed release manifest schema, key-id rules, decoder limits; enforce `check_signer_role` and `check_release_key_membership` on every verified object.
+- [ ] **Admission hookup**: evaluate client release/trust in fresh admission and V2 recovery (`apps/game-server/src/admission_evidence.rs`, `node/serve.rs` admission path, ADMIT-CAP-1 #2187) and the handshake/capability negotiation in `gameplay_transport/capabilities.rs`; refuse or flag untrusted builds with a typed error code.
+- [ ] **Protocol**: client-integrity capability and challenge/response or attestation messages in `crates/protocol-oteryn/src/` (new module, registry entries); client side in `apps/client`.
+- [ ] **Detection**: SEC-CHAL / SEC-TELEM / SEC-DETECT children (movement/step integrity in `gameplay_transport/actor_movement.rs` and `input_gate.rs`, telemetry per DATA-PRIVACY-01), GM-1 #2181 staff audit linkage; mode starts REPORT_ONLY.
+- [ ] **Config**: node config switches (`node/config.rs`) for report-only vs enforce, trust root provisioning, operator docs.
+- [ ] **Tests**: keep the 17 unit tests; add durable tests for trust-store restart; **end-to-end through the real session handshake/`connection.rs` dispatch**: valid build admitted, revoked/unsigned/wrong-role build refused or reported, clock step backward handled; no player-visible regression in report-only mode.
+
+### Blockers and dependencies
+- SEC-TRUST-1 and SEC-REL-1 owners are not allocated (D1326); RELEASE-MANIFEST-3; ADMIT-CAP-1 #2187; DATA-PRIVACY-01; GM-1 #2181. Each child needs CP allocation before code starts.
