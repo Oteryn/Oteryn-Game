@@ -19,7 +19,7 @@ use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_highs
 use crate::durability::highscore_snapshot::{
     AchievementPoints, CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS, CutLimits, FILTERS,
     SnapshotCatalogues, SnapshotError, SnapshotPage, SnapshotRow, activated_charm_points,
-    begin_projection, job, publish_in_transaction, read_source, served_categories,
+    begin_projection, job, publish_in_transaction, read_source_within, served_categories,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, FoundationProtocolError, WorldId};
@@ -381,9 +381,21 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
             Instant::now() + std::time::Duration::from_secs(2),
         )
         .await?;
-        assert_eq!(read_source(&mut tx, world()).await.map_err(debug)?.len(), 1);
+        assert_eq!(
+            read_source_within(&mut tx, world(), CutLimits::REGISTERED)
+                .await
+                .map_err(debug)?
+                .len(),
+            1
+        );
         dataset(h, 100, 1, "paladin", 1000, world()).await?;
-        assert_eq!(read_source(&mut tx, world()).await.map_err(debug)?.len(), 1);
+        assert_eq!(
+            read_source_within(&mut tx, world(), CutLimits::REGISTERED)
+                .await
+                .map_err(debug)?
+                .len(),
+            1
+        );
         tx.rollback().await?;
         h.root
             .publish_highscore_world(world())

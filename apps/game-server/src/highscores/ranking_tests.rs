@@ -3,6 +3,17 @@
 use crate::durability::highscore_snapshot::ranking::*;
 use crate::foundation::CharacterId;
 
+/// One filter's list, as the cut takes it from [`ranked_lists`].
+fn ranked_list<'a, Value: Ord>(
+    rows: &'a [RankingRow<'a, Value>],
+    vocation_filter: Option<&str>,
+) -> Result<Vec<RankedRow<'a, Value>>, RankingError> {
+    Ok(ranked_lists(rows, &[vocation_filter])?
+        .into_iter()
+        .next()
+        .unwrap_or_default())
+}
+
 fn character(number: u32) -> CharacterId {
     let mut bytes = [0; 16];
     bytes[..4].copy_from_slice(&number.to_be_bytes());

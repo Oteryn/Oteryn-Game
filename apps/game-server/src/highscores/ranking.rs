@@ -39,22 +39,9 @@ pub enum RankingError {
 /// `None` selects all rows; a filter must be a base vocation key, not a promotion. Supply the
 /// entire eligible cut, not a previous capped list: ranks and filtered membership need every row.
 /// Equal values alone share rank; name/identity only order their positions. No source is mutated.
-#[allow(
-    dead_code,
-    reason = "the cut ranks every filter at once with `ranked_lists`; tests check one filter"
-)]
-pub fn ranked_list<'a, Value: Ord>(
-    rows: &'a [RankingRow<'a, Value>],
-    vocation_filter: Option<&str>,
-) -> Result<Vec<RankedRow<'a, Value>>, RankingError> {
-    Ok(ranked_lists(rows, &[vocation_filter])?
-        .into_iter()
-        .next()
-        .unwrap_or_default())
-}
-
-/// [`ranked_list`] for every filter of `vocation_filters` from one sort of the cut: the list of
-/// each filter, in the given order, is exactly that filter's [`ranked_list`]. The pass stops once
+///
+/// The cut sorts once for every filter of `vocation_filters`: the list of each filter, in the
+/// given order, is what ranking the whole cut for that filter alone gives. The pass stops once
 /// every list holds `RANKING_ROWS_MAX` rows, so a cut costs one sort, not one per filter.
 pub fn ranked_lists<'a, Value: Ord>(
     rows: &'a [RankingRow<'a, Value>],

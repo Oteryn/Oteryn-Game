@@ -416,21 +416,10 @@ fn uuid_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// The eligible Characters of categories 1-9 and 11 at the cut, under the registered bounds.
-#[allow(
-    dead_code,
-    reason = "the PostgreSQL highscore suites read the source of a cut with it"
-)]
-pub(crate) async fn read_source(
-    tx: &mut Transaction<'_, Postgres>,
-    world: WorldId,
-) -> Result<Vec<Source>> {
-    read_source_within(tx, world, CutLimits::REGISTERED).await
-}
-
-/// Keyset pages in CharacterId order, all inside the caller's repeatable-read cut, so the pages
-/// are one consistent set. More than `limits` eligible Characters refuse the whole cut.
-async fn read_source_within(
+/// The eligible Characters of categories 1-9 and 11 at the cut: keyset pages in CharacterId
+/// order, all inside the caller's repeatable-read cut, so the pages are one consistent set. More
+/// than `limits` eligible Characters refuse the whole cut.
+pub(crate) async fn read_source_within(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
     limits: CutLimits,

@@ -92,8 +92,8 @@ const HIGHSCORES: OfferedCapability = OfferedCapability {
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
 /// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; RANK-1 offers
-/// capability 9 `HIGHSCORES_V1`; CLOCK-1 offers capability 19 and LOGOUT-WIRE-1 capability 21. A test keeps it equal to the registry and within
-/// `REGISTERED_CAPABILITY_IDS_V1`.
+/// capability 9 `HIGHSCORES_V1`; CLOCK-1 offers capability 19 and LOGOUT-WIRE-1 capability 21.
+/// A test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
