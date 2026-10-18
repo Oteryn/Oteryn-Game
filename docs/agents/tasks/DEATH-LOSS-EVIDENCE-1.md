@@ -3,11 +3,11 @@
 ```yaml
 task_id: DEATH-LOSS-EVIDENCE-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/death-loss-evidence-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2238
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -18,6 +18,7 @@ owned_paths:
   - docs/reference/content-prep/death-loss-evidence-1/sources.json
   - docs/reference/content-prep/death-loss-evidence-1/README.md
   - docs/agents/tasks/DEATH-LOSS-EVIDENCE-1.md
+  - docs/reference/content-prep/death-loss-evidence-1/research-audit.json
 ```
 
 ## Outcome
@@ -53,3 +54,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+The requested XP, skill/magic, promotion/blessing and PvP evidence is enumerated. The live official manual supports stated behavior and worked examples, but not a closed level-24+ loss formula, exact rounding or the unfair-fight ratio/cap. Community candidates are retained as UNKNOWN; disagreement is not resolved by consensus.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
