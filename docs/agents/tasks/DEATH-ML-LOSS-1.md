@@ -25,6 +25,7 @@ owned_paths:
   - apps/game-server/src/domain/death.rs
   - apps/game-server/src/durability/character_revision_sequencer.rs
   - apps/game-server/tests/death_ml_loss_*.rs (new)
+  - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (CP D1440)
 slot_only_paths:
   - apps/game-server/src/gameplay_transport/mod.rs (runtime caller; not allocated)
   - apps/game-server/src/spell/mana_training.rs (CP D1433: `rebase_after_death` only)
@@ -63,6 +64,7 @@ Training/build progress is flushed before a death and the death receipt carries 
 - `apps/game-server/src/durability/character_death.rs`
 - `apps/game-server/src/domain/death.rs`
 - apps/game-server/tests/death_ml_loss_*.rs (new)
+- `apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` (CP D1440: the composed-owner death case; D1440 names it under `spell/`, the file lives under `gameplay_transport/`)
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -106,12 +108,12 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: "CP D1439: main 64d5e4da merged; release-path rebase; die-respawn-relog PostgreSQL case"
+last_progress: "CP D1440: composed-owner death case through respawn_after_death; FencedOut release behaviour documented"
 status: waiting
 branch: skeleton/death-ml-loss-1
 merge_authority: CP_ONLY
-blocker: "composed-owner case through respawn_after_death needs unowned monk_save_postgres_tests.rs or a bundle_gates_tests.rs row"
-next_action: "CP decides the composed-owner fixture path, then marks ready"
+blocker: null
+next_action: "CP reviews the D1440 head and decides ready and merge"
 ```
 
 ## Local choreography preparation (2026-10-15, draft #2193)
@@ -530,6 +532,71 @@ unchanged `in-pg-netns.sh` against the shared 17.6 server):
 `cargo test --lib -- boundary_unknown_monk_save_keeps_lease_until_store_recovers`
 1 passed; `cargo test --test durability_postgres --test character_progression_postgres`
 1223 + 1 + 1317 passed; `python3 tools/agents/validate_governance.py` passed.
+
+Status stays `waiting`. The record is not archived. No ready, queue or merge
+action is taken; CP alone decides merge.
+
+## CP D1440 checkpoint (2026-10-18)
+
+MERGE_AUTHORITY: CP_ONLY. CP D1440 allocates
+`apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs` to this
+task (D1440 names it under `spell/`; the file is under `gameplay_transport/`)
+for the composed-owner case, and keeps the release-path behaviour.
+
+Release path (kept, D1440 item 2): a death flush that returns `FencedOut`
+during the actor-end release (`settle_released_death`, `releasing = true`)
+still settles the death, priced from the durable build as it stands. Training
+the fenced-out save could not write is not retried; the session's own
+training saves already accept a fenced-out session the same way. A live death
+(`respawn_after_death`, `releasing = false`) keeps refusing a `FencedOut`
+flush, like `Unknown` (`death_flush_permits_settle`).
+
+New composed-owner PostgreSQL case
+`gameplay_transport::monk_save::postgres_tests::death_ml_loss_composed::composed_owner_death_lowers_rebases_and_trains_on_postgres`
+(64 MiB stack thread, the existing `Dependencies` owner, no new `SeamRooms`
+construction). The production manifest generation supplies the training
+formula and the progression; only its training content revision is the
+fixture Character's `content-1` (production pairs both as `s3b-content-1`).
+The production admission step binds progression, the root takes a druid
+choice, 98,800 experience (level 20) and a trained build (magic 3, sword 14),
+and the live actor holds one unsaved sword try. A real lethal creature hit
+records the death; `respawn_after_death` then force-saves the try, settles
+the death with the generation's formula, places and consumes the respawn and
+rebases the actor. Checks: the receipt has binding version 2, experience
+before 98,800 and the level 20 loss of 10,780, a before build that holds the
+flushed try and an after build equal to an independent SKILLS-0 §3.6
+restatement (magic and sword both lower); the durable build is the lowered
+one; no pending respawn remains; the live magic level is the lowered one and
+the next training save commits on the lowered build.
+
+Flaky monk case (CP D1440 follow-up):
+`monk_save::postgres_tests::boundary_unknown_monk_save_keeps_lease_until_store_recovers`
+asserted the release had not ended within a fixed 600 ms window and had
+reached one monk save. Under parallel load the loop could need longer than
+that to reach the save, so the case failed. It now drives the real release
+until a second monk save attempt starts. That attempt happens only after the
+first one ended `Unknown` and the loop retried instead of ending the lease. A
+release that ends first fails the case. The 60 s deadline only bounds a hang.
+Every other assertion is unchanged (revision 1 and a `Reconnectable` session
+while the store is unavailable, then `Released`, revision 2 and one receipt
+once it recovers).
+
+Validation (PC, shared PostgreSQL 17.6, `-j 4`): `cargo fmt --all --check`
+and `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
+pass. `--lib -- death_ml_loss` 3/3 pass. The parallel full `--lib` run has
+3502 passed, 3 failed and 29 ignored. The new
+composed case and the reworked monk case pass there. Three cases unrelated to
+this diff failed in that run and pass on their own:
+`party::shared_xp_postgres_tests::party_block_limit_refuses_the_101st_and_allows_an_existing_block_at_100`
+(1/1 alone) and two `node::secure_file` cases (4/4 outside the netns wrapper,
+whose root uid mapping trips their owner check). `--lib -- monk_save::postgres_tests`
+in parallel passes 21/21, three runs in a row. `--lib -- gameplay_transport
+spell:: durability:: domain::` 1697 passed, 0 failed, 12 ignored.
+`--test character_progression_postgres` 1223/1223.
+`--test durability_postgres` 1316 passed, 1 failed:
+`migration_lock_interruption_releases_before_any_ddl_and_allows_fresh_retry`
+timed out (`Elapsed`) under load and passes 1/1 alone. The governance
+validator passes.
 
 Status stays `waiting`. The record is not archived. No ready, queue or merge
 action is taken; CP alone decides merge.
