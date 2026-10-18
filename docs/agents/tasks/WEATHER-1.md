@@ -190,7 +190,7 @@ protocol-owner sign-off. This authoring allocation does not grant it.
 - [x] Historical exact-source native component compilation, strict lint, discovery and11 tests:6 server +5 protocol.
 - [x] Registry (capability 26, state domain 22), proto, constants and requirement rows registered; `offered: true` after the D1027 sign-off.
 - [x] Canonical occurrence/token (`WorldWeatherSource`) over the retained World binding; no seed or slot in the public token.
-- [x] Server module, offer seam and connection wiring (admission snapshot, `Next::Visibility` delta); e2e in `capabilities_tests.rs::weather_wire`.
+- [x] Server module, offer seam and connection wiring (admission snapshot, `Next::Visibility` delta); e2e in `capabilities_tests.rs::weather_wire` and, on the production composed owner through `serve_admitted` (PostgreSQL lane, nested under `monk_save::postgres_tests`), `weather_wire_postgres_tests.rs`.
 - [x] No binding means no offer; binding loss emits one full Unavailable; restart/reconnect/Channel move never reroll (e2e).
 - [x] Production head integration (`ComposedFreshAdmission::world_weather()` returns the shipped data); normal all-target/package CI qualification runs in the PR lanes.
 - [x] Protocol-owner D1027 sign-off: owner "tak" on 2026-10-18 (kind 1..9, intensity 1..3, capability 26 offered once the data loads); registry `offered` flipped to true.
