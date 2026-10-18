@@ -29,7 +29,7 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 ];
 
 /// Production Rust functions that take the key-33 lock or write a key-33 table.
-const RUST_KEY33_SITES: [(&str, &str); 13] = [
+const RUST_KEY33_SITES: [(&str, &str); 14] = [
     ("src/durability/item_decay_retire.rs", "apply_retire"),
     ("src/durability/item_loop_move.rs", "apply_loop_move"),
     (

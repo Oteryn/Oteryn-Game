@@ -26,12 +26,12 @@ fn world() -> TestResult<WorldId> {
 fn channel() -> TestResult<ChannelId> {
     ChannelId::decode(&id(CHANNEL)).map_err(|e| debug(e).into())
 }
-/// D1416: migration 0096 installs the reset schema; fixtures never run DDL themselves.
+/// D1416: migration 0131 installs the reset schema; fixtures never run DDL themselves.
 async fn install(h: &Harness) -> TestResult {
     let jobs: bool = sqlx::query_scalar("SELECT to_regclass('game_world_reset_jobs') IS NOT NULL")
         .fetch_one(&h.pool)
         .await?;
-    assert!(jobs, "migration 0096 must install the reset tables");
+    assert!(jobs, "migration 0131 must install the reset tables");
     let guards: Vec<String> = sqlx::query_scalar(
         "SELECT proname::text FROM pg_proc WHERE pronamespace = current_schema()::regnamespace \
            AND prosrc LIKE '%game_world_reset_item_proven(%.item_instance_id)%' ORDER BY 1",
@@ -193,7 +193,7 @@ fn reset_native_root_retires_actual_items_reloads_history_and_never_touches_inve
         use crate::durability::reward_claim_mint::{RewardClaimMintRequest,RewardClaimMintOutcome};
         use crate::durability::item_transfer::{ItemDefinitionFacts,ItemStackClass};
         let definition=crate::durability::item_mint::TypedDefinitionRef{family:"Item".into(),production_key:"fixture:b3.stone".into(),revision_ref:"definition-r1".into()};
-        let request=RewardClaimMintRequest{command:crate::item_transfer_postgres_cases::command(20)?,claim:crate::durability::item_mint::TypedDefinitionRef{family:"RewardClaim".into(),production_key:"fixture:chest.reset-key".into(),revision_ref:"definition-r1".into()},source_placement:"fixture:placement.chest".into(),item:ItemDefinitionFacts{definition,stack:ItemStackClass::NonStackable,container_capacity:None,container_slot_equip_pattern:false},quantity:1,backpack:crate::item_transfer_postgres_cases::backpack_facts(),content_revision:"content-1".into(),ruleset_revision:"ruleset-1".into(),sim_revision:"sim-1".into(),achievement:None,quest_transition:None,key_number:Some(7)};
+        let request=RewardClaimMintRequest{command:crate::item_transfer_postgres_cases::command(20)?,claim:crate::durability::item_mint::TypedDefinitionRef{family:"RewardClaim".into(),production_key:"fixture:chest.reset-key".into(),revision_ref:"definition-r1".into()},source_placement:"fixture:placement.chest".into(),item:ItemDefinitionFacts{weight:Some(1),definition,stack:ItemStackClass::NonStackable,container_capacity:None,container_slot_equip_pattern:false},quantity:1,backpack:crate::item_transfer_postgres_cases::backpack_facts(),content_revision:"content-1".into(),ruleset_revision:"ruleset-1".into(),sim_revision:"sim-1".into(),achievement:None,quest_transition:None,key_number:Some(7)};
         let mut key_candidate=h.root.freeze_reward_claim_mint(&authority,&h.node,crate::item_transfer_postgres_cases::fence()?,request).await.map_err(debug)?;
         let key=match h.root.commit_reward_claim_mint(&authority,&h.node,crate::item_transfer_postgres_cases::fence()?,&mut key_candidate).await.map_err(debug)?{RewardClaimMintOutcome::Committed(value)|RewardClaimMintOutcome::AlreadyCommitted(value)=>value.item_instance_id};
         install(&h).await?;
@@ -962,6 +962,7 @@ mod house_custody {
         ));
         let item = h.mint(&a, "fixture:house.item", 1).await?;
         let facts = ItemDefinitionFacts {
+            weight: Some(1),
             definition: crate::durability::item_mint::TypedDefinitionRef {
                 family: "Item".into(),
                 production_key: "fixture:house.item".into(),
@@ -1646,7 +1647,7 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
 /// `world-reset` dispatch. The fixture bundles stand in for the qualified rooms: the active
 /// one is the epoch-0 history's (map-1, 1/2/3), the target the qualified one (map-2, 4/5/6).
 async fn operator(
-    h: &Harness,
+    root: &crate::durability::DurabilityRoot,
     argv: &[&str],
 ) -> Result<String, crate::durability::world_reset_command::WorldResetCommandFailure> {
     use crate::durability::world_reset::WorldResetArtifactDigests;
@@ -1667,7 +1668,7 @@ async fn operator(
     }
     let command = WorldResetCommand::parse(&words, &mut options)?;
     execute_world_reset_command(
-        &h.root,
+        root,
         &command,
         WorldResetArtifactDigests {
             server: [1; 32],
@@ -1709,11 +1710,160 @@ fn admission(code: &str) -> [Option<String>; 2] {
     [Some(code.to_owned()), Some(code.to_owned())]
 }
 
+/// Codex P1 4307818778: the SQLSTATE of completing a reconnect prepared before publication.
+/// In one rolled-back TX every nonterminal session of the World closes (the drain's own
+/// transition, open while RETIRING), the harness session is prepared for reconnect (state 1,
+/// no transport, a prepared attempt) and then completed by the exact `complete_reconnect`
+/// statement. A committed RETIRING job refuses that completion (OTR03).
+async fn readmission_code(h: &Harness) -> TestResult<String> {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE world_id=encode($1,'hex')::uuid AND session_state IN(1,2)")
+        .bind(id(WORLD).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    let prepared = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1,current_generation=1,current_transport_ref=NULL,prepared_attempt_ref=$2 WHERE game_session_id=encode($1,'hex')::uuid AND control_loss_epoch IS NOT NULL")
+        .bind(id(SESSION).as_slice())
+        .bind([3_u8; 8].as_slice())
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(prepared.rows_affected(), 1);
+    let completed = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 2, current_generation=$2::text::numeric, current_transport_ref=$3, prepared_attempt_ref=NULL WHERE game_session_id=encode($1,'hex')::uuid AND session_state = 1 AND current_transport_ref IS NULL AND prepared_attempt_ref = $4 AND current_generation=$5::text::numeric")
+        .bind(id(SESSION).as_slice())
+        .bind("2")
+        .bind([8_u8; 16].as_slice())
+        .bind([3_u8; 8].as_slice())
+        .bind("1")
+        .execute(&mut *tx)
+        .await;
+    let code = match completed {
+        Ok(done) => {
+            assert_eq!(done.rows_affected(), 1);
+            "ok".to_owned()
+        }
+        Err(sqlx::Error::Database(error)) => error
+            .code()
+            .map_or_else(|| "none".to_owned(), |code| code.into_owned()),
+        Err(other) => return Err(debug(other).into()),
+    };
+    tx.rollback().await?;
+    Ok(code)
+}
+
+/// One direct SQL owner call with House evidence for the placed House: `activate` selects
+/// the activation owner, else the publisher. Returns the SQLSTATE, `None` on success.
+async fn direct_owner_call(conn: &mut sqlx::PgConnection, activate: bool) -> Option<String> {
+    let houses = vec![house_custody::HOUSE.to_owned()];
+    let called = if activate {
+        sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($1,'hex')::uuid,1,$2,$3,$4,$5)")
+            .bind(id(WORLD).as_slice())
+            .bind([7_u8; 32].as_slice())
+            .bind(houses.clone())
+            .bind(vec![vec![1_u8, 2, 3]])
+            .bind(houses)
+            .execute(&mut *conn)
+            .await
+    } else {
+        sqlx::query("SELECT game_world_reset_publish(encode($1,'hex')::uuid,0,$2,'map-2',$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_10',1,$6,$7,$8)")
+            .bind(id(WORLD).as_slice())
+            .bind([7_u8; 32].as_slice())
+            .bind([4_u8; 32].as_slice())
+            .bind([5_u8; 32].as_slice())
+            .bind([6_u8; 32].as_slice())
+            .bind(houses.clone())
+            .bind(vec![vec![1_u8, 2, 3]])
+            .bind(houses)
+            .execute(&mut *conn)
+            .await
+    };
+    match called {
+        Ok(_) => None,
+        Err(sqlx::Error::Database(error)) => error.code().map(|code| code.into_owned()),
+        Err(other) => Some(format!("{other:?}")),
+    }
+}
+
+/// A real LOGIN role that is a member of `roles` (as deployment creates one per capability),
+/// with its connection URL. A superuser `SET ROLE` is no membership and keeps the superuser
+/// session, so only a login exercises the holder walk and the login's own privileges.
+struct Login {
+    role: String,
+    url: String,
+}
+
+async fn create_login(h: &Harness, tag: &str, roles: &str) -> TestResult<Login> {
+    let database: String = sqlx::query_scalar("SELECT current_database()")
+        .fetch_one(&h.pool)
+        .await?;
+    let suffix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_nanos();
+    let role = format!("world_reset_{tag}_{suffix}");
+    let password = format!("{role}-secret");
+    for statement in [
+        format!("CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE {roles}"),
+        format!("GRANT CONNECT ON DATABASE {database} TO {role}"),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(statement))
+            .execute(&h.pool)
+            .await?;
+    }
+    let (_, address) = h
+        .database
+        .url
+        .split_once('@')
+        .ok_or("database URL has no authority separator")?;
+    let url = format!("postgresql://{role}:{password}@{address}");
+    Ok(Login { role, url })
+}
+
+/// A ready Root connected as `login` only, as the ops tool or the node connects its login.
+async fn login_root(login: &Login) -> TestResult<crate::durability::DurabilityRoot> {
+    let root =
+        crate::durability::DurabilityRoot::connect_test_runtime(&login.url).map_err(debug)?;
+    assert!(root.maintain_ready_once().await.map_err(debug)?);
+    Ok(root)
+}
+
+async fn drop_login(h: &Harness, login: Login) -> TestResult {
+    sqlx::query(sqlx::AssertSqlSafe(format!("DROP OWNED BY {}", login.role)))
+        .execute(&h.pool)
+        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!("DROP ROLE {}", login.role)))
+        .execute(&h.pool)
+        .await?;
+    Ok(())
+}
+
+/// Codex P1 4307818772: the (activate, publish) SQLSTATEs of a real login that is a member of
+/// `roles`.
+async fn login_codes(
+    h: &Harness,
+    tag: &str,
+    roles: &str,
+) -> TestResult<(Option<String>, Option<String>)> {
+    use sqlx::Connection;
+    let login = create_login(h, tag, roles).await?;
+    let outcome = async {
+        let mut conn = sqlx::PgConnection::connect(&login.url).await?;
+        let mut tx = conn.begin().await?;
+        let activate = direct_owner_call(&mut tx, true).await;
+        tx.rollback().await?;
+        let mut tx = conn.begin().await?;
+        let publish = direct_owner_call(&mut tx, false).await;
+        tx.rollback().await?;
+        conn.close().await?;
+        TestResult::Ok((activate, publish))
+    }
+    .await;
+    drop_login(h, login).await?;
+    outcome
+}
+
 /// MAP-OVERLAY-1c D1451 operator path, end to end through the `world-reset` dispatch of
 /// `oteryn-game-ops`: `initialize` records epoch 0, `publish` closes admission with a
 /// RETIRING job of the qualified target (an identical re-run replays it, another cause is
-/// refused), the node's boot run retires the epoch-0 source Item and activates N+1, and the
-/// source map comes back once under epoch 1. A publication of the retired epoch is not current.
+/// refused) and also closes reconnect completion, the node's boot run retires the epoch-0
+/// source Item and activates N+1, and the source map comes back once under epoch 1. A publication of the retired epoch is not current.
 #[test]
 fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_plus_one()
 -> TestResult {
@@ -1761,8 +1911,12 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
                 .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
             Ok::<_, Box<dyn std::error::Error>>(jobs)
         };
+        // Codex P1/P2: `publish` runs as a publisher-only login, exactly as `[world_reset]`
+        // connects it, so its fences and reads must hold for that login's own privileges.
+        let publisher = create_login(&h, "ops", "oteryn_game_world_reset_publisher").await?;
+        let publisher_root = login_root(&publisher).await?;
         // Before Control initializes the World there is no active epoch to publish from.
-        let early = operator(&h, &publish("1")).await;
+        let early = operator(&publisher_root, &publish("1")).await;
         assert!(matches!(early, Err(WorldResetCommandFailure::Rejected(_))), "{early:?}");
         assert!(jobs().await?.is_empty());
         assert_eq!(admission_codes(&h).await?, admission("23502"));
@@ -1774,36 +1928,11 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
             "--calendar-revision",
             "1",
         ];
-        let line = operator(&h, &initialize).await.map_err(debug)?;
+        let line = operator(&h.root, &initialize).await.map_err(debug)?;
         assert!(line.starts_with("world_reset=initialized reset_epoch=0 map_revision=map-1 "), "{line}");
         // The initializer is exact: the identical re-run replays it.
-        assert_eq!(operator(&h, &initialize).await.map_err(debug)?, line);
+        assert_eq!(operator(&h.root, &initialize).await.map_err(debug)?, line);
         assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, None);
-        // Publication: the job of exactly the qualified target and its binding; admission closes.
-        let line = operator(&h, &publish("1")).await.map_err(debug)?;
-        let binding = retirement_binding(&qualified_target()?);
-        let binding_hex: String = binding.iter().map(|byte| format!("{byte:02x}")).collect();
-        assert!(line.starts_with("world_reset=published phase=RETIRING reset_epoch=0 map_revision=map-2 "), "{line}");
-        assert!(line.ends_with(&format!("retirement_binding={binding_hex} replayed=false")), "{line}");
-        assert_eq!(jobs().await?, vec![("0".to_owned(), "RETIRING".to_owned(), binding.to_vec())]);
-        assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, Some(0));
-        assert_eq!(admission_codes(&h).await?, admission("OTR03"));
-        let mut tx = h.pool.begin().await?;
-        let job = crate::durability::world_reset::read_locked_world_reset_target(&mut tx, world()?)
-            .await
-            .map_err(debug)?;
-        assert_eq!(job, qualified_target()?);
-        tx.rollback().await?;
-        // The identical re-run (an unknown outcome's retry) replays; another cause is refused.
-        let replayed = operator(&h, &publish("1")).await.map_err(debug)?;
-        assert_eq!(replayed, line.replace("replayed=false", "replayed=true"));
-        let other = operator(&h, &publish("2")).await;
-        assert!(matches!(other, Err(WorldResetCommandFailure::Rejected(_))), "{other:?}");
-        assert_eq!(jobs().await?, vec![("0".to_owned(), "RETIRING".to_owned(), binding.to_vec())]);
-        // The node's boot run completes the published reset (as `recover_world_reset`).
-        replace(&h).await?;
-        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN(1,2)")
-            .bind(id(61).as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
             .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
         let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
@@ -1815,18 +1944,55 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
             .bind(next.to_string()).bind(previous.map(|value| value.to_string()))
             .bind([1_u8; 32].as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
             .execute(&h.pool).await?;
-        let authority = h
-            .root
+        // A prepared reconnect still completes while no job is published.
+        assert_eq!(readmission_code(&h).await?, "ok");
+        // Publication: the job of exactly the qualified target and its binding; admission closes.
+        let line = operator(&publisher_root, &publish("1")).await.map_err(debug)?;
+        let binding = retirement_binding(&qualified_target()?);
+        let binding_hex: String = binding.iter().map(|byte| format!("{byte:02x}")).collect();
+        assert!(line.starts_with("world_reset=published phase=RETIRING reset_epoch=0 map_revision=map-2 "), "{line}");
+        assert!(line.ends_with(&format!("retirement_binding={binding_hex} replayed=false")), "{line}");
+        assert_eq!(jobs().await?, vec![("0".to_owned(), "RETIRING".to_owned(), binding.to_vec())]);
+        assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, Some(0));
+        assert_eq!(admission_codes(&h).await?, admission("OTR03"));
+        // Codex local P2: no ordinary content activation while the reset is RETIRING.
+        let refused = sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
+            .bind((next + 1).to_string()).bind(next.to_string())
+            .bind([4_u8; 32].as_slice()).bind([5_u8; 32].as_slice()).bind([6_u8; 32].as_slice())
+            .execute(&h.pool).await;
+        assert!(matches!(&refused, Err(sqlx::Error::Database(error)) if error.code().as_deref() == Some("OTR03")), "{refused:?}");
+        // Codex P1 4307818778: a reconnect prepared before publication cannot complete now.
+        assert_eq!(readmission_code(&h).await?, "OTR03");
+        let mut tx = h.pool.begin().await?;
+        let job = crate::durability::world_reset::read_locked_world_reset_target(&mut tx, world()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(job, qualified_target()?);
+        tx.rollback().await?;
+        // The identical re-run (an unknown outcome's retry) replays; another cause is refused.
+        let replayed = operator(&publisher_root, &publish("1")).await.map_err(debug)?;
+        assert_eq!(replayed, line.replace("replayed=false", "replayed=true"));
+        let other = operator(&publisher_root, &publish("2")).await;
+        assert!(matches!(other, Err(WorldResetCommandFailure::Rejected(_))), "{other:?}");
+        assert_eq!(jobs().await?, vec![("0".to_owned(), "RETIRING".to_owned(), binding.to_vec())]);
+        // The node's boot run completes the published reset (as `recover_world_reset`).
+        replace(&h).await?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN(1,2)")
+            .bind(id(61).as_slice()).execute(&h.pool).await?;
+        // The boot run as the node's own login: runtime plus the activation capability only.
+        let node_login =
+            create_login(&h, "node", "oteryn_game_runtime,oteryn_game_world_reset").await?;
+        let node_root = login_root(&node_login).await?;
+        let authority = node_root
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let binding = h
-            .root
+        let binding = node_root
             .read_world_drain_binding(&h.node, world()?)
             .await
             .map_err(debug)?;
-        let run = h
-            .root
+        let run = node_root
             .run_world_reset(&authority, &h.node, world()?, &ResetRunHouses, &ResetRunDrain(binding))
             .await
             .map_err(debug)?
@@ -1839,8 +2005,9 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
         assert_eq!(h.item_state(source_item).await?, (0, 2));
         assert_eq!(h.root.read_map_reset_epoch(world()?).await.map_err(debug)?, 1);
         assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, None);
-        // Activation reopens admission.
+        // Activation reopens admission, reconnect completion included.
         assert_eq!(admission_codes(&h).await?, admission("23502"));
+        assert_eq!(readmission_code(&h).await?, "ok");
         // N+1: the source map comes back once, as a new Item under epoch 1.
         publish_ready(&h, 2).await?;
         let restored = initialize_source_map(&h, &authority, 2).await?;
@@ -1858,11 +2025,15 @@ fn reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_pl
         assert_eq!(h.item_state(restored_item).await?, (1, 1));
         assert!(h.on_ground(restored_item).await?);
         // The retired epoch can no longer be published.
-        let stale = operator(&h, &publish("1")).await;
+        let stale = operator(&publisher_root, &publish("1")).await;
         assert!(matches!(stale, Err(WorldResetCommandFailure::Rejected(_))), "{stale:?}");
         assert_eq!(jobs().await?.len(), 1);
         drop(authority);
         drop(seal);
+        drop(node_root);
+        drop(publisher_root);
+        drop_login(&h, node_login).await?;
+        drop_login(&h, publisher).await?;
         h.cleanup().await
     })
 }
@@ -1936,10 +2107,10 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
             .await;
         assert!(matches!(stale, Err(WorldResetError::NotCurrent)), "{stale:?}");
         assert_eq!(published().await?, (0, 0, None));
-        // The SQL owner rechecks: the owner capability without House evidence for the owned
+        // The SQL owner rechecks: the publisher capability without House evidence for the owned
         // House and its interior cell is refused, with no job.
         let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL ROLE oteryn_game_world_reset").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_world_reset_publisher").execute(&mut *tx).await?;
         let bare = sqlx::query("SELECT game_world_reset_publish(encode($1,'hex')::uuid,0,$2,'map-2',$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_10',1,$6,$7,$8)")
             .bind(id(WORLD).as_slice()).bind([7_u8; 32].as_slice())
             .bind([4_u8; 32].as_slice()).bind([5_u8; 32].as_slice()).bind([6_u8; 32].as_slice())
@@ -1947,6 +2118,43 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
             .execute(&mut *tx).await;
         assert!(matches!(bare, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("OTR03")), "{bare:?}");
         tx.rollback().await?;
+        assert_eq!(published().await?, (0, 0, None));
+        // Codex P1 4307818772: each capability reaches only its own owner, and a login holding
+        // both is refused by both owners; a single-capability login passes its own check.
+        for (role, activate) in [
+            ("oteryn_game_world_reset", false),
+            ("oteryn_game_world_reset_publisher", true),
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!("SET LOCAL ROLE {role}")))
+                .execute(&mut *tx)
+                .await?;
+            let code = direct_owner_call(&mut tx, activate).await;
+            assert_eq!(code.as_deref(), Some("42501"), "{role}");
+            tx.rollback().await?;
+        }
+        let both = login_codes(
+            &h,
+            "both",
+            "oteryn_game_world_reset, oteryn_game_world_reset_publisher",
+        )
+        .await?;
+        assert_eq!(
+            (both.0.as_deref(), both.1.as_deref()),
+            (Some("42501"), Some("42501"))
+        );
+        // The publisher-only login passes every check and publishes (its TX rolls back).
+        let publisher = login_codes(&h, "publisher", "oteryn_game_world_reset_publisher").await?;
+        assert_eq!(
+            (publisher.0.as_deref(), publisher.1.as_deref()),
+            (Some("42501"), None)
+        );
+        let activator = login_codes(&h, "activator", "oteryn_game_world_reset").await?;
+        assert!(
+            matches!(activator.0.as_deref(), Some(code) if code != "42501"),
+            "{activator:?}"
+        );
+        assert_eq!(activator.1.as_deref(), Some("42501"));
         assert_eq!(published().await?, (0, 0, None));
         assert_eq!(house_snapshot(&h, item).await?, house_before);
         // Every refusal above left admission open.

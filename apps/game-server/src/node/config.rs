@@ -286,8 +286,9 @@ pub struct OpsConfig {
 }
 
 /// The operator-only World reset publication (MAP-OVERLAY-1c D1451). Its database login is
-/// the reset owner's, a member of `oteryn_game_world_reset`, never the operator's
-/// control-plane login.
+/// the operator's publication login, a member of `oteryn_game_world_reset_publisher` only:
+/// never the node's activation login (`oteryn_game_world_reset`; the SQL refuses a login
+/// holding both) and never the operator's control-plane login.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WorldResetOpsConfig {

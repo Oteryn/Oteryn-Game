@@ -102,7 +102,7 @@ pub mod sqlstate_codes;
 pub(crate) mod starter_grant;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
-// MAP-OVERLAY-1c (D1416): schema installed by migration 0096; node boot runs the reset
+// MAP-OVERLAY-1c (D1416): schema installed by migration 0131; node boot runs the reset
 // (`world_reset_run`). Test crates mount this module tree without the node caller.
 #[allow(
     dead_code,

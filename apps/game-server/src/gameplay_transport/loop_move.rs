@@ -285,15 +285,20 @@ pub(super) async fn move_loop_item(
         let pin = runtime.content_pin();
         let content_revision = sha256_revision(pin.server_artifact_digest());
         let placement_context = pin.frame_binding_digest().to_vec();
-        let pins =
-            super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
-                (
-                    at.map.overlay.base().clone(),
-                    (at.at.x, at.at.y, at.at.floor),
-                    content_revision,
-                    placement_context,
-                )
-            });
+        let pins = super::bundle_map_position(
+            &mut runtime,
+            admission.movement_cells,
+            actor,
+            admission.reset_epoch,
+        )
+        .map(|at| {
+            (
+                at.map.overlay.base().clone(),
+                (at.at.x, at.at.y, at.at.floor),
+                content_revision,
+                placement_context,
+            )
+        });
         (native, pins, index)
     };
     let Some(native) = native else {

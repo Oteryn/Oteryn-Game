@@ -1,7 +1,9 @@
 //! MAP-OVERLAY-1c bounded retirement of one real Ground item during an admitted reset.
 //!
-//! The private schema below is installed by migration 0096 (D1416). Only the control role may publish
-//! a reset/cohort; callers supply neither an epoch nor a current-generation claim. This is
+//! The private schema below is installed by migration 0131 (D1416, renumbered by D1453). Only a
+//! publisher-only login (`oteryn_game_world_reset_publisher`) may publish a reset/cohort and
+//! only the node's activation login (`oteryn_game_world_reset`) may activate it; callers
+//! supply neither an epoch nor a current-generation claim. This is
 //! step 3, not admission closure, assignment orchestration or content activation.
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
@@ -109,9 +111,12 @@ pub async fn census_retiring_world_reset(
     world: WorldId,
 ) -> Result<Option<WorldResetCensus>, WorldResetError> {
     lock_admission_relations(tx).await?;
+    // No row lock (Codex P1): FOR UPDATE needs UPDATE, which no login holds on the job. Every
+    // job writer (publish, activate, the receipt revision trigger) runs under the admission
+    // EXCLUSIVE locks taken above, so the row stays as read until this TX ends.
     let job = sqlx::query(
         "SELECT reset_epoch::text,target_digest,revision::text,active_map_revision FROM game_world_reset_jobs \
-         WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE",
+         WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING'",
     )
     .bind(world.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
@@ -494,7 +499,8 @@ async fn preflight_reset_house_catalogues(
 /// The House preflight runs against the proposed target before any record exists, and the
 /// SQL owner rechecks its evidence, then inserts the job and its Channel cohort in this same
 /// TX. A refused preflight therefore creates no job and closes no admission. The TX must run
-/// as the reset owner's login (`oteryn_game_world_reset`); runtime and control get 42501.
+/// as the operator's publication login, a member of `oteryn_game_world_reset_publisher` that
+/// does not hold `oteryn_game_world_reset`; runtime, control and activation get 42501.
 pub(crate) async fn publish_world_reset_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     target: &WorldResetTarget,
@@ -658,7 +664,8 @@ impl DurabilityRoot {
                 }
             }
 
-            let job = sqlx::query("SELECT reset_epoch::text,active_map_revision FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE")
+            // Stable under the admission locks above (no login holds UPDATE for a row lock).
+            let job = sqlx::query("SELECT reset_epoch::text,active_map_revision FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING'")
                 .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
             let Some(job) = job else { return Ok(Err(WorldResetError::NotCurrent)); };
             let epoch: String = job.try_get(0)?;
@@ -686,11 +693,12 @@ impl DurabilityRoot {
             // entry family; a character container entry's parent is a backpack slot item (FK),
             // never Ground (DUR-03 exclusive location). A row of that family under a Ground
             // root is therefore corrupt state: refuse it rather than retire the root first.
+            // A 0128 nested entry under the root or under one of its corpse entries likewise.
             let ground = sqlx::query("SELECT g.item_instance_id::text,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,g.runtime_scope_ownership_generation::text FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY g.item_instance_id LIMIT 1")
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
             let Some(ground) = ground else { if !matches!(phase,Phase::Freeze) {return Ok(Err(WorldResetError::NotCurrent));} tx.commit(deadline).await?; return Ok(Ok(PhaseResult::Frozen(None))); };
             let parent = uuid(ground.try_get(0)?)?;
-            let character_contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
+            let character_contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries n WHERE n.parent_item_instance_id=encode($1,'hex')::uuid OR n.parent_item_instance_id IN(SELECT e.item_instance_id FROM game_item_corpse_container_entries e WHERE e.parent_item_instance_id=encode($1,'hex')::uuid))")
                 .bind(parent.as_slice()).fetch_one(&mut **tx).await?;
             if character_contents { return Ok(Err(WorldResetError::InvalidStoredState)); }
             let entry = sqlx::query("SELECT e.item_instance_id::text,e.placement_ordinal::text FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal,e.item_instance_id LIMIT 1")
@@ -771,7 +779,7 @@ impl DurabilityRoot {
     }
 }
 
-/// Source of migration 0096 (D1416); `migration_0096_is_exactly_the_schema_source` pins the
+/// Source of migration 0131 (D1416); `migration_0131_is_exactly_the_schema_source` pins the
 /// installed bytes to this output. It extends exact native guard bodies, never disables a
 /// trigger or replaces their existing positive/refusal clauses. Node boot runs the reset
 /// (`world_reset_run`); `publish_world_reset` is the only RETIRING publisher (D1272).
@@ -781,7 +789,8 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
     sql.push_str(&candidate_reset_issuance_sql()?);
     sql.push_str(RESET_ACTIVATION_SCHEMA);
     // CREATE OR REPLACE resets SECURITY DEFINER and SET; `definer` restores the live
-    // attribute (0015 header; 0095 ALTERs the change guard), never widening the others.
+    // attribute (the 0015 and 0113 headers), never widening the others. Each source is the
+    // latest native definition before 0131 (pinned by the migration_0131 tests).
     for (source, name, record, definer) in [
         (
             include_str!("../../migrations/0015_corpse_decay_retire.sql"),
@@ -790,7 +799,7 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
             true,
         ),
         (
-            include_str!("../../migrations/0095_house_interior_shapes.sql"),
+            include_str!("../../migrations/0113_equipment_swap.sql"),
             "game_item_instance_change_proven",
             "NEW",
             true,
@@ -832,7 +841,7 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
     Ok(sql)
 }
 
-/// D1189a/0096: one native issuance body, two separately authorized entry points.
+/// D1189a/0131: one native issuance body, two separately authorized entry points.
 /// The reset entry point is called only by `game_world_reset_activate` (node boot reset run).
 /// Preserve the native replay/CAS/INSERT bytes and the public op4 check exactly.
 fn candidate_reset_issuance_sql() -> Result<String, &'static str> {
@@ -873,8 +882,16 @@ fn candidate_reset_issuance_sql() -> Result<String, &'static str> {
     let (signature, _) = header
         .split_once("DECLARE\n")
         .ok_or("native issuance declaration changed")?;
+    const RETIRING_FENCE: &str = r#"    -- A RETIRING World reset fixes its predecessor content: no ordinary activation may
+    -- issue other content before the reset activates. SHARE serializes with publication.
+    LOCK TABLE game_world_reset_jobs IN SHARE MODE;
+    IF EXISTS (SELECT 1 FROM game_world_reset_jobs
+        WHERE world_id = p_world_id AND phase = 'RETIRING') THEN
+        RAISE EXCEPTION 'content activation refused while a World reset is RETIRING' USING ERRCODE = 'OTR03';
+    END IF;
+"#;
     let wrapper = format!(
-        "{}BEGIN\n{grant}    PERFORM game_content_record_activation_core(\
+        "{}BEGIN\n{grant}{RETIRING_FENCE}    PERFORM game_content_record_activation_core(\
          p_world_id,p_channel_id,p_sequence,p_previous,p_server,p_client,p_frame);\nEND; $$;",
         signature.replacen("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION", 1)
     );
@@ -989,6 +1006,19 @@ BEGIN
 END $$;
 CREATE TRIGGER game_world_reset_admission_closed BEFORE INSERT ON game_durability_reconnect_sessions FOR EACH ROW EXECUTE FUNCTION game_world_reset_admission_closed();
 CREATE TRIGGER game_world_reset_admission_closed BEFORE INSERT ON game_durability_reconnect_attempts FOR EACH ROW EXECUTE FUNCTION game_world_reset_admission_closed();
+-- Codex P1 4307818778 (CODEX-CHECKLIST 12): a reconnect prepared before publication completes
+-- by UPDATE (session_state 1 -> 2), never by INSERT, so the insert closure above cannot see it.
+-- A session entering state 2 is a readmission and is closed the same way; publication holds the
+-- sessions EXCLUSIVE, so the completion either commits first (and blocks activation through
+-- the cohort check) or sees the committed job. Disconnect (-> 1) and close (-> 3) stay open
+-- for the drain. Activation requires every session closed, so a stale attempt matches no row.
+CREATE FUNCTION game_world_reset_readmission_closed() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM game_world_reset_jobs WHERE world_id=NEW.world_id AND phase='RETIRING')
+ THEN RAISE EXCEPTION 'World reset is RETIRING: reconnect completion is closed' USING ERRCODE='OTR03'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_world_reset_readmission_closed BEFORE UPDATE ON game_durability_reconnect_sessions FOR EACH ROW WHEN (NEW.session_state=2 AND OLD.session_state IS DISTINCT FROM 2) EXECUTE FUNCTION game_world_reset_readmission_closed();
 
 CREATE FUNCTION game_world_reset_cohort_current(w UUID,e NUMERIC,n UUID,r NUMERIC) RETURNS BOOLEAN
 LANGUAGE SQL SECURITY DEFINER AS $$
@@ -1003,6 +1033,7 @@ LANGUAGE SQL SECURITY DEFINER AS $$
 $$;
 -- This proof is shared by native deferred guards. Every positive reset clause still requires
 -- its complete reservation, quantity evidence, actual pre-DELETE location and audit in THIS xact.
+-- A 0128 nested entry, as the Item or as its parent, is never a reset shape: refused.
 CREATE FUNCTION game_world_reset_item_proven(p UUID) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE d game_item_decay_retire_receipts%ROWTYPE; v game_item_decay_retire_reservations%ROWTYPE;
 BEGIN
@@ -1023,6 +1054,7 @@ BEGIN
  OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=p)
  OR EXISTS(SELECT 1 FROM game_item_container_slots WHERE item_instance_id=p)
  OR EXISTS(SELECT 1 FROM game_item_house_interior_locations WHERE item_instance_id=p)
+ OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE item_instance_id=p OR parent_item_instance_id=p)
  THEN RAISE EXCEPTION 'WorldReset requires exact current reservation/receipt/retirement/audit' USING ERRCODE='23514'; END IF;
  IF d.placement_ordinal IS NULL THEN
   IF NOT EXISTS(SELECT 1 FROM game_item_ground_removal_evidence g WHERE g.item_instance_id=p AND g.world_id=d.world_id AND g.channel_id=d.channel_id)
@@ -1037,7 +1069,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 DO $$ DECLARE f TEXT; BEGIN
- FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()','game_world_reset_admission_closed()'] LOOP
+ FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()','game_world_reset_admission_closed()','game_world_reset_readmission_closed()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);
@@ -1046,20 +1078,22 @@ END $$;
 "#;
 
 #[cfg(test)]
-mod migration_0096_tests {
-    // D1416: migration 0096 installs exactly this source; regenerate the file from
+mod migration_0131_tests {
+    // D1416: migration 0131 installs exactly this source; regenerate the file from
     // `candidate_schema_sql()` whenever a native guard body or the schema changes.
     #[test]
-    fn migration_0096_is_exactly_the_schema_source() -> Result<(), &'static str> {
-        let installed = include_str!("../../migrations/0096_world_reset.sql");
+    fn migration_0131_is_exactly_the_schema_source() -> Result<(), &'static str> {
+        let installed = include_str!("../../migrations/0131_world_reset.sql");
         assert_eq!(installed, super::candidate_schema_sql()?);
         Ok(())
     }
 
     #[test]
-    fn migration_0096_extends_the_latest_native_item_change_guard() {
-        let installed = include_str!("../../migrations/0096_world_reset.sql");
+    fn migration_0131_extends_the_latest_native_item_change_guard() {
+        let installed = include_str!("../../migrations/0131_world_reset.sql");
         assert!(installed.contains("-- 0095: exact owner-produced House shape evidence"));
+        // 0113 (after the original 0096) added the equipment swap arm; 0131 extends that body.
+        assert!(installed.contains("r.swap_item_instance_id=NEW.item_instance_id"));
         assert_eq!(
             installed
                 .matches("game_world_reset_item_proven(NEW.item_instance_id)")
@@ -1072,11 +1106,63 @@ mod migration_0096_tests {
                 .count(),
             2
         );
-        // CREATE OR REPLACE drops 0095's SECURITY DEFINER; the slot restores it.
+        // CREATE OR REPLACE drops 0113's SECURITY DEFINER; the slot restores it.
         assert!(
             installed
                 .contains("ALTER FUNCTION game_item_instance_change_proven() SECURITY DEFINER;\n")
         );
+    }
+
+    #[test]
+    fn migration_0131_guard_sources_are_the_latest_native_definitions()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("migrations");
+        let mut files = Vec::new();
+        for entry in std::fs::read_dir(&dir)? {
+            let name = entry?.file_name().to_string_lossy().into_owned();
+            if name.ends_with(".sql") {
+                files.push(name);
+            }
+        }
+        files.sort();
+        for (name, source) in [
+            (
+                "game_item_decay_retire_consistency_guard",
+                "0015_corpse_decay_retire.sql",
+            ),
+            (
+                "game_item_instance_change_proven",
+                "0113_equipment_swap.sql",
+            ),
+            (
+                "game_item_ground_removal_proven",
+                "0050_spell_item_temporal_chain.sql",
+            ),
+            (
+                "game_item_corpse_entry_removal_proven",
+                "0042_spell_inventory_consumption.sql",
+            ),
+        ] {
+            let marker = format!("FUNCTION {name}() RETURNS trigger");
+            let mut defining = Vec::new();
+            for file in &files {
+                if std::fs::read_to_string(dir.join(file))?.contains(&marker) {
+                    defining.push(file.as_str());
+                }
+            }
+            // A later redefinition would silently drop the reset proof from the live guard.
+            assert_eq!(
+                defining.last().copied(),
+                Some("0131_world_reset.sql"),
+                "{name}"
+            );
+            assert_eq!(
+                defining.iter().rev().nth(1).copied(),
+                Some(source),
+                "{name}"
+            );
+        }
+        Ok(())
     }
 }
 
@@ -1332,7 +1418,35 @@ mod reset_activation_source_tests {
                 .count(),
             1
         );
-        assert!(sql.contains("CREATE ROLE oteryn_game_world_reset NOLOGIN;"));
+        // Codex P1 4307818772: two disjoint NOLOGIN NOINHERIT capabilities, refused when a
+        // pre-existing role logs in, is a member of a role or already holds a privilege.
+        for role in [
+            "oteryn_game_world_reset",
+            "oteryn_game_world_reset_publisher",
+        ] {
+            assert!(
+                sql.contains(&format!("CREATE ROLE {role} NOLOGIN NOINHERIT;")),
+                "{role}"
+            );
+        }
+        for refusal in [
+            "pg_auth_members m JOIN pg_roles r ON r.oid=m.member WHERE r.rolname=c",
+            "aclexplode(o.relacl)",
+            "aclexplode(o.proacl)",
+            "aclexplode(o.nspacl)",
+            "pg_has_role('oteryn_game_world_reset','oteryn_game_world_reset_publisher','MEMBER')",
+            "pg_has_role('oteryn_game_world_reset_publisher','oteryn_game_world_reset','MEMBER')",
+            // A superuser is no implicit holder: the walk follows grants from session_user.
+            "WITH RECURSIVE m(oid) AS (SELECT oid FROM pg_roles WHERE rolname=session_user",
+            "REVOKE ALL ON FUNCTION game_world_reset_login_holds(NAME) FROM PUBLIC;",
+        ] {
+            assert!(sql.contains(refusal), "{refusal}");
+        }
+        // Cluster-wide role rows are never rewritten by a per-database install.
+        assert!(!sql.contains("ALTER ROLE"));
+        let login_check = sql
+            .find("IF game_world_reset_login_holds('oteryn_game_world_reset_publisher')")
+            .unwrap_or(usize::MAX);
         let capability = sql
             .find("'World reset activation capability is held by a generic Game group'")
             .unwrap_or(usize::MAX);
@@ -1342,9 +1456,13 @@ mod reset_activation_source_tests {
         assert!(body < capability && capability < sql.len());
         for group in ["oteryn_game_runtime", "oteryn_game_control"] {
             let check = format!("pg_has_role('{group}','oteryn_game_world_reset','MEMBER')");
-            // Role DO block, activation and publication.
-            assert_eq!(sql.matches(&check).count(), 3, "{check}");
+            // Activation only; the role DO block checks both capabilities in its loop.
+            assert_eq!(sql.matches(&check).count(), 1, "{check}");
             assert!(sql[body..capability].contains(&check), "{check}");
+            assert!(
+                sql.contains(&format!("pg_has_role('{group}',c,'MEMBER')")),
+                "{group}"
+            );
         }
         assert!(sql.contains("ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path"));
         assert!(!sql.contains("BYTEA,UUID,NUMERIC) "));
@@ -1359,6 +1477,7 @@ mod reset_activation_source_tests {
         let house = position("'World reset House evidence refused'");
         let first_write = position("PERFORM game_content_record_activation_core(");
         assert!(body < capability && capability < evidence_data && evidence_data < first_fence);
+        assert!(capability < login_check && login_check < evidence_data);
         assert!(assignment_lock < drain && house_lock < drain);
         assert!(drain < house && house < first_write && first_write < usize::MAX);
         // The same D1233 domain, fields and Channel order as `world_drain_cohort_digest`.
@@ -1398,7 +1517,11 @@ mod reset_activation_source_tests {
         assert!(sql.contains(&format!(
             "REVOKE ALL ON FUNCTION {signature} FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;"
         )));
+        // Codex P1 4307818772: the publisher capability, never the activation one.
         assert!(sql.contains(&format!(
+            "GRANT EXECUTE ON FUNCTION {signature} TO oteryn_game_world_reset_publisher;"
+        )));
+        assert!(!sql.contains(&format!(
             "GRANT EXECUTE ON FUNCTION {signature} TO oteryn_game_world_reset;"
         )));
         assert_eq!(
@@ -1406,6 +1529,28 @@ mod reset_activation_source_tests {
                 .count(),
             1
         );
+        // The Rust path before each owner runs as the capability login: read and fence
+        // (MAINTAIN for LOCK TABLE) grants only, never a write on any relation.
+        assert!(sql.contains(
+            "game_durability_transport_ref_reservations TO oteryn_game_world_reset_publisher;"
+        ));
+        assert!(sql.contains("GRANT MAINTAIN,SELECT ON game_item_house_interior_locations,game_house_ownership,game_world_house_instances\n TO oteryn_game_world_reset_publisher,oteryn_game_world_reset;"));
+        assert!(sql.contains("GRANT SELECT ON game_world_reset_epoch_history,game_world_reset_active_epochs,game_world_reset_jobs\n TO oteryn_game_world_reset_publisher;"));
+        for grant in sql.split("GRANT ").skip(1) {
+            let statement = grant.split(';').next().unwrap_or_default();
+            if statement.contains(" TO oteryn_game_world_reset") {
+                for write in ["INSERT", "UPDATE", "DELETE", "TRUNCATE", "ALL"] {
+                    assert!(
+                        !statement
+                            .split(" ON ")
+                            .next()
+                            .unwrap_or_default()
+                            .contains(write),
+                        "{statement}"
+                    );
+                }
+            }
+        }
         assert!(sql.contains("ALTER FUNCTION game_world_reset_publish(uuid,numeric,bytea,text,bytea,bytea,bytea,text,numeric,text[],bytea[],text[]) SET search_path"));
         let start = sql
             .find("CREATE FUNCTION game_world_reset_publish(")
@@ -1415,7 +1560,17 @@ mod reset_activation_source_tests {
         let position = |needle: &str| body.find(needle).unwrap_or(usize::MAX);
         let capability =
             position("'World reset publication capability is held by a generic Game group'");
+        let login = position("IF game_world_reset_login_holds('oteryn_game_world_reset')");
         let data = position("'World reset publication target data refused'");
+        for group in ["oteryn_game_runtime", "oteryn_game_control"] {
+            let check =
+                format!("pg_has_role('{group}','oteryn_game_world_reset_publisher','MEMBER')");
+            assert_eq!(sql.matches(&check).count(), 1, "{check}");
+            assert!(
+                capability < body.len() && body[..capability].contains(&check),
+                "{check}"
+            );
+        }
         let fence =
             position("LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE");
         let epoch = position("'World reset publication epoch is not the active epoch'");
@@ -1427,7 +1582,7 @@ mod reset_activation_source_tests {
             .unwrap_or(usize::MAX);
         let job = position("INSERT INTO game_world_reset_jobs(");
         let cohort = position("INSERT INTO game_world_reset_scopes(");
-        assert!(capability < data && data < fence && fence < epoch);
+        assert!(capability < login && login < data && data < fence && fence < epoch);
         assert!(epoch < houses && houses < house && house < job && job < cohort);
         assert!(cohort < body.len());
         assert!(body[houses..house].contains("EXCEPT SELECT k,p FROM unnest(hk,hp) AS c(k,p)"));
@@ -1437,6 +1592,20 @@ mod reset_activation_source_tests {
         assert!(super::RESET_SCHEMA.contains(
             "REVOKE ALL ON game_world_reset_jobs,game_world_reset_scopes FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;"
         ));
+    }
+
+    // Codex P1 4307818778: completing a reconnect prepared before publication (an UPDATE into
+    // session_state 2) is closed while the World is RETIRING; other transitions stay open.
+    #[test]
+    fn retiring_job_closes_reconnect_completion_updates() {
+        let sql = super::RESET_SCHEMA;
+        assert!(sql.contains("CREATE TRIGGER game_world_reset_readmission_closed BEFORE UPDATE ON game_durability_reconnect_sessions FOR EACH ROW WHEN (NEW.session_state=2 AND OLD.session_state IS DISTINCT FROM 2) EXECUTE FUNCTION game_world_reset_readmission_closed();"));
+        let start = sql
+            .find("CREATE FUNCTION game_world_reset_readmission_closed()")
+            .unwrap_or(usize::MAX);
+        assert!(start < sql.len());
+        assert!(sql[start..].contains("WHERE world_id=NEW.world_id AND phase='RETIRING')\n THEN RAISE EXCEPTION 'World reset is RETIRING: reconnect completion is closed' USING ERRCODE='OTR03'"));
+        assert!(sql.contains("'game_world_reset_readmission_closed()'] LOOP"));
     }
 
     #[test]
@@ -1662,7 +1831,7 @@ impl DurabilityRoot {
 }
 
 const RESET_EPOCH_SCHEMA: &str = r#"
--- D1257/0096. Explicit Control initialization only.
+-- D1257/0131. Explicit Control initialization only.
 CREATE FUNCTION game_world_reset_month_key(p_instant TIMESTAMPTZ,p_policy TEXT,p_revision NUMERIC)
 RETURNS TEXT LANGUAGE SQL IMMUTABLE STRICT AS $$
  SELECT CASE WHEN isfinite(p_instant) AND p_policy='TIBIA_SERVER_SAVE_BERLIN_10'
@@ -1740,7 +1909,9 @@ pub async fn read_locked_world_reset_target(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     world: WorldId,
 ) -> Result<WorldResetTarget, WorldResetError> {
-    let row=sqlx::query("SELECT reset_epoch::text,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision::text,target_calendar_parity FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE")
+    // Every caller holds the admission EXCLUSIVE locks that serialize all job writers, so the
+    // row stays as read until the TX ends; no login holds the UPDATE a row lock would need.
+    let row=sqlx::query("SELECT reset_epoch::text,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision::text,target_calendar_parity FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING'")
         .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?.ok_or(WorldResetError::NotCurrent)?;
     let required_text = |index| {
         row.try_get::<Option<String>, _>(index)
@@ -1804,8 +1975,9 @@ pub(crate) enum WorldResetActivationDisposition {
 /// The source and witness must be genuine C/I implementations; this module creates neither.
 /// Historical exact replay is checked first and does not require today's drain/cohort.
 /// No publication or in-memory readiness transition may precede the commit receipt.
-/// The TX must run as the reset owner's login, the only member of `oteryn_game_world_reset`;
-/// a generic runtime or control login is refused EXECUTE (42501).
+/// The TX must run as the reset owner's node login, the only member of `oteryn_game_world_reset`,
+/// which does not hold `oteryn_game_world_reset_publisher`; a generic runtime or control login
+/// is refused EXECUTE and a login holding both capabilities is refused (42501).
 pub(crate) async fn activate_world_reset_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
@@ -1822,11 +1994,12 @@ pub(crate) async fn activate_world_reset_in_transaction(
         .checked_add(1)
         .ok_or(WorldResetError::CapacityExceeded)?;
     lock_admission_relations(tx).await?;
-    // Lock the exact occurrence, never whichever job is currently RETIRING.
+    // Read the exact occurrence, never whichever job is currently RETIRING. The admission
+    // locks above hold it stable; no login holds the UPDATE a row lock would need.
     let replay: Option<bool> = sqlx::query_scalar(
         "SELECT phase='ACTIVATED' AND revision=$3::text::numeric AND target_digest=$4 \
          FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid \
-         AND reset_epoch=$2::text::numeric FOR UPDATE",
+         AND reset_epoch=$2::text::numeric",
     )
     .bind(identity.world.as_bytes().as_slice())
     .bind(identity.epoch.to_string())
@@ -1910,7 +2083,7 @@ impl DurabilityRoot {
     }
 }
 
-// Private successor installed by 0096; no production root mounting yet.
+// Private successor installed by 0131; no production root mounting yet.
 // A generic runtime login can read every durable fact the SQL rechecks, so those rechecks
 // cannot stand in for the in-memory drain witness or the qualified catalogues. EXECUTE is
 // therefore an owner-specific capability (`oteryn_game_world_reset`) that no Game group
@@ -1922,20 +2095,51 @@ CREATE FUNCTION game_world_reset_u64_be(v NUMERIC) RETURNS BYTEA LANGUAGE SQL IM
 $$;
 REVOKE ALL ON FUNCTION game_world_reset_u64_be(NUMERIC) FROM PUBLIC;
 ALTER FUNCTION game_world_reset_u64_be(NUMERIC) SET search_path=pg_catalog,pg_temp;
--- Activation is an owner-specific capability, never a generic runtime or control grant.
--- Deployment grants this NOLOGIN group only to the reset owner's login, which reaches the
--- call only after the Rust drain witness and catalogue House checks; no group may hold it.
-DO $$ BEGIN
+-- Activation and publication are two owner-specific capabilities, never a generic runtime
+-- or control grant (Codex P1 4307818772). Activation (`oteryn_game_world_reset`) belongs to
+-- the reset owner's node login, which reaches the call only after the Rust drain witness and
+-- catalogue House checks. Publication (`oteryn_game_world_reset_publisher`) belongs to the
+-- operator's `[world_reset]` login, which never runs the drain witness, so it must never be
+-- able to activate. Both are plain NOLOGIN NOINHERIT groups that are members of no role and
+-- hold no object privilege but the EXECUTE, read and fence grants this file makes; no
+-- group may hold either.
+DO $$ DECLARE c NAME; BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset') THEN
-  BEGIN CREATE ROLE oteryn_game_world_reset NOLOGIN;
+  BEGIN CREATE ROLE oteryn_game_world_reset NOLOGIN NOINHERIT;
   EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
  END IF;
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset'
- AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication))
- OR pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
- OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
- THEN RAISE EXCEPTION 'oteryn_game_world_reset must be a plain NOLOGIN group outside the Game groups' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset_publisher') THEN
+  BEGIN CREATE ROLE oteryn_game_world_reset_publisher NOLOGIN NOINHERIT;
+  EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+ END IF;
+ FOREACH c IN ARRAY ARRAY['oteryn_game_world_reset','oteryn_game_world_reset_publisher']::NAME[] LOOP
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname=c
+  AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication))
+  OR EXISTS(SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member WHERE r.rolname=c)
+  OR pg_has_role('oteryn_game_runtime',c,'MEMBER')
+  OR pg_has_role('oteryn_game_control',c,'MEMBER')
+  OR EXISTS(SELECT 1 FROM pg_class o CROSS JOIN LATERAL aclexplode(o.relacl) x JOIN pg_roles r ON r.oid=x.grantee WHERE r.rolname=c)
+  OR EXISTS(SELECT 1 FROM pg_attribute o CROSS JOIN LATERAL aclexplode(o.attacl) x JOIN pg_roles r ON r.oid=x.grantee WHERE r.rolname=c)
+  OR EXISTS(SELECT 1 FROM pg_proc o CROSS JOIN LATERAL aclexplode(o.proacl) x JOIN pg_roles r ON r.oid=x.grantee WHERE r.rolname=c)
+  OR EXISTS(SELECT 1 FROM pg_namespace o CROSS JOIN LATERAL aclexplode(o.nspacl) x JOIN pg_roles r ON r.oid=x.grantee WHERE r.rolname=c)
+  THEN RAISE EXCEPTION '% must be a plain NOLOGIN group outside the Game groups with no prior privilege',c USING ERRCODE='42501'; END IF;
+  -- No role is altered here: installs into sibling databases of one cluster run concurrently and
+  -- would race on the shared pg_authid row (XX000). A pre-existing group passes only as a
+  -- member of no role, so its INHERIT attribute grants nothing.
+ END LOOP;
+ IF pg_has_role('oteryn_game_world_reset','oteryn_game_world_reset_publisher','MEMBER')
+ OR pg_has_role('oteryn_game_world_reset_publisher','oteryn_game_world_reset','MEMBER')
+ THEN RAISE EXCEPTION 'World reset activation and publication capabilities must stay disjoint' USING ERRCODE='42501'; END IF;
 END $$;
+-- The call-time holder walk follows actual grants (pg_auth_members) from the session login.
+-- pg_has_role would count a superuser as a member of every role; this walk does not.
+CREATE FUNCTION game_world_reset_login_holds(p_capability NAME) RETURNS BOOLEAN LANGUAGE SQL STABLE AS $$
+ WITH RECURSIVE m(oid) AS (SELECT oid FROM pg_roles WHERE rolname=session_user
+  UNION SELECT a.roleid FROM pg_auth_members a JOIN m ON a.member=m.oid)
+ SELECT EXISTS(SELECT 1 FROM m JOIN pg_roles r ON r.oid=m.oid WHERE r.rolname=p_capability);
+$$;
+REVOKE ALL ON FUNCTION game_world_reset_login_holds(NAME) FROM PUBLIC;
+ALTER FUNCTION game_world_reset_login_holds(NAME) SET search_path=pg_catalog,pg_temp;
 CREATE FUNCTION game_world_reset_activate(w UUID,e NUMERIC,r NUMERIC,b BYTEA,n UUID,nr NUMERIC,
  d BYTEA,hk TEXT[],hp BYTEA[],hs TEXT[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -1948,6 +2152,10 @@ BEGIN
  IF pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
  OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
  THEN RAISE EXCEPTION 'World reset activation capability is held by a generic Game group' USING ERRCODE='42501'; END IF;
+ -- Codex P1 4307818772: the publication login never runs the drain witness, so a login
+ -- that also holds publication never activates.
+ IF game_world_reset_login_holds('oteryn_game_world_reset_publisher')
+ THEN RAISE EXCEPTION 'World reset activation refused: the login also holds publication' USING ERRCODE='42501'; END IF;
  -- SQL NULL must never turn a current-authority predicate into UNKNOWN/false IF.
  -- Refuse malformed occurrence/node data before taking any mutation fence.
  IF w IS NULL OR e IS NULL OR r IS NULL OR b IS NULL OR n IS NULL OR nr IS NULL
@@ -2052,15 +2260,19 @@ END $$;
 -- owner's Rust preflight binds both House catalogues first; this owner rechecks that House
 -- evidence under the SHARE House locks, so a refused preflight leaves no job and closes no
 -- admission. The committed job closes admission to the whole World in this same TX
--- (game_world_reset_admission_closed). Same owner capability as activation: no Game group may hold it.
+-- (game_world_reset_admission_closed). Its capability is the publisher group, disjoint from
+-- activation: no Game group and no activation login may hold it.
 CREATE FUNCTION game_world_reset_publish(w UUID,e NUMERIC,b BYTEA,tm TEXT,ts BYTEA,tc BYTEA,tf BYTEA,
  cp TEXT,cr NUMERIC,hk TEXT[],hp BYTEA[],hs TEXT[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_active game_world_reset_epoch_history%ROWTYPE;
 BEGIN
- IF pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
- OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
+ IF pg_has_role('oteryn_game_runtime','oteryn_game_world_reset_publisher','MEMBER')
+ OR pg_has_role('oteryn_game_control','oteryn_game_world_reset_publisher','MEMBER')
  THEN RAISE EXCEPTION 'World reset publication capability is held by a generic Game group' USING ERRCODE='42501'; END IF;
+ -- Codex P1 4307818772: the node's activation login never publishes.
+ IF game_world_reset_login_holds('oteryn_game_world_reset')
+ THEN RAISE EXCEPTION 'World reset publication refused: the login also holds activation' USING ERRCODE='42501'; END IF;
  IF w IS NULL OR e IS NULL OR b IS NULL OR tm IS NULL OR ts IS NULL OR tc IS NULL OR tf IS NULL
  OR cp IS NULL OR cr IS NULL OR NOT game_node_is_uuid_v7(w)
  OR octet_length(b)<>32 OR octet_length(ts)<>32 OR octet_length(tc)<>32 OR octet_length(tf)<>32
@@ -2111,8 +2323,29 @@ BEGIN
  SELECT world_id,e,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1;
 END $$;
 REVOKE ALL ON FUNCTION game_world_reset_publish(UUID,NUMERIC,BYTEA,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
-GRANT EXECUTE ON FUNCTION game_world_reset_publish(UUID,NUMERIC,BYTEA,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_world_reset;
+GRANT EXECUTE ON FUNCTION game_world_reset_publish(UUID,NUMERIC,BYTEA,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_world_reset_publisher;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_world_reset_publish(uuid,numeric,bytea,text,bytea,bytea,bytea,text,numeric,text[],bytea[],text[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
+-- The Rust paths before each owner run as the capability login itself. Publication takes
+-- the admission EXCLUSIVE and House SHARE fences, reads the active epoch, both House
+-- catalogues and the replay probe; activation takes the assignment, Ground and House SHARE
+-- fences, which a column UPDATE does not allow. LOCK TABLE needs MAINTAIN (as 0006 grants
+-- Control for the admission fences). No capability gains a write: the
+-- job, cohort, epoch and activation rows are written only by the SECURITY DEFINER owners.
+GRANT MAINTAIN ON game_durability_admission_account_guards,game_durability_admission_character_guards,
+ game_durability_admission_guard_history,game_durability_admission_lifecycle_receipts,
+ game_durability_admission_runtime_guards,game_durability_admission_signing_trust_guards,
+ game_durability_control_loss_continuity,game_durability_executor_custody,
+ game_durability_fresh_admission_receipts,game_durability_reconnect_attempts,
+ game_durability_reconnect_pending_commands,game_durability_reconnect_sessions,
+ game_durability_recovery_grant_consumptions,game_durability_session_replacements,
+ game_durability_session_use_ledgers,game_durability_session_use_memberships,
+ game_durability_transport_ref_reservations TO oteryn_game_world_reset_publisher;
+GRANT MAINTAIN,SELECT ON game_item_house_interior_locations,game_house_ownership,game_world_house_instances
+ TO oteryn_game_world_reset_publisher,oteryn_game_world_reset;
+GRANT MAINTAIN ON game_runtime_scope_assignments,game_item_ground_locations,game_item_corpse_container_entries
+ TO oteryn_game_world_reset;
+GRANT SELECT ON game_world_reset_epoch_history,game_world_reset_active_epochs,game_world_reset_jobs
+ TO oteryn_game_world_reset_publisher;
 "#;

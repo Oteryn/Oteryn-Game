@@ -1413,7 +1413,8 @@ async fn public_projection(
 
 /// `world-reset initialize|publish` (MAP-OVERLAY-1c D1451): the operator path of the World
 /// reset. `initialize` records epoch 0 with the operator's control-plane login; `publish`, the
-/// only RETIRING publisher, connects only the reset owner's login (`[world_reset]`). Like
+/// only RETIRING publisher, connects only the publication login (`[world_reset]`, a member of
+/// `oteryn_game_world_reset_publisher`, never of `oteryn_game_world_reset`). Like
 /// `projection resync`, each connects its one root before, and instead of, the operator's
 /// state: both inputs are derived from qualified content, so the identical re-run after an
 /// unknown outcome is the replay. The node completes a published reset at its next boot.

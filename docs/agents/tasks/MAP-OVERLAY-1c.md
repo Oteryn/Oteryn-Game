@@ -21,6 +21,45 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+## Renumbering, role split and readmission fence — 2026-10-18 (D1453)
+
+- D1453 renumbering: `0096_world_reset.sql` is now `0131_world_reset.sql` and
+  `0123_native_map_item_reset_epoch.sql` is now `0132_native_map_item_reset_epoch.sql`;
+  every reference (include paths, unit tests, docs) follows. Under the old order, main's
+  0113 redefined `game_item_instance_change_proven` after the reset migration and dropped
+  the reset early-return. The generator now extends 0113's body (the swap arm included).
+  The unit test `migration_0131_guard_sources_are_the_latest_native_definitions` scans
+  `migrations/` and requires that 0131 is the last definition of each extended guard and
+  that the generator's source is the one before it.
+- Codex P1 4307818772 (separate activation from the publisher credential): 0131 creates two
+  disjoint NOLOGIN NOINHERIT capabilities. `oteryn_game_world_reset` (EXECUTE on
+  `game_world_reset_activate`) is held by the node login.
+  `oteryn_game_world_reset_publisher` (EXECUTE on `game_world_reset_publish`) is held by
+  the ops `[world_reset]` login. The migration refuses a pre-existing role with login or
+  privileged attributes, any membership, membership in or of a Game group, or any direct
+  ACL. At call time, activation refuses (42501) when the session login holds the publisher
+  capability. Publication refuses when a Game group holds the publisher capability or the
+  login holds activation. The publication PG case proves these on real logins: both
+  capabilities refused both calls; publisher only could publish but not activate;
+  activator only could activate but not publish.
+- Codex P1 4307818778 (block reconnect session updates while RETIRING), and the known
+  risk that a reconnect prepared before publication can still complete: the trigger
+  `game_world_reset_readmission_closed` (BEFORE UPDATE on
+  `game_durability_reconnect_sessions`, when a row enters state 2) raises OTR03 while
+  the World has a RETIRING job. Publication holds the session table EXCLUSIVE, so no
+  completion straddles its commit. The operator e2e case completes a prepared reconnect
+  with the exact `complete_reconnect` UPDATE: it succeeds before publication, is
+  refused (OTR03) while RETIRING, and succeeds again after activation.
+- Nested entries (0128 `game_item_nested_entries`): the reset item proof refuses a root or
+  parent with nested entries. The Rust phase returns `InvalidStoredState` for a nested
+  entry under the root or under its corpse entries, so the root is not attempted.
+- Main merge compile fix (wave1 report, lead-directed; disclosed scope extension):
+  `gameplay_transport/loop_move.rs` (ITEM-LOOP-1, #2190) passes
+  `admission.reset_epoch` to `bundle_map_position`, and the key-33 pin array grows to 14.
+- Deployment rows (D1447 batch, unchanged owner): grant `oteryn_game_world_reset` to the
+  node login only, and `oteryn_game_world_reset_publisher` to the ops `[world_reset]`
+  login only.
+
 ## Completion and wiring — 2026-10-18 (D1436)
 
 - CI root cause: the reset PG cases returned `Err` when `OTERYN_TEST_POSTGRES_ADMIN_URL`
@@ -76,8 +115,8 @@ merge_authority: CP_ONLY (builder never marks ready)
     (HOUSE-RUNTIME owner).
   - Only one Channel per node: a multi-Channel World waits as `NotCurrent`.
   - A crash-left reconnect session in state 1 or 2 blocks the cohort until it is released.
-  - The reset owner login must also be granted EXECUTE use of `game_world_reset_publish`
-    through `oteryn_game_world_reset` (same D1447 deploy grant), and the ops config needs its
+  - The ops reset login must be granted `oteryn_game_world_reset_publisher` (EXECUTE on
+    `game_world_reset_publish`; D1453 role split, same D1447 deploy batch), and the ops config needs its
     `[world_reset.database]` credential for `world-reset publish`.
   - `MAP01-RESET-RETIRE-MS` (600,000 ms) needs a real-data measurement.
 - D1451 (CP, option a; replaces the LOOP-GROUND-1 cross_domain_finding): source-map Item
@@ -284,10 +323,10 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/src/durability/mod.rs` (world reset module registration)
 - `apps/game-server/src/node/serve.rs` (boot recovery, reset watch and drain exit)
 - `apps/game-server/src/gameplay_transport/mod.rs` (`GameplayDrain`, `serve_gameplay_draining`)
-- `apps/game-server/migrations/0096_world_reset.sql`
+- `apps/game-server/migrations/0131_world_reset.sql` (D1453; was 0096)
 - `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (`MAP01-RESET-RETIRE-MS` row only)
 - `apps/game-server/tests/spell_lane_key33_pin.rs` (`world_reset_phase` pin row only)
-- `apps/game-server/migrations/0123_native_map_item_reset_epoch.sql` (D1451; provisional number)
+- `apps/game-server/migrations/0132_native_map_item_reset_epoch.sql` (D1451; D1453 number, was 0123)
 - `apps/game-server/src/durability/native_map_items.rs` (D1451 reset-epoch receipt key)
 - `apps/game-server/src/spell/world_execution.rs` (D1451 active-epoch receipt lookup)
 - `apps/game-server/src/bin/oteryn-game-ops.rs` (D1451 `world-reset` operator command)
