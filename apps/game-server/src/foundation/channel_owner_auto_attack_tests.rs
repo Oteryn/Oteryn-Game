@@ -1526,6 +1526,7 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         suspend: bool,
         first_caller: usize,
         clear_first: bool,
+        protect_first: bool,
     ) -> ([Option<CardinalStep>; 2], Option<MovementLocalPosition>) {
         let (mut owner, chasers) = two_chasers();
         let room = owner.room.clone();
@@ -1571,6 +1572,28 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
             );
         }
         let now = T0 + CHASE_WINDOW_MICROS;
+        // Re-entry protection ends only the first chaser's chase; its next check would hold.
+        let protect = |owner: &mut Owner| {
+            let (player, session) = chasers[0];
+            owner
+                .runtime
+                .record_control_loss(
+                    player,
+                    session,
+                    ControlLossMark {
+                        epoch: 1,
+                        grace_deadline: 1,
+                    },
+                )
+                .unwrap();
+            owner
+                .runtime
+                .restore_control_after_committed_reentry(player, session, 1, now)
+                .unwrap();
+        };
+        if protect_first && !suspend {
+            protect(&mut owner);
+        }
         if suspend {
             // Pending creatures hold 48 searches; prior player work leaves one reservation.
             let budget = &mut owner.attack.chase_searches;
@@ -1590,7 +1613,7 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         );
         assert_eq!(
             owner.attack.chase_searches.player_searches(),
-            if suspend { 1 } else { 2 }
+            if suspend || protect_first { 1 } else { 2 }
         );
         if suspend {
             assert_eq!(steps[1], None, "the second search stopped on the budget");
@@ -1610,10 +1633,14 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
             let (player, session) = chasers[0];
             owner.attack.clear_target(player, session);
         }
+        if protect_first && suspend {
+            // The first step is still stored when the first chaser's chase stops running.
+            protect(&mut owner);
+        }
         // As in chase_step_now's await of paced_step, no returned step has committed yet. The
         // resumed search must see the first destination even if next_step already consumed it.
         for (step, (player, session)) in steps.iter_mut().zip(chasers) {
-            if step.is_none() && !(clear_first && player == chasers[0].0) {
+            if step.is_none() && !((clear_first || protect_first) && player == chasers[0].0) {
                 *step = owner.attack.chase_decision(
                     &owner.runtime,
                     &room,
@@ -1624,9 +1651,12 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
                 );
             }
         }
-        assert_eq!(steps[0], Some(CardinalStep::East));
+        assert_eq!(steps[0], (!protect_first).then_some(CardinalStep::East));
         assert!(steps[1].is_some());
-        assert_eq!(owner.attack.chase_searches.player_searches(), 2);
+        assert_eq!(
+            owner.attack.chase_searches.player_searches(),
+            if protect_first && !suspend { 1 } else { 2 }
+        );
         assert_eq!(
             owner
                 .runtime
@@ -1639,7 +1669,7 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         (steps, owner.attack.entries[index].chase.next_cell())
     }
 
-    let uninterrupted = routes(false, 1, false);
+    let uninterrupted = routes(false, 1, false, false);
     assert!(uninterrupted.1.is_some());
     assert_ne!(
         uninterrupted.1,
@@ -1649,21 +1679,35 @@ fn a_resumed_chase_drain_keeps_the_earlier_planned_occupancy() {
         }),
         "the second route avoids the first chaser's planned destination"
     );
-    assert_eq!(routes(false, 0, false), uninterrupted);
+    assert_eq!(routes(false, 0, false, false), uninterrupted);
     assert_eq!(
-        routes(true, 1, false),
+        routes(true, 1, false, false),
         uninterrupted,
         "the first step is still stored"
     );
     assert_eq!(
-        routes(true, 0, false),
+        routes(true, 0, false, false),
         uninterrupted,
         "the first step awaits Movement"
     );
     assert_eq!(
-        routes(true, 0, true),
+        routes(true, 0, true, false),
         uninterrupted,
         "the in-flight step survives target cleanup"
+    );
+    // Without a running chase, the first chaser stands still: the second route crosses it.
+    let ended = routes(false, 1, false, true);
+    assert_eq!(
+        ended.1,
+        Some(MovementLocalPosition {
+            x: OPEN_PLAYER.x + 1,
+            ..OPEN_PLAYER
+        })
+    );
+    assert_eq!(
+        routes(true, 1, false, true),
+        ended,
+        "a stored step is dropped once its chase stops running"
     );
 }
 
