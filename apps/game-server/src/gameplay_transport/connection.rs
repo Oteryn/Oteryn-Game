@@ -138,6 +138,9 @@ pub(crate) struct FreshAdmissionAttempt<'a> {
     pub(crate) admission_material: &'a [u8],
     pub(crate) game_session_id: GameSessionId,
     pub(crate) transport: AuthenticatedTransportRefV1,
+    /// The bootstrap's supported capabilities, untrusted. ADMIT0 §4: the owner checks them
+    /// against the Channel's required set only after authenticating the grant.
+    pub(crate) supported_capabilities: &'a [u32],
 }
 
 /// One `ClientResume` attempt: the GameSession to resume, the untrusted reauthenticated
@@ -328,6 +331,10 @@ pub(crate) enum AdmissionRefusal {
     /// Refused with an N8 admission refusal code (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); nothing
     /// was admitted. The client receives the code in one `ProtocolError` before the close.
     Classified(FoundationProtocolError),
+    /// ADMIT0 §4: an authenticated recovery whose support lacks the Channel's required set.
+    /// Sent as `RECOVERY_CAPABILITY_REQUIRED` (1118, CP D1187); no claim is released and no
+    /// recovery grant is consumed.
+    RecoveryCapabilityRequired,
 }
 
 /// N8: the one pre-admission refusal frame is written and flushed within this bound, or dropped.
@@ -362,13 +369,6 @@ pub(crate) trait FreshAdmissionAuthority {
     /// the registry's offered set; tests inject theirs.
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         PRODUCTION_OFFERED_CAPABILITIES
-    }
-
-    /// A capability every fresh admission must select, or `None`. A bundle World requires 18
-    /// `WORLD_MAP_VIEW_V1` (MAP-CUTOVER-1b): it serves its map only as domain 17, so a client
-    /// without it is refused with `CAPABILITY_MISMATCH` before the owner admits anything.
-    fn required_capability(&self) -> Option<u32> {
-        None
     }
 
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
@@ -1177,8 +1177,28 @@ where
                     last_applied_server_sequence: resume.last_applied_server_sequence,
                     supported_capabilities: resume.supported_capabilities,
                 })
-                .await
-                .map_err(|_| ConnectionEnd::ResumeUnavailable)?;
+                .await;
+            let resumed = match resumed {
+                Ok(resumed) => resumed,
+                // ADMIT0 §4: the owner reached this only after authenticating the recovery
+                // credential, so the typed refusal may be revealed. One frame, then close.
+                Err(AdmissionRefusal::RecoveryCapabilityRequired) => {
+                    let _ = tokio::time::timeout(
+                        ADMISSION_REFUSAL_WRITE_BOUND,
+                        send_error(
+                            stream,
+                            FoundationProtocolError::RecoveryCapabilityRequired,
+                            0,
+                        ),
+                    )
+                    .await;
+                    return Err(ConnectionEnd::AdmissionRefused(
+                        AdmissionRefusal::RecoveryCapabilityRequired,
+                    ));
+                }
+                // Every other refusal stays silent: nothing about the session is revealed.
+                Err(_) => return Err(ConnectionEnd::ResumeUnavailable),
+            };
             let continuity = resumed.continuity;
             // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
             // refuses a resume that cannot keep it before committing; this never acknowledges one.
@@ -1224,21 +1244,14 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
-    if let Some(required) = authority.required_capability()
-        && !selected.contains(required)
-    {
-        let error = FoundationProtocolError::CapabilityMismatch;
-        let _ =
-            tokio::time::timeout(ADMISSION_REFUSAL_WRITE_BOUND, send_error(stream, error, 0)).await;
-        return Err(ConnectionEnd::AdmissionRefused(
-            AdmissionRefusal::Classified(error),
-        ));
-    }
+    // ADMIT0 §4: no capability refusal precedes the owner's grant authentication; the owner
+    // checks the Channel's required set itself and answers ADMISSION_CAPABILITY_REQUIRED.
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
         game_session_id,
         transport,
+        supported_capabilities: bootstrap.supported_capabilities,
     };
     let mut admitted = match authority.admit(attempt).await {
         Ok(admitted) => admitted,

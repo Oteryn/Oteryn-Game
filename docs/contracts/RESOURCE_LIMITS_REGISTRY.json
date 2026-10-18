@@ -12184,6 +12184,31 @@
         "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
       ],
       "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "ADMIT0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ADMIT0_WORLD_REQUIRED_CAPABILITIES_DECISION_2026-10-01.md",
+      "resource": "Declared Channel required_gameplay_capabilities before dependency closure",
+      "unit": "declared capability ids per Channel scope",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 16
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "The node configuration list is bounded and checked sorted, unique and registered before the dependency closure is built; boot then refuses the generation (no readiness) when a declared ID or the mandatory floor is unoffered. The closure stays bounded by the protocol capability count (128) and the existing negotiated-selection capacity; no larger set is allocated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "gameplay_transport::world_required_capabilities::tests::the_declared_limit_is_registered_and_applies_before_closure",
+        "gameplay_transport::world_required_capabilities::tests::declared_maximum_and_maximum_plus_one_preserve_the_accepted_bound",
+        "node::config::tests::required_gameplay_capabilities_are_explicit_registered_and_canonical"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/world_required_capabilities.rs (MAX_DECLARED_REQUIRED_CAPABILITIES)",
+        "apps/game-server/src/node/config.rs (ReadinessConfig.required_gameplay_capabilities)",
+        "apps/game-server/src/node/serve.rs (boot binding before readiness)"
+      ],
+      "notes": "ADMIT0 \u00a73.1. The configured value is the operator's declared list, not a tunable cap: 0..16 IDs. The bound applies to the declaration only; the mandatory floor and registry requires are added by the closure afterwards and are bounded separately."
     }
   ]
 }
