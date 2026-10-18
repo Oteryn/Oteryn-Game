@@ -15,6 +15,10 @@ mod logout_e2e;
 #[path = "map_bundle_domain_postgres_tests.rs"]
 mod map_bundle_domain;
 
+// QUEST-RT-1 uses this actual native owner and its coherent fresh-admission fixture.
+#[path = "../quest/admission_tests.rs"]
+pub(in crate::gameplay_transport) mod quest_admission;
+
 use super::{ComposedFreshAdmission, MonkSave};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::fresh_admission::FreshAdmissionStore;

@@ -1028,6 +1028,8 @@ pub(crate) struct QuestSession {
     pub(crate) copy: Option<crate::durability::quest_state::QuestStateCopy>,
     /// When the pending obligations may be requested again after a failed attempt.
     pub(crate) retry_at: Option<std::time::Instant>,
+    /// QUEST-XP-ADMISSION-1: report an unbound session once, across refreshes and resume.
+    experience_deferred_logged: bool,
 }
 
 /// SPEED-1: the level a player's effective speed uses until a Character progression owner
@@ -1835,9 +1837,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// session that may have ended meanwhile: it then updates only a session still present.
     async fn refresh_quest_session(&self, session: GameSessionId, insert: bool) {
         let fence = self.current_quest_fence(session).await;
+        #[cfg(test)]
+        monk_save::postgres_tests::quest_admission::after_fence().await;
+        let mut experience_deferred = false;
         let (copy, retry) = match fence {
             Ok(Some(fence)) => {
-                let admission = crate::durability::quest_state::admit_character_quest_state(
+                let mut admission = crate::durability::quest_state::admit_character_quest_state(
                     &self.revision_sequencer,
                     self.root,
                     self.character,
@@ -1846,7 +1851,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.quest_catalogue.as_ref(),
                 )
                 .await;
-                let retry = admission.retry || admission.copy.is_none();
+                let mut retry = admission.retry || admission.copy.is_none();
+                if let Some(copy) = admission.copy.as_mut() {
+                    // The session's pinned progression policy is independent of quest content.
+                    // progression_binding clones the Arc and releases the map lock before await.
+                    if let Some(binding) = self.progression_binding(session) {
+                        // The XP helper owns a full policy in each award request, as the
+                        // progression initializer does. Keep that future off the caller's frame.
+                        retry |= Box::pin(
+                            crate::durability::quest_state::request_pending_quest_experience(
+                                &self.revision_sequencer,
+                                self.root,
+                                self.character,
+                                self.holder,
+                                fence,
+                                &binding.policy,
+                                copy,
+                            ),
+                        )
+                        .await;
+                    } else {
+                        // No binding cannot be repaired by a quest retry. Preserve any retry
+                        // requested independently by the load or pending claim obligations.
+                        experience_deferred = true;
+                    }
+                }
                 (Some(admission.copy), retry)
             }
             // A proven terminal session: no quest action and nothing to retry.
@@ -1855,11 +1884,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => (None, true),
         };
         let retry_at = retry.then(|| std::time::Instant::now() + QUEST_OBLIGATION_RETRY);
+        let mut report_experience_deferred = false;
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             match (copy, sessions.get_mut(&session)) {
-                (Some(copy), Some(entry)) => *entry = QuestSession { copy, retry_at },
+                (Some(copy), Some(entry)) => {
+                    entry.copy = copy;
+                    entry.retry_at = retry_at;
+                }
                 (Some(copy), None) if insert => {
-                    sessions.insert(session, QuestSession { copy, retry_at });
+                    sessions.insert(
+                        session,
+                        QuestSession {
+                            copy,
+                            retry_at,
+                            experience_deferred_logged: false,
+                        },
+                    );
                 }
                 (None, Some(entry)) => entry.retry_at = retry_at,
                 (None, None) if insert => {
@@ -1868,11 +1908,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         QuestSession {
                             copy: None,
                             retry_at,
+                            experience_deferred_logged: false,
                         },
                     );
                 }
                 _ => {}
             }
+            if experience_deferred
+                && let Some(entry) = sessions.get_mut(&session)
+                && !entry.experience_deferred_logged
+            {
+                entry.experience_deferred_logged = true;
+                report_experience_deferred = true;
+            }
+        }
+        if report_experience_deferred {
+            operator_event("quest_experience_deferred reason=no_progression_binding");
         }
     }
 
