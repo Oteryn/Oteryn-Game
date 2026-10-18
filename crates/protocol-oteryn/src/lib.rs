@@ -2555,6 +2555,7 @@ mod charm_wire;
 pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
+pub mod highscores;
 pub mod item_view;
 pub mod npc_service;
 pub mod presentation;
