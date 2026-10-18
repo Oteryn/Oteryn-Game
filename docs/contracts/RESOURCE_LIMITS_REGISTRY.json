@@ -9014,23 +9014,25 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
       "resource": "Forge dust limit of one Character (the balance is 0 to the limit)",
       "unit": "forge dust",
-      "hard_maximum": 225,
+      "hard_maximum": 4600,
       "configurable_range": {
         "minimum": 100,
-        "maximum": 225
+        "maximum": 4600
       },
       "failure_category": "INVALID_INPUT",
-      "allocation_impact": "The limit starts at 100 and is a SMALLINT within 100-225; a gain above the limit credits up to it and records the lost part, and a spend above the balance is refused before any write.",
+      "allocation_impact": "D1230 exact progression only: limit=100+20*n, n=0..225; new +20 costs 25+n dust. Before migration every legacy row and ledger link must prove limit100. No rounding of historical 225 or inferred unlocks. Gain/Spend preserve the unlocked limit.",
       "client_visible": false,
       "boundary_tests": [
-        "min=100 and max=225: accepted by the dust_limit CHECK",
-        "min-1=99 and max+1=226: rejected by the dust_limit CHECK (game_character_forge_dust_limit_range)"
+        "all 225 paid transitions; exact 100 and 4600 accepted; off-grid 101/225/226 and 4601 refused",
+        "native first debit 25 and last debit 249; after 225 upgrades a further attempt is refused without an effect",
+        "native migration rejects legacy limit !=100 or disconnected/inconsistent history before enabling the D1230 constraints"
       ],
       "consumers": [
-        "apps/game-server/migrations/0059_character_forge_dust.sql game_character_forge_dust_limit_range",
-        "apps/game-server/src/domain/forge_dust.rs DUST_LIMIT_MIN, DUST_LIMIT_MAX"
+        "apps/game-server/src/domain/forge_dust.rs",
+        "apps/game-server/src/durability/character_forge_dust.rs",
+        "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
       ],
-      "notes": "IMBUE-FORGE-0 \u00a79 and \u00a715. Raising the limit costs (limit - 75) dust (Canary, PARITY_PENDING) and is FORGE-1b's DustLimit operation. Registered by OTV2-20261003-forge-1a."
+      "notes": "Private continuation proposal under accepted D1230 (CP comment6226138153): GUI+CIPSOFT base/increment; general cost and maximum PARITY_WIKI. Replaces the older unadmitted Canary policy; no other Forge operation is admitted. Native migration number awaits root final allocation."
     },
     {
       "allocation_impact": "The one timed item; a composed shape's receipt rows are charged against the receipt's own rows.",
@@ -11864,6 +11866,122 @@
         "apps/game-server/migrations/0091_public_projections.sql"
       ],
       "notes": "Contract sections 5 and 8. The resync runs with the node stopped (store recovery), so no gameplay pass waits behind it; the ordinary DB_PASS_DEADLINE (2 s) does not bound it. Bounded by the root's longest pass deadline (60 s, NODE-BOOT-DEADLINE-1). Sized for a store of 1,000,000 Characters plus all their highscores pairs (about 30 s at about 30 us per subject); if a resync exceeds it, re-run one family at a time, and if a single family still exceeds it, that is a blocker for the contract owner, resolved by a contract change and never by editing this deadline in place. Internal Game-to-Platform boundary; no client wire. Registered by OTV2-20261015-public-projections-producer."
+    },
+    {
+      "id": "DUR03-RL-01-FORGE-DUST-LIMIT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "failure_category": "CAPACITY_EXCEEDED",
+      "client_visible": false,
+      "consumers": [
+        "apps/game-server/src/durability/character_forge_dust.rs",
+        "apps/game-server/src/durability/character_forge_dust_audit.rs",
+        "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+      ],
+      "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+      "resource": "Touched ItemInstances in one material-free Forge DustLimit",
+      "unit": "items per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "allocation_impact": "The closed DustLimit operation has no item field or material/funding path.",
+      "boundary_tests": [
+        "zero item shape admitted; unknown extra item/operation field rejects before a write"
+      ]
+    },
+    {
+      "id": "DUR03-RL-03-FORGE-DUST-LIMIT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "failure_category": "CAPACITY_EXCEEDED",
+      "client_visible": false,
+      "consumers": [
+        "apps/game-server/src/durability/character_forge_dust.rs",
+        "apps/game-server/src/durability/character_forge_dust_audit.rs",
+        "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+      ],
+      "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+      "resource": "Dust value effects in one material-free Forge DustLimit",
+      "unit": "value effects per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "allocation_impact": "One Character dust debit and one exact +20 limit state mutation; represented by one before/after pair and its exact burn.",
+      "boundary_tests": [
+        "valid exact pair accepted; extra value field, altered debit or altered limit rejects"
+      ]
+    },
+    {
+      "id": "DUR03-RL-06-PARTICIPANTS-FORGE-DUST-LIMIT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "failure_category": "CAPACITY_EXCEEDED",
+      "client_visible": false,
+      "consumers": [
+        "apps/game-server/src/durability/character_forge_dust.rs",
+        "apps/game-server/src/durability/character_forge_dust_audit.rs",
+        "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+      ],
+      "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+      "resource": "Non-item asset participants in one material-free Forge DustLimit",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "allocation_impact": "The one acting Character dust asset; never a second Character or Account.",
+      "boundary_tests": [
+        "one Character accepted; changed Character/scope binding rejected by real current fence"
+      ]
+    },
+    {
+      "id": "DUR03-RL-06-EFFECT-WORK-UNITS-FORGE-DUST-LIMIT",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "failure_category": "CAPACITY_EXCEEDED",
+      "client_visible": false,
+      "consumers": [
+        "apps/game-server/src/durability/character_forge_dust.rs",
+        "apps/game-server/src/durability/character_forge_dust_audit.rs",
+        "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+      ],
+      "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+      "resource": "Participant plus its value effects in one material-free Forge DustLimit",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "allocation_impact": "One Character participant + one dust debit + one limit mutation. The atomic physical writes are ledger, balance, receipt, outbox and bounded history.",
+      "boundary_tests": [
+        "fixed 3-work-unit closed shape; undeclared additional effects rejected by canonical decoder"
+      ]
+    },
+    {
+      "id": "IMBFORGE0-RL-12",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md",
+      "failure_category": "CAPACITY_EXCEEDED",
+      "client_visible": false,
+      "consumers": [
+        "apps/game-server/src/durability/character_forge_dust.rs",
+        "apps/game-server/src/durability/character_forge_dust_audit.rs",
+        "apps/game-server/tests/support/forge_dust_limit_postgres_cases.rs"
+      ],
+      "notes": "Private complete-code review proposal only; root rechecks allocations before publication. No new event type/schema/retention tuple or Forge runtime admission.",
+      "resource": "Forge history rows per Character",
+      "unit": "history rows per Character",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "allocation_impact": "Oldest overflow only is deleted in an append transaction; receipts and ledger are retained. This DustLimit-only table can contain at most225 successful upgrades; later Forge shapes must compose into the one total budget before FORGE_V1 history is exposed.",
+      "boundary_tests": [
+        "native all225 legitimate unlocks retain225 history rows and never more than1000",
+        "deleting a non-overflow row or inserting history without the exact same-transaction successful receipt rejects"
+      ]
     },
     {
       "id": "DUR03-RL-01-REWARD-INBOX",
