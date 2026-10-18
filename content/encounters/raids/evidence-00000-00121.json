@@ -5809,17 +5809,22 @@
           "note": "Explicit subarea where present; otherwise page scope, not a coordinate."
         },
         "creatures": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": [
+            "Blue Djinn",
+            "Green Djinn",
+            "Efreet",
+            "Marid"
+          ],
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:20158:1135815",
-              "selector": "Djinn Raid / full section"
+              "source": "wiki-br:raid-khazeel:371579",
+              "selector": "Invasão Djinns / explicit raid creature table and fortress notes"
             }
           ],
-          "note": "No static CreatureList in this raid section."
+          "note": "Names come from this specific raid section; HP/XP/loot counts are not mistaken for spawn counts. Exact wave counts and schedule remain unproven."
         },
         "broadcast_timeline": {
           "value": [

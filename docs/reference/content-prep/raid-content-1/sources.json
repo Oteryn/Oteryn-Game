@@ -2216,6 +2216,17 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "445d638bb02551e9833f5667d0d374c6f614a513a9ae9713fb3258e8439305a0",
       "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-final-raid-flags.json"
+    },
+    "wiki-br:raid-khazeel:371579": {
+      "title": "Invasões em Kha'zeel",
+      "url": "https://www.tibiawiki.com.br/wiki/Invas%C3%B5es_em_Kha%27zeel",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dce51014aa5c777d6f11c0efc8f554fbb8bc65ebc1e48bede23dc8d3a58c697f",
+      "supported_claim": "Raid takes place in both djinn fortresses with Blue Djinn, Green Djinn, Efreet and Marid.",
+      "revid": 371579,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Invas%C3%B5es_em_Kha%27zeel&oldid=371579"
     }
   }
 }

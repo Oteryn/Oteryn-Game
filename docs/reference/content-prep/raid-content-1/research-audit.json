@@ -10,9 +10,9 @@
     "content/encounters/raids/evidence-00000-00121.json": 122
   },
   "evidence_field_counts": {
-    "PROVEN": 288,
+    "PROVEN": 289,
     "DERIVED": 488,
-    "UNKNOWN": 236,
+    "UNKNOWN": 235,
     "CONFLICT": 1
   },
   "unresolved_fields": [
@@ -1023,18 +1023,6 @@
         }
       ],
       "limitation": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
-    },
-    {
-      "field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/creatures",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:20158:1135815",
-          "selector": "Djinn Raid / full section"
-        }
-      ],
-      "limitation": "No static CreatureList in this raid section."
     },
     {
       "field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/waves",
@@ -2871,5 +2859,13 @@
       "limitation": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
     }
   ],
-  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion."
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "oteryn:raid.northern_darama_raids.djinn_raid/creatures"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  }
 }

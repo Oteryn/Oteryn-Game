@@ -70,3 +70,9 @@ This authoring successor replaces the previous reference candidate only after fu
 ### Final source-gap sweep
 
 Linked Nimmersatt quest sources now establish Dragon Bride as the sole creature type and a source-stated six-month recurrence (exact dates unproven). Explicit isboss=no flags resolve the Monks and Warlocks source-listed creature set.
+
+## Full outstanding-field source sweep —2026-10-18
+
+oteryn:raid.northern_darama_raids.djinn_raid/creatures.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
