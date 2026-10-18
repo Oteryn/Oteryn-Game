@@ -377,9 +377,9 @@ In this checkpoint:
   compiles. Without `OTERYN_TEST_POSTGRES_ADMIN_URL` each case reports
   PRE-ROUTING / NONCANONICAL and returns. A routed run creates its own
   database, applies the native migrations, runs the unchanged body and drops
-  the database. The cases are mounted through `durability/mod.rs`, so the
-  registered PostgreSQL CI targets (`durability_postgres`,
-  `character_authority_postgres`) execute them. This closes the gap-review P2
+  the database. The cases are mounted through `durability/mod.rs`; of the
+  registered PostgreSQL CI targets that mount it, only `durability_postgres`
+  executes them, so CI runs the suite once. This closes the gap-review P2
   that they never ran in CI.
 
 Still open (later DAILY-1 slices): migration installation of the schema

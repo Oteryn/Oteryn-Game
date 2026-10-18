@@ -4,12 +4,32 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+/// The one registered PostgreSQL CI target that executes these cases.
+const OWNING_TARGET: &str = "durability_postgres";
+
+/// `durability/mod.rs` is mounted by several registered PostgreSQL targets,
+/// so this module compiles into each of them. Only the owning target creates
+/// databases; the others report where the cases run, so CI runs the suite once.
+const RUNS_IN_THIS_TARGET: bool = {
+    let crate_name = env!("CARGO_CRATE_NAME").as_bytes();
+    let owner = OWNING_TARGET.as_bytes();
+    let mut same = crate_name.len() == owner.len();
+    let mut i = 0;
+    while same && i < owner.len() {
+        same = crate_name[i] == owner[i];
+        i += 1;
+    }
+    same
+};
+
 /// Repository PostgreSQL convention: without `OTERYN_TEST_POSTGRES_ADMIN_URL` a
 /// case reports PRE-ROUTING / NONCANONICAL and returns. A routed run executes
-/// the body on its own natively migrated database, dropped afterwards. This
-/// module is compiled into every target that mounts `durability`, so the
-/// registered PostgreSQL CI targets execute these cases.
+/// the body on its own natively migrated database, dropped afterwards.
 fn postgres_case(tag: &str, case: impl AsyncFnOnce(PgPool) -> TestResult) -> TestResult {
+    if !RUNS_IN_THIS_TARGET {
+        eprintln!("DAILY PostgreSQL case {tag} runs in the {OWNING_TARGET} target");
+        return Ok(());
+    }
     let Ok(admin_url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
         return Ok(());
