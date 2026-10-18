@@ -373,10 +373,12 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
 // LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
 // 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
-// capability requirement was assigned. Next unallocated capability is29.
+// capability requirement was assigned. 31 VIP_V1 (VIP-2, CP D1444) is offered with its command
+// handler and state domain 21; 29 and 30 are claimed by ADMIT-CAP-1 (CP D1442). Next unallocated
+// capability is 32.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28,
+    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28, 31,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -2567,6 +2569,7 @@ pub mod npc_service;
 pub mod presentation;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
+pub mod vip;
 pub mod world_clock;
 pub mod world_interaction;
 pub mod world_map;

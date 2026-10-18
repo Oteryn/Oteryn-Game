@@ -255,6 +255,17 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "Not offered: command type 30 ITEM_LOOK_INTENT is registered (CP D1268, D1292) and gated on this capability, but no command handler, rate limiter or runtime negotiation composition is installed, so the server never selects 28 and never dispatches 30. Only a session selecting capability28 may send Creature field2 EntityRef (identity16B,generationu64,max31B) or receive extended refusals3 NotVisible/4 NotReachable/5 RateLimited. Without28 Creature is malformed and server extended refusals map to existing2 NotAvailable; legacy resultdecode rejects3–5. Item field1 remains unchanged; text field1 is nonempty UTF-8 at most512B. Generation0 means unknown and requires NotVisible before runtime binding. D1240 assigns no additional capability dependency; requires stays empty."
+    },
+    {
+      "id": 31,
+      "name": "VIP_V1",
+      "owner_decision": "VIP-0 VIP0-ACCOUNT-WORLD-VIP-LIST-V1 §7 and §8 (docs/architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md); CP D1444 (#2164, one PR per mechanic): capabilities 29 and 30 are claimed by ADMIT-CAP-1 (CP D1442), so VIP-2 registers the next free capability, 31, with command type 31 and state domain 21",
+      "owner": "World communication: the VIP list writers (durability::vip) and the node's VIP presence owner (vip::presence)",
+      "requires": [],
+      "command_types": [31],
+      "state_domains": [21],
+      "offered": true,
+      "offer_gate": "Offered by VIP-2 in every offered set (production, Item view and bundle World). With it selected, admission sends a domain 21 snapshot of the list and the consent view, command type 31 is answered with one VipIntentResultV1 after the write has committed (VIP_UNAVAILABLE when the node's presence listener is down or the store is unavailable, nothing changed), and status deltas follow the presence owner: a watched target's login or logout reaches its accepted watchers through the World chat relay hints, the 60 s reconcile (VIP0-RL-09) and the 10 s visibility confirmation (VIP0-RL-16). TRAINING is reserved and never sent. Without it selected, domain 21 is never sent and command type 31 is refused as an unregistered command."
     }
   ],
   "command_types": [
@@ -423,6 +434,16 @@
       "result_schema": "crates/protocol-oteryn/src/item_look.rs#ItemLookResult (CP D1240 layout; no .proto is published yet): exactly one of field 1 nonempty UTF-8 text of at most 512 bytes, or one empty refusal marker: 2 NOT_AVAILABLE, and only with capability 28 selected 3 NOT_VISIBLE, 4 NOT_REACHABLE, 5 RATE_LIMITED; a refusal carries no target facts",
       "max_payload_bytes": 31,
       "max_result_payload_bytes": 515
+    },
+    {
+      "id": 31,
+      "name": "VIP_INTENT",
+      "owner_decision": "VIP-0 VIP0-ACCOUNT-WORLD-VIP-LIST-V1 §7 and §8 (docs/architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md); CP D1444 (#2164, one PR per mechanic): capabilities 29 and 30 are claimed by ADMIT-CAP-1 (CP D1442), so VIP-2 registers the next free capability, 31, with command type 31 and state domain 21",
+      "capability": 31,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipIntentResultV1",
+      "max_payload_bytes": 536,
+      "max_result_payload_bytes": 4
     }
   ],
   "state_domains": [
@@ -895,6 +916,54 @@
           "max_payload_bytes": 65552
         }
       ]
+    },
+    {
+      "id": 21,
+      "name": "VIP",
+      "owner_decision": "VIP-0 VIP0-ACCOUNT-WORLD-VIP-LIST-V1 §7 and §8 (docs/architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md); CP D1444 (#2164, one PR per mechanic): capabilities 29 and 30 are claimed by ADMIT-CAP-1 (CP D1442), so VIP-2 registers the next free capability, 31, with command type 31 and state domain 21",
+      "owner": "World communication: the VIP list writers (durability::vip) and the node's VIP presence owner (vip::presence)",
+      "capability": 31,
+      "revision": "per GameSessionId, strictly above any revision the session has seen, across reconnect, resume and transfer, and never reused (FND-02 §15): the admission snapshot is the last revision sent plus 1, and each delta adds 1; every admission, reconnect, resume and transfer starts with a snapshot read from the list at that time, and a delta is never replayed",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "VIP_ENTRY_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipEntryV1",
+          "max_payload_bytes": 566
+        },
+        {
+          "id": 2,
+          "name": "VIP_ENTRY_REMOVED_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipEntryRemovedV1",
+          "max_payload_bytes": 11
+        },
+        {
+          "id": 3,
+          "name": "VIP_GROUPS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipGroupsV1",
+          "max_payload_bytes": 530
+        },
+        {
+          "id": 4,
+          "name": "VIP_STATUS_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipStatusV1",
+          "max_payload_bytes": 15
+        },
+        {
+          "id": 5,
+          "name": "VIP_CONSENT_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipConsentViewV1",
+          "max_payload_bytes": 5502
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "VIP_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/vip_v1.proto#VipSnapshotV1",
+          "max_payload_bytes": 62935
+        }
+      ]
     }
   ],
   "error_codes": [
@@ -938,7 +1007,7 @@
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},
-    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 29},
+    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 32},
     "command_type": {"invalid": 0, "assignable": [1, 2147483647]},
     "state_domain_id": {"invalid": 0, "assignable": [1, 2147483647]},
     "delta_type": {"invalid": 0, "scope": "state_domain", "assignable": [1, 2147483647]},

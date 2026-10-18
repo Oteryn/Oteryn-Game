@@ -94,6 +94,7 @@ pub(crate) mod spell_parameter_result;
 pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
+pub(crate) mod vip;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
 // VIP-2 (VIP0 §8): the node presence owner; its source lives with the VIP mechanic.

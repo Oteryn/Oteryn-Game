@@ -65,6 +65,7 @@ pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
 pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
+mod vip_intent;
 mod world_map;
 pub(crate) mod world_object;
 pub(crate) mod world_spatial;
@@ -597,7 +598,12 @@ pub async fn serve_gameplay(
             owners.world_id,
             config.max_connections,
         ) {
-            relay.install_presence(std::sync::Arc::new(presence));
+            let presence = std::sync::Arc::new(presence);
+            authority
+                .chat
+                .vip
+                .install_presence(std::sync::Arc::clone(&presence));
+            relay.install_presence(presence);
         }
         authority.chat.install_relay(std::sync::Arc::new(relay));
     }
@@ -1940,6 +1946,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     fn forget_quest_session(&self, session: GameSessionId) {
         self.chat.forget(session);
+        self.chat.vip.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
@@ -3057,6 +3064,36 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn chat_delivered(&self, session: GameSessionId) {
         self.chat.delivered(session);
+    }
+
+    async fn vip_admit(
+        &self,
+        session: GameSessionId,
+        fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    ) -> Option<oteryn_protocol_oteryn::vip::VipSnapshot> {
+        self.vip_open(session, fence).await
+    }
+
+    async fn vip_intent(
+        &self,
+        command: connection::UseCommand,
+        payload: &[u8],
+    ) -> (
+        vip_intent::VipCommandOutcome,
+        Vec<oteryn_protocol_oteryn::vip::VipDelta>,
+    ) {
+        self.vip_command(command, payload).await
+    }
+
+    async fn vip_next(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::vip::VipDelta> {
+        self.vip_follow(session).await
+    }
+
+    async fn vip_delivered(&self, session: GameSessionId) {
+        self.chat.vip.delivered(session);
     }
 
     async fn chat_rooms_changed(

@@ -3,11 +3,14 @@
 //! `durability/mod.rs`). The World relay (`chat::relay` kind 3) feeds it presence hints and
 //! listener state through `gameplay_transport::chat_relay`.
 //! Read observations and queued updates are DATA, never continuing delivery authority.
+//! `gameplay_transport::vip_intent` registers each VIP_V1 session's watcher and delivers its
+//! status updates as domain 21 deltas (CP D1444).
 //! House (Instance-scope) watchers fail closed: every read refuses a non-Channel session scope
 //! until HOUSE-RUNTIME-1b (#2165) gives House sessions a native scope proof.
 #![allow(
     dead_code,
-    reason = "Watcher registration and delivery wait on the VIP-1 production schema and the VIP_V1 wire"
+    reason = "Production reads per session (`next_current_update`); the batched RL-11 reader, the \
+              visibility refresh and the DB-outage withdrawal path wait on the node scheduler"
 )]
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, uuid_text};
@@ -879,6 +882,9 @@ impl State {
             w.reading = false;
             w.pending.clear();
             w.inflight = None;
+            // The cleared withdrawals are replaced only by a fresh read, so an earlier failed
+            // read's backoff must not delay it past the confirmation bound (RL-09 reconcile).
+            w.retry_at = now;
         }
         Ok(())
     }
@@ -1182,6 +1188,10 @@ impl PresenceOwner {
             .map_err(|_| corrupt())?
             .delivered(update, clock()?)
     }
+    /// The relay listener is up: the node can confirm presence (VIP-0 §8.2).
+    pub(crate) fn listening(&self) -> bool {
+        self.state.lock().is_ok_and(|s| s.listener)
+    }
     pub(crate) fn listener_down(&self) -> Result<()> {
         self.state
             .lock()
@@ -1215,6 +1225,38 @@ impl PresenceOwner {
             .lock()
             .map_err(|_| corrupt())?
             .due(clock()?, budget)
+    }
+    /// `session` needs a native read before its next update: it has no watcher yet, or it is
+    /// dirty, due for its reconcile or holds an ONLINE older than its confirmation.
+    pub(crate) fn is_due(&self, session: GameSessionId) -> Result<bool> {
+        let now = clock()?;
+        let mut s = self.state.lock().map_err(|_| corrupt())?;
+        if !s.sessions.contains_key(&session) {
+            return Ok(true);
+        }
+        let capacity = s.capacity;
+        Ok(s.due(now, capacity)?.contains(&session))
+    }
+    /// The next queued update of `session` without a new read. Each queued ONLINE still carries
+    /// the confirmation deadline of the read that made it, and an expired one is refused.
+    pub(crate) fn next_queued(&self, session: GameSessionId) -> Result<Option<StatusUpdate>> {
+        self.state
+            .lock()
+            .map_err(|_| corrupt())?
+            .next(session, clock()?)
+    }
+    /// A local write changed `session`'s list or consent: its next update reads first.
+    pub(crate) fn invalidate(&self, session: GameSessionId) -> Result<()> {
+        if let Some(w) = self
+            .state
+            .lock()
+            .map_err(|_| corrupt())?
+            .sessions
+            .get_mut(&session)
+        {
+            w.dirty = true;
+        }
+        Ok(())
     }
 }
 

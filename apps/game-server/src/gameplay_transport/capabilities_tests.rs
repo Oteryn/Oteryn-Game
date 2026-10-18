@@ -256,7 +256,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_7_13_17_19_21_and_31_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -269,14 +269,14 @@ fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_cl
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 13, 17, 19, 21][..])
+        Some(&[6, 7, 13, 17, 19, 21, 31][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 13, 17, 19, 21][..])
+        Some(&[4, 6, 7, 13, 17, 19, 21, 31][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
@@ -313,7 +313,8 @@ fn commands_and_domains_follow_the_selection() {
     // Capability 1: commands 4 and 5, domains 4 and 5. Capability 7: command 13, domain 12.
     // Capability 8: domain 13. Capability 10: domain 15. Capability 16: command 22, domain 16.
     // Capability 17: commands 11 and 12, domain 10. Capability 19: domain 18. Capability 11: command 15.
-    // Capability 21: command 23. Capability 23: domains 19 and 20.
+    // Capability 21: command 23. Capability 23: domains 19 and 20. Capability 31: command 31,
+    // domain 21.
     for (capability, commands, domains) in [
         (1, &[4, 5][..], &[4, 5][..]),
         (7, &[13][..], &[12][..]),
@@ -325,6 +326,7 @@ fn commands_and_domains_follow_the_selection() {
         (11, &[15][..], &[][..]),
         (21, &[23][..], &[][..]),
         (23, &[][..], &[19, 20][..]),
+        (31, &[31][..], &[21][..]),
     ] {
         let selected = selection(&[capability]);
         for &command in commands {
@@ -724,22 +726,26 @@ fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
     // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 18 before its
-    // last entries 19 and 21 (LOGOUT-WIRE-1); 18's crate and registry `requires` stay [4, 6] and
-    // the registry keeps 18 `offered: false`.
-    let (logout, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    // last entries 19, 21 (LOGOUT-WIRE-1) and 31 (VIP-2); 18's crate and registry `requires`
+    // stay [4, 6] and the registry keeps 18 `offered: false`.
+    let (vip, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
+    let (logout, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (light, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (last, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
-    let (item_logout, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
+    let (item_vip, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty item view set")?;
+    let (item_logout, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
     let (item_light, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
     assert_eq!(light, item_light);
     assert_eq!(light.id, 19);
     assert_eq!(logout, item_logout);
     assert_eq!((logout.id, logout.requires), (21, &[][..]));
+    assert_eq!(vip, item_vip);
+    assert_eq!((vip.id, vip.requires), (31, &[][..]));
     assert_eq!(
         (npc.id, npc.requires),
         (

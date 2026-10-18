@@ -19,6 +19,7 @@ pub mod premium;
 pub mod progression;
 pub mod timed_item;
 pub mod timed_item_host;
+pub mod vip;
 pub mod weapon_proficiency;
 
 use std::collections::{BTreeMap, BTreeSet};

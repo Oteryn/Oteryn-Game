@@ -427,9 +427,12 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(entry["requires"], serde_json::json!([]));
     assert_eq!(entry["command_types"], serde_json::json!([30]));
     assert_eq!(entry["state_domains"], serde_json::json!([]));
-    assert_eq!(
-        registry["allocation_ranges"]["capability_id"]["next_unallocated"],
-        29
+    // 29 stayed unallocated by ITEM-LOOK; later gates (VIP-2 took 31 under CP D1444) only move
+    // the next free ID upward.
+    assert!(
+        registry["allocation_ranges"]["capability_id"]["next_unallocated"]
+            .as_u64()
+            .is_some_and(|next| next >= 29)
     );
     // CP D1268/D1292: command 30 is registered once, gated by 28, with the codec's byte bounds.
     let commands: Vec<_> = registry["command_types"]

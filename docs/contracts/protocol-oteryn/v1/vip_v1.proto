@@ -1,0 +1,191 @@
+// VIP-0 §5-§8 (docs/architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md), CP
+// D1444: typed payloads of capability 31 VIP_V1 (no requirement), command type 31 VIP_INTENT and
+// state domain 21 VIP. Capabilities 29 and 30 are claimed by ADMIT-CAP-1 (CP D1442), so VIP_V1
+// takes the next free capability, 31. FND-02 envelopes own CommandRef, server sequence, the
+// command status and the domain revision; these payloads never duplicate them.
+//
+// Identities (VIP-0 §7, FND-02 §10): an entry is named by its entry_no, a small number local to
+// the list; invitations and watchers by per-session handles. No CharacterId, AccountId,
+// invitation_id or Channel is ever sent. A name is the character's current name.
+//
+// Unknown fields, repeated singular fields, zero and unknown enum values, zero entry numbers and
+// handles, out-of-order or repeated list items, the reserved TRAINING status and values outside
+// the declared bounds all fail closed. Repeated scalars are not used: the groups of an entry are
+// one bit set (bit n-1 for group n).
+syntax = "proto3";
+
+package oteryn.protocol.v1.vip;
+
+// Append-only.
+enum VipResultCode {
+  VIP_RESULT_CODE_UNSPECIFIED = 0;
+  VIP_RESULT_CODE_OK = 1;
+  // Add: no live character of that name on this World (one answer, VIP-0 §5).
+  VIP_RESULT_CODE_UNKNOWN_NAME = 2;
+  // Add: this character already holds an invitation for the target.
+  VIP_RESULT_CODE_ALREADY_LISTED = 3;
+  // Add over the entry cap (VIP0-RL-01, VIP0-RL-02); accept over VIP0-RL-15.
+  VIP_RESULT_CODE_LIST_FULL = 4;
+  // Group add or rename over the custom group cap (VIP0-RL-03).
+  VIP_RESULT_CODE_GROUP_LIMIT = 5;
+  // A custom group of that name (case-insensitive) exists.
+  VIP_RESULT_CODE_NAME_TAKEN = 6;
+  // No such entry, group, invitation or watcher in the caller's own view.
+  VIP_RESULT_CODE_NOT_FOUND = 7;
+  // The list's write bucket is empty (VIP0-RL-07); retry_after_seconds is set.
+  VIP_RESULT_CODE_EXHAUSTED = 8;
+  // The node cannot confirm presence (listener down) or the store is unavailable; nothing
+  // changed (VIP-0 §7, §8.2).
+  VIP_RESULT_CODE_VIP_UNAVAILABLE = 9;
+  // Malformed intent, an invalid name or text, a fixed group, the character itself, or a
+  // CommandRef replayed with a different request.
+  VIP_RESULT_CODE_REJECTED = 10;
+}
+
+enum VipVisibility {
+  VIP_VISIBILITY_UNSPECIFIED = 0;
+  VIP_VISIBILITY_SHOWN = 1;
+  VIP_VISIBILITY_HIDDEN = 2;
+}
+
+enum VipStatus {
+  VIP_STATUS_UNSPECIFIED = 0;
+  VIP_STATUS_OFFLINE = 1;
+  VIP_STATUS_ONLINE = 2;
+  // No accepted consent of this session's character for the target (VIP-0 §8.1), or the node
+  // cannot confirm.
+  VIP_STATUS_UNCONFIRMED = 3;
+  // Reserved for the exercise-training decision; never sent, refused on decode.
+  VIP_STATUS_TRAINING = 4;
+}
+
+message VipNameV1 {
+  // 1..=29 bytes (the 0022 name grammar is the server's rule).
+  string name = 1;
+}
+
+message VipEntryRefV1 {
+  uint64 entry_no = 1;
+}
+
+message VipGroupRefV1 {
+  // A custom group, 4..=8.
+  uint32 group_no = 1;
+}
+
+message VipHandleV1 {
+  // A per-session invitation or watcher handle, never zero.
+  uint64 handle = 1;
+}
+
+message VipEditV1 {
+  uint64 entry_no = 1;
+  // VIP0-RL-04: 0..=128 characters and 512 bytes; trimming and control characters are the
+  // server's rule.
+  string description = 2;
+  // VIP0-RL-05: 0..=10.
+  uint32 icon = 3;
+  bool notify = 4;
+  // Bit n-1 for group n (1..=8): the fixed groups 1-3 and existing custom groups 4-8.
+  uint32 groups = 5;
+}
+
+message VipGroupRenameV1 {
+  uint32 group_no = 1;
+  // VIP0-RL-06: 1..=25 characters (at most 100 bytes).
+  string name = 2;
+}
+
+message VipStatusSettingV1 {
+  VipVisibility visibility = 1;
+}
+
+// ClientCommand.payload of command type 31: exactly one intent; none or several is REJECTED.
+// At most 536 bytes (an edit with the longest description).
+message VipIntentV1 {
+  oneof intent {
+    VipNameV1 add = 1;
+    VipEntryRefV1 remove = 2;
+    VipEditV1 edit = 3;
+    VipNameV1 group_add = 4;
+    VipGroupRenameV1 group_rename = 5;
+    VipGroupRefV1 group_remove = 6;
+    VipHandleV1 accept = 7;
+    VipHandleV1 reject = 8;
+    VipHandleV1 revoke = 9;
+    VipEntryRefV1 withdraw = 10;
+    VipStatusSettingV1 vip_status = 11;
+  }
+}
+
+// CommandResult.payload of command type 31, with status ACCEPTED for OK and REJECTED otherwise.
+// retry_after_seconds is 1..=3 with EXHAUSTED only (VIP0-RL-07) and absent with every other
+// code. At most 4 bytes.
+message VipIntentResultV1 {
+  VipResultCode result = 1;
+  uint32 retry_after_seconds = 2;
+}
+
+message VipGroupV1 {
+  uint32 group_no = 1;
+  string name = 2;
+}
+
+// Delta type 1 (entry upsert), and each entry of the snapshot. At most 566 bytes.
+message VipEntryV1 {
+  uint64 entry_no = 1;
+  string name = 2;
+  string description = 3;
+  uint32 icon = 4;
+  bool notify = 5;
+  uint32 groups = 6;
+  VipStatus status = 7;
+}
+
+// Delta type 2. At most 11 bytes.
+message VipEntryRemovedV1 {
+  uint64 entry_no = 1;
+}
+
+// Delta type 3: the custom groups, replaced whole, in ascending group_no. At most 530 bytes.
+message VipGroupsV1 {
+  repeated VipGroupV1 groups = 1;
+}
+
+// Delta type 4. announce is set only for a confirmed login or logout of an entry with notify.
+// At most 15 bytes.
+message VipStatusV1 {
+  uint64 entry_no = 1;
+  VipStatus status = 2;
+  bool announce = 3;
+}
+
+message VipInvitationV1 {
+  uint64 handle = 1;
+  string inviter_name = 2;
+  // Unix milliseconds; the client hides the invitation at this time (VIP0-RL-14).
+  uint64 expires_at_ms = 3;
+}
+
+message VipWatcherV1 {
+  uint64 handle = 1;
+  string name = 2;
+}
+
+// Delta type 5 (consent view replaced): the character's pending unexpired invitations (at most
+// VIP0-RL-13, 20) and accepted watchers (at most VIP0-RL-15, 100), each in ascending handle, and
+// its vip_status. At most 5502 bytes.
+message VipConsentViewV1 {
+  repeated VipInvitationV1 invitations = 1;
+  repeated VipWatcherV1 watchers = 2;
+  VipVisibility vip_status = 3;
+}
+
+// Snapshot type 1 of domain 21: the custom groups (at most VIP0-RL-03, 5) and the entries (at
+// most VIP0-RL-02, 100), each in ascending number, and the consent view. VIP0-RL-08: at most
+// 62935 bytes.
+message VipSnapshotV1 {
+  repeated VipGroupV1 groups = 1;
+  repeated VipEntryV1 entries = 2;
+  VipConsentViewV1 consent = 3;
+}

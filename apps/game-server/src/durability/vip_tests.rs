@@ -1,49 +1,21 @@
-//! Real native recovery/session checks plus explicitly test-only proposed VIP tables/columns.
-//! The fixture is not an installed migration, SECURITY DEFINER/grant or gameplay consent producer.
+//! VIP-1b (CP D1444): the VIP writers against the installed migration `0124_vip_lists.sql`,
+//! with the real native recovery and session checks. Mounted by the library's test target only
+//! (`gameplay_transport::vip_intent`), which owns the real Premium coordinator; without a
+//! configured PostgreSQL route each test returns without running.
 #![allow(clippy::expect_used)]
-use super::*;
 use crate::bestiary_postgres_harness as harness;
+use crate::domain::vip::*;
+use crate::domain::{AccountId, CharacterId, WorldId};
+use crate::durability::DurabilityRoot;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::vip::*;
 use crate::foundation::{CommandId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration};
+use crate::foundation::{CommandRef, RuntimeScopeRefV1};
+use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use harness::{CHARACTER, Harness, SESSION, TestResult, WORLD, debug, id};
-use sqlx::Executor;
+use sqlx::{Executor, Row};
 use std::future::Future;
 use std::task::Poll;
-
-const PRIVATE_SCHEMA: &str = r#"
-ALTER TABLE game_character_social_settings ADD COLUMN vip_status SMALLINT NOT NULL DEFAULT 1 CHECK(vip_status IN(1,2));
-ALTER TABLE game_character_social_settings ADD COLUMN vip_consent_revision NUMERIC(20,0) NOT NULL DEFAULT 0 CHECK(vip_consent_revision BETWEEN 0 AND 18446744073709551615);
-CREATE TABLE game_vip_lists (
- account_id UUID NOT NULL REFERENCES game_character_account_guards(account_id),world_id UUID NOT NULL,
- revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615),
- next_entry_no NUMERIC(20,0) NOT NULL CHECK(next_entry_no BETWEEN 1 AND 18446744073709551615),
- rate_tokens SMALLINT NOT NULL CHECK(rate_tokens BETWEEN 0 AND 20),rate_at BIGINT NOT NULL CHECK(rate_at>=0),PRIMARY KEY(account_id,world_id));
-CREATE TABLE game_vip_entries (
- account_id UUID NOT NULL,world_id UUID NOT NULL,character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
- entry_no NUMERIC(20,0) NOT NULL CHECK(entry_no>0),description TEXT NOT NULL DEFAULT'',icon SMALLINT NOT NULL DEFAULT 0,notify BOOLEAN NOT NULL DEFAULT FALSE,added_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
- PRIMARY KEY(account_id,world_id,character_id),UNIQUE(account_id,world_id,entry_no),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE);
-CREATE SEQUENCE game_vip_invitation_id NO CYCLE;
-CREATE TABLE game_vip_consents (
- account_id UUID NOT NULL,world_id UUID NOT NULL,inviter_character_id UUID NOT NULL REFERENCES game_character_roots(character_id),character_id UUID NOT NULL,
- invitation_id BIGINT NOT NULL DEFAULT nextval('game_vip_invitation_id') UNIQUE CHECK(invitation_id>0),consent SMALLINT NOT NULL CHECK(consent IN(1,2)),invite_expires_at TIMESTAMPTZ NOT NULL,
- PRIMARY KEY(account_id,world_id,inviter_character_id,character_id),CHECK(inviter_character_id<>character_id),
- FOREIGN KEY(account_id,world_id,character_id) REFERENCES game_vip_entries ON DELETE CASCADE);
-CREATE TABLE game_vip_group_members (
- account_id UUID NOT NULL,world_id UUID NOT NULL,character_id UUID NOT NULL,group_no SMALLINT NOT NULL CHECK(group_no BETWEEN 1 AND 8),
- PRIMARY KEY(account_id,world_id,character_id,group_no),FOREIGN KEY(account_id,world_id,character_id) REFERENCES game_vip_entries ON DELETE CASCADE);
-CREATE TABLE game_vip_command_receipts (
- account_id UUID NOT NULL,world_id UUID NOT NULL,game_session_id UUID NOT NULL,command_id NUMERIC(20,0) NOT NULL CHECK(command_id>0),
- character_id UUID NOT NULL REFERENCES game_character_roots(character_id),kind SMALLINT NOT NULL CHECK(kind IN(1,2,3,4,5,6)),binding BYTEA NOT NULL CHECK(octet_length(binding)=32),
- result SMALLINT NOT NULL CHECK(result IN(1,2,3,4,5,6,7)),seconds SMALLINT,revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615),committed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),entry_no NUMERIC(20,0) CHECK(entry_no BETWEEN 1 AND 18446744073709551615),
- PRIMARY KEY(account_id,world_id,game_session_id,command_id),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE,
- CHECK((kind=5 AND result IN(1,3,4,5,6,7)) OR(kind IN(1,2,3,4) AND result IN(1,2,3,4)) OR(kind=6 AND result IN(1,2,3))),
- CHECK((kind=5 AND result IN(1,6))=(entry_no IS NOT NULL)),
- CHECK((result=3 AND seconds IS NOT NULL AND seconds BETWEEN 1 AND 3) OR(result<>3 AND seconds IS NULL)));
-CREATE FUNCTION vip_fixture_receipt_immutable() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN
- IF TG_OP='DELETE' AND NOT EXISTS(SELECT 1 FROM game_vip_lists WHERE account_id=OLD.account_id AND world_id=OLD.world_id) THEN RETURN OLD; END IF;
- RAISE EXCEPTION 'immutable VIP receipt' USING ERRCODE='23514';END;$$;
-CREATE TRIGGER vip_fixture_receipt_immutable BEFORE UPDATE OR DELETE ON game_vip_command_receipts FOR EACH ROW EXECUTE FUNCTION vip_fixture_receipt_immutable();
-REVOKE ALL ON game_vip_lists,game_vip_entries,game_vip_consents,game_vip_group_members,game_vip_command_receipts FROM PUBLIC;
-"#;
 
 fn account(seed: u8) -> AccountId {
     AccountId::from_bytes(id(seed)).expect("account")
@@ -87,7 +59,6 @@ where
     };
     harness::runtime()?.block_on(async move {
         let h = Harness::create(admin, tag, false).await?;
-        h.pool.execute(PRIVATE_SCHEMA).await?;
         let result = body(&h).await;
         h.cleanup().await?;
         result
@@ -389,7 +360,7 @@ fn vip_historical_replay_precedes_ended_session_but_not_recovery_or_binding() ->
                 .await,
             Err(VipError::ConflictingCommand)
         ));
-        let mut wrong_recovery = authority.record_for(&h.root).map_err(debug)?;
+        let mut wrong_recovery = recovery_record(&authority, &h.root).map_err(debug)?;
         wrong_recovery.recovery_generation += 1;
         let mut tx = h.pool.begin().await?;
         assert!(matches!(
@@ -638,7 +609,7 @@ fn vip_concurrent_commands_serialize_one_erase_and_receipt_each_outcome() -> Tes
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
-        let recovery = authority.record_for(&h.root).map_err(debug)?;
+        let recovery = recovery_record(&authority, &h.root).map_err(debug)?;
         let operation = async |number| -> TestResult<VipReceipt> {
             let mut tx = h.pool.begin().await?;
             let result = end_in_transaction(
@@ -889,7 +860,7 @@ fn vip_accept_receipt_precedes_live_fence_but_not_recovery_and_binding() -> Test
                 .await,
             Err(VipError::ConflictingCommand)
         ));
-        let mut recovery = authority.record_for(&h.root).map_err(debug)?;
+        let mut recovery = recovery_record(&authority, &h.root).map_err(debug)?;
         recovery.recovery_generation += 1;
         let mut tx = h.pool.begin().await?;
         assert!(matches!(
@@ -1234,7 +1205,9 @@ fn run_add<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
-    let admin = harness::configured_admin().ok_or("native PG route required; no Add skip")?;
+    let Some(admin) = harness::configured_admin() else {
+        return Ok(());
+    };
     harness::runtime()?.block_on(async move {
         let h = Harness::create(admin, tag, false).await?;
         let result = async {
@@ -1243,7 +1216,6 @@ where
                 .await?;
             assert_eq!(version, "170006");
             eprintln!("VIP-ADD-PG server_version_num={version}");
-            h.pool.execute(PRIVATE_SCHEMA).await?;
             body(&h).await
         }
         .await;
@@ -2020,9 +1992,7 @@ fn vip_remove_native_account_cascade_retains_groups_other_entries_and_foreign_co
         );
         fixture_consent(h, 40, 62, 60, 2).await?;
         fixture_consent(h, 80, 63, 60, 2).await?;
-        // Minimal UNINSTALLED catalogue DATA solely to prove the native entry FK cascades
-        // memberships, not retained custom definitions. No group command/admission claim.
-        h.pool.execute("CREATE TABLE game_vip_groups(account_id UUID NOT NULL,world_id UUID NOT NULL,group_no SMALLINT NOT NULL CHECK(group_no BETWEEN 4 AND 8),name TEXT NOT NULL CHECK(char_length(name) BETWEEN 1 AND 25),PRIMARY KEY(account_id,world_id,group_no),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE);CREATE UNIQUE INDEX vip_fixture_group_names ON game_vip_groups(account_id,world_id,lower(name))").await?;
+        // A custom group, to prove the entry FK cascades memberships, not group definitions.
         sqlx::query("INSERT INTO game_vip_groups VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,4,'Test Friends')")
             .bind(id(40).as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
         for seed in [60, 61] {
@@ -2061,11 +2031,12 @@ fn vip_remove_native_account_cascade_retains_groups_other_entries_and_foreign_co
         let untouched_foreign: i64 = sqlx::query_scalar("SELECT count(*) FROM game_vip_consents WHERE account_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND consent=2")
             .bind(id(80).as_slice()).bind(id(60).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(untouched_foreign, 1);
-        let retained_member: String =
-            sqlx::query_scalar("SELECT character_id::text FROM game_vip_group_members")
-                .fetch_one(&h.pool)
-                .await?;
-        assert_eq!(uuid_text(&retained_member).map_err(debug)?, id(61));
+        let retained_member: Vec<u8> = sqlx::query_scalar(
+            "SELECT decode(replace(character_id::text,'-',''),'hex') FROM game_vip_group_members",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(retained_member.as_slice(), id(61).as_slice());
         assert_eq!(h.root_revision().await?, "1");
         Ok(())
     })
@@ -2417,7 +2388,7 @@ fn vip_remove_native_current_fences_assignment_revoke_and_recovery_before_replay
             (historical.result, historical.revision),
             (committed.result, committed.revision)
         );
-        let mut wrong_recovery = authority.record_for(&h.root).map_err(debug)?;
+        let mut wrong_recovery = recovery_record(&authority, &h.root).map_err(debug)?;
         wrong_recovery.recovery_generation += 1;
         let mut tx = h.pool.begin().await?;
         assert!(matches!(
@@ -2569,31 +2540,11 @@ fn vip_remove_native_two_root_duplicate_distinct_and_add_remove_serialization() 
     })
 }
 
-// Additive metadata fixture. PRIVATE_SCHEMA and all inherited test bodies above stay literal.
-// These private SQL codes are not protocol reservations or production privilege claims.
-const LIST_SCHEMA: &str = r#"
-CREATE TABLE game_vip_groups(account_id UUID NOT NULL,world_id UUID NOT NULL,group_no SMALLINT NOT NULL CHECK(group_no BETWEEN 4 AND 8),name TEXT NOT NULL CHECK(char_length(name) BETWEEN 1 AND 25),PRIMARY KEY(account_id,world_id,group_no),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE);
-CREATE UNIQUE INDEX vip_fixture_group_names ON game_vip_groups(account_id,world_id,lower(name));
-ALTER TABLE game_vip_command_receipts ADD COLUMN group_no SMALLINT CHECK(group_no BETWEEN 4 AND 8);
-DO $$DECLARE c RECORD; BEGIN
- FOR c IN SELECT conname FROM pg_constraint WHERE conrelid='game_vip_command_receipts'::regclass AND contype='c' AND (pg_get_constraintdef(oid) LIKE '%kind%' OR pg_get_constraintdef(oid) LIKE '%result%') LOOP
- EXECUTE format('ALTER TABLE game_vip_command_receipts DROP CONSTRAINT %I',c.conname);
- END LOOP;
-END$$;
-ALTER TABLE game_vip_command_receipts ADD CHECK(kind BETWEEN 1 AND 11),ADD CHECK(result BETWEEN 1 AND 9),
- ADD CHECK((kind=5 AND result IN(1,3,4,5,6,7)) OR(kind IN(1,2,3,4) AND result IN(1,2,3,4)) OR(kind=6 AND result IN(1,2,3)) OR(kind BETWEEN 7 AND 11 AND result IN(1,2,3,7,8,9))),
- ADD CHECK((kind=5 AND result IN(1,6))=(entry_no IS NOT NULL)),
- ADD CHECK((kind=7 AND result=1)=(group_no IS NOT NULL)),
- ADD CHECK((result=3 AND seconds IS NOT NULL AND seconds BETWEEN 1 AND 3) OR(result<>3 AND seconds IS NULL));
-"#;
 fn run_list<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
-    run_add(tag, async |h| {
-        h.pool.execute(LIST_SCHEMA).await?;
-        body(h).await
-    })
+    run_add(tag, body)
 }
 fn list_request(number: u64, operation: VipListOperation) -> VipListRequest {
     VipListRequest {
@@ -3141,7 +3092,7 @@ fn vip_list_native_authority_rejection_replay_binding_and_rate_refusal() -> Test
                 .await,
             Err(VipError::ConflictingCommand)
         ));
-        let mut wrong_recovery = authority.record_for(&h.root).map_err(debug)?;
+        let mut wrong_recovery = recovery_record(&authority, &h.root).map_err(debug)?;
         wrong_recovery.recovery_generation += 1;
         let mut tx = h.pool.begin().await?;
         assert!(matches!(

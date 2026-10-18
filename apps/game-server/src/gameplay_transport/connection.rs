@@ -41,6 +41,7 @@ pub(crate) use super::logout::LogoutReply;
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
 use super::tcp_tls::{FrameReader, read_frame, write_frame};
+use super::vip_intent::{VIP_DELTAS_PER_TICK, VIP_REFRESH, VipCommandOutcome};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_object::{
     CAPABILITY_ITEM_USE_V1, CAPABILITY_RUNE_USE_V1, CAPABILITY_WORLD_INTERACTION_V1,
@@ -113,6 +114,10 @@ use oteryn_protocol_oteryn::npc_service::{
 use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
     STATE_DOMAIN_QUEST_LOG, decode_quest_log_query,
+};
+use oteryn_protocol_oteryn::vip::{
+    COMMAND_TYPE_VIP_INTENT, SNAPSHOT_TYPE_VIP_V1, STATE_DOMAIN_VIP, VipDelta, VipResultCode,
+    VipSnapshot, encode_vip_delta, encode_vip_intent_result, encode_vip_snapshot,
 };
 use oteryn_protocol_oteryn::world_clock::{
     CAPABILITY_WORLD_LIGHT_V1, DELTA_TYPE_WORLD_CLOCK_V1, SNAPSHOT_TYPE_WORLD_CLOCK_V1,
@@ -220,6 +225,10 @@ pub(crate) struct SessionContinuity {
     /// cumulative per GameSession, so a resume or channel transfer carries it and the next
     /// snapshot follows it.
     pub(crate) chat_revision: u64,
+    /// VIP-2: the last domain 21 revision sent. Used only with capability 31; it is cumulative
+    /// per GameSession, so a resume or channel transfer carries it and the next snapshot follows
+    /// it.
+    pub(crate) vip_revision: u64,
     /// NPC-CMD-1a: the last domain 7 and 8 revisions sent. Used only with capability 3; a resume
     /// or channel transfer carries them and the next snapshot follows them.
     pub(crate) npc: NpcContinuity,
@@ -254,6 +263,7 @@ impl SessionContinuity {
         combat: CombatContinuity::FRESH,
         world_map_revision: 0,
         chat_revision: 0,
+        vip_revision: 0,
         npc: NpcContinuity {
             conversation_revision: 0,
             window_revision: 0,
@@ -688,6 +698,41 @@ pub(crate) trait FreshAdmissionAuthority {
     /// CHAT-WIRE-1: the real line last returned by `chat_next` was written to the client; it
     /// stops counting against `CHAT0-RL-11`.
     fn chat_delivered(&self, _session: GameSessionId) -> impl Future<Output = ()> {
+        async {}
+    }
+
+    /// VIP-2 (CP D1444): a session with capability 31 opens its VIP view; `None` (no view for
+    /// this session) sends no domain 21.
+    fn vip_admit(
+        &self,
+        _session: GameSessionId,
+        _fence: Option<CurrentCharacterItemFence>,
+    ) -> impl Future<Output = Option<VipSnapshot>> {
+        async { None }
+    }
+
+    /// VIP-2: one `VIP_INTENT` (command 31) and the domain 21 deltas of the session's own view
+    /// that follow its result.
+    fn vip_intent(
+        &self,
+        _command: UseCommand,
+        _payload: &[u8],
+    ) -> impl Future<Output = (VipCommandOutcome, Vec<VipDelta>)> {
+        async {
+            (
+                VipCommandOutcome::answer(VipResultCode::VipUnavailable),
+                Vec::new(),
+            )
+        }
+    }
+
+    /// VIP-2: the next domain 21 delta of the session, if any.
+    fn vip_next(&self, _session: GameSessionId) -> impl Future<Output = Option<VipDelta>> {
+        async { None }
+    }
+
+    /// VIP-2: the delta last returned by `vip_next` was written to the client.
+    fn vip_delivered(&self, _session: GameSessionId) -> impl Future<Output = ()> {
         async {}
     }
 
@@ -1734,6 +1779,35 @@ where
             payload: &chat_snapshot,
         });
     }
+    // VIP-2 (CP D1444): with capability 31, domain 21 with the list and the consent view, above
+    // every revision the session has seen; every status starts UNCONFIRMED and the presence
+    // owner's confirmations follow as deltas.
+    let vip_snapshot: Vec<u8>;
+    let mut vip_active = false;
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_VIP)
+        && let Some(snapshot) = authority
+            .vip_admit(admitted.game_session_id, admitted.item_fence)
+            .await
+    {
+        let (Some(revision), Ok(payload)) = (
+            admitted.continuity.vip_revision.checked_add(1),
+            encode_vip_snapshot(&snapshot),
+        ) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        admitted.continuity.vip_revision = revision;
+        vip_snapshot = payload;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_VIP,
+            revision,
+            snapshot_type: SNAPSHOT_TYPE_VIP_V1,
+            payload: &vip_snapshot,
+        });
+        vip_active = true;
+    }
     // NPC-CMD-1a: with capability 3, domain 7 (no conversation: a fresh snapshot ends it) and
     // domain 8 (a closed window), each above its last revision.
     let npc_snapshots: Option<(Vec<u8>, Vec<u8>)>;
@@ -1919,6 +1993,13 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
+    // VIP-2: only a session sent domain 21 follows its view and its entries' presence.
+    let mut vip_refresh = vip_active.then(|| {
+        let mut refresh =
+            tokio::time::interval_at(tokio::time::Instant::now() + VIP_REFRESH, VIP_REFRESH);
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
     // NPC-CMD-1a: a session with domain 7 follows its conversation (chat greeting, walking away).
     let mut npc_refresh = npc_snapshots.is_some().then(|| {
         let mut refresh =
@@ -1978,6 +2059,7 @@ where
             Serene,
             QuestLog,
             Chat,
+            Vip,
             Visibility,
             Combat,
             Chase,
@@ -2022,6 +2104,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut vip_tick = std::pin::pin!(async {
+                match vip_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             let mut visibility_tick = std::pin::pin!(async {
                 match visibility_refresh.as_mut() {
                     Some(refresh) => refresh.tick().await,
@@ -2058,6 +2146,9 @@ where
                 }
                 if chat_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Chat);
+                }
+                if vip_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Vip);
                 }
                 if visibility_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Visibility);
@@ -2180,6 +2271,31 @@ where
                     if !matches!(line, ChatLine::Dropped) {
                         authority.chat_delivered(admitted.game_session_id).await;
                     }
+                }
+                continue;
+            }
+            Next::Vip => {
+                // VIP-2: queued view changes, then confirmed presence updates, each one domain
+                // 21 delta; at most VIP_DELTAS_PER_TICK per tick, the rest waits.
+                for _ in 0..VIP_DELTAS_PER_TICK {
+                    let Some(delta) = authority.vip_next(admitted.game_session_id).await else {
+                        break;
+                    };
+                    let Some((delta_sequence, frame, revision)) = vip_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vip_revision,
+                        &delta,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.vip_revision = revision;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                    authority.vip_delivered(admitted.game_session_id).await;
                 }
                 continue;
             }
@@ -2489,6 +2605,9 @@ where
             Attack(AttackIntentDisposition),
             /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
             Chat(ChatIntentResult),
+            /// VIP-2: command 31; the domain 21 deltas of the session's own view follow the
+            /// result.
+            Vip(oteryn_protocol_oteryn::vip::VipIntentResult, Vec<VipDelta>),
             /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
             Npc(NpcIntentDisposition, NpcUpdate, bool),
             /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
@@ -2856,6 +2975,23 @@ where
                 ),
                 Err(_) => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_VIP_INTENT {
+            // VIP-2: a malformed intent is REJECTED (VIP_RESULT_CODE_REJECTED). An unknown store
+            // outcome ends the connection before the result, so the resend replays the receipt.
+            let (outcome, deltas) = authority
+                .vip_intent(
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    command.payload,
+                )
+                .await;
+            if outcome.unknown {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
+            Dispatch::Vip(outcome.result, deltas)
         } else if command.command_type == COMMAND_TYPE_NPC_TALK_INTENT {
             // NPC-CMD-1a: a malformed intent is REJECTED, but it still spends the session's
             // NPC0-RL-04 allowance: it reaches the limiter as an intent with no text.
@@ -3145,6 +3281,19 @@ where
                 (CommandStatus::Accepted, payload)
             }
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
+            Dispatch::Vip(result, _) => {
+                let Ok(payload) = encode_vip_intent_result(*result) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (
+                    if result.code == VipResultCode::Ok {
+                        CommandStatus::Accepted
+                    } else {
+                        CommandStatus::Rejected
+                    },
+                    payload,
+                )
+            }
             Dispatch::Chat(result) => {
                 let Ok(payload) = encode_chat_intent_result(result) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -3501,6 +3650,25 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.chat_revision = revision;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+            }
+            // VIP-2: the deltas of the session's own view follow the result.
+            Dispatch::Vip(_, deltas) => {
+                for delta in deltas {
+                    let Some((delta_sequence, frame, revision)) = vip_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vip_revision,
+                        &delta,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.vip_revision = revision;
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
@@ -3900,6 +4068,30 @@ fn chat_delta(
         to,
         delta_type,
         payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame, to))
+}
+
+/// VIP-2: one domain 21 delta frame of `delta` after `sequence` and `revision`, with the new
+/// sequence and revision; `None` on an encoding fault.
+fn vip_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    delta: &VipDelta,
+) -> Option<(u64, Vec<u8>, u64)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let to = revision.checked_add(1)?;
+    let payload = encode_vip_delta(delta).ok()?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_VIP,
+        revision,
+        to,
+        delta.delta_type(),
+        &payload,
     )
     .ok()?;
     Some((delta_sequence, frame, to))
@@ -5170,6 +5362,7 @@ mod tests {
                     combat: CombatContinuity::FRESH,
                     world_map_revision: 0,
                     chat_revision: 0,
+                    vip_revision: 0,
                     npc: NpcContinuity::default(),
                     world_clock_revision: 0,
                 }

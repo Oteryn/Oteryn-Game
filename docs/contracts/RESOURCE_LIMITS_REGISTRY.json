@@ -12184,6 +12184,302 @@
         "apps/game-server/migrations/0101_mail.sql (standing D1356 migration; qualification NOT_RUN)"
       ],
       "notes": "CANDIDATE under D1356 (#2131 comment6234008098): the source checkpoint installs the complete bridge in standing migration 0101_mail.sql. The 20-output bound comes from DAILY-REWARD-0 section 4.1 and is not an Inbox capacity limit. These rows remain CANDIDATE until native prost payload/envelope and canonical JSON tests print actual measured sizes; no measured size is claimed now. Author handoff Cargo/Clippy/native PostgreSQL and byte measurement are NOT_RUN. Activation remains after #2197 and actual source claim integration. Existing CHEST/one-item, fee, NPC and retry-work rows are unchanged. Source-owned claim/line work accounts for its own additional effects. boundary_tests names the native inventory, not an execution result."
+    },
+    {
+      "id": "VIP0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP entries per account list in one World without Premium",
+      "unit": "entries",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 20,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One game_vip_entries row per entry; the add checks the count inside its transaction before it inserts.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=20: apps/game-server/src/durability/vip_tests.rs a free list accepts its twentieth entry",
+        "max+1=21: apps/game-server/src/durability/vip_tests.rs the twenty-first add answers LIST_FULL and changes nothing"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/vip.rs the add's free cap"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP entries per account list in one World with Premium",
+      "unit": "entries",
+      "hard_maximum": 100,
+      "configurable_range": {
+        "minimum": 100,
+        "maximum": 100
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One game_vip_entries row per entry; the snapshot carries at most this many entries.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds encodes 100 entries",
+        "max+1=101: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed refuses 101 entries",
+        "apps/game-server/src/durability/vip_tests.rs the Premium add cap"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_ENTRIES",
+        "apps/game-server/src/durability/vip.rs the add's Premium cap"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "Custom VIP groups per account list (Premium; 0 without Premium)",
+      "unit": "groups",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One game_vip_groups row per group, numbers 4 to 8; the groups delta and the snapshot carry at most 5.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=5: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds",
+        "max+1=6: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed",
+        "apps/game-server/src/durability/vip_tests.rs a sixth group answers GROUP_LIMIT"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_CUSTOM_GROUPS",
+        "apps/game-server/src/durability/vip.rs the group cap"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP entry description length",
+      "unit": "characters",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One TEXT column per entry, at most 128 characters and 512 bytes; decoded before any allocation beyond the payload bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=128: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds (128 four-byte characters, 512 bytes)",
+        "max+1=129: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_DESCRIPTION_CHARS and MAX_VIP_DESCRIPTION_BYTES",
+        "apps/game-server/src/domain/vip.rs vip_edit_description"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants. PARITY_PENDING (Canary column)."
+    },
+    {
+      "id": "VIP0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP entry icon number",
+      "unit": "icon",
+      "hard_maximum": 10,
+      "configurable_range": {
+        "minimum": 10,
+        "maximum": 10
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One SMALLINT per entry.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=10: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds",
+        "max+1=11: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_ICON"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants. PARITY_PENDING (Canary)."
+    },
+    {
+      "id": "VIP0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "Custom VIP group name length",
+      "unit": "characters",
+      "hard_maximum": 25,
+      "configurable_range": {
+        "minimum": 25,
+        "maximum": 25
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One TEXT column per group, 1 to 25 characters (at most 100 bytes).",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=25: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds",
+        "max+1=26: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_GROUP_NAME_CHARS",
+        "apps/game-server/src/domain/vip.rs vip_group_name"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants. PARITY_PENDING."
+    },
+    {
+      "id": "VIP0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP write bucket per account list (one token back every 3 s)",
+      "unit": "commands",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 20,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Two persisted columns per list (rate_tokens, rate_at); an empty bucket answers EXHAUSTED with a wait of 1 to 3 s and writes only the receipt.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=20: apps/game-server/src/durability/vip_tests.rs twenty writes pass",
+        "max+1=21: apps/game-server/src/durability/vip_tests.rs the twenty-first write answers EXHAUSTED",
+        "crates/protocol-oteryn/src/vip_tests.rs the wait is 1..=3 s"
+      ],
+      "consumers": [
+        "apps/game-server/src/domain/vip.rs charge_vip_bucket",
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_WAIT_SECONDS"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP_SNAPSHOT_V1 payload (100 entries, 5 custom groups, 20 invitations, 100 watchers)",
+      "unit": "bytes",
+      "hard_maximum": 62935,
+      "configurable_range": {
+        "minimum": 62935,
+        "maximum": 62935
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One encoded snapshot per admission; the decoder checks the bound before it reads a field.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=62935: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds measures the worst snapshot at exactly 62935 bytes",
+        "max+1: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed refuses a longer payload"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_SNAPSHOT_BYTES",
+        "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json snapshot type 1 of state domain 21"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants. The byte figure is the measured worst case of the encoder."
+    },
+    {
+      "id": "VIP0-RL-09",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP presence and revision reconcile interval",
+      "unit": "milliseconds",
+      "hard_maximum": 60000,
+      "configurable_range": {
+        "minimum": 60000,
+        "maximum": 60000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One timer per watching session in node memory; a reconcile is one bounded read.",
+      "client_visible": false,
+      "boundary_tests": [
+        "apps/game-server/src/vip/presence_tests.rs the 60 s reconcile and the listener reconnect reconcile"
+      ],
+      "consumers": [
+        "apps/game-server/src/vip/presence.rs RECONCILE_MS"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-13",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "Pending VIP invitations per target character",
+      "unit": "invitations",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 20,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "game_vip_consents rows in state 1 per target; the consent view carries at most 20.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=20: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds",
+        "max+1=21: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed",
+        "apps/game-server/src/durability/vip_tests.rs the twenty-first pending invitation is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_INVITATIONS",
+        "apps/game-server/src/durability/vip.rs the pending cap"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-14",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "VIP invitation lifetime",
+      "unit": "seconds",
+      "hard_maximum": 604800,
+      "configurable_range": {
+        "minimum": 604800,
+        "maximum": 604800
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "One TIMESTAMPTZ per pending invitation; expired invitations are not shown and cannot be accepted.",
+      "client_visible": true,
+      "boundary_tests": [
+        "apps/game-server/src/durability/vip_tests.rs an expired invitation answers NOT_FOUND"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/vip.rs the invitation expiry"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-15",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "Accepted VIP watchers per target character",
+      "unit": "watchers",
+      "hard_maximum": 100,
+      "configurable_range": {
+        "minimum": 100,
+        "maximum": 100
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "game_vip_consents rows in state 2 per target; the consent view carries at most 100.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=100: crates/protocol-oteryn/src/vip_tests.rs worst_cases_fill_their_bounds",
+        "max+1=101: crates/protocol-oteryn/src/vip_tests.rs over_limit_lists_and_text_fail_closed",
+        "apps/game-server/src/durability/vip_tests.rs the hundred-and-first accept answers LIST_FULL"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/vip.rs MAX_VIP_WATCHERS",
+        "apps/game-server/src/domain/vip.rs accept_consent"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants."
+    },
+    {
+      "id": "VIP0-RL-16",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md",
+      "resource": "Visibility confirmation age for a shown ONLINE",
+      "unit": "milliseconds",
+      "hard_maximum": 10000,
+      "configurable_range": {
+        "minimum": 10000,
+        "maximum": 10000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One timestamp per watched target in node memory; an older confirmation is shown as UNCONFIRMED.",
+      "client_visible": true,
+      "boundary_tests": [
+        "apps/game-server/src/vip/presence_tests.rs an ONLINE older than 10 s without confirmation is downgraded"
+      ],
+      "consumers": [
+        "apps/game-server/src/vip/presence.rs CONFIRM_MS"
+      ],
+      "notes": "VIP0 \u00a711. Registered by VIP-2 under CP D1444 (#2164). The oteryn-protocol-oteryn test vip::tests::the_registries_bind_the_vip_constants binds the wire rows to their constants. Architect ruling R4."
     }
   ]
 }

@@ -1,14 +1,12 @@
-//! VIP0 §§4–6: private, receipted consent lifecycle storage preparation.
+//! VIP0 §§4–7 (decision VIP0-ACCOUNT-WORLD-VIP-LIST-V1): the receipted writers of the VIP list
+//! of an Account in one World, and the admission producer of the character's baseline and
+//! snapshot (VIP-1b, CP D1444).
 //!
-//! Uses native recovery/session/scope/node checks unchanged. This unregistered module is
-//! qualified with an isolated schema extension; production migration, SECURITY DEFINER
-//! functions/grants, relay and handles remain CP work. No runtime role is granted direct DML.
-//! Accept changes an existing pending consent only under the target's actual native fence.
-//! No CharacterRevision, item or presence state is written.
-#![allow(
-    dead_code,
-    reason = "VIP production module/definer registration awaits the CP slot"
-)]
+//! Storage is migration `0124_vip_lists.sql`; the runtime role has exactly the column grants
+//! these writers use. Every writer runs the native recovery, session, scope and node checks
+//! unchanged. Accept changes an existing pending consent only under the target's own native
+//! fence. No CharacterRevision, item or presence state is written. Premium is read by the
+//! actual closed gate ([`VipPremiumGate`]), never supplied as a bool.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, uuid_text};
 use super::character_progression::assert_session_fence;
@@ -330,7 +328,7 @@ async fn withdraw_target(
 /// Recovery first, historical receipt next, then current native authority. Root locks precede
 /// all list locks; both roots and Account+World lists are ordered, including reciprocal revokes.
 /// No caller-controlled consent/presence state is accepted.
-async fn end_in_transaction(
+pub(crate) async fn end_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -614,10 +612,47 @@ async fn change_consent(
     Ok(VipResult::Ok)
 }
 
+use super::premium_activation_latch::PremiumGateTx;
 use crate::domain::character_name::CharacterName;
 use crate::domain::premium::PremiumStatus;
-use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
 use sqlx::Acquire;
+use std::future::Future;
+use std::pin::Pin;
+
+/// A VIP Premium gate operation: the shape of the PREMIUM-ACTIVATION-0 §1.2 gate operation. It
+/// runs once with the account's status and, for `NotActivated` only, the gate's transaction.
+pub(crate) trait VipGateOperation<T>:
+    for<'g, 't> FnOnce(
+        PremiumStatus<'g>,
+        Option<&'g mut PremiumGateTx<'t>>,
+    ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+    + Send
+    + 'static
+{
+}
+impl<T, F> VipGateOperation<T> for F where
+    F: for<'g, 't> FnOnce(
+            PremiumStatus<'g>,
+            Option<&'g mut PremiumGateTx<'t>>,
+        ) -> Pin<Box<dyn Future<Output = T> + Send + 'g>>
+        + Send
+        + 'static
+{
+}
+/// The node's one Premium gate as the VIP writers see it. The production implementations are
+/// `SpellPremiumCoordinator::with_premium_gate` and the composed admission's gate
+/// (`gameplay_transport::vip_intent`); this module never decides Premium itself.
+pub(crate) trait VipPremiumGate: Sync {
+    /// Decide `account`'s Premium status once and run `operation` with it, once.
+    fn vip_gate<T, F>(
+        &self,
+        account: [u8; 16],
+        operation: F,
+    ) -> impl Future<Output = std::result::Result<T, DurabilityError>> + Send
+    where
+        T: Send + 'static,
+        F: VipGateOperation<T>;
+}
 
 /// Bounded parsed name DATA plus the digest of the exact original name. Invalid grammar is
 /// retained only as a digest and is a receipted REJECTED command, not rate-free probing.
@@ -732,7 +767,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl VipPremiumGate,
         request: VipAddRequest,
     ) -> Result<VipAddReceipt> {
         let recovery = authority
@@ -766,7 +801,7 @@ impl DurabilityRoot {
         let root = self.clone();
         let node = node.clone();
         premium
-            .with_premium_gate(
+            .vip_gate(
                 *request.list.account_id.as_bytes(),
                 move |status, supplied| {
                     Box::pin(async move {
@@ -1061,10 +1096,6 @@ async fn add_target(
     Ok((VipAddResult::Ok, Some(entry_no)))
 }
 
-#[cfg(test)]
-#[path = "vip_tests.rs"]
-mod tests;
-
 /// List metadata operations. These values are private SQL proposals, not wire tags.
 #[derive(Clone, Debug)]
 pub(crate) enum VipListOperation {
@@ -1224,7 +1255,7 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        premium: &SpellPremiumCoordinator,
+        premium: &impl VipPremiumGate,
         request: VipListRequest,
     ) -> Result<VipListReceipt> {
         let recovery = authority
@@ -1261,7 +1292,7 @@ impl DurabilityRoot {
         }
         let root = self.clone();
         premium
-            .with_premium_gate(
+            .vip_gate(
                 *request.list.account_id.as_bytes(),
                 move |status, supplied| {
                     Box::pin(async move {
@@ -1333,7 +1364,7 @@ impl DurabilityRoot {
             .await?
     }
 }
-async fn modify_list_in_transaction(
+pub(crate) async fn modify_list_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     recovery: &CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -1533,4 +1564,216 @@ async fn mutate_list(
         }
     };
     Ok(outcome)
+}
+
+/// One entry of the character's own view (VIP-0 §6): its current target name, never a
+/// CharacterId on the wire.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct VipEntryView {
+    pub(crate) entry_no: u64,
+    /// Server-side only: which sessions a change of this entry concerns.
+    pub(crate) target: CharacterId,
+    pub(crate) name: String,
+    pub(crate) description: String,
+    pub(crate) icon: u8,
+    pub(crate) notify: bool,
+    /// Bit n-1 for group n (1..=8).
+    pub(crate) groups: u8,
+}
+/// A pending unexpired invitation to the character, with its exact retained binding.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct VipInvitationView {
+    pub(crate) binding: VipInvitationBinding,
+    pub(crate) expires_at_ms: u64,
+}
+/// The character's own VIP view at one moment: its Account+World list and its consent view.
+/// DATA for the session projection, never authority for a later write.
+#[derive(Clone, Debug)]
+pub(crate) struct VipView {
+    pub(crate) list: VipListKey,
+    /// The list revision (0 before the first write).
+    #[allow(
+        dead_code,
+        reason = "The VIP_V1 snapshot carries the session's domain revision instead"
+    )]
+    pub(crate) revision: u64,
+    pub(crate) groups: Vec<(u8, String)>,
+    pub(crate) entries: Vec<VipEntryView>,
+    /// With the inviter's current name, ascending by invitation id.
+    pub(crate) invitations: Vec<(VipInvitationView, String)>,
+    /// Accepted watchers with their current name, ascending by invitation id.
+    pub(crate) watchers: Vec<(VipInvitationBinding, String)>,
+    pub(crate) hidden: bool,
+}
+
+impl DurabilityRoot {
+    /// VIP-1b admission producer (CP D1444): under the native recovery, session, scope and node
+    /// checks, give the character the PARTY settings baseline its VIP consent needs (PARTYPVP0
+    /// §3 absent-row defaults; an existing row is never changed) and read its own view. Also the
+    /// reader of the view after the session's own writes and on reconcile.
+    pub(crate) async fn admit_vip(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<VipView> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| VipError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    match admit_in_transaction(&mut tx, &recovery, &node, fence).await {
+                        Ok(view) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(view))
+                        }
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+}
+
+fn millis_u64(value: i64) -> Result<u64> {
+    u64::try_from(value).map_err(|_| corrupt())
+}
+
+async fn admit_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+) -> Result<VipView> {
+    assert_recovery_fence(tx, recovery).await?;
+    lock_admission_relations(tx).await?;
+    let account = assert_session_fence(tx, &fence, node)
+        .await?
+        .map_err(|_| VipError::AuthorityRejected)?;
+    let account = AccountId::from_bytes(uuid_text(&account)?).map_err(|_| corrupt())?;
+    // House seam (HOUSE-RUNTIME-1b, #2165): an Instance-scope session has no VIP view yet.
+    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
+        return Err(VipError::AuthorityRejected);
+    };
+    let world = WorldId::from_bytes(*world_id.as_bytes()).map_err(|_| corrupt())?;
+    let me = fence.character_id.as_bytes().as_slice();
+    let root = sqlx::query("SELECT account_id::text,world_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
+        .bind(me).fetch_optional(&mut **tx).await?.ok_or(VipError::AuthorityRejected)?;
+    if uuid_text(root.try_get("account_id")?)? != *account.as_bytes()
+        || uuid_text(root.try_get("world_id")?)? != *world.as_bytes()
+    {
+        return Err(VipError::AuthorityRejected);
+    }
+    sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT (character_id) DO NOTHING")
+        .bind(me).execute(&mut **tx).await?;
+    let settings = sqlx::query("SELECT vip_status,source_policy FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(me).fetch_one(&mut **tx).await?;
+    if settings.try_get::<String, _>("source_policy")? != "PARTYPVP0-PARTIES-AND-PVP-V1" {
+        return Err(corrupt());
+    }
+    let hidden = match settings.try_get::<i16, _>("vip_status")? {
+        1 => false,
+        2 => true,
+        _ => return Err(corrupt()),
+    };
+    let list = VipListKey {
+        account_id: account,
+        world_id: world,
+    };
+    let (a, w) = (account.as_bytes().as_slice(), world.as_bytes().as_slice());
+    let revision: Option<String> = sqlx::query_scalar("SELECT revision::text FROM game_vip_lists WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid FOR SHARE")
+        .bind(a).bind(w).fetch_optional(&mut **tx).await?;
+    let revision = revision
+        .map(|value| value.parse::<u64>().map_err(|_| corrupt()))
+        .transpose()?
+        .unwrap_or(0);
+    let mut groups = Vec::new();
+    for row in sqlx::query("SELECT group_no,name FROM game_vip_groups WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid ORDER BY group_no LIMIT 6")
+        .bind(a).bind(w).fetch_all(&mut **tx).await?
+    {
+        let number = u8::try_from(row.try_get::<i16, _>("group_no")?).map_err(|_| corrupt())?;
+        groups.push((number, row.try_get::<String, _>("name")?));
+    }
+    if groups.len() > 5 {
+        return Err(corrupt());
+    }
+    let mut entries = Vec::new();
+    for row in sqlx::query("SELECT e.entry_no::text,e.character_id::text,t.name,e.description,e.icon,e.notify,COALESCE((SELECT bit_or(1<<(m.group_no-1)) FROM game_vip_group_members m WHERE m.account_id=e.account_id AND m.world_id=e.world_id AND m.character_id=e.character_id),0)::int AS groups FROM game_vip_entries e JOIN game_character_roots t ON t.character_id=e.character_id WHERE e.account_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid ORDER BY e.entry_no LIMIT 101")
+        .bind(a).bind(w).fetch_all(&mut **tx).await?
+    {
+        entries.push(VipEntryView {
+            entry_no: stored_u64(&row, "entry_no")?,
+            target: CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
+                .map_err(|_| corrupt())?,
+            name: row.try_get("name")?,
+            description: row.try_get("description")?,
+            icon: u8::try_from(row.try_get::<i16, _>("icon")?).map_err(|_| corrupt())?,
+            notify: row.try_get("notify")?,
+            groups: u8::try_from(row.try_get::<i32, _>("groups")?).map_err(|_| corrupt())?,
+        });
+    }
+    if entries.len() > 100 {
+        return Err(corrupt());
+    }
+    let mut invitations = Vec::new();
+    for row in sqlx::query("SELECT c.account_id::text,c.inviter_character_id::text,c.invitation_id,floor(extract(epoch FROM c.invite_expires_at)*1000)::bigint AS expires_ms,r.name FROM game_vip_consents c JOIN game_character_roots r ON r.character_id=c.inviter_character_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.consent=1 AND c.invite_expires_at>clock_timestamp() ORDER BY c.invitation_id LIMIT 21")
+        .bind(me).bind(w).fetch_all(&mut **tx).await?
+    {
+        invitations.push((
+            VipInvitationView {
+                binding: binding_of(&row)?,
+                expires_at_ms: millis_u64(row.try_get("expires_ms")?)?,
+            },
+            row.try_get::<String, _>("name")?,
+        ));
+    }
+    let mut watchers = Vec::new();
+    for row in sqlx::query("SELECT c.account_id::text,c.inviter_character_id::text,c.invitation_id,r.name FROM game_vip_consents c JOIN game_character_roots r ON r.character_id=c.inviter_character_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.consent=2 ORDER BY c.invitation_id LIMIT 101")
+        .bind(me).bind(w).fetch_all(&mut **tx).await?
+    {
+        watchers.push((binding_of(&row)?, row.try_get::<String, _>("name")?));
+    }
+    if invitations.len() > 20 || watchers.len() > 100 {
+        return Err(corrupt());
+    }
+    Ok(VipView {
+        list,
+        revision,
+        groups,
+        entries,
+        invitations,
+        watchers,
+        hidden,
+    })
+}
+
+fn binding_of(row: &sqlx::postgres::PgRow) -> Result<VipInvitationBinding> {
+    let invitation_id = u64::try_from(row.try_get::<i64, _>("invitation_id")?)
+        .ok()
+        .filter(|id| *id > 0)
+        .ok_or_else(corrupt)?;
+    Ok(VipInvitationBinding {
+        watcher_account: AccountId::from_bytes(uuid_text(row.try_get("account_id")?)?)
+            .map_err(|_| corrupt())?,
+        inviter: CharacterId::from_bytes(uuid_text(row.try_get("inviter_character_id")?)?)
+            .map_err(|_| corrupt())?,
+        invitation_id,
+    })
+}
+
+/// The recovery record of `authority` on `root`, for the recovery-mismatch cases of
+/// `vip_tests.rs`, which the library test target mounts outside `durability`.
+#[cfg(test)]
+pub(crate) fn recovery_record(
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    root: &DurabilityRoot,
+) -> std::result::Result<
+    CharacterRecoveryFenceV1,
+    super::character_authority::CharacterAuthorityError,
+> {
+    authority.record_for(root)
 }

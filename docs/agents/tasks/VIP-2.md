@@ -28,6 +28,20 @@ owned_paths:
   - "apps/game-server/src/gameplay_transport/chat_relay.rs + chat_relay/tests.rs (presence sender, listener, RL-10/RL-11 meter)"
   - "apps/game-server/src/gameplay_transport/mod.rs (login/logout presence feed, owner install)"
   - "apps/game-server/src/gameplay_transport/logout_postgres_tests.rs (offline hint on the real logout path)"
+  # Widened by CP D1444 (2026-10-18): VIP is one mechanic; VIP-1b and the VIP_V1 wire land here.
+  - "apps/game-server/migrations/0124_vip_lists.sql (VIP-1b production schema and grants)"
+  - "apps/game-server/src/domain/vip.rs + domain/mod.rs (registration only)"
+  - "apps/game-server/src/durability/vip.rs + durability/vip_tests.rs"
+  - "apps/game-server/src/vip/presence_tests.rs (end-to-end watcher client case)"
+  - "apps/game-server/src/gameplay_transport/vip_intent.rs (new: command 31, domain 21 deltas)"
+  - "apps/game-server/src/gameplay_transport/chat_intent.rs (VipRuntime field only)"
+  - "apps/game-server/src/gameplay_transport/connection.rs (domain 21 snapshot, deltas, command 31)"
+  - "apps/game-server/src/gameplay_transport/capabilities.rs + capabilities_tests.rs (capability 31)"
+  - "crates/protocol-oteryn/src/vip.rs + vip_tests.rs (new), lib.rs (pub mod), item_look_tests.rs (capability count)"
+  - "crates/session/src/lib.rs (capability 31 gated route and client test)"
+  - "docs/contracts/protocol-oteryn/v1/vip_v1.proto (new)"
+  - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (capability 31, command 31, domain 21)"
+  - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json (VIP0-RL rows)"
 slot_only_paths:
   - "apps/game-server/src/chat/ relay wiring"
   - "apps/game-server/src/gameplay_transport/connection.rs (presence push)"
@@ -607,8 +621,45 @@ A gets OFFLINE with announce, an unwatched hint changes nothing.
 
 Codex P2 (discussion_r4305168482): fixed under D1434; thread answered and resolved with this head.
 
-Outside this PR and still open: VIP-1 production migration/definers/producers (the VIP tables
-exist only as test fixtures, so production watcher registration and the 10 s/60 s driver cannot
-run yet); `VIP_V1` capability/delta/wire on #162 (client frames and end-to-end RL-11). A
-crash-recovery path that ends another node's rows sends no hint; the 60 s RL-09 reconcile
-corrects it.
+Outside this PR at D1435 (both closed by D1444 below): VIP-1 production migration/definers/
+producers; `VIP_V1` capability/delta/wire on #162. A crash-recovery path that ends another
+node's rows sends no hint; the 60 s RL-09 reconcile corrects it.
+
+## CP D1444 completion — 2026-10-18
+
+CP D1444 (one PR per mechanic): VIP is one mechanic, so VIP-1b and the `VIP_V1` wire land in
+this PR. The monk_save timing test is left to DEATH-ML-LOSS-1.
+
+- VIP-1b: production migration `0124_vip_lists.sql` (main ends at 0122; 0123 is claimed by the
+  open GM-1 and PVP-1b branches, so this takes 0124; lists, entries, consents, groups, group
+  members, command receipts, invitation sequence; least-privilege runtime column grants, no
+  PUBLIC or control access, immutable receipts). The runtime role writes through these grants,
+  so no SECURITY DEFINER function is needed. Producers: `durability/vip.rs` (add, list edits,
+  accept/reject/revoke/withdraw, `admit_vip` views) behind `domain/vip.rs` rules. The presence
+  test fixture now uses the migration instead of its own schema.
+- Capability 31 `VIP_V1` (no requirement), command type 31 `VIP_INTENT`, state domain 21 `VIP`
+  are reserved on `PROTOCOL_OTERYN_V1_REGISTRY.json` (#162 rules: append-only, next free IDs
+  after ADMIT-CAP-1's 29/30) with `vip_v1.proto` and the `protocol-oteryn::vip` codecs, every
+  payload bound tested (intent 536, result 4, entry 566, consent 5502, snapshot 62935 bytes).
+- Server wiring: the capability is offered and gated (command 31, domain 21);
+  `gameplay_transport/vip_intent.rs` sends the domain 21 snapshot at admission (revision above
+  any seen across reconnect), answers command 31 with `VipIntentResultV1`, and pushes entry,
+  groups, consent and status deltas. Presence statuses come from the installed
+  `PresenceOwner` (RL-09 reconcile 60 s, one native read per due session); a node without the
+  relay listener keeps every status `UNCONFIRMED` and answers writes `VIP_UNAVAILABLE`. The
+  batched reader, the hint-announce refresh and the DB-outage withdrawal path are tested but not
+  yet scheduled by the node, so `presence.rs` keeps its reasoned `dead_code` allow.
+- Client: `crates/session` routes capability 31 through the gated table (snapshot, command 31,
+  domain 21 deltas) and re-exports the VIP codecs; it is not in `CLIENT_SUPPORTED_CAPABILITIES`
+  until the client keeps a typed VIP store, because status deltas are unsolicited pushes.
+- End to end: `presence_tests.rs` adds a VIP by name over the wire codec, accepts the
+  invitation as the target, and measures RL-11 from the target's logout/login to the watcher's
+  decoded `VipStatusV1` (`VIP0-RL-11 end to end` line). The session crate case adds a VIP and
+  reads ONLINE then OFFLINE with announce.
+
+- Codex P2 on 8b368b35 (`listener_reconnected`): a reconnect now also clears the failed-read
+  backoff (`retry_at = now`), so the cleared withdrawals are replaced by a fresh read within the
+  confirmation bound; unit test `reconnect_reconciles_at_once_after_a_failed_read_backoff`.
+
+Remaining listed dependency: HOUSE-RUNTIME-1b #2165 (Instance/House scope stays
+`AuthorityRejected` until the named-House fence exists).

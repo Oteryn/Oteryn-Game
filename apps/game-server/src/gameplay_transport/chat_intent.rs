@@ -80,6 +80,9 @@ pub(crate) struct ChatRuntime {
     relay: OnceLock<Arc<ChatRelay>>,
     /// The last customer queue position handed out.
     joins: AtomicU64,
+    /// VIP-2 (CP D1444): the VIP sessions of the Channel and the node's presence owner, beside
+    /// the relay that feeds it.
+    pub(crate) vip: super::vip_intent::VipRuntime,
 }
 
 impl ChatRuntime {

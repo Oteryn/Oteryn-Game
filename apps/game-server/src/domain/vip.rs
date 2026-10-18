@@ -1,21 +1,21 @@
 //! VIP0 §5.1/§9: private consent transitions and persisted list-bucket arithmetic.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ConsentEnd {
+pub enum ConsentEnd {
     Withdraw,
     Reject,
     Revoke,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ConsentState {
+pub enum ConsentState {
     Pending { expires_at_us: i64 },
     Accepted,
 }
 
 /// Expired pending invitations read as absent. Accepted consent does not expire with its
 /// original invitation deadline; no function here grants consent or projects presence.
-pub(crate) fn can_end_consent(action: ConsentEnd, state: ConsentState, now_us: i64) -> bool {
+pub fn can_end_consent(action: ConsentEnd, state: ConsentState, now_us: i64) -> bool {
     match state {
         ConsentState::Pending { expires_at_us } => {
             now_us < expires_at_us && action != ConsentEnd::Revoke
@@ -27,17 +27,13 @@ pub(crate) fn can_end_consent(action: ConsentEnd, state: ConsentState, now_us: i
 /// Pure transition decision; callers must independently resolve the exact invitation,
 /// database clock and accepted watcher count under the current target's root lock.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum AcceptDecision {
+pub enum AcceptDecision {
     Accept,
     NotFound,
     ListFull,
 }
 
-pub(crate) fn accept_consent(
-    state: ConsentState,
-    now_us: i64,
-    accepted_watchers: u64,
-) -> AcceptDecision {
+pub fn accept_consent(state: ConsentState, now_us: i64, accepted_watchers: u64) -> AcceptDecision {
     if !matches!(state, ConsentState::Pending { expires_at_us } if now_us < expires_at_us) {
         return AcceptDecision::NotFound;
     }
@@ -48,20 +44,20 @@ pub(crate) fn accept_consent(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct VipRateBucket {
-    pub(crate) tokens: u8,
-    pub(crate) at_us: i64,
+pub struct VipRateBucket {
+    pub tokens: u8,
+    pub at_us: i64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct VipRateCharge {
-    pub(crate) bucket: VipRateBucket,
-    pub(crate) exhausted_seconds: Option<u8>,
+pub struct VipRateCharge {
+    pub bucket: VipRateBucket,
+    pub exhausted_seconds: Option<u8>,
 }
 
 /// VIP0-RL-07: 20 tokens, one per 3 seconds. Caller supplies the database clock and the
 /// locked persisted bucket. A future/corrupt clock refuses rather than minting tokens.
-pub(crate) fn charge_vip_bucket(bucket: VipRateBucket, now_us: i64) -> Option<VipRateCharge> {
+pub fn charge_vip_bucket(bucket: VipRateBucket, now_us: i64) -> Option<VipRateCharge> {
     const INTERVAL_US: i64 = 3_000_000;
     if bucket.tokens > 20 || bucket.at_us < 0 || now_us < bucket.at_us {
         return None;
@@ -91,7 +87,7 @@ pub(crate) fn charge_vip_bucket(bucket: VipRateBucket, now_us: i64) -> Option<Vi
 }
 
 /// VIP0-RL-06. Canonical spelling is retained; uniqueness uses the lowercase key.
-pub(crate) fn vip_group_name(name: &str) -> Option<(String, String)> {
+pub fn vip_group_name(name: &str) -> Option<(String, String)> {
     if name.chars().any(char::is_control) {
         return None;
     }
@@ -104,7 +100,7 @@ pub(crate) fn vip_group_name(name: &str) -> Option<(String, String)> {
 
 /// VIP0 §5 / RL-04–05. Fixed groups are 1–3, custom groups are 4–8.
 /// Existence of custom groups is resolved independently under the owning list lock.
-pub(crate) fn vip_edit_description(description: &str, icon: u8, groups: &[u8]) -> Option<String> {
+pub fn vip_edit_description(description: &str, icon: u8, groups: &[u8]) -> Option<String> {
     if description.chars().any(char::is_control) {
         return None;
     }

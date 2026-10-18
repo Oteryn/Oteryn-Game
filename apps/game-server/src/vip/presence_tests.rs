@@ -491,17 +491,8 @@ fn malformed_read_or_revision_overflow_cannot_partially_replace_index() {
     assert!(s.index[&character(61)].contains(&f.game_session_id));
 }
 
-// Exact private VIP1 table/column subset. Administrative fixture data is not a production
-// invitation/acceptance producer, schema migration, grant or current-authority substitute.
-const SCHEMA: &str = r"
-ALTER TABLE game_character_social_settings ADD COLUMN vip_status SMALLINT NOT NULL DEFAULT 1 CHECK(vip_status IN(1,2));
-ALTER TABLE game_character_social_settings ADD COLUMN vip_consent_revision NUMERIC(20,0) NOT NULL DEFAULT 0 CHECK(vip_consent_revision BETWEEN 0 AND 18446744073709551615);
-CREATE TABLE game_vip_lists(account_id UUID NOT NULL REFERENCES game_character_account_guards(account_id),world_id UUID NOT NULL,revision NUMERIC(20,0) NOT NULL CHECK(revision BETWEEN 1 AND 18446744073709551615),next_entry_no NUMERIC(20,0) NOT NULL,rate_tokens SMALLINT NOT NULL,rate_at BIGINT NOT NULL,PRIMARY KEY(account_id,world_id));
-CREATE TABLE game_vip_entries(account_id UUID NOT NULL,world_id UUID NOT NULL,character_id UUID NOT NULL REFERENCES game_character_roots(character_id),entry_no NUMERIC(20,0) NOT NULL CHECK(entry_no>0),description TEXT NOT NULL DEFAULT'',icon SMALLINT NOT NULL DEFAULT 0,notify BOOLEAN NOT NULL DEFAULT FALSE,added_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(account_id,world_id,character_id),UNIQUE(account_id,world_id,entry_no),FOREIGN KEY(account_id,world_id) REFERENCES game_vip_lists ON DELETE CASCADE);
-CREATE SEQUENCE game_vip_invitation_id NO CYCLE;
-CREATE TABLE game_vip_consents(account_id UUID NOT NULL,world_id UUID NOT NULL,inviter_character_id UUID NOT NULL REFERENCES game_character_roots(character_id),character_id UUID NOT NULL,invitation_id BIGINT NOT NULL DEFAULT nextval('game_vip_invitation_id') UNIQUE CHECK(invitation_id>0),consent SMALLINT NOT NULL CHECK(consent IN(1,2)),invite_expires_at TIMESTAMPTZ NOT NULL,PRIMARY KEY(account_id,world_id,inviter_character_id,character_id),CHECK(inviter_character_id<>character_id),FOREIGN KEY(account_id,world_id,character_id) REFERENCES game_vip_entries ON DELETE CASCADE);
-";
-
+// The VIP tables are the installed migration 0124; fixture rows are administrative DATA, not a
+// production invitation/acceptance producer or a current-authority substitute.
 async fn fixture_character(h: &Harness, seed: u8, owner: u8) -> TestResult {
     sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING").bind(id(owner).as_slice()).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,$3 FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid")
@@ -535,7 +526,6 @@ async fn fixture_character(h: &Harness, seed: u8, owner: u8) -> TestResult {
     Ok(())
 }
 async fn fixture(h: &Harness) -> TestResult {
-    h.pool.execute(SCHEMA).await?;
     fixture_character(h, 61, 60).await?;
     fixture_character(h, 62, 70).await?;
     fixture_character(h, 63, 40).await?;
@@ -802,13 +792,19 @@ fn native_reader_rejects_independently_wrong_fences_and_uninstalled_schema() -> 
             .open_character_authority(&seal)
             .await
             .map_err(debug)?;
+        // Without the VIP relation the read fails closed (a schema that is not installed).
+        h.pool
+            .execute("ALTER TABLE game_vip_consents RENAME TO game_vip_consents_absent")
+            .await?;
         assert!(matches!(
             h.root
                 .read_current_vip_presence(&authority, &h.node, item_fence()?, Selection::Full)
                 .await,
             Err(PresenceError::Unavailable(_))
         ));
-        h.pool.execute(SCHEMA).await?;
+        h.pool
+            .execute("ALTER TABLE game_vip_consents_absent RENAME TO game_vip_consents")
+            .await?;
         for which in 0..5 {
             let mut f = item_fence()?;
             match which {
@@ -978,6 +974,28 @@ fn timer_reconcile_visibility_budget_and_work_suppression_are_exact() {
         format!("{:?}", acknowledge(&mut s, 100)),
         "StatusUpdate { .. }"
     );
+}
+
+#[test]
+fn reconnect_reconciles_at_once_after_a_failed_read_backoff() {
+    let mut s = state();
+    let f = item_fence().expect("fence");
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    assert_eq!(acknowledge(&mut s, 100).status, Status::Online);
+    // A failed read backs the watcher off for CONFIRM_MS and queues its withdrawal.
+    let (ticket, epoch, _) = s.reserve(f, 0, 200).expect("read");
+    s.failed(f.game_session_id, ticket, epoch, 200)
+        .expect("failed read");
+    assert!(s.due(201, 1).expect("backoff").is_empty());
+    // The reconnect clears that withdrawal; the watcher must be due at once, not at 10_200.
+    s.listener_down(300).expect("outage");
+    s.listener_reconnected(301).expect("reconnect");
+    assert_eq!(s.due(301, 1).expect("reconcile"), vec![f.game_session_id]);
 }
 
 #[test]
@@ -1785,6 +1803,226 @@ fn native_batch_bounds_and_schema_failure_never_preserve_online() -> TestResult 
                 .sessions
                 .values()
                 .all(|w| !w.reading && w.entries.values().all(|e| e.desired != Status::Online))
+        );
+        Ok(())
+    })
+}
+
+/// The non-Premium gate of a node without Premium reads (free-account caps).
+struct NotCurrentGate;
+impl super::super::vip::VipPremiumGate for NotCurrentGate {
+    async fn vip_gate<T, F>(
+        &self,
+        _account: [u8; 16],
+        operation: F,
+    ) -> std::result::Result<T, super::super::DurabilityError>
+    where
+        T: Send + 'static,
+        F: super::super::vip::VipGateOperation<T>,
+    {
+        Ok(operation(crate::domain::premium::PremiumStatus::NotCurrent, None).await)
+    }
+}
+
+/// VIP-2 end to end (CP D1444) on the installed migration 0124 and the real writers: the watcher
+/// (character 64, session 93) sends the client `VIP_INTENT` add frame for the harness character;
+/// the target accepts from its own admitted view; the watcher's owner then confirms ONLINE, and
+/// the target's logout and login reach the watcher as domain 21 status deltas the client decodes.
+/// RL-11 is measured from the target's session commit to the decoded delta.
+#[test]
+fn native_vip_add_accept_and_presence_reach_the_watcher_client_end_to_end() -> TestResult {
+    use super::super::vip::{VipAcceptRequest, VipAddRequest, VipAddResult, VipListKey, VipResult};
+    use crate::foundation::{CommandId, CommandRef};
+    use oteryn_protocol_oteryn::vip::{
+        VipDelta, VipIntent, VipStatus, VipStatusUpdate, decode_vip_delta, decode_vip_intent,
+        encode_vip_delta, encode_vip_intent,
+    };
+    run("vip2e2e", async |h| {
+        fixture(h).await?;
+        let watcher = second_watcher(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let list = |account: u8| -> TestResult<VipListKey> {
+            Ok(VipListKey {
+                account_id: crate::domain::AccountId::from_bytes(id(account)).map_err(debug)?,
+                world_id: crate::domain::WorldId::from_bytes(id(WORLD)).map_err(debug)?,
+            })
+        };
+        let command = |session: u8, number: u64| -> TestResult<CommandRef> {
+            Ok(CommandRef::new(
+                GameSessionId::decode(&id(session)).map_err(debug)?,
+                CommandId::new(number).map_err(debug)?,
+            ))
+        };
+        // The target's admission makes its settings row and reads its (empty) consent view.
+        let target_view = h
+            .root
+            .admit_vip(&authority, &h.node, item_fence()?)
+            .await
+            .map_err(debug)?;
+        assert!(target_view.invitations.is_empty());
+        let name: String = sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        // The client frame of the add, decoded by the server as the connection does.
+        let frame = encode_vip_intent(&VipIntent::Add { name: name.clone() }).map_err(debug)?;
+        let VipIntent::Add { name: decoded } = decode_vip_intent(&frame).map_err(debug)? else {
+            return Err("not an add".into());
+        };
+        let added = h
+            .root
+            .add_vip(
+                &authority,
+                &h.node,
+                watcher,
+                &NotCurrentGate,
+                VipAddRequest::new(list(80)?, command(93, 1)?, &decoded),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(added.result, VipAddResult::Ok);
+        let entry_no = added.entry_no.ok_or("entry number")?;
+        // The target accepts the invitation of its own view.
+        let target_view = h
+            .root
+            .admit_vip(&authority, &h.node, item_fence()?)
+            .await
+            .map_err(debug)?;
+        let (invitation, inviter) = target_view.invitations.first().ok_or("invitation")?;
+        assert_eq!(inviter, "Vip Presence CM");
+        let accepted = h
+            .root
+            .accept_vip_invitation(
+                &authority,
+                &h.node,
+                item_fence()?,
+                VipAcceptRequest {
+                    list: list(40)?,
+                    command: command(native::SESSION, 1)?,
+                    invitation: invitation.binding,
+                },
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(accepted.result, VipResult::Ok);
+        let watcher_view = h
+            .root
+            .admit_vip(&authority, &h.node, watcher)
+            .await
+            .map_err(debug)?;
+        assert!(
+            watcher_view
+                .entries
+                .iter()
+                .any(|e| e.entry_no == entry_no && e.name == name)
+        );
+        // A native add stores notify off; the watcher turns login/logout notices on.
+        let edited = h
+            .root
+            .modify_vip_list(
+                &authority,
+                &h.node,
+                watcher,
+                &NotCurrentGate,
+                super::super::vip::VipListRequest {
+                    list: list(80)?,
+                    command: command(93, 2)?,
+                    operation: super::super::vip::VipListOperation::Edit {
+                        entry_no,
+                        description: String::new(),
+                        icon: 0,
+                        notify: true,
+                        groups: Vec::new(),
+                    },
+                },
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(edited.result, super::super::vip::VipListResult::Ok);
+        // The watcher's owner confirms the listed target ONLINE (no announce at first sight).
+        let owner = PresenceOwner::new(h.root.clone(), world(), 2).map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        owner
+            .refresh_current(&authority, &h.node, watcher, 0, Refresh::Reconcile)
+            .await
+            .map_err(debug)?;
+        let mut shown = Vec::new();
+        while let Some(update) = owner
+            .next_current_update(&authority, &h.node, watcher, 0)
+            .await
+            .map_err(debug)?
+        {
+            owner.delivered(&update).map_err(debug)?;
+            shown.push((update.entry(), update.status(), update.announce()));
+        }
+        assert!(
+            shown.contains(&(entry_no, Status::Online, false)),
+            "{shown:?}"
+        );
+        // The client decodes each status delta the connection would write.
+        let client = |update: &StatusUpdate| -> TestResult<VipStatusUpdate> {
+            let delta = VipDelta::Status(VipStatusUpdate {
+                entry_no: update.entry(),
+                status: match update.status() {
+                    Status::Online => VipStatus::Online,
+                    Status::Offline => VipStatus::Offline,
+                    Status::Unconfirmed => VipStatus::Unconfirmed,
+                },
+                announce: update.announce(),
+            });
+            let payload = encode_vip_delta(&delta).map_err(debug)?;
+            match decode_vip_delta(delta.delta_type(), &payload).map_err(debug)? {
+                VipDelta::Status(status) => Ok(status),
+                _ => Err("not a status".into()),
+            }
+        };
+        let target = CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?;
+        let mut latencies = Vec::new();
+        for (state, online, status) in [
+            (3_i16, false, VipStatus::Offline),
+            (1, true, VipStatus::Online),
+        ] {
+            let started = std::time::Instant::now();
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=$1 WHERE game_session_id=encode($2,'hex')::uuid")
+                .bind(state).bind(id(native::SESSION).as_slice()).execute(&h.pool).await?;
+            owner
+                .refresh_current(
+                    &authority,
+                    &h.node,
+                    watcher,
+                    0,
+                    Refresh::PresenceHint { target, online },
+                )
+                .await
+                .map_err(debug)?;
+            let update = owner
+                .next_current_update(&authority, &h.node, watcher, 0)
+                .await
+                .map_err(debug)?
+                .ok_or("status delta")?;
+            let seen = client(&update)?;
+            latencies.push(started.elapsed());
+            assert_eq!(
+                seen,
+                VipStatusUpdate {
+                    entry_no,
+                    status,
+                    announce: true
+                }
+            );
+            owner.delivered(&update).map_err(debug)?;
+        }
+        println!(
+            "VIP0-RL-11 end to end (session commit to decoded client delta, one node): logout {} us, login {} us",
+            latencies[0].as_micros(),
+            latencies[1].as_micros()
         );
         Ok(())
     })

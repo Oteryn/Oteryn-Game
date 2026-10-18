@@ -44,6 +44,18 @@ pub use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::logout;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
+/// VIP-2 (CP D1444) list, consent and presence types of capability 31 `VIP_V1`, routed through
+/// the gated table (`Session::gated_command`, `Session::gated_snapshot`,
+/// `Session::read_gated_delta`), re-exported with their codecs so a client needs no direct
+/// `protocol-oteryn` edge (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::vip::{
+    DELTA_TYPE_VIP_CONSENT_V1, DELTA_TYPE_VIP_ENTRY_REMOVED_V1, DELTA_TYPE_VIP_ENTRY_V1,
+    DELTA_TYPE_VIP_GROUPS_V1, DELTA_TYPE_VIP_STATUS_V1, SNAPSHOT_TYPE_VIP_V1, VipConsentView,
+    VipDelta, VipEntry, VipGroup, VipGroupSet, VipIntent, VipIntentResult, VipInvitation,
+    VipResultCode, VipSnapshot, VipStatus, VipStatusUpdate, VipVisibility, VipWatcher,
+    VipWireError, decode_vip_delta, decode_vip_intent_result, decode_vip_snapshot,
+    encode_vip_intent,
+};
 use oteryn_protocol_oteryn::world_interaction;
 pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
@@ -91,6 +103,7 @@ use oteryn_protocol_oteryn::{
         self, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT, ItemViewWireError,
         STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
     },
+    vip::{CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, STATE_DOMAIN_VIP},
 };
 /// CHARM-5 view and command types (registered under capability 1 `BESTIARY_CHARMS_V1`, not yet
 /// routed by this crate), re-exported for the client views the same way.
@@ -141,7 +154,10 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// mirrors the server's gate table). Capabilities 6, 12 and 13 own none: they extend the core
 /// domain 1 and command types 1 and 9, whose codecs gate the extension on the selected set.
 /// Capabilities 4 and 7 are routed by typed code (`Session::use_item`, `Session::move_item`, the
-/// item stores; `Session::chat`, the chat log), not through this table.
+/// item stores; `Session::chat`, the chat log), not through this table. Capability 31 `VIP_V1`
+/// (command type 31, domain 21) is routed here and is not in [`CLIENT_SUPPORTED_CAPABILITIES`]:
+/// its status deltas are unsolicited pushes, so a client that advertises it reads them with
+/// `Session::read_gated_delta` until it has a typed VIP store.
 const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
     (
         CAPABILITY_BESTIARY_CHARMS_V1,
@@ -164,6 +180,11 @@ const GATED_ROUTES: &[(u32, &[u32], &[u32])] = &[
         CAPABILITY_CONTAINER_TREE_V1,
         &[COMMAND_TYPE_CONTAINER_VIEW_INTENT],
         &[STATE_DOMAIN_CONTAINER_VIEWS],
+    ),
+    (
+        CAPABILITY_VIP_V1,
+        &[COMMAND_TYPE_VIP_INTENT],
+        &[STATE_DOMAIN_VIP],
     ),
 ];
 
@@ -3951,6 +3972,159 @@ mod tests {
                     domain_id: GATED_DOMAIN
                 })
             ));
+            Ok(())
+        })?
+    }
+
+    /// VIP-2 (CP D1444): a client that advertises capability 31 gets the domain 21 snapshot,
+    /// adds a VIP with command type 31 and reads the entry and its presence status as gated
+    /// deltas, each decoded with the `protocol-oteryn` codecs.
+    #[test]
+    fn a_vip_client_adds_an_entry_and_reads_its_online_and_offline_status() -> Result<(), BoxError>
+    {
+        use oteryn_protocol_oteryn::vip::{
+            decode_vip_intent, encode_vip_delta, encode_vip_intent_result, encode_vip_snapshot,
+        };
+        fn entry(status: VipStatus) -> VipEntry {
+            VipEntry {
+                entry_no: 1,
+                name: "Ada".to_owned(),
+                description: String::new(),
+                icon: 0,
+                notify: true,
+                groups: VipGroupSet::default(),
+                status,
+            }
+        }
+        fn wire<T>(value: Result<T, VipWireError>) -> Result<T, BoxError> {
+            value.map_err(|error| format!("{error:?}").into())
+        }
+        // Not advertised by default until the client keeps a typed VIP store.
+        assert!(!CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_VIP_V1));
+        block_on(async {
+            let snapshot = wire(encode_vip_snapshot(&VipSnapshot::default()))?;
+            let (client, mut server) = tokio::io::duplex(64 * 1024);
+            let peer = tokio::spawn(async move {
+                join_peer_with(
+                    &mut server,
+                    &[13, CAPABILITY_VIP_V1],
+                    &[13, CAPABILITY_VIP_V1],
+                    &[],
+                    (SNAPSHOT_TYPE_WORLD_SPATIAL_V1, spatial(0)),
+                    &[(STATE_DOMAIN_VIP, 4, SNAPSHOT_TYPE_VIP_V1, snapshot)],
+                )
+                .await?;
+                let frame = read_frame(&mut server).await?;
+                let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                assert_eq!(command.command_type, COMMAND_TYPE_VIP_INTENT);
+                assert_eq!(
+                    wire(decode_vip_intent(command.payload))?,
+                    VipIntent::Add {
+                        name: "Ada".to_owned()
+                    }
+                );
+                let ok = wire(encode_vip_intent_result(VipIntentResult::of(
+                    VipResultCode::Ok,
+                )))?;
+                write_frame(
+                    &mut server,
+                    &encode_command_result(1, 41, 7, CommandStatus::Accepted, &ok)?,
+                )
+                .await?;
+                let mut revision = 4;
+                let mut sequence = 41;
+                for delta in [
+                    VipDelta::Entry(entry(VipStatus::Unconfirmed)),
+                    VipDelta::Status(VipStatusUpdate {
+                        entry_no: 1,
+                        status: VipStatus::Online,
+                        announce: false,
+                    }),
+                    VipDelta::Status(VipStatusUpdate {
+                        entry_no: 1,
+                        status: VipStatus::Offline,
+                        announce: true,
+                    }),
+                ] {
+                    sequence += 1;
+                    write_frame(
+                        &mut server,
+                        &encode_state_delta(
+                            1,
+                            sequence,
+                            STATE_DOMAIN_VIP,
+                            revision,
+                            revision + 1,
+                            delta.delta_type(),
+                            &wire(encode_vip_delta(&delta))?,
+                        )?,
+                    )
+                    .await?;
+                    revision += 1;
+                }
+                Ok::<(), BoxError>(())
+            });
+            let mut session =
+                Session::admit(client, admission_with(&[13, CAPABILITY_VIP_V1])?).await?;
+            let joined = session
+                .gated_snapshot(STATE_DOMAIN_VIP)
+                .ok_or("domain 21 snapshot")?;
+            assert_eq!(
+                (joined.revision, joined.snapshot_type),
+                (4, SNAPSHOT_TYPE_VIP_V1)
+            );
+            assert_eq!(
+                wire(decode_vip_snapshot(&joined.payload))?,
+                VipSnapshot::default()
+            );
+            let add = wire(encode_vip_intent(&VipIntent::Add {
+                name: "Ada".to_owned(),
+            }))?;
+            let result = session
+                .gated_command(CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, &add)
+                .await?;
+            assert_eq!(result.status, CommandStatus::Accepted);
+            assert_eq!(
+                wire(decode_vip_intent_result(&result.payload))?,
+                VipIntentResult::of(VipResultCode::Ok)
+            );
+            let mut seen = Vec::new();
+            for delta_type in [
+                DELTA_TYPE_VIP_ENTRY_V1,
+                DELTA_TYPE_VIP_STATUS_V1,
+                DELTA_TYPE_VIP_STATUS_V1,
+            ] {
+                let delta = session
+                    .read_gated_delta(STATE_DOMAIN_VIP, delta_type)
+                    .await?;
+                seen.push((
+                    delta.new_revision,
+                    wire(decode_vip_delta(delta_type, &delta.payload))?,
+                ));
+            }
+            peer.await??;
+            assert_eq!(
+                seen,
+                vec![
+                    (5, VipDelta::Entry(entry(VipStatus::Unconfirmed))),
+                    (
+                        6,
+                        VipDelta::Status(VipStatusUpdate {
+                            entry_no: 1,
+                            status: VipStatus::Online,
+                            announce: false,
+                        })
+                    ),
+                    (
+                        7,
+                        VipDelta::Status(VipStatusUpdate {
+                            entry_no: 1,
+                            status: VipStatus::Offline,
+                            announce: true,
+                        })
+                    ),
+                ]
+            );
             Ok(())
         })?
     }
