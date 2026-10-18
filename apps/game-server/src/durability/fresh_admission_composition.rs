@@ -16,7 +16,7 @@
 //! custody fence. [`DurabilityRoot::compose_fresh_admission`] then returns a
 //! sealed, already-resolved snapshot for the current assigned Channel holder;
 //! it implements the Foundation source traits without database waits. The
-//! durable commit (`FreshAdmissionStore::commit`) re-locks every guard, so a
+//! durable commit (`DurabilityRoot::commit_composed_fresh_admission`) re-locks every guard, so a
 //! snapshot never outlives a concurrent owner change.
 
 use super::admission_authority_guards::{
@@ -28,7 +28,7 @@ use super::character_authority::{
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::fresh_admission::{FreshAdmissionStore, OwnerRevalidation};
+use super::fresh_admission::{CurrentCapabilityCheck, FreshAdmissionStore, OwnerRevalidation};
 use super::native_admission_source::fence_custody;
 use super::runtime_scope_assignment::{
     AssignmentState, NodeIncarnationProof, channel_scope, load_assignment,
@@ -550,6 +550,7 @@ impl DurabilityRoot {
         holder: &NodeIncarnationProof,
         composition: &FreshAdmissionComposition,
         request: &FreshAdmissionCommitRequestV1,
+        capabilities: CurrentCapabilityCheck,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
         let recovery = character
             .record_for(self)
@@ -560,6 +561,7 @@ impl DurabilityRoot {
         // so revalidating `expected.subject` revalidates the request's subject.
         let bound = expected.binds(request);
         let store = AdmissionGuardStore::from_root(self.clone());
+        let capability_store = FreshAdmissionStore::from_root(self.clone());
         let revalidate: OwnerRevalidation = Box::new(move |tx| {
             Box::pin(async move {
                 if !bound {
@@ -568,7 +570,22 @@ impl DurabilityRoot {
                 match resolve_current(tx, &store, &recovery, &holder, expected.subject.clone())
                     .await
                 {
-                    Ok(current) => Ok(current == expected),
+                    Ok(current) => {
+                        // ADMIT0: these are recomputed from locked Character, S2,
+                        // assignment and runtime owners, never copied from `expected`.
+                        let facts = &current.current.facts;
+                        if current != expected {
+                            return Ok(false);
+                        }
+                        capability_store
+                            .check_current_runtime_capabilities(
+                                tx,
+                                RuntimeScopeRefV1::channel(facts.world_id, facts.channel_id),
+                                facts.scope_ownership_generation,
+                                &capabilities,
+                            )
+                            .await
+                    }
                     Err(DurabilityError::Unavailable) => Ok(false),
                     Err(error) => Err(error),
                 }
@@ -663,6 +680,18 @@ pub struct FreshAdmissionComposition {
 }
 
 impl FreshAdmissionComposition {
+    /// Independently resolved observation for the authenticated pre-commit check.
+    /// This snapshot is not commit authority: `commit_composed_fresh_admission`
+    /// recomputes it under the deciding transaction's locks.
+    pub(crate) fn runtime_capability_binding(&self) -> (RuntimeScopeRefV1, u64, &str) {
+        let facts = &self.current.facts;
+        (
+            RuntimeScopeRefV1::channel(facts.world_id, facts.channel_id),
+            facts.scope_ownership_generation,
+            &facts.world_policy_revision,
+        )
+    }
+
     /// Whether `request`'s complete authority binding (subject, current
     /// facts, S2 observations and expected guards) was produced from this
     /// composition.

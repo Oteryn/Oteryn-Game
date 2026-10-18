@@ -1,6 +1,7 @@
 # ADMIT-0 Channel-required gameplay capabilities
 
 - Decision: `ADMIT0-CHANNEL-REQUIRED-CAPABILITIES-V1`
+- Map reference correction: CP D1083 ([allocation](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6218747873)) accepts `WORLD_MAP_VIEW_V1=18` as the successor to the former `MAP_STATE_V1` reference used by this decision.
 - Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol and
   security, with the FND-04 owner) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
@@ -19,7 +20,7 @@
 
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
-| ADMIT-CAP-1 | hard (authority, protocol), protocol and security review | the `requires` field in the protocol registry; the declared `required_gameplay_capabilities` beside `world_policy_revision` in the D1 configuration, its closure and boot validation (§3); the check at fresh admission, reconnect and recovery (§4); forced selection; the three error codes in every FND-04 table (§5); `ADMIT0-RL-01` registered | the numbers of `MAP_STATE_V1`, `WORLD_SPATIAL_FIELDS`, `WORLD_INTERACTION_V1` reserved on #162 by their wire children |
+| ADMIT-CAP-1 | hard (authority, protocol), protocol and security review | the `requires` field in the protocol registry; the declared `required_gameplay_capabilities` beside `world_policy_revision` in the D1 configuration, its closure and boot validation (§3); the check at fresh admission, reconnect and recovery (§4); forced selection; the three error codes in every FND-04 table (§5); `ADMIT0-RL-01` registered | the numbers of `WORLD_MAP_VIEW_V1`, `WORLD_SPATIAL_FIELDS`, `WORLD_INTERACTION_V1` reserved on #162 by their wire children |
 | ADMIT-CAP-2 | impl, determinism review | the channel activation guard (§6) | ADMIT-CAP-1; FIELD-2 |
 
 Tests (FND-04A §12, FND-04B §26, FND-04C §9 fixtures): a bootstrap without a required capability is
@@ -58,8 +59,8 @@ hurt or block its character, without making those capabilities core protocol for
 - RUNE-USE-0 §11 (`RUNEUSE0-C7`) and R5: player-affecting fields and walls wait for "an accepted
   gameplay-admission rule, owned by FND-04, that refuses a session without
   `WORLD_SPATIAL_FIELDS` on any channel where such a field can exist".
-- WORLD-INTERACTION-0 §8.6 names `MAP_STATE_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1`;
-  §10.1: `WORLD_INTERACTION_V1` requires `MAP_STATE_V1` and `ITEM_USE_V1`.
+- WORLD-INTERACTION-0 §8.6 names `WORLD_MAP_VIEW_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1`;
+  §10.1: `WORLD_INTERACTION_V1` requires `WORLD_MAP_VIEW_V1` and `ITEM_USE_V1`.
 - ADR-0018: the browser client has no FND-02 or FND-04 exemption.
 
 ## 3. The channel requirement (ADMIT-CAP-1)
@@ -74,7 +75,7 @@ hurt or block its character, without making those capabilities core protocol for
   not depend on it: every check runs against the current scope generation's set, and the Platform
   needs only the token (D5).
 - **Mandatory floor (owner answer 4a, D272), enforced at boot, not by the operator.** The floor is
-  a build constant: those of `MAP_STATE_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1` that
+  a build constant: those of `WORLD_MAP_VIEW_V1`, `WORLD_SPATIAL_FIELDS` and `WORLD_INTERACTION_V1` that
   this build offers (registered, offer gate open). Boot validation (§3.2) fails closed for **every
   channel scope** whose effective set does not contain the whole floor; no World classification,
   declared list or default exempts a channel, so no public channel can publish readiness with an

@@ -83,6 +83,7 @@ fn coins() -> BankCoinFacts {
         platinum: definition(PLATINUM),
         crystal: definition(CRYSTAL),
         backpack: ItemDefinitionFacts {
+            weight: None,
             definition: definition(BACKPACK_KEY),
             stack: ItemStackClass::NonStackable,
             container_capacity: Some(20),

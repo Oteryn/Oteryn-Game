@@ -15,8 +15,11 @@
 //! - **`USE`.** With the capability, `USE` on a container handle opens it in a new view; a corpse
 //!   stays a domain 11 view at depth 1.
 //!
-//! Nothing here writes: moving an item in the tree is BAGS-1. Capability 14 stays
-//! `offered: false` until BAGS-1, so only the tests select it.
+//! - **Refresh (ITEM-LOOP-1).** After a committed command 9 every open view shows its
+//!   container's current observation; a view whose container left the carried tree closes.
+//!
+//! Nothing here writes: moving an item in the tree is the item loop (`durability::item_loop_move`,
+//! BAGS-1).
 
 #![cfg_attr(not(test), allow(dead_code))]
 
@@ -135,6 +138,49 @@ pub(crate) struct ContainerViewState {
 impl ContainerViewState {
     pub(crate) fn open_views(&self) -> usize {
         self.views.len()
+    }
+
+    /// The containers of the open views, in view order.
+    pub(crate) fn containers(&self) -> Vec<ItemKey> {
+        self.views.values().map(|view| view.container).collect()
+    }
+
+    /// After a committed move: each open view shows the current observation of its container in
+    /// `observed`; a view whose container is gone, out of reach, no longer a container or not
+    /// observed closes. `None` when nothing changed, or when the refreshed views would not encode
+    /// (they then stay as they were).
+    pub(crate) fn refresh(
+        &mut self,
+        item_view: &mut SessionItemView,
+        observed: &[(ItemKey, Option<ContainerObservation>)],
+    ) -> Result<Option<ItemViewDelta>, ItemViewError> {
+        let mut next = BTreeMap::new();
+        for (id, view) in &self.views {
+            let observation = observed
+                .iter()
+                .find(|(key, _)| *key == view.container)
+                .and_then(|(_, observation)| observation.as_ref());
+            if let Some(ContainerObservation::Container {
+                parent,
+                capacity,
+                entries,
+            }) = observation
+            {
+                next.insert(
+                    *id,
+                    OpenView {
+                        container: view.container,
+                        parent: *parent,
+                        capacity: *capacity,
+                        entries: entries.clone(),
+                    },
+                );
+            }
+        }
+        if next == self.views {
+            return Ok(None);
+        }
+        self.commit(item_view, next)
     }
 
     /// The first step of one command 21: a close is decided here; an open or up names the

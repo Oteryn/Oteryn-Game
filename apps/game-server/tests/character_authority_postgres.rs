@@ -2249,6 +2249,11 @@ mod item_transfer_postgres_cases;
 #[path = "support/corpse_transfer_postgres_cases.rs"]
 mod corpse_transfer_postgres_cases;
 
+// ITEM-LOOP-1 (CP D1438) live item loop: move, nest, split/merge, drop/pickup and the
+// derived-capacity pickup refusal, plus the STARTER-1 grant, through the same protected lane.
+#[path = "support/item_loop_postgres_cases.rs"]
+mod item_loop_postgres_cases;
+
 // D3-6 corpse DECAY_RETIRE (N+1 one-item steps at materialized_at + 60 s,
 // resumable from durable state) shares its cases with the focused standalone
 // target through the same protected lane.
@@ -3084,9 +3089,14 @@ mod npc_econ_bank_postgres_cases;
 #[path = "support/mail_postgres_cases.rs"]
 mod mail_postgres_cases;
 
+#[path = "support/market_postgres_cases.rs"]
+mod market_postgres_cases;
+
 // NPC-TRADE-1 NPC BUY/SELL commit (migration 0082) on the B3 item-transfer harness.
 #[path = "support/npc_trade_postgres_cases.rs"]
 mod npc_trade_postgres_cases;
+#[path = "support/npc_travel_postgres_cases.rs"]
+mod npc_travel_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.
@@ -3408,6 +3418,12 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
+// Private native LIMIT_RAISE continuation on the actual item-transfer harness.
+#[path = "support/forge_dust_limit_postgres_cases.rs"]
+mod forge_dust_limit_postgres_cases;
+// Private ITEM-FORGE-1 tier schema/read cases (formerly the standalone forge_postgres target).
+#[path = "support/forge_cases.rs"]
+mod forge_cases;
 #[path = "support/item_ref_production_postgres_cases.rs"]
 mod item_ref_production_postgres_cases;
 

@@ -32,6 +32,7 @@ fn typed(key: &str) -> TypedDefinitionRef {
 
 fn stackable(key: &str) -> ItemDefinitionFacts {
     ItemDefinitionFacts {
+        weight: None,
         definition: typed(key),
         stack: ItemStackClass::Stackable {
             proven_maximum: None,
@@ -86,11 +87,21 @@ async fn give(
     let item = harness
         .mint_definition(authority, typed(key), quantity)
         .await?;
+    // This positive bootstrap resolves the exact fixture catalogue; trade-only facts
+    // remain weight-unknown because that writer does not enforce incoming capacity.
+    let mut item_facts = stackable(key);
+    item_facts.weight = match key {
+        SWORD => Some(1),
+        "oteryn:item.tibia.i3031" | "oteryn:item.tibia.i3035" | "oteryn:item.tibia.i3043" => {
+            Some(10)
+        }
+        _ => None,
+    };
     match harness
         .transfer(
             authority,
             fence()?,
-            to_backpack(command(command_id)?, item, stackable(key)),
+            to_backpack(command(command_id)?, item, item_facts),
         )
         .await
         .map_err(debug)?
