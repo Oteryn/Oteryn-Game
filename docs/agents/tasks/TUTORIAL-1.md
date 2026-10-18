@@ -84,7 +84,7 @@ Replaced by the CP D1426 scenario brief below (its assertions A1-A6). The start 
 
 - [x] A1: a StartThais Character never enters the tutorial (`tests/tutorial_newhaven.rs`).
 - [x] A2-A4: a Newhaven-start Character goes through the reference steps (`tests/tutorial_newhaven.rs`).
-- [x] A5: concurrent writers are serialized by a row lock and a compare-and-set version; the loser gets a typed `Conflict`, a replay is `Replayed` (`tutorial_progress_postgres_cases.rs`).
+- [x] A5: concurrent writers are serialized by a row lock and a compare-and-set version; the loser gets a typed `Conflict` and writes nothing, also when its progress equals the stored one (a retry or a stale equal-state writer; no occurrence identity), see `tutorial_progress_postgres_cases.rs`.
 - [x] A6: after a reconnect (new connection generation) and a node restart the tutorial resumes from the stored step; a stale connection, lease or session reads and writes nothing (`tutorial_progress_postgres_cases.rs`).
 - [ ] Runtime wiring (login, step-in, death, loot, NPC) stays a slot-only follow-up; nothing calls the writer yet.
 

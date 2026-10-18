@@ -9,9 +9,11 @@
 //! A write is a compare-and-set on `progress_version`: the caller names the version it read (`0`
 //! for no row) and the row is locked before it is compared. Of two concurrent writers from the
 //! same version exactly one writes; the other gets [`TutorialProgressWrite::Conflict`] with the
-//! stored progress. A replay of a committed write (the same progress at the next version) is
-//! [`TutorialProgressWrite::Replayed`] and writes nothing. A reconnect or a node restart reads the
-//! stored step back, so the tutorial resumes where it was.
+//! stored progress. The write carries no occurrence identity, so a retry of a committed write
+//! cannot be told apart from a stale writer that computed the same progress: both get
+//! [`TutorialProgressWrite::Conflict`] with the stored progress, write nothing, and the caller
+//! re-reads and re-applies its event against the stored version. A reconnect or a node restart
+//! reads the stored step back, so the tutorial resumes where it was.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
@@ -41,9 +43,8 @@ pub struct StoredTutorialProgress {
 pub enum TutorialProgressWrite {
     /// The progress is stored at `version`.
     Written { version: u64 },
-    /// The same progress was already stored at `version` (a replay of a committed write).
-    Replayed { version: u64 },
-    /// The stored version is not the expected one: another writer won. `None` is no row.
+    /// The stored version is not the expected one: another writer won, or an earlier attempt of
+    /// this write committed; equal progress is no proof of a replay. `None` is no row.
     Conflict {
         stored: Option<StoredTutorialProgress>,
     },
@@ -146,12 +147,7 @@ async fn compare_and_set(
     let stored = load_progress(tx, character_id, true).await?;
     let current = stored.map_or(0, |stored| stored.version);
     if current != expected_version {
-        return Ok(match stored {
-            Some(stored) if stored.version == next && stored.progress == progress => {
-                TutorialProgressWrite::Replayed { version: next }
-            }
-            _ => TutorialProgressWrite::Conflict { stored },
-        });
+        return Ok(TutorialProgressWrite::Conflict { stored });
     }
     let written = if stored.is_none() {
         sqlx::query(
@@ -191,12 +187,7 @@ async fn compare_and_set(
     }
     // A concurrent first insert won between the locking read and the insert.
     let stored = load_progress(tx, character_id, true).await?;
-    Ok(match stored {
-        Some(stored) if stored.version == next && stored.progress == progress => {
-            TutorialProgressWrite::Replayed { version: next }
-        }
-        _ => TutorialProgressWrite::Conflict { stored },
-    })
+    Ok(TutorialProgressWrite::Conflict { stored })
 }
 
 async fn load_progress(

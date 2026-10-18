@@ -44,9 +44,9 @@ async fn rows(harness: &Harness) -> TestResult<i64> {
 }
 
 /// A StartThais Character writes nothing; a Newhaven Character's steps are stored under the
-/// session fence; a replay is idempotent, a stale writer gets a typed conflict; after a reconnect
-/// (a new connection generation) and after a node restart the tutorial resumes from the stored
-/// step, and the old connection reads nothing.
+/// session fence; a retry or a stale writer, even with equal progress, gets a typed conflict and
+/// writes nothing; after a reconnect (a new connection generation) and after a node restart the
+/// tutorial resumes from the stored step, and the old connection reads nothing.
 #[test]
 fn tutorial_progress_resumes_after_reconnect_and_restart() -> TestResult {
     run("tutorial_resume", async |h| {
@@ -96,10 +96,13 @@ fn tutorial_progress_resumes_after_reconnect_and_restart() -> TestResult {
             progress: ARMED,
             version: 2,
         };
-        // A replay of the committed write writes nothing; a writer of the old version loses.
+        // A writer of the old version loses, even with the same progress (a retry of the
+        // committed write or a stale concurrent writer: no occurrence identity tells them apart).
         assert_eq!(
             write(fence(1)?, 1, ARMED).await.map_err(debug)?,
-            TutorialProgressWrite::Replayed { version: 2 }
+            TutorialProgressWrite::Conflict {
+                stored: Some(stored)
+            }
         );
         assert_eq!(
             write(fence(1)?, 1, TutorialProgress::new(TutorialStep::Departed))
