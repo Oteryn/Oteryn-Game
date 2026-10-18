@@ -11,10 +11,16 @@ pub(crate) mod admission_journal;
 pub mod bank;
 pub mod bank_audit;
 pub mod bestiary_progress;
+#[allow(
+    dead_code,
+    reason = "APP-1 production caller awaits admitted content, sex and grant owners"
+)]
+pub(crate) mod character_appearance;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
 pub(crate) mod character_chat_name;
+pub(crate) mod character_chat_recipient;
 pub mod character_command;
 pub mod character_death;
 pub mod character_equipment;
@@ -28,13 +34,19 @@ pub mod character_proficiency_modification;
 pub mod character_progression;
 pub mod character_revision_sequencer;
 pub mod character_stance;
+pub mod character_vitals_soul;
+pub mod character_vitals_stamina;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod content_activation;
 mod db;
 pub(crate) mod equipment_policy_abi;
+pub mod forge;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
+pub(crate) mod ground_cell_limit;
+pub mod house_interior;
+pub mod house_interior_audit;
 pub mod house_scope_handoff;
 pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
@@ -42,22 +54,27 @@ pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
 pub mod item_mint;
 pub mod item_mint_audit;
+pub(crate) mod item_text;
 pub mod item_timed_state;
 pub mod item_timed_state_audit;
 pub mod item_transfer;
 pub mod item_transfer_audit;
 pub mod item_use;
 pub mod item_use_audit;
+pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
+pub(crate) mod market;
 pub mod monk_state;
 pub mod native_admission_source;
 pub(crate) mod native_map_items;
 pub(crate) mod native_map_items_abi;
 pub mod npc_trade;
 pub mod npc_trade_audit;
+pub(crate) mod npc_travel;
 pub mod premium_activation_latch;
 pub mod premium_fence;
+pub mod public_projections;
 pub mod pvp_state;
 pub mod quest_state;
 pub mod recovery_evidence_composition;
@@ -586,6 +603,25 @@ mod account_characters_projection_linkage {
         let _ = DurabilityRoot::next_account_characters_snapshot;
         let _ = DurabilityRoot::clear_account_characters;
         let _ = DurabilityRoot::account_characters_watermark_facts;
+    }
+}
+
+#[cfg(test)]
+mod public_projections_linkage {
+    use super::DurabilityRoot;
+    use super::public_projections::PublicProjectionsStore;
+
+    #[test]
+    fn public_projections_api_is_linked() {
+        let _ = std::mem::size_of::<PublicProjectionsStore<'_, '_, '_, '_>>();
+        let _ = DurabilityRoot::next_public_profiles;
+        let _ = DurabilityRoot::clear_public_profiles;
+        let _ = DurabilityRoot::public_outbox_facts;
+        let _ = DurabilityRoot::next_public_highscores;
+        let _ = DurabilityRoot::clear_public_highscores;
+        let _ = DurabilityRoot::public_online_cut;
+        let _ = DurabilityRoot::persist_public_online;
+        let _ = DurabilityRoot::ack_public_online;
     }
 }
 

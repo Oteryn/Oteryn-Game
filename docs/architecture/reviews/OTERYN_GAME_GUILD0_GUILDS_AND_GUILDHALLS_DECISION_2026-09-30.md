@@ -1,7 +1,7 @@
 # GUILD-0 Guilds and guildhalls
 
 - Decision: `GUILD0-GUILDS-AND-GUILDHALLS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (persistence,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) through the control plane (D551, owner answer 1a), recorded by the acceptance PR (`ACCEPT-SOCIAL-MAP-0`, `OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md`); status line reconciled 2026-10-15 (ACCEPT-BATCH-2026-10-15); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (persistence,
   economy, security and protocol) and protected integration. Owner questions G1 and G2 (§14) are
   answered a and a (verbatim record on #162 5917665342); §3.2 and §7 apply them.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)

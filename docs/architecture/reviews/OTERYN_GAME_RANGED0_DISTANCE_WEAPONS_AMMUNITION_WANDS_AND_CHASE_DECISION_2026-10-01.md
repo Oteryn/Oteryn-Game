@@ -1,7 +1,7 @@
 # RANGED-0 Distance weapons, ammunition, wands and chase
 
 - Decision: `RANGED0-DISTANCE-WEAPONS-AMMUNITION-WANDS-AND-CHASE-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat,
+- Status: **ACCEPTED**. Accepted by the owner (blakinio) on 2026-10-15, owner accepted via control plane, effective only on exact-head review, CI and protected integration of the acceptance PR (`ACCEPT-BATCH-2026-10-15`, `OTERYN_GAME_ACCEPT_BATCH_2026-10-15_ACCEPTANCE_DECISION.md`); no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (combat,
   persistence, movement and protocol) and protected integration. Amended 2026-10-14 after the
   four-lane review of 2026-10-14 (all four lanes failed; every blocker is closed in §14 and the
   sections it names); the amended head needs the four lanes again. Round 2 (2026-10-14) closes the second-round
@@ -71,7 +71,7 @@ sorcerers and druids attack with wands and rods, and who moves a player in chase
 - Composition decision rule 2 binds a cause to a CharacterId and a fence; rule 3 proves ingress by a
   pending CommandRef; the STARTER-BACKPACK-0 amendment admits a server-originated variant fenced by
   the admitted session's `CurrentCharacterItemFence` without a CommandRef.
-- ITEM-MOVE-WIRE-1 §5: Ground drops (10 items per tile `ITEMMOVE1-RL-01`, 20,000 per channel
+- ITEM-MOVE-WIRE-1 §5: Ground drops (64 items per tile `ITEMMOVE1-RL-01`, amended from 10 on 2026-10-15, 20,000 per channel
   `ITEMMOVE1-RL-02`, house tiles `BLOCKED`, the per-tile row lock and counter); §6.2 the §32 scope
   fence on every Ground write; §6.1 supersessions; §7.2 the extended lock order; §4 refuses containers and unknown equipment semantics in the nine slots. BAGS-0
   §3: trees of depth 8 and 500 items, `GAMEITEM01-REACHABLE-ITEMS` 509; §4.1 entries keyed by

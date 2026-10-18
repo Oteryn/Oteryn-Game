@@ -1,5 +1,5 @@
-use oteryn_client::input::{MouseActions, StepDir, arrow_step, click_tile};
-use oteryn_client::play::{PlayLink, PlayView};
+use oteryn_client::input::{MouseActions, StepDir, arrow_step, click_tile, logout_key};
+use oteryn_client::play::{PlayEnd, PlayLink, PlayView};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
@@ -128,6 +128,9 @@ impl Application {
             for spell in self.hotkeys.route(events) {
                 play.view.cast(spell);
             }
+            if logout_key(events) {
+                play.view.logout();
+            }
             let mut render_failed = false;
             for click in self.actions.route(events) {
                 if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
@@ -177,8 +180,17 @@ impl Application {
     /// A session end returns to the pre-admission state: the offline scene, with the public
     /// class in the title and on the console. The session task is gone with its link.
     fn return_to_login(&mut self, class: PublicClass) {
+        self.leave_play(&GameplayEntryError::Rejected(class).to_string());
+    }
+
+    /// A committed logout ends play like a session end, without an error: the character is
+    /// chosen again at the next login (character mode 33a takes it from configuration).
+    fn return_to_character_selection(&mut self) {
+        self.leave_play("logged out");
+    }
+
+    fn leave_play(&mut self, message: &str) {
         self.play = None;
-        let message = GameplayEntryError::Rejected(class).to_string();
         println!("Oteryn: {message}");
         if let Some(window) = &self.window {
             window.set_title(&format!("Oteryn — {message}"));
@@ -342,9 +354,12 @@ impl ApplicationHandler for Application {
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         if let Some(play) = &mut self.play
-            && let Err(class) = play.view.tick(&play.link)
+            && let Err(end) = play.view.tick(&play.link)
         {
-            self.return_to_login(class);
+            match end {
+                PlayEnd::Ended(class) => self.return_to_login(class),
+                PlayEnd::LoggedOut => self.return_to_character_selection(),
+            }
         }
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
             let status = play.view.combat_status();
