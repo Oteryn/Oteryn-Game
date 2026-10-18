@@ -424,6 +424,9 @@ struct FrozenNpcBankCoins {
     stack_maximum: Option<u32>,
     capacity: Option<u32>,
     container_slot_equip_pattern: bool,
+    /// Native backpack weight (centi-oz); omitted when unknown so earlier v1 records stay byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    backpack_weight: Option<u32>,
 }
 
 fn freeze_npc_bank(request: &BankRequest) -> Result<Vec<u8>> {
@@ -455,6 +458,7 @@ fn freeze_npc_bank(request: &BankRequest) -> Result<Vec<u8>> {
             stack_maximum,
             capacity: coins.backpack.container_capacity,
             container_slot_equip_pattern: coins.backpack.container_slot_equip_pattern,
+            backpack_weight: coins.backpack.weight,
         }
     });
     let (recipient, recipient_name_key) = match request {
@@ -526,8 +530,7 @@ fn thaw_npc_bank(bytes: &[u8]) -> Result<BankRequest> {
                 platinum: def(c.platinum),
                 crystal: def(c.crystal),
                 backpack: ItemDefinitionFacts {
-                    // Bank never reads backpack weight; the frozen v1 record carries none.
-                    weight: None,
+                    weight: c.backpack_weight,
                     definition: def(c.backpack),
                     stack,
                     container_capacity: c.capacity,

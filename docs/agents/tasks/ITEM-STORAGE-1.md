@@ -825,3 +825,23 @@ main-backpack entry within the accepted native TRANSFER operation3 scope.
 Stash and writable-item children retain their separate accepted boundaries.
 The draft is retained; these results do not claim full storage-family runtime
 integration or ready/merge status.
+
+## 2026-10-17 — bounded checkpoint (CP takeover, D1379)
+
+MERGE_AUTHORITY: CP_ONLY. Bounded checkpoint; draft retained, never marked ready
+by the builder.
+
+- Merged main `f094e032` (normal merge commit). Conflicts: `durability/mod.rs`
+  keeps both `item_weight_lookup` and `mail`; `ground_cell_limit_tests.rs` keeps
+  this branch's weight adapter (main's copy is unchanged since `ce7bccab`).
+- Main's NPC-ECON-1, MAIL-1 and reward-claim inbox code built
+  `ItemDefinitionFacts` without this branch's `weight` field. Bank's frozen v1
+  request carries an optional `backpack_weight`, omitted when unknown, so records
+  frozen before this field still decode and thaw byte-identically. Fixtures that
+  move gold or the mail food item into a backpack carry the `TEST_WEIGHTS` value;
+  the test catalogue gains `oteryn:item.tibia.i3577` and the NPC trade output
+  `oteryn:item.tibia.i3264`.
+- No migration added or renumbered; the existing `0113_equipment_swap.sql` and the
+  unnumbered Depot proposal are unchanged.
+- Remaining scope is unchanged from the sections above: Depot SQL installation,
+  Locker/USE/view/Content admission, STASH-1 and WRITE-1 stay CP slot work.
