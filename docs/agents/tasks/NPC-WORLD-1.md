@@ -805,3 +805,23 @@ bundle_npcs 4, all passing); the native PostgreSQL travel case passed through
 `in-pg-netns.sh` against shared PostgreSQL 17.6. The D1357/D1385 13-file native NPC
 source packet is not yet integrated, and D1358 remains deferred. The PR stays
 draft and NOT_FULLY_QUALIFIED.
+
+## Completion + wiring (post-checkpoint)
+
+Evidence base: origin/main `c55a92b4`. The checkpoint was merged unfinished; nothing in the running game calls it. This PR carries the completion. It must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain referenced below: `apps/game-server/src/gameplay_transport/connection.rs` (command `else if` chain, about lines 2550-3017) and the `GATED` table in `apps/game-server/src/gameplay_transport/capabilities.rs` (highest capability id on main: 28). Wire modules live in `crates/protocol-oteryn/src/` (none exists for this mechanic).
+
+### Present on main (#2157)
+- Travel: `gameplay_transport/npc_travel.rs` (`TravelHoldSlot`, fee/placement/consume state machine) and `durability/npc_travel.rs` (`read_npc_pending_arrival`, `consume_npc_pending_arrival_placed`). Walking: `gameplay_transport/npc_actor.rs` (`NpcWalkBook`, `NpcWalkState`, proposals), `foundation/npc_actor.rs` (placements). Voices: `gameplay_transport/npc_voice.rs` (`NpcVoiceBook`, `NpcVoiceState`, `chat_line`). `node/serve/bundle_npcs.rs` only retains and logs the verified catalogue digest.
+- Modules are declared in `gameplay_transport/mod.rs` but `NpcWalkBook`, `NpcVoiceBook`, `NpcVoiceState`, `NpcWalkState` and `TravelHoldSlot` have no callers outside their own files and tests. No migration for the pending-arrival table (the PG fixture `tests/support/npc_travel_postgres_fixture.rs` installs it privately).
+
+### Checklist
+- [ ] **Migration**: numbered migration for the NPC pending-arrival / travel occurrence tables (currently only in the PG fixture), with privileges.
+- [ ] **Travel (NPC-TRAVEL-2)**: dispatch from the NPC trade/talk path (`gameplay_transport/npc_command.rs`, `npc_trade_command.rs`, `npc_talk.rs`) to `TravelHoldSlot::start`; fee debit through the Bank/gold path; destination placement via the Character position writer (`last_position.rs`); hold cancellation on death/logout/disconnect (`logout.rs`, `resume.rs`); arrival consume after restart; premium gate; protocol messages for destination list and confirm (extend `crates/protocol-oteryn/src/npc_service.rs` or add a capability, then `GATED` in `capabilities.rs`).
+- [ ] **Walking actors (NPC-ACTOR-1)**: build `NpcWalkBook::from_catalogue` at content activation (`node/serve.rs::activate_content` and `bundle_npcs.rs`), own `NpcWalkState` per placed NPC in the runtime actor carrier (`foundation/runtime_actor_carrier.rs`), tick it from a scheduler like `gameplay_transport/monster_ai_cycle.rs`, apply steps through the actor movement owner (`actor_movement.rs`) and publish positions to spatial entities (`world_spatial_entities` wire). D1357 native NPC source packet and D1358 height/trigger admission are not integrated.
+- [ ] **Voices (NPC-VOICE-1)**: tick `NpcVoiceState::think` and emit `ChatLine` through the chat relay (`chat_intent.rs`, `chat_relay.rs`) to listeners in range.
+- [ ] **Talk book install**: confirm the production path calls `install_npc_talk` (`chat_intent.rs`); on main the visible call sites are tests.
+- [ ] **Content**: TRAVEL-CONTENT-1 destinations/fees, NPC-CONTENT-2 voice and movement facts; regenerate content and pins.
+- [ ] **Tests**: unit tests exist (travel 5, voice 10, actor 12); add PG test for pending arrival after restart in the real harness; **end-to-end through `connection.rs` dispatch**: talk to travel NPC, confirm destination, fee debited, character arrives at destination, restart mid-hold resumes once; a walking NPC changes position visible in a spatial snapshot; a voice line is received by a nearby client.
+
+### Blockers and dependencies
+- CREATURE-MOVE-1 #2184 (chase/step composition), NPC-CONTENT-2, TRAVEL-CONTENT-1 (not started), ADMIT-CAP-1 #2187 (channel capabilities), D1357/D1358 native NPC source work. NPC-TRAVEL-1, CHAT-1, PREMIUM-1 and NPC-ECON-1 are merged.
