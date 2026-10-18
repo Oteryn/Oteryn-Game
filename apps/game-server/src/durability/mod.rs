@@ -96,6 +96,9 @@ pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
+// VIP-2 (VIP0 §8): the node presence owner; its source lives with the VIP mechanic.
+#[path = "../vip/presence.rs"]
+pub(crate) mod vip_presence;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};

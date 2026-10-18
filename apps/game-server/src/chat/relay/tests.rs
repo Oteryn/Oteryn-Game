@@ -839,3 +839,105 @@ fn a_reconnect_after_the_database_clock_stepped_back_keeps_the_floor_past_the_ne
         Err(RelayError::BeforeStart)
     );
 }
+
+fn presence(id: u8, sent_at: u64, online: bool) -> PresenceHint {
+    PresenceHint {
+        message_id: [id; ID_BYTES],
+        sent_at_micros: sent_at,
+        character: recipient(id),
+        online,
+    }
+}
+
+#[test]
+fn a_presence_hint_round_trips_as_kind_three_inside_the_bounds() {
+    let ring = ring(&[(1, 0)]);
+    for online in [true, false] {
+        let hint = presence(3, NOW, online);
+        let plaintext = hint.encode();
+        assert_eq!(plaintext[0], KIND_PRESENCE);
+        assert_eq!(plaintext.len(), PRESENCE_PLAINTEXT_BYTES);
+        let text = seal_presence_with_nonce(&ring, CHANNEL, &hint, NONCE).expect("seal");
+        assert!(text.len() <= NOTIFY_MAX_BYTES);
+        assert_eq!(
+            open_relayed(&ring, CHANNEL, &text, NOW),
+            Ok(Relayed::Presence(hint))
+        );
+        // The chat-only opener never hands a hint to chat delivery.
+        assert_eq!(
+            open(&ring, CHANNEL, &text, NOW),
+            Err(RelayError::BadPayload)
+        );
+    }
+    let sealed = seal_presence(
+        &ring,
+        CHANNEL,
+        OutgoingPresence {
+            sent_at_micros: NOW,
+            character: recipient(4),
+            online: true,
+        },
+    )
+    .expect("seal");
+    assert!(matches!(
+        open_relayed(&ring, CHANNEL, &sealed, NOW),
+        Ok(Relayed::Presence(hint)) if hint.online && hint.character == recipient(4)
+    ));
+}
+
+#[test]
+fn a_malformed_presence_hint_is_a_bad_payload() {
+    let ring = ring(&[(1, 0)]);
+    let good = presence(5, NOW, true).encode();
+    let mut bad_flag = good.clone();
+    *bad_flag.last_mut().expect("flag") = 2;
+    let mut trailing = good.clone();
+    trailing.push(0);
+    let short = good[..good.len() - 1].to_vec();
+    let mut zero_character = good.clone();
+    zero_character[1 + ID_BYTES + 8..1 + ID_BYTES + 8 + ID_BYTES].fill(0);
+    for plaintext in [bad_flag, trailing, short, zero_character] {
+        let text = seal_plaintext(&ring, CHANNEL, NOW, plaintext, NONCE).expect("seal");
+        assert_eq!(
+            open_relayed(&ring, CHANNEL, &text, NOW),
+            Err(RelayError::BadPayload)
+        );
+    }
+    assert_eq!(
+        format!("{:?}", presence(5, NOW, true)),
+        "PresenceHint { online: true, .. }"
+    );
+}
+
+#[test]
+fn a_presence_hint_shares_the_freshness_and_replay_rules() {
+    let ring = ring(&[(1, 0)]);
+    let hint = presence(6, NOW, false);
+    let text = seal_presence_with_nonce(&ring, CHANNEL, &hint, NONCE).expect("seal");
+    let mut window = ReplayWindow::starting_at(NOW);
+    assert_eq!(
+        window.receive_relayed(&ring, CHANNEL, &text, NOW),
+        Ok(Relayed::Presence(hint))
+    );
+    assert_eq!(
+        window.receive_relayed(&ring, CHANNEL, &text, NOW + 1),
+        Err(RelayError::Replayed)
+    );
+    let mut fresh = ReplayWindow::starting_at(NOW);
+    assert_eq!(
+        fresh.receive_relayed(&ring, CHANNEL, &text, NOW + FRESHNESS_MICROS + 1),
+        Err(RelayError::Stale)
+    );
+    let mut late = ReplayWindow::starting_at(NOW + 1);
+    assert_eq!(
+        late.receive_relayed(&ring, CHANNEL, &text, NOW + 1),
+        Err(RelayError::BeforeStart)
+    );
+    // A chat line still opens as a line through the shared receiver.
+    let line = room_line(7, NOW);
+    let line_text = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("seal");
+    assert_eq!(
+        window.receive_relayed(&ring, CHANNEL, &line_text, NOW + 2),
+        Ok(Relayed::Line(line))
+    );
+}

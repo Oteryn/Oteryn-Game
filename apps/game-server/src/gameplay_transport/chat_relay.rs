@@ -22,27 +22,40 @@
 //!
 //! Nothing here logs or stores chat text, sender or recipient (FND-02 §20): failures are counted
 //! and reported as numbers only.
+//!
+//! VIP-2 (VIP0 §8.2, CP D1435): the same relay carries the presence hint (relay kind 3). A
+//! session's committed admission queues `online`, its TERMINAL retirement `offline`; a death or
+//! a reconnect inside session states 1-2 sends nothing. Hints wait in a bounded outbox coalesced
+//! per character and are sent only while the relay is ready, so they stay inside `CHAT0-RL-09`;
+//! a hint refused there is lost and corrected by the `VIP0-RL-09` reconcile. Every node,
+//! the sender included, hands an admitted hint and its listener state to the installed
+//! [`PresenceSink`], the VIP presence owner. `VIP0-RL-10` (hints per World per second) and the
+//! relay part of `VIP0-RL-11` (hint latency, p99) are measured and reported as numbers.
 
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use oteryn_foundation::CancellationToken;
+use oteryn_protocol_oteryn::CharacterId;
 use oteryn_protocol_oteryn::chat::ChatDisposition;
 use sqlx::Executor as _;
 use sqlx::Row as _;
 use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
+use tokio::sync::Notify;
 
 use super::chat_intent::ChatRuntime;
 use super::{first, operator_event};
 use crate::chat::ChatText;
 use crate::chat::relay::{
-    OutgoingLine, RelayDestination, RelayError, RelayKey, RelayKeyRing, ReplayWindow, channel_name,
-    seal,
+    OutgoingLine, OutgoingPresence, PresenceHint, RelayDestination, RelayError, RelayKey,
+    RelayKeyRing, Relayed, ReplayWindow, channel_name, seal, seal_presence,
 };
 use crate::domain::character_name::CharacterName;
+use crate::foundation::GameSessionId;
 
 /// The environment variable naming the relay key file: one key per line,
 /// `<key_id> <activate_at_micros> <base64 of 32 bytes>`. Unset means no relay.
@@ -59,6 +72,140 @@ const RECONNECT_BACKOFF: Duration = Duration::from_secs(1);
 /// Over half of the notification queue in use refuses chat (CHAT-0 §5).
 const QUEUE_USAGE_MAX: f64 = 0.5;
 const DROP_REPORT: Duration = Duration::from_secs(60);
+/// VIP0 §8.2: presence hints waiting for the relay, one per character. A full outbox refuses a
+/// new character's hint (counted); the `VIP0-RL-09` reconcile corrects what it missed.
+pub(crate) const PRESENCE_OUTBOX_MAX: usize = 1_024;
+/// Local sessions that publish presence; one per admitted session of this node.
+pub(crate) const PRESENCE_PUBLISHERS_MAX: usize = 65_536;
+/// Hint latency samples kept between two reports, for the `VIP0-RL-11` p99.
+const PRESENCE_LATENCY_SAMPLES: usize = 1_024;
+
+/// VIP0 §8.2: what consumes the presence side of the relay on this node (the VIP presence owner).
+/// Every call is advisory input: the sink re-reads the durable rows before it shows anything.
+pub(crate) trait PresenceSink: Send + Sync {
+    /// An authentic, fresh, first-seen hint for `character` (its `online` value is advisory).
+    fn hint(&self, character: CharacterId, online: bool);
+    /// The listener became ready (`true`) or stopped being ready (`false`).
+    fn listener(&self, up: bool);
+    /// `session` left this node; its watcher state goes with it.
+    fn session_ended(&self, session: GameSessionId);
+}
+
+/// The VIP presence owner consumes the relay. Its errors drop the input: the hint is advisory,
+/// and a lost listener transition or watcher is corrected by its own reconcile and expiry.
+impl PresenceSink for crate::durability::vip_presence::PresenceOwner {
+    fn hint(&self, character: CharacterId, _online: bool) {
+        if let Ok(target) = crate::domain::CharacterId::from_bytes(*character.as_bytes()) {
+            let _ = self.target_hint(target);
+        }
+    }
+
+    fn listener(&self, up: bool) {
+        let _ = if up {
+            self.listener_reconnected()
+        } else {
+            self.listener_down()
+        };
+    }
+
+    fn session_ended(&self, session: GameSessionId) {
+        let _ = self.forget(session);
+    }
+}
+
+/// The bounded presence outbox, coalesced per character: a hint is advisory and the receiver
+/// re-reads the row, so only the newest transition of a character needs to be sent.
+#[derive(Default)]
+struct PresenceOutbox {
+    queue: VecDeque<(CharacterId, bool)>,
+}
+
+impl PresenceOutbox {
+    /// `false` when the outbox is full and holds no hint for `character`.
+    fn push(&mut self, character: CharacterId, online: bool) -> bool {
+        if let Some(queued) = self.queue.iter_mut().find(|(id, _)| *id == character) {
+            queued.1 = online;
+            return true;
+        }
+        if self.queue.len() >= PRESENCE_OUTBOX_MAX {
+            return false;
+        }
+        self.queue.push_back((character, online));
+        true
+    }
+
+    fn pop(&mut self) -> Option<(CharacterId, bool)> {
+        self.queue.pop_front()
+    }
+}
+
+/// `VIP0-RL-10` and `VIP0-RL-11` measurement between two reports. Numbers only.
+#[derive(Default)]
+struct PresenceMeter {
+    sent: AtomicU64,
+    refused: AtomicU64,
+    received: AtomicU64,
+    /// The current one-second send window: its start and count, and the peak count.
+    rate: Mutex<(Option<Instant>, u64, u64)>,
+    /// Send-to-receive latency of admitted hints, database microseconds.
+    latencies: Mutex<VecDeque<u64>>,
+}
+
+impl PresenceMeter {
+    fn sent(&self) {
+        self.sent.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut rate) = self.rate.lock() {
+            let (start, count, peak) = &mut *rate;
+            if start.is_none_or(|at| at.elapsed() >= Duration::from_secs(1)) {
+                *start = Some(Instant::now());
+                *count = 0;
+            }
+            *count += 1;
+            *peak = (*peak).max(*count);
+        }
+    }
+
+    fn refused(&self) {
+        self.refused.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn received(&self, latency_micros: u64) {
+        self.received.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut latencies) = self.latencies.lock() {
+            if latencies.len() >= PRESENCE_LATENCY_SAMPLES {
+                latencies.pop_front();
+            }
+            latencies.push_back(latency_micros);
+        }
+    }
+
+    /// `(sent, refused, received, peak per second, p99 latency)` since the last take.
+    fn take(&self) -> (u64, u64, u64, u64, u64) {
+        let peak = self
+            .rate
+            .lock()
+            .map_or(0, |mut rate| std::mem::take(&mut rate.2));
+        let mut samples: Vec<u64> = self
+            .latencies
+            .lock()
+            .map(|mut latencies| latencies.drain(..).collect())
+            .unwrap_or_default();
+        samples.sort_unstable();
+        // Nearest rank: the smallest sample at or above 99% of them.
+        let p99 = (samples.len() * 99)
+            .div_ceil(100)
+            .checked_sub(1)
+            .and_then(|rank| samples.get(rank).copied())
+            .unwrap_or(0);
+        (
+            self.sent.swap(0, Ordering::Relaxed),
+            self.refused.swap(0, Ordering::Relaxed),
+            self.received.swap(0, Ordering::Relaxed),
+            peak,
+            p99,
+        )
+    }
+}
 
 /// Why the relay is not configured. Fixed reasons only: no path, key or file content.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -259,6 +406,15 @@ pub(crate) struct ChatRelay {
     dropped: AtomicU64,
     /// Set for good once a connection refused the logging pin: the relay never starts.
     refused: Arc<AtomicBool>,
+    /// VIP-2: the presence owner fed by admitted hints and listener state.
+    presence: OnceLock<Arc<dyn PresenceSink>>,
+    /// The character of each local session that published `online`.
+    publishers: Mutex<HashMap<GameSessionId, CharacterId>>,
+    outbox: Mutex<PresenceOutbox>,
+    outbox_ready: Notify,
+    meter: PresenceMeter,
+    /// Whether the sink was last told the listener is ready.
+    presence_up: AtomicBool,
 }
 
 impl ChatRelay {
@@ -277,7 +433,131 @@ impl ChatRelay {
             clock: Mutex::new(None),
             dropped: AtomicU64::new(0),
             refused,
+            presence: OnceLock::new(),
+            publishers: Mutex::new(HashMap::new()),
+            outbox: Mutex::new(PresenceOutbox::default()),
+            outbox_ready: Notify::new(),
+            meter: PresenceMeter::default(),
+            presence_up: AtomicBool::new(false),
         })
+    }
+
+    /// Installs the presence owner once; `false` when one is already installed.
+    pub(crate) fn install_presence(&self, sink: Arc<dyn PresenceSink>) -> bool {
+        self.presence.set(sink).is_ok()
+    }
+
+    /// VIP0 §8.2: `session` of `character` entered session state 1 here (its admission
+    /// committed). Queues one `online` hint after that commit.
+    pub(crate) fn presence_login(&self, session: GameSessionId, character: CharacterId) {
+        let admitted = self.publishers.lock().is_ok_and(|mut publishers| {
+            let room =
+                publishers.len() < PRESENCE_PUBLISHERS_MAX || publishers.contains_key(&session);
+            if room {
+                publishers.insert(session, character);
+            }
+            room
+        });
+        if admitted {
+            self.queue_presence(character, true);
+        } else {
+            self.meter.refused();
+        }
+    }
+
+    /// VIP0 §8.2: `session` left session states 1-2 here (its TERMINAL commit retired it).
+    /// Queues one `offline` hint for the character it published and forgets its watcher state.
+    pub(crate) fn presence_logout(&self, session: GameSessionId) {
+        let character = self
+            .publishers
+            .lock()
+            .ok()
+            .and_then(|mut publishers| publishers.remove(&session));
+        if let Some(sink) = self.presence.get() {
+            sink.session_ended(session);
+        }
+        if let Some(character) = character {
+            self.queue_presence(character, false);
+        }
+    }
+
+    fn queue_presence(&self, character: CharacterId, online: bool) {
+        let queued = self
+            .outbox
+            .lock()
+            .is_ok_and(|mut outbox| outbox.push(character, online));
+        if queued {
+            self.outbox_ready.notify_one();
+        } else {
+            self.meter.refused();
+        }
+    }
+
+    /// The hints waiting in the outbox, oldest first, for the rules tests.
+    #[cfg(test)]
+    pub(crate) fn queued_presence(&self) -> Vec<(CharacterId, bool)> {
+        self.outbox
+            .lock()
+            .map(|outbox| outbox.queue.iter().copied().collect())
+            .unwrap_or_default()
+    }
+
+    /// Sends the outbox until `shutdown`, then parks. A hint the relay cannot send now (not
+    /// ready, the queue over `CHAT0-RL-09`, or the send failed) is counted and dropped.
+    async fn run_presence(&self, shutdown: &CancellationToken) {
+        loop {
+            if first(self.outbox_ready.notified(), shutdown.cancelled())
+                .await
+                .is_none()
+            {
+                std::future::pending::<()>().await;
+            }
+            while let Some((character, online)) =
+                self.outbox.lock().ok().and_then(|mut outbox| outbox.pop())
+            {
+                match self.send_presence(character, online).await {
+                    Ok(()) => self.meter.sent(),
+                    Err(_) => self.meter.refused(),
+                }
+            }
+        }
+    }
+
+    /// Seals one presence hint and sends it to every listener of the World, this node included.
+    async fn send_presence(
+        &self,
+        character: CharacterId,
+        online: bool,
+    ) -> Result<(), ChatDisposition> {
+        let sent_at_micros = self.db_now().ok_or(ChatDisposition::ChatUnavailable)?;
+        let sealed = seal_presence(
+            &self.ring,
+            &self.channel,
+            OutgoingPresence {
+                sent_at_micros,
+                character,
+                online,
+            },
+        )
+        .map_err(|_| ChatDisposition::ChatUnavailable)?;
+        let notify = notify_quietly(&self.pool, &self.channel, &sealed);
+        sent_or_unavailable(tokio::time::timeout(SEND_TIMEOUT, notify).await)
+    }
+
+    /// Tells the sink of a change of the listener's readiness only.
+    fn presence_listener(&self, up: bool) {
+        if self.presence_up.swap(up, Ordering::AcqRel) != up
+            && let Some(sink) = self.presence.get()
+        {
+            sink.listener(up);
+        }
+    }
+
+    fn presence_hint(&self, hint: &PresenceHint, now: u64) {
+        self.meter.received(now.saturating_sub(hint.sent_at_micros));
+        if let Some(sink) = self.presence.get() {
+            sink.hint(hint.character, hint.online);
+        }
     }
 
     /// Whether the relay may send now.
@@ -342,8 +622,13 @@ impl ChatRelay {
     /// reconnect moves its floor, so a line sent while the listener was down stays lost. A
     /// connection that refused the logging pin stops the relay for good: it closes its pool,
     /// reports once and parks without retrying.
+    /// The presence outbox is sent alongside, on the same task.
     pub(crate) async fn run(&self, chat: &ChatRuntime, shutdown: &CancellationToken) {
-        self.run_from(None, chat, shutdown).await;
+        let _ = first(
+            self.run_presence(shutdown),
+            self.run_from(None, chat, shutdown),
+        )
+        .await;
     }
 
     /// [`Self::run`] from `window` (`None` reads the stored lease on the first tick).
@@ -479,6 +764,9 @@ impl ChatRelay {
             .admitting_clock(now)
             .filter(|_| quiet && usage <= QUEUE_USAGE_MAX);
         *self.clock.lock().map_err(|_| Lost)? = clock.map(|clock| (clock, read_at));
+        // VIP0 §8.2: the presence owner shows UNCONFIRMED while the relay is not ready and
+        // reconciles at once when it is ready again (`VIP0-RL-09`).
+        self.presence_listener(clock.is_some());
         Ok(())
     }
 
@@ -486,6 +774,7 @@ impl ChatRelay {
         if let Ok(mut clock) = self.clock.lock() {
             *clock = None;
         }
+        self.presence_listener(false);
     }
 
     /// Opens one notification and delivers it; a refused line is only counted.
@@ -499,13 +788,17 @@ impl ChatRelay {
         if channel != self.channel {
             return;
         }
-        let opened = match (window.as_mut(), self.db_now()) {
-            (Some(window), Some(now)) => window.receive(&self.ring, &self.channel, payload, now),
+        let now = self.db_now();
+        let opened = match (window.as_mut(), now) {
+            (Some(window), Some(now)) => {
+                window.receive_relayed(&self.ring, &self.channel, payload, now)
+            }
             _ => Err(RelayError::Unleased),
         };
-        match opened {
-            Ok(line) => chat.deliver(&line),
-            Err(_) => {
+        match (opened, now) {
+            (Ok(Relayed::Line(line)), _) => chat.deliver(&line),
+            (Ok(Relayed::Presence(hint)), Some(now)) => self.presence_hint(&hint, now),
+            _ => {
                 self.dropped.fetch_add(1, Ordering::Relaxed);
             }
         }
@@ -519,6 +812,13 @@ impl ChatRelay {
         let dropped = self.dropped.swap(0, Ordering::Relaxed);
         if dropped > 0 {
             operator_event(&format!("chat_relay_dropped lines={dropped}"));
+        }
+        let (sent, refused, received, peak, p99) = self.meter.take();
+        if sent + refused + received > 0 {
+            operator_event(&format!(
+                "vip_presence_relay sent={sent} refused={refused} received={received} \
+                 peak_per_second={peak} hint_p99_micros={p99}"
+            ));
         }
     }
 }

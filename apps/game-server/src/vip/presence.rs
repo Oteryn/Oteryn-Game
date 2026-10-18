@@ -1,10 +1,13 @@
 //! VIP0 §8: bounded node presence owner and genuine native combined reader.
-//! Compiled as a durability child (`#[path="../vip/presence.rs"] mod vip_presence`).
-//! Shared production registration, VIP1 schema/definers, relay and wire remain CP work.
+//! Registered as a durability child (`#[path = "../vip/presence.rs"] mod vip_presence` in
+//! `durability/mod.rs`). The World relay (`chat::relay` kind 3) feeds it presence hints and
+//! listener state through `gameplay_transport::chat_relay`.
 //! Read observations and queued updates are DATA, never continuing delivery authority.
+//! House (Instance-scope) watchers fail closed: every read refuses a non-Channel session scope
+//! until HOUSE-RUNTIME-1b (#2165) gives House sessions a native scope proof.
 #![allow(
     dead_code,
-    reason = "Owned component; production namespace and wire integration are CP-only"
+    reason = "Watcher registration and delivery wait on the VIP-1 production schema and the VIP_V1 wire"
 )]
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence, uuid_text};
@@ -50,8 +53,26 @@ type Result<T> = std::result::Result<T, PresenceError>;
 fn corrupt() -> PresenceError {
     DurabilityError::InvalidStoredState.into()
 }
+/// The owner clock in UTC milliseconds: the wall clock read once, then advanced by the
+/// monotonic clock, so owner deadlines never move backward with a wall-clock step. Local
+/// because every path-loaded durability root compiles this module without the node clock.
 fn clock() -> Result<u64> {
-    crate::world_clock::now_utc_ms().ok_or(PresenceError::Clock)
+    static ANCHOR: std::sync::OnceLock<Option<(u64, std::time::Instant)>> =
+        std::sync::OnceLock::new();
+    let (utc_ms, at) = (*ANCHOR.get_or_init(|| {
+        let elapsed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()?;
+        Some((
+            u64::try_from(elapsed.as_millis()).ok()?,
+            std::time::Instant::now(),
+        ))
+    }))
+    .ok_or(PresenceError::Clock)?;
+    u64::try_from(at.elapsed().as_millis())
+        .ok()
+        .and_then(|elapsed| utc_ms.checked_add(elapsed))
+        .ok_or(PresenceError::Clock)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -154,6 +175,8 @@ async fn read_in_transaction(
         .await?
         .map_err(|_| PresenceError::AuthorityRejected)?;
     let account = AccountId::from_bytes(uuid_text(&account)?).map_err(|_| corrupt())?;
+    // House seam (HOUSE-RUNTIME-1b, #2165): a House session's Instance scope has no native
+    // scope-only fence yet, so its watcher fails closed here and shows nothing.
     let RuntimeScopeRefV1::Channel {
         world_id: world, ..
     } = fence.runtime_scope
@@ -445,25 +468,21 @@ impl State {
         ))
     }
     fn replace_watcher(&mut self, session: GameSessionId, next: Option<Watcher>) {
+        // Only accepted entries (shown or hidden) are indexed: a pending, rejected or absent
+        // consent can never consume a hint, so it must not let a target's hints dirty the session.
+        let accepted = |w: &Watcher| {
+            w.entries
+                .values()
+                .filter(|e| e.read.visibility != Visibility::Unconfirmed)
+                .map(|e| e.read.target)
+                .collect::<BTreeSet<_>>()
+        };
         let before = self
             .sessions
             .get(&session)
-            .map(|w| {
-                w.entries
-                    .values()
-                    .map(|e| e.read.target)
-                    .collect::<BTreeSet<_>>()
-            })
+            .map(accepted)
             .unwrap_or_default();
-        let after = next
-            .as_ref()
-            .map(|w| {
-                w.entries
-                    .values()
-                    .map(|e| e.read.target)
-                    .collect::<BTreeSet<_>>()
-            })
-            .unwrap_or_default();
+        let after = next.as_ref().map(accepted).unwrap_or_default();
         for target in before.difference(&after) {
             if let Some(sessions) = self.index.get_mut(target) {
                 sessions.remove(&session);
@@ -1256,6 +1275,7 @@ async fn read_batch_in_transaction(
             .await?
             .map_err(|_| PresenceError::AuthorityRejected)?;
         let account = AccountId::from_bytes(uuid_text(&account)?).map_err(|_| corrupt())?;
+        // House seam (#2165): an Instance-scope watcher fails the whole batch closed.
         let RuntimeScopeRefV1::Channel {
             world_id: world, ..
         } = input.fence.runtime_scope

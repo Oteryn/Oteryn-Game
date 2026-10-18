@@ -22,6 +22,12 @@ merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
   - "apps/game-server/src/vip/presence.rs (new) + tests"
   - "docs/agents/tasks/VIP-2.md"
+  # Widened by CP D1435 (2026-10-18): full completion and wiring in this PR.
+  - "apps/game-server/src/durability/mod.rs (vip_presence registration only)"
+  - "apps/game-server/src/chat/relay/mod.rs + tests.rs (relay kind 3, presence)"
+  - "apps/game-server/src/gameplay_transport/chat_relay.rs + chat_relay/tests.rs (presence sender, listener, RL-10/RL-11 meter)"
+  - "apps/game-server/src/gameplay_transport/mod.rs (login/logout presence feed, owner install)"
+  - "apps/game-server/src/gameplay_transport/logout_postgres_tests.rs (offline hint on the real logout path)"
 slot_only_paths:
   - "apps/game-server/src/chat/ relay wiring"
   - "apps/game-server/src/gameplay_transport/connection.rs (presence push)"
@@ -40,7 +46,8 @@ VIP online presence over the World chat relay, gated by consent and `vip_status`
 |---|---|---|
 | VIP0 acceptance (CANDIDATE) | NOT ACCEPTED | **BLOCKING** |
 | VIP-1 | NOT MERGED (Wave 4) | **BLOCKING** |
-| CHAT-2 (relay; CHAT-2B) | OPEN (#2128) | **BLOCKING** |
+| CHAT-2 (relay; CHAT-2B) | MERGED (#2227) | met (D1435) |
+| HOUSE-RUNTIME-1b (named-House session fence) | OPEN (#2165) | remaining dependency: House watchers fail closed |
 
 Rows marked BLOCKING must merge (or be accepted) before the builder's slot commit; code in owned_paths may be drafted earlier but must not assume unmerged schemas.
 
@@ -563,3 +570,45 @@ per-entry coalescing (pending is bounded by `LIST_MAX`). A refresh that re-coale
 low-numbered entry can no longer overtake an older pending revision of a higher-numbered entry.
 Regression test: `pending_updates_dequeue_in_revision_order_not_entry_order`. Merges
 `main@1f51f5df` with a merge commit; no conflicts.
+
+## CP D1435 completion — 2026-10-18
+
+CP D1435 supersedes D1434's split: this PR owns full completion and wiring. Merges
+`main@64d5e4da` with a merge commit.
+
+Wired into the running game:
+
+- Registration: `durability/mod.rs` mounts `#[path = "../vip/presence.rs"] mod vip_presence`.
+  Every root that path-loads durability compiles it; its 8 native PostgreSQL cases run only in
+  the `durability_postgres` crate (`CARGO_CRATE_NAME` gate), the CI PG lane, and refuse without
+  `OTERYN_TEST_POSTGRES_ADMIN_URL` there.
+- Relay kind 3 (`chat/relay`): sealed `PresenceHint {message_id, sent_at, character, online}`,
+  strict decode, same AEAD, freshness and replay window as chat lines.
+- `gameplay_transport/chat_relay.rs`: when the relay is configured, `serve_gameplay` installs a
+  `PresenceOwner` as the presence sink. A fresh admission queues ONLINE after commit; an accepted
+  retire (logout) queues OFFLINE and forgets the session's watcher state. Reconnect and death
+  send nothing (VIP0: death is not a logout). A bounded, per-character coalescing outbox feeds a
+  sender that publishes only while the relay reads `db_now()` (inside `CHAT0-RL-09`); received
+  hints go to `PresenceOwner::target_hint`, listener readiness to
+  `listener_reconnected`/`listener_down` (RL-09 reconcile on reconnect).
+- RL-10/RL-11: the relay reports `vip_presence_relay sent refused received peak_per_second
+  hint_p99_micros` with the drop report. The limit is the CHAT0-RL-09 gate plus the bounded
+  outbox (no new numeric cap); RL-11 is measured to the receiving node (hint latency p99).
+- Node-wide indexed batch reader: `refresh_batch_current` (2026-10-16).
+- House seam: `PresenceOwner` resolves only Channel scopes; an Instance (House) scope is
+  `AuthorityRejected` (fail closed) until HOUSE-RUNTIME-1b #2165 exposes the scope-only
+  named-House fence. This is the one remaining listed dependency.
+
+Tests: relay kind-3 codec, malformed and replay cases; outbox bounds/coalescing; meter p99;
+listener edges; a two-node PostgreSQL relay case (login and logout reach the other node's owner);
+the real `logout_session` path queues OFFLINE once (Busy repeat queues nothing; in-fight refusal
+keeps ONLINE); native owner case: A watches B, B logs in, A gets ONLINE with announce, B logs out,
+A gets OFFLINE with announce, an unwatched hint changes nothing.
+
+Codex P2 (discussion_r4305168482): fixed under D1434; thread answered and resolved with this head.
+
+Outside this PR and still open: VIP-1 production migration/definers/producers (the VIP tables
+exist only as test fixtures, so production watcher registration and the 10 s/60 s driver cannot
+run yet); `VIP_V1` capability/delta/wire on #162 (client frames and end-to-end RL-11). A
+crash-recovery path that ends another node's rows sends no hint; the 60 s RL-09 reconcile
+corrects it.

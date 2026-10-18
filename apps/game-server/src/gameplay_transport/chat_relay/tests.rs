@@ -9,6 +9,7 @@ use oteryn_simulation_determinism::SemanticTimeMicros;
 use sqlx::{Connection as _, Executor as _, PgConnection};
 
 use super::*;
+use crate::chat::relay::FRESHNESS_MICROS;
 use crate::durability::MigrationExecutor;
 use crate::foundation::GameSessionId;
 
@@ -677,4 +678,214 @@ async fn first_of<T>(
     other: impl Future<Output = ()>,
 ) -> Option<T> {
     first(primary, other).await
+}
+
+// ---- VIP-2: presence hints on the relay (VIP0 §8.2) ------------------------------------------
+
+/// A presence sink that records what the relay hands it.
+#[derive(Default)]
+struct RecordingSink {
+    hints: Mutex<Vec<(CharacterId, bool)>>,
+    listener: Mutex<Vec<bool>>,
+    ended: Mutex<Vec<GameSessionId>>,
+}
+
+impl PresenceSink for RecordingSink {
+    fn hint(&self, character: CharacterId, online: bool) {
+        self.hints.lock().expect("hints").push((character, online));
+    }
+    fn listener(&self, up: bool) {
+        self.listener.lock().expect("listener").push(up);
+    }
+    fn session_ended(&self, session: GameSessionId) {
+        self.ended.lock().expect("ended").push(session);
+    }
+}
+
+fn character_id(marker: u8) -> CharacterId {
+    CharacterId::decode(&character(marker)).expect("character")
+}
+
+fn unreachable_relay() -> ChatRelay {
+    let options =
+        PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none").expect("options");
+    ChatRelay::new(ring(), WORLD, options).expect("relay")
+}
+
+/// The relay's lazy pool needs a Tokio context even when a test never awaits it; the relay is
+/// declared after the guard, so it drops inside that context.
+fn current_thread_runtime() -> tokio::runtime::Runtime {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("runtime")
+}
+
+#[test]
+fn a_login_queues_online_and_its_retirement_offline_coalesced_per_character() {
+    let runtime = current_thread_runtime();
+    let _entered = runtime.enter();
+    let relay = unreachable_relay();
+    let sink = Arc::new(RecordingSink::default());
+    assert!(relay.install_presence(sink.clone()));
+    assert!(!relay.install_presence(Arc::new(RecordingSink::default())));
+    let (bryn, cara) = (character_id(0x32), character_id(0x33));
+    relay.presence_login(session_of(0x72), bryn);
+    relay.presence_login(session_of(0x73), cara);
+    assert_eq!(relay.queued_presence(), vec![(bryn, true), (cara, true)]);
+    relay.presence_logout(session_of(0x72));
+    // The newest transition of a character replaces its queued hint, in place.
+    assert_eq!(relay.queued_presence(), vec![(bryn, false), (cara, true)]);
+    assert_eq!(*sink.ended.lock().expect("ended"), vec![session_of(0x72)]);
+    // A session that never published (or already retired) queues nothing more.
+    relay.presence_logout(session_of(0x72));
+    relay.presence_logout(session_of(0x74));
+    assert_eq!(relay.queued_presence().len(), 2);
+}
+
+#[test]
+fn the_outbox_is_bounded_and_a_full_outbox_refuses_only_new_characters() {
+    let mut outbox = PresenceOutbox::default();
+    let id = |index: usize| {
+        let mut bytes = [0_u8; 16];
+        // Bytes 0..4 carry the index, clear of the UUIDv7 version and variant bytes.
+        bytes[..4].copy_from_slice(&(index as u32 + 1).to_be_bytes());
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes[15] = 1;
+        CharacterId::decode(&bytes).expect("character")
+    };
+    for index in 0..PRESENCE_OUTBOX_MAX {
+        assert!(outbox.push(id(index), true));
+    }
+    assert!(!outbox.push(id(PRESENCE_OUTBOX_MAX), true));
+    assert!(outbox.push(id(0), false), "a queued character is coalesced");
+    assert_eq!(outbox.pop(), Some((id(0), false)));
+    assert!(outbox.push(id(PRESENCE_OUTBOX_MAX), true));
+}
+
+#[test]
+fn a_relay_that_is_not_ready_refuses_presence_and_counts_it() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("runtime");
+    runtime.block_on(async {
+        let relay = unreachable_relay();
+        assert_eq!(
+            relay.send_presence(character_id(0x32), true).await,
+            Err(ChatDisposition::ChatUnavailable)
+        );
+        relay.presence_login(session_of(0x72), character_id(0x32));
+        let shutdown = CancellationToken::new();
+        let drained = async {
+            assert!(wait_for(5, || relay.queued_presence().is_empty()).await);
+            // Let the in-flight send finish before reading the meter.
+            assert!(wait_for(5, || relay.meter.refused.load(Ordering::Relaxed) == 1).await);
+        };
+        assert!(
+            first_of(Box::pin(drained), relay.run_presence(&shutdown))
+                .await
+                .is_some()
+        );
+        assert_eq!(relay.meter.take(), (0, 1, 0, 0, 0));
+    });
+}
+
+#[test]
+fn the_meter_reports_counts_peak_and_a_nearest_rank_p99() {
+    let meter = PresenceMeter::default();
+    for latency in 1..=100 {
+        meter.received(latency);
+    }
+    meter.sent();
+    meter.sent();
+    meter.refused();
+    assert_eq!(meter.take(), (2, 1, 100, 2, 99));
+    assert_eq!(meter.take(), (0, 0, 0, 0, 0));
+}
+
+#[test]
+fn listener_readiness_reaches_the_sink_on_change_only() {
+    let runtime = current_thread_runtime();
+    let _entered = runtime.enter();
+    let relay = unreachable_relay();
+    let sink = Arc::new(RecordingSink::default());
+    relay.install_presence(sink.clone());
+    relay.presence_listener(true);
+    relay.presence_listener(true);
+    relay.not_ready();
+    relay.not_ready();
+    relay.presence_listener(true);
+    assert_eq!(
+        *sink.listener.lock().expect("listener"),
+        vec![true, false, true]
+    );
+}
+
+/// VIP0 §8.2 across two nodes of a World: B's login on the first node reaches the second node's
+/// presence owner as an `online` hint, and B's logout as `offline`; the second node's listener
+/// readiness reaches its owner first.
+#[test]
+fn a_login_and_a_logout_reach_the_other_nodes_presence_owner() -> TestResult {
+    run_postgres_test(async {
+        let (database, url) = relay_database("vip_presence_hint", &all_pinned()).await?;
+        let (aela, bryn) = (session_of(0x71), session_of(0x72));
+        let first = node(&url, bryn, "Bryn", character(0x32));
+        let second = node(&url, aela, "Aela", character(0x31));
+        let watcher = Arc::new(RecordingSink::default());
+        assert!(relay_of(&second).install_presence(watcher.clone()));
+        let shutdown = CancellationToken::new();
+        let listeners = async {
+            let _ = first_of(
+                first_of(
+                    relay_of(&first).run_from(
+                        Some(ReplayWindow::starting_at(0)),
+                        &first,
+                        &shutdown,
+                    ),
+                    relay_of(&first).run_presence(&shutdown),
+                ),
+                relay_of(&second).run_from(Some(ReplayWindow::starting_at(0)), &second, &shutdown),
+            )
+            .await;
+        };
+        let exchange = async {
+            assert!(
+                wait_for(10, || relay_of(&first).is_ready()
+                    && relay_of(&second).is_ready())
+                .await,
+                "both relays listen"
+            );
+            assert_eq!(*watcher.listener.lock().expect("listener"), vec![true]);
+            let target = character_id(0x32);
+            relay_of(&first).presence_login(bryn, target);
+            assert!(
+                wait_for(10, || watcher.hints.lock().expect("hints").len() == 1).await,
+                "the online hint arrives"
+            );
+            relay_of(&first).presence_logout(bryn);
+            assert!(
+                wait_for(10, || watcher.hints.lock().expect("hints").len() == 2).await,
+                "the offline hint arrives"
+            );
+            assert_eq!(
+                *watcher.hints.lock().expect("hints"),
+                vec![(target, true), (target, false)]
+            );
+            let (sent, refused, ..) = relay_of(&first).meter.take();
+            assert_eq!((sent, refused), (2, 0));
+            let (_, _, received, _, p99) = relay_of(&second).meter.take();
+            assert_eq!(received, 2);
+            assert!(p99 <= FRESHNESS_MICROS, "an admitted hint is fresh");
+            // Nothing is delivered to chat sessions for a presence hint.
+            assert!(second.drain(aela).is_empty());
+        };
+        let finished = first_of(Box::pin(exchange), Box::pin(listeners)).await;
+        shutdown.cancel();
+        drop((first, second));
+        database.cleanup().await?;
+        finished.ok_or("the relays stopped")?;
+        Ok(())
+    })
 }

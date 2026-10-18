@@ -127,6 +127,85 @@ fn logout_commits_terminal_saves_the_position_and_retires_the_actor() -> TestRes
     })
 }
 
+/// VIP-2 (VIP0 §8.2): the owner's relay, unreachable so that hints stay in its outbox for the
+/// test to read. The character is the fixture's (`id(41)`) and its session has published online
+/// through the helper the fresh admission calls after its commits.
+fn presence_relay<'o>(
+    owner: &'o ComposedFreshAdmission<'_, '_, '_>,
+    dependencies: &Dependencies,
+) -> TestResult<(
+    &'o crate::gameplay_transport::chat_relay::ChatRelay,
+    oteryn_protocol_oteryn::CharacterId,
+)> {
+    use std::str::FromStr as _;
+    // The relay's World only names its channel here; nothing is sent.
+    let world = [
+        0x01, 0x90, 0x0a, 0x5d, 0xac, 0x96, 0x7a, 0xb2, 0x80, 0xe7, 0x01, 0x23, 0x45, 0x67, 0x89,
+        0xab,
+    ];
+    let ring = crate::gameplay_transport::chat_relay::parse_keys(
+        format!(
+            "1 0 {}\n",
+            base64::Engine::encode(&base64::engine::general_purpose::STANDARD, [1_u8; 32])
+        )
+        .as_bytes(),
+    )
+    .map_err(debug)?;
+    let options =
+        sqlx::postgres::PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none")?;
+    let relay = crate::gameplay_transport::chat_relay::ChatRelay::new(ring, world, options)
+        .map_err(debug)?;
+    owner.chat.install_relay(std::sync::Arc::new(relay));
+    let relay = owner.chat.relay().ok_or("installed relay")?;
+    let character = crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?;
+    owner.presence_login(dependencies.admitted.game_session_id, character);
+    let character = oteryn_protocol_oteryn::CharacterId::decode(&id(41)).map_err(debug)?;
+    assert_eq!(relay.queued_presence(), vec![(character, true)]);
+    Ok((relay, character))
+}
+
+/// VIP-2 (VIP0 §8.2): B is admitted (online queued), then B's real logout commits TERMINAL and
+/// retires the actor, which queues B's offline hint for the watchers' nodes.
+#[test]
+fn an_accepted_logout_sends_the_offline_presence_hint() -> TestResult {
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_presence", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        let (relay, character) = presence_relay(&owner, &dependencies)?;
+        assert_eq!(
+            owner.logout_session(dependencies.admitted).await,
+            LogoutReply::Result(LogoutResult::Accepted)
+        );
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Terminal
+        );
+        // The online hint not yet sent is replaced in place by the newest transition.
+        assert_eq!(relay.queued_presence(), vec![(character, false)]);
+        // The refused second logout retires nothing and queues nothing more.
+        assert_eq!(
+            owner.logout_session(dependencies.admitted).await,
+            LogoutReply::Result(LogoutResult::Busy)
+        );
+        assert_eq!(relay.queued_presence(), vec![(character, false)]);
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
 #[test]
 fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
     run(async |admin| {
@@ -143,6 +222,7 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
         let dependencies = Dependencies::new()?;
         let owner = dependencies.owner(&harness, &authority);
         enter(&owner, &dependencies).await?;
+        let (relay, character) = presence_relay(&owner, &dependencies)?;
         let now = owner.owner_now();
         {
             let runtime = owner.runtime.lock().await;
@@ -181,6 +261,8 @@ fn logout_in_fight_is_refused_and_changes_nothing() -> TestResult {
         assert!(actor_present(&owner, &dependencies).await);
         assert_eq!(last_positions(&harness).await?, 0);
         assert_eq!(revision(&harness).await?, 1);
+        // VIP-2: the character is still online; no offline hint.
+        assert_eq!(relay.queued_presence(), vec![(character, true)]);
         drop(owner);
         drop(authority);
         drop(seal);

@@ -589,6 +589,16 @@ pub async fn serve_gameplay(
         *owners.world_id.as_bytes(),
         owners.root.chat_relay_connect_options(),
     ) {
+        // VIP-2 (VIP0 §8.2): the node's VIP presence owner consumes the relay's presence hints
+        // and listener state. House (Instance-scope) watchers fail closed in the owner until
+        // HOUSE-RUNTIME-1b (#2165).
+        if let Ok(presence) = crate::durability::vip_presence::PresenceOwner::new(
+            owners.root.clone(),
+            owners.world_id,
+            config.max_connections,
+        ) {
+            relay.install_presence(std::sync::Arc::new(presence));
+        }
         authority.chat.install_relay(std::sync::Arc::new(relay));
     }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
@@ -2305,6 +2315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.forget_quest_session(session);
                 self.forget_progression_session(session);
                 self.last_positions.forget(session);
+                self.presence_logout(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -2322,6 +2333,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> GraceExpiryResult {
         self.release_premium(account_id, session);
         self.retire(session, actor).await
+    }
+
+    /// VIP-2 (VIP0 §8.2): `session`'s fresh admission committed, so its character entered
+    /// session state 1; the relay sends one `online` hint after that commit. A reconnect
+    /// (state 2 to 1) and a death stay inside states 1-2 and send nothing.
+    fn presence_login(&self, session: GameSessionId, character: domain::CharacterId) {
+        if let (Some(relay), Ok(character)) = (
+            self.chat.relay(),
+            oteryn_protocol_oteryn::CharacterId::decode(character.as_bytes()),
+        ) {
+            relay.presence_login(session, character);
+        }
+    }
+
+    /// VIP-2 (VIP0 §8.2): `session` is TERMINAL and retired (logout, teardown, abandoned-session
+    /// release); the relay sends one `offline` hint for its character after that commit.
+    fn presence_logout(&self, session: GameSessionId) {
+        if let Some(relay) = self.chat.relay() {
+            relay.presence_logout(session);
+        }
     }
 
     /// PREM-1b: start (or wake) the account's Premium pulls for `session`.
@@ -4139,6 +4170,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
         self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
+        // VIP-2: both COMMITs are durable; the session is in state 1.
+        self.presence_login(attempt.game_session_id, character_id);
         let mut admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,

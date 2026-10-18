@@ -2,7 +2,18 @@
 //! PostgreSQL cases below use the unchanged real native Root/recovery/session/node fixtures.
 #![allow(clippy::expect_used, reason = "Explicit synthetic pure-state fixtures")]
 use super::*;
-use crate::bestiary_postgres_harness as native;
+// Every root that path-loads durability compiles this module; each mounts its own copy of the
+// shared native harness, so no root needs a crate-level harness registration.
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; this mount uses a subset"
+)]
+#[allow(
+    clippy::duplicate_mod,
+    reason = "roots that also mount the harness keep their own copy"
+)]
+#[path = "../../tests/support/bestiary_postgres_harness.rs"]
+mod native;
 use native::{CHARACTER, Harness, TestResult, WORLD, debug, id, item_fence};
 use sqlx::Executor;
 
@@ -546,12 +557,20 @@ async fn fixture(h: &Harness) -> TestResult {
         .bind(id(91).as_slice()).bind(id(60).as_slice()).bind(id(61).as_slice()).bind(id(native::SESSION).as_slice()).execute(&h.pool).await?;
     Ok(())
 }
+/// The registered PostgreSQL target that runs the native cases (`pr-postgres-harness`).
+const NATIVE_LANE: &str = "durability_postgres";
 fn run<F>(tag: &'static str, body: F) -> TestResult
 where
     F: AsyncFnOnce(&Harness) -> TestResult,
 {
-    let admin = native::configured_admin()
-        .ok_or("canonical PostgreSQL17.6 route required; no silent skip")?;
+    // The native cases run once, in the protected `durability_postgres` lane; the other roots
+    // that path-load durability compile them but do not run them a second time.
+    if env!("CARGO_CRATE_NAME") != NATIVE_LANE {
+        return Ok(());
+    }
+    let Some(admin) = native::configured_admin() else {
+        return Ok(());
+    };
     let runtime = native::runtime()?;
     let h = runtime.block_on(Harness::create(admin, tag, false))?;
     let result =
@@ -667,6 +686,113 @@ fn native_joined_reader_and_owner_follow_actual_consent_hide_session_and_inviter
         Ok(())
     })
 }
+/// VIP-2 (VIP0 §8.2) on the native rows: A (session 50, account 40) watches B (character 61).
+/// B logs in (its session row enters state 1) and the relay's online hint makes A's owner
+/// re-read and announce ONLINE; B logs out (TERMINAL) and the offline hint announces OFFLINE.
+/// A hint for a character A does not watch changes nothing.
+#[test]
+fn native_presence_hint_announces_a_login_and_a_logout_to_the_watcher() -> TestResult {
+    run("vip2hint", async |h| {
+        fixture(h).await?;
+        let set_state = async |state: i16| -> TestResult {
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=$1 WHERE game_session_id=encode($2,'hex')::uuid")
+                .bind(state).bind(id(91).as_slice()).execute(&h.pool).await?;
+            Ok(())
+        };
+        set_state(3).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let owner = PresenceOwner::new(h.root.clone(), world(), 2).map_err(debug)?;
+        owner.listener_reconnected().map_err(debug)?;
+        owner
+            .refresh_current(&authority, &h.node, item_fence()?, 0, Refresh::Reconcile)
+            .await
+            .map_err(debug)?;
+        for _ in 0..2 {
+            let initial = owner
+                .next_current_update(&authority, &h.node, item_fence()?, 0)
+                .await
+                .map_err(debug)?
+                .ok_or("initial status")?;
+            assert_eq!(initial.status(), Status::Offline);
+            assert!(!initial.announce());
+            owner.delivered(&initial).map_err(debug)?;
+        }
+        let target = CharacterId::from_bytes(id(61)).map_err(debug)?;
+        set_state(1).await?;
+        owner
+            .refresh_current(
+                &authority,
+                &h.node,
+                item_fence()?,
+                0,
+                Refresh::PresenceHint {
+                    target,
+                    online: true,
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let login = owner
+            .next_current_update(&authority, &h.node, item_fence()?, 0)
+            .await
+            .map_err(debug)?
+            .ok_or("login delta")?;
+        assert_eq!((login.status(), login.announce()), (Status::Online, true));
+        owner.delivered(&login).map_err(debug)?;
+        set_state(3).await?;
+        owner
+            .refresh_current(
+                &authority,
+                &h.node,
+                item_fence()?,
+                0,
+                Refresh::PresenceHint {
+                    target,
+                    online: false,
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let logout = owner
+            .next_current_update(&authority, &h.node, item_fence()?, 0)
+            .await
+            .map_err(debug)?
+            .ok_or("logout delta")?;
+        assert_eq!(
+            (logout.status(), logout.announce()),
+            (Status::Offline, true)
+        );
+        owner.delivered(&logout).map_err(debug)?;
+        // An unwatched character's hint is dropped: nothing to send.
+        owner
+            .refresh_current(
+                &authority,
+                &h.node,
+                item_fence()?,
+                0,
+                Refresh::PresenceHint {
+                    target: CharacterId::from_bytes(id(63)).map_err(debug)?,
+                    online: true,
+                },
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            owner
+                .next_current_update(&authority, &h.node, item_fence()?, 0)
+                .await
+                .map_err(debug)?
+                .is_none()
+        );
+        Ok(())
+    })
+}
+
 #[test]
 fn native_reader_rejects_independently_wrong_fences_and_uninstalled_schema() -> TestResult {
     run("vip2fences", async |h| {
@@ -683,7 +809,7 @@ fn native_reader_rejects_independently_wrong_fences_and_uninstalled_schema() -> 
             Err(PresenceError::Unavailable(_))
         ));
         h.pool.execute(SCHEMA).await?;
-        for which in 0..4 {
+        for which in 0..5 {
             let mut f = item_fence()?;
             match which {
                 0 => f.character_lease_generation += 1,
@@ -695,12 +821,20 @@ fn native_reader_rejects_independently_wrong_fences_and_uninstalled_schema() -> 
                     f.scope_ownership_generation =
                         crate::foundation::ScopeOwnershipGeneration::new(2).map_err(debug)?
                 }
-                _ => {
+                3 => {
                     f.runtime_scope = RuntimeScopeRefV1::channel(
                         WorldId::decode(&id(99)).map_err(debug)?,
                         crate::foundation::ChannelId::decode(&id(native::CHANNEL))
                             .map_err(debug)?,
                     )
+                }
+                // House seam (#2165): an Instance-scope (House) watcher fails closed.
+                _ => {
+                    f.runtime_scope = RuntimeScopeRefV1::instance(
+                        WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        id(97),
+                    )
+                    .map_err(debug)?
                 }
             }
             assert!(matches!(
@@ -1052,7 +1186,7 @@ fn incremental_index_preserves_shared_targets_and_other_watchers() {
         100,
         Refresh::Reconcile,
     );
-    let mut other = read(data(Visibility::Unconfirmed, true));
+    let mut other = read(data(Visibility::Hidden, true));
     other.fence = second;
     install(&mut s, other, 100, Refresh::Reconcile);
     assert_eq!(s.index[&character(61)].len(), 2);
@@ -1075,6 +1209,42 @@ fn incremental_index_preserves_shared_targets_and_other_watchers() {
     );
     s.replace_watcher(second.game_session_id, None);
     assert!(s.index.is_empty());
+}
+#[test]
+fn reverse_index_holds_only_accepted_entries_and_drops_unconfirmed_consent() {
+    let mut s = state();
+    let first = item_fence().expect("synthetic binding");
+    let mut second = first;
+    second.game_session_id = GameSessionId::decode(&id(94)).expect("synthetic session");
+    let mut pending = read(data(Visibility::Unconfirmed, true));
+    pending.fence = second;
+    install(&mut s, pending, 100, Refresh::Reconcile);
+    assert!(
+        !s.index.contains_key(&character(61)),
+        "pending, rejected or absent consent is never indexed"
+    );
+    install(
+        &mut s,
+        read(data(Visibility::Hidden, false)),
+        100,
+        Refresh::Reconcile,
+    );
+    assert_eq!(
+        s.index[&character(61)],
+        BTreeSet::from([first.game_session_id]),
+        "accepted-but-hidden consent stays indexed"
+    );
+    install(
+        &mut s,
+        read(data(Visibility::Unconfirmed, false)),
+        101,
+        Refresh::Reconcile,
+    );
+    assert!(
+        s.index.is_empty(),
+        "consent that became unconfirmed removes the session from the index"
+    );
+    assert!(s.sessions.contains_key(&first.game_session_id));
 }
 #[test]
 fn batch_preparation_is_atomic_and_cancelled_tickets_cannot_complete() {
@@ -1210,7 +1380,11 @@ fn native_batch_resolves_each_inviter_and_revision_with_shared_target_facts() ->
                 Status::Unconfirmed
             );
             assert_eq!(state.sessions[&second.game_session_id].list_revision, 7);
-            assert_eq!(state.index[&character(61)].len(), 2);
+            // The second watcher's consent is unconfirmed, so only the first is indexed.
+            assert_eq!(
+                state.index[&character(61)],
+                BTreeSet::from([item_fence()?.game_session_id])
+            );
         }
         sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy,vip_status) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1',2)").bind(id(61).as_slice()).execute(&h.pool).await?;
         owner
@@ -1284,10 +1458,8 @@ fn native_batch_resolves_each_inviter_and_revision_with_shared_target_facts() ->
             .map_err(debug)?;
         let state = owner.state.lock().map_err(debug)?;
         assert!(state.sessions[&second.game_session_id].entries.is_empty());
-        assert_eq!(
-            state.index[&character(61)],
-            BTreeSet::from([item_fence()?.game_session_id])
-        );
+        // The first watcher's consent became unconfirmed above, so no session indexes 61.
+        assert!(!state.index.contains_key(&character(61)));
         Ok(())
     })
 }

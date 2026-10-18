@@ -4,6 +4,10 @@
 //! and its 24 hour rotation overlap, the freshness check and the bounded de-duplication window.
 //! The `LISTEN`/`NOTIFY` connection, the readiness gate and the delivery to sessions feed these
 //! rules and live outside this module. Chat text is never logged or stored here (FND-02 §20).
+//!
+//! The same sealed relay also carries the VIP presence hint (VIP0 §8, kind 3): an advisory
+//! `{character_id, online, at}` the receiving node re-reads from the durable rows. It shares the
+//! keys, the freshness rule and the de-duplication window, so it counts toward `CHAT0-RL-09`.
 
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
@@ -46,6 +50,12 @@ const PLAINTEXT_MAX_BYTES: usize =
 pub(crate) const SEALED_MAX_BYTES: usize = 1 + NONCE_BYTES + PLAINTEXT_MAX_BYTES + TAG_BYTES;
 const KIND_PRIVATE: u8 = 1;
 const KIND_ROOM: u8 = 2;
+/// VIP0 §8: the presence hint, the next free relay kind after the two chat kinds.
+const KIND_PRESENCE: u8 = 3;
+/// kind, message id, sent at, character id, online flag.
+const PRESENCE_PLAINTEXT_BYTES: usize = 1 + ID_BYTES + 8 + ID_BYTES + 1;
+// A presence hint always fits the chat plaintext bound, so it shares the sealed limits.
+const _: () = assert!(PRESENCE_PLAINTEXT_BYTES <= PLAINTEXT_MAX_BYTES);
 const CHANNEL_PREFIX: &str = "oteryn_chat_";
 
 /// Why a relay line is refused. Every refusal drops the line; none reaches a client.
@@ -206,6 +216,118 @@ impl RelayLine {
             sender_name,
             text,
         })
+    }
+}
+
+/// One presence hint (VIP0 §8): `character` entered (`online`) or left session states 1-2 at
+/// `sent_at_micros`. Advisory only: a receiver re-reads the durable rows before it shows anything.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PresenceHint {
+    pub(crate) message_id: [u8; ID_BYTES],
+    /// The sender's database time, microseconds.
+    pub(crate) sent_at_micros: u64,
+    pub(crate) character: CharacterId,
+    pub(crate) online: bool,
+}
+
+// The CharacterId is player-linked; it never reaches a log through `Debug` (FND-02 §20).
+impl fmt::Debug for PresenceHint {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PresenceHint")
+            .field("online", &self.online)
+            .finish_non_exhaustive()
+    }
+}
+
+impl PresenceHint {
+    fn encode(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(PRESENCE_PLAINTEXT_BYTES);
+        out.push(KIND_PRESENCE);
+        out.extend_from_slice(&self.message_id);
+        out.extend_from_slice(&self.sent_at_micros.to_be_bytes());
+        out.extend_from_slice(self.character.as_bytes());
+        out.push(u8::from(self.online));
+        out
+    }
+
+    fn decode(bytes: &[u8]) -> Result<Self, RelayError> {
+        let mut cursor = Cursor(bytes);
+        if cursor.take(1)?[0] != KIND_PRESENCE {
+            return Err(RelayError::BadPayload);
+        }
+        let message_id = cursor.array()?;
+        let sent_at_micros = u64::from_be_bytes(cursor.array()?);
+        let character = CharacterId::decode(&cursor.array::<ID_BYTES>()?)
+            .map_err(|_| RelayError::BadPayload)?;
+        let online = match cursor.take(1)?[0] {
+            0 => false,
+            1 => true,
+            _ => return Err(RelayError::BadPayload),
+        };
+        if !cursor.0.is_empty() {
+            return Err(RelayError::BadPayload);
+        }
+        Ok(Self {
+            message_id,
+            sent_at_micros,
+            character,
+            online,
+        })
+    }
+}
+
+/// One opened relay payload: a chat line or a presence hint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Relayed {
+    Line(RelayLine),
+    Presence(PresenceHint),
+}
+
+impl Relayed {
+    fn decode(bytes: &[u8]) -> Result<Self, RelayError> {
+        match bytes.first() {
+            Some(&KIND_PRESENCE) => PresenceHint::decode(bytes).map(Self::Presence),
+            _ => RelayLine::decode(bytes).map(Self::Line),
+        }
+    }
+}
+
+/// What the de-duplication window needs from an opened payload.
+trait Stamped {
+    fn message_id(&self) -> [u8; ID_BYTES];
+    fn sent_at_micros(&self) -> u64;
+}
+
+impl Stamped for RelayLine {
+    fn message_id(&self) -> [u8; ID_BYTES] {
+        self.message_id
+    }
+    fn sent_at_micros(&self) -> u64 {
+        self.sent_at_micros
+    }
+}
+
+impl Stamped for PresenceHint {
+    fn message_id(&self) -> [u8; ID_BYTES] {
+        self.message_id
+    }
+    fn sent_at_micros(&self) -> u64 {
+        self.sent_at_micros
+    }
+}
+
+impl Stamped for Relayed {
+    fn message_id(&self) -> [u8; ID_BYTES] {
+        match self {
+            Self::Line(line) => line.message_id,
+            Self::Presence(hint) => hint.message_id,
+        }
+    }
+    fn sent_at_micros(&self) -> u64 {
+        match self {
+            Self::Line(line) => line.sent_at_micros,
+            Self::Presence(hint) => hint.sent_at_micros,
+        }
     }
 }
 
@@ -386,6 +508,40 @@ pub(crate) fn seal(
     seal_with_nonce(ring, channel, &line, random_nonce()?)
 }
 
+/// What a node supplies for one presence hint; the `message_id` is generated in [`seal_presence`].
+#[derive(Clone, Copy)]
+pub(crate) struct OutgoingPresence {
+    /// The sender's database time, microseconds.
+    pub(crate) sent_at_micros: u64,
+    pub(crate) character: CharacterId,
+    pub(crate) online: bool,
+}
+
+/// Seals a presence hint exactly as [`seal`] seals a chat line: newest key, fresh nonce and
+/// `message_id`, the same associated data and bounds.
+pub(crate) fn seal_presence(
+    ring: &RelayKeyRing,
+    channel: &str,
+    hint: OutgoingPresence,
+) -> Result<String, RelayError> {
+    let hint = PresenceHint {
+        message_id: random_message_id()?,
+        sent_at_micros: hint.sent_at_micros,
+        character: hint.character,
+        online: hint.online,
+    };
+    seal_presence_with_nonce(ring, channel, &hint, random_nonce()?)
+}
+
+fn seal_presence_with_nonce(
+    ring: &RelayKeyRing,
+    channel: &str,
+    hint: &PresenceHint,
+    nonce: [u8; NONCE_BYTES],
+) -> Result<String, RelayError> {
+    seal_plaintext(ring, channel, hint.sent_at_micros, hint.encode(), nonce)
+}
+
 fn seal_with_nonce(
     ring: &RelayKeyRing,
     channel: &str,
@@ -426,16 +582,30 @@ fn seal_plaintext(
     Ok(text)
 }
 
-/// Opens a `NOTIFY` text received on `channel`: authenticity, layout and freshness. `now_micros`
-/// must be the monotonic reading of [`ReplayWindow::receive`], the only caller outside tests, so
-/// key retirement and freshness never see the clock run backwards. Any `Err` drops the line
-/// (counted by the caller); nothing is logged here.
+/// Opens a chat `NOTIFY` text; a presence hint is a `BadPayload` here. The rules tests use it.
+#[cfg(test)]
 fn open(
     ring: &RelayKeyRing,
     channel: &str,
     notify_text: &str,
     now_micros: u64,
 ) -> Result<RelayLine, RelayError> {
+    match open_relayed(ring, channel, notify_text, now_micros)? {
+        Relayed::Line(line) => Ok(line),
+        Relayed::Presence(_) => Err(RelayError::BadPayload),
+    }
+}
+
+/// Opens a `NOTIFY` text received on `channel`: authenticity, layout and freshness. `now_micros`
+/// must be the monotonic reading of [`ReplayWindow::receive_relayed`], the only caller outside
+/// tests, so key retirement and freshness never see the clock run backwards. Any `Err` drops the
+/// payload (counted by the caller); nothing is logged here.
+fn open_relayed(
+    ring: &RelayKeyRing,
+    channel: &str,
+    notify_text: &str,
+    now_micros: u64,
+) -> Result<Relayed, RelayError> {
     if notify_text.len() > NOTIFY_MAX_BYTES {
         return Err(RelayError::Malformed);
     }
@@ -454,11 +624,11 @@ fn open(
     let plaintext = aead_key(key)?
         .open_in_place(nonce, Aad::from(aad), &mut buffer)
         .map_err(|_| RelayError::Unauthentic)?;
-    let line = RelayLine::decode(plaintext)?;
-    if now_micros.abs_diff(line.sent_at_micros) > FRESHNESS_MICROS {
+    let relayed = Relayed::decode(plaintext)?;
+    if now_micros.abs_diff(relayed.sent_at_micros()) > FRESHNESS_MICROS {
         return Err(RelayError::Stale);
     }
-    Ok(line)
+    Ok(relayed)
 }
 
 /// The bounded per-World de-duplication set (CHAT-0 §5): a `message_id` seen inside the freshness
@@ -606,7 +776,25 @@ impl ReplayWindow {
     /// backwards. `now_micros` is the node's database-time reading, raised to the highest reading
     /// seen, so a database clock stepped back can neither revive a retired key nor re-admit an
     /// evicted `message_id` or an expired line. A reading past the stored lease is `Unleased`
-    /// before any key is consulted.
+    /// before any key is consulted. A chat line or a presence hint is admitted the same way.
+    pub(crate) fn receive_relayed(
+        &mut self,
+        ring: &RelayKeyRing,
+        channel: &str,
+        notify_text: &str,
+        now_micros: u64,
+    ) -> Result<Relayed, RelayError> {
+        let now_micros = self.observe(now_micros);
+        if self.leased_until.is_none_or(|until| now_micros > until) {
+            return Err(RelayError::Unleased);
+        }
+        let relayed = open_relayed(ring, channel, notify_text, now_micros)?;
+        self.admit(&relayed, now_micros)?;
+        Ok(relayed)
+    }
+
+    /// [`Self::receive_relayed`] for a chat line only; the rules tests use it.
+    #[cfg(test)]
     pub(crate) fn receive(
         &mut self,
         ring: &RelayKeyRing,
@@ -614,13 +802,10 @@ impl ReplayWindow {
         notify_text: &str,
         now_micros: u64,
     ) -> Result<RelayLine, RelayError> {
-        let now_micros = self.observe(now_micros);
-        if self.leased_until.is_none_or(|until| now_micros > until) {
-            return Err(RelayError::Unleased);
+        match self.receive_relayed(ring, channel, notify_text, now_micros)? {
+            Relayed::Line(line) => Ok(line),
+            Relayed::Presence(_) => Err(RelayError::BadPayload),
         }
-        let line = open(ring, channel, notify_text, now_micros)?;
-        self.admit(&line, now_micros)?;
-        Ok(line)
     }
 
     fn observe(&mut self, now_micros: u64) -> u64 {
@@ -631,7 +816,8 @@ impl ReplayWindow {
 
     /// Admits the line once. A line outside the freshness window is `Stale` here too, so nothing
     /// already expired is ever stored.
-    fn admit(&mut self, line: &RelayLine, now_micros: u64) -> Result<(), RelayError> {
+    fn admit(&mut self, line: &impl Stamped, now_micros: u64) -> Result<(), RelayError> {
+        let (message_id, sent_at_micros) = (line.message_id(), line.sent_at_micros());
         let now_micros = self.observe(now_micros);
         while let Some(&(expiry, id)) = self.by_expiry.first() {
             if expiry >= now_micros {
@@ -640,21 +826,21 @@ impl ReplayWindow {
             self.by_expiry.remove(&(expiry, id));
             self.expiry_of.remove(&id);
         }
-        if line.sent_at_micros < self.floor {
+        if sent_at_micros < self.floor {
             return Err(RelayError::BeforeStart);
         }
-        if now_micros.abs_diff(line.sent_at_micros) > FRESHNESS_MICROS {
+        if now_micros.abs_diff(sent_at_micros) > FRESHNESS_MICROS {
             return Err(RelayError::Stale);
         }
-        if self.expiry_of.contains_key(&line.message_id) {
+        if self.expiry_of.contains_key(&message_id) {
             return Err(RelayError::Replayed);
         }
         if self.expiry_of.len() >= REPLAY_WINDOW_LINES {
             return Err(RelayError::Saturated);
         }
-        let expiry = line.sent_at_micros.saturating_add(FRESHNESS_MICROS);
-        self.expiry_of.insert(line.message_id, expiry);
-        self.by_expiry.insert((expiry, line.message_id));
+        let expiry = sent_at_micros.saturating_add(FRESHNESS_MICROS);
+        self.expiry_of.insert(message_id, expiry);
+        self.by_expiry.insert((expiry, message_id));
         Ok(())
     }
 }
