@@ -7446,3 +7446,6 @@ mod death_ml_loss_postgres {
         Ok(())
     }
 }
+
+#[path = "../interaction/vocation_choice.rs"]
+mod vocation_choice;

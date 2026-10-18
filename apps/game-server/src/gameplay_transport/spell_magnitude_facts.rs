@@ -10,14 +10,11 @@ use crate::spell::magnitude_owner::{
 use crate::spell::owned_cast_facts::{CastFactsBinding, CurrentProjection};
 use std::collections::BTreeMap;
 
-pub(crate) fn project(
+fn validate_current_binding(
     raw: &RawCastDurableFacts,
     binding: &CastFactsBinding,
     native: &NativeGameplayState,
-    wheel: Option<&CurrentProjection<BTreeMap<String, u8>>>,
-    premium: Option<&CurrentProjection<bool>>,
-    now_micros: u64,
-) -> Result<Option<MagnitudeOwnedAttributes>, AccessFactsError> {
+) -> Result<(), AccessFactsError> {
     let equipment = &raw.equipment;
     if equipment.character != binding.character
         || *raw.fence.character_id.as_bytes() != binding.character
@@ -37,6 +34,60 @@ pub(crate) fn project(
             "magnitude durable owner binding",
         ));
     }
+    Ok(())
+}
+
+/// Current build/condition observations for the auto-attack owner; these are data,
+/// not permission to attack, and do not claim unqualified equipment modifiers.
+#[allow(
+    dead_code,
+    reason = "D1125 attack caller is composed after #2192; current facts confer no attack authority"
+)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CurrentAttackSkills {
+    pub(crate) binding: CastFactsBinding,
+    pub(crate) level: u32,
+    /// Native build order: fist, club, sword, axe, distance, shielding, fishing.
+    pub(crate) skills: [u32; 7],
+}
+
+#[allow(
+    dead_code,
+    reason = "D1125 attack caller is composed after #2192; current facts confer no attack authority"
+)]
+pub(crate) fn project_current_attack_skills(
+    raw: &RawCastDurableFacts,
+    binding: &CastFactsBinding,
+    native: &NativeGameplayState,
+    player: &crate::spell::cast::PlayerSpellState,
+    now_micros: u64,
+) -> Result<CurrentAttackSkills, AccessFactsError> {
+    validate_current_binding(raw, binding, native)?;
+    if player.revision() != binding.player_revision || player.character_facts().level != raw.level {
+        return Err(AccessFactsError::Unavailable(
+            "attack current player binding",
+        ));
+    }
+    let skills = player
+        .owned_effective_skills(&raw.build, now_micros)
+        .map_err(|_| AccessFactsError::Unavailable("attack current build and conditions"))?;
+    Ok(CurrentAttackSkills {
+        binding: binding.clone(),
+        level: raw.level,
+        skills,
+    })
+}
+
+pub(crate) fn project(
+    raw: &RawCastDurableFacts,
+    binding: &CastFactsBinding,
+    native: &NativeGameplayState,
+    wheel: Option<&CurrentProjection<BTreeMap<String, u8>>>,
+    premium: Option<&CurrentProjection<bool>>,
+    now_micros: u64,
+) -> Result<Option<MagnitudeOwnedAttributes>, AccessFactsError> {
+    validate_current_binding(raw, binding, native)?;
+    let equipment = &raw.equipment;
     // No advanced modifier owner is registered yet. Strict Content keeps its refusal.
     if native.magnitude_policy() == MagnitudePolicy::Strict {
         return Ok(None);
