@@ -1468,19 +1468,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        // DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165): the committed death's
+        // post-loss build, carried from the settle to the respawn step that rebases the live
+        // actor onto it, so the next training save submits the lowered durable build.
+        let lowered = std::sync::OnceLock::new();
         respawn_in_order(
-            self.settle_death(session, death),
+            async {
+                let (settled, after) = self.settle_death(actor, session, death).await;
+                if let Some(after) = after {
+                    let _ = lowered.set(after);
+                }
+                settled
+            },
             self.place_and_consume_settled_respawn(actor, session, death.occurrence),
             async {
                 let now = self.owner_now();
                 let runtime = self.runtime.lock().await;
-                self.spell_states.lock().await.respawn(
-                    &runtime,
-                    actor,
-                    session,
-                    death.occurrence,
-                    now,
-                )
+                let mut states = self.spell_states.lock().await;
+                if let Some(after) = lowered.get() {
+                    // A replayed death rebases again onto the same receipt; an actor this step
+                    // cannot reach stays dead for the next cadence.
+                    states
+                        .get_mut(&runtime, actor, session)?
+                        .rebase_after_death(after);
+                }
+                states.respawn(&runtime, actor, session, death.occurrence, now)
             },
         )
         .await
@@ -1489,15 +1501,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// DEATH-2 §4.3-§4.4: with the session's progression binding, commit (or replay) the durable
     /// death of `death`, with no lock held across the database. Its pending respawn stays
     /// recorded for the placement.
+    ///
+    /// DEATH-ML-LOSS-1 (A13 §4.6, CP D1433): before a new death the actor's pending training is
+    /// force-saved ([`Self::flush_training_before_death`]), and a committed death that lowered the
+    /// build returns its post-loss build for the respawn's rebase.
     async fn settle_death(
         &self,
+        actor: ExactActorRef,
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
-    ) -> SessionDeath {
-        settle_session_death(&self.progression_sessions, session, |progression| {
-            Box::pin(async move { self.commit_death(session, &progression, death).await })
+    ) -> (
+        SessionDeath,
+        Option<crate::durability::character_build::DurableBuildState>,
+    ) {
+        let mut lowered = None;
+        let lowered_slot = &mut lowered;
+        let settled = settle_session_death(&self.progression_sessions, session, |progression| {
+            Box::pin(async move {
+                if !self
+                    .flush_training_before_death(actor, session, death)
+                    .await
+                {
+                    return DeathCommit::Unavailable;
+                }
+                let (commit, after) = self.commit_death(session, &progression, death).await;
+                *lowered_slot = after;
+                commit
+            })
         })
-        .await
+        .await;
+        (settled, lowered)
+    }
+
+    /// DEATH-ML-LOSS-1 (A13 §4.6, CP D1433, #2193 Codex P1 4304911161): the death's loss is
+    /// priced from a build that holds the actor's trained progress, so a new death first
+    /// force-saves the pending training. A death the retained receipts already hold is not new:
+    /// its build was priced when it committed and its pending respawn refuses build writes, so
+    /// the flush is skipped. `false` (an unknown save or a failed reconcile) keeps the actor
+    /// dead for the next attempt.
+    async fn flush_training_before_death(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        death: actor_spell::PlayerDeath,
+    ) -> bool {
+        match self
+            .root
+            .reconcile_character_death(self.character, death.occurrence)
+            .await
+        {
+            Ok(Some(_)) => true,
+            Ok(None) => {
+                self.save_spell_training(actor, session, true).await
+                    != actor_spell::TrainingSave::Unknown
+            }
+            Err(error) => {
+                operator_event(&format!("player_death_reconcile_failed reason={error}"));
+                false
+            }
+        }
     }
 
     /// DEATH-RESTART-SAFETY-1 (#2004 Codex P1 4248558737): resolve the session's current fences
@@ -1605,7 +1667,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         progression: &SessionProgressionBinding,
         death: actor_spell::PlayerDeath,
-    ) -> DeathCommit {
+    ) -> (
+        DeathCommit,
+        Option<crate::durability::character_build::DurableBuildState>,
+    ) {
         let (map_revision, respawn) = {
             let runtime = self.runtime.lock().await;
             (runtime.map_revision_digest(), runtime.respawn_position())
@@ -1618,7 +1683,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             respawn,
         );
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return DeathCommit::Unavailable;
+            return (DeathCommit::Unavailable, None);
         };
         // CP D1425: the active generation's training formula prices the death's build loss.
         let formula = self
@@ -1638,10 +1703,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(_) => DeathCommit::Settled,
+            Ok(committed) => (
+                DeathCommit::Settled,
+                committed.build_loss.map(|loss| loss.after),
+            ),
             Err(error) => {
                 operator_event(&format!("player_death_settle_failed reason={error}"));
-                death_commit_refusal(&error)
+                (death_commit_refusal(&error), None)
             }
         }
     }
@@ -1665,14 +1733,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match death {
             // A durable death leaves its pending respawn for the next admission (DEATH-0 §3.4); a
             // session without a durable death releases the actor with nothing written.
-            Some(death) if *settled != Some(death) => match self.settle_death(session, death).await
-            {
-                SessionDeath::Durable | SessionDeath::NoDurableDeath => {
-                    *settled = Some(death);
-                    true
+            Some(death) if *settled != Some(death) => {
+                match self.settle_death(actor, session, death).await.0 {
+                    SessionDeath::Durable | SessionDeath::NoDurableDeath => {
+                        *settled = Some(death);
+                        true
+                    }
+                    SessionDeath::Retry => false,
                 }
-                SessionDeath::Retry => false,
-            },
+            }
             _ => true,
         }
     }
@@ -7142,3 +7211,238 @@ pub(crate) use spell_presentation_publisher::{
 pub(crate) use spell_presentations::SpellPresentationOwner;
 
 mod spell_presentations;
+
+/// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 17.6: a trained actor
+/// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
+/// next training save commits on the lowered durable build instead of returning `Unknown`.
+#[cfg(test)]
+mod death_ml_loss_postgres {
+    use crate::bestiary_postgres_harness::{
+        self as harness, Harness, TestResult, debug, fence, id,
+    };
+    use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildCommitOutcome, BuildFormula, BuildOccurrence,
+        DurableBuildState, convert_vocation,
+    };
+    use crate::durability::character_death::{
+        CharacterDeathRequest, DeathCell, PlayerDeathOccurrence,
+    };
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use crate::foundation::{ChannelId, WorldId};
+    use crate::spell::cast::{CharacterCastFacts, PlayerSpellState};
+    use crate::spell::mana_training::CompiledTrainingFormula;
+    use crate::spell::mana_training::hit_training::SkillFamily;
+    use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+
+    fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
+        let thresholds = std::array::from_fn(|index| LevelThreshold {
+            level: u32::try_from(index + 1).unwrap_or(u32::MAX),
+            minimum_experience: ExactI64::new(i64::try_from(index).unwrap_or(i64::MAX) * 20),
+        });
+        let context = harness::context();
+        Ok(CharacterDeathRequest {
+            occurrence: PlayerDeathOccurrence::from_bytes(id(tag)).map_err(debug)?,
+            policy: FiniteProgressionPolicy {
+                context: context.clone(),
+                policy_revision: "policy-1".into(),
+                reward_revision: "reward-1".into(),
+                death_policy_revision: "death-1".into(),
+                declared_difference_revision: "declaration-1".into(),
+                thresholds,
+                terminal_exclusive_experience: ExactI64::new(1_000_000),
+                death_loss_numerator: 1,
+                death_loss_denominator: 1,
+                death_loss_rounding: RoundingMode::Floor,
+            },
+            context,
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+            held_blessings: vec![],
+            death_cell: DeathCell {
+                world_id: WorldId::decode(&id(harness::WORLD)).map_err(debug)?,
+                channel_id: ChannelId::decode(&id(harness::CHANNEL)).map_err(debug)?,
+                spatial_position: vec![1, 2, 3, 7],
+                map_revision: "map-1".into(),
+            },
+            respawn_position: b"temple:thais".to_vec(),
+        })
+    }
+
+    #[test]
+    fn train_lowering_death_respawn_then_train_save_commits() -> TestResult {
+        let Some(admin) = harness::configured_admin() else {
+            return Ok(());
+        };
+        harness::runtime()?.block_on(async move {
+            let h = Harness::create(admin, "death_ml_rebase", true).await?;
+            let result = train_die_respawn_train(&h).await;
+            h.cleanup().await?;
+            result
+        })
+    }
+
+    async fn train_die_respawn_train(h: &Harness) -> TestResult {
+        let formula = CompiledTrainingFormula::from_profile(
+            include_bytes!("../../../../tools/content-schema/native-gameplay/build-training.json"),
+            &harness::context().content,
+        )
+        .map_err(debug)?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let occurrence = |tag| BuildOccurrence::from_bytes(id(tag)).map_err(debug);
+        // The vocation choice the actor trains under: revision 1 to 2.
+        let druid =
+            convert_vocation(&formula, &DurableBuildState::default(), "druid").map_err(debug)?;
+        let chosen = h
+            .root
+            .commit_character_build(
+                &authority,
+                &h.node,
+                fence(1)?,
+                BuildChangeRequest {
+                    occurrence: occurrence(80)?,
+                    cause: BuildCause::VocationChoice,
+                    before: DurableBuildState::default(),
+                    after: druid.clone(),
+                    pruned_stance: None,
+                },
+                &formula,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(chosen, BuildCommitOutcome::Committed(_)));
+        let mut actor = PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation: crate::spell::Vocation::Druid,
+                level: 8,
+                magic_level: u32::from(druid.magic().0),
+                max_health: 185,
+                max_mana: 90,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .ok_or("actor")?;
+        actor
+            .load_owned_build(&druid)
+            .map_err(|_| "load_owned_build")?;
+        actor
+            .enable_owned_training(&druid, &formula)
+            .map_err(debug)?;
+
+        // Train: the 50 druid sword tries reach sword 11, saved at revision 2 to 3.
+        assert!(
+            actor
+                .train_skill(SkillFamily::Sword, 1, &formula, |_| 50)
+                .map_err(debug)?
+                .checkpoint_due
+        );
+        let prepared = actor
+            .prepare_training_checkpoint(2, &formula, occurrence(81)?, true)
+            .map_err(debug)?
+            .ok_or("no training to save")?;
+        let BuildCommitOutcome::Committed(receipt) = h
+            .root
+            .commit_character_build(
+                &authority,
+                &h.node,
+                fence(2)?,
+                prepared.request.clone(),
+                &formula,
+            )
+            .await
+            .map_err(debug)?
+        else {
+            return Err("training save replayed".into());
+        };
+        let trained = receipt.after.clone();
+        actor
+            .commit_training_checkpoint(prepared, &receipt)
+            .map_err(debug)?;
+        assert_eq!(trained.skills()[2].0, 11);
+
+        // A death that lowers the build: revision 3 to 4, then its respawn is consumed.
+        let request = death(82)?;
+        let committed = h
+            .root
+            .settle_runtime_player_death(
+                &CharacterRevisionSequencer::new(),
+                &authority,
+                &h.node,
+                fence(3)?,
+                request.clone(),
+                Some(&formula as &dyn BuildFormula),
+            )
+            .await
+            .map_err(debug)?;
+        let lowered = committed.build_loss.ok_or("death lowered no build")?;
+        assert_eq!(lowered.before, trained);
+        assert!(lowered.after.skills()[2].0 < trained.skills()[2].0);
+        h.root
+            .consume_pending_respawn(&authority, &h.node, fence(4)?, Some(request.occurrence))
+            .await
+            .map_err(debug)?
+            .ok_or("missing pending respawn")?;
+        assert_eq!(h.root_revision().await?, "4");
+
+        // Without the rebase the save submits the pre-death build and is refused (the owner's
+        // `Unknown`), writing nothing.
+        let mut stale = actor.clone();
+        stale
+            .train_skill(SkillFamily::Sword, 3, &formula, |_| 1)
+            .map_err(debug)?;
+        let refused = stale
+            .prepare_training_checkpoint(4, &formula, occurrence(83)?, true)
+            .map_err(debug)?
+            .ok_or("no stale training to save")?;
+        assert_eq!(refused.request.before, trained);
+        assert!(
+            h.root
+                .commit_character_build(&authority, &h.node, fence(4)?, refused.request, &formula)
+                .await
+                .is_err()
+        );
+        assert_eq!(h.root_revision().await?, "4");
+
+        // The respawn's rebase: the next training save commits on the lowered build.
+        actor.rebase_after_death(&lowered.after);
+        assert_eq!(
+            actor.character_facts().magic_level,
+            u32::from(lowered.after.magic().0)
+        );
+        assert!(!actor.has_training_to_flush());
+        actor
+            .train_skill(SkillFamily::Sword, 3, &formula, |_| 1)
+            .map_err(debug)?;
+        let prepared = actor
+            .prepare_training_checkpoint(4, &formula, occurrence(84)?, true)
+            .map_err(debug)?
+            .ok_or("no training to save after respawn")?;
+        assert_eq!(prepared.request.before, lowered.after);
+        let BuildCommitOutcome::Committed(receipt) = h
+            .root
+            .commit_character_build(
+                &authority,
+                &h.node,
+                fence(4)?,
+                prepared.request.clone(),
+                &formula,
+            )
+            .await
+            .map_err(debug)?
+        else {
+            return Err("training save after respawn replayed".into());
+        };
+        actor
+            .commit_training_checkpoint(prepared, &receipt)
+            .map_err(debug)?;
+        assert_eq!(h.root_revision().await?, "5");
+        Ok(())
+    }
+}

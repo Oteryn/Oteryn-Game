@@ -18,7 +18,7 @@ registry: no
 owner: "Codex family lead: Rozwój postaci i trening; D1105 source writer /root/death_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_death.rs
@@ -27,6 +27,7 @@ owned_paths:
   - apps/game-server/tests/death_ml_loss_*.rs (new)
 slot_only_paths:
   - apps/game-server/src/gameplay_transport/mod.rs (runtime caller; not allocated)
+  - apps/game-server/src/spell/mana_training.rs (CP D1433: `rebase_after_death` only)
 public_contracts: []
 depends_on:
   - "CHAR-BUILD-1: MERGED"
@@ -434,6 +435,42 @@ Clippy pass. Package lib tests without a PostgreSQL URL: 3399 passed, 0 failed,
 29 ignored. `cargo test --lib death` with the URL: 128 passed, 0 failed,
 3 ignored, including all six `death_build_postgres` cases.
 Governance validation and its 124 unit tests pass.
+
+Status stays `waiting`. The record is not archived. No ready, queue or merge
+action is taken; CP alone decides merge.
+
+## CP D1433 checkpoint (2026-10-18)
+
+MERGE_AUTHORITY: CP_ONLY. CP D1433 granted one extra file,
+`spell/mana_training.rs`, for one method. The CP worker merged protected main
+`1f51f5df` with a merge commit (no conflicts, no rebase or force).
+
+**Condition 2: done.** New `PlayerSpellState::rebase_after_death(&DurableBuildState)`
+re-bases live training from the post-loss build, lowers the magic-level fact and
+owned skills, and drops any pre-death checkpoint and payment.
+`commit_death` returns `CommittedCharacterDeath::build_loss.after` (a new commit
+or a replay); `respawn_after_death` rebases the actor with it before `respawn`
+under the same lock. Codex P1 `PRRT_kwDOT8SzxM6tlZN0`.
+
+**Condition 3: done.** `settle_death` now takes the actor. Inside the bound
+session it first asks `reconcile_character_death`: an already-committed death
+skips the flush (its pending respawn fences build writes). Otherwise it runs a
+forced `save_spell_training(actor, session, true)`; only `Unknown` refuses the
+death as `Unavailable` (retry). The flush and the settle take the sequencer slot
+one after the other, never nested. Codex P1 `PRRT_kwDOT8SzxM6tlZNx`.
+
+New PostgreSQL case
+`gameplay_transport::death_ml_loss_postgres::train_lowering_death_respawn_then_train_save_commits`:
+train and save, lowering death, respawn consumed, a stale (un-rebased) save is
+refused and writes nothing, then after `rebase_after_death` the next training
+save commits on the lowered build (never `Unknown`).
+
+Validation on this head (Molehill-PC, shared PostgreSQL 17.6 via
+`in-pg-netns.sh`, `src/lib.rs` touched before each run): `cargo fmt --all
+--check` and strict all-target package Clippy pass. With the URL: the new case
+passes; `--lib` filtered to `gameplay_transport spell:: durability::` 1520
+passed, 0 failed, 12 ignored; `character_progression_postgres` 1218 passed;
+`durability_postgres` 1312 passed, 0 failed.
 
 Status stays `waiting`. The record is not archived. No ready, queue or merge
 action is taken; CP alone decides merge.

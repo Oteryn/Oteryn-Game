@@ -1206,6 +1206,22 @@ impl super::cast::PlayerSpellState {
         self.training_checkpoint = None;
         Ok(())
     }
+    /// DEATH-ML-LOSS-1 (A13 §4.6, CP D1433): a committed death lowered the durable build to
+    /// `build`, so the live actor continues from it. Owned training restarts from `build` with
+    /// nothing pending, the magic level and owned skill levels drop to its levels, and every
+    /// pre-death checkpoint and payment witness is retired: the next training save submits
+    /// `build` as its `before`. The caller drained pending training before the death.
+    pub(crate) fn rebase_after_death(&mut self, build: &DurableBuildState) {
+        if self.training.is_some() {
+            self.training = Some(LiveManaTraining::from_owned_build(build));
+        }
+        self.facts.magic_level = u32::from(build.magic().0);
+        if self.owned_skills.is_some() {
+            self.owned_skills = Some(build.skills().map(|(level, _)| level));
+        }
+        self.training_checkpoint = None;
+        self.training_payment = None;
+    }
 }
 impl super::cast::PlayerSpellState {
     /// Whether a forced checkpoint now has anything to write: a retained checkpoint to replay or
