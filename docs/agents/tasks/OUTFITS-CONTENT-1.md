@@ -60,3 +60,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 There are 136 real outfit records: 69 Store outfits, 59 quest outfits and 8 special outfits. The template itself and navigation page are excluded. Both look types and explicit Premium flags are captured. Separate acquisition stages retain quantities, items, ranks/quests and sex-dependent addon numbers; Yalaharian choices are mutually exclusive. Store bundles and special/event methods are distinct. Afflicted/Captains exact addon-number mappings and Monk addon availability remain held where current source pages do not establish them.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Supplemental source completion — 2026-10-18
+
+All 136 real outfit records remain covered. Required items and separately numbered male/female addon sprite images now resolve Afflicted Plague Mask=addon 1, Plague Bell=addon 2, Captains Sabre=addon 1 and Captains Hat=addon 2. Image page revids, asset SHA1s and direct visual-inspection method are retained. Monk addon availability/account eligibility remain UNKNOWN; an empty source field is not proof of absence.
+
+This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.

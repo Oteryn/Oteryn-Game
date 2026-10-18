@@ -237,18 +237,43 @@
             ],
             "source_of_items": "Belongings of a Deceased, exchanged by Ottokar for Medicine Pouches",
             "may_buy_items_from_players": true,
-            "addon_number_mapping": null
+            "addon_number_mapping": {
+              "Plague Mask": {
+                "male": 1,
+                "female": 1
+              },
+              "Plague Bell": {
+                "male": 2,
+                "female": 2
+              }
+            }
           },
-          "classification": "UNKNOWN",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "LATEST_IMAGES_AND_QUEST_SOURCES_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:54474:1035122",
               "selector": "Bell and Mask Addons"
+            },
+            {
+              "source": "wiki-file:54233:c255bd09de5236dda761e1e90b9de3e2f2aeed43",
+              "selector": "Visible mask on separately numbered addon image"
+            },
+            {
+              "source": "wiki-file:54234:82ee776233d620fb7d8a5e512f70303d38074aa4",
+              "selector": "Visible bell on separately numbered addon image"
+            },
+            {
+              "source": "wiki-file:54238:643c4df0d53142bd5d2400ca21408a368f770544",
+              "selector": "Visible mask on separately numbered addon image"
+            },
+            {
+              "source": "wiki-file:54237:90a196e75bae30ba955d0c300abac7ea3520ea56",
+              "selector": "Visible bell on separately numbered addon image"
             }
           ],
-          "note": "Both acquisition items and use method are explicit, but this source shows only full-addon images (Addon 3), and own item pages do not establish addon 1 versus 2. Exact numbering is held."
+          "note": "Quest/item text identifies the required object. Individually named addon-1/addon-2 sprite images for both male and female looks resolve the number: Plague Mask=1, Plague Bell=2. This is source-based visual identification, not a controlled server unlock experiment."
         },
         "base_account_eligibility": {
           "value": "Premium Account, see Afflicted Outfits Quest.",
@@ -2735,18 +2760,43 @@
                 "cost_event_points": 560
               }
             ],
-            "addon_number_mapping": null
+            "addon_number_mapping": {
+              "Captain's Sabre": {
+                "male": 1,
+                "female": 1
+              },
+              "Captain's Hat": {
+                "male": 2,
+                "female": 2
+              }
+            }
           },
-          "classification": "UNKNOWN",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "LATEST_IMAGES_AND_QUEST_SOURCES_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:111212:1200358",
               "selector": "Rewards / Outfit and Mount"
+            },
+            {
+              "source": "wiki-file:111249:4acc6a04a116541545dce9ed39746750e034af14",
+              "selector": "Visible sabre on separately numbered addon image"
+            },
+            {
+              "source": "wiki-file:111250:d274eba66b02f912668a44f25b1835d8c2b16cbe",
+              "selector": "Visible hat on separately numbered addon image"
+            },
+            {
+              "source": "wiki-file:111246:ff7d2aca4141306d4b290a9c57898f15327610ed",
+              "selector": "Visible sabre on separately numbered addon image"
+            },
+            {
+              "source": "wiki-file:111247:2fedbb929165792f40b7d559f3457114aa1ac0e6",
+              "selector": "Visible hat on separately numbered addon image"
             }
           ],
-          "note": "Source gives both addon reward items and their prices but their item pages are currently missing. Exact addon-number mapping is not asserted."
+          "note": "Quest/item text identifies the required object. Individually named addon-1/addon-2 sprite images for both male and female looks resolve the number: Captain's Sabre=1, Captain's Hat=2. This is source-based visual identification, not a controlled server unlock experiment."
         },
         "base_account_eligibility": {
           "value": "Premium Account, see The Great Expedition",
