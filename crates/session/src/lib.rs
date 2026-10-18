@@ -38,34 +38,68 @@ pub use oteryn_protocol_oteryn::chat::{
 /// The capability-4 item types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::item_view::{
-    CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
+    CharacterInventory, EquipmentSlot, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
 use oteryn_protocol_oteryn::logout;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_protocol_oteryn::world_interaction;
-pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
-use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_map;
+use oteryn_protocol_oteryn::world_object::{self, WorldObjectTarget};
+/// Existing capability-18 map codecs/types, exposed without a client-to-protocol edge.
+/// Re-exporting them does not advertise the capability in the default client.
+pub mod map_view;
+
+fn map_store_error(error: map_view::MapViewError) -> SessionError {
+    match error {
+        map_view::MapViewError::Wire(error) => SessionError::WorldMap(error),
+        map_view::MapViewError::Limit => {
+            SessionError::WorldMap(world_map::WorldMapWireError::LimitExceeded)
+        }
+        map_view::MapViewError::ContentGeneration => SessionError::ContentGenerationMismatch {
+            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+        },
+        map_view::MapViewError::AwaitingSnapshot => {
+            SessionError::MissingDomain(world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+        }
+    }
+}
+pub use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 /// The step types a client names when it walks and reads the outcome (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial::{
     ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
 };
-use oteryn_protocol_oteryn::world_spatial_entities::{
-    self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,
-};
+use oteryn_protocol_oteryn::world_spatial_entities::{self, CAPABILITY_WORLD_SPATIAL_ENTITIES};
 /// The capability-6 entity types a client draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial_entities::{
-    EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    EntityDetail, EntityKind, EntityRef, MAX_SNAPSHOT_ENTITIES, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity,
 };
 /// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
 /// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::{
-    ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass, admission_refusal_class,
+    ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass,
 };
 pub use oteryn_protocol_oteryn::{CharacterId, CommandStatus};
+
+/// Native bootstrap classification (CLIENT-COMPLETION CC-6): the bundle's capability
+/// mismatch is terminal and requires an update, just like N8's capability-required row.
+/// The N8 registry/table stays unchanged; other foundation errors are not reclassified.
+#[must_use]
+pub fn admission_refusal_class(code: u32) -> Option<(AdmissionProgression, AdmissionPublicClass)> {
+    if code == FoundationProtocolError::CapabilityMismatch.code() {
+        Some((
+            AdmissionProgression::Terminal,
+            AdmissionPublicClass::ClientUpdateRequired,
+        ))
+    } else {
+        oteryn_protocol_oteryn::admission_refusal_class(code)
+    }
+}
+
 use oteryn_protocol_oteryn::{
     ClientBootstrapValue, ClientCommandValue, Direction, FoundationProtocolError, FrameLength,
     GameSessionId, MessageType, ProtocolDisposition, decode_command_result, decode_liveness_probe,
@@ -107,7 +141,8 @@ use std::fmt;
 use std::future::Future;
 use std::io;
 use std::num::NonZeroU32;
-use std::time::Duration;
+use std::task::Poll;
+use std::time::{Duration, Instant};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 /// The ALPN protocol id an adapter must negotiate (or otherwise guarantee) before a session is
@@ -126,7 +161,9 @@ impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 /// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
 /// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
 /// domain 12), 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`) and 17 `ATTACK_V1` (command
-/// types 11 and 12, domain 10; requires 6) and 21 `LOGOUT_V1` (command type 23). Add an ID here only
+/// types 11 and 12, domain 10; requires 6), 18 `WORLD_MAP_VIEW_V1` (domain 17;
+/// requires 4 and 6, replaces legacy domain 2 only when selected), and 21 `LOGOUT_V1`
+/// (command type 23). Add an ID here only
 /// together with its routing, and keep the set closed under the registry's `requires`.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -134,6 +171,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_CHAT_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
     CAPABILITY_ATTACK_V1,
+    world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     logout::CAPABILITY_LOGOUT_V1,
 ];
 
@@ -236,8 +274,7 @@ pub struct Admission<'a> {
     pub deadline: Duration,
 }
 
-/// `oteryn-protocol-oteryn`'s own domain codecs (state domains 1 `WORLD_SPATIAL` and 2
-/// `WORLD_OBJECT_OVERLAY`).
+/// The atomic join state: spatial visibility and either object overlay or the streamed map.
 #[derive(Debug, Clone)]
 pub struct JoinSnapshot {
     pub game_session_id: GameSessionId,
@@ -249,6 +286,9 @@ pub struct JoinSnapshot {
     /// The `WORLD_OBJECT_OVERLAY` domain revision the snapshot carried: the base every later
     /// domain-2 `StateDelta` must name.
     pub world_object_overlay_revision: u64,
+    /// Domain 17, present only when capability 18 is selected. Domain 2 is then absent.
+    pub world_map: Option<map_view::WorldMapViewSnapshot>,
+    pub world_map_revision: u64,
 }
 
 #[derive(Debug)]
@@ -264,6 +304,7 @@ pub enum SessionError {
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
+    WorldMap(map_view::WorldMapWireError),
     ActorSpell(actor_spell::ActorSpellError),
     /// A chat payload was refused by its codec.
     Chat(ChatWireError),
@@ -276,8 +317,8 @@ pub enum SessionError {
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
-    /// The server refused admission with an N8 code (1100..=1199) in one `ProtocolError`
-    /// (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); `admission_refusal_class` gives its public class.
+    /// The server refused admission with an N8 code or the bundle's capability mismatch
+    /// in one strict bootstrap `ProtocolError`; `admission_refusal_class` gives its public class.
     AdmissionRefused {
         code: u32,
     },
@@ -418,6 +459,7 @@ impl fmt::Display for SessionError {
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
             }
+            Self::WorldMap(error) => write!(formatter, "WORLD_MAP_VIEW decode failed: {error:?}"),
             Self::WorldObject(error) => {
                 write!(formatter, "WORLD_OBJECT_OVERLAY decode failed: {error:?}")
             }
@@ -624,6 +666,38 @@ pub struct CommandOutcome<D> {
 
 /// Outcome of `Session::step` (FIRST-CONTROL-WIRE-V1, command type 1).
 pub type StepOutcome = CommandOutcome<StepDisposition>;
+
+/// Validated command-bound timing; the timestamp is captured before any claimed delta wait.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StepReceipt {
+    pub command_id: u64,
+    pub connection_generation: u64,
+    pub received_at: Instant,
+    pub wait_ms: u32,
+}
+
+/// Timing-aware native outcome. The legacy outcome/literals remain source-compatible.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StepReceiptOutcome {
+    pub outcome: StepOutcome,
+    pub receipt: Option<StepReceipt>,
+}
+
+impl std::ops::Deref for StepReceiptOutcome {
+    type Target = StepOutcome;
+    fn deref(&self) -> &Self::Target {
+        &self.outcome
+    }
+}
+
+impl From<StepOutcome> for StepReceiptOutcome {
+    fn from(outcome: StepOutcome) -> Self {
+        Self {
+            outcome,
+            receipt: None,
+        }
+    }
+}
 /// Outcome of `Session::use_object` (USE-WIRE-V1, command type 2).
 pub type UseOutcome = CommandOutcome<UseDisposition>;
 
@@ -675,6 +749,8 @@ pub enum SessionEvent {
     WorldSpatialEntities(AppliedDelta<WorldSpatialEntitiesDelta>),
     /// Domain 2 `WORLD_OBJECT_OVERLAY`.
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
+    /// Domain 17: received tile replacements, clears and the new server window header.
+    WorldMapView(AppliedDelta<map_view::WorldMapViewDelta>),
     /// Domain 3 `ACTOR_VITALS`.
     ActorVitals(AppliedDelta<ActorVitals>),
     /// Domain 10 `ACTOR_COMBAT_STATE`: the own actor's attack target, modes and in-fight flag,
@@ -700,6 +776,7 @@ impl SessionEvent {
                 world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            Self::WorldMapView(_) => world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
             Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
@@ -918,6 +995,8 @@ pub struct Session<S> {
     actor_vitals: Option<ActorVitals>,
     world_spatial: WorldSpatialObservation,
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
+    map: Option<map_view::MapView>,
+    map_revision: u64,
     join_snapshot: JoinSnapshot,
     unusable: bool,
     first_command_id: u64,
@@ -998,9 +1077,12 @@ impl<S: SessionStream> Session<S> {
         accepted_envelope.validate(Direction::ServerToClient, false)?;
         if accepted_envelope.message_type() == MessageType::ProtocolError
             && let Ok(refusal) = decode_protocol_error(accepted_envelope.payload())
-            && ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
-            // N8 fixes the refusal shape; any other disposition or correlation fails closed below.
-            && refusal.disposition == ProtocolDisposition::TransportFatal
+            // N8 is TRANSPORT_FATAL; the existing foundation capability mismatch is
+            // SESSION_FATAL. Neither accepts the other disposition or non-zero correlation.
+            && ((ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+                && refusal.disposition == ProtocolDisposition::TransportFatal)
+                || (refusal.error_code == FoundationProtocolError::CapabilityMismatch.code()
+                    && refusal.disposition == FoundationProtocolError::CapabilityMismatch.disposition()))
             && refusal.related_command_id == 0
             && refusal.expected_command_id == 0
             && refusal.expected_server_sequence == 0
@@ -1023,6 +1105,16 @@ impl<S: SessionStream> Session<S> {
             return Err(SessionError::CapabilityNotRequested(capability));
         }
         let selected_capabilities = accepted_fields.selected_capabilities.clone();
+        let map_selected = selected_capabilities.contains(&world_map::CAPABILITY_WORLD_MAP_VIEW_V1);
+        if map_selected {
+            for required in world_map::CAPABILITY_WORLD_MAP_VIEW_REQUIRES {
+                if !selected_capabilities.contains(&required) {
+                    return Err(SessionError::CapabilityNotSelected {
+                        capability: required,
+                    });
+                }
+            }
+        }
 
         // SnapshotBegin's full declaration: every chunk read below, and the commit that follows
         // them, is checked against it before being trusted.
@@ -1134,6 +1226,8 @@ impl<S: SessionStream> Session<S> {
         let mut world_spatial_observation = None;
         let mut entities = None;
         let mut world_object_overlay = None;
+        let mut world_map_snapshot = None;
+        let mut map_revision = 0;
         let mut actor_vitals = None;
         let mut combat_state = None;
         let mut combat_revision = 0;
@@ -1181,11 +1275,38 @@ impl<S: SessionStream> Session<S> {
                 (
                     world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
                     world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                ) => {
+                ) if !map_selected => {
                     world_object_overlay = Some(
                         world_object::decode_world_object_overlay_snapshot(domain.payload)?,
                     );
                     overlay_revision = domain.revision;
+                }
+                (world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, _) if map_selected => {
+                    return Err(SessionError::UnselectedDomain {
+                        domain_id: world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    });
+                }
+                (
+                    world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                    world_map::SNAPSHOT_TYPE_WORLD_MAP_VIEW_SNAPSHOT_V1,
+                ) if map_selected => {
+                    world_map_snapshot = Some(
+                        world_map::decode_world_map_snapshot(domain.payload)
+                            .map_err(SessionError::WorldMap)?,
+                    );
+                    map_revision = domain.revision;
+                }
+                (world_map::STATE_DOMAIN_WORLD_MAP_VIEW, snapshot_type) => {
+                    return Err(if map_selected {
+                        SessionError::UnregisteredSnapshotType {
+                            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                            snapshot_type,
+                        }
+                    } else {
+                        SessionError::UnselectedDomain {
+                            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                        }
+                    });
                 }
                 (
                     actor_spell::STATE_DOMAIN_ACTOR_VITALS,
@@ -1304,16 +1425,43 @@ impl<S: SessionStream> Session<S> {
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             ));
         }
+        let observation = world_spatial_observation.ok_or(SessionError::MissingDomain(
+            world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+        ))?;
+        let map = if map_selected {
+            let map = world_map_snapshot
+                .as_ref()
+                .ok_or(SessionError::MissingDomain(
+                    world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                ))?;
+            if map.header.content_generation != observation.content_generation {
+                return Err(SessionError::ContentGenerationMismatch {
+                    domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+                });
+            }
+            let mut store =
+                map_view::MapView::new(observation.content_generation).map_err(map_store_error)?;
+            store
+                .replace_decoded(map.clone())
+                .map_err(map_store_error)?;
+            Some(store)
+        } else {
+            None
+        };
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
-            world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(
-                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            ))?,
+            world_spatial: observation,
             world_spatial_revision: spatial_revision,
-            world_object_overlay: world_object_overlay.ok_or(SessionError::MissingDomain(
-                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            ))?,
+            world_object_overlay: if map_selected {
+                Vec::new()
+            } else {
+                world_object_overlay.ok_or(SessionError::MissingDomain(
+                    world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                ))?
+            },
             world_object_overlay_revision: overlay_revision,
+            world_map: world_map_snapshot,
+            world_map_revision: map_revision,
         };
         Ok(Self {
             stream,
@@ -1330,6 +1478,8 @@ impl<S: SessionStream> Session<S> {
             actor_vitals,
             world_spatial: snapshot.world_spatial,
             world_object_overlay: snapshot.world_object_overlay.clone(),
+            map,
+            map_revision,
             join_snapshot: snapshot,
             unusable: false,
             duplicates: Vec::new(),
@@ -1441,6 +1591,16 @@ impl<S: SessionStream> Session<S> {
         self.entities.as_ref()
     }
 
+    /// The complete bounded map after every accepted domain-17 update; absent after refusal.
+    pub fn world_map_view(&self) -> Option<&map_view::MapView> {
+        self.map.as_ref()
+    }
+
+    /// Revision paired with the current map; useful for bounded latest-state consumers.
+    pub const fn world_map_revision(&self) -> u64 {
+        self.map_revision
+    }
+
     /// The open rooms and the last lines after every delta applied so far; `Some` exactly when
     /// capability 7 is selected.
     pub fn chat_log(&self) -> Option<&ChatLog> {
@@ -1485,6 +1645,11 @@ impl<S: SessionStream> Session<S> {
         self.next_command_id
     }
 
+    /// Generation to which this admitted session's commands and receipts are fenced.
+    pub const fn connection_generation(&self) -> u64 {
+        self.connection_generation
+    }
+
     /// The `server_sequence` of the last frame applied (initially the snapshot's target).
     pub fn last_server_sequence(&self) -> u64 {
         self.last_server_sequence
@@ -1508,14 +1673,35 @@ impl<S: SessionStream> Session<S> {
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
         self.ensure_usable()?;
         let until = tokio::time::Instant::now() + duration;
-        let outcome = self.serve_liveness_until(until).await;
+        let outcome = self.serve_liveness_until(until, None).await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Native command wake interrupts only an idle first-byte wait, never a started frame.
+    pub async fn service_liveness_interruptible(
+        &mut self,
+        duration: Duration,
+        wake: &tokio::sync::Notify,
+    ) -> Result<(), SessionError> {
+        self.ensure_usable()?;
+        let until = tokio::time::Instant::now() + duration;
+        let outcome = self.serve_liveness_until(until, Some(wake)).await;
         self.poison_on_error(outcome)
     }
 
     async fn serve_liveness_until(
         &mut self,
         until: tokio::time::Instant,
+        wake: Option<&tokio::sync::Notify>,
     ) -> Result<(), SessionError> {
+        // Keep notifications posted during a frame until that frame is fully applied.
+        let mut notified = std::pin::pin!(async {
+            if let Some(wake) = wake {
+                wake.notified().await;
+            } else {
+                std::future::pending::<()>().await;
+            }
+        });
         loop {
             // Tokio may poll a ready read before an expired timeout. A continuously
             // readable peer must not extend the caller's idle window indefinitely.
@@ -1526,11 +1712,22 @@ impl<S: SessionStream> Session<S> {
             // consumes nothing), so the idle window can end without losing part of a frame; the
             // rest of a started frame is then read under the ordinary per-frame deadline.
             let mut first = [0_u8; 1];
-            match tokio::time::timeout_at(until, self.stream.read(&mut first)).await {
-                Err(_elapsed) => return Ok(()),
-                Ok(Err(error)) => return Err(error.into()),
-                Ok(Ok(0)) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
-                Ok(Ok(_)) => {}
+            let result = {
+                let mut read =
+                    std::pin::pin!(tokio::time::timeout_at(until, self.stream.read(&mut first)));
+                std::future::poll_fn(|context| {
+                    if notified.as_mut().poll(context).is_ready() {
+                        return Poll::Ready(None);
+                    }
+                    read.as_mut().poll(context).map(Some)
+                })
+                .await
+            };
+            match result {
+                None | Some(Err(_)) => return Ok(()),
+                Some(Ok(Err(error))) => return Err(error.into()),
+                Some(Ok(Ok(0))) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+                Some(Ok(Ok(_))) => {}
             }
             let frame = bounded(
                 self.deadline,
@@ -1545,7 +1742,9 @@ impl<S: SessionStream> Session<S> {
                 MessageType::LivenessProbe => self.answer_probe(envelope.payload()).await?,
                 MessageType::StateDelta => {
                     let server_sequence = self.next_sequence(&envelope)?;
-                    let event = self.apply_state_delta(server_sequence, envelope.payload())?;
+                    let event = self
+                        .apply_inbound_delta(server_sequence, envelope.payload())
+                        .await?;
                     self.queue_event(event)?;
                 }
                 actual => {
@@ -1596,6 +1795,17 @@ impl<S: SessionStream> Session<S> {
     /// Sends the FND-02 `ClientCommand` type 1 `WORLD_ACTOR_STEP_INTENT` for `direction` and
     /// decodes its `CommandResult` and, when it `Moved`, the one `WORLD_SPATIAL` delta.
     pub async fn step(&mut self, direction: StepDirection) -> Result<StepOutcome, SessionError> {
+        self.step_with_receipt(direction)
+            .await
+            .map(|result| result.outcome)
+    }
+
+    /// One step with its authoritative receipt, including receipt-bearing TOO_EARLY.
+    /// This low-level API does not rate-limit diagnostic harnesses; native dispatch does.
+    pub async fn step_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepReceiptOutcome, SessionError> {
         self.ensure_usable()?;
         let payload = world_spatial::encode_step_intent(direction);
         let outcome = self.exchange_step(&payload).await;
@@ -1621,10 +1831,32 @@ impl<S: SessionStream> Session<S> {
         }
     }
 
+    /// Native compatibility route: only receiptless TOO_EARLY uses legacy backoff.
+    /// A receipt-bearing refusal returns immediately to the client's deadline gate.
+    pub async fn step_retrying_with_receipt(
+        &mut self,
+        direction: StepDirection,
+    ) -> Result<StepReceiptOutcome, SessionError> {
+        let mut backoff = STEP_RETRY_INITIAL_BACKOFF;
+        let mut attempt = 1;
+        loop {
+            let result = self.step_with_receipt(direction).await?;
+            if result.disposition != StepDisposition::TooEarly
+                || result.receipt.is_some()
+                || attempt >= STEP_RETRY_ATTEMPTS
+            {
+                return Ok(result);
+            }
+            tokio::time::sleep(backoff).await;
+            backoff = backoff.saturating_mul(2);
+            attempt += 1;
+        }
+    }
+
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` (USE-WIRE-V1) for the object at
     /// `placement`, naming the overlay revision this client believes current
-    /// (`expected_revision`), and decodes its `CommandResult` and, when `Committed`, the one
-    /// `WORLD_OBJECT_OVERLAY` delta.
+    /// (`expected_revision`), and decodes its `CommandResult`. Any resulting deltas
+    /// (including map domain 17) are routed through the domain store and event queue.
     pub async fn use_object(
         &mut self,
         placement: &[u8],
@@ -1637,6 +1869,30 @@ impl<S: SessionStream> Session<S> {
         })?;
         let outcome = self.exchange_use(&payload).await;
         self.poison_on_error(outcome)
+    }
+
+    /// Uses a still-visible received map target. A departed/replaced target sends nothing.
+    pub async fn use_map_target(
+        &mut self,
+        target: map_view::MapTarget,
+    ) -> Result<Option<UseOutcome>, SessionError> {
+        self.ensure_usable()?;
+        if !self
+            .world_map_view()
+            .is_some_and(|map| map.contains_target(target))
+        {
+            return Ok(None);
+        }
+        match target {
+            map_view::MapTarget::Item(handle) => self.use_item(handle).await.map(Some),
+            map_view::MapTarget::Base {
+                placement,
+                expected_revision,
+            } => self
+                .use_object(&placement, expected_revision)
+                .await
+                .map(Some),
+        }
     }
 
     /// Sends the FND-02 `ClientCommand` type 2 `USE_INTENT` with the field 2 item target
@@ -1881,18 +2137,30 @@ impl<S: SessionStream> Session<S> {
     fn poison_on_error<T>(&mut self, outcome: Result<T, SessionError>) -> Result<T, SessionError> {
         if outcome.is_err() {
             self.unusable = true;
+            if self.map.take().is_some() {
+                self.join_snapshot.world_map = None;
+                self.events.clear();
+            }
         }
         outcome
     }
 
-    async fn exchange_step(&mut self, payload: &[u8]) -> Result<StepOutcome, SessionError> {
+    async fn exchange_step(&mut self, payload: &[u8]) -> Result<StepReceiptOutcome, SessionError> {
         let result = self
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
-        let disposition = world_spatial::decode_step_result_paced(
+        let received_at = Instant::now();
+        let decoded = world_spatial::decode_step_result_receipt(
             &result.payload,
             self.is_selected(CAPABILITY_PACED_MOVEMENT_V1),
         )?;
+        let disposition = decoded.disposition;
+        let receipt = (decoded.step_wait_ms != 0).then_some(StepReceipt {
+            command_id: result.command_id,
+            connection_generation: self.connection_generation,
+            received_at,
+            wait_ms: decoded.step_wait_ms,
+        });
         check_status_pairing(
             result.command_id,
             result.status,
@@ -1933,14 +2201,17 @@ impl<S: SessionStream> Session<S> {
             } else {
                 None
             };
-        Ok(CommandOutcome {
-            command_id: result.command_id,
-            status: result.status,
-            disposition,
-            result_server_sequence: result.server_sequence,
-            world_spatial_delta,
-            world_object_overlay_delta: None,
-            gate_message_id: None,
+        Ok(StepReceiptOutcome {
+            receipt,
+            outcome: CommandOutcome {
+                command_id: result.command_id,
+                status: result.status,
+                disposition,
+                result_server_sequence: result.server_sequence,
+                world_spatial_delta,
+                world_object_overlay_delta: None,
+                gate_message_id: None,
+            },
         })
     }
 
@@ -2048,7 +2319,9 @@ impl<S: SessionStream> Session<S> {
                 self.read_sequenced_push("CommandResult").await?;
             if message_type == MessageType::StateDelta {
                 // Pushed before the result (the session never predicts the next frame's domain).
-                let event = self.apply_state_delta(server_sequence, &result_payload)?;
+                let event = self
+                    .apply_inbound_delta(server_sequence, &result_payload)
+                    .await?;
                 self.queue_event(event)?;
                 continue;
             }
@@ -2107,7 +2380,7 @@ impl<S: SessionStream> Session<S> {
             let (server_sequence, payload) = self
                 .read_sequenced("StateDelta", MessageType::StateDelta)
                 .await?;
-            let event = self.apply_state_delta(server_sequence, &payload)?;
+            let event = self.apply_inbound_delta(server_sequence, &payload).await?;
             if event.domain_id() == domain_id {
                 return Ok(event);
             }
@@ -2123,6 +2396,41 @@ impl<S: SessionStream> Session<S> {
         }
         self.events.push(event);
         Ok(())
+    }
+
+    /// A mismatched binding or malformed map requests existing FND resync, then fails closed.
+    /// Recovery uses a fresh admission snapshot, not an invented mid-session snapshot route.
+    async fn apply_inbound_delta(
+        &mut self,
+        server_sequence: u64,
+        payload: &[u8],
+    ) -> Result<SessionEvent, SessionError> {
+        let result = self.apply_state_delta(server_sequence, payload);
+        if matches!(result, Err(SessionError::WorldMap(_))) {
+            self.map = None;
+            self.join_snapshot.world_map = None;
+            self.events.clear();
+            if matches!(
+                result,
+                Err(SessionError::WorldMap(
+                    world_map::WorldMapWireError::BindingMismatch
+                        | world_map::WorldMapWireError::Malformed
+                ))
+            ) {
+                let frame = oteryn_protocol_oteryn::encode_resync_request(
+                    self.connection_generation,
+                    server_sequence.saturating_sub(1),
+                    &[(world_map::STATE_DOMAIN_WORLD_MAP_VIEW, self.map_revision)],
+                )?;
+                bounded(
+                    self.deadline,
+                    "map resync request",
+                    write_frame(&mut self.stream, &frame),
+                )
+                .await?;
+            }
+        }
+        result
     }
 
     /// The domain store: applies one validated `StateDelta` by its own domain. It must be based
@@ -2146,6 +2454,38 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+                if self.is_selected(world_map::CAPABILITY_WORLD_MAP_VIEW_V1) =>
+            {
+                check_delta(
+                    &delta,
+                    world_map::DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1,
+                    self.map_revision,
+                )?;
+                let map = self
+                    .map
+                    .as_mut()
+                    .ok_or(SessionError::MissingDomain(domain_id))?;
+                let header = map.header().ok_or(SessionError::MissingDomain(domain_id))?;
+                let value = world_map::decode_world_map_delta(&header, delta.payload)
+                    .map_err(SessionError::WorldMap)?;
+                map.apply_delta(delta.payload).map_err(map_store_error)?;
+                self.map_revision = new_revision;
+                Ok(SessionEvent::WorldMapView(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
+            world_map::STATE_DOMAIN_WORLD_MAP_VIEW => {
+                Err(SessionError::UnselectedDomain { domain_id })
+            }
+            world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY
+                if self.is_selected(world_map::CAPABILITY_WORLD_MAP_VIEW_V1) =>
+            {
+                Err(SessionError::UnselectedDomain { domain_id })
+            }
             world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY if self.entities.is_some() => {
                 check_delta(
                     &delta,
@@ -2625,6 +2965,7 @@ fn check_status_pairing(
 #[cfg(test)]
 mod tests {
     use super::*;
+    mod map_view;
     use oteryn_protocol_oteryn::world_object::{
         SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
         WorldObjectOverlayEntry as WireOverlayEntry, encode_world_object_overlay_snapshot,
@@ -3336,6 +3677,91 @@ mod tests {
         )?)
     }
 
+    async fn poll_once<F: Future>(mut future: std::pin::Pin<&mut F>) -> Poll<F::Output> {
+        std::future::poll_fn(|context| Poll::Ready(future.as_mut().poll(context))).await
+    }
+
+    #[test]
+    fn native_idle_wake_returns_without_consuming_a_frame() -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, _peer) = vitals_pair().await?;
+            let wake = tokio::sync::Notify::new();
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                wake.notify_one();
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            assert_eq!(session.last_server_sequence(), 40);
+            assert_eq!(session.next_command_id(), 7);
+            session.ensure_usable()?;
+            wake.notify_one(); // A notification posted before the first poll retains its permit.
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            Ok::<_, BoxError>(())
+        })?
+    }
+
+    #[test]
+    fn native_wake_finishes_a_withheld_frame_body_before_returning() -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, mut peer) = vitals_pair().await?;
+            let wake = tokio::sync::Notify::new();
+            let payload =
+                actor_spell::encode_actor_vitals(&vitals(140, 55)).map_err(|e| format!("{e:?}"))?;
+            let body = vitals_frame(1, 41, 3, 3, 4, 1, &payload)?;
+            let mut framed = u32::try_from(body.len())?.to_be_bytes().to_vec();
+            framed.extend_from_slice(&body);
+            peer.write_all(&framed[..5]).await?;
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                wake.notify_one();
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                peer.write_all(&framed[5..]).await?;
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            assert_eq!(session.last_server_sequence(), 41);
+            assert_eq!(session.vitals_revision, 4);
+            assert_eq!(session.actor_vitals(), Some(&vitals(140, 55)));
+            assert_eq!(session.take_events().len(), 1);
+            session.ensure_usable()?;
+            write_frame(&mut peer, &vitals_frame(1, 42, 3, 4, 5, 1, &payload)?).await?;
+            {
+                let mut serving = std::pin::pin!(
+                    session.service_liveness_interruptible(Duration::from_secs(60), &wake)
+                );
+                assert!(poll_once(serving.as_mut()).await.is_pending());
+                wake.notify_one();
+                assert!(matches!(
+                    poll_once(serving.as_mut()).await,
+                    Poll::Ready(Ok(()))
+                ));
+            }
+            assert_eq!(session.last_server_sequence(), 42);
+            assert_eq!(session.vitals_revision, 5);
+            assert_eq!(session.take_events().len(), 1);
+            Ok::<_, BoxError>(())
+        })?
+    }
+
     #[test]
     fn idle_applies_sequenced_actor_vitals_before_liveness_ack() -> Result<(), BoxError> {
         block_on(async {
@@ -3544,8 +3970,32 @@ mod tests {
         Ok(result)
     }
 
-    /// N8: a refusal frame with a code in 1100..=1199 surfaces the code, and the code maps to
-    /// its FND-04A class; any other `ProtocolError` stays `NotAdmitted`.
+    #[test]
+    fn capability_refusals_preserve_update_required_without_admitting() -> Result<(), BoxError> {
+        block_on(async {
+            for error in [
+                FoundationProtocolError::CapabilityMismatch,
+                FoundationProtocolError::AdmissionCapabilityRequired,
+            ] {
+                let result = refuse_admission(error).await?;
+                let Err(SessionError::AdmissionRefused { code }) = result else {
+                    return Err(format!("{error:?}: {:?}", result.err()).into());
+                };
+                assert_eq!(code, error.code());
+                assert_eq!(
+                    admission_refusal_class(code),
+                    Some((
+                        AdmissionProgression::Terminal,
+                        AdmissionPublicClass::ClientUpdateRequired,
+                    ))
+                );
+            }
+            Ok(())
+        })?
+    }
+
+    /// N8 codes surface their public class; the bundle capability gate is covered separately.
+    /// Unrelated foundation errors stay `NotAdmitted`.
     #[test]
     fn an_admission_refusal_frame_surfaces_its_code() -> Result<(), BoxError> {
         block_on(async {
@@ -3618,34 +4068,69 @@ mod tests {
         })?
     }
 
-    /// N8 fixes the refusal shape: a refusal-range code with any other disposition or with a
-    /// correlation field is not an admission refusal and fails closed as `NotAdmitted`.
+    /// N8 and the capability gate keep the refusal shape: any other disposition or
+    /// correlation fails closed as `NotAdmitted`, not an actionable update/refusal.
     #[test]
     fn a_misshapen_admission_refusal_fails_closed() -> Result<(), BoxError> {
         block_on(async {
-            // Type 14, generation 0; code 1103 (varint cf 08) plus the listed fields.
-            for payload in [
-                &[0x08, 0xcf, 0x08, 0x10, 0x01][..],
-                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x18, 0x01],
-                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x20, 0x01],
-                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x28, 0x01],
+            // Independent wire fixtures: codes 1103, 1007 and 1116, type 14, generation 0.
+            for (code, fatal) in [
+                ([0x08, 0xcf, 0x08], 0x04),
+                ([0x08, 0xef, 0x07], 0x03),
+                ([0x08, 0xdc, 0x08], 0x04),
             ] {
-                let mut frame = vec![0x08, 0x0e, 0x22, u8::try_from(payload.len())?];
-                frame.extend_from_slice(payload);
+                for suffix in [
+                    vec![0x10, 0x01],
+                    vec![0x10, if fatal == 0x04 { 0x03 } else { 0x04 }],
+                    vec![0x10, fatal, 0x18, 0x01],
+                    vec![0x10, fatal, 0x20, 0x01],
+                    vec![0x10, fatal, 0x28, 0x01],
+                ] {
+                    let mut payload = code.to_vec();
+                    payload.extend_from_slice(&suffix);
+                    let mut frame = vec![0x08, 0x0e, 0x22, u8::try_from(payload.len())?];
+                    frame.extend_from_slice(&payload);
+                    let (client, mut server) = tokio::io::duplex(1024);
+                    let peer = tokio::spawn(async move {
+                        read_frame(&mut server).await?;
+                        write_frame(&mut server, &frame).await?;
+                        Ok::<_, BoxError>(())
+                    });
+                    let result = Session::admit(client, admission()?).await;
+                    peer.await??;
+                    assert!(
+                        matches!(
+                            result,
+                            Err(SessionError::NotAdmitted(MessageType::ProtocolError))
+                        ),
+                        "{payload:02x?}: {:?}",
+                        result.err()
+                    );
+                }
+            }
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn capability_refusals_require_the_bootstrap_envelope() -> Result<(), BoxError> {
+        block_on(async {
+            for envelope_extra in [[0x10, 0x01], [0x18, 0x01]] {
                 let (client, mut server) = tokio::io::duplex(1024);
                 let peer = tokio::spawn(async move {
                     read_frame(&mut server).await?;
+                    // A non-zero generation or sequence must fail before code1007 is consumed.
+                    let mut frame = vec![0x08, 0x0e];
+                    frame.extend_from_slice(&envelope_extra);
+                    frame.extend_from_slice(&[0x22, 0x05, 0x08, 0xef, 0x07, 0x10, 0x03]);
                     write_frame(&mut server, &frame).await?;
                     Ok::<_, BoxError>(())
                 });
                 let result = Session::admit(client, admission()?).await;
                 peer.await??;
                 assert!(
-                    matches!(
-                        result,
-                        Err(SessionError::NotAdmitted(MessageType::ProtocolError))
-                    ),
-                    "{payload:02x?}: {:?}",
+                    matches!(result, Err(SessionError::Protocol(_))),
+                    "{:?}",
                     result.err()
                 );
             }
@@ -3750,6 +4235,265 @@ mod tests {
             supported_capabilities: supported,
             ..admission()?
         })
+    }
+
+    /// Wire compatibility only: accepting a receipt does not qualify the future deadline consumer.
+    #[test]
+    fn native_receipts_preserve_golden_wait_and_stamp_before_the_claimed_delta()
+    -> Result<(), BoxError> {
+        block_on(async {
+            use std::future::Future as _;
+            use std::task::Poll;
+            for (payload, wait, moved) in [
+                (vec![0x08, 0x01, 0x10, 0x64], Some(100), true),
+                (vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06], Some(111150), true),
+                (vec![0x08, 0x04, 0x10, 0x25], Some(37), false),
+                (vec![0x08, 0x01], None, true),
+            ] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let (sent, received) = tokio::sync::oneshot::channel();
+                let (allow_delta, delta_permission) = tokio::sync::oneshot::channel();
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[13], &[13], &[]).await?;
+                    let command = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&command)?
+                            .client_command(1)?
+                            .command_id,
+                        7
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            41,
+                            7,
+                            if moved {
+                                CommandStatus::Accepted
+                            } else {
+                                CommandStatus::Rejected
+                            },
+                            &payload,
+                        )?,
+                    )
+                    .await?;
+                    sent.send(Instant::now()).map_err(|_| "marker dropped")?;
+                    if moved {
+                        delta_permission.await?;
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, 42, 1, 5, 6, 1, &spatial(17))?,
+                        )
+                        .await?;
+                    }
+                    let mut rest = Vec::new();
+                    server.read_to_end(&mut rest).await?;
+                    assert!(
+                        rest.is_empty(),
+                        "receipt-bearing TOO_EARLY must not use legacy retry"
+                    );
+                    Ok::<_, BoxError>(())
+                });
+                let mut session = Session::admit(client, admission()?).await?;
+                let mut step = Box::pin(session.step_retrying_with_receipt(StepDirection::East));
+                let before_delta = if moved {
+                    let mut received = Box::pin(received);
+                    std::future::poll_fn(|cx| {
+                        if let Poll::Ready(marker) = received.as_mut().poll(cx) {
+                            return Poll::Ready(marker.map_err(BoxError::from));
+                        }
+                        if step.as_mut().poll(cx).is_ready() {
+                            return Poll::Ready(
+                                Err("step completed before permitted delta".into()),
+                            );
+                        }
+                        Poll::Pending
+                    })
+                    .await?;
+                    // Result bytes are buffered: poll through their decode to the withheld delta.
+                    std::future::poll_fn(|cx| match step.as_mut().poll(cx) {
+                        Poll::Pending => Poll::Ready(Ok::<_, BoxError>(())),
+                        Poll::Ready(_) => {
+                            Poll::Ready(Err("step did not await the claimed delta".into()))
+                        }
+                    })
+                    .await?;
+                    let marker = Instant::now();
+                    allow_delta
+                        .send(())
+                        .map_err(|_| "delta permission dropped")?;
+                    Some(marker)
+                } else {
+                    None
+                };
+                let result = step.await?;
+                assert_eq!(result.receipt.map(|receipt| receipt.wait_ms), wait);
+                if let Some(receipt) = result.receipt {
+                    assert_eq!((receipt.command_id, receipt.connection_generation), (7, 1));
+                    if let Some(marker) = before_delta {
+                        assert!(receipt.received_at <= marker);
+                    }
+                }
+                assert_eq!(
+                    result.disposition,
+                    if moved {
+                        StepDisposition::Moved
+                    } else {
+                        StepDisposition::TooEarly
+                    }
+                );
+                drop(session);
+                peer.await??;
+            }
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn admitted_steps_decode_pacing_receipts_and_preserve_legacy_results() -> Result<(), BoxError> {
+        block_on(async {
+            for (selected, payload, disposition, status) in [
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0xae, 0xe4, 0x06],
+                    StepDisposition::Moved,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x04, 0x10, 0x01],
+                    StepDisposition::TooEarly,
+                    CommandStatus::Rejected,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x04],
+                    StepDisposition::TooEarly,
+                    CommandStatus::Rejected,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x01],
+                    StepDisposition::Moved,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    false,
+                    vec![0x08, 0x01],
+                    StepDisposition::Moved,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x02],
+                    StepDisposition::Blocked,
+                    CommandStatus::Accepted,
+                ),
+                (
+                    false,
+                    vec![0x08, 0x02],
+                    StepDisposition::Blocked,
+                    CommandStatus::Accepted,
+                ),
+            ] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[13], if selected { &[13] } else { &[] }, &[]).await?;
+                    let command = read_frame(&mut server).await?;
+                    assert_eq!(
+                        decode_wire_envelope(&command)?
+                            .client_command(1)?
+                            .command_id,
+                        7
+                    );
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(1, 41, 7, status, &payload)?,
+                    )
+                    .await?;
+                    if disposition == StepDisposition::Moved {
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(1, 42, 1, 5, 6, 1, &spatial(17))?,
+                        )
+                        .await?;
+                    }
+                    Ok::<_, BoxError>(())
+                });
+                let mut session = Session::admit(client, admission()?).await?;
+                let result = session.step(StepDirection::East).await?;
+                peer.await??;
+                assert_eq!(result.disposition, disposition);
+                assert_eq!(result.status, status);
+                let moved = disposition == StepDisposition::Moved;
+                assert_eq!(
+                    result
+                        .world_spatial_delta
+                        .as_ref()
+                        .map(|delta| delta.value.actor_position.x),
+                    moved.then_some(17)
+                );
+                assert_eq!(session.last_server_sequence(), if moved { 42 } else { 41 });
+                assert_eq!(session.next_command_id(), 8);
+                session.ensure_usable()?;
+                // No second step is sent: the allocation for receipt-based timing is still open.
+            }
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn malformed_or_unselected_pacing_receipts_poison_the_admitted_session() -> Result<(), BoxError>
+    {
+        block_on(async {
+            for (selected, payload, status) in [
+                (false, vec![0x08, 0x01, 0x10, 0x32], CommandStatus::Accepted),
+                (true, vec![0x08, 0x02, 0x10, 0x32], CommandStatus::Accepted),
+                (true, vec![0x08, 0x03, 0x10, 0x01], CommandStatus::Rejected),
+                (true, vec![0x08, 0x04, 0x10, 0x00], CommandStatus::Rejected),
+                (true, vec![0x08, 0x01, 0x10, 0x33], CommandStatus::Accepted),
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0xaf, 0xe4, 0x06],
+                    CommandStatus::Accepted,
+                ),
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0x32, 0x10, 0x32],
+                    CommandStatus::Accepted,
+                ),
+                (true, vec![0x08, 0x01, 0x18, 0x32], CommandStatus::Accepted),
+                (
+                    true,
+                    vec![0x08, 0x01, 0x10, 0x32, 0x18, 1, 0x20, 1, 0x28, 1],
+                    CommandStatus::Accepted,
+                ),
+            ] {
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[13], if selected { &[13] } else { &[] }, &[]).await?;
+                    read_frame(&mut server).await?;
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(1, 41, 7, status, &payload)?,
+                    )
+                    .await?;
+                    Ok::<_, BoxError>(())
+                });
+                let mut session = Session::admit(client, admission()?).await?;
+                assert!(matches!(
+                    session.step(StepDirection::East).await,
+                    Err(SessionError::WorldSpatial(_))
+                ));
+                peer.await??;
+                assert!(matches!(
+                    session.step(StepDirection::East).await,
+                    Err(SessionError::SessionUnusable)
+                ));
+                assert_eq!(session.next_command_id(), 8);
+            }
+            Ok(())
+        })?
     }
 
     #[test]
@@ -4553,7 +5297,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 selected,
                 &[],
                 snapshot,
@@ -4578,7 +5322,7 @@ mod tests {
     #[test]
     fn the_advertised_set_is_closed_under_the_registry_requires() {
         // PROTOCOL_OTERYN_V1_REGISTRY.json `requires`: 4 needs 6, 12 needs 4, 14 needs 4 and 12.
-        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12])];
+        let requires: &[(u32, &[u32])] = &[(4, &[6]), (12, &[4]), (14, &[4, 12]), (18, &[4, 6])];
         for (capability, needed) in requires {
             if CLIENT_SUPPORTED_CAPABILITIES.contains(capability) {
                 for need in *needed {
@@ -5031,7 +5775,7 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 21]);
+        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17, 18, 21]);
     }
 
     #[test]
@@ -5628,7 +6372,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13, 17, 21],
+                CLIENT_SUPPORTED_CAPABILITIES,
                 ITEM_SELECTED,
                 &[],
                 snapshot,

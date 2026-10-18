@@ -246,6 +246,8 @@ pub struct BootConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    /// D1041 restart-only reviewed independent staff trust; absent disables staff control.
+    pub staff: Option<crate::staff::signature::TrustConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
     pub database: DatabaseConfig,

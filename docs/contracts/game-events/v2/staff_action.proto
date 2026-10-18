@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package oteryn.events.v2;
+
+// OPS-GM-AUDIT-1 / ARCH-LIVE-READINESS-0 §1 ruling 11.
+// Schema revision 1; CP D1188 leases STAFF_ACTION event_type_id = 5.
+// Exact signed JCS and outcome bytes are retained; protobuf is not semantic JCS.
+// Payload <= 49152 bytes; the ANL envelope <= 50176 bytes.
+// Fields mirror apps/game-server/src/staff/audit.rs::StaffActionV1.
+message StaffActionV1 {
+  bytes action_id = 1;
+  string actor_kind = 2;
+  string action_kind = 3;
+  bytes target_jcs = 4;
+  string reason = 5;
+  string result = 6;
+  bytes signed_request = 7;
+  string principal = 8;
+  string key_fingerprint = 9;
+  string signature = 10;
+  string roster_sha256 = 11;
+  string request_sha256 = 12;
+  bytes parameters_jcs = 13;
+  string trace_id = 14;
+  bytes basis_refs_jcs = 15;
+  bytes outcome_jcs = 16;
+  string environment = 17;
+}

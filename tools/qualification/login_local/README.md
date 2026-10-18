@@ -195,6 +195,33 @@ either the run is `BLOCKED`). After seeing the server step result, write text co
 before READY, and only text containing this run's id ends the run `WALKED`.
 With `LOGIN_LOCAL_RUN_CLIENT=1` a client that does not print the admission line ends `FAIL` (exit 1).
 
+## Windows client launcher
+
+Use the compiled `oteryn-client.exe` with this repository's
+`launch-client-local.ps1`, the run's private `client.env`, and its gameplay
+certificate. This is a testing/preproduction connection, not a production rollout.
+
+```powershell
+powershell.exe -NoProfile -File .\tools\qualification\login_local\launch-client-local.ps1 -ClientPath 'C:\Oteryn-test\oteryn-client.exe' -ClientEnv 'C:\Oteryn-test\client.env' -DevRoot 'C:\Oteryn-test\login-local-gameplay.crt'
+```
+
+`-ValidateOnly` checks configuration without starting a process or doing network
+I/O. The launcher never evaluates the env file as code, displays its comments,
+imports certificates, writes account credentials, or changes the parent's
+environment. Only four public connection settings reach the child; configured
+World/Character IDs are discarded in favour of the authenticated GUI selection.
+A sibling `login-local-gameplay.crt` is selected when `-DevRoot` is omitted;
+otherwise the configured certificate path is resolved relative to `client.env`.
+Missing files/settings, duplicate/unknown keys and unsafe URL origins refuse
+launch. Platform/Gateway HTTPS trust must already be valid in Windows; TLS checks
+remain enabled. Click Sign In, finish Platform's browser PKCE flow, select an
+owned character and enter. Success requires actual server admission, not opening
+a browser or receiving a ticket. No real-account sign-in is performed by this script.
+
+Configuration regressions can be run without a server or account:
+`pwsh -NoProfile -File tools/qualification/login_local/test-launch-client-local.ps1`.
+They exercise the real launcher in validation mode, not a separate parser.
+
 ## Platform commands used (Platform main, no Platform change)
 
 The projection feed needs a Platform checkout carrying PLATFORM-LCFA-1 (Platform#1465); until the pin above

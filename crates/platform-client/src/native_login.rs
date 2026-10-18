@@ -369,6 +369,16 @@ fn format_uuid(bytes: &[u8; 16]) -> String {
 #[derive(Debug)]
 pub struct AccessToken(SecretText);
 
+/// Owner-visible character metadata from the authenticated Platform projection.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct NativeCharacterChoice {
+    pub character_id: String,
+    pub world_id: String,
+    pub name: String,
+    pub availability: String,
+}
+
 /// A one-time native Game Login Ticket, the instant after which the client stops using it, and
 /// the Gateway requests already sent with it (one budget for the ticket and its `attempt_ref`).
 #[derive(Debug)]
@@ -495,6 +505,17 @@ impl NativeLoginClient {
         state: &str,
         code_challenge: &str,
     ) -> Result<Url, PlatformClientError> {
+        self.authorization_url_for_login(redirect_uri, state, code_challenge, false)
+    }
+
+    /// Explicit account switching uses normal OAuth login and consent, never a client password.
+    pub fn authorization_url_for_login(
+        &self,
+        redirect_uri: &str,
+        state: &str,
+        code_challenge: &str,
+        choose_account: bool,
+    ) -> Result<Url, PlatformClientError> {
         let mut url = self
             .platform
             .join("oauth/authorize")
@@ -506,7 +527,15 @@ impl NativeLoginClient {
             .append_pair("scope", NATIVE_LOGIN_SCOPE)
             .append_pair("state", state)
             .append_pair("code_challenge", code_challenge)
-            .append_pair("code_challenge_method", "S256");
+            .append_pair("code_challenge_method", "S256")
+            .append_pair(
+                "prompt",
+                if choose_account {
+                    "login consent"
+                } else {
+                    "consent"
+                },
+            );
         Ok(url)
     }
 
@@ -559,7 +588,57 @@ impl NativeLoginClient {
         run(cancellation, request).await
     }
 
-    /// `POST /v1/game-auth/tickets` with the bearer: one native ticket. The access token is
+    /// Reads the authenticated owner's characters without issuing a gameplay credential.
+    pub async fn account_characters(
+        &self,
+        token: &AccessToken,
+        cancellation: CancellationToken,
+    ) -> Result<Vec<NativeCharacterChoice>, NativeLoginError> {
+        let endpoint = self
+            .platform
+            .join("api/v1/game-auth/native-characters")
+            .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
+        let request = async {
+            let response = self
+                .client
+                .get(endpoint)
+                .bearer_auth(token.0.expose())
+                .send()
+                .await
+                .map_err(|_error| PlatformClientError::Request)?;
+            if !response.status().is_success() {
+                return Err(NativeLoginError::TokenRefused);
+            }
+            let body = read_bounded(response, MAX_OAUTH_RESPONSE_BYTES).await?;
+            #[derive(Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct OwnerCharacters {
+                protocol_version: u64,
+                characters: Vec<NativeCharacterChoice>,
+            }
+            let payload: OwnerCharacters = serde_json::from_slice(&body)
+                .map_err(|_error| PlatformClientError::InvalidPayload)?;
+            let mut ids = std::collections::BTreeSet::new();
+            if payload.protocol_version != 2
+                || payload.characters.len() > 128
+                || payload.characters.iter().any(|character| {
+                    parse_uuid_v7(&character.character_id).is_none()
+                        || parse_uuid_v7(&character.world_id).is_none()
+                        || !ids.insert(&character.character_id)
+                        || character.name.is_empty()
+                        || character.name.len() > 96
+                        || character.name.chars().any(char::is_control)
+                        || !matches!(character.availability.as_str(), "AVAILABLE" | "UNAVAILABLE")
+                })
+            {
+                return Err(PlatformClientError::InvalidPayload.into());
+            }
+            Ok(payload.characters)
+        };
+        run(cancellation, request).await
+    }
+
+    /// `POST /api/v1/game-auth/tickets` with the bearer: one native ticket. The access token is
     /// consumed; Platform revokes it.
     pub async fn issue_native_ticket(
         &self,
@@ -568,7 +647,7 @@ impl NativeLoginClient {
     ) -> Result<NativeTicket, NativeLoginError> {
         let endpoint = self
             .platform
-            .join("v1/game-auth/tickets")
+            .join("api/v1/game-auth/tickets")
             .map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
         let request = async {
             let response = self

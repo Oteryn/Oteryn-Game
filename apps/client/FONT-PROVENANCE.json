@@ -1,0 +1,30 @@
+{
+  "schema": "oteryn.client.font-provenance.v1",
+  "crate": {
+    "name": "epaint_default_fonts",
+    "version": "0.36.2",
+    "archive_sha256": "773fa9c96dd0dbef887e39d0ed6177f141cce4d68e6041df77570aa3702dfa13",
+    "upstream_commit": "49682f8baa058bf49e011035cfbd6e825f88a5ef",
+    "license_expression": "(MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0",
+    "unmodified_files_sha256": {
+      "fonts/Hack-Regular.ttf": "15f55cc0c85a2988d2b4b3a8cdb5d77fdfbaf319e1bb5309d725db9818fb7125",
+      "fonts/Hack-Regular.txt": "47c0cccbeec7e8614548cc485588b28149e7874188df5f41b36efebcee285c87",
+      "fonts/NotoEmoji-Regular.ttf": "415dc6290378574135b64c808dc640c1df7531973290c4970c51fdeb849cb0c5",
+      "fonts/OFL.txt": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "fonts/UFL.txt": "2f0015108d68627bd788d313f529c21ff4da2c2c42a5e1f3883acc83480f9002",
+      "fonts/Ubuntu-Light.ttf": "80307b8da7649aa4ee4d484b232140e3ce1ec0ca093073d3c53c8f5a5ced7a70",
+      "fonts/emoji-icon-font-mit-license.txt": "b9d2c1d909aa149996fd4c91dcb92b2362a04431640c1d200959da94caf8cde1",
+      "fonts/emoji-icon-font.ttf": "f426bec371f484646d002717e2c555a95cd5145e635d83a48bbef83f3abf18ca"
+    },
+    "MIT_license_url": "https://raw.githubusercontent.com/emilk/egui/49682f8baa058bf49e011035cfbd6e825f88a5ef/LICENSE-MIT",
+    "MIT_license_sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+  },
+  "brand_font": {
+    "font": "assets/login-brand.ttf",
+    "font_sha256": "f4d83d34d1f6c741193e4acf4b3dff9531e5a67b6aa65228d00a7db72a4e0f34",
+    "license": "assets/Cinzel-OFL.txt",
+    "license_sha256": "f5a242cf68ad6ebd0603b3359a74c593ca080318a681035be5296ba2c6b04ae6",
+    "copyright": "Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)"
+  },
+  "distribution_notice": "THIRD-PARTY-FONTS.txt"
+}

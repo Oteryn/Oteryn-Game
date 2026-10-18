@@ -228,5 +228,52 @@ action was intended as an audit step.
 Build actual viewport/HUD/domain panels, inventory and action bars, chat, input
 contexts, effect/audio consumers and persistent layout before exposing their
 settings as active controls. The implementation status in SETTINGS.md describes
-private work on `fix/native-client-login-20261007`; this documentation PR neither
-publishes that source delta nor establishes full client readiness.
+the client authoring branch `feat/client-completion-20261009`; source and
+documentation remain a draft candidate without full-client readiness.
+
+## Semantic source evidence, 2026-10-09
+
+A bounded read-only sweep examined the installed package's `bin/client`
+(51,557,504 bytes), `bin/client.en.qm` (739,296 bytes) and
+`bin/graphics_resources.rcc` (6,781,132 bytes). No account/configuration files,
+asset payloads, executable copies or translation corpus were added to the repo.
+
+The executable contains the cited `GameserverMessagePlayerData`,
+`receivedCreatureHealthMessage` and `handlePlayerInventoryMessage` name strings.
+Its ordinary symbol table is stripped; the dynamic-symbol probe exposed no
+matching handler/method definitions. Names identify consumer vocabulary, not
+source code or proven runtime packet layouts. Additional class-name evidence separates basic/current
+player data, player skills/state, vocation-specific data, resource balances,
+inventory changes, inspection, depot search, stash and market messages.
+
+The Qt `qres` version-3 tree contains exactly **1,063 file resources** in 1,097
+tree nodes. Only names/structure were read. Boss-difficulty-selection resource
+names independently match the `GameserverMessageBossDifficultySelection` string
+and eight matching translation keys; this is an additional modal, outside the
+28-shortcut inventory, whose runtime behavior remains unverified.
+
+The existing 4,622-key Qt message inventory was reproduced. Comparing this
+semantic evidence with the current client catalogues identifies missing layouts:
+
+- Boss difficulty: selected difficulty, modifiers, personal/group highest
+  difficulty, bad-luck bonus and the start-fight route.
+- Depot search: storage-location/count results, refresh and retrieve-displayed
+  routes. Stash has distinct retrieve, stow-stack, stow-type and container-content
+  routes; the Cyclopedia item-summary page does not cover these dialogs.
+- Market: offer browsing/details/statistics and an offer composer with amount,
+  buy/sell direction and anonymous-offer intent. Item trade-offer details do not
+  constitute the complete market UI.
+- Inspection: a separate requested-character/item view and inspection-state
+  result; the permission preference alone does not provide this view.
+- Container context controls: name/expiry sorting in both directions, backpacks
+  first, filtering and recursive-sort confirmation. Chat context controls include
+  participants, mute, save contents and secondary-chat placement.
+
+Embedded protobuf descriptor candidates name `appearances.proto`, `map.proto`
+and `sounds.proto`; no standalone schemas appeared in the bounded package search.
+They identify appearance names/descriptions/frame groups/flags, map areas/NPCs/
+resource files/bounds, and sound IDs/streams/random pitch-volume/ambience distance/
+music templates. These are asset-schema clues, not Game network contracts.
+Their full source schemas, live packet formats, reachability, ownership and
+mutation semantics are not established by this sweep. New Oteryn layouts must
+retain unknown values until accepted Game-owned projections supply them.

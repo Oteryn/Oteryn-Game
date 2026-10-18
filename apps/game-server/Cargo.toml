@@ -19,6 +19,7 @@ ed25519-dalek.workspace = true
 oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-ntp-clock = { version = "=0.1.0", path = "../../crates/ntp-clock" }
+oteryn-release-manifest = { version = "=0.1.0", path = "../../crates/release-manifest" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
@@ -166,3 +167,7 @@ test = false
 
 [lints]
 workspace = true
+
+[[test]]
+name = "staff_audit_postgres"
+test = false

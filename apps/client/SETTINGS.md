@@ -4,15 +4,16 @@ The owner requested the complete intended preferences experience, available befo
 sign-in and during play. This is the working implementation and remaining product
 scope, not a declaration that the whole game client is complete.
 
-Implementation status below refers to the private authoring branch
-`fix/native-client-login-20261007`, not the main branch. This checkpoint is
-documentation only and does not publish that implementation.
+Implementation status refers to `feat/client-completion-20261009`. This is an
+authoring candidate, not merged main or production readiness.
 
 ## Implemented
 
-The Windows client opens the same preferences panel from the login toolbar and
-with F10 during an admitted session. Opening the panel suppresses gameplay input;
-the session continues ticking. Apply and save validates the draft, persists it,
+The Windows client opens preferences from the login toolbar; F10 is a
+pre-admission shortcut. During an admitted session Options remains available from
+the client UI or an assigned General Hotkey, while F10 belongs to the reference
+F1–F12 action-button defaults. Opening the panel suppresses gameplay input; the
+session continues ticking. Apply and save validates the draft, persists it,
 then updates the current configuration. Cancel discards edits. Defaults resets
 the draft and requires Apply to persist. An invalid file falls back to defaults
 and reports the read failure inside the panel. A failed save preserves the active
@@ -103,8 +104,8 @@ panels are recorded in [REFERENCE-AUDIT.md](REFERENCE-AUDIT.md).
   Visible entries include skills, battle/spell/VIP lists, help, quests, compendium,
   cyclopedia, highscores, player guide, party, wheel and unjustified points.
 - Graphics exposes engine, anti-aliasing, fullscreen, integral scaling, VSync and
-  frame limiting. Effects separates ambient light, level separator, indoor/cloud
-  attenuation and own/other/creature/boss-area spell opacity.
+  frame limiting. Effects separates ambient light, level separator, one combined
+  Clouds & Indoor Effect control and own/other/creature/boss-area spell opacity.
 - Sound separates device, master/music/ambience/items/events; combat mixes own,
   other players and creatures with attack/heal/support/weapon/noise/death filters.
   UI audio includes interactions, party/VIP notices and per-channel chat filters.
@@ -165,5 +166,95 @@ seven-section preferences panel are the foundation, not this complete compositio
 Reference screenshots and raw captures are private artifacts kept outside the
 repository. The sanitized field-name inventory is committed as
 [REFERENCE-PREFERENCE-KEYS.json](REFERENCE-PREFERENCE-KEYS.json); neither is a
-bundled game asset.
-Oteryn uses its own branding, textures and implementation.
+bundled game asset. Oteryn uses its own branding, textures and implementation.
+
+## Prepared reference-completion candidate, 2026-10-09
+
+The complete browser exposes27 groups and277 typed bilingual controls.19 map
+to existing client fields; remaining options keep validated user intent with
+explicit pending-consumer labels. They do not simulate missing engine behavior.
+
+In-world UI includes28 panel shortcuts with differentiated fields/tabs, six
+additional reference-derived dialogs, a minimap of actually loaded terrain and
+108 action slots across nine independently selected rows. Session item/spell handles never persist across admission.
+Future gameplay values remain unknown; pending mutation actions are disabled.
+
+OS-vault primitives use local Windows credential storage or encrypted Linux
+Secret Service, without plaintext fallback. They are not wired into remembered
+sign-in yet. Browser PKCE remains current behavior; rotation recovery, per-origin
+process serialization and reviewed Platform HTTP integration remain outstanding.
+
+
+The full preferences tree is reachable from the pre-admission settings entry,
+with search and its own Apply/Cancel/Defaults footer. Connection/account details
+remain accessible from that footer. 65 additional controls have names-only reference provenance; their
+precise original behavior is not inferred from configuration-key names. Future
+preferences store user choices without pretending to enable absent consumers.
+
+
+## Reference fidelity repair, 2026-10-09
+
+Basic Options now has Gameplay, Interface, Graphics and Sound groups, compact
+square controls, nested advanced navigation with directly drawn arrow icons,
+and a pinned OK/Apply/Cancel footer. OK closes only
+after a successful save; Apply stays open and Cancel discards the draft. Mouse presets,
+antialiasing and loot-colour dropdown membership were verified live in the
+reference draft; all changes there were canceled. These choices and the volume
+slider retain validated intent while their consumers are absent. No audio,
+looting, inspection or rendering mode is simulated by those controls.
+
+Each edge's All checkbox has an actual visibility consumer and preserves its
+three independent row selections, locks and chords when off. Basic/Advanced
+share canonical masters. Legacy explicit Boolean master selections migrate;
+missing selections default to enabled masters without modifying legacy rows.
+Hidden hotkeys retain their established activation policy. Clear Bar clears
+current-session assignments only, obeys runtime locks and is unavailable at login.
+All nine Clear Bar buttons fit the standard dialog without scrolling.
+
+The in-world chrome uses independently drawn grey grain and bevels, shared
+156-point sidebar/30-point header/108-point console reservations, compact minimap,
+3-by-4 equipment layout, four-column item cells and smaller shortcut controls.
+Rendering, picking and surrounding chrome use the same effective-row viewport.
+Private reference captures and original textures/icons remain outside the repo.
+
+This repairs two concrete compositions; it is not full visual/behavior parity.
+Outstanding reference details include modifier-only rotation/stack controls,
+Interface cursor/link-copy/expiry controls, draft-based shortcut list ordering,
+and the remaining advanced page-specific arrangements. Generic prepared feature
+panels and missing engine projections still need their own completion batches.
+
+## Own-resource HUD renderer checkpoint
+
+Own HUD master, health/mana selection and Bars/Arcs now control independently
+authored resource geometry over the own actor. Only authoritative session vitals
+are used. Missing vitals or zero/unknown maxima produce no resource overlay; no
+values or condition states are manufactured. Unset switches remain unset and
+do not enable overlays. Arcs additionally require an explicit verified size
+selection (Small/Default/Large); distance and opacity use Oteryn renderer
+fallbacks 25/100 when absent, without persisting reference defaults.
+
+Private `optionsmenu_hud_arc_size_*` labels and own-HUD help text in the original
+client.en.qm confirm those choices and bars/arcs dependencies. Original binaries,
+translations and assets are not redistributed. Native tests/Clippy/release and
+Linux headless geometry checks pass. Live-session visual acceptance is still
+required. Names, marks, Harmony, other actors and condition ordering/projection
+remain incomplete; this renderer does not complete the HUD screen.
+
+## Reference hotkey semantics checkpoint — 2026-10-11
+
+Official static defaults establish Escape for Stop All in both chat contexts and
+F1–F12 for action buttons 1.01–1.12. New profiles use those chords. Settings
+schema v2 upgrades only the exact untouched v1 number-row action sequence and
+only when the target chords are conflict-free; customized bindings remain intact.
+Existing v1 profiles do not acquire a missing Stop binding because absence may
+represent an intentional clear; fresh and reset profiles use Escape in both chat
+contexts.
+F10 opens settings only before admission so the admitted action router can own
+button 1.10. Movement editor validation accepts a single unmodified physical key,
+and clearing a profile movement binding is retained so the legacy global mapping
+cannot silently make the cleared action continue working.
+
+This completes those key-routing semantics, not the full General Hotkeys
+inventory. The remaining official actions stay disabled until their owning local
+or protocol consumer exists, and native Windows interaction evidence is still
+required for the current candidate.

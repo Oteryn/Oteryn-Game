@@ -117,6 +117,8 @@ fn snapshot() -> Result<JoinSnapshot, BoxError> {
         world_spatial_revision: JOIN_SPATIAL_REVISION,
         world_object_overlay: vec![door_entry(DOOR_STATE_CLOSED, JOIN_DOOR_REVISION)],
         world_object_overlay_revision: JOIN_DOOR_REVISION,
+        world_map: None,
+        world_map_revision: 0,
     })
 }
 
