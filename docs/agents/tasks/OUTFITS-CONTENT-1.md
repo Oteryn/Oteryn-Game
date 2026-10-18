@@ -66,3 +66,9 @@ Task status `ready` refers only to the data/docs handoff. The PR remains draft; 
 All 136 real outfit records remain covered. Required items and separately numbered male/female addon sprite images now resolve Afflicted Plague Mask=addon 1, Plague Bell=addon 2, Captains Sabre=addon 1 and Captains Hat=addon 2. Image page revids, asset SHA1s and direct visual-inspection method are retained. Monk addon availability/account eligibility remain UNKNOWN; an empty source field is not proof of absence.
 
 This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.
+
+## Full outstanding-field source sweep —2026-10-18
+
+oteryn:content.outfit.monk_outfits/addon_account_eligibility.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

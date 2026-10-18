@@ -13,3 +13,9 @@ These files prepare Reference data for CP. They add no runtime admission, Rust c
 All 136 real outfit records remain covered. Required items and separately numbered male/female addon sprite images now resolve Afflicted Plague Mask=addon 1, Plague Bell=addon 2, Captains Sabre=addon 1 and Captains Hat=addon 2. Image page revids, asset SHA1s and direct visual-inspection method are retained. Monk addon availability/account eligibility remain UNKNOWN; an empty source field is not proof of absence.
 
 This is a sourced reference handoff, not a claim of complete gameplay knowledge. The field-level [research audit](research-audit.json) enumerates all remaining UNKNOWN/CONFLICT fields. Runtime admission stays blocked pending CP qualification.
+
+## Full outstanding-field source sweep —2026-10-18
+
+oteryn:content.outfit.monk_outfits/addon_account_eligibility.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

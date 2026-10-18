@@ -10,9 +10,9 @@
     "content/cosmetics/outfits/evidence-00000-00135.json": 136
   },
   "evidence_field_counts": {
-    "PROVEN": 1043,
+    "PROVEN": 1044,
     "DERIVED": 319,
-    "UNKNOWN": 2
+    "UNKNOWN": 1
   },
   "unresolved_fields": [
     {
@@ -26,19 +26,15 @@
         }
       ],
       "limitation": "Current Monk outfit infobox has no addon declaration. No explicit availability or acquisition proof was found; empty source field is not treated as absence."
-    },
-    {
-      "field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_account_eligibility",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:108263:1102608",
-          "selector": "Infobox Outfit / addons"
-        }
-      ],
-      "limitation": "No proven value in inspected sources."
     }
   ],
-  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion."
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "oteryn:content.outfit.monk_outfits/addon_account_eligibility"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  }
 }

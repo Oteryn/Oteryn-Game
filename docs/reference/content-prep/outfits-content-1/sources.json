@@ -2695,6 +2695,17 @@
       "fetched_at": "2026-10-18",
       "continuity": "LATEST_IMAGEINFO_RETRIEVED_AT_FETCH",
       "qualification": "Individual addon 1 and addon 2 images for both sexes were directly viewed through the authorized browser-computer image reader. Visual identification is DERIVED, not a captured server unlock receipt."
+    },
+    "wiki-br:monk-outfits:423805": {
+      "title": "Monk Outfits",
+      "url": "https://www.tibiawiki.com.br/wiki/Monk_Outfits",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "8b6dadc326c082e5c04c1299eaba389160144846a348b003688b9835039b9e74",
+      "supported_claim": "Base outfit is free; addons require Premium.",
+      "revid": 423805,
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Monk_Outfits&oldid=423805"
     }
   }
 }

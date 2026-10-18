@@ -12811,17 +12811,19 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "addon_account_eligibility": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "premium_required": true
+          },
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:108263:1102608",
-              "selector": "Infobox Outfit / addons"
+              "source": "wiki-br:monk-outfits:423805",
+              "selector": "Premium / explicit parenthetical addons require Premium"
             }
           ],
-          "note": "No proven value in inspected sources."
+          "note": "Wiki BR explicitly distinguishes the free base outfit from Premium addons. Exact addon item/quest steps remain unproven."
         },
         "base_acquisition": {
           "value": {
