@@ -3,11 +3,11 @@
 ```yaml
 task_id: BLESSINGS-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/blessings-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2237
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -21,6 +21,7 @@ owned_paths:
   - docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/evidence-00000-00009.json
   - docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/index.json
   - docs/reference/content-prep/blessings-content-1/service-apply-plan.json
+  - docs/reference/content-prep/blessings-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -60,3 +61,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 ## Service placement constraint
 
 Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.
+
+## Reference delivery boundary
+
+The seven ordinary blessings, Twist of Fate, Inquisition bundle and Adventurer protection are covered with NPCs/locations and available price rules. Reduction tables are derived from the live official manual. Conflicting above-120 regular prices, Retro Hardcore community wording and unsupported promotion-specific purchase discounts remain explicit.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

@@ -14,7 +14,7 @@
   "payloads": [
     {
       "path": "rulesets/character/blessings/reference-evidence.json",
-      "sha256": "e6a4c58011dfb225bababa09a4ff4350ae7063fa549e7ac2ffdfa1caa8bf5964"
+      "sha256": "1f26b10984c682576a7e51adf0e541e1c1b81f1df84a884608a4c967f94645f1"
     }
   ]
 }

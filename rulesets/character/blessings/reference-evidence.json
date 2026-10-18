@@ -25,16 +25,28 @@
               "gold": "20000+75*(L-120)"
             }
           ],
-          "classification": "PROVEN",
+          "classification": "CONFLICT",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:1630:1113782",
               "selector": "Price / R(L)"
+            },
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "wiki:1628:1140641",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "Conflicting statements identified in note"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Current Wiki piecewise formula is preserved, but its above-120 segment conflicts with live official manual wording that regular prices stop rising while PvP blessing prices continue. Do not admit the aggregate regular formula without resolving this segment."
         },
         "enhanced": {
           "value": [
@@ -94,7 +106,7 @@
           "value": null,
           "classification": "CONFLICT",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:1630:1113782",
@@ -105,7 +117,7 @@
               "selector": "Conflicting statements identified in note"
             },
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "Conflicting statements identified in note"
             }
           ],
@@ -180,10 +192,10 @@
           "value": 0,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -193,10 +205,10 @@
           "value": 30,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -206,14 +218,14 @@
           "value": 0,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -237,10 +249,10 @@
           "value": 8,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -250,10 +262,10 @@
           "value": 38,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -263,14 +275,14 @@
           "value": 30,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -294,10 +306,10 @@
           "value": 16,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -307,10 +319,10 @@
           "value": 46,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -320,14 +332,14 @@
           "value": 55,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -351,10 +363,10 @@
           "value": 24,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -364,10 +376,10 @@
           "value": 54,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -377,14 +389,14 @@
           "value": 75,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -408,10 +420,10 @@
           "value": 32,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -421,10 +433,10 @@
           "value": 62,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -434,14 +446,14 @@
           "value": 90,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -465,10 +477,10 @@
           "value": 40,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -478,10 +490,10 @@
           "value": 70,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -491,14 +503,14 @@
           "value": 100,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -522,10 +534,10 @@
           "value": 48,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -535,10 +547,10 @@
           "value": 78,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -548,14 +560,14 @@
           "value": 100,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -579,10 +591,10 @@
           "value": 56,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -592,10 +604,10 @@
           "value": 86,
           "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
@@ -605,14 +617,14 @@
           "value": 100,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -623,33 +635,33 @@
           "value": "At least 5% PvP damage in last five minutes OR final blow by a character/summon.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "twist_effect": {
           "value": "Protects regular blessings in qualifying PvP deaths; does not save red/black skull equipment or PvE blessings.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "retro_hardcore_rate": {
           "value": null,
           "classification": "CONFLICT",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:1630:1113782",
@@ -660,11 +672,24 @@
               "selector": "Conflicting statements identified in note"
             },
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "Conflicting statements identified in note"
             }
           ],
           "note": "Official manual: 6.31% per blessing; current Death Wiki: 6.4%. Neither silently selected."
+        },
+        "official_retro_hardcore_reduction_percent": {
+          "value": 6.31,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11 / Experience Loss"
+            }
+          ],
+          "note": "Current primary official value; community 6.4% discrepancy retained in retro_hardcore_rate."
         }
       }
     }

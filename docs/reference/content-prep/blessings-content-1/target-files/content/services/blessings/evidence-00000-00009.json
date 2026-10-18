@@ -701,14 +701,14 @@
           "value": "Level 21 or first initiated attack on another player.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/characters.md",
+              "source": "official:manual:characters:2026-10-18",
               "selector": "5.1.11"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     }

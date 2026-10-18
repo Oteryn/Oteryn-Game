@@ -35,6 +35,17 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "92e62acaa5b6cb3b9f63a10730ddd5d5e636699b765f4f372c8fa20bfcf0402b",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "official:manual:characters:2026-10-18": {
+      "title": "Tibia official manual: characters",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "d14ece6c40d0213c0f996b45938ff215cd050404e5d38abf7255bf29e8568026",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
     }
   }
 }
