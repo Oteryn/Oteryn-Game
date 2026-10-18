@@ -1,0 +1,28 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "DEATH-LOSS-EVIDENCE-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "repo:docs/reference/tibia-manual/characters.md": {
+      "path": "docs/reference/tibia-manual/characters.md",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/docs/reference/tibia-manual/characters.md",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "f3f89885a0850493e737b109e658c35b9a47186c0e1656da64df907b118d5a79",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18"
+    },
+    "wiki:1628:1140641": {
+      "title": "Death",
+      "url": "https://tibia.fandom.com/wiki/Death",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1140641",
+      "revid": 1140641,
+      "revision_timestamp": "2025-11-07T13:36:07Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "92e62acaa5b6cb3b9f63a10730ddd5d5e636699b765f4f372c8fa20bfcf0402b",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    }
+  }
+}
