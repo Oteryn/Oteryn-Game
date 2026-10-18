@@ -1,0 +1,20 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_SOURCE_MANIFEST/v1",
+  "task": "FORGE-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "owner_cut_override": "Owner explicitly requested fresh current data on 2026-10-18; historical 2026-09-27 programme cut is not changed repository-wide.",
+  "sources": {
+    "wiki:95592:1205481": {
+      "title": "Equipment Upgrade",
+      "url": "https://tibia.fandom.com/wiki/Equipment_Upgrade",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1205481",
+      "revid": 1205481,
+      "revision_timestamp": "2026-09-07T20:53:26Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "659e52ca9a8f175937853837226a5fc53a46347800b587d3d6f734667de346ad",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=The%20Market%20(Object)%7CTravelling%7CEquipment%20Upgrade%7CBlessings&redirects=1"
+    }
+  }
+}
