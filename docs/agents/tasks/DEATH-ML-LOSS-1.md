@@ -600,3 +600,55 @@ validator passes.
 
 Status stays `waiting`. The record is not archived. No ready, queue or merge
 action is taken; CP alone decides merge.
+
+## Codex P1 4306765047 follow-up (2026-10-18)
+
+Thread PRRT_kwDOT8SzxM6tp0K9, checked against D1440. The release path is
+unchanged and correct: a `FencedOut` flush during the actor-end release
+settles the death from the durable build, with no retry. A committed
+checkpoint is already in that build. The live path did retry without end.
+A forced save whose retained checkpoint committed, but whose session
+connection, lease or scope generation moved before the post-write check,
+returns `FencedOut` without applying the receipt
+(`training_save.rs`, not changed here). Each later replay fails the same
+immutable retained fence, so the actor stayed dead until its actor-end
+release.
+
+Fix (in `gameplay_transport/mod.rs`, the runtime caller this branch already
+changes): on a live `FencedOut` flush, `adopt_committed_training_checkpoint`
+reads the retained checkpoint's receipt with `reconcile_character_build`. It
+applies the receipt only when the receipt is durable and the live actor is
+still this session's under the current session, scope and owner authority.
+It takes the Character's revision slot first, as the training save does, and
+writes nothing. The checkpoint then retires, and the training banked after
+it stays pending. A second forced save then prepares under the current
+fence. Only that save's `Saved` or `NotApplicable` settles the death, so no
+committed outcome and no in-memory successor is lost. With no retained
+checkpoint, no durable receipt, or a moved or terminal session, the outcome
+stays `FencedOut` and the live actor stays dead, as before.
+
+The pinning case,
+`death_ml_loss_composed::composed_live_death_applies_a_committed_but_fenced_checkpoint_on_postgres`,
+runs the composed scenario with the death flush's own checkpoint for the
+unsaved try retained under a stale lease fence, after the lethal hit (a
+retained checkpoint refuses creature hits, so only the death flush itself
+can leave one on a dead actor). The checkpoint's write is committed. Two
+forced saves are checked to be `FencedOut` with the checkpoint still
+retained. `respawn_after_death` then settles and respawns. The death
+receipt's `before` build holds the try, and the live actor continues on the
+lowered build.
+
+Pre-existing and out of scope: the regular cadence save has the same stale
+retained fence after such a commit. Its owner is `training_save.rs`, which
+this task does not own.
+
+Validation (PC, shared PostgreSQL 17.6, `-j 4`, D1445 scope): `cargo fmt
+--all --check` and `cargo clippy --locked -p oteryn-game-server --all-targets
+-- -D warnings` pass. `--lib -- death_ml_loss fenced_out_training_flush` 5/5
+pass, including the new case. `--lib -- gameplay_transport` 709 passed, 0
+failed, 6 ignored. With only the `mod.rs` fix reverted, the new case fails
+with "the death settles and the actor respawns", so it pins the endless
+retry.
+
+Status stays `waiting`. The record is not archived. No ready, queue or merge
+action is taken; CP alone decides merge.

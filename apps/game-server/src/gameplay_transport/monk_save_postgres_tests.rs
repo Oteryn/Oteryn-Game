@@ -680,6 +680,7 @@ mod death_ml_loss_composed {
     use crate::gameplay_transport::ComposedFreshAdmission;
     use crate::gameplay_transport::actor_spell::TrainingSave;
     use crate::spell::cast::CharacterCastFacts;
+    use crate::spell::mana_training::RetainedTrainingCheckpoint;
     use crate::spell::mana_training::hit_training::SkillFamily;
     use oteryn_simulation_determinism::ExactI64;
 
@@ -694,9 +695,24 @@ mod death_ml_loss_composed {
         std::thread::Builder::new()
             .name("death-ml-loss-composed".into())
             .stack_size(SCENARIO_STACK_BYTES)
-            .spawn(|| scenario().map_err(|error| error.to_string()))?
+            .spawn(|| scenario(false).map_err(|error| error.to_string()))?
             .join()
             .map_err(|_| "death ML loss composed thread panicked")?
+            .map_err(Into::into)
+    }
+
+    /// #2193 Codex P1 4306765047: the death flush's retained checkpoint committed, but under a
+    /// fence the session has since moved past, so every forced replay is fenced out. The live
+    /// death applies the durable receipt, retiring the checkpoint, and respawns; the death is
+    /// priced from the build holding the flushed try.
+    #[test]
+    fn composed_live_death_applies_a_committed_but_fenced_checkpoint_on_postgres() -> TestResult {
+        std::thread::Builder::new()
+            .name("death-ml-loss-fenced".into())
+            .stack_size(SCENARIO_STACK_BYTES)
+            .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "death ML loss fenced thread panicked")?
             .map_err(Into::into)
     }
 
@@ -833,11 +849,14 @@ mod death_ml_loss_composed {
         clippy::too_many_lines,
         reason = "one end-to-end scenario: setup, the lethal hit, the respawn and its checks"
     )]
-    fn scenario() -> TestResult {
-        run(async |admin| {
-            let harness =
-                Harness::create_with_admission_seed(admin, "death_ml_composed", false, false)
-                    .await?;
+    fn scenario(committed_fenced: bool) -> TestResult {
+        run(async move |admin| {
+            let name = if committed_fenced {
+                "death_ml_fenced"
+            } else {
+                "death_ml_composed"
+            };
+            let harness = Harness::create_with_admission_seed(admin, name, false, false).await?;
             prepare_current_session(&harness).await?;
             let seal = harness.recovery.seal_current().map_err(debug)?;
             let authority = harness
@@ -940,6 +959,12 @@ mod death_ml_loss_composed {
             };
             // The owner's revision writer starts after the setup writes, as after an admission.
             owner.revision_sequencer = CharacterRevisionSequencer::new();
+            // The fence a checkpoint prepared before the session's lease moved retains.
+            let stale = CurrentCharacterGameplayFence {
+                character_lease_generation: 1,
+                ..current_fence(&owner, session).await?
+            };
+            let mut retained_request = None;
 
             // The admitted actor, as first entry leaves it: placed, its Character lease bound,
             // its spell state loaded from the durable build with training enabled.
@@ -1003,6 +1028,64 @@ mod death_ml_loss_composed {
                     .ok_or("the lethal hit records the death")?
             };
             assert!(owner.spell_states.lock().await.is_dead(actor));
+            if committed_fenced {
+                // The death flush's own checkpoint for the try, retained under the stale fence
+                // (a retained checkpoint refuses creature hits, so it follows the death).
+                let runtime = dependencies.runtime.lock().await;
+                let mut states = owner.spell_states.lock().await;
+                let state = states
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("dead actor")?;
+                let prepared = state
+                    .prepare_training_checkpoint(
+                        owner.owner_now().get(),
+                        formula,
+                        occurrence(93)?,
+                        true,
+                    )
+                    .map_err(debug)?
+                    .ok_or("a checkpoint for the try")?;
+                retained_request = Some(prepared.request.clone());
+                state
+                    .retain_training_checkpoint(RetainedTrainingCheckpoint {
+                        fence: stale,
+                        prepared,
+                        formula_digest: formula.digest(),
+                    })
+                    .map_err(debug)?;
+            }
+            if let Some(request) = retained_request {
+                // Its write committed before the post-write authority check saw the moved fence.
+                let committed = harness
+                    .root
+                    .commit_character_build(
+                        &authority,
+                        &harness.node,
+                        current_fence(&owner, session).await?,
+                        request,
+                        table,
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(matches!(committed, BuildCommitOutcome::Committed(_)));
+                owner.revision_sequencer = CharacterRevisionSequencer::new();
+                // Every forced replay is fenced out and leaves the checkpoint retained.
+                for _ in 0..2 {
+                    assert_eq!(
+                        owner.save_spell_training(actor, session, true).await,
+                        TrainingSave::FencedOut
+                    );
+                }
+                let runtime = dependencies.runtime.lock().await;
+                let mut states = owner.spell_states.lock().await;
+                assert!(
+                    states
+                        .get_mut(&runtime, actor, session)
+                        .ok_or("dead actor")?
+                        .pending_training_checkpoint()
+                        .is_some()
+                );
+            }
 
             // The composed respawn: flush, priced death, placement, rebase and refill.
             let (_, vitals) = owner
