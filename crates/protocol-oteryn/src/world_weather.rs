@@ -1,6 +1,6 @@
 //! WEATHER-1 candidate visual payload codec (CP D1111, D1026–D1027).
 //!
-//! This is an owned review candidate, not a registered schema or protocol-owner sign-off.
+//! Registered (not offered) in `PROTOCOL_OTERYN_V1_REGISTRY.json`; protocol-owner D1027 sign-off is pending.
 //! Candidate protobuf layout: required field 1 varint status (1 Unavailable, 2 Active);
 //! Active additionally requires field 2 bytes binding token (exactly 32 public, non-secret
 //! revision-identity bytes), field 3 uint64 absolute slot (present even at zero), and field 4
@@ -25,6 +25,10 @@ pub const CAPABILITY_WORLD_WEATHER_V1_REQUIRES: [u32; 1] =
     [crate::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES];
 /// D1137 allocated leaf ID; this constant does not register a state domain or enable an offer.
 pub const STATE_DOMAIN_WORLD_WEATHER: u32 = 22;
+/// Delta type 1 `WORLD_WEATHER_DELTA_V1`; snapshot and delta carry the same full replacement.
+pub const DELTA_TYPE_WORLD_WEATHER_V1: u32 = 1;
+/// Snapshot type 1 `WORLD_WEATHER_SNAPSHOT_V1`.
+pub const SNAPSHOT_TYPE_WORLD_WEATHER_V1: u32 = 1;
 
 pub const MAX_WORLD_WEATHER_BYTES: usize = 64;
 const _: () = assert!(MAX_WORLD_WEATHER_BYTES <= crate::MAX_STATE_DELTA_PAYLOAD_BYTES);
@@ -251,5 +255,50 @@ mod tests {
             Err(WorldWeatherWireError::Malformed)
         );
         Ok(())
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn registry_binds_the_weather_wire_ids_and_limits() {
+        const REGISTRY: &str = include_str!("../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json");
+        const SCHEMA: &str =
+            include_str!("../../../docs/contracts/protocol-oteryn/v1/world_weather_v1.proto");
+        let protocol: serde_json::Value = serde_json::from_str(REGISTRY).expect("registry");
+        let only = |section: &str, id: u32| {
+            let matches: Vec<&serde_json::Value> = protocol[section]
+                .as_array()
+                .expect(section)
+                .iter()
+                .filter(|entry| entry["id"] == id)
+                .collect();
+            assert_eq!(matches.len(), 1, "{section} {id} registered once");
+            matches[0].clone()
+        };
+        assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_WORLD_WEATHER_V1));
+        let capability = only("capabilities", CAPABILITY_WORLD_WEATHER_V1);
+        assert_eq!(capability["name"], "WORLD_WEATHER_V1");
+        assert_eq!(capability["offered"], false);
+        assert_eq!(capability["requires"], serde_json::json!([6]));
+        assert_eq!(capability["command_types"], serde_json::json!([]));
+        assert_eq!(
+            capability["state_domains"],
+            serde_json::json!([STATE_DOMAIN_WORLD_WEATHER])
+        );
+        let domain = only("state_domains", STATE_DOMAIN_WORLD_WEATHER);
+        assert_eq!(domain["capability"], CAPABILITY_WORLD_WEATHER_V1);
+        for (section, id) in [
+            ("delta_types", DELTA_TYPE_WORLD_WEATHER_V1),
+            ("snapshot_types", SNAPSHOT_TYPE_WORLD_WEATHER_V1),
+        ] {
+            let entries = domain[section].as_array().expect(section);
+            assert_eq!(entries.len(), 1, "{section}");
+            assert_eq!(entries[0]["id"], id);
+            assert_eq!(entries[0]["max_payload_bytes"], MAX_WORLD_WEATHER_BYTES);
+            assert_eq!(
+                entries[0]["payload_schema"],
+                "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1"
+            );
+        }
+        assert!(SCHEMA.contains("message WorldWeatherV1 {"));
     }
 }

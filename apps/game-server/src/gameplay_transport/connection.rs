@@ -22,7 +22,7 @@ use super::actor_spell::{
 };
 use super::attack::{COMBAT_REFRESH, CombatContinuity};
 use super::capabilities::{
-    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
+    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities, with_weather_offer,
 };
 use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
@@ -69,6 +69,7 @@ use crate::movement::pacing::StepPacer;
 use crate::world_clock::{
     DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS, WorldClockDeltaPacer, WorldClockSource,
 };
+use crate::world_weather::WorldWeatherSource;
 use oteryn_protocol_oteryn::account_achievements::{
     COMMAND_TYPE_ACCOUNT_ACHIEVEMENTS_QUERY, decode_account_achievements_query,
 };
@@ -120,6 +121,10 @@ use oteryn_protocol_oteryn::world_clock::{
 };
 use oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef as WireEntityRef;
+use oteryn_protocol_oteryn::world_weather::{
+    CAPABILITY_WORLD_WEATHER_V1, DELTA_TYPE_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1,
+    STATE_DOMAIN_WORLD_WEATHER, WorldWeather, encode_world_weather,
+};
 use quest_log::{
     QUEST_LOG_REFRESH, QuestLogContinuity, QuestLogDomain, QuestLogObservation, QuestLogState,
 };
@@ -227,6 +232,10 @@ pub(crate) struct SessionContinuity {
     /// per GameSession, so a resume or channel transfer carries it and the next snapshot follows
     /// it.
     pub(crate) world_clock_revision: u64,
+    /// WEATHER-1: the last domain 22 revision sent. Used only with capability 26; it is
+    /// cumulative per GameSession, so a resume or channel transfer carries it and the next
+    /// snapshot follows it.
+    pub(crate) world_weather_revision: u64,
 }
 
 impl SessionContinuity {
@@ -259,6 +268,7 @@ impl SessionContinuity {
             window_revision: 0,
         },
         world_clock_revision: 0,
+        world_weather_revision: 0,
     };
 }
 
@@ -510,6 +520,14 @@ pub(crate) trait FreshAdmissionAuthority {
     /// when it cannot be read: a session that selected capability 19 then fails closed.
     fn world_clock_utc_ms(&self) -> Option<u64> {
         crate::world_clock::now_utc_ms()
+    }
+
+    /// WEATHER-1 (D1025/D1026/D1446): the retained World weather source, or `None`. With `None`
+    /// capability 26 is never offered at fresh admission, and a session that selected it earlier
+    /// is sent one full `Unavailable`. The default is `None`: production has no sourced preset
+    /// data or World-config load yet, so it never offers weather and no weather effect exists.
+    fn world_weather(&self) -> Option<&WorldWeatherSource> {
+        None
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
@@ -1216,10 +1234,13 @@ where
         ));
     };
     // CAP-NEG-1: the client's supported capabilities the server offers, with their `requires`.
-    let Some(selected) = SelectedCapabilities::select(
+    // WEATHER-1: capability 26 is offered only while the authority holds a retained binding.
+    let offered = with_weather_offer(
         authority.offered_capabilities(),
-        bootstrap.supported_capabilities,
-    ) else {
+        authority.world_weather().is_some(),
+    );
+    let Some(selected) = SelectedCapabilities::select(&offered, bootstrap.supported_capabilities)
+    else {
         return Err(ConnectionEnd::AdmissionRefused(
             AdmissionRefusal::Unavailable,
         ));
@@ -1413,6 +1434,37 @@ fn world_clock_delta(
         revision,
         new_revision,
         DELTA_TYPE_WORLD_CLOCK_V1,
+        &payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame, new_revision))
+}
+
+/// WEATHER-1: the full-replacement domain 22 value at the authority's UTC time fact.
+/// `Unavailable` when the authority holds no binding (lost after selection) or no time fact.
+fn observe_weather<A: GameplayAuthority>(authority: &A) -> WorldWeather {
+    match (authority.world_weather(), authority.world_clock_utc_ms()) {
+        (Some(source), Some(now)) => source.observe(now),
+        _ => WorldWeather::Unavailable,
+    }
+}
+
+/// WEATHER-1: the domain 22 delta after `revision`, with its sequence and new revision.
+fn world_weather_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    weather: WorldWeather,
+) -> Option<(u64, Vec<u8>, u64)> {
+    let (delta_sequence, new_revision) = (sequence.checked_add(1)?, revision.checked_add(1)?);
+    let payload = encode_world_weather(weather).ok()?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_WORLD_WEATHER,
+        revision,
+        new_revision,
+        DELTA_TYPE_WORLD_WEATHER_V1,
         &payload,
     )
     .ok()?;
@@ -1853,6 +1905,25 @@ where
             revision: admitted.continuity.world_clock_revision,
             snapshot_type: SNAPSHOT_TYPE_WORLD_CLOCK_V1,
             payload: &clock_snapshot,
+        });
+    }
+    // WEATHER-1 (D1026): with capability 26 (which requires 6), domain 22 at the session's current
+    // revision; a resume or transfer sends only this full snapshot, never a delta replay, and a
+    // lost binding is one full `Unavailable`, never a fictitious preset.
+    let mut weather_sent = None;
+    let weather_snapshot;
+    if selected_capabilities.contains(CAPABILITY_WORLD_WEATHER_V1) {
+        let observed = observe_weather(authority);
+        let Ok(payload) = encode_world_weather(observed) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        weather_sent = Some(observed);
+        weather_snapshot = payload;
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_WEATHER,
+            revision: admitted.continuity.world_weather_revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_WEATHER_V1,
+            payload: &weather_snapshot,
         });
     }
     let snapshot =
@@ -2361,6 +2432,29 @@ where
                         if write_frame(stream, &frame).await.is_err() {
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
+                    }
+                }
+                // WEATHER-1: a full-replacement domain 22 delta only when the observation
+                // changed (a new absolute slot, or a lost or restored binding). Visual only: no
+                // gameplay owner is read or written.
+                if let Some(sent) = weather_sent {
+                    let observed = observe_weather(authority);
+                    if observed != sent {
+                        let Some((delta_sequence, frame, to)) = world_weather_delta(
+                            generation,
+                            sequence,
+                            admitted.continuity.world_weather_revision,
+                            observed,
+                        ) else {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        };
+                        sequence = delta_sequence;
+                        admitted.continuity.server_sequence = sequence;
+                        admitted.continuity.world_weather_revision = to;
+                        if write_frame(stream, &frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
+                        weather_sent = Some(observed);
                     }
                 }
                 continue;
@@ -5172,6 +5266,7 @@ mod tests {
                     chat_revision: 0,
                     npc: NpcContinuity::default(),
                     world_clock_revision: 0,
+                    world_weather_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.

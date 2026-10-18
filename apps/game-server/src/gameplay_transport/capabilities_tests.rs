@@ -395,6 +395,11 @@ struct NegotiatingAuthority {
     /// ITEM-USE-1c: whether the backpack holds one direct entry, and the items used.
     backpack_entry: Cell<bool>,
     item_uses: RefCell<Vec<ItemKey>>,
+    /// WEATHER-1: the retained World weather source (fixture), whether its binding is readable
+    /// now, and the authority's UTC time fact.
+    weather: Option<crate::world_weather::WorldWeatherSource>,
+    weather_bound: Cell<bool>,
+    clock_ms: Cell<u64>,
 }
 
 impl NegotiatingAuthority {
@@ -407,6 +412,9 @@ impl NegotiatingAuthority {
             item_target: RefCell::new(None),
             backpack_entry: Cell::new(false),
             item_uses: RefCell::new(Vec::new()),
+            weather: None,
+            weather_bound: Cell::new(true),
+            clock_ms: Cell::new(NOON_UTC_MS),
         }
     }
 }
@@ -453,7 +461,11 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
     }
 
     fn world_clock_utc_ms(&self) -> Option<u64> {
-        Some(NOON_UTC_MS)
+        Some(self.clock_ms.get())
+    }
+
+    fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
+        self.weather.as_ref().filter(|_| self.weather_bound.get())
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -2350,6 +2362,251 @@ mod logout_wire {
             .await?;
             assert_eq!(authority.logouts.get(), 2);
             assert_eq!(results(&written)?.len(), 2);
+            Ok(())
+        })
+    }
+}
+
+/// WEATHER-1 (D1023..D1026, D1446): capability 26 through the real admission and serve path.
+/// The source is a fixture identity policy; production has no sourced table and no World-config
+/// load, so it never holds a source and never offers 26.
+mod weather_wire {
+    use super::*;
+    use crate::world_clock::RetainedWorldConfig;
+    use crate::world_weather::{WEATHER_SLOT_MS, WeatherPolicy, WorldWeatherSource};
+    use oteryn_protocol_oteryn::world_weather::{
+        CAPABILITY_WORLD_WEATHER_V1, DELTA_TYPE_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1,
+        STATE_DOMAIN_WORLD_WEATHER, WorldWeather, decode_world_weather,
+    };
+    use oteryn_protocol_oteryn::{decode_snapshot_chunk, decode_state_delta};
+    use std::task::Poll;
+    use std::time::Duration;
+
+    fn source(seed: u8) -> Result<WorldWeatherSource, Box<dyn Error>> {
+        let all: Vec<u8> = (1..=16).collect();
+        Ok(WorldWeatherSource::new(
+            WorldId::decode(&WORLD)?,
+            RetainedWorldConfig::for_tests(
+                WorldId::decode(&WORLD)?,
+                [seed; 32],
+                "clock-v1",
+                0,
+                "policy-7",
+            ),
+            WeatherPolicy::new(&all, &all).map_err(|error| format!("{error:?}"))?,
+        ))
+    }
+
+    fn with_source(seed: u8) -> Result<NegotiatingAuthority, Box<dyn Error>> {
+        let mut authority = NegotiatingAuthority::new(None);
+        authority.weather = Some(source(seed)?);
+        Ok(authority)
+    }
+
+    /// Domain 22 in the frames: the snapshot entries `(revision, value)` and the deltas
+    /// `(base, new, value)`; no other domain may carry weather.
+    #[allow(clippy::type_complexity)]
+    fn weather_of(
+        frames: &[Vec<u8>],
+    ) -> Result<(Vec<(u64, WorldWeather)>, Vec<(u64, u64, WorldWeather)>), Box<dyn Error>> {
+        let (mut snapshots, mut deltas) = (Vec::new(), Vec::new());
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            match envelope.message_type() {
+                MessageType::SnapshotChunk => {
+                    let (_, domains) = decode_snapshot_chunk(envelope.payload())?;
+                    for domain in domains {
+                        if domain.domain_id == STATE_DOMAIN_WORLD_WEATHER {
+                            assert_eq!(domain.snapshot_type, SNAPSHOT_TYPE_WORLD_WEATHER_V1);
+                            snapshots.push((
+                                domain.revision,
+                                decode_world_weather(domain.payload)
+                                    .map_err(|e| format!("{e:?}"))?,
+                            ));
+                        }
+                    }
+                }
+                MessageType::StateDelta => {
+                    let delta = decode_state_delta(envelope.payload())?;
+                    if delta.domain_id == STATE_DOMAIN_WORLD_WEATHER {
+                        assert_eq!(delta.delta_type, DELTA_TYPE_WORLD_WEATHER_V1);
+                        deltas.push((
+                            delta.base_revision,
+                            delta.new_revision,
+                            decode_world_weather(delta.payload).map_err(|e| format!("{e:?}"))?,
+                        ));
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok((snapshots, deltas))
+    }
+
+    fn slot_of(weather: WorldWeather) -> Result<u64, Box<dyn Error>> {
+        match weather {
+            WorldWeather::Active { absolute_slot, .. } => Ok(absolute_slot),
+            WorldWeather::Unavailable => Err("expected Active".into()),
+        }
+    }
+
+    #[test]
+    fn capability_26_is_offered_only_with_a_retained_binding_and_never_by_production()
+    -> Result<(), Box<dyn Error>> {
+        for set in [
+            PRODUCTION_OFFERED_CAPABILITIES,
+            ITEM_VIEW_OFFERED_CAPABILITIES,
+        ] {
+            assert!(
+                set.iter()
+                    .all(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
+            );
+        }
+        run(async {
+            // No binding: not offered, so a client asking for it gets 6 alone.
+            let bare = NegotiatingAuthority::new(None);
+            let (admitted, frames) = admit(&bare, &bootstrap(&[6, 26])?).await?;
+            assert!(admitted.is_ok());
+            assert_eq!(accepted_selection(&frames)?, [6]);
+            let (_, frames) = serve(&bare, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert!(weather_of(&frames)?.0.is_empty());
+            // A binding offers 26 (requiring 6); a client that does not ask for it never gets it.
+            let bound = with_source(0x31)?;
+            let (admitted, frames) = admit(&bound, &bootstrap(&[6, 26])?).await?;
+            assert!(admitted.is_ok());
+            assert_eq!(accepted_selection(&frames)?, [6, 26]);
+            let (admitted, frames) = admit(&bound, &bootstrap(&[6])?).await?;
+            assert_eq!(accepted_selection(&frames)?, [6]);
+            let (_, frames) = serve(&bound, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert!(weather_of(&frames)?.0.is_empty());
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn admission_sends_the_domain_22_snapshot_at_the_carried_revision_and_never_rerolls()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = with_source(0x31)?;
+            authority.clock_ms.set(2 * WEATHER_SLOT_MS + 17);
+            let (admitted, _) = admit(&authority, &bootstrap(&[6, 26])?).await?;
+            let mut admitted = admitted.map_err(|e| format!("{e:?}"))?;
+            assert_eq!(admitted.continuity.world_weather_revision, 0);
+            admitted.continuity.world_weather_revision = 5;
+            let (end, frames) = serve(&authority, admitted, &[]).await?;
+            let (snapshots, deltas) = weather_of(&frames)?;
+            assert!(deltas.is_empty());
+            let [(revision, first)] = snapshots[..] else {
+                return Err("one weather snapshot".into());
+            };
+            assert_eq!(revision, 5);
+            assert_eq!(slot_of(first)?, 2);
+            // A resume or transfer never winds the revision back.
+            let ConnectionEnd::AdmittedThenDisconnected(served) = end else {
+                return Err(format!("{end:?}").into());
+            };
+            assert_eq!(served.continuity.world_weather_revision, 5);
+            // Reconnect, a Channel move and a process restart (a new source from the same
+            // retained binding) show the same value for the same slot: no reroll.
+            let restarted = with_source(0x31)?;
+            restarted.clock_ms.set(2 * WEATHER_SLOT_MS + 899_000);
+            for (authority, other) in [(&authority, 0), (&restarted, 1)] {
+                let (admitted, _) = admit(authority, &bootstrap(&[6, 26])?).await?;
+                let admitted = admitted.map_err(|e| format!("{e:?}"))?;
+                let (_, frames) = serve(authority, admitted, &[]).await?;
+                assert_eq!(weather_of(&frames)?.0, [(0, first)], "{other}");
+            }
+            // Another World seed selects independently, without sharing the token.
+            let other = with_source(0x77)?;
+            other.clock_ms.set(2 * WEATHER_SLOT_MS);
+            let (admitted, _) = admit(&other, &bootstrap(&[6, 26])?).await?;
+            let (_, frames) = serve(&other, admitted.map_err(|e| format!("{e:?}"))?, &[]).await?;
+            assert_ne!(weather_of(&frames)?.0, [(0, first)]);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_new_slot_a_lost_binding_and_a_returned_binding_each_send_one_full_replacement()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = with_source(0x31)?;
+            authority.clock_ms.set(2 * WEATHER_SLOT_MS);
+            let (admitted, _) = admit(&authority, &bootstrap(&[6, 26])?).await?;
+            let mut admitted = admitted.map_err(|e| format!("{e:?}"))?;
+            admitted.continuity.world_weather_revision = 5;
+            let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+            let driving = async {
+                let beat = Duration::from_millis(400);
+                // Within the same slot nothing is sent.
+                tokio::time::sleep(beat).await;
+                authority.clock_ms.set(3 * WEATHER_SLOT_MS);
+                tokio::time::sleep(beat).await;
+                authority.weather_bound.set(false);
+                tokio::time::sleep(beat).await;
+                // Still unbound in a later slot: nothing more (one Unavailable only).
+                authority.clock_ms.set(9 * WEATHER_SLOT_MS);
+                tokio::time::sleep(beat).await;
+                authority.weather_bound.set(true);
+                tokio::time::sleep(beat).await;
+                client.shutdown().await?;
+                let mut output = Vec::new();
+                client.read_to_end(&mut output).await?;
+                Ok::<_, std::io::Error>(output)
+            };
+            let serving = async {
+                let end = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+                drop(server);
+                end
+            };
+            let (mut serving, mut driving) = (std::pin::pin!(serving), std::pin::pin!(driving));
+            let (mut end, mut output) = (None, None);
+            std::future::poll_fn(|context| {
+                if end.is_none()
+                    && let Poll::Ready(value) = serving.as_mut().poll(context)
+                {
+                    end = Some(value);
+                }
+                if output.is_none()
+                    && let Poll::Ready(value) = driving.as_mut().poll(context)
+                {
+                    output = Some(value);
+                }
+                if end.is_some() && output.is_some() {
+                    Poll::Ready(())
+                } else {
+                    Poll::Pending
+                }
+            })
+            .await;
+            let ConnectionEnd::AdmittedThenDisconnected(served) = end.ok_or("end")? else {
+                return Err("the connection did not end as a disconnect".into());
+            };
+            let frames = split(&output.ok_or("output")??)?;
+            let (snapshots, deltas) = weather_of(&frames)?;
+            assert_eq!(snapshots.len(), 1);
+            assert_eq!(snapshots[0].0, 5);
+            assert_eq!(slot_of(snapshots[0].1)?, 2);
+            let [(b1, n1, slot3), (b2, n2, lost), (b3, n3, back)] = deltas[..] else {
+                return Err(format!("expected three deltas, got {deltas:?}").into());
+            };
+            assert_eq!((b1, n1, slot_of(slot3)?), (5, 6, 3));
+            assert_eq!((b2, n2, lost), (6, 7, WorldWeather::Unavailable));
+            assert_eq!((b3, n3, slot_of(back)?), (7, 8, 9));
+            assert_eq!(served.continuity.world_weather_revision, 8);
+            // Visual only: no gameplay domain moved with it.
+            let mut domains = Vec::new();
+            for frame in &frames {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::StateDelta {
+                    domains.push(decode_state_delta(envelope.payload())?.domain_id);
+                }
+            }
+            assert!(
+                domains
+                    .iter()
+                    .all(|&domain| domain == STATE_DOMAIN_WORLD_WEATHER)
+            );
             Ok(())
         })
     }

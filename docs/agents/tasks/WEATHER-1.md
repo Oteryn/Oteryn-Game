@@ -26,13 +26,14 @@ owned_paths:
   - apps/game-server/src/world_weather.rs
   - apps/game-server/src/world_weather_tests.rs
   - crates/protocol-oteryn/src/world_weather.rs
-slot_only_paths:
+  - docs/contracts/protocol-oteryn/v1/world_weather_v1.proto
   - apps/game-server/src/lib.rs
   - apps/game-server/src/gameplay_transport/connection.rs
-  - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/capabilities.rs
+  - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - crates/protocol-oteryn/src/lib.rs
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
+slot_only_paths: []
 public_contracts: []
 depends_on:
   - "D1190: owned World binding plus canonical occurrence/A2 integration required before offer"
@@ -185,13 +186,15 @@ protocol-owner sign-off. This authoring allocation does not grant it.
 - [x] Owned candidate codec and negative tests authored; no registration/sign-off claim.
 - [x] Residue checked against observed main and exact CP ruling before this batch.
 - [x] Historical exact-source native component compilation, strict lint, discovery and11 tests:6 server +5 protocol.
-- [ ] Production head integration and normal all-target/package CI qualification after the caller slot.
-- [ ] Protocol-owner D1027 sign-off, accepted schema and slot registry bindings.
-- [ ] WEATHER-SEAM-1 actual World/private seed/clock/policy binding and canonical occurrence.
-- [ ] Real caller plus server module declaration/capability/transport in one allocated slot.
-- [ ] No binding means no offer; binding loss emits one full Unavailable only while current.
-- [ ] A stale owner emits nothing; replay/restart/Channel moves never reseed or reroll.
-- [ ] Live visual-only gameplay isolation and WEATHER-CLIENT-1 consumer/assets.
+- [x] Registry (capability 26, state domain 22), proto, constants and requirement rows registered, `offered: false`.
+- [x] Canonical occurrence/token (`WorldWeatherSource`) over the retained World binding; no seed or slot in the public token.
+- [x] Server module, offer seam and connection wiring (admission snapshot, `Next::Visibility` delta); e2e in `capabilities_tests.rs::weather_wire`.
+- [x] No binding means no offer; binding loss emits one full Unavailable; restart/reconnect/Channel move never reroll (e2e).
+- [ ] Production head integration and normal all-target/package CI qualification (CI).
+- [ ] Protocol-owner D1027 sign-off (pending; blocks flipping `offered`).
+- [ ] A2: World-config load + sourced preset table/selector (CP D1446: none exists, so production holds no source and offers nothing).
+- [x] Visual-only isolation at the wire: the e2e asserts only domain 22 deltas move with weather.
+- [ ] WEATHER-CLIENT-1 consumer/assets.
 
 No standalone `lib.rs` declaration, lint allowance, path harness, fixture binding,
 client/renderer edit, content file or slot wiring is part of this batch. Shared
@@ -242,11 +245,11 @@ Later caller/slot integration retains the repository's normal package gates:
 ## Checkpoint
 
 ```yaml
-last_progress: D1190 real checked-secret retained World loader authored; private A2 caller proposal retained
+last_progress: CP D1446 fail-closed seam wired end to end; unsourced rain/fog/snow weights removed
 status: NOT_FULLY_QUALIFIED
 branch: skeleton/weather-1
-blocker: D1190 A2 composition after2187+2182; native loader/caller qualification; canonical occurrence and D1027 review
-next_action: lead reviews owned loader and frozen private A2 proposal; preserve NOT_RUN and no offer before integration
+blocker: D1027 protocol-owner sign-off; A2 World-config load; sourced preset data (D1446)
+next_action: after sign-off and data, supply a source in production and flip registry offered; until then no weather effects
 ```
 
 Lead independent source review PASS for the owned retained-config leaf; changed-file
@@ -282,3 +285,13 @@ already-owned loader/test hunks. Exact patch SHA256
 `f116b6430005f1f0f1eb68feac3718cd946edb26d4597b89fd7a6cd7da399f83`;
 all before/after hashes and exact apply roundtrip retained outside the product.
 The v1 proposal remains immutable historical evidence. No shared caller is pushed.
+
+
+### D1446 wiring (supersedes the NOT_RUN notes above)
+
+The unsourced 6/5/5 rain/fog/snow table was removed; no preset values are invented. Capability 26
+is registered but not offered. `GameplayAuthority::world_weather()` defaults to `None`, so
+production never offers 26; an authority holding a retained binding offers it dynamically
+(`with_weather_offer`), sends the domain 22 snapshot at admission and one full-replacement delta per
+new absolute slot, lost binding (one `Unavailable`) or restored binding. Validation of the
+candidate is recorded in the PR status comment.

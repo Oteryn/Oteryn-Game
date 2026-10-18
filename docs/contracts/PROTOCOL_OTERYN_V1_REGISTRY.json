@@ -246,6 +246,17 @@
       "offer_gate": "PRESENT-WIRE-1 registers the codecs only: the server does not offer this capability before SPELL-PRESENT-1 or COMBAT-PRESENT-1 composes an emitter, and the B3 batch measurement of SPELL-PRESENT-0 §9 is recorded on #162 before activation. It requires 6 WORLD_SPATIAL_ENTITIES, whose D85 identities the events name. With it selected, domain 19 carries at most one batch of presentation events per sync unit (SPELLPRES0-RL-01..03; overflow keeps the observer's own events, then the nearest by D87, ties by decision and emission ordinal; a batch is dropped whole while SPELLPRES0-RL-07 batches are undelivered or a snapshot is in flight), domain 20 carries the own actor's cooldowns (a snapshot at admission, reconnect and channel transfer; a delta at each PRIMARY COMMIT that starts or changes one, and one corrective delta at the first liveness ack), and the command type 3 result may carry field 2 detail. Without it selected, domains 19 and 20 and field 2 are never sent and the session keeps today's behaviour; it is not refused."
     },
     {
+      "id": 26,
+      "name": "WORLD_WEATHER_V1",
+      "owner_decision": "CP D1023-D1028 (#2202 comment6216591471); D1137 allocates capability 26 and state domain 22 as leaf constants; D1446 fails closed without sourced preset data",
+      "owner": "WEATHER-1; the World-config owner supplies the retained binding and the policy",
+      "requires": [6],
+      "command_types": [],
+      "state_domains": [22],
+      "offered": false,
+      "offer_gate": "Offered per connection and never from a static set: the authority must expose a retained World weather source (World-bound private seed, clock identity and epoch, policy revision, and an admitted 16-entry preset policy). Production has none (D1446: no sourced preset data), so it never offers 26. Without a source a session never selects 26. With 26 selected, domain 22 carries a full snapshot at admission, reconnect and channel transfer and a full-replacement delta when the absolute 900,000 ms slot changes; a lost binding sends one Unavailable and no fictitious preset. Visual only. D1027 protocol-owner sign-off is pending."
+    },
+    {
       "id": 28,
       "name": "ITEM_LOOK_V1",
       "owner_decision": "CP D1240 comment6226466175 (#2182 payload and capability allocation); D1240a comment6226563247 (sole-writer registry/list/closure and next ledger29)",
@@ -895,6 +906,16 @@
           "max_payload_bytes": 65552
         }
       ]
+    },
+    {
+      "id": 22,
+      "name": "WORLD_WEATHER",
+      "owner_decision": "CP D1023-D1028 (#2202); D1137 allocates state domain 22",
+      "owner": "current ChannelRuntime",
+      "capability": 26,
+      "revision": "per GameSessionId, monotonic and never reused: 0 at the initial snapshot, plus 1 for each delta sent; never reset at a reconnect or channel transfer; a resync, reconnect or channel transfer sends only a snapshot and never replays a delta",
+      "delta_types": [{"id": 1, "name": "WORLD_WEATHER_DELTA_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}],
+      "snapshot_types": [{"id": 1, "name": "WORLD_WEATHER_SNAPSHOT_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}]
     }
   ],
   "error_codes": [

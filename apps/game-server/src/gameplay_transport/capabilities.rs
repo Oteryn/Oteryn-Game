@@ -55,6 +55,9 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+use oteryn_protocol_oteryn::world_weather::{
+    CAPABILITY_WORLD_WEATHER_V1, CAPABILITY_WORLD_WEATHER_V1_REQUIRES, STATE_DOMAIN_WORLD_WEATHER,
+};
 
 /// One capability the server offers, with the capabilities that must also be selected for it
 /// (the registry entry's `requires`, empty when the entry has none).
@@ -70,6 +73,31 @@ const WORLD_LIGHT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_LIGHT_V1,
     requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
 };
+
+/// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. It is in no static
+/// set: a connection adds it only when its authority exposes a retained weather source
+/// (D1025/D1446), see [`with_weather_offer`].
+pub(crate) const WORLD_WEATHER: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_WORLD_WEATHER_V1,
+    requires: &CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
+};
+
+/// The offered set of one connection: `base` without capability 26 unless `weather_bound`, plus
+/// 26 when `weather_bound` (no binding means no offer).
+pub(crate) fn with_weather_offer(
+    base: &[OfferedCapability],
+    weather_bound: bool,
+) -> Vec<OfferedCapability> {
+    let mut offered: Vec<OfferedCapability> = base
+        .iter()
+        .copied()
+        .filter(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
+        .collect();
+    if weather_bound {
+        offered.push(WORLD_WEATHER);
+    }
+    offered
+}
 
 /// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. It is the
 /// highest offered ID, so every offered set ends with it.
@@ -249,6 +277,11 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
         &[STATE_DOMAIN_WORLD_MAP_VIEW],
     ),
     (CAPABILITY_WORLD_LIGHT_V1, &[], &[STATE_DOMAIN_WORLD_CLOCK]),
+    (
+        CAPABILITY_WORLD_WEATHER_V1,
+        &[],
+        &[STATE_DOMAIN_WORLD_WEATHER],
+    ),
     (CAPABILITY_LOGOUT_V1, &[COMMAND_TYPE_LOGOUT_INTENT], &[]),
     // RUNE-USE-0 §4: owns no command type or domain; it gates the USE position arm and
     // dispositions 18 and 19, and is not offered before RUNE-CAST-1.

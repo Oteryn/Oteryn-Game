@@ -1,3 +1,5 @@
+#![allow(clippy::expect_used, clippy::panic)]
+
 use super::*;
 
 #[test]
@@ -97,31 +99,97 @@ fn selection_reuses_the_existing_sim_primitive_without_rng_state()
     Ok(())
 }
 
+fn test_world(last: u8) -> WorldId {
+    let mut bytes = [0; 16];
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    bytes[15] = last;
+    WorldId::decode(&bytes).expect("fixture World id")
+}
+
+/// Fixture policy only (CP D1446: no shipped table exists); it exercises the seam.
+fn test_source(seed: u8, world: u8, bound: u8) -> WorldWeatherSource {
+    let all: Vec<u8> = (1..=16).collect();
+    WorldWeatherSource::new(
+        test_world(world),
+        RetainedWorldConfig::for_tests(
+            test_world(bound),
+            [seed; 32],
+            "clock-v1",
+            18_000_000,
+            "policy-7",
+        ),
+        WeatherPolicy::new(&all, &all).expect("fixture policy"),
+    )
+}
+
+fn active(weather: WorldWeather) -> (u64, u8, [u8; 32]) {
+    match weather {
+        WorldWeather::Active {
+            binding_token,
+            absolute_slot,
+            preset_index,
+        } => (absolute_slot, preset_index, binding_token),
+        WorldWeather::Unavailable => panic!("expected Active"),
+    }
+}
+
 #[test]
-fn owned_visual_map_and_policy_contain_only_rain_fog_and_snow() -> Result<(), WeatherPolicyError> {
+fn source_observation_is_direct_slot_stable_across_restart_and_seedless_in_the_token() {
+    let epoch = 18_000_000;
+    let first = test_source(0x31, 1, 1);
+    let (slot0, preset0, token) = active(first.observe(epoch));
+    assert_eq!(slot0, 0);
+    // P-1 stays in slot 0, P and P+1 are slot 1; an instant replacement, no history.
     assert_eq!(
-        WEATHER_VISUAL_PRESETS,
-        [
-            (WeatherPreset(1), WeatherVisual::Rain),
-            (WeatherPreset(2), WeatherVisual::Fog),
-            (WeatherPreset(3), WeatherVisual::Snow),
-        ]
+        first.observe(epoch + WEATHER_SLOT_MS - 1),
+        first.observe(epoch)
     );
-    let entries = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3];
+    let (slot1, _, token1) = active(first.observe(epoch + WEATHER_SLOT_MS));
+    assert_eq!(slot1, 1);
+    assert_eq!(token1, token);
     assert_eq!(
-        WEATHER_VISUAL_POLICY,
-        WeatherPolicy::new(&[1, 2, 3], &entries)?
+        first.observe(epoch + WEATHER_SLOT_MS),
+        first.observe(epoch + WEATHER_SLOT_MS + 1)
     );
-    for (bucket, expected) in entries.into_iter().enumerate() {
-        let preset = WEATHER_VISUAL_POLICY.preset_for_draw((bucket as u64) << 60);
-        assert_eq!(preset.index(), expected);
-        assert!(
-            WEATHER_VISUAL_PRESETS
-                .iter()
-                .any(|(known, _)| *known == preset)
+    // A restarted process (fresh source from the same retained inputs) never rerolls, and the
+    // order of earlier observations does not matter.
+    let restarted = test_source(0x31, 1, 1);
+    for offset in [
+        5 * WEATHER_SLOT_MS,
+        0,
+        1_000_000 * WEATHER_SLOT_MS,
+        WEATHER_SLOT_MS,
+    ] {
+        assert_eq!(
+            restarted.observe(epoch + offset),
+            first.observe(epoch + offset)
         );
     }
-    Ok(())
+    assert_eq!(active(restarted.observe(epoch)).1, preset0);
+    // A different seed changes the draw stream but not the public token; the token is not seed.
+    let other_seed = test_source(0x32, 1, 1);
+    assert_eq!(active(other_seed.observe(epoch)).2, token);
+    assert!((0..64).any(|n| {
+        active(other_seed.observe(epoch + n * WEATHER_SLOT_MS)).1
+            != active(first.observe(epoch + n * WEATHER_SLOT_MS)).1
+    }));
+    assert!(!token.windows(32).any(|w| w == [0x31; 32]));
+    // Another World's binding yields a different token.
+    assert_ne!(active(test_source(0x31, 2, 2).observe(epoch)).2, token);
+}
+
+#[test]
+fn source_fails_closed_without_a_readable_binding_or_before_the_epoch() {
+    // The source's World differs from the retained config's World: not readable.
+    assert_eq!(
+        test_source(0x31, 1, 2).observe(18_000_000),
+        WorldWeather::Unavailable
+    );
+    assert_eq!(
+        test_source(0x31, 1, 1).observe(17_999_999),
+        WorldWeather::Unavailable
+    );
 }
 
 #[test]

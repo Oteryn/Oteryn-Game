@@ -96,6 +96,24 @@ impl RetainedWorldConfig {
         })
     }
 
+    /// Test-only: a retained binding from fixed bytes. Production has no raw-seed constructor.
+    #[cfg(test)]
+    pub(crate) fn for_tests(
+        world: WorldId,
+        seed: [u8; 32],
+        clock_identity: &str,
+        clock_epoch_utc_ms: u64,
+        policy_revision: &str,
+    ) -> Self {
+        Self {
+            world,
+            root: GameplayDecisionRoot::from_bytes(seed),
+            clock_identity: clock_identity.to_owned(),
+            clock: WorldClockSource::new(clock_epoch_utc_ms),
+            policy_revision: policy_revision.to_owned(),
+        }
+    }
+
     /// D1190: another World cannot read this seed/clock/policy binding.
     pub(crate) fn read(&self, world: WorldId) -> Option<WorldConfigRead<'_>> {
         (self.world == world).then_some(WorldConfigRead {
@@ -194,6 +212,10 @@ pub(crate) struct WorldClockSource {
 impl WorldClockSource {
     pub(crate) fn new(epoch_utc_ms: u64) -> Self {
         Self { epoch_utc_ms }
+    }
+
+    pub(crate) fn epoch_utc_ms(&self) -> u64 {
+        self.epoch_utc_ms
     }
 
     /// Read the absolute elapsed time from this clock's retained epoch. Unlike the Tibian

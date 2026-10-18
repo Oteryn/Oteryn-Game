@@ -6,8 +6,12 @@
 //! no Channel, process generation, wall-clock read, default epoch or fixture seed is introduced
 //! here. Canonical occurrence derivation and the read-only binding belong to WEATHER-SEAM-1;
 //! the server must not offer weather before that seam and the reviewed wire are integrated.
-//! D1111 assigns the rain/fog/snow map and selector data below to WEATHER-1.
+//! CP D1446: no sourced preset data exists, so this module authors none. A World offers weather
+//! only when its [`WorldWeatherSource`] (retained binding plus an admitted policy) is present.
 
+use crate::foundation::WorldId;
+use crate::world_clock::RetainedWorldConfig;
+use oteryn_protocol_oteryn::world_weather::WorldWeather;
 use oteryn_simulation_determinism::{
     DecisionError, DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -27,9 +31,10 @@ pub(crate) fn absolute_weather_slot(epoch_utc_ms: u64, normalized_utc_ms: u64) -
 }
 
 /// An explicitly admitted policy-local preset identity; it is not a registered wire value.
-/// WEATHER-1 maps shipped identities to rain, fog and snow below; client assets remain a
-/// separate WEATHER-CLIENT-1 integration requirement.
-/// There is deliberately no `Default` or "clear" variant.
+/// There is deliberately no `Default` or "clear" variant, and (CP D1446) no preset table is
+/// authored here: the repository has no sourced rain/fog/snow preset or weight data, so the
+/// World-config owner must supply an admitted [`WeatherPolicy`] through the
+/// [`WorldWeatherSource`] seam. Client assets remain WEATHER-CLIENT-1.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct WeatherPreset(u8);
 
@@ -38,45 +43,6 @@ impl WeatherPreset {
         self.0
     }
 }
-
-/// Visual identities only: none is a gameplay modifier or a client asset path.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum WeatherVisual {
-    Rain,
-    Fog,
-    Snow,
-}
-
-/// D1111: authored in this owned module, without a new content file or a clear preset.
-pub(crate) const WEATHER_VISUAL_PRESETS: [(WeatherPreset, WeatherVisual); 3] = [
-    (WeatherPreset(1), WeatherVisual::Rain),
-    (WeatherPreset(2), WeatherVisual::Fog),
-    (WeatherPreset(3), WeatherVisual::Snow),
-];
-
-/// Explicit authored weights: rain 6/16, fog 5/16, snow 5/16. A World must bind this
-/// policy and its retained revision explicitly; this data never substitutes for a missing
-/// World binding. No implicit default, clock, activation rule or asset admission is supplied.
-pub(crate) const WEATHER_VISUAL_POLICY: WeatherPolicy = WeatherPolicy {
-    selector: [
-        WeatherPreset(1),
-        WeatherPreset(1),
-        WeatherPreset(1),
-        WeatherPreset(1),
-        WeatherPreset(1),
-        WeatherPreset(1),
-        WeatherPreset(2),
-        WeatherPreset(2),
-        WeatherPreset(2),
-        WeatherPreset(2),
-        WeatherPreset(2),
-        WeatherPreset(3),
-        WeatherPreset(3),
-        WeatherPreset(3),
-        WeatherPreset(3),
-        WeatherPreset(3),
-    ],
-};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WeatherPolicyError {
@@ -144,6 +110,81 @@ impl WeatherPolicy {
         deterministic_decision_u64(world_root, occurrence, WEATHER_PURPOSE, 0)
             .map(|draw| self.preset_for_draw(draw))
     }
+}
+
+/// The retained, World-bound weather binding and its admitted policy: the seam through which a
+/// connection observes weather (D1025/D1446). Immutable input data; it is neither ownership nor
+/// session authority, and it holds no timer, history or mutable RNG. Restart, reconnect and
+/// Channel move construct no new seed: the observation is a pure function of this binding and
+/// the absolute slot.
+pub(crate) struct WorldWeatherSource {
+    world: WorldId,
+    config: RetainedWorldConfig,
+    policy: WeatherPolicy,
+}
+
+impl WorldWeatherSource {
+    pub(crate) fn new(world: WorldId, config: RetainedWorldConfig, policy: WeatherPolicy) -> Self {
+        Self {
+            world,
+            config,
+            policy,
+        }
+    }
+
+    /// The full-replacement observation at a UTC time fact. `Unavailable` (never a fictitious
+    /// preset) when the binding is not readable for this World or the fact precedes the epoch.
+    pub(crate) fn observe(&self, now_utc_ms: u64) -> WorldWeather {
+        self.try_observe(now_utc_ms)
+            .unwrap_or(WorldWeather::Unavailable)
+    }
+
+    fn try_observe(&self, now_utc_ms: u64) -> Option<WorldWeather> {
+        let read = self.config.read(self.world)?;
+        let epoch = read.clock.epoch_utc_ms();
+        let slot = absolute_weather_slot(epoch, now_utc_ms)?;
+        let identity =
+            binding_identity(self.world, read.clock_identity, read.policy_revision, epoch);
+        let token = digest(b"oteryn.weather.binding.v1", &identity, &[]);
+        let occurrence = digest(
+            b"oteryn.weather.occurrence.v1",
+            &identity,
+            &slot.to_be_bytes(),
+        );
+        let mut id = [0_u8; 16];
+        id.copy_from_slice(&occurrence[..16]);
+        let preset = self
+            .policy
+            .select(read.root, DecisionOccurrenceId::from_bytes(id))
+            .ok()?;
+        Some(WorldWeather::Active {
+            binding_token: token,
+            absolute_slot: slot,
+            preset_index: preset.index(),
+        })
+    }
+}
+
+/// Canonical public binding identity: World, clock identity, policy revision and epoch. Never
+/// contains the seed.
+fn binding_identity(world: WorldId, clock: &str, policy: &str, epoch: u64) -> Vec<u8> {
+    let mut identity = world.as_bytes().to_vec();
+    for text in [clock, policy] {
+        identity.extend_from_slice(&(text.len() as u32).to_be_bytes());
+        identity.extend_from_slice(text.as_bytes());
+    }
+    identity.extend_from_slice(&epoch.to_be_bytes());
+    identity
+}
+
+fn digest(domain: &[u8], identity: &[u8], suffix: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    Sha256::new()
+        .chain_update(domain)
+        .chain_update(identity)
+        .chain_update(suffix)
+        .finalize()
+        .into()
 }
 
 #[cfg(test)]

@@ -831,6 +831,11 @@ mod welter_consume;
     reason = "LOOP-CLOCK-1 registers the pure World clock; the WORLD_LIGHT_V1 offer composes it later"
 )]
 mod world_clock;
+#[allow(
+    dead_code,
+    reason = "CP D1446: no sourced preset data and no production World-config source exist, so only the connection seam consumes the weather source; a data PR plus the A2 config load supply it"
+)]
+mod world_weather;
 
 #[allow(
     dead_code,
