@@ -13,14 +13,14 @@
           "value": "Trigger chance and intensity are independent; applies to spells/runes as well as attacks.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.5"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "intrinsic_chance": {
           "value": 5,
@@ -57,14 +57,14 @@
           "value": "Chance to restore HP or mana as a fraction of damage dealt.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.5"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "life_formula": {
           "value": null,

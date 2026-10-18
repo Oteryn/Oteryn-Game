@@ -71,6 +71,17 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "e6a10f2d73871e8f63d5c3a1eaad199863e033148028528a06f1c11baf4aba12",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Critical%20Hit%7CLife%20Leech%7CMana%20Leech%7CSkills&redirects=1"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
     }
   }
 }
