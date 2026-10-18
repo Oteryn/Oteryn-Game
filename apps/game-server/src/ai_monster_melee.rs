@@ -4,6 +4,8 @@
 //! Source intervals/chances are retained; missed owner turns coalesce without bursts.
 //! CREATURE-AI-1 §1.5: the swing is the profile's one melee entry; its chance is drawn in ppm
 //! with purpose `AI_ATTACK` bound to (creature, swing sequence, entry index).
+use std::collections::{BTreeMap, btree_map};
+
 use crate::ability::creature_bite::{
     AppliedBite, BiteRejection, CREATURE_BITE_LEDGER_MAX, CreatureBiteDefinition,
     CreatureBiteLedger, CreatureBiteVitals, ReentryProtection, commit_ai_bite,
@@ -72,10 +74,17 @@ struct Entry {
 }
 #[derive(Debug, Default)]
 pub(crate) struct MonsterMeleeOwner {
-    entries: Vec<Entry>,
+    /// Keyed by the issuer's slot (`actor_local_id`), at most one entry per carrier slot and so
+    /// at most `CREATUREAI0-RL-04` (SPAWN-CEILINGS-1, Codex 4242381779: no longer the D57 64). A
+    /// newer generation in the slot replaces the dead issuer's entry in place.
+    entries: BTreeMap<u32, Entry>,
     bites: CreatureBiteLedger,
     /// CREATURE-AI-1 §2.1: the Channel's creature thinks, which decide each swing's target.
     pub(crate) creature_ai: crate::ai_think::CreatureAiTable,
+    /// The first owner time of the next pass that swings (SPAWN-CEILINGS-1, Codex 4243189401):
+    /// swings keep one pass per `CREATURE_THINK_INTERVAL_MILLIS`, while the passes between them
+    /// only run thinks left due by `CREATUREAI0-RL-05`.
+    pub(crate) next_swing_pass_us: u64,
 }
 impl MonsterMeleeOwner {
     /// One scheduled owner think, at most one existing typed bite. The selected
@@ -108,27 +117,29 @@ impl MonsterMeleeOwner {
         {
             return Err(BiteRejection::InvalidPlan);
         }
-        self.entries
-            .retain(|e| runtime.contains_live_creature(e.actor));
-        let index = match self.entries.iter().position(|e| e.actor == issuer) {
-            Some(index) => index,
-            None => {
-                if self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
+        let fresh = Entry {
+            actor: issuer,
+            definition,
+            due_us: now.get(),
+            last: None,
+        };
+        let entries = self.entries.len();
+        // The issuer is live, so another generation's entry in its slot is a dead issuer's.
+        let entry = match self.entries.entry(issuer.actor_local_id()) {
+            btree_map::Entry::Occupied(occupied) => {
+                let entry = occupied.into_mut();
+                if entry.actor != issuer {
+                    *entry = fresh;
+                }
+                entry
+            }
+            btree_map::Entry::Vacant(vacant) => {
+                if entries >= CREATURE_BITE_LEDGER_MAX {
                     return Err(BiteRejection::LedgerFull);
                 }
-                self.entries
-                    .try_reserve(1)
-                    .map_err(|_| BiteRejection::LedgerFull)?;
-                self.entries.push(Entry {
-                    actor: issuer,
-                    definition,
-                    due_us: now.get(),
-                    last: None,
-                });
-                self.entries.len() - 1
+                vacant.insert(fresh)
             }
         };
-        let entry = &mut self.entries[index];
         if entry.definition != definition {
             return Err(BiteRejection::OccurrenceConflict);
         }
@@ -295,6 +306,9 @@ mod tests {
         GameSessionId,
     );
     fn fixture() -> Result<Fixture, String> {
+        fixture_with(4)
+    }
+    fn fixture_with(capacity: usize) -> Result<Fixture, String> {
         let world = WorldId::decode(&uuid(1)).map_err(|error| format!("{error:?}"))?;
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -304,7 +318,7 @@ mod tests {
             1,
             1,
             "runtime-scope-assignment:1",
-            4,
+            capacity,
             ChannelContentPin::test(world),
         )
         .map_err(|error| format!("{error:?}"))?;
@@ -478,7 +492,8 @@ mod tests {
             .map_err(|error| format!("{error:?}"))?;
         assert_eq!(vitals.health, 0, "DEATH-2: a creature bite may be lethal");
         assert_eq!(
-            owner.entries[0].due_us, 11_000_000,
+            owner.entries.values().next().map(|entry| entry.due_us),
+            Some(11_000_000),
             "missed turns never burst"
         );
         Ok(())
@@ -515,7 +530,10 @@ mod tests {
             )
             .map_err(|error| format!("{error:?}"))?;
         assert_eq!(result, Dispatch::Decision(ThinkOutcome::Idle));
-        assert_eq!(owner.entries[0].due_us, 2_000_000);
+        assert_eq!(
+            owner.entries.values().next().map(|entry| entry.due_us),
+            Some(2_000_000)
+        );
         assert_eq!((vitals.health, vitals.revision), (20, 0));
         let mut protected = MonsterMeleeOwner::default();
         let def = definition(&runtime, 1_000_000)?;
@@ -627,6 +645,96 @@ mod tests {
         assert!(MeleeDefinition::new([3; 32], 2000, 123_456, 0, 8).is_some());
         assert!(MeleeDefinition::new([3; 32], 2000, 1_000_000, 9, 8).is_none());
         assert!(MeleeDefinition::new([3; 32], 2000, 0, 0, 0).is_none());
+        Ok(())
+    }
+    /// SPAWN-CEILINGS-1 (Codex 4242381779): past the D57 64 and the old `AI01-ACTIVE-ACTORS`
+    /// 256, every live issuer keeps a melee entry and a bite entry and none is refused
+    /// `LedgerFull`; a newer generation in a dead issuer's slot starts fresh.
+    #[test]
+    fn three_hundred_issuers_each_keep_their_entries_and_a_reused_slot_starts_fresh()
+    -> Result<(), String> {
+        const ISSUERS: usize = 300;
+        // One player and 300 creatures fill every slot.
+        let (mut runtime, first, target, session) = fixture_with(ISSUERS + 1)?;
+        let mut issuers = vec![first];
+        for index in 1..ISSUERS {
+            let x = i32::try_from(index).map_err(|error| format!("{error:?}"))? * 3 + 10;
+            issuers.push(
+                runtime
+                    .admit_test_creature(position(x))
+                    .map_err(|error| format!("{error:?}"))?,
+            );
+        }
+        let mut owner = MonsterMeleeOwner::default();
+        let mut vitals = Vitals {
+            health: 1_000,
+            revision: 0,
+        };
+        let def = definition(&runtime, 1_000_000)?;
+        let resolve = |_| {
+            Some((
+                target,
+                session,
+                ReentryProtection {
+                    protected_until: None,
+                },
+            ))
+        };
+        let mut swing = |runtime: &mut ChannelRuntimeV1, owner: &mut MonsterMeleeOwner, issuer| {
+            owner.think(
+                runtime,
+                &mut vitals,
+                issuer,
+                1,
+                def,
+                input(1),
+                &perceived(),
+                resolve,
+                revisions().map_err(|_| BiteRejection::InvalidPlan)?,
+                SemanticTimeMicros::from_micros(0),
+            )
+        };
+        for issuer in &issuers {
+            // Only the first issuer stands next to the player; every other bite is out of range,
+            // but each issuer's entries are made and kept.
+            let dispatch =
+                swing(&mut runtime, &mut owner, *issuer).map_err(|error| format!("{error:?}"))?;
+            assert!(matches!(
+                dispatch,
+                Dispatch::Bite(Ok(_) | Err(BiteRejection::OutOfRange))
+            ));
+        }
+        assert_eq!((owner.entries.len(), owner.bites.len()), (ISSUERS, ISSUERS));
+        // The first issuer's bite landed. Its slot is then the only free one, so the next
+        // creature takes it.
+        let dead = first;
+        runtime
+            .remove_test_actor(dead)
+            .map_err(|error| format!("{error:?}"))?;
+        let newer = runtime
+            .admit_test_creature(position(-5))
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(newer.actor_local_id(), dead.actor_local_id());
+        assert_ne!(newer, dead);
+        // The same think sequence is the newer issuer's own, not a replay of the dead one's
+        // landed bite.
+        assert_eq!(
+            swing(&mut runtime, &mut owner, newer),
+            Ok(Dispatch::Bite(Err(BiteRejection::OutOfRange)))
+        );
+        // The melee entry is replaced in its slot; the bite ledger keys the exact generation and
+        // keeps the dead one's entry until it is retired or the ledger is full.
+        assert_eq!(
+            (owner.entries.len(), owner.bites.len()),
+            (ISSUERS, ISSUERS + 1)
+        );
+        assert_eq!(
+            owner
+                .entries
+                .get(&newer.actor_local_id())
+                .map(|entry| entry.actor),
+            Some(newer)
+        );
         Ok(())
     }
 }

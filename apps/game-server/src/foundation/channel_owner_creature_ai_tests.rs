@@ -94,6 +94,10 @@ struct Channel {
 
 impl Channel {
     fn new() -> Self {
+        Self::with_capacity(8)
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
         let world = WorldId::decode(&uuid(1)).expect("world");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -103,7 +107,7 @@ impl Channel {
             1,
             1,
             "runtime-scope-assignment:1",
-            8,
+            capacity,
             ChannelContentPin::test(world),
         )
         .expect("runtime");
@@ -539,4 +543,241 @@ fn the_swing_goes_at_the_think_target_and_not_a_nearer_player() {
         )
         .is_empty()
     );
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4242381774): 300 rats, past the old `AI01-ACTIVE-ACTORS` 256. The
+/// melee census lists every one in slot order, also after a slot is reused, all 300 think in one
+/// pass, and a rat that dies while the table holds it is forgotten without a think.
+#[test]
+fn three_hundred_rats_are_censused_in_slot_order_think_in_one_pass_and_the_dead_are_forgotten() {
+    const RATS: usize = 300;
+    let mut channel = Channel::with_capacity(RATS + 1);
+    let rats = (0..RATS)
+        .map(|index| {
+            let x = 200 + 2 * i32::try_from(index).expect("x");
+            channel.admit(at(x, 300), 0)
+        })
+        .collect::<Vec<_>>();
+    let in_slot_order = |runtime: &ChannelRuntimeV1| {
+        let census = runtime.positioned_melee_census().expect("census");
+        assert_eq!(census.len(), RATS + 1);
+        census
+            .windows(2)
+            .all(|pair| pair[0].0.actor_local_id() < pair[1].0.actor_local_id())
+    };
+    assert!(in_slot_order(&channel.runtime));
+    assert_eq!(channel.table.len(), RATS);
+    assert_eq!(channel.thinks(0, false).len(), RATS);
+
+    let dead = rats[7];
+    assert!(channel.runtime.kill_creature_for_test(dead));
+    channel.table.forget_dead(&channel.runtime);
+    assert_eq!(channel.table.len(), RATS - 1);
+    assert!(channel.table.state(dead).is_none());
+    assert!(channel.table.state(rats[8]).is_some());
+
+    // The freed slot, the only one, takes the next rat; the census keeps slot order.
+    channel.runtime.remove_test_actor(dead).expect("despawn");
+    let newer = channel.admit(at(199, 300), 0);
+    assert_eq!(newer.actor_local_id(), dead.actor_local_id());
+    assert!(in_slot_order(&channel.runtime));
+    assert_eq!(channel.table.len(), RATS);
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4243189401): 1,500 rats due at once think 1,024 in the first owner
+/// window and the rest in the next; `earliest_due` reports the left-over thinks as still due, so
+/// the owner schedules its next pass in the next window.
+#[test]
+fn thinks_past_the_window_budget_stay_due_and_run_in_the_next_window() {
+    use crate::ai_think::{CREATUREAI0_THINK_WINDOW_MICROS, CREATUREAI0_THINKS_PER_WINDOW};
+    const RATS: usize = 1_500;
+    let mut channel = Channel::with_capacity(RATS + 1);
+    for index in 0..RATS {
+        let x = 200 + 2 * i32::try_from(index % 100).expect("x");
+        let y = 300 + 2 * i32::try_from(index / 100).expect("y");
+        channel.admit(at(x, y), 0);
+    }
+    assert_eq!(channel.table.earliest_due(), Some(0));
+    assert_eq!(
+        channel.thinks(0, false).len(),
+        CREATUREAI0_THINKS_PER_WINDOW
+    );
+    assert_eq!(channel.table.earliest_due(), Some(0));
+    assert!(
+        channel
+            .thinks(CREATUREAI0_THINK_WINDOW_MICROS - 1, false)
+            .is_empty()
+    );
+    assert_eq!(
+        channel.thinks(CREATUREAI0_THINK_WINDOW_MICROS, false).len(),
+        RATS - CREATUREAI0_THINKS_PER_WINDOW
+    );
+    assert!(
+        channel
+            .table
+            .earliest_due()
+            .is_none_or(|due| due >= 1_000_000)
+    );
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4242808144): the wake's view box holds every cell a player sees, on
+/// every floor pair, VIS-1's 0..=15 and the source-world floors outside it.
+#[test]
+fn the_wake_view_box_holds_every_cell_a_player_sees() {
+    for player_floor in -2..=17 {
+        let player = MovementLocalPosition {
+            x: 1_000,
+            y: 1_000,
+            floor: player_floor,
+        };
+        for floor in -2..=17 {
+            let wake_box = wake_view_box(player, floor);
+            if let Some((columns, rows)) = &wake_box {
+                assert_eq!((columns.clone().count(), rows.clone().count()), (19, 19));
+            }
+            for dx in -30..=30 {
+                for dy in -30..=30 {
+                    let creature = MovementLocalPosition {
+                        x: player.x + dx,
+                        y: player.y + dy,
+                        floor,
+                    };
+                    if targeting::sees(player, creature) {
+                        let (columns, rows) = wake_box.clone().expect("seen floor in the box");
+                        assert!(columns.contains(&creature.x) && rows.contains(&creature.y));
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4242808144): one wake pass for many players equals their wakes in
+/// turn, reads each idle creature's position once, and examines only the creatures in each
+/// player's view box, not every creature once per player.
+#[test]
+fn one_wake_pass_for_many_players_equals_their_wakes_in_turn_and_is_bounded() {
+    const PLAYERS: u8 = 40;
+    const RATS: usize = 800;
+    // Players and creatures share the carrier's slots.
+    let mut channel = Channel::with_capacity(usize::from(PLAYERS) + 1 + RATS);
+    let mut players = vec![channel.player];
+    for tag in 0..PLAYERS {
+        let session = GameSessionId::decode(&uuid(10 + tag)).expect("session");
+        let reservation = channel
+            .runtime
+            .reserve_fresh_session(session)
+            .expect("reserve");
+        let player = channel
+            .runtime
+            .commit_fresh_session(reservation)
+            .expect("commit");
+        let (row, column) = (i32::from(tag / 8), i32::from(tag % 8));
+        let floor = if tag % 5 == 0 { 6 } else { 7 };
+        channel
+            .runtime
+            .initialize_pinned_test_position(
+                player,
+                MovementLocalPosition {
+                    x: 101 + 4 * column,
+                    y: 101 + 6 * row,
+                    floor,
+                },
+            )
+            .expect("player position");
+        players.push(player);
+    }
+    // The players stand on odd cells; 600 rats on even cells of floors 6 and 7 around them,
+    // 200 far away.
+    let mut rats = Vec::new();
+    for floor in [6, 7] {
+        for x in (100..140).step_by(2) {
+            for y in (100..130).step_by(2) {
+                let rat = channel
+                    .runtime
+                    .admit_pinned_test_creature(MovementLocalPosition { x, y, floor })
+                    .expect("rat");
+                rats.push(rat);
+            }
+        }
+    }
+    for index in 0..200 {
+        let rat = channel
+            .runtime
+            .admit_pinned_test_creature(at(10_000 + 2 * index, 100))
+            .expect("far rat");
+        rats.push(rat);
+    }
+    assert_eq!(rats.len(), RATS);
+    // Three tables with every rat idle: one per wake path.
+    let mut tables = [(); 3].map(|()| CreatureAiTable::default());
+    for table in &mut tables {
+        for rat_actor in &rats {
+            table
+                .admit_creature(&channel.runtime, *rat_actor, Some(&rat(1)), &abilities(), 0)
+                .expect("admitted");
+        }
+        assert_eq!(
+            table
+                .run_due_thinks(
+                    &mut channel.runtime,
+                    0,
+                    &channel.root,
+                    &channel.revisions,
+                    &[],
+                    |_| false,
+                )
+                .len(),
+            rats.len()
+        );
+        assert_eq!(table.pending(), 0);
+    }
+    let [mut in_turn, mut indexed, mut production] = tables;
+    let runtime = &channel.runtime;
+    let viewers = players
+        .iter()
+        .map(|player| channel.position(*player))
+        .collect::<Vec<_>>();
+    let now = SECOND;
+
+    let expected = viewers
+        .iter()
+        .flat_map(|viewer| in_turn.wake(*viewer, |rat| live_position(runtime, rat), now))
+        .collect::<Vec<_>>();
+    assert!(expected.len() > viewers.len());
+
+    let reads = std::cell::Cell::new(0_usize);
+    let (woken, examined) = indexed.wake_indexed(
+        &viewers,
+        |rat| {
+            reads.set(reads.get() + 1);
+            live_position(runtime, rat)
+        },
+        now,
+    );
+    assert_eq!(woken, expected);
+    assert_eq!(reads.get(), rats.len());
+    let in_box = viewers
+        .iter()
+        .map(|viewer| {
+            rats.iter()
+                .map(|rat| channel.position(*rat))
+                .filter(|position| {
+                    wake_view_box(*viewer, position.floor).is_some_and(|(columns, rows)| {
+                        columns.contains(&position.x) && rows.contains(&position.y)
+                    })
+                })
+                .count()
+        })
+        .sum::<usize>();
+    assert_eq!(examined, in_box);
+    assert!(examined * 4 < viewers.len() * rats.len());
+
+    assert_eq!(
+        production.wake_for_players(&channel.runtime, &players, now),
+        expected
+    );
+    for rat_actor in &rats {
+        assert_eq!(production.due(*rat_actor), in_turn.due(*rat_actor));
+    }
 }
