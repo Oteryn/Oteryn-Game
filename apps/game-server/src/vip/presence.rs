@@ -872,9 +872,17 @@ impl State {
         if w.inflight.is_some() {
             return Err(PresenceError::Busy);
         }
-        let Some((id, update)) = w.pending.pop_first() else {
+        // Coalesced per entry, dequeued by revision: entry order would let a newer
+        // revision overtake an older pending one and break monotonic delivery.
+        let Some(id) = w
+            .pending
+            .iter()
+            .min_by_key(|(_, p)| p.revision)
+            .map(|(id, _)| *id)
+        else {
             return Ok(None);
         };
+        let update = w.pending.remove(&id).ok_or_else(corrupt)?;
         if update.status == Status::Online && (update.deadline_ms <= now || !self.listener) {
             return Err(PresenceError::StaleWork);
         }

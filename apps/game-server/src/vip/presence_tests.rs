@@ -379,6 +379,28 @@ fn revision_floor_reconnect_prevents_old_pending_delta_reuse() {
     assert!(acknowledge(&mut s, 104).revision > 200);
 }
 #[test]
+fn pending_updates_dequeue_in_revision_order_not_entry_order() {
+    let mut s = state();
+    let pair = |first_online: bool| {
+        let mut r = read(data(Visibility::Shown, first_online));
+        let mut second = data(Visibility::Shown, true);
+        second.entry = 2;
+        second.target = character(62);
+        r.entries.push(second);
+        r
+    };
+    install(&mut s, pair(true), 100, Refresh::Reconcile);
+    // Entry 1 is re-coalesced with a newer revision; entry 2 keeps its older one.
+    install(&mut s, pair(false), 101, Refresh::Reconcile);
+    let first = acknowledge(&mut s, 102);
+    let second = acknowledge(&mut s, 102);
+    assert_eq!((first.entry, first.status), (2, Status::Online));
+    assert_eq!((second.entry, second.status), (1, Status::Offline));
+    assert!(first.revision < second.revision);
+    let session = item_fence().expect("fence").game_session_id;
+    assert!(s.next(session, 103).expect("next").is_none());
+}
+#[test]
 fn state_capacity_queue_coalescing_and_index_replacement_are_bounded() {
     let mut s = state();
     let mut snapshot = read(data(Visibility::Shown, true));

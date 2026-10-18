@@ -549,3 +549,17 @@ after `mod world_party` in `durability/mod.rs`) and is not committed.
 listener and senders; hint budget inside `CHAT0-RL-09` with RL-10/RL-11 measured; connection
 custody of the ten-second ONLINE bound; VIP-1 migration/definers/wire. Acceptance checkboxes
 above stay open.
+
+## CP D1434 checkpoint — 2026-10-18
+
+CP D1434 (#2164) answers the four open questions: registration is lib-only; the 7 native cases
+run in the PostgreSQL lane through `in-pg-netns.sh`; the House owner exposes a scope-only
+named-House fence; the CHAT owner adds the presence relay kind (this PR consumes it later).
+All four stay outside owned paths.
+
+Codex P2 (discussion_r4305168482, dequeue by revision): fixed at the root. `State::next` now
+takes the pending update with the lowest revision instead of the lowest entry id, keeping
+per-entry coalescing (pending is bounded by `LIST_MAX`). A refresh that re-coalesces a
+low-numbered entry can no longer overtake an older pending revision of a higher-numbered entry.
+Regression test: `pending_updates_dequeue_in_revision_order_not_entry_order`. Merges
+`main@1f51f5df` with a merge commit; no conflicts.
