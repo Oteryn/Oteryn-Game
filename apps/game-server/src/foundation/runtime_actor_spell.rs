@@ -196,6 +196,46 @@ impl StagedSpellBatch {
         if !preflight.matches_batch(&self.batch) {
             return Err(Error::CommandConflict);
         }
+        // Fill only actual player heal transitions. The sealed owner staged each
+        // transition against the independently validated live player state.
+        for effect in &self.player_effects {
+            let Some(health) = preflight.health_receipt(effect.target, effect.sub_ordinal) else {
+                continue;
+            };
+            if !matches!(effect.change, OwnerCombatChange::Heal { .. }) {
+                return Err(Error::InvalidBatch);
+            }
+            let receipt = self
+                .receipt
+                .effects
+                .iter_mut()
+                .find(|receipt| {
+                    receipt.target == effect.target && receipt.sub_ordinal == effect.sub_ordinal
+                })
+                .ok_or(Error::InvalidBatch)?;
+            receipt.health = Some(health);
+            // Preserve the same HP facts on native command replay, without granting
+            // another activity event (the whole replay receipt remains unapplied).
+            for (_, slot) in &mut self.replacements {
+                let state = state_mut(slot)?;
+                if let Some(record) = state
+                    .records
+                    .iter_mut()
+                    .find(|record| record.original_batch == self.batch)
+                {
+                    let retained = record
+                        .receipt
+                        .effects
+                        .iter_mut()
+                        .find(|receipt| {
+                            receipt.target == effect.target
+                                && receipt.sub_ordinal == effect.sub_ordinal
+                        })
+                        .ok_or(Error::InvalidBatch)?;
+                    retained.health = Some(health);
+                }
+            }
+        }
         self.player_preflight_bound = true;
         Ok(())
     }
@@ -266,6 +306,13 @@ fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
     }
     out.atom(&batch.binding)?;
     out.number(batch.now_ms)?;
+    match batch.now_us {
+        Some(at) => {
+            out.number(1)?;
+            out.number(at.get())?;
+        }
+        None => out.number(0)?,
+    }
     if let Some(anchor) = &batch.anchor {
         out.number(1)?;
         out.number(anchor.expected_revision)?;
@@ -389,7 +436,10 @@ fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
 }
 
 fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
-    if batch.current_lease_generation == 0
+    if batch
+        .now_us
+        .is_some_and(|at| at.get() / 1000 != batch.now_ms)
+        || batch.current_lease_generation == 0
         || batch.binding.is_empty()
         || (batch.effects.is_empty() && batch.anchor.is_none())
     {

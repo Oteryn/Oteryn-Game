@@ -985,6 +985,7 @@ fn claim_message(
             reward_claim: Some(definition_message(&request.claim)),
         }),
         before_semantically_absent: true,
+        inbox: None,
     }
 }
 

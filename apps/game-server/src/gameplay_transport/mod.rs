@@ -3,6 +3,8 @@
 
 pub(crate) mod actor_spell;
 mod attack;
+#[path = "../interaction/bank_npc.rs"]
+mod bank_npc;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod capabilities;
@@ -11,11 +13,18 @@ mod character_progression_binding;
 mod character_progression_binding_tests;
 pub(crate) mod charm;
 mod chat_intent;
+mod chat_relay;
+mod combat_lock_fact;
 mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
 mod input_gate;
+#[allow(
+    dead_code,
+    reason = "ITEM-LOOK-1 read-only examine helper is native-tested; command 30 dispatch, rate limiting and capability 28 offer remain a separate integration gate"
+)]
+mod item_look;
 mod item_move;
 mod item_ref_admission;
 mod item_use;
@@ -34,9 +43,12 @@ mod monster_ai_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod npc_actor;
 mod npc_command;
 mod npc_talk;
 mod npc_trade_command;
+mod npc_travel;
+mod npc_voice;
 pub(crate) use npc_talk::NpcTalkBook;
 #[cfg(test)]
 mod qualification;
@@ -572,6 +584,13 @@ pub async fn serve_gameplay(
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
     }
+    // CHAT-2B: the World chat relay, when its key file is configured.
+    if let Some(relay) = chat_relay::configured(
+        *owners.world_id.as_bytes(),
+        owners.root.chat_relay_connect_options(),
+    ) {
+        authority.chat.install_relay(std::sync::Arc::new(relay));
+    }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
@@ -612,6 +631,13 @@ pub async fn serve_gameplay(
             None => std::future::pending().await,
         }
     });
+    // CHAT-2B: the relay listener; it parks once shutdown is requested.
+    let mut relay = pin!(async {
+        match authority.chat.relay() {
+            Some(relay) => relay.run(&authority.chat, shutdown).await,
+            None => std::future::pending().await,
+        }
+    });
     let mut serving_done = false;
     let mut cycles_done = false;
     let mut flush_done = false;
@@ -621,6 +647,8 @@ pub async fn serve_gameplay(
         }
         // Never ends on its own; it parks once shutdown is requested.
         let _ = positions.as_mut().poll(context);
+        // Never ends: it parks once shutdown is requested.
+        let _ = relay.as_mut().poll(context);
         if !serving_done && serving.as_mut().poll(context).is_ready() {
             serving_done = true;
         }
@@ -3000,11 +3028,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.chat.delivered(session);
     }
 
+    async fn chat_rooms_changed(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
+        self.chat.take_rooms_change(session)
+    }
+
     async fn npc_session_open(&self, session: GameSessionId) {
         // A client without chat still has a conversation state, held with the chat session.
         if !self.chat.knows(session) {
             self.chat_open(session).await;
         }
+        self.npc_conversations.cancel_bank(session);
         self.chat.set_npc_service(session);
     }
 
@@ -3019,22 +3055,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .follow(&self.chat, &runtime, session, shown)
     }
 
+    async fn resume_npc_bank(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+    ) -> Option<npc_command::NpcTalkOutcome> {
+        npc_command::resume_bank_talk(self, actor, command).await
+    }
+
     async fn npc_talk(
         &self,
         actor: ExactActorRef,
-        session: GameSessionId,
+        command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        let runtime = self.runtime.lock().await;
-        self.npc_conversations.talk_in(
-            &self.chat,
-            &runtime,
-            actor,
-            session,
-            &intent,
-            self.owner_now(),
-            item_ref_admission::pinned_index(&runtime, self.active_generation),
-        )
+        npc_command::npc_bank_talk(self, actor, command, intent).await
     }
 
     async fn npc_trade(
@@ -3624,6 +3659,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             states.player_death(&runtime, actor, game_session_id)
         };
         if let Some(death) = death {
+            // #2199 Codex P1 4303261095 (FAMILIARS0 §7): the owner's death ends its live
+            // familiar (remaining 0) through the fenced lifecycle writer before the respawn; a
+            // failed write keeps the actor dead and the familiar present for the next tick.
+            if self
+                .end_familiars_at_owner_death(actor, game_session_id, death.occurrence)
+                .await
+                .is_err()
+            {
+                return None;
+            }
             return self
                 .respawn_after_death(actor, game_session_id, death)
                 .await;
@@ -3667,6 +3712,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let cleanup_access = self.refresh_spell_access(actor, game_session_id).await;
         let _ = self
             .drain_familiar_deaths(actor, game_session_id, &cleanup_access)
+            .await;
+        // #2199 Codex P2 4302041461: a familiar Login stored for lack of a free tile returns
+        // on this cadence once a tile frees.
+        let _ = self
+            .retry_waiting_familiar_return(actor, game_session_id, &cleanup_access)
             .await;
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
@@ -4913,9 +4963,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let access = self
                 .refresh_and_apply_spell_access(actor, game_session_id)
                 .await;
-            let _ = self
+            // #2199: a familiar Login that did not complete restored neither the stored familiar
+            // nor its cooldowns, so the entry fails closed like the other post-position owners.
+            let initialized = self
                 .initialize_familiar_login(actor, game_session_id, request, native, &access, config)
-                .await;
+                .await
+                .is_ok();
+            let outcome = familiar_login_first_entry(outcome, initialized);
+            if outcome == FirstEntryOutcome::RefusedByChannel {
+                return (outcome, None, None);
+            }
         }
         (outcome, item_fence, Some(decided))
     }
@@ -5163,6 +5220,20 @@ const fn writes_after_progression(positioned: bool, first_entry: FirstEntryOutco
 /// connection holds the actor input-ineligible.
 const fn respawned_first_entry(first_entry: FirstEntryOutcome, settled: bool) -> FirstEntryOutcome {
     if settled {
+        first_entry
+    } else {
+        FirstEntryOutcome::RefusedByChannel
+    }
+}
+
+/// #2199: a first entry whose familiar Login did not complete (an unknown or refused lifecycle
+/// write, with the stored familiar and its cooldowns unrestored) refuses its playable entry, so
+/// the connection holds the actor input-ineligible instead of playing without them.
+const fn familiar_login_first_entry(
+    first_entry: FirstEntryOutcome,
+    initialized: bool,
+) -> FirstEntryOutcome {
+    if initialized {
         first_entry
     } else {
         FirstEntryOutcome::RefusedByChannel
@@ -6897,6 +6968,19 @@ mod tests {
         }
     }
 
+    /// #2199: a familiar Login that did not complete refuses the playable first entry, so the
+    /// stored familiar and its cooldowns are never silently left unrestored.
+    #[test]
+    fn an_incomplete_familiar_login_refuses_the_playable_first_entry() {
+        for entry in [FirstEntryOutcome::Positioned, FirstEntryOutcome::Reconciled] {
+            assert_eq!(familiar_login_first_entry(entry, true), entry);
+            assert_eq!(
+                familiar_login_first_entry(entry, false),
+                FirstEntryOutcome::RefusedByChannel
+            );
+        }
+    }
+
     /// ARCH-PROGRESSION-SOURCE-0 §1.5 (#1964 Codex P1 4243646040): a positioned admission whose
     /// progression rounds all ended undecided runs no later admission writer, even when storage
     /// recovers right after the last round; the gate reads only the refused outcome. A bound or
@@ -7051,3 +7135,6 @@ pub(crate) use spell_presentation_publisher::{
 pub(crate) use spell_presentations::SpellPresentationOwner;
 
 mod spell_presentations;
+
+#[path = "../interaction/vocation_choice.rs"]
+mod vocation_choice;

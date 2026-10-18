@@ -69,6 +69,8 @@ mod combat_attack;
 )]
 #[path = "combat/pvp/mod.rs"]
 mod combat_pvp;
+// PARTY-1 (CP D1391): the party module and its PostgreSQL cases.
+mod party;
 // D39 chest `USE` wiring, top-level for the same reason: `tests/interaction_workflow.rs`
 // recompiles `interaction/mod.rs` without Content or durability. C2 routes `USE_INTENT` to it.
 #[path = "interaction/chest_use.rs"]
@@ -144,6 +146,12 @@ mod spell_familiar_runtime_postgres_cases;
 #[cfg(test)]
 #[path = "durability/world_party_tests.rs"]
 mod world_party_runtime_postgres_cases;
+
+// LIMIT_RAISE value/audit regressions have one source mount; the canonical PG root
+// path-loads durability and must not collect these pure cases a second time.
+#[cfg(test)]
+#[path = "durability/forge_dust_limit_audit_tests.rs"]
+mod forge_dust_limit_audit_tests;
 
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
@@ -849,3 +857,10 @@ mod creature_icicle;
 // Full native Creature callbacks stay outside standalone Durability path loads.
 #[path = "durability/creature_source_items.rs"]
 mod creature_source_items;
+
+// D1287: selection-source component tests, without a production runtime caller.
+#[cfg(test)]
+mod world_change;
+
+#[cfg(test)]
+mod security;
