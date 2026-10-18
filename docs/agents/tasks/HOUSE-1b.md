@@ -24,13 +24,163 @@ owned_paths:
   - "apps/game-server/src/house/*_tests.rs"
   - "apps/game-server/tests/house_move_out_*.rs"
   - "docs/agents/tasks/HOUSE-1b.md"
+  - "apps/game-server/migrations/0121_house_disposition.sql (D1382/D1403 canonical installer)"
+  - "apps/game-server/src/durability/house_disposition_native.rs (D1367/D1384 private bridge)"
   - "apps/game-server/tests/support/house_move_out_postgres_cases.rs (D1349 native cases)"
   - "apps/game-server/tests/support/house_move_out_waiting_postgres_cases.rs (unmounted producer gate)"
+  - "apps/game-server/tests/support/character_inbox_postgres_cases.rs" # D1413 exact Inbox reader inventory
 slot_only_paths:
-  - "apps/game-server/migrations/00NN_house_transfer.sql"
   - "docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json"
   - "Common slot-only set (any that the task touches): tools/content-migration/regenerate_content.py outputs, content/project.json, content/manifest.json, content.lock.json, content/interactions/index.json, content/world/pins/*, Rust pins, docs/contracts/*REGISTRY*.json, migration numbers, wiring in apps/game-server/src/gameplay_transport/{connection.rs,mod.rs,capabilities.rs} and crates/protocol-oteryn/src/lib.rs"
 ```
+
+## 2026-10-17 D1413 composed Inbox inventory and native execution packet
+
+[D1413](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6238443765)
+allocates the exact Inbox reader-list amendment to this 0121 producer in the same
+push. It adds `game_house_disposition_delivery_proven` and
+`game_house_disposition_native_removal_proven` to the sorted exact reader list,
+and corrects the adjacent comment. `game_house_disposition_deliver` is not added.
+The query, exact equality and all immutability assertions remain unchanged.
+
+The fresh actual main `6c8d99925fccec46703af2f62698ff30ddf8ba36` and this
+packet's parent `c65dd10af69ce6d2263175a35736fbe531f01a01` share Inbox blob
+`958cd155646ae60d2d7690e2138fdfa1abbe43be`; neither yet contains D1390's later
+MAIL/TRADE entries. The hunk is exactly the approved patch SHA256
+`a655e37f93d36f1fe9932d3d0882f51cdda112657da739ea67f4cfb47ba6aa66`.
+D1390's actual composed sorted union must be rechecked immediately before push;
+a later owner entry must be retained and requalified rather than overwritten.
+The shared test path is recorded in `owned_paths` above.
+
+The seven-file publication successor retains all five previously formatted
+production/test leaves and adds this one shared test hunk plus the updated card.
+The four existing Rust leaves passed native formatting; Inbox native formatting
+and the new composed execution remain pending at this source freeze. The earlier
+six-file packet and its native formatter receipt are retained separately.
+
+[D1409](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6238179653)
+allocates the first House child to this canonical migration. Its actual inventory
+is **24 cases: one pure boundary case, 22 House PG cases and one additional Inbox
+PG case**. The existing dedicated `character_inbox_postgres` target executes
+`character_inbox_postgres_cases::inbox_rows_are_immutable_and_no_other_writer_touches_them`
+through the D1329 wrapper and the full `sqlx::migrate!("./migrations")` installer.
+No new Cargo or registry mount is needed for that existing target.
+
+The Inbox helper emits no `QUALIFIED` marker. Its successful native receipt must
+require the exact LIST1, real wrapper invocation, one PASS with zero ignored,
+no PRE-ROUTING/NONCANONICAL route, and unchanged final source. Its normal success
+includes its own exact-name database cleanup; its legacy panic/create-failure
+cleanup gap remains disclosed in the source review. House's separate expected
+post-cleanup `QUALIFIED PostgreSQL17.6` count remains 22. No case has run on this
+new composition yet, and this source freeze is **NOT_FULLY_QUALIFIED**.
+
+## 2026-10-17 D1403 canonical producer and D1384 owner command
+
+**Historical six-file source-freeze record, superseded by the D1413 packet above.**
+At that freeze, native formatting, compilation, Clippy and PostgreSQL were NOT_RUN.
+The four Rust leaves have since passed the retained native formatting receipt;
+compiled/PG qualification still awaits the new composed attempt. The publication
+parent remains `c65dd10af69ce6d2263175a35736fbe531f01a01`. Earlier private
+installers and execution results do not qualify this canonical successor.
+
+[D1403](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237071382),
+answering [the complete producer request](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6237062703),
+confirms migration `0121_house_disposition.sql` under
+[D1382/D1384](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6235281112).
+The existing migration directory is the registry. This packet adds no separate
+migration registry and no event type; event 8 remains #2137/0119's allocation.
+
+### Canonical SQL and exact extraction
+
+The migration installs the existing three disposition tables and their ordinary
+operation, census, step and real Inbox-delivery functions before the accepted
+native removal predicate. Both Rust private schema constants and both fixture SQL
+installations are removed in this same packet. The existing `MIGRATOR` is the only
+installer, so the native tests execute the same guard definitions as production.
+The Rust modules remain canonical `house::{move_out,transfer}`, with the existing
+private Durability bridge; this packet changes no module root or Cargo registration.
+
+| Retained SQL source | Original extracted SHA256 | Canonical extracted SHA256 |
+| --- | --- | --- |
+| `move_out.rs` ordinary producer | `b6cb12794737e63c6df05b0f4a9b6c92ee6436b455863b61c42efd7fc72aeeac` | `a6a54944c6accbd5ffe45f50b9f1a727fc9bc4592e9c653628eddcc2a9f34c4f` |
+| `transfer.rs` real custody producer | `563c3f2c8acfd148c48adae7797cf5f2147aa1dd34c674301bcfcfd582e82d16` | Identical |
+
+The ordinary-producer change is D1384's replacement of `notice_days` equality with
+the checked absolute bound. The migration SHA256 is
+`e0a7f4fc7de8e994b661383429ecc3b39dfeea873583d4fbc417371765fece99`.
+The separately reviewed removal predicate/guard segment is
+`7062dc9e8d02286856239b6e6ae9515e878fbde519ba49d780961918a8008653`.
+Native 0095 is not edited. Removing only the new ordinary-disposition DELETE arm
+and the `OR REPLACE` keyword reproduces its original guard text exactly (SHA256
+`8583585b9a5e10b6058b66d356b3210602817348d986557a659cb7fcb6a321a2`).
+Its INSERT and player shape 6/7 DELETE arms, trigger and deferred timing remain.
+
+The new proof requires the actual immutable source, current physical transaction,
+matching disposition/step, unchanged native item, real Inbox delivery to the captured
+provenance reclaim subject, and absence of old House location/provenance. Its lookup
+is bounded by exact World/House and item identity. PUBLIC/runtime/control receive no
+direct predicate execution or new table-mutation grant. Existing fail-closed typed
+Guild-hook capability checks are retained; no absent relation is replaced with a
+fake table, an optional zero, or a fixture-only version of the production guard.
+
+### Native owner command and replay
+
+`DurabilityRoot::apply_house_move_out_command` consumes retained recovery authority,
+the real Node proof, complete current fence, original `CommandRef`, `HouseId`, and
+`HouseMoveOutCommand::{Notice { due_at_unix_ms }, Cancel}`. The request supplies no
+operation UUID, ownership revision or currentness flag. The existing native semantic
+transaction, recovery/admission locks and handoff/owner locks enclose the whole write.
+
+The owner samples one DB clock and checks the inclusive interval
+`86_400_000 <= due_at_unix_ms - db_now_ms <= 2_592_000_000` with checked arithmetic.
+It stores the exact requested absolute date without rounding. Under the original
+CommandRef lock, replay returns the original binding and outcome before re-reading
+the clock or current ownership. The server resolves and mints each new operation;
+cancel targets the actual pending notice under lock. Replaying a cancelled older
+notice or cancellation cannot affect a later notice. The separate
+`read_house_move_out_owner` projection performs an actual current native fence and
+owner check and returns a read-only snapshot, not authority to mutate custody.
+
+### Exact test inventory and previous failure evidence
+
+The actual canonical aggregate retains sixteen prior cases and adds the exact
+native-removal regression plus five D1384 cases: absolute-date retention/replay,
+refused deadline without a durable effect, cancellation of the actual pending
+notice, replay versus current owner projection, and a real two-Root same-command
+race. Selector `house_move_out_postgres_cases::` therefore contains **22 PG cases**.
+The owner module adds **one pure** inclusive-boundary and integer-overflow case,
+`house::move_out::absolute_due_tests::absolute_due_bounds_are_inclusive_checked_and_not_rounded`.
+None of these new cases has run yet.
+
+All sixteen domain assertion/command bodies match the previously compiled native
+repair. Relative to published c65, fifteen complete bodies are byte-identical; the
+remaining body changes only its invalid `durability::house_move_out::DispositionView`
+type path to the granted canonical `house::move_out` path. The repair also restores
+the two existing real-entry imports, and uses the owned bounded-step constant.
+The one waiting committed-access case remains unmounted behind actual #2137/#2140
+producers. No `ignore`, disabled whole-file test gate, fake native function, diagnostic
+bridge or forced-deferred probe is introduced. D1366 NON-PG routing and cleanup after
+ordinary errors/assertion panics remain intact; only actual routed PG and successful
+own-database cleanup produce the qualification marker.
+
+The preceding repair assembly compiled, then produced **10 PG PASS / 6 FAIL**, with
+zero ignored. Its separate one-case diagnostic exposed native SQLSTATE23514,
+`house removal lacks actual source shape`. This is the concrete reason for the
+canonical D1382 proof; neither that failed run nor historical private-harness passes
+qualifies the new migration. Independent source review passed for the full migration,
+preserved player arms/privileges and separately the D1384 command/replay/lock order.
+Those reviews precede only the present documentation changes; native execution is
+still required on the actual complete candidate and published head.
+
+### Remaining integration gates
+
+DRAINED still retains the owner and content fence. Actual final property/slot release,
+registered House events, ongoing rent/grace/eviction, BED release, content revision,
+runtime exit/quiescence and production caller permissions remain separate work. WIRE
+maps the actual command only after #2141 merges. D1403 does not grant the distinct
+Guild removal arm: #2137 retains its honest PROPERTY6 PASS and GUILD9 PASS / 4 FAIL
+evidence, with the fourth error awaiting diagnosis. Its own fixture stops reinstalling
+ordinary SQL after 0121 reaches main; no Guild proof is silently admitted by this packet.
 
 ## Native trigger-order repair — local recovery candidate, NOT_FULLY_QUALIFIED
 

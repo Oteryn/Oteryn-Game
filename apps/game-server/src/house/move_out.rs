@@ -1,10 +1,12 @@
-//! Bounded HOUSE-1b preparation over the native ownership, handoff and custody tables.
+//! HOUSE-1b commands and bounded disposition over native ownership, handoff and custody.
 //!
-//! The canonical House body uses the real native Durability transaction envelope. The
-//! private schema below remains uninstalled outside isolated qualification. Its retained SQL
-//! evidence is not the registered HouseOperation event: production installation/permissions,
-//! acquisition/property/slot reconciliation, exit/quiesce, house content revision and BED
-//! integration remain mandatory. DRAINED deliberately keeps the content fence and owner.
+//! The real Durability transaction envelope invokes these canonical House operations.
+//! Migration 0121 installs their retained producer and native custody proof through the
+//! existing MIGRATOR, identically for production and native tests. D1384 owner commands
+//! retain an exact absolute due time and replay the original CommandRef-bound outcome.
+//! Registered HouseOperation events, production caller permissions, acquisition/property/
+//! slot reconciliation, exit/quiesce, house content revision and BED integration remain
+//! separate integration gates. DRAINED deliberately keeps the content fence and owner.
 
 use crate::durability::house_scope_handoff::HouseId;
 use crate::durability::item_transfer::{
@@ -23,6 +25,69 @@ pub const DISPOSITION_STEP_ITEMS: usize = 100;
 /// Accepted house item bound, still PARITY_PENDING in the owning decision.
 pub const HOUSE_ITEMS_MAX: usize = 2_000;
 const DAY_MS: i64 = 86_400_000;
+
+/// A player's requested action. The native owner resolves every durable identity.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HouseMoveOutCommand {
+    Notice { due_at_unix_ms: i64 },
+    Cancel,
+}
+
+/// The retained command result. It is not a current owner or custody capability.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseMoveOutCommandReceipt {
+    pub operation: [u8; 16],
+    pub due_at_unix_ms: i64,
+    pub cancelled: bool,
+    pub replayed: bool,
+}
+
+/// An authorized owner snapshot. A later command independently resolves ownership.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HouseMoveOutOwnerView {
+    pub house: HouseId,
+    pub ownership_revision: u64,
+    pub notice: Option<DispositionView>,
+}
+
+fn check_absolute_due_at(db_now_ms: i64, due_at_ms: i64) -> Result<()> {
+    let span = due_at_ms
+        .checked_sub(db_now_ms)
+        .ok_or(HouseMoveOutError::InvalidInput)?;
+    if !(DAY_MS..=30 * DAY_MS).contains(&span) {
+        return Err(HouseMoveOutError::InvalidInput);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod absolute_due_tests {
+    use super::{DAY_MS, HouseMoveOutError, check_absolute_due_at};
+
+    #[test]
+    fn absolute_due_bounds_are_inclusive_checked_and_not_rounded() {
+        let now = 1_800_000_000_123_i64;
+        assert!(check_absolute_due_at(now, now + DAY_MS).is_ok());
+        assert!(check_absolute_due_at(now, now + 30 * DAY_MS).is_ok());
+        assert!(check_absolute_due_at(now, now + DAY_MS + 1).is_ok());
+        assert!(matches!(
+            check_absolute_due_at(now, now + DAY_MS - 1),
+            Err(HouseMoveOutError::InvalidInput)
+        ));
+        assert!(matches!(
+            check_absolute_due_at(now, now + 30 * DAY_MS + 1),
+            Err(HouseMoveOutError::InvalidInput)
+        ));
+        assert!(matches!(
+            check_absolute_due_at(i64::MIN, i64::MAX),
+            Err(HouseMoveOutError::InvalidInput)
+        ));
+        assert!(matches!(
+            check_absolute_due_at(i64::MAX, i64::MIN),
+            Err(HouseMoveOutError::InvalidInput)
+        ));
+    }
+}
 
 /// A native current-owner notice, not a direct player-to-player property sale.
 #[derive(Debug, Clone)]
@@ -257,6 +322,225 @@ fn command_binding(
     Ok(binding)
 }
 
+fn absolute_command_binding(
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    house: &HouseId,
+    ownership_revision: u64,
+    operation: [u8; 16],
+    request: HouseMoveOutCommand,
+) -> Result<Vec<u8>> {
+    // Separate tags keep the original private day-based qualification path distinct.
+    // The exact supplied fence and absolute date are bound, without scope normalization.
+    let tag = match request {
+        HouseMoveOutCommand::Notice { .. } => 31,
+        HouseMoveOutCommand::Cancel => 32,
+    };
+    let mut binding = command_binding(fence, command, house, ownership_revision, tag)?;
+    binding.extend_from_slice(&operation);
+    if let HouseMoveOutCommand::Notice { due_at_unix_ms } = request {
+        binding.extend_from_slice(&due_at_unix_ms.to_be_bytes());
+    }
+    Ok(binding)
+}
+
+pub(crate) async fn apply_command(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    house: HouseId,
+    request: HouseMoveOutCommand,
+) -> Result<HouseMoveOutCommandReceipt> {
+    if command.game_session_id() != fence.game_session_id {
+        return Err(HouseMoveOutError::AuthorityRejected);
+    }
+    // Occurrence before Character/property locks. No durable row is written for a refusal.
+    // This lock uses the original CommandRef, never a newly minted operation identifier.
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:house-command:'||encode($1,'hex')||':'||$2,0))")
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .execute(&mut **tx).await?;
+    if let Some(previous) = sqlx::query("SELECT uuid_send(operation_id) AS operation,ownership_revision::text,command_binding,cancel_binding,due_at_ms,game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0) AS notice_command FROM game_house_dispositions WHERE (game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)) OR (cancel_session_id=encode($1,'hex')::uuid AND cancel_command_id=$2::text::numeric(20,0))")
+        .bind(command.game_session_id().as_bytes().as_slice())
+        .bind(command.command_id().get().to_string())
+        .fetch_optional(&mut **tx).await? {
+        let operation = bytes(&previous, "operation")?;
+        let was_notice: bool = previous.try_get("notice_command")?;
+        if was_notice != matches!(request, HouseMoveOutCommand::Notice { .. }) {
+            return Err(HouseMoveOutError::ConflictingOperation);
+        }
+        let expected = absolute_command_binding(
+            &fence, command, &house, number(&previous, "ownership_revision")?, operation, request,
+        )?;
+        let retained: Option<Vec<u8>> = if was_notice {
+            Some(previous.try_get("command_binding")?)
+        } else {
+            previous.try_get("cancel_binding")?
+        };
+        if retained.as_deref() != Some(expected.as_slice()) {
+            return Err(HouseMoveOutError::ConflictingOperation);
+        }
+        // These fields are immutable. Reconstruct the original command outcome even if
+        // custody progressed, the owner changed or a newer notice now exists. No clock,
+        // current owner lookup, UUID allocation or fresh mutation occurs on this branch.
+        return Ok(HouseMoveOutCommandReceipt {
+            operation,
+            due_at_unix_ms: previous.try_get("due_at_ms")?,
+            cancelled: !was_notice,
+            replayed: true,
+        });
+    }
+
+    let (world, channel) = crate::durability::item_transfer::scope_of(&fence)
+        .map_err(|_| HouseMoveOutError::AuthorityRejected)?;
+    if world != house.world_id()
+        || !character_item_fence_is_current(
+            tx,
+            node,
+            &fence,
+            command,
+            fence.character_id,
+            *world.as_bytes(),
+            *channel.as_bytes(),
+        )
+        .await?
+    {
+        return Err(HouseMoveOutError::AuthorityRejected);
+    }
+    let owner = sqlx::query("SELECT uuid_send(owner_character_id) AS owner,ownership_revision::text FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR UPDATE")
+        .bind(world.as_bytes().as_slice()).bind(house.house_key())
+        .fetch_optional(&mut **tx).await?.ok_or(HouseMoveOutError::OwnershipChanged)?;
+    if owner.try_get::<Option<Vec<u8>>, _>("owner")?.as_deref()
+        != Some(fence.character_id.as_bytes().as_slice())
+    {
+        return Err(HouseMoveOutError::OwnershipChanged);
+    }
+    let ownership_revision = number(&owner, "ownership_revision")?;
+    let pending = sqlx::query("SELECT uuid_send(operation_id) AS operation,uuid_send(owner_character_id) AS owner,ownership_revision::text,due_at_ms,state FROM game_house_dispositions WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND state<>4 FOR UPDATE")
+        .bind(world.as_bytes().as_slice()).bind(house.house_key())
+        .fetch_optional(&mut **tx).await?;
+
+    match request {
+        HouseMoveOutCommand::Notice { due_at_unix_ms } => {
+            if pending.is_some() {
+                return Err(HouseMoveOutError::ConflictingOperation);
+            }
+            let now: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+            )
+            .fetch_one(&mut **tx)
+            .await?;
+            check_absolute_due_at(now, due_at_unix_ms)?;
+            // The server allocates this identity once, after admission and before the
+            // single retained INSERT. Rollback discards the allocation with the command.
+            let operation: Vec<u8> =
+                sqlx::query_scalar("SELECT uuid_send(game_character_uuid_v7())")
+                    .fetch_one(&mut **tx)
+                    .await?;
+            let operation: [u8; 16] = operation
+                .try_into()
+                .map_err(|_| HouseMoveOutError::InvalidCustody)?;
+            let binding = absolute_command_binding(
+                &fence,
+                command,
+                &house,
+                ownership_revision,
+                operation,
+                request,
+            )?;
+            sqlx::query("INSERT INTO game_house_dispositions(operation_id,world_id,house_key,owner_character_id,ownership_revision,game_session_id,command_id,command_binding,requested_at_ms,due_at_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,$5::text::numeric(20,0),encode($6,'hex')::uuid,$7::text::numeric(20,0),$8,$9,$10)")
+                .bind(operation.as_slice()).bind(world.as_bytes().as_slice()).bind(house.house_key())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(ownership_revision.to_string())
+                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+                .bind(binding).bind(now).bind(due_at_unix_ms).execute(&mut **tx).await?;
+            Ok(HouseMoveOutCommandReceipt {
+                operation,
+                due_at_unix_ms,
+                cancelled: false,
+                replayed: false,
+            })
+        }
+        HouseMoveOutCommand::Cancel => {
+            let pending = pending.ok_or(HouseMoveOutError::MissingOperation)?;
+            if bytes(&pending, "owner")? != *fence.character_id.as_bytes()
+                || number(&pending, "ownership_revision")? != ownership_revision
+            {
+                return Err(HouseMoveOutError::OwnershipChanged);
+            }
+            if pending.try_get::<i16, _>("state")? != 1 {
+                return Err(HouseMoveOutError::CancellationClosed);
+            }
+            let operation = bytes(&pending, "operation")?;
+            let binding = absolute_command_binding(
+                &fence,
+                command,
+                &house,
+                ownership_revision,
+                operation,
+                request,
+            )?;
+            let now: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+            )
+            .fetch_one(&mut **tx)
+            .await?;
+            let due_at_unix_ms: i64 = pending.try_get("due_at_ms")?;
+            if now >= due_at_unix_ms {
+                return Err(HouseMoveOutError::CancellationClosed);
+            }
+            let changed = sqlx::query("UPDATE game_house_dispositions SET state=4,cancel_session_id=encode($2,'hex')::uuid,cancel_command_id=$3::text::numeric(20,0),cancel_binding=$4,cancelled_at_ms=$5 WHERE operation_id=encode($1,'hex')::uuid AND state=1")
+                .bind(operation.as_slice()).bind(command.game_session_id().as_bytes().as_slice())
+                .bind(command.command_id().get().to_string()).bind(binding).bind(now)
+                .execute(&mut **tx).await?.rows_affected();
+            if changed != 1 {
+                return Err(HouseMoveOutError::CancellationClosed);
+            }
+            Ok(HouseMoveOutCommandReceipt {
+                operation,
+                due_at_unix_ms,
+                cancelled: true,
+                replayed: false,
+            })
+        }
+    }
+}
+
+/// Called only after the native envelope checks the complete current Character fence.
+/// Locks protect this read; no notice, receipt, revision or lifecycle state is written.
+pub(crate) async fn read_owner_projection(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: crate::domain::CharacterId,
+    house: HouseId,
+) -> Result<HouseMoveOutOwnerView> {
+    let owner = sqlx::query("SELECT uuid_send(owner_character_id) AS owner,ownership_revision::text FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 FOR SHARE")
+        .bind(house.world_id().as_bytes().as_slice()).bind(house.house_key())
+        .fetch_optional(&mut **tx).await?.ok_or(HouseMoveOutError::OwnershipChanged)?;
+    if owner.try_get::<Option<Vec<u8>>, _>("owner")?.as_deref() != Some(actor.as_bytes().as_slice())
+    {
+        return Err(HouseMoveOutError::OwnershipChanged);
+    }
+    let ownership_revision = number(&owner, "ownership_revision")?;
+    let notice = sqlx::query("SELECT uuid_send(operation_id) AS operation,uuid_send(owner_character_id) AS owner,ownership_revision::text,due_at_ms,state,frozen_count,frozen_digest,next_step::text FROM game_house_dispositions WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND state<>4 FOR SHARE")
+        .bind(house.world_id().as_bytes().as_slice()).bind(house.house_key())
+        .fetch_optional(&mut **tx).await?;
+    let notice = notice
+        .map(|row| {
+            if bytes(&row, "owner")? != *actor.as_bytes()
+                || number(&row, "ownership_revision")? != ownership_revision
+            {
+                return Err(HouseMoveOutError::OwnershipChanged);
+            }
+            view(&row)
+        })
+        .transpose()?;
+    Ok(HouseMoveOutOwnerView {
+        house,
+        ownership_revision,
+        notice,
+    })
+}
+
 pub(crate) async fn notice(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
@@ -308,8 +592,8 @@ pub(crate) async fn notice(
     if occupied {
         return Err(HouseMoveOutError::ConflictingOperation);
     }
-    sqlx::query("INSERT INTO game_house_dispositions(operation_id,world_id,house_key,owner_character_id,ownership_revision,game_session_id,command_id,command_binding,notice_days,requested_at_ms,due_at_ms) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,$5::text::numeric(20,0),encode($6,'hex')::uuid,$7::text::numeric(20,0),$8,$9,n,n+$10 FROM (SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS n) clock")
-        .bind(request.operation.as_slice()).bind(world.as_bytes().as_slice()).bind(request.house.house_key()).bind(fence.character_id.as_bytes().as_slice()).bind(request.ownership_revision.to_string()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(binding).bind(i16::from(request.notice_days)).bind(i64::from(request.notice_days)*DAY_MS).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_house_dispositions(operation_id,world_id,house_key,owner_character_id,ownership_revision,game_session_id,command_id,command_binding,requested_at_ms,due_at_ms) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,$5::text::numeric(20,0),encode($6,'hex')::uuid,$7::text::numeric(20,0),$8,n,n+$9 FROM (SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS n) clock")
+        .bind(request.operation.as_slice()).bind(world.as_bytes().as_slice()).bind(request.house.house_key()).bind(fence.character_id.as_bytes().as_slice()).bind(request.ownership_revision.to_string()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(binding).bind(i64::from(request.notice_days)*DAY_MS).execute(&mut **tx).await?;
     Ok(HouseMoveOutOutcome::Notice(view(
         &load(tx, request.operation, &request.house).await?,
     )?))
@@ -418,156 +702,3 @@ pub(crate) async fn freeze(
         &load(tx, operation, house).await?,
     )?))
 }
-
-/// Delegated private design, deliberately not a numbered migration or production install.
-pub const PRIVATE_DISPOSITION_SCHEMA: &str = r#"
-CREATE TABLE game_house_dispositions (
- operation_id UUID PRIMARY KEY CHECK(game_character_is_uuid_v7(operation_id)),
- world_id UUID NOT NULL, house_key TEXT NOT NULL CHECK(game_house_scope_key_valid(house_key)),
- owner_character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
- ownership_revision NUMERIC(20,0) NOT NULL CHECK(ownership_revision BETWEEN 1 AND 18446744073709551615),
- game_session_id UUID NOT NULL,command_id NUMERIC(20,0) NOT NULL CHECK(command_id>0),
- command_binding BYTEA NOT NULL CHECK(octet_length(command_binding) BETWEEN 1 AND 2048),
- cause TEXT NOT NULL DEFAULT 'MOVE_OUT' CHECK(cause='MOVE_OUT'),
- notice_days SMALLINT NOT NULL CHECK(notice_days BETWEEN 1 AND 30),requested_at_ms BIGINT NOT NULL,
- due_at_ms BIGINT NOT NULL CHECK(due_at_ms=requested_at_ms+notice_days::bigint*86400000),
- state SMALLINT NOT NULL DEFAULT 1 CHECK(state IN(1,2,3,4)),
- cancel_session_id UUID,cancel_command_id NUMERIC(20,0),cancel_binding BYTEA,cancelled_at_ms BIGINT,
- frozen_count BIGINT CHECK(frozen_count BETWEEN 0 AND 2000),frozen_digest BYTEA CHECK(octet_length(frozen_digest)=32),
- next_step NUMERIC(20,0) NOT NULL DEFAULT 0 CHECK(next_step BETWEEN 0 AND 18446744073709551615),
- UNIQUE(game_session_id,command_id),UNIQUE(cancel_session_id,cancel_command_id),
- CHECK((state IN(1,4))=(frozen_count IS NULL)),CHECK((state IN(1,4))=(frozen_digest IS NULL)),
- CHECK((state=4)=(cancel_session_id IS NOT NULL)),CHECK((state=4)=(cancel_command_id IS NOT NULL)),
- CHECK((state=4)=(cancel_binding IS NOT NULL)),CHECK((state=4)=(cancelled_at_ms IS NOT NULL)),
- CHECK(cancel_command_id>0),CHECK(octet_length(cancel_binding) BETWEEN 1 AND 2048),
- CHECK(cancelled_at_ms<due_at_ms AND cancelled_at_ms>=requested_at_ms)
-
-);
-CREATE UNIQUE INDEX house_disposition_live_house ON game_house_dispositions(world_id,house_key) WHERE state<>4;
-CREATE TABLE game_house_disposition_items (
- operation_id UUID NOT NULL REFERENCES game_house_dispositions(operation_id),item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
- source_location JSONB NOT NULL,source_provenance JSONB NOT NULL,source_item JSONB NOT NULL,
- moved_step NUMERIC(20,0),moving_xact_id XID8,ordinal NUMERIC(20,0),
- PRIMARY KEY(operation_id,item_instance_id),CHECK((moved_step IS NULL)=(moving_xact_id IS NULL)),CHECK(ordinal IS NULL OR (ordinal>0 AND moved_step IS NOT NULL))
-);
-CREATE TABLE game_house_disposition_steps (
- operation_id UUID NOT NULL REFERENCES game_house_dispositions(operation_id),step NUMERIC(20,0) NOT NULL CHECK(step>=0),
- moved_count BIGINT NOT NULL CHECK(moved_count BETWEEN 0 AND 100),created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
- PRIMARY KEY(operation_id,step)
-);
-INSERT INTO game_character_inbox_cause_kinds(cause_kind) VALUES('HOUSE_DISPOSITION');
-CREATE FUNCTION game_house_disposition_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
- IF TG_OP='DELETE' THEN RAISE EXCEPTION 'disposition evidence is retained' USING ERRCODE='23514'; END IF;
- IF TG_TABLE_NAME='game_house_dispositions' THEN
-  IF OLD.state=1 AND NEW.state=4 THEN
-   IF (to_jsonb(NEW)-ARRAY['state','cancel_session_id','cancel_command_id','cancel_binding','cancelled_at_ms']) IS DISTINCT FROM
-      (to_jsonb(OLD)-ARRAY['state','cancel_session_id','cancel_command_id','cancel_binding','cancelled_at_ms'])
-   THEN RAISE EXCEPTION 'cancellation changed immutable notice' USING ERRCODE='23514'; END IF;
-   RETURN NEW;
-  END IF;
-  IF (to_jsonb(NEW)-ARRAY['state','frozen_count','frozen_digest','next_step']) IS DISTINCT FROM
-     (to_jsonb(OLD)-ARRAY['state','frozen_count','frozen_digest','next_step']) OR
-     NOT ((OLD.state=1 AND NEW.state=2 AND NEW.next_step=OLD.next_step) OR
-          (OLD.state=2 AND NEW.state IN(2,3) AND NEW.next_step=OLD.next_step+1 AND NEW.frozen_count=OLD.frozen_count AND NEW.frozen_digest=OLD.frozen_digest))
-   THEN RAISE EXCEPTION 'immutable disposition binding/cause or invalid successor' USING ERRCODE='23514'; END IF;
- ELSIF TG_TABLE_NAME='game_house_disposition_items' THEN
-  IF (to_jsonb(NEW)-ARRAY['moved_step','moving_xact_id','ordinal']) IS DISTINCT FROM
-     (to_jsonb(OLD)-ARRAY['moved_step','moving_xact_id','ordinal']) OR
-     NOT ((OLD.moved_step IS NULL AND NEW.moved_step IS NOT NULL AND NEW.moving_xact_id=pg_current_xact_id() AND NEW.ordinal IS NULL) OR
-          (OLD.moved_step=NEW.moved_step AND OLD.moving_xact_id=pg_current_xact_id() AND NEW.moving_xact_id=OLD.moving_xact_id AND OLD.ordinal IS NULL AND NEW.ordinal IS NOT NULL))
-   THEN RAISE EXCEPTION 'immutable census or already returned item' USING ERRCODE='23514'; END IF;
- ELSE RAISE EXCEPTION 'step evidence is immutable' USING ERRCODE='23514'; END IF;
- RETURN NEW;
-END $$;
-CREATE TRIGGER house_disposition_immutable BEFORE UPDATE OR DELETE ON game_house_dispositions FOR EACH ROW EXECUTE FUNCTION game_house_disposition_immutable();
-CREATE TRIGGER house_disposition_item_immutable BEFORE UPDATE OR DELETE ON game_house_disposition_items FOR EACH ROW EXECUTE FUNCTION game_house_disposition_immutable();
-CREATE TRIGGER house_disposition_step_immutable BEFORE UPDATE OR DELETE ON game_house_disposition_steps FOR EACH ROW EXECUTE FUNCTION game_house_disposition_immutable();
-CREATE FUNCTION game_house_disposition_fence_check(w UUID,h TEXT,i UUID,deleting BOOLEAN) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE op UUID;guild_relation REGCLASS;guild_guard REGPROCEDURE;
-BEGIN
- -- Native row triggers can arrive with an item/provenance row already locked. Never
- -- wait here behind a disposition that owns this anchor and is waiting for that row.
- -- Root writers prelock the anchor; late generic writers fail closed with55P03.
- PERFORM 1 FROM game_house_ownership WHERE world_id=w AND house_key=h FOR SHARE NOWAIT;
- SELECT operation_id INTO op FROM game_house_dispositions WHERE world_id=w AND house_key=h AND state IN(2,3);
- IF FOUND AND NOT (deleting AND EXISTS(SELECT 1 FROM game_house_disposition_items c WHERE c.operation_id=op AND c.item_instance_id=i AND c.moved_step IS NOT NULL AND c.moving_xact_id=pg_current_xact_id()))
- THEN RAISE EXCEPTION 'house disposition content fence' USING ERRCODE='23514'; END IF;
- -- The typed Guild owner supplies its actual census/reservation guard. Both native item
- -- mutations and House entry already pass through this one boundary. Ordinary DRAINED
- -- history remains fenced; a Guild release cannot bypass the ordinary branch above.
- guild_relation:=to_regclass(format('%I.game_house_guild_dispositions',current_schema()));
- IF guild_relation IS NOT NULL OR EXISTS(SELECT 1 FROM pg_catalog.pg_attribute
-     WHERE attrelid='game_house_ownership'::regclass AND attname='owner_guild_id' AND NOT attisdropped) THEN
-  guild_guard:=to_regprocedure(format('%I.game_house_guild_disposition_fence_check(uuid,text,uuid,boolean)',current_schema()));
-  IF guild_relation IS NULL OR guild_guard IS NULL OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_proc
-      WHERE oid=guild_guard AND prokind='f' AND prorettype='void'::regtype) THEN
-   RAISE EXCEPTION 'Guild disposition fence owner is not installed' USING ERRCODE='23514';
-  END IF;
-  EXECUTE format('SELECT %I.game_house_guild_disposition_fence_check($1,$2,$3,$4)',current_schema())
-   USING w,h,i,deleting;
- END IF;
-END $$;
-CREATE FUNCTION game_house_disposition_content_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
- IF TG_OP<>'INSERT' THEN PERFORM game_house_disposition_fence_check(OLD.world_id,OLD.house_key,OLD.item_instance_id,TG_OP='DELETE'); END IF;
- IF TG_OP<>'DELETE' THEN PERFORM game_house_disposition_fence_check(NEW.world_id,NEW.house_key,NEW.item_instance_id,false); END IF;
- IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
-END $$;
-CREATE TRIGGER a_house_disposition_content_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_interior_locations FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
-CREATE TRIGGER a_house_disposition_provenance_fence BEFORE INSERT OR UPDATE OR DELETE ON game_item_house_reclaim_provenance FOR EACH ROW EXECUTE FUNCTION game_house_disposition_content_fence();
-CREATE FUNCTION game_house_disposition_item_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE location RECORD;
-BEGIN
- FOR location IN SELECT world_id,house_key FROM game_item_house_interior_locations
-     WHERE item_instance_id=OLD.item_instance_id ORDER BY world_id,house_key LOOP
-  -- A custody return moves its location/provenance; it never rewrites the frozen item.
-  PERFORM game_house_disposition_fence_check(location.world_id,location.house_key,OLD.item_instance_id,false);
- END LOOP;
- IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
-END $$;
-CREATE TRIGGER a_house_disposition_item_fence BEFORE UPDATE OR DELETE ON game_item_instances FOR EACH ROW EXECUTE FUNCTION game_house_disposition_item_fence();
-CREATE FUNCTION game_house_disposition_entry_fence() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
- IF NEW.state IN(1,2) THEN
-  PERFORM game_house_disposition_fence_check(NEW.world_id,NEW.house_key,NULL,false);
- END IF;
- RETURN NEW;
-END $$;
-CREATE TRIGGER a_house_disposition_entry_fence BEFORE INSERT OR UPDATE ON game_house_scope_handoffs FOR EACH ROW EXECUTE FUNCTION game_house_disposition_entry_fence();
-CREATE FUNCTION game_house_disposition_delivery_proven() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
- IF NEW.moved_step IS NOT NULL THEN
-  IF NOT EXISTS(SELECT 1 FROM game_house_disposition_items c JOIN game_house_dispositions o USING(operation_id)
-   JOIN game_item_character_inbox_locations l ON l.item_instance_id=c.item_instance_id
-   JOIN game_character_inbox_deliveries d ON d.item_instance_id=l.item_instance_id AND d.world_id=l.world_id AND d.character_id=l.character_id AND d.ordinal=l.ordinal
-   JOIN game_item_instances i ON i.item_instance_id=c.item_instance_id
-   JOIN game_house_disposition_steps s ON s.operation_id=c.operation_id AND s.step=c.moved_step
-   WHERE c.operation_id=NEW.operation_id AND c.item_instance_id=NEW.item_instance_id AND c.ordinal=l.ordinal
-    AND l.character_id=(c.source_provenance->>'reclaim_subject_character_id')::uuid AND l.world_id=o.world_id
-    AND d.cause_kind='HOUSE_DISPOSITION' AND d.cause_ref=o.operation_id::text AND d.created_xact_id=c.moving_xact_id
-    AND s.created_xact_id=c.moving_xact_id AND to_jsonb(i)=c.source_item
-    AND NOT EXISTS(SELECT 1 FROM game_item_house_interior_locations h WHERE h.item_instance_id=c.item_instance_id)
-    AND NOT EXISTS(SELECT 1 FROM game_item_house_reclaim_provenance p WHERE p.item_instance_id=c.item_instance_id))
-  THEN RAISE EXCEPTION 'disposition item lacks native delivery/source/step proof' USING ERRCODE='23514'; END IF;
- END IF;
- RETURN NULL;
-END $$;
-CREATE CONSTRAINT TRIGGER house_disposition_delivery_proven AFTER UPDATE ON game_house_disposition_items DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_house_disposition_delivery_proven();
--- Installed with the real common, location, provenance, item and entry guards above.
--- The typed Guild owner requires this protected ABI before freezing or applying effects;
--- an older ordinary-only fence has no such capability and must refuse Guild integration.
-CREATE FUNCTION game_house_disposition_guild_fence_abi() RETURNS INTEGER LANGUAGE sql IMMUTABLE AS $$ SELECT 1 $$;
-REVOKE ALL ON game_house_dispositions,game_house_disposition_items,game_house_disposition_steps FROM PUBLIC;
-DO $$ DECLARE n TEXT; BEGIN
- FOREACH n IN ARRAY ARRAY['game_house_disposition_immutable','game_house_disposition_content_fence','game_house_disposition_item_fence','game_house_disposition_entry_fence','game_house_disposition_delivery_proven','game_house_disposition_guild_fence_abi'] LOOP
-  EXECUTE format('ALTER FUNCTION %I() SET search_path=%I,pg_temp',n,current_schema());
-  EXECUTE format('REVOKE ALL ON FUNCTION %I() FROM PUBLIC',n);
- END LOOP;
- EXECUTE format('ALTER FUNCTION game_house_disposition_fence_check(UUID,TEXT,UUID,BOOLEAN) SET search_path=%I,pg_temp',current_schema());
-END $$;
-REVOKE ALL ON FUNCTION game_house_disposition_fence_check(UUID,TEXT,UUID,BOOLEAN) FROM PUBLIC;
--- The genuine Guild participant reads this constant on its runtime transaction. This
--- grants no trigger, mutation, table or terminal-release authority to that role.
-GRANT EXECUTE ON FUNCTION game_house_disposition_guild_fence_abi() TO oteryn_game_runtime;
-"#;

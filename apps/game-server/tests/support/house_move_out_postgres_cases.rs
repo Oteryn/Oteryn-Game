@@ -8,16 +8,19 @@ use crate::bestiary_postgres_harness::{
     runtime, scope,
 };
 use crate::durability::house_scope_handoff::{
-    HouseEntryRequest, HouseHandoffDirection, HouseId, HousePrepareOutcome,
-    HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome, HouseScopeAssignmentRequest,
+    HouseCommitOutcome, HouseEntryCommit, HouseEntryRequest, HouseHandoffDirection, HouseId,
+    HousePrepareOutcome, HouseScopeAssignmentCommand, HouseScopeAssignmentOutcome,
+    HouseScopeAssignmentRequest,
 };
 use crate::durability::runtime_scope_assignment::{ControlActor, OperationKey};
 use crate::foundation::{CommandId, CommandRef, GameSessionId, WorldId};
 use crate::house::move_out::{
-    HouseMoveOutError as Error, HouseMoveOutOutcome as Outcome, HouseMoveOutPass as Pass,
-    MoveOutCancellation, MoveOutNotice, PRIVATE_DISPOSITION_SCHEMA,
+    HouseMoveOutCommand, HouseMoveOutCommandReceipt, HouseMoveOutOwnerView,
 };
-use crate::house::transfer::PRIVATE_DISPOSITION_TRANSFER_SCHEMA;
+use crate::house::move_out::{
+    HouseMoveOutError as Error, HouseMoveOutOutcome as Outcome, HouseMoveOutPass as Pass,
+    MoveOutCancellation, MoveOutNotice,
+};
 use sqlx::Executor;
 use std::{future::Future, pin::pin, task::Poll};
 const HOUSE: &str = "oteryn:content.house.thais_1";
@@ -112,6 +115,52 @@ async fn apply(h: &Harness, p: Pass) -> Result<Outcome, Error> {
     h.root
         .run_private_house_move_out(&authority, &h.node, p)
         .await
+}
+async fn apply_absolute(
+    h: &Harness,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    command: CommandRef,
+    request: HouseMoveOutCommand,
+) -> Result<HouseMoveOutCommandReceipt, Error> {
+    let seal = h
+        .recovery
+        .seal_current()
+        .map_err(|_| Error::AuthorityRejected)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(|_| Error::AuthorityRejected)?;
+    let target = house().map_err(|_| Error::InvalidInput)?;
+    h.root
+        .apply_house_move_out_command(&authority, &h.node, fence, command, target, request)
+        .await
+}
+async fn read_owner(
+    h: &Harness,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+) -> Result<HouseMoveOutOwnerView, Error> {
+    let seal = h
+        .recovery
+        .seal_current()
+        .map_err(|_| Error::AuthorityRejected)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(|_| Error::AuthorityRejected)?;
+    let target = house().map_err(|_| Error::InvalidInput)?;
+    h.root
+        .read_house_move_out_owner(&authority, &h.node, fence, target)
+        .await
+}
+async fn absolute_deadline(h: &Harness, offset: i64) -> TestResult<i64> {
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    now.checked_add(offset)
+        .ok_or_else(|| "deadline overflow".into())
 }
 async fn join<A: Future, B: Future>(a: A, b: B) -> (A::Output, B::Output) {
     let mut a = pin!(a);
@@ -275,12 +324,7 @@ async fn assert_native_house_fence_order(h: &Harness) -> TestResult {
     Ok(())
 }
 async fn setup(h: &Harness, items: usize) -> TestResult {
-    sqlx::raw_sql(PRIVATE_DISPOSITION_SCHEMA)
-        .execute(&h.pool)
-        .await?;
-    sqlx::raw_sql(PRIVATE_DISPOSITION_TRANSFER_SCHEMA)
-        .execute(&h.pool)
-        .await?;
+    // The real MIGRATOR installed 0121 once; there is no fixture-owned guard/schema.
     assert_native_house_fence_order(h).await?;
     let second = bootstrap_second_subject(h).await?;
     // Only preexisting item/ownership state is authored with replication triggers disabled.
@@ -307,7 +351,7 @@ async fn setup(h: &Harness, items: usize) -> TestResult {
 // Initial retained private NOTICE from an earlier day. It is fixture history only: current
 // authority is independently re-read by the actual Root job, never reconstructed from it.
 async fn past_notice(h: &Harness) -> TestResult {
-    sqlx::query("INSERT INTO game_house_dispositions(operation_id,world_id,house_key,owner_character_id,ownership_revision,game_session_id,command_id,command_binding,notice_days,requested_at_ms,due_at_ms) SELECT encode($1,'hex')::uuid,world_id,house_key,owner_character_id,ownership_revision,encode($2,'hex')::uuid,90,$3,1,n-172800000,n-86400000 FROM game_house_ownership CROSS JOIN (SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS n) clock WHERE house_key=$4")
+    sqlx::query("INSERT INTO game_house_dispositions(operation_id,world_id,house_key,owner_character_id,ownership_revision,game_session_id,command_id,command_binding,requested_at_ms,due_at_ms) SELECT encode($1,'hex')::uuid,world_id,house_key,owner_character_id,ownership_revision,encode($2,'hex')::uuid,90,$3,n-172800000,n-86400000 FROM game_house_ownership CROSS JOIN (SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS n) clock WHERE house_key=$4")
   .bind(id(OP).as_slice()).bind(id(SESSION).as_slice()).bind([1_u8].as_slice()).bind(HOUSE).execute(&h.pool).await?;
     Ok(())
 }
@@ -1201,7 +1245,7 @@ fn another_current_world_channel_can_process_an_unloaded_house() -> TestResult {
                 .await
                 .map_err(debug)?,
             Outcome::Step {
-                view: crate::durability::house_move_out::DispositionView { drained: true, .. },
+                view: crate::house::move_out::DispositionView { drained: true, .. },
                 ..
             }
         ));
@@ -1413,6 +1457,323 @@ fn current_successor_connection_can_cancel_an_older_notice() -> TestResult {
             .await,
             Err(Error::OwnershipChanged)
         ));
+        Ok(())
+    })
+}
+
+#[test]
+fn native_removal_requires_current_exact_custody_delivery() -> TestResult {
+    run("hm_native_removal", async |h| {
+        setup(h, 1).await?;
+        let source: String = sqlx::query_scalar(
+            "SELECT to_jsonb(h)::text FROM game_item_house_interior_locations h",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        let proven: bool =
+            sqlx::query_scalar("SELECT game_house_disposition_native_removal_proven($1::jsonb)")
+                .bind(&source)
+                .fetch_one(&h.pool)
+                .await?;
+        assert!(!proven);
+        let granted: bool = sqlx::query_scalar(
+            "SELECT has_function_privilege('oteryn_game_runtime', \
+             'game_house_disposition_native_removal_proven(jsonb)', 'EXECUTE')",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(!granted);
+        past_notice(h).await?;
+        apply(h, freeze()?).await.map_err(debug)?;
+        let proven: bool =
+            sqlx::query_scalar("SELECT game_house_disposition_native_removal_proven($1::jsonb)")
+                .bind(&source)
+                .fetch_one(&h.pool)
+                .await?;
+        assert!(!proven);
+        let Outcome::Step {
+            items,
+            view,
+            replayed,
+        } = apply(h, step(0)?).await.map_err(debug)?
+        else {
+            return Err("step".into());
+        };
+        assert!(!replayed);
+        assert!(view.drained);
+        assert_eq!(items.len(), 1);
+        assert_eq!(counts(h).await?, (0, 0, 1, 1));
+        // Retained successful delivery is not physical-transaction removal authority.
+        let proven: bool =
+            sqlx::query_scalar("SELECT game_house_disposition_native_removal_proven($1::jsonb)")
+                .bind(&source)
+                .fetch_one(&h.pool)
+                .await?;
+        assert!(!proven);
+        Ok(())
+    })
+}
+
+#[test]
+fn absolute_notice_retains_exact_date_binding_and_original_replay() -> TestResult {
+    run("hm_absolute", async |h| {
+        setup(h, 0).await?;
+        let due = absolute_deadline(h, 2 * 86_400_000 + 12_345).await?;
+        let request = HouseMoveOutCommand::Notice {
+            due_at_unix_ms: due,
+        };
+        let first = apply_absolute(h, item_fence()?, command(201)?, request)
+            .await
+            .map_err(debug)?;
+        assert!(!first.replayed && !first.cancelled);
+        assert_eq!(first.due_at_unix_ms, due);
+        let stored: (i64, i64) =
+            sqlx::query_as("SELECT requested_at_ms,due_at_ms FROM game_house_dispositions")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(stored.1, due);
+        assert!((86_400_000..=30 * 86_400_000).contains(&(stored.1 - stored.0)));
+        assert!(matches!(
+            apply_absolute(
+                h,
+                item_fence()?,
+                command(201)?,
+                HouseMoveOutCommand::Notice {
+                    due_at_unix_ms: due + 1
+                }
+            )
+            .await,
+            Err(Error::ConflictingOperation)
+        ));
+        assert!(matches!(
+            apply_absolute(h, item_fence()?, command(201)?, HouseMoveOutCommand::Cancel).await,
+            Err(Error::ConflictingOperation)
+        ));
+        let cancelled =
+            apply_absolute(h, item_fence()?, command(202)?, HouseMoveOutCommand::Cancel)
+                .await
+                .map_err(debug)?;
+        assert!(cancelled.cancelled);
+        assert_eq!(cancelled.operation, first.operation);
+        // Replay is the original Notice result, not today's mutable Cancelled view.
+        let replay = apply_absolute(h, item_fence()?, command(201)?, request)
+            .await
+            .map_err(debug)?;
+        assert!(replay.replayed && !replay.cancelled);
+        assert_eq!(replay.operation, first.operation);
+        assert_eq!(replay.due_at_unix_ms, due);
+        assert_eq!(h.count("game_house_dispositions").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn absolute_deadline_refusal_writes_no_notice_and_does_not_burn_the_command() -> TestResult {
+    run("hm_absolute_bound", async |h| {
+        setup(h, 0).await?;
+        let too_soon = absolute_deadline(h, 86_400_000 - 1_000).await?;
+        let too_late = absolute_deadline(h, 30 * 86_400_000 + 120_000).await?;
+        for due_at_unix_ms in [i64::MIN, i64::MAX, too_soon, too_late] {
+            assert!(matches!(
+                apply_absolute(
+                    h,
+                    item_fence()?,
+                    command(203)?,
+                    HouseMoveOutCommand::Notice { due_at_unix_ms }
+                )
+                .await,
+                Err(Error::InvalidInput)
+            ));
+            assert_eq!(h.count("game_house_dispositions").await?, 0);
+        }
+        let due = absolute_deadline(h, 2 * 86_400_000 + 789).await?;
+        let accepted = apply_absolute(
+            h,
+            item_fence()?,
+            command(203)?,
+            HouseMoveOutCommand::Notice {
+                due_at_unix_ms: due,
+            },
+        )
+        .await
+        .map_err(debug)?;
+        assert!(!accepted.replayed);
+        assert_eq!(accepted.due_at_unix_ms, due);
+        assert_eq!(h.count("game_house_dispositions").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn absolute_cancel_resolves_the_pending_notice_and_retains_its_original_target() -> TestResult {
+    run("hm_absolute_cancel", async |h| {
+        setup(h, 0).await?;
+        let before = read_owner(h, item_fence()?).await.map_err(debug)?;
+        assert_eq!(before.ownership_revision, 1);
+        assert!(before.notice.is_none());
+        assert!(matches!(
+            apply_absolute(h, item_fence()?, command(205)?, HouseMoveOutCommand::Cancel).await,
+            Err(Error::MissingOperation)
+        ));
+        let due = absolute_deadline(h, 2 * 86_400_000 + 7).await?;
+        let first = apply_absolute(
+            h,
+            item_fence()?,
+            command(204)?,
+            HouseMoveOutCommand::Notice {
+                due_at_unix_ms: due,
+            },
+        )
+        .await
+        .map_err(debug)?;
+        let pending = read_owner(h, item_fence()?)
+            .await
+            .map_err(debug)?
+            .notice
+            .ok_or("missing owner notice")?;
+        assert_eq!(pending.operation, first.operation);
+        assert_eq!(pending.due_at_unix_ms, due);
+        let cancelled =
+            apply_absolute(h, item_fence()?, command(205)?, HouseMoveOutCommand::Cancel)
+                .await
+                .map_err(debug)?;
+        assert!(cancelled.cancelled && !cancelled.replayed);
+        assert_eq!(cancelled.operation, first.operation);
+        assert!(
+            read_owner(h, item_fence()?)
+                .await
+                .map_err(debug)?
+                .notice
+                .is_none()
+        );
+        let next = apply_absolute(
+            h,
+            item_fence()?,
+            command(206)?,
+            HouseMoveOutCommand::Notice {
+                due_at_unix_ms: due + 1_000,
+            },
+        )
+        .await
+        .map_err(debug)?;
+        assert_ne!(next.operation, first.operation);
+        let replay = apply_absolute(h, item_fence()?, command(205)?, HouseMoveOutCommand::Cancel)
+            .await
+            .map_err(debug)?;
+        assert!(replay.replayed && replay.cancelled);
+        assert_eq!(replay.operation, first.operation);
+        assert_eq!(replay.due_at_unix_ms, due);
+        let pending = read_owner(h, item_fence()?)
+            .await
+            .map_err(debug)?
+            .notice
+            .ok_or("fresh pending notice")?;
+        assert_eq!(pending.operation, next.operation);
+        assert!(!pending.cancelled);
+        assert_eq!(h.count("game_house_dispositions").await?, 2);
+        Ok(())
+    })
+}
+
+#[test]
+fn absolute_command_replay_is_retained_but_owner_projection_requires_current_fences() -> TestResult
+{
+    run("hm_absolute_current", async |h| {
+        setup(h, 0).await?;
+        let mut stale = item_fence()?;
+        stale.character_lease_generation = 2;
+        assert!(matches!(
+            read_owner(h, stale).await,
+            Err(Error::AuthorityRejected)
+        ));
+        let due = absolute_deadline(h, 2 * 86_400_000 + 99).await?;
+        let request = HouseMoveOutCommand::Notice {
+            due_at_unix_ms: due,
+        };
+        assert!(matches!(
+            apply_absolute(h, stale, command(207)?, request).await,
+            Err(Error::AuthorityRejected)
+        ));
+        assert_eq!(h.count("game_house_dispositions").await?, 0);
+        let first = apply_absolute(h, item_fence()?, command(207)?, request)
+            .await
+            .map_err(debug)?;
+        sqlx::query("UPDATE game_house_ownership SET ownership_revision=2,acquisition_receipt_ref=encode($1,'hex')::uuid WHERE world_id=encode($2,'hex')::uuid AND house_key=$3")
+            .bind(id(95).as_slice()).bind(id(WORLD).as_slice()).bind(HOUSE).execute(&h.pool).await?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=2 WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(id(SESSION).as_slice()).execute(&h.pool).await?;
+        let replay = apply_absolute(h, item_fence()?, command(207)?, request)
+            .await
+            .map_err(debug)?;
+        assert!(replay.replayed);
+        assert_eq!(replay.operation, first.operation);
+        assert_eq!(replay.due_at_unix_ms, due);
+        assert!(matches!(
+            read_owner(h, item_fence()?).await,
+            Err(Error::AuthorityRejected)
+        ));
+        let mut current = item_fence()?;
+        current.connection_generation =
+            crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
+        assert!(matches!(
+            read_owner(h, current).await,
+            Err(Error::OwnershipChanged)
+        ));
+        assert!(matches!(
+            apply_absolute(h, current, command(208)?, HouseMoveOutCommand::Cancel).await,
+            Err(Error::OwnershipChanged)
+        ));
+        assert_eq!(h.count("game_house_dispositions").await?, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn concurrent_absolute_command_mints_one_native_operation_and_one_retained_notice() -> TestResult {
+    run("hm_absolute_race", async |h| {
+        setup(h, 0).await?;
+        let second = crate::durability::DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(second.maintain_ready_once().await?);
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let first_auth = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let second_auth = second
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let due = absolute_deadline(h, 2 * 86_400_000 + 17).await?;
+        let request = HouseMoveOutCommand::Notice {
+            due_at_unix_ms: due,
+        };
+        let (a, b) = join(
+            h.root.apply_house_move_out_command(
+                &first_auth,
+                &h.node,
+                item_fence()?,
+                command(209)?,
+                house()?,
+                request,
+            ),
+            second.apply_house_move_out_command(
+                &second_auth,
+                &h.node,
+                item_fence()?,
+                command(209)?,
+                house()?,
+                request,
+            ),
+        )
+        .await;
+        let a = a.map_err(debug)?;
+        let b = b.map_err(debug)?;
+        assert_ne!(a.replayed, b.replayed);
+        assert_eq!(a.operation, b.operation);
+        assert_eq!(a.due_at_unix_ms, due);
+        assert_eq!(b.due_at_unix_ms, due);
+        assert_eq!(h.count("game_house_dispositions").await?, 1);
         Ok(())
     })
 }
