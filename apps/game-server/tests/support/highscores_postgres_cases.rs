@@ -1256,3 +1256,60 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
         Ok(())
     })
 }
+
+/// Migration 0097's guard on the cluster-global job group, as the migration runs it.
+fn job_role_guard() -> &'static str {
+    const MIGRATION: &str = include_str!("../../migrations/0097_world_highscores.sql");
+    let start = MIGRATION
+        .find("DO $$")
+        .expect("0097 opens with its role guard");
+    let end = start
+        + MIGRATION[start..]
+            .find("END $$;")
+            .expect("the guard block ends")
+        + 7;
+    &MIGRATION[start..end]
+}
+
+#[test]
+fn job_role_guard_refuses_a_pre_existing_group_with_any_membership() -> TestResult {
+    run("hsjobmembership", async |h| {
+        let guard = job_role_guard();
+        assert!(guard.contains("pg_auth_members"));
+        // The provisioned group is a plain NOLOGIN group that is a member of no role.
+        h.pool.execute(guard).await?;
+        let probe = format!("bp_hsjobmember_{}", std::process::id());
+        // The membership exists only in this transaction, so no other database on the shared
+        // cluster ever sees the group as a member of a role.
+        let mut tx = h.pool.begin().await?;
+        for statement in [
+            format!("CREATE ROLE {probe} NOLOGIN"),
+            format!("GRANT {probe} TO oteryn_game_highscore_job"),
+        ] {
+            sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(&mut *tx)
+                .await?;
+        }
+        let refused = (&mut *tx).execute(guard).await;
+        let code = refused
+            .as_ref()
+            .err()
+            .and_then(sqlx::Error::as_database_error)
+            .and_then(|error| error.code());
+        assert_eq!(code.as_deref(), Some("42501"), "{refused:?}");
+        assert!(
+            format!("{refused:?}").contains("is a member of another role"),
+            "{refused:?}"
+        );
+        tx.rollback().await?;
+        let memberships: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member \
+             WHERE r.rolname = 'oteryn_game_highscore_job'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(memberships, 0);
+        h.pool.execute(guard).await?;
+        Ok(())
+    })
+}

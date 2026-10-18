@@ -13,10 +13,11 @@
 --   * the public projection attachment (0091 §11): each snapshot insert advances the public
 --     (World, category) revision in the job's own transaction, so a failed cut publishes none;
 --   * the job's role (HIGHSCORES0 §4): the NOLOGIN group `oteryn_game_highscore_job` alone
---     writes and deletes the snapshot tables and reads their committed sources. The runtime group
---     is its member WITH INHERIT FALSE, SET TRUE: a runtime login holds none of its privileges
---     and gains them only for the job's own transaction (`SET LOCAL ROLE`). The runtime and
---     control roles SELECT the snapshot tables only.
+--     writes and deletes the snapshot tables and reads their committed sources. A pre-existing
+--     role is refused unless it is a plain NOLOGIN group that is a member of no role. The
+--     runtime group is its member WITH INHERIT FALSE, SET TRUE: a runtime login holds none of its
+--     privileges and gains them only for the job's own transaction (`SET LOCAL ROLE`). The
+--     runtime and control roles SELECT the snapshot tables only.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration that drops the
 -- trigger, the three tables and the two guard functions, and revokes the job role's grants (the
@@ -38,6 +39,15 @@ BEGIN
           AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication)
     ) THEN
         RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job is not a plain NOLOGIN group'
+            USING ERRCODE = '42501';
+    END IF;
+    -- A membership of its own would let the job's transaction inherit, or SET ROLE to,
+    -- privileges beyond the highscore grants below: the group must be a member of no role.
+    IF EXISTS (
+        SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member
+        WHERE r.rolname = 'oteryn_game_highscore_job'
+    ) THEN
+        RAISE EXCEPTION 'pre-existing Game group role oteryn_game_highscore_job is a member of another role'
             USING ERRCODE = '42501';
     END IF;
 END $$;
