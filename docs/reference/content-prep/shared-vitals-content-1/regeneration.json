@@ -381,12 +381,23 @@
           "note": "Precise cap is Wiki evidence; local owner/runtime constants are not an independent official observation."
         },
         "durations": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "reference": "food-durations.json",
+            "regenerative_source_rows": 146,
+            "native_records": 140,
+            "unbound_reference_records": 6,
+            "controlled_spot_checks": 5
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Current per-food nutrition values are staged separately from any executable regeneration rates."
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:Food:888949:rendered:20261018",
+              "selector": "Regenerative Food table -> per-item pinned nutrition records"
+            }
+          ],
+          "note": "Complete reference table is now linked explicitly. Wiki-derived nutrition seconds and five observed UI durations remain separate from HP/MP regeneration rates and runtime admission."
         }
       }
     }
