@@ -1,0 +1,29 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Every tracked content/services/ file participates in the World Bundle input fingerprint. Owner forbids content/world/pins/* mutation and regeneration; coordinator applies these data packets together with separately qualified pin regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/services/blessings/evidence-00000-00009.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/evidence-00000-00009.json",
+      "sha256": "fc42f5c521336f86f750d70ffa781174affdcf8b926fd12552031a2f1930c690"
+    },
+    {
+      "target_path": "content/services/blessings/index.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/index.json",
+      "sha256": "aeeaa8f3dc4bcc48cc617fbf658b2d382f12c36ac72a038b11816a1d31a0a22a"
+    }
+  ],
+  "generated_service_declarations_changed": false,
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "generated catalogue equivalence",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

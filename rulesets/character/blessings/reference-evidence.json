@@ -1,0 +1,697 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "blessings.prices",
+      "facts": {
+        "regular": {
+          "value": [
+            {
+              "level_max": 30,
+              "gold": "2000"
+            },
+            {
+              "level_min_exclusive": 30,
+              "level_max_exclusive": 120,
+              "gold": "200*(L-20)"
+            },
+            {
+              "level_min": 120,
+              "gold": "20000+75*(L-120)"
+            }
+          ],
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price / R(L)"
+            },
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "wiki:1628:1140641",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Current Wiki piecewise formula is preserved, but its above-120 segment conflicts with live official manual wording that regular prices stop rising while PvP blessing prices continue. Do not admit the aggregate regular formula without resolving this segment."
+        },
+        "enhanced": {
+          "value": [
+            {
+              "level_max": 30,
+              "gold": "2600"
+            },
+            {
+              "level_min_exclusive": 30,
+              "level_max_exclusive": 120,
+              "gold": "260*(L-20)"
+            },
+            {
+              "level_min": 120,
+              "gold": "26000+100*(L-120)"
+            }
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price / E(L)"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "twist": {
+          "value": [
+            {
+              "level_max": 30,
+              "gold": "2000"
+            },
+            {
+              "level_min_exclusive": 30,
+              "level_max_exclusive": 270,
+              "gold": "200*(L-20)"
+            },
+            {
+              "level_min": 270,
+              "gold": "50000"
+            }
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Price / ToF(L)"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "regular_above_120": {
+          "value": null,
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "wiki:1628:1140641",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Wiki current Blessings price formula grows 75 gp/level above 120; official manual 2026-09-28 describes a flat regular price past 120. Keep both observations; no runtime formula selected."
+        },
+        "promotion_price_effect": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No explicit promotion-specific purchase discount in the cited current source."
+        },
+        "premium_effect": {
+          "value": "Named NPC acquisition of Wisdom, Blood, Heart requires Premium; this does not imply a surcharge for other blessings.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Useful facts"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "phoenix": {
+          "value": "Kawill then Pydar; both parts required. Phoenix Egg + completed Paradox Tower gives 10% price discount.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Introduction / Spark of the Phoenix"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "inquisition": {
+          "value": "Five basic blessings cost 10% more when bought together from Henricus.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Special Blessings"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count0",
+      "facts": {
+        "count": {
+          "value": 0,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 0,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 30,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 0,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count1",
+      "facts": {
+        "count": {
+          "value": 1,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 8,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 38,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 30,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count2",
+      "facts": {
+        "count": {
+          "value": 2,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 16,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 46,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 55,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count3",
+      "facts": {
+        "count": {
+          "value": 3,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 24,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 54,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 75,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count4",
+      "facts": {
+        "count": {
+          "value": 4,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 32,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 62,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 90,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count5",
+      "facts": {
+        "count": {
+          "value": 5,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 40,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 70,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count6",
+      "facts": {
+        "count": {
+          "value": 6,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 48,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 78,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.loss.count7",
+      "facts": {
+        "count": {
+          "value": 7,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Summary table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "xp_skill_base_reduction_percent": {
+          "value": 56,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as n * 8 percentage points, not a multiplicative per-blessing factor."
+        },
+        "promoted_reduction_percent": {
+          "value": 86,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Computed as 30 + n * 8; promotion and blessings reduce the base loss additively."
+        },
+        "equipment_protection_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        }
+      }
+    },
+    {
+      "key": "blessings.pvp",
+      "facts": {
+        "pvp_death_test": {
+          "value": "At least 5% PvP damage in last five minutes OR final blow by a character/summon.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "twist_effect": {
+          "value": "Protects regular blessings in qualifying PvP deaths; does not save red/black skull equipment or PvE blessings.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11"
+            }
+          ],
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
+        },
+        "retro_hardcore_rate": {
+          "value": null,
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1630:1113782",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "wiki:1628:1140641",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Official manual: 6.31% per blessing; current Death Wiki: 6.4%. Neither silently selected."
+        },
+        "official_retro_hardcore_reduction_percent": {
+          "value": 6.31,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:characters:2026-10-18",
+              "selector": "5.1.11 / Experience Loss"
+            }
+          ],
+          "note": "Current primary official value; community 6.4% discrepancy retained in retro_hardcore_rate."
+        }
+      }
+    }
+  ]
+}

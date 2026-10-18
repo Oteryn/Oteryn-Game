@@ -1,12 +1,16 @@
-//! PREM-5 promotion end to end on PostgreSQL: one admitted Character talks to a placed NPC
-//! through the real command-7 dispatch (`FreshAdmissionAuthority::npc_talk`). `promotion` opens
-//! the offer, `yes` buys it through the native owner under the pre-delivery promotion gate, and
-//! the coins-only fee burn, the promotion receipt and the promotion row commit together. A retry
-//! of the same command replays that receipt and burns nothing twice; a new command is refused.
+//! PREM-5 promotion and Premium blessing end to end on PostgreSQL: one admitted Character talks
+//! to a placed NPC through the real command-7 dispatch (`FreshAdmissionAuthority::npc_talk`).
+//! `promotion` or a blessing name opens the offer, `yes` buys it through the native owner under
+//! one Premium gate, and the coins-only fee burn, the receipt and the promotion row or held
+//! blessing commit together. A retry of the same command replays that receipt and burns nothing
+//! twice; a resumed connection repeating the CommandId reconciles it from the receipt
+//! (`FreshAdmissionAuthority::resume_npc_bank`); a new command is refused.
 //!
-//! The only fabricated inputs are the session fixture, the clock, the coins in the backpack and
-//! the Premium NPC service catalogue: no qualified promotion NPC source is pinned in production
-//! yet, so the test installs one through the same seam a pinned source would use.
+//! The only fabricated inputs are the session fixture, the clock, the Premium snapshot, the coins
+//! in the backpack and the NPC declarations: no qualified promotion NPC source and no blessing
+//! Service declaration is pinned in production yet, so the test installs them through the same
+//! seam a pinned source would use. The blessing prices, NPC names and storage keys come from the
+//! embedded BLESSINGS-CONTENT-1 source (`premium_blessing_catalogue`).
 //!
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
@@ -23,15 +27,24 @@ use crate::foundation::{
     ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing,
     MovementLocalPosition, NodeId, NpcPlacement, NpcPlacementTable, NpcPlacements, WorldId,
 };
+use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::NpcTalkBook;
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
 use crate::gameplay_transport::npc_promotion::{
-    BlessingNpcOffer, PremiumBlessingService, PremiumNpcServiceCatalogue, PromotionNpcOffer,
+    BlessingNpcOffer, PremiumBlessingService, PremiumNpcServiceCatalogue, PremiumReconcile,
+    PromotionNpcOffer,
 };
 use crate::gameplay_transport::npc_talk::NpcTalkEntry;
+use crate::gameplay_transport::premium_blessing_catalogue::{
+    BlessingSources, SourceBlessingCatalogue,
+};
+use crate::gameplay_transport::premium_blessing_purchase::BlessingPurchaseError;
 use crate::gameplay_transport::premium_promotion::PROMOTION_PRICE;
-use crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator;
+use crate::gameplay_transport::spell_premium_coordinator::{
+    PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
+};
+use crate::premium::{IngestOutcome, PremiumConsumer, TrustedNow};
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
@@ -47,6 +60,18 @@ const PLAYER: MovementLocalPosition = MovementLocalPosition {
 };
 const NPC_KEY: &str = "oteryn:npc.promotion-guide";
 const SERVICE_KEY: &str = "oteryn:service.promotion-guide";
+/// The source NPC of Blood of the Mountain (BLESSINGS-CONTENT-1: `Kais`).
+const BLESSING_NPC_KEY: &str = "oteryn:npc.kais";
+/// The source Service keys the blessing NPC declares. Only Blood of the Mountain is sold by
+/// Kais; the Heart is Nomad's and the Wisdom's regular price family is `CONFLICT`.
+const BLESSING_SERVICE_KEYS: [&str; 3] = [
+    "oteryn:service.blessing.blood_of_the_mountain",
+    "oteryn:service.blessing.heart_of_the_mountain",
+    "oteryn:service.blessing.the_wisdom_of_solitude",
+];
+const BLOOD_KEY: &str = "oteryn:blessing.blood-of-the-mountain";
+/// The Premium test clock: 2026-09-30T12:00:00Z, after the activation switch-over.
+const PREMIUM_TEST_NOW: i64 = 1_790_769_600_000_000;
 /// The fixture Character root's Content revision (`seed_character`).
 const CONTENT_REVISION: &str = "content-1";
 /// One intent per step stays well inside the `NPC0-RL-05` window of four per second.
@@ -87,11 +112,124 @@ impl PremiumNpcServiceCatalogue for PromotionCatalogue {
     }
 }
 
-fn npc_catalogue() -> NpcDataCatalogue {
+/// The blessing test catalogue: the source-backed blessing offers of the embedded
+/// BLESSINGS-CONTENT-1 source, and a promotion offer at the same NPC so the promoted buyer's
+/// fail-closed price can be shown.
+struct BlessingCatalogue {
+    source: SourceBlessingCatalogue,
+}
+
+impl PremiumNpcServiceCatalogue for BlessingCatalogue {
+    fn content_revision(&self) -> &str {
+        self.source.content_revision()
+    }
+    fn npcs(&self) -> &NpcDataCatalogue {
+        self.source.npcs()
+    }
+    fn promotion(&self, native_npc_key: &str) -> Option<PromotionNpcOffer> {
+        (native_npc_key == BLESSING_NPC_KEY).then(|| PromotionNpcOffer {
+            npc: reference(ProjectV2Family::Npc, BLESSING_NPC_KEY),
+            service: reference(ProjectV2Family::Service, SERVICE_KEY),
+        })
+    }
+    fn blessing(
+        &self,
+        native_npc_key: &str,
+        service: PremiumBlessingService,
+    ) -> Option<BlessingNpcOffer> {
+        self.source.blessing(native_npc_key, service)
+    }
+}
+
+/// Which Premium NPC service the scenario buys.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Case {
+    Promotion,
+    Blessing,
+}
+
+impl Case {
+    const fn npc_key(self) -> &'static str {
+        match self {
+            Self::Promotion => NPC_KEY,
+            Self::Blessing => BLESSING_NPC_KEY,
+        }
+    }
+}
+
+struct PremiumClock(TrustedNow);
+impl clock_registration::Registered for PremiumClock {}
+impl RegisteredPremiumClock for PremiumClock {
+    fn read_current_window(&self) -> Option<TrustedNow> {
+        Some(self.0)
+    }
+}
+
+/// A delivered, Current Premium for the fixture account through the real snapshot consumer.
+async fn current_premium(harness: &Harness) -> TestResult<SpellPremiumCoordinator> {
+    let consumer = Arc::new(PremiumConsumer::default());
+    let nonce = "6b1f0c2d9e8a47f3a1b2c3d4e5f60718";
+    let response = crate::premium::test_producer::snapshot(
+        &crate::premium::test_producer::ProducerRequest {
+            account_id: crate::premium::snapshot::canonical_uuid(id(40)),
+            nonce: nonce.into(),
+        },
+        7,
+        &[],
+    );
+    assert!(matches!(
+        consumer
+            .ingest(&harness.root, id(40), nonce, &response)
+            .await,
+        IngestOutcome::Accepted
+    ));
+    Ok(SpellPremiumCoordinator::new(
+        consumer,
+        Some(Arc::new(PremiumClock(TrustedNow::new(PREMIUM_TEST_NOW, 1)))
+            as Arc<dyn RegisteredPremiumClock>),
+        Some(PremiumActivation {
+            activation_id: "prem-5-blessing-test".into(),
+            switch_over_us: PREMIUM_TEST_NOW - 60_000_000,
+        }),
+        Some(harness.root.clone()),
+    ))
+}
+
+fn npc_catalogue(case: Case) -> NpcDataCatalogue {
     let identity = |key: &str| ProjectV2Identity {
         key: key.into(),
         revision: "definition-r1".into(),
     };
+    let service_keys = match case {
+        Case::Promotion => vec![SERVICE_KEY],
+        Case::Blessing => [SERVICE_KEY]
+            .into_iter()
+            .chain(BLESSING_SERVICE_KEYS)
+            .collect(),
+    };
+    let mut declarations = vec![ProjectV2Declaration::Npc {
+        identity: identity(case.npc_key()),
+        presentation: None,
+        behavior: None,
+        dialogue: None,
+        services: service_keys
+            .iter()
+            .map(|key| reference(ProjectV2Family::Service, key))
+            .collect(),
+        fields: vec![],
+    }];
+    declarations.extend(
+        service_keys
+            .iter()
+            .map(|key| ProjectV2Declaration::Service {
+                bank: false,
+                identity: identity(key),
+                offers: vec![],
+                recipes: vec![],
+                routes: vec![],
+                fields: Vec::<ProjectV2CandidateField>::new(),
+            }),
+    );
     let draft = ProjectV2Draft {
         core: ProjectDraft {
             project_revision: "promotion-r1".into(),
@@ -105,24 +243,7 @@ fn npc_catalogue() -> NpcDataCatalogue {
             metadata: vec![],
         },
         state: ProjectV2State {
-            declarations: vec![
-                ProjectV2Declaration::Npc {
-                    identity: identity(NPC_KEY),
-                    presentation: None,
-                    behavior: None,
-                    dialogue: None,
-                    services: vec![reference(ProjectV2Family::Service, SERVICE_KEY)],
-                    fields: vec![],
-                },
-                ProjectV2Declaration::Service {
-                    bank: false,
-                    identity: identity(SERVICE_KEY),
-                    offers: vec![],
-                    recipes: vec![],
-                    routes: vec![],
-                    fields: Vec::<ProjectV2CandidateField>::new(),
-                },
-            ],
+            declarations,
             ..ProjectV2State::default()
         },
     };
@@ -208,20 +329,32 @@ fn item(seed: u8, key: &str, revision: &str, quantity: u32) -> String {
 
 #[test]
 fn promotion_talk_through_dispatch_burns_fee_and_promotes() -> TestResult {
+    on_scenario_stack("promotion-npc-e2e", Case::Promotion)
+}
+
+#[test]
+fn blessing_talk_through_dispatch_burns_fee_and_blesses() -> TestResult {
+    on_scenario_stack("blessing-npc-e2e", Case::Blessing)
+}
+
+fn on_scenario_stack(name: &str, case: Case) -> TestResult {
     std::thread::Builder::new()
-        .name("promotion-npc-e2e".into())
+        .name(name.into())
         .stack_size(SCENARIO_STACK_BYTES)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(case).map_err(|error| error.to_string()))?
         .join()
-        .map_err(|_| "promotion NPC e2e thread panicked")?
+        .map_err(|_| "Premium NPC e2e thread panicked")?
         .map_err(Into::into)
 }
 
 #[allow(clippy::too_many_lines)]
-fn scenario() -> TestResult {
+fn scenario(case: Case) -> TestResult {
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "promotion_npc_e2e", true, false).await?;
+        let name = match case {
+            Case::Promotion => "promotion_npc_e2e",
+            Case::Blessing => "blessing_npc_e2e",
+        };
+        let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
         prepare_current_session(&harness).await?;
         {
             let mut tx = harness.pool.begin().await?;
@@ -337,7 +470,7 @@ fn scenario() -> TestResult {
             .position();
         let table = NpcPlacementTable {
             npcs: vec![NpcPlacements {
-                key: NPC_KEY.to_owned(),
+                key: case.npc_key().to_owned(),
                 placements: vec![NpcPlacement {
                     floor: -i8::try_from(spot.floor)?,
                     y: u16::try_from(spot.y)?,
@@ -395,9 +528,14 @@ fn scenario() -> TestResult {
             crate::achievement_catalogue::AchievementCatalogue::embedded().map_err(debug)?;
         let charms =
             crate::content::charm_source::CanonicalCharmCatalogue::embedded().map_err(debug)?;
-        // Before Premium delivery: the WHEEL-0 §6.2 promotion exception through the real latch.
-        let premium_gate =
-            SpellPremiumCoordinator::new(Arc::default(), None, None, Some(harness.root.clone()));
+        // The promotion: before Premium delivery, the WHEEL-0 §6.2 exception through the real
+        // latch. A blessing has no such exception: it needs a Current Premium.
+        let premium_gate = match case {
+            Case::Promotion => {
+                SpellPremiumCoordinator::new(Arc::default(), None, None, Some(harness.root.clone()))
+            }
+            Case::Blessing => current_premium(&harness).await?,
+        };
         let runtime = Mutex::new(runtime);
         let door = Mutex::new(door);
         let mut owner = ComposedFreshAdmission {
@@ -466,86 +604,43 @@ fn scenario() -> TestResult {
         // Premium service seam a pinned NPC source would fill.
         owner.chat.admit(session, "Fixture Hero", owner.owner_now());
         owner.chat.set_npc_service(session);
+        let (npc_name, catalogue): (_, Arc<dyn PremiumNpcServiceCatalogue>) = match case {
+            Case::Promotion => (
+                "Aldric",
+                Arc::new(PromotionCatalogue {
+                    npcs: npc_catalogue(case),
+                }),
+            ),
+            Case::Blessing => (
+                "Kais",
+                Arc::new(BlessingCatalogue {
+                    source: SourceBlessingCatalogue::new(
+                        Arc::new(npc_catalogue(case)),
+                        CONTENT_REVISION.to_owned(),
+                        BlessingSources::embedded().map_err(debug)?,
+                    ),
+                }),
+            ),
+        };
         owner.chat.install_npc_talk(Arc::new(
-            NpcTalkBook::default().with(NPC_KEY, NpcTalkEntry::new("Aldric", None)),
+            NpcTalkBook::default().with(case.npc_key(), NpcTalkEntry::new(npc_name, None)),
         ));
         assert!(
             owner
                 .npc_conversations
-                .install_premium_services(Arc::new(PromotionCatalogue {
-                    npcs: npc_catalogue(),
-                }))
+                .install_premium_services(catalogue.clone())
         );
 
         let before = revision(&harness).await?;
         assert_eq!(before, 2);
         assert_eq!(crystals(&harness).await?, 3);
-
-        // The greeting opens the conversation; the topic prompts the offer and writes nothing.
-        talk(&mut owner, (actor, session, npc), 1, "hello").await;
-        let (prompt, _) = talk(&mut owner, (actor, session, npc), 2, "promotion").await;
-        assert_eq!(
-            prompt,
-            vec![format!(
-                "Do you want to be promoted in your vocation for {PROMOTION_PRICE} gold?"
-            )]
-        );
-        assert_eq!(promotion_receipts(&harness).await?, 0);
-
-        // `yes` buys it: one receipt, one promotion row, a 20000 coins-only fee burn and one
-        // committed revision, all together.
-        let (bought, changed) = talk(&mut owner, (actor, session, npc), 3, "yes").await;
-        assert_eq!(
-            bought,
-            vec!["Congratulations! You are now promoted.".to_owned()]
-        );
-        assert!(changed);
-        assert_eq!(promotion_receipts(&harness).await?, 1);
-        let premium_admission: i16 =
-            sqlx::query_scalar("SELECT premium_admission FROM game_character_promotion_receipts")
-                .fetch_one(&harness.pool)
-                .await?;
-        assert_eq!(premium_admission, 2, "admitted before Premium delivery");
-        let promoted: bool = sqlx::query_scalar(
-            "SELECT promoted FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
-        )
-        .bind(id(41).as_slice())
-        .fetch_one(&harness.pool)
-        .await?;
-        assert!(promoted);
-        assert_eq!(fee_burns(&harness).await?, vec![(2, 20_000)]);
-        assert_eq!(revision(&harness).await?, before + 1);
-        assert_eq!(crystals(&harness).await?, 1);
-
-        // The same command again replays its receipt: no second burn or revision.
-        talk(&mut owner, (actor, session, npc), 4, "promotion").await;
-        let (replayed, _) = talk(&mut owner, (actor, session, npc), 3, "yes").await;
-        assert_eq!(
-            replayed,
-            vec!["Congratulations! You are now promoted.".to_owned()]
-        );
-        assert_eq!(promotion_receipts(&harness).await?, 1);
-        assert_eq!(fee_burns(&harness).await?, vec![(2, 20_000)]);
-        assert_eq!(revision(&harness).await?, before + 1);
-
-        // A new command is refused by the durable promotion and writes nothing.
-        talk(&mut owner, (actor, session, npc), 5, "promotion").await;
-        let (refused, changed) = talk(&mut owner, (actor, session, npc), 6, "yes").await;
-        assert_eq!(refused, vec!["You are already promoted!".to_owned()]);
-        assert!(!changed);
-        assert_eq!(promotion_receipts(&harness).await?, 1);
-        assert_eq!(fee_burns(&harness).await?, vec![(2, 20_000)]);
-        assert_eq!(revision(&harness).await?, before + 1);
-        assert_eq!(crystals(&harness).await?, 1);
-
-        // No blessing source is sourced: the topic fails closed with no offer and no purchase.
-        let (blessing, _) = talk(&mut owner, (actor, session, npc), 7, "wisdom of solitude").await;
-        assert!(
-            !blessing
-                .iter()
-                .any(|line| line.contains("Wisdom of Solitude")),
-            "{blessing:?}"
-        );
+        let at = (actor, session, npc);
+        match case {
+            Case::Promotion => promotion_steps(&harness, &mut owner, at, before).await?,
+            Case::Blessing => {
+                blessing_steps(&harness, &mut owner, at, before, catalogue.as_ref()).await?;
+            }
+        }
 
         drop(owner);
         drop(authority);
@@ -554,10 +649,247 @@ fn scenario() -> TestResult {
     })
 }
 
+type At = (ExactActorRef, GameSessionId, EntityRef);
+
+/// The promotion through dispatch, its replay, its reconcile after a lost outcome and its refusal.
+async fn promotion_steps(
+    harness: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    at: At,
+    before: u64,
+) -> TestResult {
+    // The greeting opens the conversation; the topic prompts the offer and writes nothing.
+    talk(owner, at, 1, "hello").await;
+    let (prompt, _) = talk(owner, at, 2, "promotion").await;
+    assert_eq!(
+        prompt,
+        vec![format!(
+            "Do you want to be promoted in your vocation for {PROMOTION_PRICE} gold?"
+        )]
+    );
+    assert_eq!(promotion_receipts(harness).await?, 0);
+
+    // `yes` buys it: one receipt, one promotion row, a 20000 coins-only fee burn and one
+    // committed revision, all together.
+    let (bought, changed) = talk(owner, at, 3, "yes").await;
+    assert_eq!(
+        bought,
+        vec!["Congratulations! You are now promoted.".to_owned()]
+    );
+    assert!(changed);
+    assert_eq!(promotion_receipts(harness).await?, 1);
+    let premium_admission: i16 =
+        sqlx::query_scalar("SELECT premium_admission FROM game_character_promotion_receipts")
+            .fetch_one(&harness.pool)
+            .await?;
+    assert_eq!(premium_admission, 2, "admitted before Premium delivery");
+    let promoted: bool = sqlx::query_scalar(
+        "SELECT promoted FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    assert!(promoted);
+    assert_eq!(fee_burns(harness).await?, vec![(2, 20_000)]);
+    assert_eq!(revision(harness).await?, before + 1);
+    assert_eq!(crystals(harness).await?, 1);
+
+    // The same command again replays its receipt: no second burn or revision.
+    talk(owner, at, 4, "promotion").await;
+    let (replayed, _) = talk(owner, at, 3, "yes").await;
+    assert_eq!(
+        replayed,
+        vec!["Congratulations! You are now promoted.".to_owned()]
+    );
+    assert_eq!(promotion_receipts(harness).await?, 1);
+    assert_eq!(fee_burns(harness).await?, vec![(2, 20_000)]);
+    assert_eq!(revision(harness).await?, before + 1);
+
+    // A resumed connection whose first command repeats CommandId 3 after a lost outcome: the
+    // conversation (and its pending offer) is gone, and the receipt alone answers it.
+    reconciles(owner, at, 3, "Congratulations! You are now promoted.").await;
+    assert_eq!(fee_burns(harness).await?, vec![(2, 20_000)]);
+    assert_eq!(revision(harness).await?, before + 1);
+
+    // A new command is refused by the durable promotion and writes nothing.
+    talk(owner, at, 5, "promotion").await;
+    let (refused, changed) = talk(owner, at, 6, "yes").await;
+    assert_eq!(refused, vec!["You are already promoted!".to_owned()]);
+    assert!(!changed);
+    assert_eq!(promotion_receipts(harness).await?, 1);
+    assert_eq!(fee_burns(harness).await?, vec![(2, 20_000)]);
+    assert_eq!(revision(harness).await?, before + 1);
+    assert_eq!(crystals(harness).await?, 1);
+
+    // This catalogue sources no blessing: the topic fails closed with no offer and no purchase.
+    let (blessing, _) = talk(owner, at, 7, "wisdom of solitude").await;
+    assert!(
+        !blessing
+            .iter()
+            .any(|line| line.contains("Wisdom of Solitude")),
+        "{blessing:?}"
+    );
+    Ok(())
+}
+
+/// The source-backed Blood of the Mountain through dispatch at its level-50 source price,
+/// its replay, its reconcile, the death hook's held set, and the fail-closed offers.
+#[allow(clippy::too_many_lines)]
+async fn blessing_steps(
+    harness: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    at: At,
+    before: u64,
+    catalogue: &dyn PremiumNpcServiceCatalogue,
+) -> TestResult {
+    // BLESSINGS-CONTENT-1 `enhanced` (PROVEN): 260 * (L - 20) gold for 30 < L < 120.
+    const BLOOD_PRICE: i64 = 260 * (50 - 20);
+    let (actor, session, npc) = at;
+    talk(owner, at, 1, "hello").await;
+    let (prompt, _) = talk(owner, at, 2, "blood of the mountain").await;
+    assert_eq!(
+        prompt,
+        vec!["Do you want to receive the Blood of the Mountain blessing?".to_owned()]
+    );
+    assert!(fee_burns(harness).await?.is_empty());
+
+    // `yes` buys it: one receipt with the writer-selected band, one held blessing, a coins-first
+    // fee burn with change, and one committed revision, all together.
+    let (bought, changed) = talk(owner, at, 3, "yes").await;
+    assert_eq!(bought, vec!["You have been blessed.".to_owned()]);
+    assert!(changed);
+    assert_eq!(fee_burns(harness).await?, vec![(3, BLOOD_PRICE)]);
+    assert_eq!(held_blessings(harness).await?, vec![BLOOD_KEY.to_owned()]);
+    let receipt: (String, i64, i64, i64, i16) = sqlx::query_as(
+        "SELECT blessing_key, price_gold_units::bigint, price_minimum_level,                 price_maximum_level, blessing_service            FROM game_character_blessing_purchase_receipts",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(receipt, (BLOOD_KEY.to_owned(), BLOOD_PRICE, 31, 119, 2));
+    assert_eq!(revision(harness).await?, before + 1);
+    assert_eq!(crystals(harness).await?, 2);
+
+    // The same command again replays its receipt: no second burn or revision.
+    talk(owner, at, 4, "blood of the mountain").await;
+    let (replayed, _) = talk(owner, at, 3, "yes").await;
+    assert_eq!(replayed, vec!["You have been blessed.".to_owned()]);
+    assert_eq!(fee_burns(harness).await?, vec![(3, BLOOD_PRICE)]);
+    assert_eq!(revision(harness).await?, before + 1);
+
+    // A resumed connection repeating CommandId 3 reconciles it from the receipt alone; an
+    // unrelated command has no Premium purchase.
+    reconciles(owner, at, 3, "You have been blessed.").await;
+    assert_eq!(
+        owner
+            .reconcile_premium_purchase(actor, CommandRef::new(session, CommandId::new(99)?))
+            .await,
+        PremiumReconcile::None
+    );
+    assert_eq!(fee_burns(harness).await?, vec![(3, BLOOD_PRICE)]);
+    assert_eq!(revision(harness).await?, before + 1);
+
+    // DEATH_COMPLETE0 §4.7: a death consumes exactly the held set.
+    let fence = owner
+        .promotion_actor_facts(actor, session)
+        .await
+        .ok_or("current actor facts")?
+        .fence;
+    let death = crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(77))
+        .map_err(debug)?;
+    assert_eq!(
+        owner.death_held_blessings(fence, death).await,
+        Some(vec![BLOOD_KEY.to_owned()])
+    );
+
+    // A new command is refused by the held blessing and writes nothing.
+    talk(owner, at, 5, "blood of the mountain").await;
+    let (refused, changed) = talk(owner, at, 6, "yes").await;
+    assert_eq!(
+        refused,
+        vec!["You already possess this blessing.".to_owned()]
+    );
+    assert!(!changed);
+    assert_eq!(fee_burns(harness).await?, vec![(3, BLOOD_PRICE)]);
+    assert_eq!(revision(harness).await?, before + 1);
+
+    // Kais sells only Blood of the Mountain: the Heart is Nomad's, and the Wisdom's `regular`
+    // price family is `CONFLICT`, so neither is offered.
+    for (command, topic, name) in [
+        (7, "heart of the mountain", "Heart of the Mountain"),
+        (8, "wisdom of solitude", "Wisdom of Solitude"),
+    ] {
+        let (lines, _) = talk(owner, at, command, topic).await;
+        assert!(!lines.iter().any(|line| line.contains(name)), "{lines:?}");
+    }
+
+    // After a promotion the promoted price effect is `UNKNOWN`: the writer refuses any price.
+    talk(owner, at, 9, "promotion").await;
+    let (promoted, _) = talk(owner, at, 10, "yes").await;
+    assert_eq!(
+        promoted,
+        vec!["Congratulations! You are now promoted.".to_owned()]
+    );
+    let fees = vec![(3, BLOOD_PRICE), (2, 20_000)];
+    assert_eq!(fee_burns(harness).await?, fees);
+    let refused = owner
+        .buy_npc_blessing(
+            actor,
+            CommandRef::new(session, CommandId::new(11)?),
+            npc,
+            PremiumBlessingService::BloodOfTheMountain,
+            catalogue,
+        )
+        .await;
+    assert!(
+        matches!(refused, Err(BlessingPurchaseError::PriceUnavailable)),
+        "{refused:?}"
+    );
+    assert_eq!(fee_burns(harness).await?, fees);
+    assert_eq!(revision(harness).await?, before + 2);
+    Ok(())
+}
+
+/// The resumed connection's original command through `resume_npc_bank`: the committed Premium
+/// purchase answers it with its line and nothing is written.
+async fn reconciles(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    (actor, session, npc): At,
+    command_id: u64,
+    line: &str,
+) {
+    let outcome = owner
+        .resume_npc_bank(
+            actor,
+            UseCommand {
+                game_session_id: session,
+                command_id,
+                item_fence: None,
+            },
+        )
+        .await
+        .expect("the committed purchase answers the original command");
+    assert!(!outcome.unknown);
+    assert!(outcome.inventory_changed);
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    let conversation = outcome.conversation.expect("the purchase line");
+    assert_eq!(conversation.open.map(|(talking, _)| talking), Some(npc));
+    assert_eq!(conversation.lines, vec![line.to_owned()]);
+}
+
+async fn held_blessings(harness: &Harness) -> TestResult<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "SELECT blessing_key FROM game_character_blessings \
+          WHERE character_id=encode($1,'hex')::uuid ORDER BY 1",
+    )
+    .bind(id(41).as_slice())
+    .fetch_all(&harness.pool)
+    .await?)
+}
+
 /// One command-7 intent through the real dispatch, one step later on the owner clock.
 async fn talk(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
-    (actor, session, npc): (ExactActorRef, GameSessionId, EntityRef),
+    (actor, session, npc): At,
     command_id: u64,
     text: &str,
 ) -> (Vec<String>, bool) {

@@ -18,7 +18,7 @@ registry: maybe
 owner: "Codex family lead: Rozwój postaci i trening; policy worker /root/training_review"
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-17
+updated_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/domain/premium.rs
@@ -36,6 +36,12 @@ owned_paths:
   - apps/game-server/src/durability/mod.rs (D1160 single own-module `npc_purchase` registration only)
   - apps/game-server/tests/support/item_fee_burn_postgres_cases.rs (D1164 CharmUnassign let-else hunk only)
   - apps/game-server/tests/support/gold_fee_bank_postgres_cases.rs (D1164 CharmUnassign let-else hunk only)
+  - apps/game-server/src/premium/blessing_catalogue.rs (new; BLESSINGS-CONTENT-1 source reader)
+  - apps/game-server/src/gameplay_transport/promotion_npc_postgres_tests.rs (PREM-5 e2e)
+  - apps/game-server/src/gameplay_transport/npc_command.rs (Premium talk and reconcile hunks; slot unlocked after #2197)
+  - apps/game-server/src/gameplay_transport/mod.rs (Premium module registration, resume and death held-set hunks; slot unlocked after #2197)
+  - rulesets/character/blessings/ (taken unchanged from #2237 BLESSINGS-CONTENT-1)
+  - docs/reference/content-prep/blessings-content-1/ (taken unchanged from #2237 BLESSINGS-CONTENT-1)
 slot_only_paths:
   - apps/game-server/src/lib.rs (premium module registration after #2197)
   - migration number
@@ -560,3 +566,41 @@ The standalone `item_fee_burn_postgres` target (`test = false`) does not compile
 on main since #2157: `npc_travel` path-loads a fixture that needs
 `crate::bestiary_postgres_harness`. That target is not owned here and was not
 changed; its cases ran through `character_authority_postgres` instead.
+
+## 2026-10-18 — source-backed blessing offers and Premium purchase reconcile
+
+CP decision: the blessing source is draft #2237 (BLESSINGS-CONTENT-1). Its
+eight files (`rulesets/character/blessings/` and
+`docs/reference/content-prep/blessings-content-1/`) are taken unchanged; #2237
+is superseded by this PR and closes after the merge.
+
+- `premium/blessing_catalogue.rs` reads both evidence files at build time and
+  admits only `PROVEN` or `DERIVED` facts. Blood of the Mountain (Kais) and Heart
+  of the Mountain (Nomad) get the `enhanced` bands (`PROVEN`). The Wisdom of
+  Solitude (Eremo) stays held: its `regular` family is `CONFLICT`.
+  `promotion_price_effect` is `UNKNOWN`, so the writer refuses any price to a
+  promoted buyer (`PriceUnavailable`). The storage key is
+  `oteryn:blessing.<service with '-'>`. The offer still needs the NPC's own
+  Service declaration, which is no content NPC's yet. The node does not install
+  the catalogue: that is the CP content step (Service declarations and pins).
+- The writer prices the band at the locked level: `gold + slope * (L - base)`,
+  checked. The receipt binding covers both the slope and the promoted
+  admission.
+- Codex P1 (npc_command.rs:854): a resumed connection's first command first
+  re-keys the Character's promotion and blessing receipts with its CommandRef
+  (`reconcile_premium_purchase`). A match answers with the purchase line; an
+  unknown read holds the command; anything else falls through to the Bank
+  reconcile.
+- The DEATH_COMPLETE0 §4.7 hook: `commit_death` sends the held blessing set,
+  either the set of the already-committed death or the current set read under
+  the revision slot. The loss table of the source matches
+  `domain::death::death_experience_loss`. #2193 is not merged, so the
+  death-side reduction stays as it is on main.
+
+E2E: `gameplay_transport::monk_save::postgres_tests::promotion_npc_e2e::blessing_talk_through_dispatch_burns_fee_and_blesses`.
+It covers the prompt, the 7800 gold burn at level 50, the held key, the receipt
+band 31..119, replay, reconcile, the death held set, the already-held refusal,
+the unoffered Heart and Wisdom, and the promoted fail-closed price. The
+promotion e2e also covers the reconcile.
+
+Qualification is recorded in PR #2194.

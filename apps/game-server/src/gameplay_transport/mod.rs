@@ -36,6 +36,8 @@ mod logout;
 mod logout_tests;
 #[path = "../interaction/npc_promotion.rs"]
 pub(crate) mod npc_promotion;
+#[path = "../premium/blessing_catalogue.rs"]
+pub(crate) mod premium_blessing_catalogue;
 #[path = "../premium/blessing_purchase.rs"]
 pub(crate) mod premium_blessing_purchase;
 #[path = "../premium/promotion.rs"]
@@ -1616,15 +1618,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let runtime = self.runtime.lock().await;
             (runtime.map_revision_digest(), runtime.respawn_position())
         };
-        let request = player_death_request(
-            progression,
-            (self.world_id, self.channel_id),
-            map_revision,
-            death,
-            respawn,
-        );
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return DeathCommit::Unavailable;
+        };
+        // DEATH_COMPLETE0 §4.7: the death consumes the blessings held when it commits.
+        let Some(held_blessings) = self.death_held_blessings(fence, death.occurrence).await else {
+            return DeathCommit::Unavailable;
+        };
+        let request = crate::durability::character_death::CharacterDeathRequest {
+            held_blessings,
+            ..player_death_request(
+                progression,
+                (self.world_id, self.channel_id),
+                map_revision,
+                death,
+                respawn,
+            )
         };
         match self
             .root
@@ -3066,6 +3075,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
+        if let Some(outcome) = npc_command::resume_premium_talk(self, actor, &command).await {
+            return Some(outcome);
+        }
         npc_command::resume_bank_talk(self, actor, command).await
     }
 
@@ -5146,7 +5158,8 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
 
 /// The durable intent of one runtime death (DEATH-0 §3.1): the death cell in this Channel at the
 /// pinned map revision and the respawn position, both as the big-endian `(x, y, floor)` cell.
-/// No path inserts blessings before DEATH-4, so the held set is empty.
+/// The held set is left empty here: the death path sets the durable held set it read under the
+/// revision slot (PREM-5 purchases insert it; `ComposedFreshAdmission::death_held_blessings`).
 fn player_death_request<const N: usize>(
     progression: &crate::combat::RewardProgressionBinding<N>,
     (world_id, channel_id): (WorldId, ChannelId),

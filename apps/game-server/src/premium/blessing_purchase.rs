@@ -176,18 +176,18 @@ fn valid_key(key: &str) -> bool {
             .bytes()
             .all(|c| c.is_ascii_alphanumeric() || b"._:-".contains(&c))
 }
-/// Prices are admitted source data, not a newly invented game-price formula.
+/// Prices are admitted source data, not a newly invented game-price formula. Returns the band
+/// of `level` and its price there.
 fn price_at(
     offer: &BlessingNpcOffer,
     level: u32,
-) -> Result<&BlessingPriceBand, BlessingPurchaseError> {
+) -> Result<(&BlessingPriceBand, u64), BlessingPurchaseError> {
     let mut found = None;
     let mut previous = None;
     for band in &offer.prices {
         if band.minimum_level == 0
             || band.maximum_level < band.minimum_level
-            || band.gold_units == 0
-            || band.gold_units > i64::MAX as u64
+            || (band.gold_per_level != 0 && band.base_level > band.minimum_level)
             || previous.is_some_and(|maximum| band.minimum_level <= maximum)
         {
             return Err(BlessingPurchaseError::InvalidInput);
@@ -197,7 +197,19 @@ fn price_at(
             found = Some(band);
         }
     }
-    found.ok_or(BlessingPurchaseError::PriceUnavailable)
+    let band = found.ok_or(BlessingPurchaseError::PriceUnavailable)?;
+    let slope = if band.gold_per_level == 0 {
+        Some(0)
+    } else {
+        level
+            .checked_sub(band.base_level)
+            .and_then(|steps| band.gold_per_level.checked_mul(u64::from(steps)))
+    };
+    let price = slope
+        .and_then(|slope| band.gold_units.checked_add(slope))
+        .filter(|price| (1..=i64::MAX as u64).contains(price))
+        .ok_or(BlessingPurchaseError::InvalidInput)?;
+    Ok((band, price))
 }
 fn binding(
     fence: &CurrentCharacterGameplayFence,
@@ -261,7 +273,10 @@ fn binding(
         hash.update(band.minimum_level.to_be_bytes());
         hash.update(band.maximum_level.to_be_bytes());
         hash.update(band.gold_units.to_be_bytes());
+        hash.update(band.gold_per_level.to_be_bytes());
+        hash.update(band.base_level.to_be_bytes());
     }
+    hash.update([u8::from(r.offer.promoted_price_admitted)]);
     let mut value = vec![1];
     value.extend_from_slice(&hash.finalize());
     Ok(value)
@@ -302,7 +317,15 @@ pub(crate) async fn prepare_blessing_purchase(
     let level:i64=sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
     let level = u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let band = price_at(&request.offer, level)?;
+    let (band, price) = price_at(&request.offer, level)?;
+    // A promoted buyer's price is not admitted while the source leaves its effect unknown.
+    if !request.offer.promoted_price_admitted {
+        let promoted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid AND promoted)")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+        if promoted {
+            return Err(BlessingPurchaseError::PriceUnavailable);
+        }
+    }
     // Admission already holds the character root and progression row locks through COMMIT.
     // Blessing purchases and deaths serialize there; held rows need no additional lock.
     // FOR UPDATE would require UPDATE authority on the append/consume-only blessing table.
@@ -319,7 +342,7 @@ pub(crate) async fn prepare_blessing_purchase(
     after.push(request.offer.storage_key.clone());
     after.sort();
     let mut fee = request.fee.clone();
-    fee.fee_gold_units = band.gold_units;
+    fee.fee_gold_units = price;
     let FeeBurnOutcome::Burned(paid) = burn_fee_in_transaction(tx, &fence, &fee).await? else {
         return Err(DurabilityError::InvalidStoredState.into());
     };
@@ -331,11 +354,11 @@ pub(crate) async fn prepare_blessing_purchase(
         .ok_or(BlessingPurchaseError::InvalidInput)?;
     if paid.character_id != fence.character_id
         || paid.committed_character_revision != committed
-        || paid.fee_gold_units != band.gold_units
+        || paid.fee_gold_units != price
         || paid.bank_debit.is_some_and(|bank| {
             bank.account_id != request.account_id
                 || bank.debit_gold_units == 0
-                || bank.debit_gold_units > band.gold_units
+                || bank.debit_gold_units > price
                 || bank
                     .balance_before_gold_units
                     .checked_sub(bank.debit_gold_units)
@@ -356,7 +379,7 @@ pub(crate) async fn prepare_blessing_purchase(
         .bind(request.source.actor.identity.as_slice()).bind(request.source.actor.generation.to_string())
         .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.account_id.as_slice())
         .bind(&request.offer.storage_key).bind(service_code(request.offer.blessing))
-        .bind(i64::from(band.minimum_level)).bind(i64::from(band.maximum_level)).bind(i64::try_from(band.gold_units).map_err(|_|BlessingPurchaseError::InvalidInput)?)
+        .bind(i64::from(band.minimum_level)).bind(i64::from(band.maximum_level)).bind(i64::try_from(price).map_err(|_|BlessingPurchaseError::InvalidInput)?)
         .bind(bank.as_ref().map(|b|b.entry_id.as_slice())).bind(bank.map_or(0,|b|b.debit_gold_units as i64))
         .bind(bank.map(|b|b.balance_before_gold_units as i64)).bind(bank.map(|b|b.balance_after_gold_units as i64))
         .bind(&before).bind(&after).bind(fence.character_id.as_bytes().as_slice()).bind(fence.expected_character_revision.get().to_string())
@@ -388,7 +411,7 @@ pub(crate) async fn prepare_blessing_purchase(
             service: request.offer.blessing,
             fee_transaction: paid.transaction_id,
             fee_event: paid.event_id,
-            price_gold_units: band.gold_units,
+            price_gold_units: price,
             bank_debit: bank,
         },
     )))
@@ -520,4 +543,79 @@ fn decode_receipt(
         price_gold_units: price as u64,
         bank_debit: bank,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+    use super::*;
+    use crate::content::ProjectV2DefinitionRef;
+    use crate::gameplay_transport::npc_promotion::PromotionNpcOffer;
+    use crate::gameplay_transport::premium_blessing_catalogue::BlessingSources;
+
+    fn offer(prices: Vec<BlessingPriceBand>) -> BlessingNpcOffer {
+        let reference = |family, key: &str| ProjectV2DefinitionRef {
+            family,
+            key: key.into(),
+            revision: "1".into(),
+        };
+        BlessingNpcOffer {
+            source: PromotionNpcOffer {
+                npc: reference(ProjectV2Family::Npc, "oteryn:npc.kais"),
+                service: reference(
+                    ProjectV2Family::Service,
+                    "oteryn:service.blessing.blood_of_the_mountain",
+                ),
+            },
+            blessing: PremiumBlessingService::BloodOfTheMountain,
+            storage_key: "oteryn:blessing.blood-of-the-mountain".into(),
+            prices,
+            promoted_price_admitted: false,
+        }
+    }
+
+    #[test]
+    fn the_writer_prices_the_source_bands_at_the_locked_level() {
+        let sources = BlessingSources::embedded().expect("source");
+        let blood = offer(
+            sources
+                .get(PremiumBlessingService::BloodOfTheMountain)
+                .expect("blood")
+                .prices
+                .clone(),
+        );
+        for (level, gold) in [
+            (1, 2_600),
+            (30, 2_600),
+            (31, 2_860),
+            (50, 7_800),
+            (119, 25_740),
+            (120, 26_000),
+            (121, 26_100),
+        ] {
+            assert_eq!(price_at(&blood, level).expect("price").1, gold, "{level}");
+        }
+        // No band, a flat zero price and a slope below its base fail closed.
+        assert!(matches!(
+            price_at(&offer(Vec::new()), 50),
+            Err(BlessingPurchaseError::PriceUnavailable)
+        ));
+        let band = |minimum_level, gold_units, gold_per_level, base_level| BlessingPriceBand {
+            minimum_level,
+            maximum_level: u32::MAX,
+            gold_units,
+            gold_per_level,
+            base_level,
+        };
+        for prices in [vec![band(1, 0, 0, 0)], vec![band(1, 0, 5, 20)]] {
+            assert!(matches!(
+                price_at(&offer(prices), 50),
+                Err(BlessingPurchaseError::InvalidInput)
+            ));
+        }
+        assert!(matches!(
+            price_at(&offer(vec![band(1, 1, u64::MAX, 1)]), 3),
+            Err(BlessingPurchaseError::InvalidInput)
+        ));
+    }
 }

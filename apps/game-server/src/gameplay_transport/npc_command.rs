@@ -286,6 +286,12 @@ impl NpcConversations {
         self.premium_services.set(catalogue).is_ok()
     }
 
+    /// Whether a Premium NPC service source is installed: without one no Premium purchase
+    /// can have been made, so a resume has nothing to reconcile.
+    pub(crate) fn premium_services_installed(&self) -> bool {
+        self.premium_services.get().is_some()
+    }
+
     /// PREM-5: the Premium service step of one `OK` talk intent, under the Channel runtime lock.
     /// Every intent consumes the pending offer. A `yes` of the same NPC generation and
     /// conversation confirms it; an admitted topic opens a new prompt and cancels a pending Bank
@@ -1127,6 +1133,41 @@ pub(super) async fn resume_bank_talk(
         // An accepted original pending command cannot be abandoned or sequenced as a new
         // command because current ownership is temporarily unavailable or storage is unknown.
         Err(_) => Some(held_bank_outcome()),
+    }
+}
+
+/// PREM-5: the first command of a resumed connection that repeats an unsequenced CommandId.
+/// The reconnect cancelled the pending Premium offer, so a resent `yes` cannot reach the
+/// purchase replay; when a promotion or blessing purchase committed under this CommandRef
+/// before the lost COMMIT outcome, its answer is the receipt's, with nothing bought again.
+/// `None`: no Premium purchase committed under it; dispatch goes on.
+pub(super) async fn resume_premium_talk(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: &super::connection::UseCommand,
+) -> Option<NpcTalkOutcome> {
+    use super::npc_promotion::PremiumReconcile;
+    if !admission.npc_conversations.premium_services_installed() {
+        return None;
+    }
+    let id = crate::foundation::CommandId::new(command.command_id).ok()?;
+    let reference = crate::foundation::CommandRef::new(command.game_session_id, id);
+    match admission
+        .reconcile_premium_purchase(actor, reference)
+        .await
+    {
+        PremiumReconcile::None => None,
+        PremiumReconcile::Committed { npc, line } => {
+            let intent = NpcTalkIntent {
+                npc_actor: npc,
+                text: String::new(),
+            };
+            Some(NpcTalkOutcome {
+                inventory_changed: true,
+                ..NpcConversations::bank_reply(&intent, line.to_owned())
+            })
+        }
+        PremiumReconcile::Held => Some(held_bank_outcome()),
     }
 }
 

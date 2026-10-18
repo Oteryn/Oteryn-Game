@@ -75,13 +75,20 @@ pub(crate) struct BlessingNpcOffer {
     pub(crate) blessing: PremiumBlessingService,
     pub(crate) storage_key: String,
     pub(crate) prices: Vec<BlessingPriceBand>,
+    /// Whether the source admits a price for a promoted buyer. While its effect is not known,
+    /// a promoted buyer gets no price (fail closed).
+    pub(crate) promoted_price_admitted: bool,
 }
 
-#[derive(Debug, Clone)]
+/// One source price band: `gold_units + gold_per_level × (level − base_level)` for every level
+/// from `minimum_level` to `maximum_level`. A flat band has `gold_per_level` 0.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BlessingPriceBand {
     pub(crate) minimum_level: u32,
     pub(crate) maximum_level: u32,
     pub(crate) gold_units: u64,
+    pub(crate) gold_per_level: u64,
+    pub(crate) base_level: u32,
 }
 
 pub(crate) fn admitted_promotion_offer(
@@ -487,6 +494,209 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+/// The receipt keys of every Premium purchase of one Character: its occurrence, the NPC
+/// generation it was bought from and whether it is a blessing. Read, never written.
+struct PremiumReceiptKey {
+    occurrence: [u8; 16],
+    npc: EntityRef,
+    blessing: bool,
+}
+
+struct PremiumReceiptKeys(Vec<PremiumReceiptKey>);
+
+impl crate::durability::character_revision_sequencer::SequencedOutcome for PremiumReceiptKeys {
+    fn committed_revision(&self) -> Option<crate::domain::CharacterRevision> {
+        None
+    }
+}
+
+struct PremiumReceiptKeysRead {
+    character: crate::domain::CharacterId,
+}
+
+impl crate::durability::npc_purchase::NpcPurchaseOperation for PremiumReceiptKeysRead {
+    type Output = PremiumReceiptKeys;
+    type Error = BlessingPurchaseError;
+
+    fn apply<'a, 't>(
+        self,
+        _context: &'a crate::durability::npc_purchase::NpcPurchaseWriteContext,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>>
+    where
+        Self: 'a,
+    {
+        Box::pin(async move {
+            let rows: Vec<(Vec<u8>, Vec<u8>, String, bool)> = sqlx::query_as(
+                "SELECT decode(replace(purchase_occurrence_id::text,'-',''),'hex'), \
+                        decode(replace(npc_actor_id::text,'-',''),'hex'), \
+                        npc_actor_generation::text, false \
+                   FROM game_character_promotion_receipts \
+                  WHERE character_id = encode($1,'hex')::uuid \
+                 UNION ALL \
+                 SELECT decode(replace(purchase_occurrence_id::text,'-',''),'hex'), \
+                        decode(replace(npc_actor_id::text,'-',''),'hex'), \
+                        npc_actor_generation::text, true \
+                   FROM game_character_blessing_purchase_receipts \
+                  WHERE character_id = encode($1,'hex')::uuid",
+            )
+            .bind(self.character.as_bytes().as_slice())
+            .fetch_all(&mut ***tx)
+            .await?;
+            rows.into_iter()
+                .map(|(occurrence, identity, generation, blessing)| {
+                    Some(PremiumReceiptKey {
+                        occurrence: occurrence.try_into().ok()?,
+                        npc: EntityRef {
+                            identity: identity.try_into().ok()?,
+                            generation: generation.parse().ok()?,
+                        },
+                        blessing,
+                    })
+                })
+                .collect::<Option<Vec<_>>>()
+                .map(PremiumReceiptKeys)
+                .ok_or(BlessingPurchaseError::from(
+                    crate::durability::DurabilityError::InvalidStoredState,
+                ))
+        })
+    }
+}
+
+/// The held blessing set of one Character, in the byte order the death writer compares.
+struct HeldBlessings(Vec<String>);
+
+impl crate::durability::character_revision_sequencer::SequencedOutcome for HeldBlessings {
+    fn committed_revision(&self) -> Option<crate::domain::CharacterRevision> {
+        None
+    }
+}
+
+struct HeldBlessingsRead {
+    character: crate::domain::CharacterId,
+}
+
+impl crate::durability::npc_purchase::NpcPurchaseOperation for HeldBlessingsRead {
+    type Output = HeldBlessings;
+    type Error = BlessingPurchaseError;
+
+    fn apply<'a, 't>(
+        self,
+        _context: &'a crate::durability::npc_purchase::NpcPurchaseWriteContext,
+        tx: &'a mut Type2Transaction<'t>,
+    ) -> Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>>
+    where
+        Self: 'a,
+    {
+        Box::pin(async move {
+            let held: Vec<String> = sqlx::query_scalar(
+                "SELECT blessing_key COLLATE \"C\" FROM game_character_blessings \
+                  WHERE character_id = encode($1,'hex')::uuid ORDER BY 1",
+            )
+            .bind(self.character.as_bytes().as_slice())
+            .fetch_all(&mut ***tx)
+            .await?;
+            Ok::<_, BlessingPurchaseError>(HeldBlessings(held))
+        })
+    }
+}
+
+/// The durable answer of a Premium purchase command after a lost COMMIT outcome.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PremiumReconcile {
+    /// No Premium purchase committed under this command.
+    None,
+    /// It committed: the NPC it was bought from and the answer the command would have had.
+    Committed { npc: EntityRef, line: &'static str },
+    /// Not classifiable with current authority yet: the command stays unsequenced.
+    Held,
+}
+
+const PROMOTED_LINE: &str = "Congratulations! You are now promoted.";
+const BLESSED_LINE: &str = "You have been blessed.";
+
+impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
+    /// Whether a promotion or blessing purchase committed under `command`, for a resumed
+    /// connection whose first command repeats an unsequenced CommandId. A purchase occurrence is
+    /// keyed by the CommandRef and the NPC generation, so every receipt of the Character is
+    /// re-keyed with this CommandRef: only the purchase of exactly this command matches. Nothing
+    /// is written and no current NPC, offer or Premium state is needed.
+    pub(crate) async fn reconcile_premium_purchase(
+        &self,
+        actor: ExactActorRef,
+        command: CommandRef,
+    ) -> PremiumReconcile {
+        use crate::durability::character_revision_sequencer::SequencedError;
+        let Some(facts) = self
+            .promotion_actor_facts(actor, command.game_session_id())
+            .await
+        else {
+            return PremiumReconcile::Held;
+        };
+        let character = facts.fence.character_id;
+        let mut slot = self.revision_sequencer.acquire(character).await;
+        let keys = slot
+            .commit_npc_purchase(
+                self.root,
+                self.character,
+                self.holder,
+                facts.fence,
+                |owner, _fence| async move { owner.commit(PremiumReceiptKeysRead { character }).await },
+            )
+            .await;
+        drop(slot);
+        let keys = match keys {
+            Ok(keys) => keys,
+            Err(error) if error.is_unknown() => return PremiumReconcile::Held,
+            // Without current authority nothing can be bought either; dispatch refuses it.
+            Err(_) => return PremiumReconcile::None,
+        };
+        keys.0
+            .into_iter()
+            .find_map(|key| {
+                let (tag, line): (&[u8], _) = if key.blessing {
+                    (b"oteryn:blessing-occurrence:v1", BLESSED_LINE)
+                } else {
+                    (b"oteryn:promotion-occurrence:v1", PROMOTED_LINE)
+                };
+                (promotion_command_id(tag, command, key.npc) == key.occurrence)
+                    .then_some(PremiumReconcile::Committed { npc: key.npc, line })
+            })
+            .unwrap_or(PremiumReconcile::None)
+    }
+
+    /// DEATH_COMPLETE0 §4.7: the held blessing set a death of `occurrence` consumes. A death that
+    /// already committed keeps the set it consumed, so its retry replays the same intent;
+    /// otherwise the current set is read under the revision slot. `None`: unavailable now.
+    pub(crate) async fn death_held_blessings(
+        &self,
+        fence: CurrentCharacterGameplayFence,
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+    ) -> Option<Vec<String>> {
+        if let Some(committed) = self
+            .root
+            .reconcile_character_death(self.character, occurrence)
+            .await
+            .ok()?
+        {
+            return Some(committed.blessings_before);
+        }
+        let character = fence.character_id;
+        let mut slot = self.revision_sequencer.acquire(character).await;
+        let held = slot
+            .commit_npc_purchase(
+                self.root,
+                self.character,
+                self.holder,
+                fence,
+                |owner, _fence| async move { owner.commit(HeldBlessingsRead { character }).await },
+            )
+            .await
+            .ok()?;
+        Some(held.0)
+    }
+}
+
 /// The talk topic of a Premium NPC service: `None` is the promotion, `Some` one of the three
 /// Premium blessings (PREMIUM_ACTIVATION §4.4). Matched whole and case-insensitively.
 pub(crate) fn premium_topic(text: &str) -> Option<Option<PremiumBlessingService>> {
@@ -606,7 +816,7 @@ pub(crate) async fn confirm_premium_service(
             .buy_npc_promotion(actor, command, pending.npc, catalogue)
             .await
         {
-            Ok(_) => line("Congratulations! You are now promoted.", true),
+            Ok(_) => line(PROMOTED_LINE, true),
             Err(error) if error.is_unknown() => PremiumTalkAnswer::Unknown,
             Err(PromotionPurchaseError::Eligibility(refusal)) => match refusal {
                 PromotionRefusal::Premium(_) => {
@@ -625,7 +835,7 @@ pub(crate) async fn confirm_premium_service(
             .buy_npc_blessing(actor, command, pending.npc, service, catalogue)
             .await
         {
-            Ok(_) => line("You have been blessed.", true),
+            Ok(_) => line(BLESSED_LINE, true),
             Err(error) if error.is_unknown() => PremiumTalkAnswer::Unknown,
             Err(BlessingPurchaseError::Premium(_)) => line(
                 "You need a premium account in order to receive this blessing.",
