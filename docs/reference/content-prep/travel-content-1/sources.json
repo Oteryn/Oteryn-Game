@@ -575,6 +575,18 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "0903d47d1d8554cff321d6dd1287a767366131c22f8765b768a7ebb75a8fb22f",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Tanyt%7CThorgrin%7CTonar%7CUrks+The+Mute%7CUzon%7CZiyad&redirects=1"
+    },
+    "wiki:1710:1113795": {
+      "title": "Boat",
+      "url": "https://tibia.fandom.com/wiki/Boat",
+      "revision_url": "https://tibia.fandom.com/w/index.php?oldid=1113795",
+      "revid": 1113795,
+      "revision_timestamp": "2025-07-26T09:27:19Z",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI",
+      "retained_scope": "FULL_PAGE_WIKITEXT",
+      "retained_text_sha256": "8040aaefd9c442fa484fe9c6c2ce5e54a56b93d477685f6ad965dedf18a98538",
+      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Offline%20Training%7CExercise%20Weapons%7CBoat%7CMagic%20Carpet&redirects=1"
     }
   }
 }

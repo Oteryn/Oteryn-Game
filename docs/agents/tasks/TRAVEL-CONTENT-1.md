@@ -3,11 +3,11 @@
 ```yaml
 task_id: TRAVEL-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/travel-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2235
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -21,6 +21,7 @@ owned_paths:
   - docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/evidence-00000-00055.json
   - docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/index.json
   - docs/reference/content-prep/travel-content-1/service-apply-plan.json
+  - docs/reference/content-prep/travel-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -60,3 +61,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 ## Service placement constraint
 
 Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.
+
+## Reference delivery boundary
+
+All 56 original travel services and 195 route declarations are covered. Current NPC fares, directional carpet fares, explicit quest conditions, Free mainland boat eligibility and Premium carpet rules are extracted separately. Native historical candidates remain visible. Multiple NPC placements, omitted/obsolete route keywords and undocumented arrival tiles remain explicitly held. An NPC standing tile is never substituted for a destination arrival tile.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
