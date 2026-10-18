@@ -456,7 +456,7 @@ fn scenario() -> TestResult {
                         actor,
                         session,
                         crate::gameplay_transport::actor_spell::tests::FACTS,
-                        (3, 7_000_000),
+                        (0, 0),
                         owner.owner_now(),
                     )
                     .is_some()
