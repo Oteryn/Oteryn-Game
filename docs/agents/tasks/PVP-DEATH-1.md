@@ -658,6 +658,12 @@ oldest-`last_at_us` eviction, plus oldest-first one-second contribution buckets
 under one second and never drops damage early. Refusals still leave the ledger
 unchanged. Two cases cover per-hit expiry and the bucket bound.
 
+Codex P1 "Retain the killer's damage total in the lethal snapshot" is fixed in the
+same file. `LethalAttribution` now carries `killer_hp`, the killer's retained
+five-minute total including the final blow, so `killer_hp` plus the assists is the
+all-source denominator the death consumer needs. One case covers a killer with earlier
+damage.
+
 This is a bounded checkpoint with `merge_authority: CP_ONLY`: the native lethal source
 ledger and the typed outcome leaf. Shared `character_death.rs` death-transaction
 integration, PvP totals/buckets, skull settlement and full death acceptance stay out of

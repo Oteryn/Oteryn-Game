@@ -165,6 +165,9 @@ pub(crate) struct LedgerEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LethalAttribution {
     pub(crate) killer: LethalSource,
+    /// The killer's retained five-minute HP total, including the final blow, so the
+    /// death consumer can form the all-source denominator (`killer_hp` + assists).
+    pub(crate) killer_hp: u64,
     pub(crate) assists: Vec<(LethalSource, u64)>,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -271,13 +274,10 @@ impl PlayerDamageLedger {
         if self.last_applied != Some((killer, now)) {
             return Err(DamageLedgerError::MissingFinalHit);
         }
-        if self
-            .entries
-            .get(&killer)
-            .is_none_or(|entry| entry.last_at_us != now)
-        {
-            return Err(DamageLedgerError::MissingFinalHit);
-        }
+        let killer_hp = match self.entries.get(&killer) {
+            Some(entry) if entry.last_at_us == now => entry.hp_total,
+            _ => return Err(DamageLedgerError::MissingFinalHit),
+        };
         let mut assists: Vec<_> = self
             .entries
             .iter()
@@ -285,7 +285,11 @@ impl PlayerDamageLedger {
             .map(|(source, entry)| (*source, entry.hp_total))
             .collect();
         assists.sort_by(|(a, hp_a), (b, hp_b)| hp_b.cmp(hp_a).then_with(|| a.cmp(b)));
-        Ok(LethalAttribution { killer, assists })
+        Ok(LethalAttribution {
+            killer,
+            killer_hp,
+            assists,
+        })
     }
 }
 
@@ -318,6 +322,7 @@ mod damage_ledger_tests {
         ledger.observe(source(1), 20, at(299_000_000))?;
         ledger.observe(source(2), 5, at(301_000_000))?;
         let snapshot = ledger.snapshot(source(2), at(301_000_000))?;
+        assert_eq!(snapshot.killer_hp, 5);
         assert_eq!(snapshot.assists, vec![(source(1), 20)]);
         // A repeated attacker keeps only its in-window hits, including the final blow.
         ledger.observe(source(1), 7, at(302_000_000))?;
@@ -367,8 +372,24 @@ mod damage_ledger_tests {
         assert!(!ledger.entries.contains_key(&source(0)));
         let snapshot = ledger.snapshot(source(64), at(64))?;
         assert_eq!(snapshot.killer, source(64));
+        assert_eq!(snapshot.killer_hp, 1);
         assert_eq!(snapshot.assists.first(), Some(&(source(63), 64)));
         assert_eq!(snapshot.assists.len(), 63);
+        Ok(())
+    }
+    #[test]
+    fn snapshot_retains_killer_prior_damage_for_the_all_source_total()
+    -> Result<(), DamageLedgerError> {
+        let mut ledger = PlayerDamageLedger::default();
+        ledger.observe(source(1), 96, at(1))?;
+        ledger.observe(source(2), 4, at(2))?;
+        ledger.observe(source(1), 3, at(3))?;
+        let snapshot = ledger.snapshot(source(1), at(3))?;
+        assert_eq!(snapshot.killer, source(1));
+        assert_eq!(snapshot.killer_hp, 99);
+        assert_eq!(snapshot.assists, vec![(source(2), 4)]);
+        let all: u64 = snapshot.killer_hp + snapshot.assists.iter().map(|(_, hp)| hp).sum::<u64>();
+        assert_eq!(all, 103);
         Ok(())
     }
     #[test]
