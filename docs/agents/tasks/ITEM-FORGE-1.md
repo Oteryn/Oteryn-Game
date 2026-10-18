@@ -813,3 +813,24 @@ MERGE_AUTHORITY: CP_ONLY. Draft retained; the builder never marks ready.
   the production types.
 - Scope unchanged: native DustLimit and its DATA history reader; no numbered
   migration, no gameplay admission.
+
+## Completion + wiring (post-checkpoint)
+
+Evidence base: origin/main `c55a92b4`. The checkpoint was merged unfinished; nothing in the running game calls it. This PR carries the completion. It must not merge until the mechanic is playable end to end through the real dispatch path, CI is green and Codex review is clean. Dispatch chain referenced below: `apps/game-server/src/gameplay_transport/connection.rs` (command `else if` chain, about lines 2550-3017) and the `GATED` table in `apps/game-server/src/gameplay_transport/capabilities.rs` (highest capability id on main: 28). Wire modules live in `crates/protocol-oteryn/src/` (none exists for this mechanic).
+
+### Present on main (#2146)
+- Pure rules: `domain/forge.rs` (item tier, fusion/transfer/convergence target tier, DustLimit, dust to sliver to core conversion) and `domain/forge_dust.rs`. Storage: `durability/forge.rs` (`read_item_tier` only), `durability/character_forge_dust.rs` + audit (FORGE-1a, migration `0059_character_forge_dust.sql`), DustLimit raise + retained-history reader.
+- The DustLimit schema is an unnumbered proposal installed only in test databases (`tests/support/forge_dust_limit_migration.sql`), not in production migrations. No caller of forge code exists in `gameplay_transport/`, `node/` or combat. No `FORGE_V1` capability, no content recipes.
+
+### Checklist
+- [ ] **Migration**: number and ship the DustLimit schema (`forge_dust_limit_migration.sql` to `migrations/NNNN_*.sql`), plus tier storage and forge history tables bounded by `IMBFORGE0-RL-12`; remove the test-only install path.
+- [ ] **Writers (FORGE-1b)** in `durability/forge.rs`: fusion (item BURN + tier MINT + dust/gold ledger in one transaction), transfer, convergence, dust/sliver/core conversions, DustLimit raise reachable from a command; `ForgeCause` ledger causes; gold fee through the Bank fee path; replay-stable failure paths.
+- [ ] **Content**: FORGE-CONTENT-1 recipes/costs/tier caps per classification; regenerate content and pins; reconcile with `content/item_forge289_promotion.rs` and `item_forge3332_promotion.rs`.
+- [ ] **Protocol**: new `crates/protocol-oteryn/src/forge.rs` with `CAPABILITY_FORGE_V1` (id above 28), window/open, fuse, transfer, convert, raise-limit commands and state; registries (protocol, game event, `RESOURCE_LIMITS_REGISTRY.json` already partly updated, error codes).
+- [ ] **Runtime hookup**: new `gameplay_transport/forge.rs` handler; branch in `connection.rs`; `GATED` row in `capabilities.rs`; a forge USE/window admission path (item use via `gameplay_transport/item_use.rs` or an NPC-style window) gated on range and session.
+- [ ] **Dust income**: source of dust (monster loot / kill-reward chain, `gameplay_transport/kill_reward.rs`, `combat/death_reward.rs`) so the asset is obtainable in play.
+- [ ] **Tier effects and creatures**: TIER-EFFECT-1 (`combat/tier_effects.rs`, hooked into the attack/formula path) and FORGE-CREATURE-1 (influenced/fiendish spawns in the monster loot/death chain); MARKET-TIER-1 after MARKET-1.
+- [ ] **Tests**: pure and PG cases for conservation of value (IMBUE_FORGE0 §8-§10), tier caps, concurrent transitions; **end-to-end through `connection.rs` dispatch**: open forge, fuse two items, assert burn/mint/dust/gold, restart-resume, capability-off refusal.
+
+### Blockers and dependencies
+- ITEM-LOOP-1 (#2190 open), ITEM-MOVE-2a, MARKET-1 (for MARKET-TIER-1), ITEM-IMBUE-1 #2144 (shares item-mutation patterns), FORGE-CONTENT-1 not started.
