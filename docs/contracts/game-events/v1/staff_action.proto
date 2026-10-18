@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package oteryn.events.v1;
+
+// D1343: STAFF_ACTION event type 5, schema revision 1, carried by the v1
+// foundation EventEnvelope with STAFF_ACTION_AUDIT_RETENTION_V1 (365 elapsed
+// days). Owner: OPS-GM-01, live-readiness rulings 2 and 11. Registration grants
+// no runtime mutation or production-collection authority; ALPHA is REPORT_ONLY.
+//
+// The current producer emits OPERATOR evidence. JCS fields are regenerated
+// from the complete closed typed request and outcome; signed_request retains
+// the exact verified bytes. No unsigned sibling supplies a request parameter.
+// Ordinary requests carry distinct WorldId and ChannelId in their signed scope
+// and in the envelope. The restart-pinned ROSTER_ACTIVATE link is environment-wide.
+// Payload bytes remain immutable; envelope protobuf field order is not semantic.
+// Resource ceilings: GM1-STAFF-ACTION-PAYLOAD-BYTES (49,152 B) and
+// GM1-STAFF-ACTION-ENVELOPE-BYTES (50,176 B), RESOURCE_LIMITS_REGISTRY.json.
+message StaffActionV1 {
+  bytes action_id = 1;          // 16-byte UUIDv7, equal to the envelope event_id
+  string actor_kind = 2;
+  string action_kind = 3;
+  bytes target_jcs = 4;
+  string reason = 5;
+  string result = 6;
+  bytes signed_request = 7;
+  string principal = 8;
+  string key_fingerprint = 9;
+  string signature = 10;
+  string roster_sha256 = 11;
+  string request_sha256 = 12;
+  bytes parameters_jcs = 13;
+  string trace_id = 14;         // canonical transaction UUIDv7
+  bytes basis_refs_jcs = 15;
+  bytes outcome_jcs = 16;
+  string environment = 17;
+}

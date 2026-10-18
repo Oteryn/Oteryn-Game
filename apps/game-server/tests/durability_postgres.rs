@@ -3,6 +3,7 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
+pub use production_server::{node, staff};
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
@@ -39,6 +40,8 @@ mod item_timed_postgres_cases;
 mod item_timed_state_postgres_cases;
 #[path = "support/postgres.rs"]
 mod postgres;
+#[path = "support/staff_audit_postgres_cases.rs"]
+mod staff_audit_postgres_cases;
 use sqlx::Connection;
 
 static PROCESS_ROOT_LEDGER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());

@@ -1490,8 +1490,387 @@ async fn dispatch(
         Some("character") => character(&operator, arguments).await,
         Some("assignment") => assignment(&operator, arguments).await,
         Some("content") => content(&operator, arguments).await,
+        Some("staff") => staff_audit(&operator, arguments).await,
+        Some("audit") if arguments.words.get(1).map(String::as_str) == Some("verify") => {
+            let mut arguments = arguments;
+            arguments.words = vec!["staff".into(), "audit-verify".into()];
+            staff_audit(&operator, arguments).await
+        }
         _ => Err(Failure::Usage(
-            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection|public-projection ...",
+            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection|public-projection|staff|audit ...",
+        )),
+    }
+}
+
+fn staff_failure(_: impl std::fmt::Debug) -> Failure {
+    Failure::Rejected("staff signature, binding, chain or audit qualification failed".into())
+}
+fn staff_input(path: &str, maximum: usize) -> Result<Vec<u8>, Failure> {
+    secure_file::read_checked(
+        std::path::Path::new(path),
+        FileClass::Trusted,
+        secure_file::effective_uid(),
+        maximum,
+    )
+    .map_err(staff_failure)
+}
+fn retain_staff(operator: &Operator, name: &str, bytes: &[u8]) -> Outcome {
+    match secure_file::create_exclusive(&operator.state, name, None, bytes) {
+        Ok(()) => Ok(()),
+        Err(secure_file::FileError::Exists) => {
+            let existing = secure_file::read_in(
+                &operator.state,
+                name,
+                FileClass::Secret,
+                secure_file::effective_uid(),
+                bytes.len(),
+            )
+            .map_err(staff_failure)?;
+            if existing == bytes {
+                Ok(())
+            } else {
+                Err(staff_failure("retained evidence differs"))
+            }
+        }
+        Err(error) => Err(staff_failure(error)),
+    }
+}
+
+/// No private key is accepted or generated. Every submitted request/receipt is
+/// already signed on the operator's device. Local verification is diagnostic;
+/// the real node handler must independently verify before its transaction.
+async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
+    use oteryn_game_server::staff::audit::{self, Contract};
+    use oteryn_game_server::staff::signature::{
+        self as signature, Action, ActivationConfig, ControlMessage, Decimal, History,
+        Outcome as StaffOutcome, Receipt, SignedBytes, TrustConfig, VerifiedLink,
+    };
+    use oteryn_release_manifest::jcs;
+    let command = arguments.words.get(1).cloned().ok_or(Failure::Usage(
+        "staff prepare|submit|prepare-receipt|submit-receipt|historical-reconcile|audit-verify",
+    ))?;
+    if arguments.words.len() != 2 {
+        return Err(Failure::Usage("unexpected staff command words"));
+    }
+    let trust_path = arguments.take("trust-config")?;
+    let config: TrustConfig =
+        serde_json::from_slice(&staff_input(&trust_path, 4096)?).map_err(staff_failure)?;
+    let trust = config.load().map_err(staff_failure)?;
+    match command.as_str() {
+        "prepare" => {
+            let history_path = arguments.take("activation-history")?;
+            let input = arguments.take("request")?;
+            let output = arguments.take("output")?;
+            arguments.finish()?;
+            let mut request: signature::Request =
+                serde_json::from_slice(&staff_input(&input, signature::MAX_REQUEST_BYTES)?)
+                    .map_err(staff_failure)?;
+            // D1412: the head is released only by a receipt verified under the
+            // reviewed activation in effect at its sequence, never row existence.
+            let configs: Vec<ActivationConfig> =
+                serde_json::from_slice(&staff_input(&history_path, 65_536)?)
+                    .map_err(staff_failure)?;
+            let history = History::load(configs, &trust).map_err(staff_failure)?;
+            let head = operator
+                .root
+                .staff_prepare_head(trust.environment().into(), std::sync::Arc::new(history))
+                .await
+                .map_err(staff_failure)?;
+            if head.activation_digest != trust.activation_digest() {
+                return Err(staff_failure("activation differs"));
+            }
+            if matches!(request.action, Action::RosterActivate { .. }) {
+                return Err(staff_failure("runtime activation forbidden"));
+            }
+            request.environment = trust.environment().into();
+            request.roster_sha256 = trust.roster_digest().into();
+            request.issued_at = Decimal(signature::synchronized_now_ms().map_err(staff_failure)?);
+            request.control_seq = Decimal(
+                head.sequence
+                    .checked_add(1)
+                    .ok_or_else(|| staff_failure("sequence exhausted"))?,
+            );
+            request.previous_link_sha256 = head.digest;
+            retain_staff(
+                operator,
+                &output,
+                &request.canonical_bytes().map_err(staff_failure)?,
+            )?;
+            event("staff_request=prepared_offhost_signature_required");
+            Ok(())
+        }
+        "submit" | "submit-receipt" => {
+            let request = arguments.take("request")?;
+            let detached = arguments.take("signature")?;
+            let principal = arguments.take("principal")?;
+            let socket = arguments.take("socket")?;
+            arguments.finish()?;
+            let signed = SignedBytes {
+                bytes: staff_input(&request, signature::MAX_REQUEST_BYTES)?,
+                signature: String::from_utf8(staff_input(
+                    &detached,
+                    signature::MAX_SIGNATURE_BYTES,
+                )?)
+                .map_err(staff_failure)?,
+                principal,
+            };
+            let (message, sequence) = if command == "submit" {
+                let checked = trust
+                    .verify_request(signed.clone())
+                    .map_err(staff_failure)?;
+                if matches!(checked.request().action, Action::RosterActivate { .. }) {
+                    return Err(staff_failure("runtime activation forbidden"));
+                }
+                (
+                    ControlMessage::Request(signed),
+                    checked.request().control_seq.0,
+                )
+            } else {
+                let checked = trust
+                    .verify_receipt(signed.clone())
+                    .map_err(staff_failure)?;
+                (
+                    ControlMessage::Receipt(signed),
+                    checked.receipt().control_seq.0,
+                )
+            };
+            let wire =
+                jcs::encode(&message, signature::MAX_CONTROL_BYTES).map_err(staff_failure)?;
+            let stem = format!("staff-link-{sequence}-{}", signature::sha256(&wire));
+            retain_staff(operator, &format!("{stem}.json"), &wire)?;
+            let answer = staff_control_request(&socket, &wire).await?;
+            // Preserve exact response before displaying any successful result.
+            // A transport response is not an operator-signed COMMITTED receipt.
+            if command == "submit" {
+                let _: StaffOutcome =
+                    jcs::decode(&answer, signature::MAX_OUTCOME_BYTES).map_err(staff_failure)?;
+            } else if answer != b"receipt-stored" {
+                return Err(staff_failure("receipt not committed"));
+            }
+            retain_staff(operator, &format!("{stem}.outcome"), &answer)?;
+            event("staff_submission=stored_operator_receipt_required");
+            Ok(())
+        }
+        "prepare-receipt" => {
+            let request = arguments.take("request")?;
+            let detached = arguments.take("signature")?;
+            let principal = arguments.take("principal")?;
+            let outcome = arguments.take("outcome")?;
+            let output = arguments.take("output")?;
+            arguments.finish()?;
+            let checked = trust
+                .verify_request(SignedBytes {
+                    bytes: staff_input(&request, signature::MAX_REQUEST_BYTES)?,
+                    signature: String::from_utf8(staff_input(
+                        &detached,
+                        signature::MAX_SIGNATURE_BYTES,
+                    )?)
+                    .map_err(staff_failure)?,
+                    principal,
+                })
+                .map_err(staff_failure)?;
+            let outcome_bytes = staff_input(&outcome, signature::MAX_OUTCOME_BYTES)?;
+            let outcome: StaffOutcome =
+                jcs::decode(&outcome_bytes, signature::MAX_OUTCOME_BYTES).map_err(staff_failure)?;
+            let head = operator
+                .root
+                .staff_receipt_head(trust.environment().into())
+                .await
+                .map_err(staff_failure)?;
+            if head.activation_digest != trust.activation_digest() {
+                return Err(staff_failure("activation differs"));
+            }
+            let receipt = Receipt {
+                version: 1,
+                environment: trust.environment().into(),
+                roster_sha256: trust.roster_digest().into(),
+                operation_id: checked.request().operation_id.clone(),
+                request_sha256: checked.digest().into(),
+                outcome_sha256: signature::sha256(&outcome_bytes),
+                disposition: outcome.disposition,
+                issued_at: Decimal(signature::synchronized_now_ms().map_err(staff_failure)?),
+                control_seq: Decimal(
+                    head.sequence
+                        .checked_add(1)
+                        .ok_or_else(|| staff_failure("sequence exhausted"))?,
+                ),
+                previous_link_sha256: head.digest,
+            };
+            retain_staff(
+                operator,
+                &output,
+                &jcs::encode(&receipt, signature::MAX_REQUEST_BYTES).map_err(staff_failure)?,
+            )?;
+            event("staff_receipt=prepared_offhost_signature_required");
+            Ok(())
+        }
+        "historical-reconcile" => {
+            let history_path = arguments.take("activation-history")?;
+            let input = arguments.take("request")?;
+            let output = arguments.take("output")?;
+            arguments.finish()?;
+            let bytes = staff_input(&input, signature::MAX_REQUEST_BYTES)?;
+            let configs: Vec<ActivationConfig> =
+                serde_json::from_slice(&staff_input(&history_path, 65_536)?)
+                    .map_err(staff_failure)?;
+            let history = History::load(configs, &trust).map_err(staff_failure)?;
+            let mut cursor = history
+                .cursor_for_request(signature::sha256(&bytes))
+                .map_err(staff_failure)?;
+            let head = operator
+                .root
+                .staff_receipt_head(trust.environment().into())
+                .await
+                .map_err(staff_failure)?;
+            if head.activation_digest != trust.activation_digest() {
+                return Err(staff_failure(
+                    "head activation differs from independent current pin",
+                ));
+            }
+            let mut after = 0;
+            loop {
+                let rows = operator
+                    .root
+                    .staff_evidence_page(trust.environment().into(), after, head.sequence)
+                    .await
+                    .map_err(staff_failure)?;
+                if rows.is_empty() {
+                    break;
+                }
+                for row in rows {
+                    after = row.link.sequence;
+                    cursor.push(&row.link).map_err(staff_failure)?;
+                }
+            }
+            let evidence = cursor
+                .finish_reconciliation(head.sequence, &head.digest)
+                .map_err(staff_failure)?;
+            if evidence.request().signed().bytes != bytes {
+                return Err(staff_failure("historical request differs"));
+            }
+            let outcome = operator
+                .root
+                .reconcile_staff_historical(evidence)
+                .await
+                .map_err(staff_failure)?
+                .ok_or_else(|| {
+                    staff_failure("no stored historical outcome; execution is forbidden")
+                })?;
+            retain_staff(operator, &output, &outcome.bytes)?;
+            event("staff_reconciliation=stored_outcome_only");
+            Ok(())
+        }
+        "audit-verify" => {
+            let history_path = arguments.take("activation-history")?;
+            arguments.finish()?;
+            let configs: Vec<ActivationConfig> =
+                serde_json::from_slice(&staff_input(&history_path, 65_536)?)
+                    .map_err(staff_failure)?;
+            let history = History::load(configs, &trust).map_err(staff_failure)?;
+            let mut cursor = history.cursor();
+            let head = operator
+                .root
+                .staff_receipt_head(trust.environment().into())
+                .await
+                .map_err(staff_failure)?;
+            if head.activation_digest != trust.activation_digest() {
+                return Err(staff_failure(
+                    "head activation differs from independent current pin",
+                ));
+            }
+            let contract = Contract::registered().map_err(staff_failure)?;
+            let now = signature::synchronized_now_ms().map_err(staff_failure)?;
+            let mut after = 0;
+            loop {
+                let rows = operator
+                    .root
+                    .staff_evidence_page(trust.environment().into(), after, head.sequence)
+                    .await
+                    .map_err(staff_failure)?;
+                if rows.is_empty() {
+                    break;
+                }
+                for row in rows {
+                    after = row.link.sequence;
+                    if let VerifiedLink::Request(request) =
+                        cursor.push(&row.link).map_err(staff_failure)?
+                    {
+                        if matches!(request.request().action, Action::RosterActivate { .. })
+                            && row.operation.is_none()
+                        {
+                            continue;
+                        }
+                        let operation = row
+                            .operation
+                            .ok_or_else(|| staff_failure("missing operation evidence"))?;
+                        let outcome = audit::verify_stored_operation(&request, &operation.record)
+                            .map_err(staff_failure)?;
+                        let receipt = if let Some(receipt) = operation.receipt.clone() {
+                            if operation.receipt_link.as_ref() != Some(&receipt.bytes) {
+                                return Err(staff_failure("receipt differs from chain"));
+                            }
+                            Some(
+                                history
+                                    .receipt_at(
+                                        receipt,
+                                        operation.receipt_sequence.ok_or_else(|| {
+                                            staff_failure("receipt sequence missing")
+                                        })?,
+                                    )
+                                    .map_err(staff_failure)?,
+                            )
+                        } else {
+                            None
+                        };
+                        let expiry = audit::evidence_expiry(&request, &outcome, receipt.as_ref())
+                            .map_err(staff_failure)?;
+                        if let Some(row) = operation.envelope {
+                            audit::verify_stored_event(contract, &request, &outcome, &row)
+                                .map_err(staff_failure)?;
+                        } else if now < expiry {
+                            return Err(staff_failure("missing audit not yet provably expired"));
+                        }
+                    }
+                }
+            }
+            cursor
+                .finish(head.sequence, &head.digest)
+                .map_err(staff_failure)?;
+            if operator
+                .root
+                .staff_evidence_has_orphans(trust.environment().into(), head.sequence)
+                .await
+                .map_err(staff_failure)?
+            {
+                return Err(staff_failure("orphan or misbound retained audit evidence"));
+            }
+            event("staff_audit=verified_complete_retained_prefix");
+            Ok(())
+        }
+        _ => Err(Failure::Usage("unknown staff audit command")),
+    }
+}
+
+async fn staff_control_request(socket: &str, wire: &[u8]) -> Result<Vec<u8>, Failure> {
+    use oteryn_game_server::staff::signature;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let exchange = async {
+        let mut stream = tokio::net::UnixStream::connect(socket).await.ok()?;
+        stream.write_all(signature::CONTROL_PREFIX).await.ok()?;
+        stream.write_all(wire).await.ok()?;
+        stream.shutdown().await.ok()?;
+        let mut answer = Vec::new();
+        (&mut stream)
+            .take(signature::MAX_OUTCOME_BYTES as u64 + 1)
+            .read_to_end(&mut answer)
+            .await
+            .ok()?;
+        (answer.len() <= signature::MAX_OUTCOME_BYTES).then_some(answer)
+    };
+    match tokio::time::timeout(std::time::Duration::from_secs(60), exchange).await {
+        Ok(Some(answer)) => Ok(answer),
+        _ => Err(Failure::Ambiguous(
+            "staff submission uncertain; retain and resubmit identical signed bytes".into(),
         )),
     }
 }
