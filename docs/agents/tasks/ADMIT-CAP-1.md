@@ -49,6 +49,8 @@ owned_paths:
   - crates/protocol-oteryn/src/item_look_tests.rs (unregistered probe moved to 31)
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (capabilities 29/30, errors 1117/1118)
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json (ADMIT0-RL-01)
+  # 2026-10-18 CI follow-up (lead; D1324 canonical mount, PG-COVERAGE-1).
+  - apps/game-server/tests/durability_postgres.rs (world_required_capabilities cases mount only)
 slot_only_paths: []
 public_contracts: []
 depends_on:
@@ -120,6 +122,20 @@ netns uid mapping and pass outside it (4/4); the `party::shared_xp_postgres_test
 case passed on its rerun (1/1). The
 `world_required_capabilities_postgres` wrapper now also mounts `bestiary_postgres_harness`,
 which main's durability NPC travel fixture needs.
+
+**CI follow-up (2026-10-18, head after `93815212`).**
+- **PG-COVERAGE-1.** Both merge-queue failures (integration-rest and the Durability harness)
+  were one guard, `postgres_target_aggregation`: `support/world_required_capabilities_postgres_cases.rs`
+  was mounted only by its own wrapper, which CI does not run. `durability_postgres.rs` (a CI-run
+  target) now mounts it the same way as the sibling `*_cases.rs` files; nothing is exempted.
+  The other PostgreSQL errors in the harness log are expected-error output of passing tests.
+- **Node template (Codex P1).** CP D1447: production infra is oteryn-vps only and Synology is
+  out of scope, so `deploy/synology-game/` is unchanged. The repository has no oteryn-vps node
+  template. A node document whose `[readiness]` omits the field now fails closed with
+  the key `readiness.required_gameplay_capabilities` (no default). The
+  VPS batch deploy adds the field: `[18]` for a bundle World, `[]` for a fixture World.
+- **Owner answers (lead).** Registry ID 29 (`MAP_STATE_V1`) stays reserved and is never
+  offered. The 1117 `RECONNECT_CAPABILITY_REQUIRED` caller belongs to lane G2.
 
 **Tests.**
 - **Wire handshake** (`capabilities_tests.rs`, through `admit_frame`). A bundle World refuses a

@@ -368,10 +368,25 @@ fn parse<T: serde::de::DeserializeOwned>(document: &[u8]) -> Result<T, ConfigErr
     toml::from_str(text).map_err(|_| ConfigError { key: "<document>" })
 }
 
+/// ADMIT0: a node document whose `[readiness]` omits the explicit capability declaration
+/// (an older template) fails closed naming that key, not the whole document. There is no
+/// default; the operator declares the set, possibly `[]`.
+fn missing_required_capabilities(document: &[u8]) -> Option<ConfigError> {
+    if document.len() > MAX_CONFIG_BYTES {
+        return None;
+    }
+    let table: toml::Table = toml::from_str(std::str::from_utf8(document).ok()?).ok()?;
+    let readiness = table.get("readiness")?.as_table()?;
+    (!readiness.contains_key("required_gameplay_capabilities")).then_some(ConfigError {
+        key: "readiness.required_gameplay_capabilities",
+    })
+}
+
 impl NodeConfig {
     /// Parse and validate one node configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
-        let config: Self = parse(document)?;
+        let config: Self = parse(document)
+            .map_err(|error| missing_required_capabilities(document).unwrap_or(error))?;
         config.validate()?;
         Ok(config)
     }
@@ -832,7 +847,12 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             let changed = NODE.replace(field, &format!("required_gameplay_capabilities = {ids}"));
             assert!(NodeConfig::parse(changed.as_bytes()).is_err(), "{ids}");
         }
-        assert!(NodeConfig::parse(NODE.replace(field, "").as_bytes()).is_err());
+        assert_eq!(
+            NodeConfig::parse(NODE.replace(field, "").as_bytes()),
+            Err(ConfigError {
+                key: "readiness.required_gameplay_capabilities"
+            })
+        );
         let declared = NODE.replace(field, "required_gameplay_capabilities = [11, 18]");
         assert_eq!(
             NodeConfig::parse(declared.as_bytes())
