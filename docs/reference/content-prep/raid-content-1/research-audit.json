@@ -2,17 +2,17 @@
   "task": "RAID-CONTENT-1",
   "review_date": "2026-10-18",
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "research_status": "SUPPLEMENTAL_SOURCES_EXTRACTED_REMAINING_FIELDS_EXPLICIT",
   "runtime_admission": "BLOCKED",
-  "coverage": "There are 122 actual source raid descriptions, including explicitly historical/deprecated entries. Four general mechanics sections and two nested map headings are excluded from the raid family. Listed creatures, 119 resolved boss classifications, broadcasts, count-bearing observations and explicit seasonal schedules are captured. Approximate counts/ranges remain qualified; message times alone do not prove exact spawn composition. Undocumented per-raid intervals and counts remain held.",
+  "coverage": "All 122 actual raid descriptions remain covered. Supplemental structured evidence gives the explicit Necromancer waves (1, then 5, then 4 Liches), Draconia spatial group composition, five Ghostlands waves with two unannounced, and source-qualified Terramite counts. Spatial groups are not inferred to be temporal waves. Approximate counts remain approximate; undocumented exact spawn configurations and intervals remain held.",
   "source_registry": "sources.json",
   "record_counts": {
     "content/encounters/raids/evidence-00000-00121.json": 122
   },
   "evidence_field_counts": {
-    "PROVEN": 285,
-    "DERIVED": 485,
-    "UNKNOWN": 240,
+    "PROVEN": 286,
+    "DERIVED": 487,
+    "UNKNOWN": 239,
     "CONFLICT": 1
   },
   "unresolved_fields": [
@@ -999,18 +999,6 @@
         }
       ],
       "limitation": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
-    },
-    {
-      "field_path": "content/encounters/raids/evidence-00000-00121.json/records/40/facts/waves",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:20158:1135815",
-          "selector": "Necromancers and Liches in Deeper Catacombs / full section"
-        }
-      ],
-      "limitation": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
     },
     {
       "field_path": "content/encounters/raids/evidence-00000-00121.json/records/40/facts/schedule",
@@ -2919,5 +2907,5 @@
       "limitation": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
     }
   ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion."
 }

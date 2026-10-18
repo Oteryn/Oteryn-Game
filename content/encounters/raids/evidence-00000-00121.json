@@ -990,6 +990,22 @@
             }
           ],
           "note": "Status projected only from explicit section labels; source listing is not live in-game telemetry."
+        },
+        "wave_timing": {
+          "value": {
+            "wave_count": 5,
+            "last_two_announced": false
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:20163:1107807",
+              "selector": "Lesser Undead Raid on Ghostlands / prose: five waves, last two unannounced"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
         }
       }
     },
@@ -5314,17 +5330,46 @@
           "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
         },
         "waves": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": [
+            {
+              "wave": 1,
+              "creatures": [
+                {
+                  "name": "Necromancer",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "wave": 2,
+              "creatures": [
+                {
+                  "name": "Necromancer",
+                  "count": 5
+                }
+              ]
+            },
+            {
+              "wave": 3,
+              "creatures": [
+                {
+                  "name": "Lich",
+                  "count": 4
+                }
+              ],
+              "placement": "top-left, top-right, middle-left, middle-right rooms; one per room"
+            }
+          ],
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:20158:1135815",
-              "selector": "Necromancers and Liches in Deeper Catacombs / full section"
+              "selector": "Necromancers and Liches in Deeper Catacombs / prose: 1 and then 5 Necromancers, after that 4 Liches"
             }
           ],
-          "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+          "note": "Explicit ordered source counts, not inferred from broadcast timestamps. Lich coordinates identify rooms only; no exact spawn tiles invented."
         },
         "boss": {
           "value": [],
@@ -8877,6 +8922,25 @@
             }
           ],
           "note": "Status projected only from explicit section labels; source listing is not live in-game telemetry."
+        },
+        "structured_count_observations": {
+          "value": {
+            "approximate_total": 100,
+            "first_message_group": 30,
+            "second_message_group": 70,
+            "timing": "two consecutive waves seconds apart",
+            "qualifier": "source describes the total as around 100"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:20159:1107855",
+              "selector": "Terramite Raid near Ankrahmun / count-bearing prose"
+            }
+          ],
+          "note": "Approximate/source-qualified counts remain observations. The exact spawn configuration remains UNKNOWN; no approximate count is silently promoted into an exact runtime constant."
         }
       }
     },

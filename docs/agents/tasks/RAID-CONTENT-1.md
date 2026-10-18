@@ -60,3 +60,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 There are 122 actual source raid descriptions, including explicitly historical/deprecated entries. Four general mechanics sections and two nested map headings are excluded from the raid family. Listed creatures, 119 resolved boss classifications, broadcasts, count-bearing observations and explicit seasonal schedules are captured. Approximate counts/ranges remain qualified; message times alone do not prove exact spawn composition. Undocumented per-raid intervals and counts remain held.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Supplemental source completion — 2026-10-18
+
+All 122 actual raid descriptions remain covered. Supplemental structured evidence gives the explicit Necromancer waves (1, then 5, then 4 Liches), Draconia spatial group composition, five Ghostlands waves with two unannounced, and source-qualified Terramite counts. Spatial groups are not inferred to be temporal waves. Approximate counts remain approximate; undocumented exact spawn configurations and intervals remain held.
+
+This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.

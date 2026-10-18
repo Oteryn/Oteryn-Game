@@ -8,8 +8,8 @@ These files prepare Reference data for CP. They add no runtime admission, Rust c
 
 - Task card path mismatch: content/raids/ is not used; the accepted target is content/encounters/raids/. Counts and spawn-wave composition remain UNKNOWN where the Wiki gives only approximate totals or a creature list.
 
-## Research completion and coverage
+## Supplemental source research — 2026-10-18
 
-There are 122 actual source raid descriptions, including explicitly historical/deprecated entries. Four general mechanics sections and two nested map headings are excluded from the raid family. Listed creatures, 119 resolved boss classifications, broadcasts, count-bearing observations and explicit seasonal schedules are captured. Approximate counts/ranges remain qualified; message times alone do not prove exact spawn composition. Undocumented per-raid intervals and counts remain held.
+All 122 actual raid descriptions remain covered. Supplemental structured evidence gives the explicit Necromancer waves (1, then 5, then 4 Liches), Draconia spatial group composition, five Ghostlands waves with two unannounced, and source-qualified Terramite counts. Spatial groups are not inferred to be temporal waves. Approximate counts remain approximate; undocumented exact spawn configurations and intervals remain held.
 
-The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+This is a sourced reference handoff, not a claim of complete gameplay knowledge. The field-level [research audit](research-audit.json) enumerates all remaining UNKNOWN/CONFLICT fields. Runtime admission stays blocked pending CP qualification.
