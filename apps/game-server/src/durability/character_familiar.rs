@@ -32,9 +32,149 @@ pub struct FamiliarCooldownSnapshot {
     pub reference_spell_id: u32,
     pub remaining_micros: u64,
 }
+/// Full current gameplay writer identity; connection generations do not order distinct sessions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FamiliarLifecycleWriter {
+    pub game_session_id: String,
+    pub connection_generation: u64,
+    pub world_id: String,
+    pub channel_id: String,
+    pub scope_ownership_generation: u64,
+}
+impl FamiliarLifecycleWriter {
+    pub fn from_fence(fence: &CurrentCharacterGameplayFence) -> Result<Self> {
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = fence.runtime_scope
+        else {
+            return Err(CharacterProgressionError::InvalidInput);
+        };
+        let writer = Self {
+            game_session_id: lifecycle_uuid_text(fence.game_session_id.as_bytes()),
+            connection_generation: fence.connection_generation.get(),
+            world_id: lifecycle_uuid_text(world_id.as_bytes()),
+            channel_id: lifecycle_uuid_text(channel_id.as_bytes()),
+            scope_ownership_generation: fence.scope_ownership_generation.get(),
+        };
+        writer.validate()?;
+        Ok(writer)
+    }
+    fn validate(&self) -> Result<()> {
+        if !valid_lifecycle_uuid(&self.game_session_id)
+            || !valid_lifecycle_uuid(&self.world_id)
+            || !valid_lifecycle_uuid(&self.channel_id)
+            || self.connection_generation == 0
+            || self.scope_ownership_generation == 0
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        Ok(())
+    }
+    /// Same-session reconnect on the same runtime is continuation, not crash.
+    #[must_use]
+    pub fn same_lifecycle(&self, current: &Self) -> bool {
+        self.game_session_id == current.game_session_id
+            && self.world_id == current.world_id
+            && self.channel_id == current.channel_id
+            && self.scope_ownership_generation == current.scope_ownership_generation
+    }
+}
+fn lifecycle_uuid_text(bytes: &[u8; 16]) -> String {
+    let value = u128::from_be_bytes(*bytes);
+    format!(
+        "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+        value >> 96,
+        (value >> 80) & 0xffff,
+        (value >> 64) & 0xffff,
+        (value >> 48) & 0xffff,
+        value & 0xffffffffffff
+    )
+}
+fn valid_lifecycle_uuid(value: &str) -> bool {
+    value.len() == 36
+        && value.bytes().enumerate().all(|(i, b)| {
+            if [8, 13, 18, 23].contains(&i) {
+                b == b'-'
+            } else {
+                b.is_ascii_digit() || (b'a'..=b'f').contains(&b)
+            }
+        })
+        && value.as_bytes()[14] == b'7'
+        && matches!(value.as_bytes()[19], b'8'..=b'b')
+}
+
+/// Current-session evidence of a clean session end (FAMILIARS0 §5). The writer TX verifies it
+/// against the durable session row; it is never derived from the familiar row itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FamiliarCleanEndProof {
+    /// An ACTIVE session's own logout on this exact current transport.
+    Logout(crate::foundation::AuthenticatedTransportRefV1),
+    /// The terminal release at the end of the in-fight deadline for this control-loss epoch.
+    GraceExpiry(u64),
+}
+
+/// Which clean-end proof a new write's marker needs: `Ok(None)` needs none, `Ok(Some(_))` must
+/// be verified in the same TX. F-I11: after this session's clean end committed, it writes
+/// nothing more (a lost response is a replay of the same occurrence, answered before this).
+/// A closed foreign session's marker may be carried unchanged by a later session's ordinary
+/// write; only the cast and return writes clear it.
+pub(crate) fn clean_end_marker_requirement(
+    before: Option<&str>,
+    after: Option<&str>,
+    current_session: &str,
+    proof: Option<FamiliarCleanEndProof>,
+) -> Result<Option<FamiliarCleanEndProof>> {
+    match (after, proof) {
+        (Some(marker), Some(proof))
+            if marker == current_session && before != Some(current_session) =>
+        {
+            Ok(Some(proof))
+        }
+        (_, Some(_)) => Err(CharacterProgressionError::AuthorityRejected),
+        (None, None) if before != Some(current_session) => Ok(None),
+        (Some(marker), None) if before == Some(marker) && marker != current_session => Ok(None),
+        _ => Err(CharacterProgressionError::AuthorityRejected),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FamiliarLifecycleV2 {
+    pub version: u8,
+    pub familiar_remaining_ms: u64,
+    pub open: bool,
+    pub writer: FamiliarLifecycleWriter,
+    #[serde(deserialize_with = "deserialize_clean_end_session")]
+    pub clean_end_game_session_id: Option<String>,
+}
+fn deserialize_clean_end_session<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<Option<String>, D::Error> {
+    Option::<String>::deserialize(deserializer)
+}
+impl FamiliarLifecycleV2 {
+    fn validate(&self) -> Result<()> {
+        self.writer.validate()?;
+        if self.version != 2
+            || self
+                .clean_end_game_session_id
+                .as_deref()
+                .is_some_and(|v| !valid_lifecycle_uuid(v))
+            || (self.open && self.clean_end_game_session_id.is_some())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DurableFamiliarState {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifecycle: Option<FamiliarLifecycleV2>,
     pub selected_look: u32,
     pub granted_looks: Vec<u32>,
     pub saved_expiry_unix: i64,
@@ -49,6 +189,7 @@ pub struct DurableFamiliarState {
 impl Default for DurableFamiliarState {
     fn default() -> Self {
         Self {
+            lifecycle: None,
             selected_look: 0,
             granted_looks: Vec::new(),
             saved_expiry_unix: 0,
@@ -62,7 +203,43 @@ impl Default for DurableFamiliarState {
     }
 }
 impl DurableFamiliarState {
+    /// Prepare conversion for the NEXT fenced write only. The original state/binding is untouched.
+    /// Legacy lifecycle was unspecified; D1126 treats it as a clean checkpoint save.
+    pub fn for_next_write(
+        &self,
+        committed_at_ms: Option<i64>,
+        writer: &FamiliarLifecycleWriter,
+    ) -> Result<Self> {
+        self.validate()?;
+        writer.validate()?;
+        let mut next = self.clone();
+        if next.lifecycle.is_none() {
+            let remaining = if self.saved_expiry_unix == 0 {
+                0
+            } else {
+                let checkpoint = committed_at_ms
+                    .filter(|v| *v >= 0)
+                    .ok_or(CharacterProgressionError::InvalidInput)?;
+                u64::try_from(
+                    (i128::from(self.saved_expiry_unix) * 1000 - i128::from(checkpoint)).max(0),
+                )
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+            };
+            next.lifecycle = Some(FamiliarLifecycleV2 {
+                version: 2,
+                familiar_remaining_ms: remaining,
+                open: false,
+                writer: writer.clone(),
+                clean_end_game_session_id: None,
+            });
+        }
+        Ok(next)
+    }
+
     pub fn validate(&self) -> Result<()> {
+        if let Some(lifecycle) = &self.lifecycle {
+            lifecycle.validate()?;
+        }
         let valid_key = |key: &str| {
             !key.is_empty()
                 && key.len() <= 256
@@ -145,11 +322,16 @@ impl FamiliarStateRequest {
 pub struct DurableFamiliarProjection {
     state: DurableFamiliarState,
     committed_character_revision: Option<CharacterRevision>,
+    checkpoint_committed_at_ms: Option<i64>,
 }
 impl DurableFamiliarProjection {
     #[must_use]
     pub fn state(&self) -> &DurableFamiliarState {
         &self.state
+    }
+    #[must_use]
+    pub const fn checkpoint_committed_at_ms(&self) -> Option<i64> {
+        self.checkpoint_committed_at_ms
     }
     #[must_use]
     pub const fn committed_character_revision(&self) -> Option<CharacterRevision> {
@@ -304,7 +486,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
     ) -> Result<FamiliarStateOutcome> {
-        self.commit_character_familiar_state_inner(authority, node, fence, request, true)
+        self.commit_character_familiar_state_inner(authority, node, fence, request, true, None)
             .await
     }
 
@@ -315,8 +497,29 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
     ) -> Result<FamiliarStateOutcome> {
-        self.commit_character_familiar_state_inner(authority, node, fence, request, false)
+        self.commit_character_familiar_state_inner(authority, node, fence, request, false, None)
             .await
+    }
+
+    /// Only the actor-end producer (Logout or terminal grace expiry) supplies this proof.
+    /// The same TX independently verifies the current session row; JSON is not its proof.
+    pub(crate) async fn commit_character_familiar_clean_end(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+        proof: FamiliarCleanEndProof,
+    ) -> Result<FamiliarStateOutcome> {
+        self.commit_character_familiar_state_inner(
+            authority,
+            node,
+            fence,
+            request,
+            true,
+            Some(proof),
+        )
+        .await
     }
 
     async fn commit_character_familiar_state_inner(
@@ -326,6 +529,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: FamiliarStateRequest,
         allow_new_mutation: bool,
+        clean_end_proof: Option<FamiliarCleanEndProof>,
     ) -> Result<FamiliarStateOutcome> {
         request.validate()?;
         let binding = command_binding(&fence, &request)?;
@@ -345,6 +549,7 @@ impl DurabilityRoot {
                         request,
                         binding,
                         allow_new_mutation,
+                        clean_end_proof,
                     )
                     .await?;
                     let outcome = match outcome {
@@ -383,7 +588,7 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
-        apply_familiar_transaction(tx, &recovery, node, fence, request, binding, true).await?
+        apply_familiar_transaction(tx, &recovery, node, fence, request, binding, true, None).await?
     }
 
     pub async fn reconcile_character_familiar_state(
@@ -422,9 +627,13 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
-            let row = sqlx::query("SELECT state::text,committed_character_revision::text FROM game_character_familiar_state WHERE character_id=encode($1,'hex')::uuid")
+            let row = sqlx::query("SELECT s.state::text,s.committed_character_revision::text,r.committed_at AS checkpoint_committed_at_ms FROM game_character_familiar_state s LEFT JOIN game_character_familiar_receipts r ON r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision WHERE s.character_id=encode($1,'hex')::uuid")
                 .bind(character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-            let projection = row.as_ref().map(decode_projection).transpose()?.unwrap_or_default();
+            let mut projection = row.as_ref().map(decode_projection).transpose()?.unwrap_or_default();
+            if let Some(row) = &row {
+                let checkpoint: Option<i64> = row.try_get("checkpoint_committed_at_ms")?;
+                projection.checkpoint_committed_at_ms = Some(checkpoint.filter(|v| *v >= 0).ok_or(DurabilityError::InvalidStoredState)?);
+            }
             commit_semantic_transaction(tx,deadline).await?;
             Ok(Ok(projection))
         })).await?
@@ -480,6 +689,10 @@ fn binding_from_identity(
     binding.extend_from_slice(&Sha256::digest(&semantic));
     Ok(binding)
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one existing TX carries independently current clean-end session evidence"
+)]
 async fn apply_familiar_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     recovery: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
@@ -488,6 +701,7 @@ async fn apply_familiar_transaction(
     request: FamiliarStateRequest,
     binding: Vec<u8>,
     allow_new_mutation: bool,
+    clean_end_proof: Option<FamiliarCleanEndProof>,
 ) -> std::result::Result<Result<PendingFamiliarStateOutcome>, DurabilityError> {
     if fence.character_lease_generation == 0
         || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
@@ -528,7 +742,7 @@ async fn apply_familiar_transaction(
     {
         return Ok(Err(CharacterProgressionError::ProgressionContextMismatch));
     }
-    let projection = sqlx::query("SELECT state::text, committed_character_revision::text FROM game_character_familiar_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+    let projection = sqlx::query("SELECT s.state::text,s.committed_character_revision::text,(SELECT r.committed_at FROM game_character_familiar_receipts r WHERE r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision) AS checkpoint_committed_at_ms FROM game_character_familiar_state s WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF s")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let before = projection
         .as_ref()
@@ -543,6 +757,46 @@ async fn apply_familiar_transaction(
     }
     if before.state != request.before {
         return Ok(Err(CharacterProgressionError::FamiliarStateMismatch));
+    }
+    if request.after.lifecycle.is_none() {
+        // Historical receipts were looked up before current-mutation checks.
+        // Every NEW write must be v2, including a proposed v2→legacy downgrade.
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
+    if let Some(lifecycle) = &request.after.lifecycle {
+        let required = match clean_end_marker_requirement(
+            request
+                .before
+                .lifecycle
+                .as_ref()
+                .and_then(|l| l.clean_end_game_session_id.as_deref()),
+            lifecycle.clean_end_game_session_id.as_deref(),
+            &lifecycle_uuid_text(fence.game_session_id.as_bytes()),
+            clean_end_proof,
+        ) {
+            Ok(required) => required,
+            Err(error) => return Ok(Err(error)),
+        };
+        let proven: bool = match required {
+            None => true,
+            Some(FamiliarCleanEndProof::Logout(transport)) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2 AND current_transport_ref=$2)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(transport.to_bytes().as_slice())
+                .fetch_one(&mut **tx).await?,
+            // Terminal grace expiry: still Reconnectable at this exact control-loss epoch and its
+            // original grace deadline has passed on the database clock.
+            Some(FamiliarCleanEndProof::GraceExpiry(epoch)) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND session_state=1 AND control_loss_epoch=$2::text::numeric(20,0) AND original_grace_deadline<=floor(extract(epoch FROM clock_timestamp()))::bigint)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(epoch.to_string())
+                .fetch_one(&mut **tx).await?,
+        };
+        if !proven {
+            return Ok(Err(CharacterProgressionError::AuthorityRejected));
+        }
+        if lifecycle.writer
+            != FamiliarLifecycleWriter::from_fence(&fence)
+                .map_err(|_| DurabilityError::InvalidStoredState)?
+        {
+            return Ok(Err(CharacterProgressionError::AuthorityRejected));
+        }
     }
     let pending: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid)")
                 .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
@@ -621,6 +875,7 @@ fn decode_projection(
     }
     Ok(DurableFamiliarProjection {
         state: decode_state(row.try_get("state")?)?,
+        checkpoint_committed_at_ms: row.try_get("checkpoint_committed_at_ms")?,
         committed_character_revision: Some(
             CharacterRevision::new(revision).map_err(|_| DurabilityError::InvalidStoredState)?,
         ),
@@ -741,7 +996,7 @@ pub(crate) async fn verify_familiar_chain(
     }
     let mut after = "00000000-0000-0000-0000-000000000000".to_owned();
     loop {
-        let rows=sqlx::query("SELECT character_id::text,state::text,committed_character_revision::text FROM game_character_familiar_state WHERE character_id>$1::uuid ORDER BY character_id LIMIT 256").bind(&after).fetch_all(&mut **tx).await?;
+        let rows=sqlx::query("SELECT s.character_id::text,s.state::text,s.committed_character_revision::text,r.committed_at AS checkpoint_committed_at_ms FROM game_character_familiar_state s LEFT JOIN game_character_familiar_receipts r ON r.familiar_occurrence_id=s.last_familiar_occurrence_id AND r.character_id=s.character_id AND r.committed_character_revision=s.committed_character_revision WHERE s.character_id>$1::uuid ORDER BY s.character_id LIMIT 256").bind(&after).fetch_all(&mut **tx).await?;
         let Some(last) = rows.last() else {
             break;
         };
@@ -775,12 +1030,154 @@ mod tests {
             with_cooldown
         );
         with_cooldown.cooldowns[0].reference_spell_id = 0;
-        assert!(with_cooldown.validate().is_err());
+        assert!(matches!(
+            with_cooldown.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         assert!(
             serde_json::from_str::<FamiliarCooldownSnapshot>(
                 r#"{"reference_spell_id":197,"remaining_micros":5,"unused":1}"#
             )
             .is_err()
+        );
+    }
+    #[test]
+    fn conversion_uses_receipt_checkpoint_and_keeps_legacy_binding_and_cooldown() {
+        let writer = FamiliarLifecycleWriter {
+            game_session_id: "0199aabb-1234-7000-8000-000000000001".into(),
+            connection_generation: 1,
+            world_id: "0199aabb-1234-7000-8000-000000000002".into(),
+            channel_id: "0199aabb-1234-7000-8000-000000000003".into(),
+            scope_ownership_generation: 4,
+        };
+        let before = DurableFamiliarState {
+            saved_expiry_unix: 100,
+            last_logout_unix: 1, // deliberately unrelated; never conversion provenance
+            cooldowns: vec![FamiliarCooldownSnapshot {
+                reference_spell_id: 197,
+                remaining_micros: 1234,
+            }],
+            ..DurableFamiliarState::default()
+        };
+        let bytes = encode_state(&before).unwrap();
+        let after = before.for_next_write(Some(98_501), &writer).unwrap();
+        assert_eq!(
+            after.lifecycle.as_ref().unwrap().familiar_remaining_ms,
+            1499
+        );
+        assert!(!after.lifecycle.as_ref().unwrap().open);
+        assert_eq!(after.cooldowns, before.cooldowns);
+        assert_eq!(encode_state(&before).unwrap(), bytes);
+        assert!(matches!(
+            before.for_next_write(None, &writer),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+        assert_eq!(
+            before
+                .for_next_write(Some(100_000), &writer)
+                .unwrap()
+                .lifecycle
+                .unwrap()
+                .familiar_remaining_ms,
+            0
+        );
+        assert_eq!(
+            before
+                .for_next_write(Some(100_001), &writer)
+                .unwrap()
+                .lifecycle
+                .unwrap()
+                .familiar_remaining_ms,
+            0
+        );
+        let mut reconnect = writer.clone();
+        reconnect.connection_generation = 9;
+        assert!(writer.same_lifecycle(&reconnect));
+        reconnect.scope_ownership_generation += 1;
+        assert!(!writer.same_lifecycle(&reconnect));
+        reconnect = writer.clone();
+        reconnect.game_session_id = "0199aabb-1234-7000-8000-000000000004".into();
+        assert!(!writer.same_lifecycle(&reconnect));
+        let mut invalid = after;
+        invalid.lifecycle.as_mut().unwrap().open = true;
+        invalid
+            .lifecycle
+            .as_mut()
+            .unwrap()
+            .clean_end_game_session_id = Some(writer.game_session_id);
+        assert!(matches!(
+            invalid.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+    }
+    #[test]
+    fn clean_end_marker_needs_current_proof_and_only_carries_foreign_close() {
+        let current = "0199aabb-1234-7000-8000-000000000001";
+        let foreign = "0199aabb-1234-7000-8000-000000000004";
+        let grace = FamiliarCleanEndProof::GraceExpiry(3);
+        let rejected = |r: Result<Option<FamiliarCleanEndProof>>| {
+            matches!(r, Err(CharacterProgressionError::AuthorityRejected))
+        };
+        // #2199 4301237612: terminal grace expiry is a clean end needing its own TX proof.
+        assert_eq!(
+            clean_end_marker_requirement(None, Some(current), current, Some(grace)).unwrap(),
+            Some(grace)
+        );
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            Some(current),
+            current,
+            None
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            Some(foreign),
+            current,
+            Some(grace)
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            None,
+            current,
+            Some(grace)
+        )));
+        // #2199 4301237622: a later session (no-room login) carries a foreign close unchanged.
+        assert_eq!(
+            clean_end_marker_requirement(Some(foreign), Some(foreign), current, None).unwrap(),
+            None
+        );
+        assert_eq!(
+            clean_end_marker_requirement(Some(foreign), None, current, None).unwrap(),
+            None
+        );
+        assert!(rejected(clean_end_marker_requirement(
+            None,
+            Some(foreign),
+            current,
+            None
+        )));
+        // F-I11: after this session's own clean end, no write reopens or rewrites it.
+        assert!(rejected(clean_end_marker_requirement(
+            Some(current),
+            Some(current),
+            current,
+            Some(grace)
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            Some(current),
+            None,
+            current,
+            None
+        )));
+        assert!(rejected(clean_end_marker_requirement(
+            Some(current),
+            Some(current),
+            current,
+            None
+        )));
+        assert_eq!(
+            clean_end_marker_requirement(None, None, current, None).unwrap(),
+            None
         );
     }
     #[test]
@@ -793,18 +1190,33 @@ mod tests {
         state.last_logout_unix = 1_799_999_990;
         assert!(state.validate().is_ok());
         state.granted_looks = vec![993, 991];
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.granted_looks = vec![991, 991];
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.granted_looks = vec![0];
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.granted_looks = vec![991];
         state.familiar_definition = Some("creature:knight/familiar".into());
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         state.familiar_revision = Some("r20".into());
         assert!(state.validate().is_ok());
         state.saved_expiry_unix = -1;
-        assert!(state.validate().is_err());
+        assert!(matches!(
+            state.validate(),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
         assert!(decode_state("{\"extra\":1}".into()).is_err());
     }
 }
@@ -1049,7 +1461,7 @@ impl DurabilityRoot {
                         }
                     }
                     let familiar = match apply_familiar_transaction(
-                        &mut tx, &recovery, &node, fence, request, binding, allow_new_mutation,
+                        &mut tx, &recovery, &node, fence, request, binding, allow_new_mutation, None,
                     )
                     .await?
                     {
