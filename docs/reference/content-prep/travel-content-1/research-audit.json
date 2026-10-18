@@ -4,7 +4,7 @@
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
   "research_status": "SUPPLEMENTAL_SOURCES_EXTRACTED_REMAINING_FIELDS_EXPLICIT",
   "runtime_admission": "BLOCKED",
-  "coverage": "All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical.",
+  "coverage": "All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical. The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json": 195,
@@ -12,8 +12,8 @@
   },
   "evidence_field_counts": {
     "PROVEN": 670,
-    "DERIVED": 531,
-    "UNKNOWN": 686,
+    "DERIVED": 559,
+    "UNKNOWN": 658,
     "CONFLICT": 4
   },
   "unresolved_fields": [
@@ -2814,18 +2814,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/71/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:8554:1178786",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/71/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3018,18 +3006,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/75/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:75233:1178803",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/75/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3078,18 +3054,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/76/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:75233:1178803",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/76/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3126,30 +3090,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/77/facts/origin",
-      "candidate": "Southern Fibula and Meluna, [http://tibia.wikia.com/wiki/Mapper?coords=125.88,126.213,7 here].",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:36677:851735",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/77/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:36677:851735",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/77/facts/fare_gold",
       "candidate": null,
       "status": "UNKNOWN",
@@ -3184,30 +3124,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/78/facts/origin",
-      "candidate": "Southern Fibula and Meluna, [http://tibia.wikia.com/wiki/Mapper?coords=125.88,126.213,7 here].",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:36677:851735",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/78/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:36677:851735",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/78/facts/fare_gold",
@@ -3580,30 +3496,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/88/facts/origin",
-      "candidate": "Yalahar: in the Trade Quarter docks (straight south from the main gate), West on Vengoth {{Mapper Coords|128.89|123.62|7|1|text=here}}.",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:30907:1178796",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/88/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:30907:1178796",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/88/facts/minimum_level",
@@ -4762,18 +4654,6 @@
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/116/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:80191:766394",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/116/facts/fare_gold",
       "candidate": null,
       "status": "UNKNOWN",
@@ -4844,18 +4724,6 @@
         }
       ],
       "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/117/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:80191:766394",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/117/facts/fare_gold",
@@ -5734,18 +5602,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/138/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4621:1178763",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/138/facts/premium_required",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5794,18 +5650,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/139/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4621:1178763",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/139/facts/premium_required",
       "candidate": null,
       "status": "UNKNOWN",
@@ -5852,18 +5696,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/140/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4621:1178763",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/140/facts/premium_required",
@@ -6430,30 +6262,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/155/facts/origin",
-      "candidate": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/155/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/155/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6476,30 +6284,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/156/facts/origin",
-      "candidate": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/156/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/156/facts/quest_requirements",
@@ -6538,30 +6322,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/157/facts/origin",
-      "candidate": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/157/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/157/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6584,30 +6344,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/158/facts/origin",
-      "candidate": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/158/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:9052:1178789",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/158/facts/quest_requirements",
@@ -6644,18 +6380,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/159/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4885:1178783",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/159/facts/premium_required",
@@ -6706,18 +6430,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/160/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4885:1178783",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/160/facts/premium_required",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6764,18 +6476,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/161/facts/transport",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4885:1178783",
-          "selector": "Infobox NPC / job"
-        }
-      ],
-      "limitation": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/161/facts/premium_required",
@@ -7162,18 +6862,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/171/facts/origin",
-      "candidate": "Farmine, on the steamship",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41415:1178797",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/171/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7196,18 +6884,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/172/facts/origin",
-      "candidate": "Farmine, on the steamship",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41415:1178797",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/172/facts/fare_gold",
@@ -7256,18 +6932,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/173/facts/origin",
-      "candidate": "Farmine, on the steamship",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41415:1178797",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/173/facts/minimum_level",

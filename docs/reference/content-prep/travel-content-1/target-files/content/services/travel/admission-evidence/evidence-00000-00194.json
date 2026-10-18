@@ -9806,17 +9806,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:8554:1178786",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 50,
@@ -10346,17 +10346,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:75233:1178803",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 100,
@@ -10484,17 +10484,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:75233:1178803",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 100,
@@ -10596,17 +10596,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Southern Fibula and Meluna, [http://tibia.wikia.com/wiki/Mapper?coords=125.88,126.213,7 here].",
-          "classification": "UNKNOWN",
+          "value": "Fibula",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:36677:851735",
-              "selector": "Infobox NPC / location"
+              "selector": "notes, subarea and subarea2 / two ferry endpoints"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / ferryman_kamil"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "meluna",
@@ -10622,17 +10626,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:36677:851735",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": null,
@@ -10735,17 +10739,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Southern Fibula and Meluna, [http://tibia.wikia.com/wiki/Mapper?coords=125.88,126.213,7 here].",
-          "classification": "UNKNOWN",
+          "value": "Meluna",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:36677:851735",
-              "selector": "Infobox NPC / location"
+              "selector": "notes, subarea and subarea2 / two ferry endpoints"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / ferryman_kamil_meluna"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "fibula",
@@ -10761,17 +10769,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:36677:851735",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": null,
@@ -12177,17 +12185,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Yalahar: in the Trade Quarter docks (straight south from the main gate), West on Vengoth {{Mapper Coords|128.89|123.62|7|1|text=here}}.",
-          "classification": "UNKNOWN",
+          "value": "Vengoth",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:30907:1178796",
-              "selector": "Infobox NPC / location"
+              "selector": "location / western Vengoth placement"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / harlow_vengoth"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "yalahar",
@@ -12203,17 +12215,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:30907:1178796",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 50,
@@ -16389,17 +16401,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:80191:766394",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": null,
@@ -16536,17 +16548,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:80191:766394",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": null,
@@ -19699,17 +19711,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4621:1178763",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 20,
@@ -19833,17 +19845,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4621:1178763",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 20,
@@ -19967,17 +19979,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4621:1178763",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 20,
@@ -22075,17 +22087,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-          "classification": "UNKNOWN",
+          "value": "Meriana",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / location"
+              "selector": "TransportCell / explicit From Meriana and From Nargor qualifiers, subarea and subarea2"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / sebastian"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "liberty_bay",
@@ -22101,17 +22117,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / job"
+              "selector": "Infobox NPC / job2"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 50,
@@ -22231,17 +22247,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-          "classification": "UNKNOWN",
+          "value": "Meriana",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / location"
+              "selector": "TransportCell / explicit From Meriana and From Nargor qualifiers, subarea and subarea2"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / sebastian"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "nargor",
@@ -22257,17 +22277,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / job"
+              "selector": "Infobox NPC / job2"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 50,
@@ -22369,17 +22389,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-          "classification": "UNKNOWN",
+          "value": "Nargor",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / location"
+              "selector": "TransportCell / explicit From Meriana and From Nargor qualifiers, subarea and subarea2"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / sebastian_nargor"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "liberty_bay",
@@ -22395,17 +22419,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / job"
+              "selector": "Infobox NPC / job2"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 100,
@@ -22525,17 +22549,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "South of Sabrehaven on Meriana and on Nargor, {{Mapper Coords|125.24|128.47|7|2|text=here}}.",
-          "classification": "UNKNOWN",
+          "value": "Nargor",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / location"
+              "selector": "TransportCell / explicit From Meriana and From Nargor qualifiers, subarea and subarea2"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / sebastian_nargor"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "meriana",
@@ -22551,17 +22579,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:9052:1178789",
-              "selector": "Infobox NPC / job"
+              "selector": "Infobox NPC / job2"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 50,
@@ -22689,17 +22717,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4885:1178783",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 10,
@@ -22823,17 +22851,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4885:1178783",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 0,
@@ -22957,17 +22985,17 @@
           "note": "Preserved route keyword; aliases do not establish an arrival tile."
         },
         "transport": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "ferry",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:4885:1178783",
               "selector": "Infobox NPC / job"
             }
           ],
-          "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
+          "note": "Explicit Ferryman occupation identifies the water-ferry transport family. Secondary occupations are checked as well as primary occupations. Historical event availability remains separately qualified."
         },
         "fare_gold": {
           "value": 10,
@@ -24375,17 +24403,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Farmine, on the steamship",
-          "classification": "UNKNOWN",
+          "value": "Farmine",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:41415:1178797",
-              "selector": "Infobox NPC / location"
+              "selector": "location and city/city2/city3 / all three steamship building-stage placements are Farmine"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / thorgrin"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "cormaya",
@@ -24530,17 +24562,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Farmine, on the steamship",
-          "classification": "UNKNOWN",
+          "value": "Farmine",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:41415:1178797",
-              "selector": "Infobox NPC / location"
+              "selector": "location and city/city2/city3 / all three steamship building-stage placements are Farmine"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / thorgrin"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "gnomprona",
@@ -24668,17 +24704,21 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Farmine, on the steamship",
-          "classification": "UNKNOWN",
+          "value": "Farmine",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:41415:1178797",
-              "selector": "Infobox NPC / location"
+              "selector": "location and city/city2/city3 / all three steamship building-stage placements are Farmine"
+            },
+            {
+              "source": "repo:content/services/travel/travel-00000-00055.json",
+              "selector": "Service identity and route pair / thorgrin"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Named source place is selected by the explicit native service suffix/route pair; all Thorgrin building stages share Farmine. This establishes the origin area, not an exact floor/standing tile or destination arrival coordinate."
         },
         "destination": {
           "value": "kazordoon",

@@ -73,3 +73,7 @@ Task status `ready` refers only to the data/docs handoff. The PR remains draft; 
 All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical.
 
 This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.
+
+### Final source-gap sweep
+
+The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.

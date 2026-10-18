@@ -15,3 +15,5 @@ Service data placement: **STAGED_FOR_COORDINATOR**. The World Bundle fingerprint
 All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical.
 
 This is a sourced reference handoff, not a claim of complete gameplay knowledge. The field-level [research audit](research-audit.json) enumerates all remaining UNKNOWN/CONFLICT fields. Runtime admission stays blocked pending CP qualification.
+
+The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.
