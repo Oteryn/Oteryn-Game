@@ -699,7 +699,9 @@ the sections above held:
   (`node/serve.rs::highscores_loop`); immediate first check, then every 30 minutes from durable
   database time; a planned reset forces one complete cut.
 - [x] Categories 1 to 11: nine native skill/experience lists, category 10 from the activated
-  Achievement catalogue, category 11 from the Charm point owner.
+  Achievement catalogue (each account's highest initialized Character; a bootstrap-only
+  Character without a progression row never represents it), category 11 from the Charm point
+  owner only once a per-race Charm point source is activated.
 - [x] HS-WIRE-1: capability 9 offered, command type 14, errors 1200 `NOT_SUPPORTED` and 1201
   `SNAPSHOT_EXPIRED`, `HIGHSCORES0-RL-01..03`, `highscores_v1.proto`; the handler reads the
   admitted session's World and Character only. Live collision check: no open draft uses
@@ -718,7 +720,8 @@ Remaining dependencies (REPORT_ONLY):
 
 - Planned World reset notifications (#2167, WORLD-RESET): the job's reset channel is held open
   with no sender until that owner lands; the 30-minute schedule runs meanwhile.
-- Per-race Charm points in production (CHARM-6): no production source exists, so category 11
-  publishes the empty catalogue (every Character 0 points) until it lands.
+- Per-race Charm points in production (CHARM-6): no production source exists, so the job
+  publishes categories 1 to 10 only and a category 11 query is `NOT_SUPPORTED` (1200) until
+  `activated_charm_points` returns that source.
 
 Status stays `NOT_FULLY_QUALIFIED` until ANALYSER-EMIT-1 lands; CP owns ready and merge.

@@ -46,13 +46,45 @@ pub(crate) trait AchievementPoints: Send + Sync {
     fn total_points(&self, earned: &[EarnedAchievement]) -> Option<u32>;
 }
 
+/// HIGHSCORES0 §3 category 11 source: the activated per-race Charm point catalogue. CHARM-6 has
+/// activated none yet, so this server withholds category 11: the job publishes no category 11
+/// snapshot and a query for it is `NOT_SUPPORTED`, never a ranking of fabricated zero points.
+pub(crate) fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
+    None
+}
+
+/// The highest category this server publishes and answers: 11 with an activated Charm point
+/// source, otherwise 10.
+pub(crate) fn served_categories() -> u8 {
+    if activated_charm_points().is_some() {
+        11
+    } else {
+        10
+    }
+}
+
 /// Actual owning catalogues from the activated content generation, never caller-provided scores.
 #[derive(Clone)]
 pub(crate) struct SnapshotCatalogues {
     achievements: Arc<dyn AchievementPoints>,
     pub(crate) bestiary: BTreeMap<String, BestiaryCharmEntry>,
+    /// Whether a Charm point source backs category 11; without one it is not published.
+    charm_points: bool,
 }
 impl SnapshotCatalogues {
+    /// The serve job's catalogues: `achievements` and the activated Charm point source, if any.
+    pub(crate) fn activated(achievements: Arc<dyn AchievementPoints>) -> Result<Self> {
+        match activated_charm_points() {
+            Some(entries) => Self::new(achievements, entries),
+            None => Ok(Self {
+                achievements,
+                bestiary: BTreeMap::new(),
+                charm_points: false,
+            }),
+        }
+    }
+
+    /// Catalogues with the Charm point source `entries`, so category 11 is published.
     pub(crate) fn new(
         achievements: Arc<dyn AchievementPoints>,
         entries: impl IntoIterator<Item = BestiaryCharmEntry>,
@@ -66,7 +98,13 @@ impl SnapshotCatalogues {
                 .into_iter()
                 .map(|entry| (entry.race.key().to_owned(), entry))
                 .collect(),
+            charm_points: true,
         })
+    }
+
+    /// The categories one publication writes: 1..=11, or 1..=10 without a Charm point source.
+    fn published_categories(&self) -> i32 {
+        if self.charm_points { 11 } else { 10 }
     }
 }
 
@@ -356,7 +394,9 @@ async fn read_extra_sources(
     characters: &[Source],
     catalogues: &SnapshotCatalogues,
 ) -> Result<[Vec<Source>; 2]> {
-    let representatives = sqlx::query("SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r LEFT JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 ORDER BY r.account_id,p.level DESC NULLS FIRST,r.character_id")
+    // Migration 0009 keeps a bootstrap-only Character (revision one, no progression row) valid:
+    // it has no level to rank, so it never represents its account and never fails the cut.
+    let representatives = sqlx::query("SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 ORDER BY r.account_id,p.level DESC,r.character_id")
         .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     // All account facts, not only achievements earned in this World or by its representative.
     let rows = sqlx::query("SELECT f.account_id::text AS account_id,f.achievement_key,g.earned_at FROM game_account_achievements f JOIN game_account_achievement_grant_requests g USING(account_id,achievement_key,source_kind,source_event_id) WHERE EXISTS(SELECT 1 FROM game_character_roots r WHERE r.account_id=f.account_id AND r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1) ORDER BY f.account_id,f.achievement_key")
@@ -393,6 +433,10 @@ async fn read_extra_sources(
             level,
             values,
         });
+    }
+    // Without a Charm point source category 11 is not published, so its counters are not read.
+    if !catalogues.charm_points {
+        return Ok([achievements, Vec::new()]);
     }
     // One set-based read of the native kill counters, avoiding a network call per Character.
     // Both consumers use the owning BestiaryRace::is_complete predicate and content points;
@@ -503,7 +547,7 @@ async fn publish_cut(
     sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
         .execute(&mut **tx)
         .await?;
-    let categories: i32 = if catalogues.is_some() { 11 } else { 9 };
+    let categories: i32 = catalogues.map_or(9, SnapshotCatalogues::published_categories);
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
     // concurrent head insertion also conflicts; an invisible head never becomes an empty cut.

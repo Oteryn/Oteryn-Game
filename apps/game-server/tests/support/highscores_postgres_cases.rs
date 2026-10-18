@@ -17,11 +17,11 @@ use crate::durability::character_progression::{
 use crate::durability::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
 use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_highscores};
 use crate::durability::highscore_snapshot::{
-    AchievementPoints, SnapshotCatalogues, SnapshotError, SnapshotPage, begin_projection, job,
-    publish_in_transaction, read_source,
+    AchievementPoints, SnapshotCatalogues, SnapshotError, SnapshotPage, activated_charm_points,
+    begin_projection, job, publish_in_transaction, read_source, served_categories,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
-use crate::foundation::{CharacterId, WorldId};
+use crate::foundation::{CharacterId, FoundationProtocolError, WorldId};
 use harness::{CHARACTER, Harness, TestResult, WORLD, debug, id};
 use oteryn_protocol_oteryn::highscores::{
     HighscoresQuery, HighscoresResult, decode_highscores_query, decode_highscores_result,
@@ -844,12 +844,29 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
             .bind(&rows).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_character_progression_state SELECT (jsonb_populate_record(NULL::game_character_progression_state,to_jsonb(p)||jsonb_build_object('character_id',x.id,'character_revision',1,'level',x.level))).* FROM jsonb_to_recordset($1::jsonb) AS x(id TEXT,level BIGINT) CROSS JOIN game_character_progression_state p WHERE p.character_id=encode($2,'hex')::uuid")
             .bind(&rows).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+        // Migration 0009 keeps a bootstrap-only Character (revision one, no progression row)
+        // valid. One shares the account of the initialized Characters and sorts first by
+        // identity; another is its account's only Character. Neither has a level to rank.
+        let bootstrap = serde_json::to_string(&serde_json::json!([
+            {"id":hex(&generated(198)),"account":hex(&id(40)),"name":"Bootstrap Hero"},
+            {"id":hex(&generated(202)),"account":hex(&generated(401)),"name":"Bootstrap Only"}
+        ]))?;
+        sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid)")
+            .bind(generated(401).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT x.id::uuid,x.account::uuid,r.world_id,1,1,r.profile_revision,r.ruleset_revision,r.content_revision,r.starter_template_revision,x.name FROM jsonb_to_recordset($1::jsonb) AS x(id TEXT,account TEXT,name TEXT) CROSS JOIN game_character_roots r WHERE r.character_id=encode($2,'hex')::uuid")
+            .bind(&bootstrap).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        h.root
+        let published = h
+            .root
             .refresh_highscore_world(world(), complete_catalogues()?, true)
             .await
             .map_err(debug)?;
+        assert_eq!(published.len(), 11);
         let accounts = page(h, 10, None, 1, 0).await?;
+        // The highest initialized Character represents its account, the bootstrap-only
+        // account has no representative, and the whole cut published.
         assert_eq!(accounts.rows.len(), 2);
         assert!(accounts.rows.iter().all(|row| row.vocation == "none"));
         assert!(
@@ -863,6 +880,12 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
                 .rows
                 .iter()
                 .any(|row| row.character_id.as_bytes() == &generated(201) && row.level == 70)
+        );
+        assert!(
+            accounts
+                .rows
+                .iter()
+                .all(|row| ![generated(198), generated(202)].contains(row.character_id.as_bytes()))
         );
         assert!(page(h, 10, Some("knight"), 1, 0).await?.rows.is_empty());
         assert_eq!(page(h, 1, None, 1, 0).await?.rows.len(), 1);
@@ -1056,21 +1079,31 @@ fn xp_award(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
 
 /// The client's command type 14 round trip: the encoded query is decoded exactly as the
 /// gameplay transport decodes it and answered by the handler it dispatches to.
-async fn client_query(
+async fn client_reply(
     h: &Harness,
+    category: u32,
     vocation: u32,
     page: u32,
     snapshot_id: u64,
-) -> TestResult<HighscoresResult> {
+) -> TestResult<HighscoresReply> {
     let payload = encode_highscores_query(HighscoresQuery {
-        category: 1,
+        category,
         vocation,
         page,
         snapshot_id,
     })
     .map_err(debug)?;
     let query = decode_highscores_query(&payload).map_err(debug)?;
-    match answer_highscores(&h.root, world(), asking(), query).await {
+    Ok(answer_highscores(&h.root, world(), asking(), query).await)
+}
+
+async fn client_query(
+    h: &Harness,
+    vocation: u32,
+    page: u32,
+    snapshot_id: u64,
+) -> TestResult<HighscoresResult> {
+    match client_reply(h, 1, vocation, page, snapshot_id).await? {
         HighscoresReply::Result(result) => {
             decode_highscores_result(&result).map_err(|e| debug(e).into())
         }
@@ -1161,6 +1194,57 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
             let sorcerers = client_query(h, 3, 1, 0).await?;
             assert_eq!(standing(&sorcerers), [(5, 900), (5, 900)]);
             assert!(sorcerers.own_row.is_none());
+            drop(planned_resets);
+            Ok(())
+        };
+        tokio::time::timeout(
+            std::time::Duration::from_secs(20),
+            drive_real_job(&job, resets, observer),
+        )
+        .await??;
+        Ok(())
+    })
+}
+
+/// HIGHSCORES0 §3: with no activated per-race Charm point source (CHARM-6) the serve job's
+/// catalogues publish categories 1 to 10 only, and the client's category 11 query through the
+/// dispatched handler is `NOT_SUPPORTED` rather than a ranking of zero points.
+#[test]
+fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> TestResult {
+    run("hscharmsource", async |h| {
+        assert!(activated_charm_points().is_none());
+        assert_eq!(served_categories(), 10);
+        let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
+        assert!(root.maintain_ready_once().await?);
+        let catalogues =
+            SnapshotCatalogues::activated(std::sync::Arc::new(FixtureAchievementPoints))
+                .map_err(debug)?;
+        let job = job::HighscoreWorldJob::new(std::sync::Arc::new(root), world(), catalogues);
+        let (planned_resets, resets) = tokio::sync::mpsc::channel(1);
+        let observer = async {
+            wait_for_passes(&job, 1).await;
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 10);
+            let charm_heads: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_world_highscore_heads WHERE category=11",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(charm_heads, 0);
+            assert_eq!(
+                client_reply(h, 11, 0, 1, 0).await?,
+                HighscoresReply::Terminal(FoundationProtocolError::NotSupported)
+            );
+            let HighscoresReply::Result(accounts) = client_reply(h, 10, 0, 1, 0).await? else {
+                return Err("category 10 query was not accepted".into());
+            };
+            assert_eq!(
+                decode_highscores_result(&accounts).map_err(debug)?.category,
+                10
+            );
+            // A planned reset publishes the same ten categories again.
+            planned_resets.send(()).await?;
+            wait_for_passes(&job, 2).await;
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, 20);
             drop(planned_resets);
             Ok(())
         };

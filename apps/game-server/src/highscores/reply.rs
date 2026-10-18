@@ -1,7 +1,8 @@
 //! RANK-1 (HS-WIRE-1, HIGHSCORES0 §6, CP D1155): command type 14 `HIGHSCORES_QUERY_V1` under
 //! capability 9. The handler reads one page of a persisted World snapshot (migration 0097) and
 //! never computes ranks. The World and the asking Character come from the admitted session, never
-//! from the payload. A category outside 1..=11 is `NOT_SUPPORTED` (1200) and an echoed token that
+//! from the payload. A category this server does not publish (outside 1..=11, or 11 while no Charm
+//! point source is activated) is `NOT_SUPPORTED` (1200) and an echoed token that
 //! is no longer retained `SNAPSHOT_EXPIRED` (1201), both FND-02 error results without a payload.
 //! A malformed query, unreadable storage or a stored row the wire grammar refuses is `REJECTED`
 //! with no payload and no code; a result over its bound fails closed with
@@ -10,7 +11,7 @@
 //! It lives beside the snapshot store so the PostgreSQL suites drive the same handler the
 //! gameplay transport dispatches.
 
-use super::{DurabilityRoot, FILTERS, SnapshotError, SnapshotPage, SnapshotRow};
+use super::{DurabilityRoot, FILTERS, SnapshotError, SnapshotPage, SnapshotRow, served_categories};
 use crate::foundation::{CharacterId, FoundationProtocolError, WorldId};
 use oteryn_protocol_oteryn::highscores::{
     HighscoreRow, HighscoresQuery, HighscoresResult, HighscoresWireError, encode_highscores_result,
@@ -34,8 +35,12 @@ pub(crate) async fn answer_highscores(
     character: CharacterId,
     query: HighscoresQuery,
 ) -> HighscoresReply {
-    // The codec admits every nonzero category; one the store cannot hold is NOT_SUPPORTED.
-    let Ok(category) = u8::try_from(query.category) else {
+    // The codec admits every nonzero category; one this server does not publish is
+    // NOT_SUPPORTED, never an empty or fabricated ranking.
+    let Some(category) = u8::try_from(query.category)
+        .ok()
+        .filter(|category| (1..=served_categories()).contains(category))
+    else {
         return HighscoresReply::Terminal(FoundationProtocolError::NotSupported);
     };
     let Some(vocation) = usize::try_from(query.vocation)

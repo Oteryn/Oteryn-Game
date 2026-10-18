@@ -1067,9 +1067,10 @@ async fn public_projections_loop(
 /// never gates serving and its end is not a shutdown reason. The job publishes under its own
 /// group role (migration 0097) and schedules from durable database time, so a restart or a second
 /// Channel of the World never publishes early. Category 10 reads the activated Achievement
-/// catalogue. No per-race Charm point source is activated yet (CHARM-6), so category 11 credits
-/// no Bestiary entry, exactly as the Charm owner does. The planned World reset notification
-/// source is not wired yet (WORLD-RESET): the sender is held, unused, for the job's lifetime.
+/// catalogue. Category 11 is published only with an activated per-race Charm point source; none
+/// exists yet (CHARM-6), so it is withheld and its query is `NOT_SUPPORTED`. The planned World
+/// reset notification source is not wired yet (WORLD-RESET): the sender is held, unused, for the
+/// job's lifetime.
 async fn highscores_loop(
     root: &DurabilityRoot,
     world: crate::foundation::WorldId,
@@ -1079,7 +1080,7 @@ async fn highscores_loop(
     use crate::durability::highscore_snapshot::{SnapshotCatalogues, job::HighscoreWorldJob};
     let points: std::sync::Arc<dyn crate::durability::highscore_snapshot::AchievementPoints> =
         std::sync::Arc::new(achievements.clone());
-    let Ok(catalogues) = SnapshotCatalogues::new(points, Vec::new()) else {
+    let Ok(catalogues) = SnapshotCatalogues::activated(points) else {
         event("event=highscores state=refused reason=catalogues");
         return;
     };
