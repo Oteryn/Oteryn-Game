@@ -61,6 +61,7 @@ pub mod item_use_audit;
 pub mod mail;
 pub mod map_item_mint;
 pub mod map_item_mint_audit;
+pub(crate) mod market;
 pub mod monk_state;
 pub mod native_admission_source;
 pub(crate) mod native_map_items;
