@@ -95,6 +95,7 @@ async fn fund(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
     ));
     let gold = h.mint(a, "oteryn:item.tibia.i3031", 100).await?;
     let facts = ItemDefinitionFacts {
+        weight: Some(10),
         definition: definition("oteryn:item.tibia.i3031"),
         stack: ItemStackClass::Stackable {
             proven_maximum: Some(100),
@@ -172,7 +173,10 @@ fn accepted_command_survives_no_prompt_reload_and_replays_exact_custody_once() -
         let other=DurabilityRoot::connect_test_runtime(&h.database.url)?;assert!(other.maintain_ready_once().await?);
         let b=other.open_character_authority(&seal).await.map_err(debug)?;
         let completion=other.resume_npc_bank(&b,&h.node,fence()?,source.command).await.map_err(debug)?.expect("original retained command");
-        assert_eq!(completion.request,request);assert_eq!(completion.npc_identity,source.npc_identity);
+        // The frozen Bank request carries no weight fact (the Bank owner checks no
+        // capacity), so the resumed request thaws the backpack weight as unknown.
+        let mut expected=request.clone();if let BankRequest::Withdraw(w)=&mut expected{w.coins.backpack.weight=None;}
+        assert_eq!(completion.request,expected);assert_eq!(completion.npc_identity,source.npc_identity);
         assert!(matches!(completion.outcome,BankOperationOutcome::Committed(r) if r.result==BankResult::Ok));
         assert_eq!(balance(&h).await?,90);assert_eq!(frozen(&h).await?,bytes);
         let fp=footprint(&h).await?;
@@ -357,6 +361,7 @@ fn trade_request(n: u8, total: u64) -> TestResult<durability::npc_trade::NpcTrad
         unit_price: total,
         offer_count: 1,
         item: ItemDefinitionFacts {
+            weight: None,
             definition: definition("oteryn:item.tibia.i3264"),
             stack: ItemStackClass::NonStackable,
             container_capacity: None,
@@ -407,7 +412,7 @@ fn actual_npc_buy_uses_coins_then_bank_in_one_native_trade_and_single_event() ->
         h.root.commit_npc_trade(&a,&h.node,fence()?,request.clone()).await.map_err(debug)?;
         assert_eq!(balance(&h).await?,75);
         let gold=h.mint(&a,"oteryn:item.tibia.i3031",10).await?;
-        let facts=ItemDefinitionFacts {definition:definition("oteryn:item.tibia.i3031"),stack:ItemStackClass::Stackable{proven_maximum:Some(100)},container_capacity:None,container_slot_equip_pattern:false};
+        let facts=ItemDefinitionFacts {weight:Some(10),definition:definition("oteryn:item.tibia.i3031"),stack:ItemStackClass::Stackable{proven_maximum:Some(100)},container_capacity:None,container_slot_equip_pattern:false};
         h.transfer(&a,fence()?,fixture::to_backpack(fixture::command(3)?,gold,facts)).await.map_err(debug)?;
         let mixed=trade_request(31,40)?;h.root.commit_npc_trade(&a,&h.node,fence()?,mixed.clone()).await.map_err(debug)?;
         assert_eq!(balance(&h).await?,45);assert_eq!(h.item_state(gold).await?,(0,2));

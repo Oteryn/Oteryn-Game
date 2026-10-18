@@ -2,27 +2,37 @@
 
 ```yaml
 task_id: SEC-1
-title: "SEC-1: server-side integrity checks (bot controls), gap record and proposed scope"
+title: "SEC-1: server-side integrity checks — bounded checkpoint of SEC-TRUST-1/SEC-REL-1 policy leaves"
 mode: IMPLEMENT
-status: blocked
+status: validating
+checkpoint: BOUNDED_CHECKPOINT
+merge_authority: CP_ONLY
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/sec-1-record-20261013
+branch: skeleton/sec-1
 issue: 2054
-pr: null
-base_sha: null
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
-owner: claude-code-session_015PVevC8C3J6ZTkLXAYy6b9 (SEC-1 worker)
+pr: 2188
+base_sha: f094e0320289975a220852ff60ca7baf6d234ff4
+head_sha: pending
+owner: "CP takeover worker for #2188 (D1379); earlier record writers: SEC-1 worker session_015PVevC8C3J6ZTkLXAYy6b9, /root/gm_compile_fix"
+control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-13
-updated_at: 2026-10-13
+updated_at: 2026-10-17
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/SEC-1.md
+  - apps/game-server/src/security/mod.rs (new)
+  - apps/game-server/src/security/trust_policy.rs (new)
+  - apps/game-server/src/security/trust_policy_tests.rs (new)
+  - apps/game-server/src/security/release_policy.rs (new)
+  - apps/game-server/src/security/release_policy_tests.rs (new)
+slot_only_paths:
+  - "apps/game-server/src/lib.rs: the `security` module declaration only (D1427)"
 public_contracts: []
 depends_on:
-  - PVP-RT-1b (or the live owner of field_step_ingress.rs; PVP-RT-1 is archived and handed the movement hook wiring to PVP-RT-1b; recheck at allocation)
+  - "SEC_CLIENT01 ACCEPTED (D1034); acceptance is not child implementation authority"
+  - "CLOCK-1 residue MERGED #2114; ITEM-LOOK-1 MERGED #2182"
+  - "SEC-TRUST-1 / SEC-REL-1 contract owners: not allocated (D1326)"
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -30,72 +40,92 @@ external_repositories: []
 
 ## Outcome
 
-Sub-issue #2054, plan row 135 (PR #2047 §4): server-side integrity checks (bot controls), class impl, no migration, no registry.
-This record only states the gap and the proposed scope; no code until the control plane decides.
+Bounded checkpoint (**MERGE_AUTHORITY: CP_ONLY**). PR #2188 adds five pure
+SEC-TRUST-1/SEC-REL-1 policy leaves under `apps/game-server/src/security/` and
+declares the module test-only in `lib.rs` (D1427), so CI compiles, lints and runs
+their 17 unit tests. It ends no child task and changes no runtime behaviour:
+nothing in the server build calls these predicates. Runtime wiring stays
+**REPORT_ONLY**.
 
-## Architecture and source of truth
+- `trust_policy.rs`: consecutive revision/floor rules, checkpoint age and skew,
+  embedded/highest-seen constraints, checked raw-wall/monotonic arithmetic and
+  fetch-after-step ordering.
+- `release_policy.rs`: root/release signer-role separation and revocation-first
+  key membership.
 
-- `PROVEN`: plan row 135 names no concrete target. The only contract is the SEC-CLIENT-01 decision
-  (`docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md`):
-  CLIENT_INTEGRITY_V1 and INPUT_TELEMETRY_V1 need protocol/registry work (outside SEC-1); Layer 2 says server-side timing weighs more.
-- `PROVEN`: step pacing already exists server-side in `movement/pacing.rs` (`StepPacer`, TOO_EARLY, one-step buffer) and
-  `connection.rs`; both are outside the owned paths (`movement/` belongs to LOOP-WORLD-1).
-- `PROVEN`: no bot/anti-cheat code exists in `fresh_evidence.rs`, `field_step_ingress.rs` or `actor_movement.rs`.
+The predicates inspect supplied facts only. They do not authenticate signed bytes,
+resolve current trust, bootstrap a restored store, grant admission or authorize a
+challenge or outcome.
 
-## High-risk authority/recovery qualification
+## Decisions
 
-`NOT_APPLICABLE` for this record: docs only. Reassess if code is allocated.
+- **D1326:** no grant for SEC-TRUST-1 or SEC-REL-1. CP names those owners later.
+- **D1379:** CP takeover of #2188 as a bounded checkpoint. `main` is merged in with
+  a merge commit (no rebase).
+- **D1427:** slot-only hunk in `apps/game-server/src/lib.rs`, which declares the
+  `security` module and adds nothing else. The leaves have no dependencies outside
+  the owned paths, but in a non-test build every `pub(crate)` item would be unused,
+  so a plain `mod security;` fails strict Clippy with `dead_code`. The declaration is
+  therefore `#[cfg(test)] mod security;`. See Validation.
+- **D1431:** this file is the single SEC-1 packet. The checkpoint content moved here
+  from the duplicate root-level `docs/agents/tasks/SEC-1.md`, which is deleted. The
+  earlier bot-control gap record (scope (b): step integrity in `gameplay_transport/`)
+  is superseded here and stays unallocated. The full dated history of the deleted
+  record is kept in git at `af2acb12be608f46e845341e1fa7e9d21d0ce15a:docs/agents/tasks/SEC-1.md`.
+
+## Excluded scope (needs separate CP allocation)
+
+- Non-test registration and runtime wiring: `connection.rs`, `gameplay_transport/`,
+  `capabilities.rs` and `crates/protocol-oteryn/src/lib.rs`.
+- Cryptographic verification.
+- The trust store, fetch and clock latch (SEC-TRUST-1 / D1031).
+- Signed artifact schema, key-id rules and decoder limits (SEC-REL-1 / RELEASE-MANIFEST-3).
+- PROD-COMPAT admission and ADMIT-CAP-1.
+- The SEC-CHAL, SEC-TELEM and SEC-DETECT children, and telemetry collection
+  (DATA-PRIVACY-01).
+- The earlier bot-control step-integrity proposal.
+- Protocol and registry changes, and migrations.
 
 ## Acceptance criteria
 
-- [ ] Control plane/architect names the bot-control target, or confirms the proposed scope below.
-
-## Excluded scope
-
-Protocol/registry, migrations, `movement/`, the client (#1942), sanctions (OPS-GM-01), CLIENT_INTEGRITY_V1/INPUT_TELEMETRY_V1.
-
-## Implementation / findings
-
-Gap: no localized bot-control target in the owned paths.
-Proposed scope (b), narrowed to failures that reach the owned modules: server-authoritative step integrity in `actor_movement.rs`
-and `field_step_ingress.rs`: a step is committed only when origin, destination and the SPEED-1 duration agree with server facts;
-refusals there are counted as a bounded, non-sanctioning signal; negative cases in `authority_invariants.rs`, one invariant
-changed per case. Sequence gaps and early/buffered steps are decided in `connection.rs` (about lines 2035-2051 and 2093-2113)
-before `paced_step`; counting them needs `connection.rs` added to the allocation, which the control plane must decide.
-Proposed paths, not owned until the control plane allocates them (after the PVP-RT-1b ownership check):
-`apps/game-server/src/gameplay_transport/{fresh_evidence,field_step_ingress,actor_movement}.rs` and
-`apps/game-server/tests/authority_invariants.rs`.
+- [x] Only the allocated pure leaves, this packet and the D1427 declaration are changed.
+- [x] Strict Clippy passes and CI runs the leaf tests (17).
+- [x] No runtime activation, no SQL, no migration, no registry change.
+- [ ] CP merge decision (CP_ONLY).
 
 ## Validation
 
-- `python tools/agents/validate_governance.py`: pass
-- `python -m unittest discover -s tools/agents/tests`: pass
+These checks ran on Molehill-PC (slot-run, slot 3), on a tree that is `af2acb12` plus
+the committed declaration. The `lib.rs` sha256 is `5c1789f7…` and matches the pushed blob.
 
-## Self-review
-
-- exact head: pending
-- method/reviewer: implementing agent
-- material findings: pending
-- verdict: pending
+- `cargo fmt --all --check`: PASS.
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings` with
+  `#[cfg(test)] mod security;`: PASS. The only warning comes from vendored tokio
+  and was already there.
+- `cargo test --locked -p oteryn-game-server --lib security::`: 17 passed, 0 failed.
+- Plain `mod security;` was checked for D1427: strict Clippy FAILS with 16 errors,
+  all `dead_code` for items such as `MAX_CHECKPOINT_AGE`, `PolicyError`, `SigningRole`
+  and `check_applied_head`. It is not used.
+- `python tools/agents/validate_governance.py`: PASS.
+- `python -m unittest discover -s tools/agents/tests`: 124 OK.
+- PostgreSQL: not applicable (no SQL, durable state or migration).
+- CI on the previous head `af2acb12`: 27 success, 3 skipped. One cancelled duplicate
+  of Agent governance; its rerun succeeded.
 
 ## Independent review
 
-- required: NO for this record; YES if code is allocated
-- exact head: NOT_APPLICABLE
-
-## PR and closeout
-
-- PR #2079 carries this record (follow-up to merged #2078, which carried the superseded earlier version at docs/agents/tasks/SEC-1.md); no code until the control plane answers
+- Codex review requested on the new head. Thread r4304709105 (duplicate packet) is
+  fixed by D1431.
+- Earlier heads: the Rust 1.94.0 standalone run of the leaf tests passed 17/17
+  (history at the git path above).
 
 ## Context checkpoint
 
 ```yaml
-last_progress: gap record written; control plane chose option (c)
-status: blocked
-branch: claude/sec-1-record-20261013
-head_sha: null
-pr: null
-owner_action_required: null
-blocker: bot-control target not named; architect decision pending at control plane
-next_action: wait for control plane decision, then implement scope (b) or the named target
+last_progress: D1427 declaration and D1431 packet consolidation pushed
+status: validating
+branch: skeleton/sec-1
+pr: 2188
+blocker: null
+next_action: CP reviews CI and Codex on the new head, then decides on merge (CP_ONLY)
 ```

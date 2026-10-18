@@ -35,6 +35,13 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
+#[allow(
+    dead_code,
+    reason = "shared PostgreSQL support; each mount uses a subset"
+)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
 use admission_evidence::{Facts, Request, Response, decode_response, encode_request};
 use base64::Engine as _;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
@@ -442,6 +449,17 @@ async fn authority_snapshot(database_url: &str) -> TestResult<String> {
     ).fetch_one(&mut connection).await?;
     connection.close().await?;
     Ok(snapshot)
+}
+
+// ADMIT0 §4: the Channel's bound required-capability set, checked again inside the commit.
+// This qualification declares no required capability, so only the binding is checked.
+fn bound_capabilities(
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+) -> durability::fresh_admission::CurrentCapabilityCheck {
+    std::sync::Arc::new(move |current, current_generation, policy| {
+        current == scope && current_generation == generation && policy == "policy-s3b-1"
+    })
 }
 
 // Runtime readiness producer for the holder: the ownership generation is the
@@ -882,7 +900,7 @@ fn composition_flow(
                 now,
             )?;
             let store = FreshAdmissionStore::from_root(root.clone());
-            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request, bound_capabilities(scope, first.assignment.ownership_generation)).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 1 not committed: {other:?}").into()),
             }
@@ -962,7 +980,7 @@ fn composition_flow(
             // An owner change between composition and commit (a newer S2 floor)
             // is caught at the commit boundary: the prepared request is stale.
             ingest(&root, &node_b, descriptor, &accounts[1], &key_id).await?;
-            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request, bound_capabilities(scope, second.assignment.ownership_generation)).await? {
                 FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority => {}
                 other => return Err(format!("owner change not revalidated at commit: {other:?}").into()),
             }
@@ -979,7 +997,7 @@ fn composition_flow(
                 AuthenticatedTransportRefV1::decode(&[0x53; 16])?,
                 now,
             )?;
-            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request, bound_capabilities(scope, second.assignment.ownership_generation)).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 2 not committed: {other:?}").into()),
             }
