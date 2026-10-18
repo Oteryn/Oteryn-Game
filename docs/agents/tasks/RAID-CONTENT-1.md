@@ -3,21 +3,22 @@
 ```yaml
 task_id: RAID-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/raid-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2243
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
-  - content/encounters/raids/evidence-00000-00127.json
   - content/encounters/raids/index.json
   - docs/reference/content-prep/raid-content-1/sources.json
   - docs/reference/content-prep/raid-content-1/README.md
   - docs/agents/tasks/RAID-CONTENT-1.md
+  - content/encounters/raids/evidence-00000-00121.json
+  - docs/reference/content-prep/raid-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -53,3 +54,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+There are 122 actual source raid descriptions, including explicitly historical/deprecated entries. Four general mechanics sections and two nested map headings are excluded from the raid family. Listed creatures, 119 resolved boss classifications, broadcasts, count-bearing observations and explicit seasonal schedules are captured. Approximate counts/ranges remain qualified; message times alone do not prove exact spawn composition. Undocumented per-raid intervals and counts remain held.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
