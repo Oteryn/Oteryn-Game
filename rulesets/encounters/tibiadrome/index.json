@@ -4,7 +4,17 @@
   "kind": "ruleset",
   "owner": "Encounter/Progression",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Tibiadrome selection/scoring/reward rules."
+  "notes": "Tibiadrome selection/scoring/reward rules.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/encounters/tibiadrome/reference-evidence.json",
+      "sha256": "c65fd6da1b9612b04fbc09428a292279eeff4131cc1ccbc9d4980a8cf00ba3d3"
+    }
+  ]
 }

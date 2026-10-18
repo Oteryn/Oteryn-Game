@@ -1,0 +1,849 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "ARENA-RULES-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "tibiadrome.access",
+      "facts": {
+        "group_size": {
+          "value": [
+            1,
+            5
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "minimum_level": {
+          "value": 50,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "premium": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "wave_timeout_seconds": {
+          "value": 120,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "preparation_seconds": {
+          "value": 8,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Combat and Preparation Phases"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "monsters_by_group_size": {
+          "value": {
+            "1": 4,
+            "2": 8,
+            "3": 11,
+            "4": 14,
+            "5": 17
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "reentry_cooldown_minutes": {
+          "value": 60,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Progression and Restrictions"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.scoring",
+      "facts": {
+        "rotation_weeks": {
+          "value": 2,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "points": {
+          "value": "10 * dromeLevel if at least one wave beaten",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "starting_level": {
+          "value": "Lowest participant starting level; successful wave increments starting/drome level by one.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Progression and Restrictions"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "reset": {
+          "value": "Drome level resets to zero; starting level falls by five with floor zero.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Progression and Restrictions"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "tie_break": {
+          "value": "Lower character XP at reaching the tied highest drome level wins.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "potions_by_rank": {
+          "value": {
+            "1-5": 3,
+            "6-10": 2,
+            "11-20": 1
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "raffle": {
+          "value": "20% of remaining participants, capped at 50 potions; weighted by drome level.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.consumption",
+      "facts": {
+        "no_death_penalty": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "no_stamina_drain": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "no_xp_or_skill_gain": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "unconsumed": {
+          "value": [
+            "health_potions",
+            "mana_potions",
+            "arrows",
+            "bolts",
+            "runes"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "soul_spells_disabled": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.14"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.arena_badge_replica",
+      "facts": {
+        "name": {
+          "value": "Arena Badge Replica",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 250,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.brown_pit_demon",
+      "facts": {
+        "name": {
+          "value": "Brown Pit Demon",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 400,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.green_pit_demon",
+      "facts": {
+        "name": {
+          "value": "Green Pit Demon",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 750,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.blue_pit_demon",
+      "facts": {
+        "name": {
+          "value": "Blue Pit Demon",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 1500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.drome_cube",
+      "facts": {
+        "name": {
+          "value": "Drome Cube",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.ogre_rowdy_doll",
+      "facts": {
+        "name": {
+          "value": "Ogre Rowdy Doll",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.plushie_of_a_domestikion",
+      "facts": {
+        "name": {
+          "value": "Plushie of a Domestikion",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.plushie_of_a_hoodinion",
+      "facts": {
+        "name": {
+          "value": "Plushie of a Hoodinion",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.plushie_of_a_mearidion",
+      "facts": {
+        "name": {
+          "value": "Plushie of a Mearidion",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.plushie_of_a_murmillion",
+      "facts": {
+        "name": {
+          "value": "Plushie of a Murmillion",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.plushie_of_a_scissorion",
+      "facts": {
+        "name": {
+          "value": "Plushie of a Scissorion",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.retching_horror_doll",
+      "facts": {
+        "name": {
+          "value": "Retching Horror Doll",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 2500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.black_pit_demon",
+      "facts": {
+        "name": {
+          "value": "Black Pit Demon",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 3000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.sublime_tournament_accolade",
+      "facts": {
+        "name": {
+          "value": "Sublime Tournament Accolade",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 5000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.tournament_accolade",
+      "facts": {
+        "name": {
+          "value": "Tournament Accolade",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 5000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.red_pit_demon",
+      "facts": {
+        "name": {
+          "value": "Red Pit Demon",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 6000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.phant",
+      "facts": {
+        "name": {
+          "value": "Phant",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 8000,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    },
+    {
+      "key": "tibiadrome.reward.lion_of_war_outfits",
+      "facts": {
+        "name": {
+          "value": "Lion of War Outfits",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "drome_points": {
+          "value": 12500,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:94629:1142538",
+              "selector": "Rewards table"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        }
+      }
+    }
+  ]
+}

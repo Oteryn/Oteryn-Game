@@ -1,0 +1,62 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "ARENA-RULES-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "pvp.arena.status",
+      "facts": {
+        "current_available": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:77339:1068018",
+              "selector": "Opening historical notice"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "disabled_date": {
+          "value": "2022-03-29",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:77339:1068018",
+              "selector": "Opening historical notice"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "permanent_removal_announcement": {
+          "value": "2023-02-14",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:77339:1068018",
+              "selector": "Opening historical notice"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "oteryn_reintroduction": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "Reintroducing the removed Global feature is an owner/architecture decision, not a data fact. Do not activate historic arena rules as current."
+        }
+      }
+    }
+  ]
+}
