@@ -173,7 +173,10 @@ fn accepted_command_survives_no_prompt_reload_and_replays_exact_custody_once() -
         let other=DurabilityRoot::connect_test_runtime(&h.database.url)?;assert!(other.maintain_ready_once().await?);
         let b=other.open_character_authority(&seal).await.map_err(debug)?;
         let completion=other.resume_npc_bank(&b,&h.node,fence()?,source.command).await.map_err(debug)?.expect("original retained command");
-        assert_eq!(completion.request,request);assert_eq!(completion.npc_identity,source.npc_identity);
+        // The frozen Bank request carries no weight fact (the Bank owner checks no
+        // capacity), so the resumed request thaws the backpack weight as unknown.
+        let mut expected=request.clone();if let BankRequest::Withdraw(w)=&mut expected{w.coins.backpack.weight=None;}
+        assert_eq!(completion.request,expected);assert_eq!(completion.npc_identity,source.npc_identity);
         assert!(matches!(completion.outcome,BankOperationOutcome::Committed(r) if r.result==BankResult::Ok));
         assert_eq!(balance(&h).await?,90);assert_eq!(frozen(&h).await?,bytes);
         let fp=footprint(&h).await?;
