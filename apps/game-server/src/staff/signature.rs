@@ -91,6 +91,15 @@ pub enum ReportState {
     Closed,
     Expired,
 }
+/// A REPORTS_LIST keyset position: the last report of the previous page in
+/// `(created_at, report_id)` order. The next page starts strictly after it,
+/// so a page stays stable while reports are added, closed or expire.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReportCursor {
+    pub created_at: Decimal,
+    pub report_id: String,
+}
 
 /// D1437: the role a roster names for a signer decides the actions it may run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -141,7 +150,11 @@ pub enum Action {
     #[serde(rename = "UNMUTE")]
     Unmute { sanction_id: String },
     #[serde(rename = "REPORTS_LIST")]
-    ReportsList { state: ReportState },
+    ReportsList {
+        state: ReportState,
+        /// The answer's `next` cursor; `null` for the first page.
+        after: Option<ReportCursor>,
+    },
     #[serde(rename = "REPORT_CLOSE")]
     ReportClose { report_id: String },
     #[serde(rename = "REPORT_CLEAR_TEXT")]
@@ -175,7 +188,7 @@ impl Action {
             Self::Unmute { sanction_id } => Target::Sanction {
                 sanction_id: sanction_id.clone(),
             },
-            Self::ReportsList { state } => Target::Reports { state: *state },
+            Self::ReportsList { state, .. } => Target::Reports { state: *state },
             Self::ReportClose { report_id } | Self::ReportClearText { report_id, .. } => {
                 Target::Report {
                     report_id: report_id.clone(),
@@ -248,7 +261,9 @@ impl Request {
                 report_id,
                 text_revision,
             } => uuid(report_id) && text_revision.0 > 0,
-            Action::ReportsList { .. } => true,
+            Action::ReportsList { after, .. } => {
+                after.as_ref().is_none_or(|cursor| uuid(&cursor.report_id))
+            }
             Action::RosterActivate { roster_sha256 } => {
                 roster_sha256 == &self.roster_sha256 && self.reason == Reason::Roster
             }
@@ -1071,6 +1086,35 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn reports_list_cursor_names_a_report_uuid() {
+        let signer = Signer::new();
+        let trust = signer.trust("alpha-test", &"a".repeat(64));
+        let cursor = |report_id: &str| Action::ReportsList {
+            state: ReportState::Open,
+            after: Some(ReportCursor {
+                created_at: Decimal(1),
+                report_id: report_id.into(),
+            }),
+        };
+        let mut request = signer.request(2, 2, &"b".repeat(64));
+        request.action = cursor("00000000-0000-7000-8000-000000000001");
+        let valid = trust
+            .verify_request(signer.sign(
+                request.canonical_bytes().expect("cursor request JCS"),
+                REQUEST_NAMESPACE,
+            ))
+            .expect("signed cursor request");
+        assert_eq!(valid.request().action, request.action);
+        request.action = cursor("not-a-report");
+        assert!(matches!(request.canonical_bytes(), Err(Error::Invalid)));
+        let signed = signer.sign(
+            jcs::encode(&request, MAX_REQUEST_BYTES).expect("adversarial JCS"),
+            REQUEST_NAMESPACE,
+        );
+        assert!(matches!(trust.verify_request(signed), Err(Error::Invalid)));
+    }
+
+    #[test]
     fn ordinary_requests_require_signed_world_and_channel_scope() {
         let signer = Signer::new();
         let trust = signer.trust("alpha-test", &"a".repeat(64));
@@ -1115,18 +1159,21 @@ pub(crate) mod tests {
                 "reports open",
                 Action::ReportsList {
                     state: ReportState::Open,
+                    after: None,
                 },
             ),
             (
                 "reports closed",
                 Action::ReportsList {
                     state: ReportState::Closed,
+                    after: None,
                 },
             ),
             (
                 "reports expired",
                 Action::ReportsList {
                     state: ReportState::Expired,
+                    after: None,
                 },
             ),
             (

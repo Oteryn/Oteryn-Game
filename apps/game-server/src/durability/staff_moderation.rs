@@ -349,49 +349,71 @@ async fn decide(
                 },
             })
         }
-        Action::ReportsList { state } => {
+        Action::ReportsList { state, after } => {
             let state = match state {
                 ReportState::Open => "OPEN",
                 ReportState::Closed => "CLOSED",
                 ReportState::Expired => "EXPIRED",
             };
+            let after_at = match after {
+                Some(cursor) => {
+                    Some(i64::try_from(cursor.created_at.0).map_err(|_| Error::Bounds)?)
+                }
+                None => None,
+            };
+            // Keyset order: a page starts strictly after the signed cursor, so
+            // it stays stable while other reports open, close or expire. One
+            // row past the page tells whether another page follows.
             let rows = sqlx::query(
                 "SELECT report_id::text,item_instance_id::text,text_revision::text,created_at,\
                  writer_character_id::text,snapshot_text,cleared_action_id IS NOT NULL \
                  FROM game_item_text_reports WHERE world_id=$1::uuid AND state=$2 \
+                 AND ($4::bigint IS NULL OR (created_at,report_id)>($4::bigint,$5::uuid)) \
                  ORDER BY created_at,report_id LIMIT $3",
             )
             .bind(uuid(&node.world))
             .bind(state)
-            .bind(REPORT_PAGE)
+            .bind(REPORT_PAGE + 1)
+            .bind(after_at)
+            .bind(after.as_ref().map(|cursor| cursor.report_id.as_str()))
             .fetch_all(&mut *connection)
             .await?;
             // The snapshot reaches only the operator's answer, never a log;
-            // rows past the answer bound are left for the next page.
+            // rows past the page or the answer bound are left for the next page.
             let mut reports = Vec::new();
-            let mut size = signature::MAX_OUTCOME_BYTES + 256;
+            let mut next = None;
+            let mut size = signature::MAX_OUTCOME_BYTES + 512;
             let mut truncated = false;
             for row in rows {
+                let report_id: String = row.try_get(0)?;
+                let created_at: i64 = row.try_get(3)?;
                 let report = json!({
-                    "report_id": row.try_get::<String, _>(0)?,
+                    "report_id": report_id,
                     "item_instance_id": row.try_get::<String, _>(1)?,
                     "text_revision": row.try_get::<String, _>(2)?,
-                    "created_at": row.try_get::<i64, _>(3)?.to_string(),
+                    "created_at": created_at.to_string(),
                     "writer_character_id": row.try_get::<Option<String>, _>(4)?,
                     "text": row.try_get::<Option<String>, _>(5)?,
                     "cleared": row.try_get::<bool, _>(6)?,
                 });
                 let length = serde_json::to_vec(&report).map_or(usize::MAX, |b| b.len());
                 size = size.saturating_add(length + 1);
-                if size > signature::MAX_ANSWER_BYTES {
+                if reports.len() == REPORT_PAGE as usize || size > signature::MAX_ANSWER_BYTES {
                     truncated = true;
                     break;
                 }
+                next = Some(json!({"created_at": created_at.to_string(), "report_id": report_id}));
                 reports.push(report);
             }
             Ok(Decision {
                 result: ResultCode::Ok,
-                data: Some(json!({"state": state, "reports": reports, "truncated": truncated})),
+                data: Some(json!({
+                    "state": state,
+                    "reports": reports,
+                    "truncated": truncated,
+                    // Sign this as the next request's `after` to read on.
+                    "next": if truncated { next } else { None },
+                })),
                 effect: Effect::None,
             })
         }

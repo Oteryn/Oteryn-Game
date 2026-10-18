@@ -2567,6 +2567,10 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         sequence: u64,
         head: String,
         operation: u8,
+        /// The last request's operation id, digest and stored outcome bytes.
+        last: Option<(String, String, Vec<u8>)>,
+        /// Further member LOGINs a case created, dropped with the fixture.
+        logins: Vec<String>,
     }
     impl Exec {
         async fn create(tag: &str, role: Option<&str>) -> TestResult<Option<Self>> {
@@ -2613,6 +2617,8 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     desk: StaffDesk::new(),
                     sequence: 1,
                     operation: 1,
+                    last: None,
+                    logins: Vec::new(),
                 })),
                 Err(error) => {
                     let admin = f.admin.clone();
@@ -2623,12 +2629,59 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             }
         }
         async fn cleanup(self) -> TestResult {
-            let Self { f, root, login, .. } = self;
+            let Self {
+                f,
+                root,
+                login,
+                logins,
+                ..
+            } = self;
             drop(root);
             let admin = f.admin.clone();
             let database = f.cleanup().await;
-            drop_login(&admin, &login).await?;
+            let mut dropped = drop_login(&admin, &login).await;
+            for member in logins {
+                let result = drop_login(&admin, &member).await;
+                if dropped.is_ok() {
+                    dropped = result;
+                }
+            }
+            dropped?;
             database
+        }
+        /// A fresh LOGIN that inherits `group`, as production members do; no
+        /// `SET ROLE` stands in for it.
+        async fn member(&mut self, label: &str, group: &str) -> TestResult<sqlx::PgConnection> {
+            let nonce = self.f.name.rsplit('_').next().ok_or("fixture name")?;
+            let login = format!("gm_{label}_{nonce}");
+            let password = signature::sha256(&node::operator_files::random_bytes::<32>()?);
+            self.logins.push(login.clone());
+            // Generated ASCII identifiers only; nothing comes from the URL.
+            for statement in [
+                format!("CREATE ROLE {login} LOGIN INHERIT PASSWORD '{password}' IN ROLE {group}"),
+                format!("GRANT CONNECT ON DATABASE {} TO {login}", self.f.name),
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(statement))
+                    .execute(&self.f.pool)
+                    .await?;
+            }
+            let options = self
+                .f
+                .url
+                .parse::<sqlx::postgres::PgConnectOptions>()?
+                .username(&login)
+                .password(&password);
+            let mut connection = sqlx::PgConnection::connect_with(&options).await?;
+            let identity: (String, bool) = sqlx::query_as(
+                "SELECT current_user::text,pg_has_role(current_user,$1::name,'USAGE')",
+            )
+            .bind(group)
+            .fetch_one(&mut connection)
+            .await?;
+            if identity != (login, true) {
+                return Err(format!("invalid member LOGIN fixture: {label}").into());
+            }
+            Ok(connection)
         }
         async fn send(&mut self, action: Action) -> Result<Answer, StaffError> {
             self.send_to(action, here()).await
@@ -2669,10 +2722,17 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 .map(serde_json::from_slice::<serde_json::Value>)
                 .transpose()
                 .map_err(|_| Error::Invalid)?;
-            if mutation {
-                self.receipt(operation_id, digest, stored, outcome.disposition)
-                    .await?;
+            // Only a COMMITTED mutation awaits the operator's receipt.
+            if mutation && outcome.disposition == Disposition::Committed {
+                self.receipt(
+                    operation_id.clone(),
+                    digest.clone(),
+                    stored,
+                    outcome.disposition,
+                )
+                .await?;
             }
+            self.last = Some((operation_id, digest, stored.to_vec()));
             Ok(Answer { outcome, data })
         }
         /// The operator's signed receipt of one mutation, through the same
@@ -2892,10 +2952,12 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     .await?,
                 7
             );
+            // Only the four COMMITTED mutations take a receipt; the refused
+            // UNMUTE and KICK carry no effect to release.
             assert_eq!(
                 e.scalar("SELECT count(*) FROM game_staff_action_receipts")
                     .await?,
-                6
+                4
             );
             Ok(())
         })
@@ -3163,6 +3225,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             let listed = e
                 .send(Action::ReportsList {
                     state: ReportState::Open,
+                    after: None,
                 })
                 .await
                 .map_err(debug)?;
@@ -3251,6 +3314,384 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     .await?,
                 0
             );
+            Ok(())
+        })
+    }
+
+    fn sql_state(error: &sqlx::Error) -> Option<(String, String)> {
+        error.as_database_error().map(|e| {
+            (
+                e.code().map(|c| c.into_owned()).unwrap_or_default(),
+                e.message().to_owned(),
+            )
+        })
+    }
+
+    /// A REFUSED mutation changed nothing: it awaits no receipt, and a receipt
+    /// (REFUSED or COMMITTED) for it is refused, so no receipt ever releases a
+    /// fence by acknowledging a refusal. A COMMITTED mutation still fences.
+    #[test]
+    fn staff_pg_executor_only_committed_receipts_release_mutation_fences() -> TestResult {
+        exec_case("refusedrcpt", Some("GM"), async |e| {
+            let refused = e
+                .send(Action::Unmute {
+                    sanction_id: "00000000-0000-7000-8000-000000000041".into(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                of(&refused),
+                (Disposition::Refused, ResultCode::TargetNotFound)
+            );
+            let (operation, digest, stored) = e.last.clone().ok_or("last request")?;
+            let pending: bool = sqlx::query_scalar(
+                "SELECT requires_receipt FROM game_staff_operations WHERE operation_id=$1::uuid",
+            )
+            .bind(&operation)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert!(!pending, "a refused mutation awaits no receipt");
+            let before = e.f.counts().await?;
+            let receipts = e
+                .scalar("SELECT count(*) FROM game_staff_action_receipts")
+                .await?;
+            for disposition in [Disposition::Refused, Disposition::Committed] {
+                let receipt = e
+                    .receipt(operation.clone(), digest.clone(), &stored, disposition)
+                    .await;
+                assert!(
+                    matches!(receipt, Err(StaffError::Rejected(Error::Receipt))),
+                    "{disposition:?} receipt of a refusal: {:?}",
+                    receipt.err()
+                );
+            }
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_action_receipts")
+                    .await?,
+                receipts
+            );
+            // The refusal left no fence: the next request runs.
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+
+            // A COMMITTED mutation still fences until its COMMITTED receipt.
+            e.operation += 1;
+            let mut request = e.f.signer.request(e.operation, e.sequence + 1, &e.head);
+            request.action = mute(TARGET, 60_000);
+            let signed =
+                e.f.signer
+                    .sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+            let muted_digest = signature::sha256(&signed.bytes);
+            let answer = e
+                .root
+                .fixture_serve_staff_request(
+                    Arc::clone(&e.f.trust),
+                    Arc::clone(&e.f.history),
+                    Arc::clone(&e.desk),
+                    here(),
+                    signed,
+                    NOW,
+                )
+                .await
+                .map_err(debug)?;
+            e.sequence += 1;
+            e.head = muted_digest.clone();
+            let stored = answer
+                .split(|byte| *byte == b'\n')
+                .next()
+                .ok_or("stored outcome")?
+                .to_vec();
+            let fenced = e.send(inspect(TARGET)).await;
+            assert!(
+                matches!(fenced, Err(StaffError::Rejected(Error::Receipt))),
+                "{:?}",
+                fenced.err()
+            );
+            // The fenced request advanced no chain; `send` kept its view.
+            let refusal = e
+                .receipt(
+                    request.operation_id.clone(),
+                    muted_digest.clone(),
+                    &stored,
+                    Disposition::Refused,
+                )
+                .await;
+            assert!(
+                matches!(refusal, Err(StaffError::Rejected(Error::Receipt))),
+                "{:?}",
+                refusal.err()
+            );
+            e.receipt(
+                request.operation_id.clone(),
+                muted_digest,
+                &stored,
+                Disposition::Committed,
+            )
+            .await
+            .map_err(debug)?;
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            Ok(())
+        })
+    }
+
+    /// A sanction row is the effect of its own signed action. Runtime and
+    /// control member LOGINs cannot commit a mute or a lift that borrows the
+    /// action id of another operation (an INSPECT, an older refused MUTE, a
+    /// committed MUTE of another tx); control may not write sanctions at all.
+    #[test]
+    fn staff_pg_member_logins_cannot_forge_sanctions_from_other_actions() -> TestResult {
+        exec_case("forgemute", Some("GM"), async |e| {
+            let inspected = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&inspected), COMMITTED);
+            let refused = e.send(mute(FOREIGN, 60_000)).await.map_err(debug)?;
+            assert_eq!(
+                of(&refused),
+                (Disposition::Refused, ResultCode::TargetNotFound)
+            );
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let sanction = muted.data.as_ref().ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let pool = e.f.pool.clone();
+            let environment = e.f.trust.environment().to_owned();
+            // The operator who signed every action here: only the borrowed
+            // action id differs from a genuine executor insert.
+            let signer: String = sqlx::query_scalar(
+                "SELECT principal FROM game_staff_operations WHERE action_id=$1::uuid",
+            )
+            .bind(&muted.outcome.action_id)
+            .fetch_one(&pool)
+            .await?;
+            let state = || async {
+                sqlx::query_as::<_, (i64, i64)>(
+                    "SELECT count(*),count(*) FILTER (WHERE status='ACTIVE') \
+                     FROM game_character_sanctions",
+                )
+                .fetch_one(&pool)
+                .await
+            };
+            assert_eq!(state().await?, (1, 1));
+            let sanction_id = |n: u16| format!("00000000-0000-7000-8000-{:012x}", 0x900 + n);
+            let mut failures = Vec::new();
+            let mut n = 0;
+            for (label, group) in [
+                ("forgert", "oteryn_game_runtime"),
+                ("forgectl", "oteryn_game_control"),
+            ] {
+                let mut connection = e.member(label, group).await?;
+                let runtime = group == "oteryn_game_runtime";
+                // Mutes borrowing an INSPECT, a REFUSED MUTE of another tx and
+                // the committed MUTE's own id with the right shape.
+                for (case, character, borrowed, starts) in [
+                    (
+                        "inspect",
+                        REPORTER,
+                        inspected.outcome.action_id.clone(),
+                        NOW,
+                    ),
+                    (
+                        "refused mute",
+                        FOREIGN,
+                        refused.outcome.action_id.clone(),
+                        NOW,
+                    ),
+                    ("older mute", TARGET, muted.outcome.action_id.clone(), NOW),
+                ] {
+                    n += 1;
+                    let mut tx = connection.begin().await?;
+                    let inserted = sqlx::query(
+                        "INSERT INTO game_character_sanctions(sanction_id,environment,\
+                         character_id,kind,starts_at,ends_at,actor_principal,mute_action_id,\
+                         status,revision) VALUES($1::uuid,$6,$2::uuid,'MUTE',$3,$4,\
+                         $7,$5::uuid,'ACTIVE',1)",
+                    )
+                    .bind(sanction_id(n))
+                    .bind(character)
+                    .bind(i64::try_from(starts)?)
+                    .bind(i64::try_from(starts + 60_000)?)
+                    .bind(&borrowed)
+                    .bind(&environment)
+                    .bind(&signer)
+                    .execute(&mut *tx)
+                    .await;
+                    let refusal = match inserted {
+                        Ok(_) => tx.commit().await.err(),
+                        Err(error) => Some(error),
+                    };
+                    let expected = match (runtime, case) {
+                        (false, _) => "42501",
+                        // The committed MUTE already owns its one sanction.
+                        (true, "older mute") => "23505",
+                        (true, _) => "23514",
+                    };
+                    match refusal.as_ref().and_then(sql_state) {
+                        Some((code, message))
+                            if code == expected
+                                && (code != "23514"
+                                    || message == "sanction is not its signed staff action") => {}
+                        other => failures.push(format!("{label}: {case}: {other:?}")),
+                    }
+                }
+                // A lift borrowing the INSPECT's action id.
+                let mut tx = connection.begin().await?;
+                let lifted = sqlx::query(
+                    "UPDATE game_character_sanctions SET status='LIFTED',revision=2,\
+                     lifted_at=$2,lift_action_id=$3::uuid WHERE sanction_id=$1::uuid",
+                )
+                .bind(&sanction)
+                .bind(i64::try_from(NOW)?)
+                .bind(&inspected.outcome.action_id)
+                .execute(&mut *tx)
+                .await;
+                let refusal = match lifted {
+                    Ok(_) => tx.commit().await.err(),
+                    Err(error) => {
+                        drop(tx);
+                        Some(error)
+                    }
+                };
+                let expected = if runtime { "23514" } else { "42501" };
+                match refusal.as_ref().and_then(sql_state) {
+                    Some((code, _)) if code == expected => {}
+                    other => failures.push(format!("{label}: lift: {other:?}")),
+                }
+                connection.close().await?;
+            }
+            assert!(failures.is_empty(), "forged sanctions: {failures:?}");
+            assert_eq!(state().await?, (1, 1));
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(id(REPORTER), NOW)
+                    .await
+                    .map_err(debug)?,
+                None
+            );
+            // The executor's own lift binds to its UNMUTE and commits.
+            let lifted = e
+                .send(Action::Unmute {
+                    sanction_id: sanction.clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            assert_eq!(state().await?, (1, 0));
+            Ok(())
+        })
+    }
+
+    /// REPORTS_LIST pages by a signed `(created_at, report_id)` keyset cursor:
+    /// more than one page of reports is read in order, each exactly once, and
+    /// the answer bound ends a page early without losing a report.
+    #[test]
+    fn staff_pg_executor_reports_list_pages_past_one_page_by_signed_cursor() -> TestResult {
+        exec_case("reportpages", Some("GM"), async |e| {
+            // 70 OPEN reports in this World (pairs share a creation time), 3 in
+            // another World and 12 CLOSED ones near the snapshot size bound.
+            let mut tx = e.f.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "INSERT INTO game_item_text_reports(report_id,world_id,reporter_character_id,\
+                 reporter_account_id,item_instance_id,text_revision,snapshot_text,\
+                 writer_character_id,written_at,created_at,expires_at,state,revision,ended_at,\
+                 closed_action_id) \
+                 SELECT format('00000000-0000-7000-8000-%s',lpad(to_hex(4096+n),12,'0'))::uuid,\
+                  CASE WHEN n<70 OR n>=73 THEN $1::uuid ELSE '00000000-0000-7000-8000-000000000020'::uuid END,\
+                  $2::uuid,$3::uuid,\
+                  format('00000000-0000-7000-8000-%s',lpad(to_hex(256+n%24),12,'0'))::uuid,1+n/24,\
+                  CASE WHEN n>=73 THEN repeat('x',7000) ELSE 'Snapshot '||n END,\
+                  $2::uuid,'2026-01-01T00:00:00Z',$4+(n/2)*1000,$4+(n/2)*1000+15552000000,\
+                  CASE WHEN n>=73 THEN 'CLOSED' ELSE 'OPEN' END,CASE WHEN n>=73 THEN 2 ELSE 1 END,\
+                  CASE WHEN n>=73 THEN $4+(n/2)*1000 END,\
+                  CASE WHEN n>=73 THEN format('00000000-0000-7000-8000-%s',lpad(to_hex(8192+n),12,'0'))::uuid END \
+                 FROM generate_series(84,0,-1) AS n",
+            )
+            .bind(WORLD)
+            .bind(REPORTER)
+            .bind(REPORTER_ACCOUNT)
+            .bind(i64::try_from(REPORTED)?)
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            async fn listed(
+                e: &mut Exec,
+                state: ReportState,
+            ) -> TestResult<(Vec<String>, Vec<usize>)> {
+                let mut after = None;
+                let mut seen = Vec::new();
+                let mut pages = Vec::new();
+                loop {
+                    let page = e
+                        .send(Action::ReportsList { state, after })
+                        .await
+                        .map_err(debug)?;
+                    assert_eq!(of(&page), COMMITTED);
+                    let data = page.data.ok_or("list data")?;
+                    let reports = data["reports"].as_array().ok_or("reports")?;
+                    pages.push(reports.len());
+                    for report in reports {
+                        seen.push(report["report_id"].as_str().ok_or("report id")?.to_owned());
+                    }
+                    if data["truncated"] == false {
+                        assert!(data["next"].is_null());
+                        return Ok((seen, pages));
+                    }
+                    let next: signature::ReportCursor =
+                        serde_json::from_value(data["next"].clone())?;
+                    assert_eq!(next.report_id, *seen.last().ok_or("page")?);
+                    after = Some(next);
+                    if pages.len() > 16 {
+                        return Err("report pages do not end".into());
+                    }
+                }
+            }
+            let pool = e.f.pool.clone();
+            let order = |state: &'static str| {
+                let pool = pool.clone();
+                async move {
+                    sqlx::query_scalar::<_, String>(
+                        "SELECT report_id::text FROM game_item_text_reports WHERE world_id=$1::uuid \
+                         AND state=$2 ORDER BY created_at,report_id",
+                    )
+                    .bind(WORLD)
+                    .bind(state)
+                    .fetch_all(&pool)
+                    .await
+                }
+            };
+            let expected = order("OPEN").await?;
+            assert_eq!(expected.len(), 70);
+            let (seen, pages) = listed(e, ReportState::Open).await?;
+            assert_eq!(pages, [32, 32, 6]);
+            assert_eq!(seen, expected);
+            // Seven 7000-byte snapshots fill one 64 KiB answer: two pages.
+            let expected = order("CLOSED").await?;
+            assert_eq!(expected.len(), 12);
+            let (seen, pages) = listed(e, ReportState::Closed).await?;
+            assert!(
+                pages.len() >= 2 && pages.iter().all(|n| *n > 0),
+                "{pages:?}"
+            );
+            assert_eq!(seen, expected);
+            // A cursor past every report reads an empty, final page.
+            let last = e
+                .send(Action::ReportsList {
+                    state: ReportState::Open,
+                    after: Some(signature::ReportCursor {
+                        created_at: Decimal(REPORTED + HOUR),
+                        report_id: TARGET.into(),
+                    }),
+                })
+                .await
+                .map_err(debug)?;
+            let data = last.data.ok_or("list data")?;
+            assert_eq!(data["reports"].as_array().map(Vec::len), Some(0));
+            assert_eq!(data["truncated"], false);
             Ok(())
         })
     }

@@ -277,7 +277,8 @@ pub(crate) async fn fixture_begin_with_clock(
 }
 
 /// D1412: the caller holds the locked head in this same transaction. Every
-/// mutation needs a receipt row, and the receipt of the latest mutation, the
+/// COMMITTED mutation needs a COMMITTED receipt row (a refused one changed
+/// nothing and needs none; a receipt never acknowledges a refusal), and the receipt of the latest mutation, the
 /// one that releases its pending fence, must pass the existing verifier under
 /// the reviewed activation in effect at that receipt's own sequence. Row
 /// existence never opens the fence; an unknown activation or any mismatch
@@ -334,7 +335,8 @@ async fn receipt_fence_in_transaction(
         || row.try_get::<String, _>(4)? != receipt.signed().principal
         || row.try_get::<String, _>(5)? != receipt.fingerprint()
         || receipt.fingerprint() != fingerprint
-        || outcome.disposition != value.disposition
+        || outcome.disposition != Disposition::Committed
+        || value.disposition != Disposition::Committed
         || link_previous.as_deref() != Some(value.previous_link_sha256.as_str())
     {
         return Err(Error::Receipt.into());
@@ -385,7 +387,7 @@ pub(crate) async fn finish_in_transaction(
     sqlx::query("INSERT INTO game_staff_operations(environment,operation_id,request_sha256,request_bytes,outcome_bytes,outcome_sha256,principal,key_fingerprint,action_id,transaction_id,control_seq,requires_receipt,occurred_at,created_xact_id) VALUES($1,$2::text::uuid,$3,$4,$5,$6,$7,$8,$9::text::uuid,$10::text::uuid,$11::text::numeric,$12,$13,txid_current())")
         .bind(environment).bind(&request.request().operation_id).bind(request.digest()).bind(&request.signed().bytes).bind(&bytes).bind(signature::sha256(&bytes))
         .bind(&request.signed().principal).bind(request.fingerprint()).bind(&outcome.action_id).bind(&outcome.transaction_id)
-        .bind(request.request().control_seq.0.to_string()).bind(!request.request().action.kind().is_read()).bind(pending.occurred_at).execute(&mut *connection).await?;
+        .bind(request.request().control_seq.0.to_string()).bind(audit::requires_receipt(request, &outcome)).bind(pending.occurred_at).execute(&mut *connection).await?;
     sqlx::query("INSERT INTO game_staff_action_outbox(environment,operation_id,event_id,transaction_id,event_type_id,schema_revision,retention_profile_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state,created_xact_id) VALUES($1,$2::text::uuid,$3::text::uuid,$4::text::uuid,$5,$6,$7,$8,$9,$10,$11,1,txid_current())")
         .bind(environment).bind(&request.request().operation_id).bind(&outcome.action_id).bind(&outcome.transaction_id)
         .bind(i64::from(contract.event_type())).bind(i64::from(contract.revision())).bind(audit::RETENTION_PROFILE)
@@ -465,7 +467,8 @@ pub(crate) async fn receipt_in_transaction(
         || row.try_get::<String, _>(1)? != value.outcome_sha256
         || row.try_get::<String, _>(2)? != receipt.signed().principal
         || row.try_get::<String, _>(3)? != receipt.fingerprint()
-        || outcome.disposition != value.disposition
+        || outcome.disposition != Disposition::Committed
+        || value.disposition != Disposition::Committed
     {
         return Err(Error::Receipt.into());
     }

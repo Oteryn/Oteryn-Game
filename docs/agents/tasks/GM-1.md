@@ -54,7 +54,76 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — D1437 mechanic complete and wired, REPORT_ONLY (2026-10-18)
+## Current checkpoint — Codex review of `adc0e0a5` repairs, REPORT_ONLY (2026-10-18)
+
+Parent `adc0e0a5`. All three findings were accepted:
+
+- [P1 PRRT_kwDOT8SzxM6tqCoh](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4306858434):
+  a member LOGIN could insert an ACTIVE mute that named any staff action id,
+  for example an INSPECT. Migration 0123 now binds every sanction row to its
+  own signed action through the deferred constraint trigger
+  `game_character_sanction_bound` (`23514`, `sanction is not its signed staff
+  action`). The trigger requires that the named operation row:
+  - was committed in the same transaction (`created_xact_id`) and environment;
+  - has a COMMITTED/OK outcome;
+  - carries a signed MUTE for this Character, with the same duration, start
+    (`occurred_at`) and signer;
+  - for a lift, carries a signed UNMUTE of this sanction at `lifted_at`.
+
+  INSERT and UPDATE on sanctions are now granted only to the executor's
+  runtime role; control keeps SELECT only.
+- [P2 PRRT_kwDOT8SzxM6tqCoi](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4306858437):
+  REPORTS_LIST had no cursor past its first 32 reports. The signed action now
+  carries `after: {created_at, report_id} | null`. The executor pages by the
+  `(created_at, report_id)` keyset, and the answer returns `truncated` and the
+  `next` cursor. A page also ends early at the answer byte bound. Because a
+  snapshot is at most 7996 bytes, every page holds at least one report.
+- [P2 PRRT_kwDOT8SzxM6to430](https://github.com/Oteryn/Oteryn-Game/pull/2181#discussion_r4306375624):
+  a REFUSED receipt released the fence. A receipt must now be COMMITTED and
+  acknowledge a COMMITTED stored outcome, both in the fence and in the receipt
+  writer. `staff prepare-receipt` refuses any other receipt. Only a COMMITTED
+  mutation sets `requires_receipt` (`audit::requires_receipt`, derived from the
+  signed action and outcome). A refused mutation changed nothing, so it awaits
+  no receipt, and its audit evidence expires like a read's. Residual risk: a
+  forged unsigned REFUSED outcome row is not fenced. It cannot carry an
+  effect, because no sanction binds to a non-COMMITTED operation.
+
+CP decisions on the earlier owner questions:
+
+- **D1448b, namespace.** The signing namespaces stay `oteryn-ops-request-v1`
+  and `oteryn-ops-submission-receipt-v1`. D1437's `oteryn-staff` is superseded.
+- **Migration number.** `0123` is renumbered at the queue turn. #2203 also
+  holds `0123` provisionally, so whichever PR merges later renumbers.
+
+New canonical cases:
+
+- `staff_pg_executor_only_committed_receipts_release_mutation_fences`;
+- `staff_pg_member_logins_cannot_forge_sanctions_from_other_actions`, for
+  runtime and control LOGINs;
+- `staff_pg_executor_reports_list_pages_past_one_page_by_signed_cursor`, with
+  70 open reports paged 32/32/6 and large closed reports paged at the byte
+  bound.
+
+There is also a new lib case, `reports_list_cursor_names_a_report_uuid`.
+The existing mute/inspect/unmute/kick case now expects 4 receipts instead of 6,
+because its refused UNMUTE and KICK no longer take one.
+
+Validation on WSL `Ubuntu` (Rust 1.94, `cargo fetch --locked` first, PG
+through the unchanged `in-pg-netns.sh` against shared PostgreSQL 17.6, D1450):
+
+| Check | Result |
+| --- | --- |
+| `cargo fmt --all --check` | pass |
+| strict Clippy `-p oteryn-game-server --all-targets -D warnings` | pass |
+| strict Clippy `--test staff_audit_postgres -D warnings` | pass |
+| lib `-- staff chat_intent logout_wire` | 57 passed, 0 failed |
+| `staff_audit_postgres` | 1188 passed, 0 failed |
+| canonical `durability_postgres staff_pg_` | 28 passed, 0 failed |
+| `python3 tools/agents/validate_governance.py` | passed (22 policy documents, 9 project lanes) |
+
+Runtime remains REPORT_ONLY.
+
+## Previous checkpoint — D1437 mechanic complete and wired, REPORT_ONLY (2026-10-18)
 
 Parent `aeaf11f1`, merged with `main` `64d5e4da` (merge `bf88a534`). CP D1437
 resolved the architect UNKNOWNs; where the PR already implied a choice it is kept:

@@ -50,6 +50,13 @@ pub struct StoredOperation {
     pub requires_receipt: bool,
     pub occurred_at: i64,
 }
+/// Only a COMMITTED mutation awaits an operator receipt. A refused mutation
+/// changed nothing, and a receipt never acknowledges a refusal, so it would
+/// fence the chain for good. Derived from the signed action, never from SQL.
+pub fn requires_receipt(request: &VerifiedRequest, outcome: &Outcome) -> bool {
+    !request.request().action.kind().is_read()
+        && outcome.disposition == signature::Disposition::Committed
+}
 pub fn verify_stored_operation(
     request: &VerifiedRequest,
     row: &StoredOperation,
@@ -72,7 +79,7 @@ pub fn verify_stored_operation(
         || row.action_id != outcome.action_id
         || row.transaction_id != outcome.transaction_id
         || row.control_seq != intent.control_seq.0
-        || row.requires_receipt == intent.action.kind().is_read()
+        || row.requires_receipt != requires_receipt(request, &outcome)
         || u64::try_from(row.occurred_at).ok() != Some(outcome.occurred_at.0)
     {
         return Err(Error::Binding);
@@ -455,7 +462,7 @@ pub fn evidence_expiry(
             return Err(Error::Receipt);
         }
         outcome.occurred_at.0
-    } else if request.request().action.kind().is_read() {
+    } else if !requires_receipt(request, outcome) {
         request
             .request()
             .issued_at

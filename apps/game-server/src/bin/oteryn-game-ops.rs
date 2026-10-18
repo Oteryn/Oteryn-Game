@@ -1682,6 +1682,12 @@ async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
             let outcome_bytes = staff_input(&outcome, signature::MAX_OUTCOME_BYTES)?;
             let outcome: StaffOutcome =
                 jcs::decode(&outcome_bytes, signature::MAX_OUTCOME_BYTES).map_err(staff_failure)?;
+            // Only a COMMITTED mutation awaits a receipt; a refusal changed nothing.
+            if outcome.disposition != signature::Disposition::Committed
+                || checked.request().action.kind().is_read()
+            {
+                return Err(staff_failure("only a committed mutation takes a receipt"));
+            }
             let head = operator
                 .root
                 .staff_receipt_head(trust.environment().into())

@@ -41,6 +41,43 @@ CREATE TRIGGER game_character_sanction_lift_only BEFORE UPDATE OR DELETE ON game
  FOR EACH ROW EXECUTE FUNCTION game_character_sanction_lift_only();
 CREATE TRIGGER game_character_sanction_no_truncate BEFORE TRUNCATE ON game_character_sanctions
  FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();
+-- A sanction is the effect of its own signed staff action: a MUTE row binds to
+-- a COMMITTED MUTE operation of the same environment, principal, Character,
+-- start and duration, and a lift to a COMMITTED UNMUTE of that sanction at the
+-- lift time. The operation must be written by the executor in this same
+-- transaction, so no row can borrow the action id of another (or an older)
+-- operation. Deferred: the executor writes the operation row after its effect.
+CREATE FUNCTION game_character_sanction_bound() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+ bound uuid;
+ signer text;
+ r jsonb;
+ o jsonb;
+BEGIN
+ IF TG_OP='INSERT' AND NEW.status<>'ACTIVE' THEN
+  RAISE EXCEPTION 'sanction is not its signed staff action' USING ERRCODE='23514';
+ END IF;
+ bound:=CASE WHEN TG_OP='INSERT' THEN NEW.mute_action_id ELSE NEW.lift_action_id END;
+ SELECT op.principal,convert_from(op.request_bytes,'UTF8')::jsonb,
+  convert_from(op.outcome_bytes,'UTF8')::jsonb INTO signer,r,o FROM game_staff_operations op
+  WHERE op.action_id=bound AND op.environment=NEW.environment
+   AND op.created_xact_id=txid_current();
+ IF NOT FOUND OR r->>'environment' IS DISTINCT FROM NEW.environment
+  OR o->>'disposition' IS DISTINCT FROM 'COMMITTED' OR o->>'result' IS DISTINCT FROM 'OK'
+  OR (TG_OP='INSERT' AND (r->'action'->>'kind' IS DISTINCT FROM 'MUTE'
+   OR r->'action'->>'character_id' IS DISTINCT FROM NEW.character_id::text
+   OR r->'action'->>'duration_ms' IS DISTINCT FROM (NEW.ends_at-NEW.starts_at)::text
+   OR o->>'occurred_at' IS DISTINCT FROM NEW.starts_at::text
+   OR signer IS DISTINCT FROM NEW.actor_principal))
+  OR (TG_OP='UPDATE' AND (r->'action'->>'kind' IS DISTINCT FROM 'UNMUTE'
+   OR r->'action'->>'sanction_id' IS DISTINCT FROM NEW.sanction_id::text
+   OR o->>'occurred_at' IS DISTINCT FROM NEW.lifted_at::text)) THEN
+  RAISE EXCEPTION 'sanction is not its signed staff action' USING ERRCODE='23514';
+ END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_character_sanction_bound AFTER INSERT OR UPDATE ON game_character_sanctions
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_character_sanction_bound();
 
 -- WRITE0 §6: the restricted moderation store of item-text reports.
 CREATE TABLE game_item_text_reports (
@@ -107,11 +144,14 @@ CREATE TABLE game_item_text_report_worlds (
 
 REVOKE ALL ON game_character_sanctions,game_item_text_reports,game_item_text_report_hourly,
  game_item_text_report_accounts,game_item_text_report_worlds FROM PUBLIC;
-GRANT SELECT,INSERT,UPDATE(status,revision,lifted_at,lift_action_id) ON game_character_sanctions
- TO oteryn_game_runtime,oteryn_game_control;
+-- Only the node's staff executor (the runtime role) writes sanctions.
+GRANT SELECT ON game_character_sanctions TO oteryn_game_runtime,oteryn_game_control;
+GRANT INSERT,UPDATE(status,revision,lifted_at,lift_action_id) ON game_character_sanctions
+ TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(snapshot_text,state,revision,ended_at,closed_action_id,cleared_action_id)
  ON game_item_text_reports TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(reports),DELETE ON game_item_text_report_hourly TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(open_reports) ON game_item_text_report_accounts TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(open_snapshots) ON game_item_text_report_worlds TO oteryn_game_runtime;
-REVOKE ALL ON FUNCTION game_character_sanction_lift_only(),game_item_text_report_transition() FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_character_sanction_lift_only(),game_character_sanction_bound(),
+ game_item_text_report_transition() FROM PUBLIC;
