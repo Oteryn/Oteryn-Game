@@ -18,7 +18,8 @@ use super::{StartupError, connect_root, read_file, uuid_text};
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::content::{
     ContentActivationController, NativeEntryActivationError, NativeEntryActivationIssuance,
-    NativeEntryContentPin, NodeBootQuiescence, activate_native_entry_room,
+    NativeEntryContentPin, NodeBootQuiescence, QualifiedHouseResetSources,
+    activate_native_entry_room,
 };
 use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::{
@@ -31,6 +32,9 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
     RegistrationError, RuntimeScopeAssignment,
 };
+use crate::durability::world_reset::{WorldResetActivationDisposition, WorldResetError};
+use crate::durability::world_reset_port::{WorldDrainBinding, WorldDrainWitness};
+use crate::durability::world_reset_run::MAP01_RESET_RETIRE_MS;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -41,7 +45,7 @@ use crate::foundation::admission_authority_publication::{
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
-use crate::gameplay_transport::FreshEvidenceSource;
+use crate::gameplay_transport::{FreshEvidenceSource, GameplayDrain, serve_gameplay_draining};
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
@@ -54,7 +58,7 @@ use crate::native_admission_source::public_projections::{
 };
 use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
-use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
+use crate::{GameplayListenerConfig, GameplaySeamOwners};
 use oteryn_foundation::CancellationToken;
 use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
@@ -78,6 +82,9 @@ const MAINTENANCE_INTERVAL: Duration = Duration::from_secs(10 * 60);
 const MAINTENANCE_POLL: Duration = Duration::from_secs(1);
 const RETRY_BACKOFF_MAX: Duration = Duration::from_secs(5);
 const ASSIGNMENT_POLL: Duration = Duration::from_secs(1);
+/// How often a serving node looks for a RETIRING World reset (ADR-0021 §4.7 step 1).
+const WORLD_RESET_WATCH: Duration = Duration::from_secs(5);
+const WORLD_RESET_DRAINED: &str = "world reset drained";
 const PENDING_RECONCILE_ATTEMPTS: u32 = 5;
 const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
 /// The share of [`SHUTDOWN_BUDGET`] the shutdown last-position write may take (CHAR-POSITION-1).
@@ -1591,6 +1598,128 @@ async fn activate_content(
     Ok((controller, pin))
 }
 
+/// The boot drain witness of a World reset (ADR-0021 §4.7). It exists only before this
+/// incarnation builds any Channel runtime, listener or Spell lane, so no in-memory runtime of
+/// the bound Channels exists; the durable cohort binding is read, never assumed.
+struct BootWorldDrain {
+    binding: WorldDrainBinding,
+    _quiescence: NodeBootQuiescence,
+}
+
+impl WorldDrainWitness for BootWorldDrain {
+    fn drained(&self) -> &WorldDrainBinding {
+        &self.binding
+    }
+}
+
+const fn world_reset_refusal(error: &WorldResetError) -> &'static str {
+    match error {
+        WorldResetError::NotCurrent => "not current",
+        WorldResetError::NotInitialized => "not initialized",
+        WorldResetError::InvalidInitialization => "invalid initialization",
+        WorldResetError::UnqualifiedTarget => "unqualified target",
+        WorldResetError::ConflictingCause => "conflicting cause",
+        WorldResetError::CapacityExceeded => "capacity exceeded",
+        WorldResetError::InvalidStoredState => "invalid stored state",
+        WorldResetError::HouseSourceRefused => "house source refused",
+        WorldResetError::DrainBindingRefused => "drain binding refused",
+        WorldResetError::HouseTargetMembershipChanged { .. } => "house target membership changed",
+        WorldResetError::HouseCatalogueChanged { .. } => "house catalogue changed",
+        WorldResetError::Unavailable(_) => "unavailable",
+    }
+}
+
+/// MAP-OVERLAY-1c boot recovery (ADR-0021 §4.7): a World reset left RETIRING, by a serving
+/// node's drain or by a crash mid-run, completes here before this incarnation activates its
+/// content or builds any Channel runtime, so admission stays closed until epoch N+1 is active.
+/// The census waits, within the assignment wait, for the operator's fresh generation of every
+/// Channel and for every reconnect session to be released; any other refusal fails readiness
+/// (retryable) and the next boot resumes the same durable run. The House catalogues are the
+/// active qualified room's, so only a same-digest target can activate.
+async fn recover_world_reset(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    world: WorldId,
+    channel: ChannelId,
+    wait: Duration,
+) -> Result<(), BootError> {
+    let Some(epoch) = root
+        .read_retiring_world_reset(world)
+        .await
+        .map_err(|_| BootError::Readiness("world reset read"))?
+    else {
+        return Ok(());
+    };
+    event(&format!(
+        "event=world_reset state=resume reset_epoch={epoch}"
+    ));
+    let (_controller, content) = activate_content(root, world, channel).await?;
+    let tiles = content.qualified_room().movement_cells().house_tiles();
+    let houses = QualifiedHouseResetSources::new(tiles, tiles);
+    let deadline = tokio::time::Instant::now() + wait;
+    loop {
+        let attempt = match root.read_world_drain_binding(proof, world).await {
+            Ok(binding) => {
+                let drain = BootWorldDrain {
+                    binding,
+                    _quiescence: NodeBootQuiescence::before_channel_runtime(),
+                };
+                root.run_world_reset(authority, proof, world, &houses, &drain)
+                    .await
+            }
+            Err(error) => Err(error),
+        };
+        match attempt {
+            Ok(None) => return Ok(()),
+            Ok(Some(run)) => {
+                let elapsed_ms = run.elapsed.as_millis();
+                event(&format!(
+                    "event=world_reset state=activated reset_epoch={} disposition={} retired={} elapsed_ms={elapsed_ms} budget_ms={MAP01_RESET_RETIRE_MS}",
+                    run.reset_epoch,
+                    match run.disposition {
+                        WorldResetActivationDisposition::NewEpoch(_) => "new_epoch",
+                        WorldResetActivationDisposition::Historical(_) => "historical",
+                    },
+                    run.retired,
+                ));
+                if !run.within_budget() {
+                    event(&format!(
+                        "event=world_reset_alarm limit=MAP01-RESET-RETIRE-MS elapsed_ms={elapsed_ms} budget_ms={MAP01_RESET_RETIRE_MS}"
+                    ));
+                }
+                return Ok(());
+            }
+            Err(error @ (WorldResetError::NotCurrent | WorldResetError::Unavailable(_)))
+                if tokio::time::Instant::now() < deadline =>
+            {
+                event(&format!(
+                    "event=world_reset state=waiting reason=\"{}\"",
+                    world_reset_refusal(&error)
+                ));
+                tokio::time::sleep(ASSIGNMENT_POLL).await;
+            }
+            Err(error) => {
+                event(&format!(
+                    "event=world_reset state=refused reason=\"{}\"",
+                    world_reset_refusal(&error)
+                ));
+                return Err(BootError::Readiness("world reset"));
+            }
+        }
+    }
+}
+
+/// Ends once the World has a RETIRING reset; read failures are retried on the next tick.
+async fn world_reset_watch(root: &DurabilityRoot, world: WorldId) {
+    loop {
+        tokio::time::sleep(WORLD_RESET_WATCH).await;
+        if let Ok(Some(_)) = root.read_retiring_world_reset(world).await {
+            return;
+        }
+    }
+}
+
 /// D3 step 6: the operator assigns exactly this incarnation within the wait.
 async fn await_assignment(
     root: &DurabilityRoot,
@@ -2456,6 +2585,26 @@ async fn boot_and_serve(
     let assignment = generation?;
     let generation = assignment.ownership_generation;
     let fact = proof.fact();
+    // MAP-OVERLAY-1c (ADR-0021 §4.7): a RETIRING World reset completes before this
+    // incarnation activates content or builds any Channel runtime.
+    if first(
+        recover_world_reset(
+            root,
+            &authority,
+            &proof,
+            material.world,
+            material.channel,
+            Duration::from_millis(config.scope.assignment_wait_ms),
+        ),
+        signalled.cancelled(),
+    )
+    .await
+    .transpose()?
+    .is_none()
+    {
+        stopped_before_ready();
+        return Ok(());
+    }
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
     let (active_content, content) =
@@ -2713,12 +2862,18 @@ async fn boot_and_serve(
         last_position_flush: Some(&last_position_flush),
     };
     let loops_stop = CancellationToken::new();
-    let mut gameplay = pin!(serve_gameplay(
+    // MAP-OVERLAY-1c (ADR-0021 §4.7 step 1): a RETIRING reset of this World drains the listener;
+    // once every session is released the node stops and its next boot runs the reset.
+    let drain = GameplayDrain::default();
+    let mut gameplay = pin!(serve_gameplay_draining(
         &listener,
         listener_config,
         owners,
-        &shutdown
+        &shutdown,
+        &drain,
     ));
+    let mut reset_watch = Some(Box::pin(world_reset_watch(root, material.world)));
+    let mut reset_drained = pin!(drain.completed());
     let mut control_task = pin!(control_loop(
         &control,
         root,
@@ -2781,6 +2936,16 @@ async fn boot_and_serve(
             gameplay_done = true;
             return Poll::Ready("gameplay loop ended");
         }
+        if let Some(watch) = reset_watch.as_mut()
+            && watch.as_mut().poll(context).is_ready()
+        {
+            reset_watch = None;
+            event("event=world_reset state=draining");
+            drain.request();
+        }
+        if drain.is_requested() && reset_drained.as_mut().poll(context).is_ready() {
+            return Poll::Ready(WORLD_RESET_DRAINED);
+        }
         if control_task.as_mut().poll(context).is_ready() {
             control_done = true;
             return Poll::Ready("control loop ended");
@@ -2798,6 +2963,8 @@ async fn boot_and_serve(
         Poll::Pending
     })
     .await;
+    // A watch still in flight holds no pass the shutdown below waits for.
+    drop(reset_watch);
     event(&format!("event=shutdown reason=\"{reason}\""));
     if let Some(reporter) = &reporter {
         reporter.stop_heartbeats();
@@ -2901,6 +3068,10 @@ async fn boot_and_serve(
     event("event=shutdown state=complete");
     if serve_error.is_some() {
         return Err(BootError::Serve);
+    }
+    if reason == WORLD_RESET_DRAINED {
+        // Retryable: the supervisor restarts the node and its boot runs the reset.
+        return Err(BootError::Readiness("world reset drained"));
     }
     Ok(())
 }

@@ -8059,6 +8059,28 @@
       "unit": "entries"
     },
     {
+      "allocation_impact": "Qualification budget for one whole World reset run (Ground retirement of every drained Channel through the epoch activation commit), measured by the node at boot. A run over the budget raises the operational alarm and fails MAP-OVERLAY-1c qualification. It is not a runtime timeout: the World stays closed until the run completes.",
+      "boundary_tests": [
+        "a reset run at or under 600,000 ms passes",
+        "a measured run over 600,000 ms raises the operational alarm and fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 600000,
+        "minimum": 600000
+      },
+      "consumers": [
+        "game server boot World reset recovery"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 600000,
+      "id": "MAP01-RESET-RETIRE-MS",
+      "notes": "MAP-OVERLAY-1c; ADR-0021 \u00a74.7 Duration. Initial value; measured on the PostgreSQL fixture run (world_reset_postgres); a measurement on real persisted Ground volume must confirm or revise it before the first production reset.",
+      "owner_contract": "ADR-0021-world-map-runtime-loading.md",
+      "resource": "Wall time of one World reset run, from the first Ground retirement to the committed epoch activation",
+      "unit": "milliseconds"
+    },
+    {
       "allocation_impact": "The NPC count and each NPC's placement count are checked against the running total and against the bytes left before any list is reserved; the compiler applies the same check before it writes.",
       "boundary_tests": [
         "a table of exactly 2,048 placements validates and round-trips",

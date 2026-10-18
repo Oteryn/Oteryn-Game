@@ -96,18 +96,19 @@ pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
-// MAP-OVERLAY-1c (D1416): schema installed by migration 0096; the production caller
-// (admission close/drain, all-Channel census, boot resume) is a follow-up packet.
+// MAP-OVERLAY-1c (D1416): schema installed by migration 0096; node boot runs the reset
+// (`world_reset_run`). Test crates mount this module tree without the node caller.
 #[allow(
     dead_code,
-    reason = "reset orchestration is a follow-up packet (D1416)"
+    reason = "test crates mount durability without the node boot caller (D1416)"
 )]
 pub(crate) mod world_reset;
 #[allow(
     dead_code,
-    reason = "reset orchestration is a follow-up packet (D1416)"
+    reason = "test crates mount durability without the node boot caller (D1416)"
 )]
 pub(crate) mod world_reset_port;
+pub(crate) mod world_reset_run;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};

@@ -120,7 +120,6 @@ CREATE TRIGGER game_world_reset_scopes_no_truncate BEFORE TRUNCATE ON game_world
 REVOKE ALL ON game_world_reset_jobs,game_world_reset_scopes FROM PUBLIC,oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_control;
 GRANT SELECT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_runtime;
-GRANT UPDATE(revision) ON game_world_reset_jobs TO oteryn_game_runtime;
 
 ALTER TABLE game_item_decay_retire_reservations ADD COLUMN cause_kind TEXT NOT NULL DEFAULT 'CORPSE_DECAY' CHECK(cause_kind IN('CORPSE_DECAY','WORLD_RESET'));
 ALTER TABLE game_item_decay_retire_reservations ADD COLUMN reset_epoch NUMERIC(20,0), ADD COLUMN reset_parent_item UUID;
@@ -138,6 +137,16 @@ ALTER TABLE game_item_decay_retire_receipts ADD CHECK (
 );
 ALTER TABLE game_item_decay_retire_reservations ADD FOREIGN KEY(world_id,reset_epoch) REFERENCES game_world_reset_jobs(world_id,reset_epoch);
 ALTER TABLE game_item_decay_retire_receipts ADD FOREIGN KEY(world_id,reset_epoch) REFERENCES game_world_reset_jobs(world_id,reset_epoch);
+-- The job revision advances only as the effect of an inserted WORLD_RESET receipt, whose
+-- deferred proof guards roll the whole transaction back unless the retirement is exact.
+-- No runtime login holds UPDATE on the job row itself.
+CREATE FUNCTION game_world_reset_receipt_revision() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ UPDATE game_world_reset_jobs SET revision=revision+1 WHERE world_id=NEW.world_id AND reset_epoch=NEW.reset_epoch AND phase='RETIRING';
+ IF NOT FOUND THEN RAISE EXCEPTION 'WorldReset receipt requires its RETIRING job' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER game_world_reset_receipt_revision AFTER INSERT ON game_item_decay_retire_receipts FOR EACH ROW WHEN (NEW.cause_kind='WORLD_RESET') EXECUTE FUNCTION game_world_reset_receipt_revision();
 
 CREATE FUNCTION game_world_reset_cohort_current(w UUID,e NUMERIC,n UUID,r NUMERIC) RETURNS BOOLEAN
 LANGUAGE SQL SECURITY DEFINER AS $$
@@ -186,7 +195,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 DO $$ DECLARE f TEXT; BEGIN
- FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()'] LOOP
+ FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);

@@ -21,6 +21,47 @@ needs_content_regeneration: false
 merge_authority: CP_ONLY (builder never marks ready)
 ```
 
+## Completion and wiring — 2026-10-18 (D1436)
+
+- CI root cause: the reset PG cases returned `Err` when `OTERYN_TEST_POSTGRES_ADMIN_URL`
+  was absent, in the `cargo test --workspace` lane that has no PostgreSQL. They now follow
+  the repo convention (`configured_admin()` absent means no run) and execute in the
+  protected PostgreSQL lanes. Migration 0096 creates `oteryn_game_world_reset` (NOLOGIN)
+  idempotently with EXECUTE on `game_world_reset_activate`.
+- Codex P2: the runtime group no longer holds `UPDATE(revision)` on the job. A
+  `SECURITY DEFINER` receipt trigger advances the revision for each `WORLD_RESET` receipt
+  of the RETIRING job; runtime and control direct updates are refused (PG case).
+- Running node (step 1): `serve.rs` watches for a RETIRING job of its World every 5 s,
+  then requests `GameplayDrain`. The listener stops accepting and cancels entry work.
+  Each served session loses control with no wait and is released through its grace
+  lifecycle. Once all are released the node withdraws readiness, shuts down and exits
+  with `BOOT_READINESS_FAILED` (retryable, exit 17).
+- Boot (steps 3 and 4): `recover_world_reset` runs before content activation or any
+  Channel runtime. While the census says `NotCurrent` (operator Replace not yet done,
+  session not released) it waits, bounded by the assignment wait. Then
+  `run_world_reset` takes a fresh Spell lane per drained Channel and resumes any frozen
+  candidate. It retires every Ground item, one transaction per item, re-censuses and
+  activates epoch N+1 atomically (unknown commits retried with the same identity). It
+  logs `elapsed_ms` against `MAP01-RESET-RETIRE-MS` and raises `world_reset_alarm` over
+  budget. Content is then activated from the new issuance.
+- Integration case `reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates`
+  runs the real path through PG: a crash after one frozen candidate, Ground items, a real
+  HouseInterior placement, NewEpoch, and a second boot that does nothing.
+  Fixture measurement: 2 items retired in 317 ms.
+- Spell lane pin: `world_reset_phase` (holds a `SpellLanePermit`) deletes corpse entries, so
+  it is added to the reviewed key-33 inventory in `spell_lane_key33_pin.rs`.
+- Remaining fail-closed seams (not in this packet):
+  - The production login must be granted `oteryn_game_world_reset`. Until then
+    activation refuses with 42501 and the node stays not ready.
+  - The bundle-world House catalogue is Unknown, so a bundle World reset refuses
+    (HOUSE-RUNTIME owner).
+  - Only one Channel per node: a multi-Channel World waits as `NotCurrent`.
+  - The boot House source uses the active qualified room for both sides, so only a
+    same-server-digest target activates.
+  - A crash-left reconnect session in state 1 or 2 blocks the cohort until it is released.
+  - The control-owned reset publisher is not built.
+  - `MAP01-RESET-RETIRE-MS` (600,000 ms) needs a real-data measurement.
+
 ## Current authoring checkpoint — D1260/D1269/D1270/D1272/D1283
 
 D1269 preserves exactly one root Area and admits only unique Houses referenced
@@ -165,6 +206,13 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/tests/support/world_reset_postgres_cases.rs`
 - `docs/agents/evidence/MAP-OVERLAY-1c-*.md`
 - `docs/agents/tasks/MAP-OVERLAY-1c.md` (this record: status and notes only)
+- `apps/game-server/src/durability/world_reset_run.rs` (reset run, boot reads, `MAP01_RESET_RETIRE_MS`)
+- `apps/game-server/src/durability/mod.rs` (world reset module registration)
+- `apps/game-server/src/node/serve.rs` (boot recovery, reset watch and drain exit)
+- `apps/game-server/src/gameplay_transport/mod.rs` (`GameplayDrain`, `serve_gameplay_draining`)
+- `apps/game-server/migrations/0096_world_reset.sql`
+- `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (`MAP01-RESET-RETIRE-MS` row only)
+- `apps/game-server/tests/spell_lane_key33_pin.rs` (`world_reset_phase` pin row only)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
@@ -198,11 +246,11 @@ To compile on the branch the builder may add only the module registration lines 
 
 ## Acceptance criteria
 
-- [ ] A world reset retires exactly the overlay items the packet names; house interiors untouched.
-- [ ] Reset is idempotent and crash-safe (restart mid-reset completes).
-- [ ] Retire duration within MAP01-RESET-RETIRE-MS.
-- [ ] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
-- [ ] Durable state sufficient to resume after restart / session-generation change.
+- [x] A world reset retires exactly the overlay items the packet names; house interiors untouched.
+- [x] Reset is idempotent and crash-safe (restart mid-reset completes).
+- [x] Retire duration within MAP01-RESET-RETIRE-MS (measured per run; fixture value only, see below).
+- [x] Every concurrent transition serialized (named lock or deterministic order) and losing writer typed.
+- [x] Durable state sufficient to resume after restart / session-generation change.
 
 ## Validation commands
 

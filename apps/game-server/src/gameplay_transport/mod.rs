@@ -178,6 +178,7 @@ impl ConnectionObserver for () {
 /// connection budget (backpressure through the listen backlog). On shutdown the
 /// listener stops accepting and entry work is cancelled, while an admission
 /// already handed to the owning authority completes before this returns.
+#[cfg(test)]
 pub(crate) async fn serve_listener<A, I, O>(
     listener: &TcpListener,
     tls: &Arc<rustls::ServerConfig>,
@@ -191,6 +192,60 @@ pub(crate) async fn serve_listener<A, I, O>(
     I: ConnectionIdentifiers,
     O: ConnectionObserver,
 {
+    let never = CancellationToken::new();
+    serve_listener_draining(
+        listener,
+        tls,
+        limits,
+        authority,
+        identifiers,
+        observer,
+        shutdown,
+        &never,
+    )
+    .await;
+}
+
+/// The node's World reset drain (ADR-0021 §4.7 step 1). Requesting it closes admission at this
+/// listener: accepting stops and entry work is cancelled. Every served session then loses
+/// playable control at once and runs its whole loss and grace-release lifecycle, so its durable
+/// reconnect session ends. `completed` follows only once no connection or lifecycle remains.
+#[derive(Default)]
+pub struct GameplayDrain {
+    requested: CancellationToken,
+    completed: CancellationToken,
+}
+
+impl GameplayDrain {
+    pub fn request(&self) {
+        self.requested.cancel();
+    }
+    pub fn is_requested(&self) -> bool {
+        self.requested.is_cancelled()
+    }
+    pub async fn completed(&self) {
+        self.completed.cancelled().await;
+    }
+}
+
+/// [`serve_listener`] that also ends on `drain`. Unlike shutdown, a drain is evidence of lost
+/// playable control: each served session enters its loss lifecycle with no wait, and the
+/// lifecycles are not cancelled by the drain, so every session is released before this returns.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn serve_listener_draining<A, I, O>(
+    listener: &TcpListener,
+    tls: &Arc<rustls::ServerConfig>,
+    limits: ListenerLimits,
+    authority: &A,
+    identifiers: &I,
+    observer: &O,
+    shutdown: &CancellationToken,
+    drain: &CancellationToken,
+) where
+    A: FreshAdmissionAuthority,
+    I: ConnectionIdentifiers,
+    O: ConnectionObserver,
+{
     let units = Semaphore::new(limits.handshake_units);
     let mut connections: Vec<Pin<Box<dyn Future<Output = Option<LostControl>> + '_>>> = Vec::new();
     // Loss/grace lifecycles of ended admitted connections. They hold no socket
@@ -198,11 +253,15 @@ pub(crate) async fn serve_listener<A, I, O>(
     // connection budget; shutdown cancels them.
     let mut lifecycles: Vec<Pin<Box<dyn Future<Output = ()> + '_>>> = Vec::new();
     let mut stopping = pin!(shutdown.cancelled());
+    let mut draining = pin!(drain.cancelled());
     let mut stopped = false;
     // After an accept error (e.g. EMFILE) accepting pauses instead of spinning.
     let mut accept_pause: Option<Pin<Box<tokio::time::Sleep>>> = None;
     poll_fn(|context| {
-        if !stopped && stopping.as_mut().poll(context).is_ready() {
+        if !stopped
+            && (stopping.as_mut().poll(context).is_ready()
+                || draining.as_mut().poll(context).is_ready())
+        {
             stopped = true;
         }
         if let Some(pause) = accept_pause.as_mut()
@@ -221,6 +280,7 @@ pub(crate) async fn serve_listener<A, I, O>(
                     identifiers,
                     observer,
                     shutdown,
+                    drain,
                 ))),
                 Poll::Ready(Err(_)) => {
                     let mut pause = Box::pin(tokio::time::sleep(ACCEPT_ERROR_PAUSE));
@@ -264,6 +324,7 @@ async fn serve_accepted<A, I, O>(
     identifiers: &I,
     observer: &O,
     shutdown: &CancellationToken,
+    drain: &CancellationToken,
 ) -> Option<LostControl>
 where
     A: FreshAdmissionAuthority,
@@ -272,17 +333,16 @@ where
 {
     use connection::ConnectionEnd;
     // Entry work (unit wait, TLS, entry frame) is bounded by the deadline and
-    // cancelled by shutdown; nothing authoritative has started yet.
+    // cancelled by shutdown or a drain; nothing authoritative has started yet.
     let entry = async {
         let unit = units.acquire().await.ok()?;
         let mut stream = tcp_tls::accept_tls(stream, tls.clone()).await.ok()?;
         let frame = tcp_tls::read_frame(&mut stream).await.ok()?;
         Some((unit, stream, frame))
     };
-    let entry = first(
-        tokio::time::timeout(entry_deadline, entry),
-        shutdown.cancelled(),
-    )
+    let entry = first(tokio::time::timeout(entry_deadline, entry), async {
+        let _ = first(shutdown.cancelled(), drain.cancelled()).await;
+    })
     .await;
     let Some(Ok(Some((unit, mut stream, frame)))) = entry else {
         observer.ended(ConnectionEnd::TransportFailed);
@@ -297,12 +357,17 @@ where
         Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
         Err(end) => (end, false),
         Ok(admitted) => match first(
-            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+            first(
+                serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
+                drain.cancelled(),
+            ),
             shutdown.cancelled(),
         )
         .await
         {
-            Some(end) => (end, true),
+            Some(Some(end)) => (end, true),
+            // A World reset drain ends playable control now (ADR-0021 §4.7 step 1).
+            Some(None) => (ConnectionEnd::AdmittedThenControlLost(admitted), true),
             // A shutdown drain is not evidence of lost playable control.
             None => (ConnectionEnd::AdmittedThenDisconnected(admitted), false),
         },
@@ -521,6 +586,26 @@ pub async fn serve_gameplay(
     owners: GameplaySeamOwners<'_, '_, '_>,
     shutdown: &CancellationToken,
 ) -> Result<(), GameplayServeError> {
+    serve_gameplay_draining(
+        listener,
+        config,
+        owners,
+        shutdown,
+        &GameplayDrain::default(),
+    )
+    .await
+}
+
+/// [`serve_gameplay`] with the node's World reset drain: once it is requested and every
+/// session is released, the listener is done and `drain` completes; the other cadences keep
+/// running until `shutdown`.
+pub async fn serve_gameplay_draining(
+    listener: &TcpListener,
+    config: GameplayListenerConfig,
+    owners: GameplaySeamOwners<'_, '_, '_>,
+    shutdown: &CancellationToken,
+    drain: &GameplayDrain,
+) -> Result<(), GameplayServeError> {
     let limits = ListenerLimits::new(
         config.max_connections,
         config.max_handshake_units,
@@ -608,15 +693,22 @@ pub async fn serve_gameplay(
         }
     };
     let serving = first(
-        serve_listener(
-            listener,
-            &tls,
-            limits,
-            &authority,
-            &SecureIdentifiers,
-            &(),
-            shutdown,
-        ),
+        async {
+            serve_listener_draining(
+                listener,
+                &tls,
+                limits,
+                &authority,
+                &SecureIdentifiers,
+                &(),
+                shutdown,
+                &drain.requested,
+            )
+            .await;
+            if drain.is_requested() && !shutdown.is_cancelled() {
+                drain.completed.cancel();
+            }
+        },
         quest_retries,
     );
     let mut serving = pin!(serving);
@@ -6083,6 +6175,111 @@ mod tests {
                 "a pending grace lifecycle must not hold the only slot"
             );
             assert_eq!(authority.losses.load(Ordering::SeqCst), 2);
+            Ok(())
+        })
+    }
+
+    /// Records each loss wait; every grace expiry releases the session.
+    struct DrainAuthority {
+        inner: GatedAuthority,
+        waits: Mutex<Vec<Duration>>,
+        released: AtomicUsize,
+    }
+
+    impl FreshAdmissionAuthority for DrainAuthority {
+        async fn admit(
+            &self,
+            attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            self.inner.admit(attempt).await
+        }
+        async fn lose_control(&self, _: AdmittedSession, wait: Duration) -> ControlLossResult {
+            self.waits.lock().expect("waits").push(wait);
+            ControlLossResult::Recorded
+        }
+        async fn expire_control_loss(&self, _: AdmittedSession) -> GraceExpiryResult {
+            self.released.fetch_add(1, Ordering::SeqCst);
+            GraceExpiryResult::Released
+        }
+    }
+
+    /// MAP-OVERLAY-1c (ADR-0021 §4.7 step 1): a World reset drain closes admission and ends a
+    /// still-connected session's playable control at once; its loss and grace release run to
+    /// the end, and the listener then finishes without any shutdown.
+    #[test]
+    fn a_world_reset_drain_releases_connected_sessions_and_ends_without_shutdown()
+    -> Result<(), Box<dyn Error>> {
+        runtime()?.block_on(async {
+            let material = material()?;
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let limits = ListenerLimits::new(2, 2, Duration::from_millis(600)).ok_or("limits")?;
+            let authority = DrainAuthority {
+                inner: GatedAuthority::new(true),
+                waits: Mutex::default(),
+                released: AtomicUsize::new(0),
+            };
+            let ends = Ends::default();
+            let shutdown = CancellationToken::new();
+            let drain = CancellationToken::new();
+            let done = std::sync::atomic::AtomicBool::new(false);
+            let serve = async {
+                serve_listener_draining(
+                    &listener,
+                    &material.server,
+                    limits,
+                    &authority,
+                    &SecureIdentifiers,
+                    &ends,
+                    &shutdown,
+                    &drain,
+                )
+                .await;
+                done.store(true, Ordering::SeqCst);
+            };
+            let check = async {
+                // The client stays connected: only the drain can end its control.
+                let mut stream = material
+                    .client
+                    .connect(
+                        ServerName::try_from("localhost")?,
+                        TcpStream::connect(address).await?,
+                    )
+                    .await?;
+                stream.write_all(&bootstrap_frame()).await?;
+                let mut prefix = [0u8; 4];
+                stream.read_exact(&mut prefix).await?;
+                settle(100).await;
+                drain.cancel();
+                let mut finished = false;
+                for _ in 0..80 {
+                    if done.load(Ordering::SeqCst) {
+                        finished = true;
+                        break;
+                    }
+                    settle(50).await;
+                }
+                // A connection after the drain is never admitted.
+                let late = tokio::time::timeout(
+                    Duration::from_millis(500),
+                    admit_client(material.client.clone(), address),
+                )
+                .await;
+                drop(stream);
+                Ok::<_, Box<dyn Error + Send + Sync>>((finished, !matches!(late, Ok(Ok(_)))))
+            };
+            let ((), checked) = join(serve, check).await;
+            let (finished, late_refused) = checked.map_err(|error| error.to_string())?;
+            assert!(finished, "the drain must end the listener");
+            assert!(late_refused);
+            assert!(!shutdown.is_cancelled());
+            assert_eq!(*authority.waits.lock().expect("waits"), [Duration::ZERO]);
+            assert_eq!(authority.released.load(Ordering::SeqCst), 1);
+            assert_eq!(authority.inner.calls.load(Ordering::SeqCst), 1);
+            assert!(matches!(
+                ends.snapshot().as_slice(),
+                [ConnectionEnd::AdmittedThenControlLost(_)]
+            ));
             Ok(())
         })
     }

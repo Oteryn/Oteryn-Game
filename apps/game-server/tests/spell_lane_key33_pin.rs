@@ -29,7 +29,7 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 ];
 
 /// Production Rust functions that take the key-33 lock or write a key-33 table.
-const RUST_KEY33_SITES: [(&str, &str); 12] = [
+const RUST_KEY33_SITES: [(&str, &str); 13] = [
     ("src/durability/item_decay_retire.rs", "apply_retire"),
     (
         "src/durability/item_mint.rs",
@@ -63,6 +63,7 @@ const RUST_KEY33_SITES: [(&str, &str); 12] = [
         "src/durability/spell_item_transaction.rs",
         "assert_spell_item_authority_with_recovery",
     ),
+    ("src/durability/world_reset.rs", "world_reset_phase"),
 ];
 
 /// Lane-derived proofs: a permit or window directly, or a scope/item authority that is only

@@ -558,11 +558,10 @@ impl DurabilityRoot {
                 }
             }
 
-            let job = sqlx::query("SELECT reset_epoch::text,revision::text,active_map_revision FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE")
+            let job = sqlx::query("SELECT reset_epoch::text,active_map_revision FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND phase='RETIRING' FOR UPDATE")
                 .bind(world.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
             let Some(job) = job else { return Ok(Err(WorldResetError::NotCurrent)); };
             let epoch: String = job.try_get(0)?;
-            let revision: String = job.try_get(1)?;
             // Stable native relations are retained through COMMIT; no channel can join the
             // World or attach a player between the cohort check and retirement.
             sqlx::query("LOCK TABLE game_runtime_scope_assignments IN SHARE MODE").execute(&mut **tx).await?;
@@ -575,7 +574,7 @@ impl DurabilityRoot {
                 .load_locked(&mut tx, &crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(crate::foundation::RuntimeScopeRefV1::channel(world,channel))).await?;
             let Some(guard) = guard else { return Ok(Err(WorldResetError::NotCurrent)); };
             let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Runtime{ownership_generation, ready:false, map_revision,..}=guard.state else {return Ok(Err(WorldResetError::NotCurrent));};
-            if map_revision != job.try_get::<String,_>(2)? { return Ok(Err(WorldResetError::NotCurrent)); }
+            if map_revision != job.try_get::<String,_>(1)? { return Ok(Err(WorldResetError::NotCurrent)); }
             let generation = ownership_generation.to_string();
             let local:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_runtime_scope_assignments WHERE scope_kind=1 AND world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND state=1 AND ownership_generation=$3::text::numeric AND holder_node_id=encode($4,'hex')::uuid AND holder_registration_revision=$5::text::numeric)")
                 .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&generation).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
@@ -641,8 +640,6 @@ impl DurabilityRoot {
                 .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&generation).bind(transaction.as_slice()).bind(event.as_slice()).bind(quantity).bind(&ordinal).bind(at).bind(hash.as_slice()).bind(&epoch).bind(parent.as_slice()).execute(&mut **tx).await?;
             sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$7,$8,$9,1)")
                 .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(item.as_slice()).bind(at).bind(at.checked_add(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).ok_or(DurabilityError::InvalidStoredState)?).bind(envelope).bind(hash.as_slice()).execute(&mut **tx).await?;
-            let changed=sqlx::query("UPDATE game_world_reset_jobs SET revision=revision+1 WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=$2::text::numeric AND revision=$3::text::numeric AND phase='RETIRING'").bind(world.as_bytes().as_slice()).bind(&epoch).bind(revision).execute(&mut **tx).await?;
-            if changed.rows_affected()!=1{return Err(DurabilityError::InvalidStoredState);}
             tx.commit(deadline).await?;
             Ok(Ok(PhaseResult::Committed(candidate.retirement)))
         })).await?
@@ -669,8 +666,8 @@ impl DurabilityRoot {
 
 /// Source of migration 0096 (D1416); `migration_0096_is_exactly_the_schema_source` pins the
 /// installed bytes to this output. It extends exact native guard bodies, never disables a
-/// trigger or replaces their existing positive/refusal clauses. The control-owned reset
-/// publisher and orchestration remain a follow-up packet.
+/// trigger or replaces their existing positive/refusal clauses. Node boot runs the reset
+/// (`world_reset_run`); the control-owned reset publisher remains a follow-up packet.
 pub fn candidate_schema_sql() -> Result<String, &'static str> {
     let mut sql = RESET_EPOCH_SCHEMA.to_owned();
     sql.push_str(RESET_SCHEMA);
@@ -729,7 +726,7 @@ pub fn candidate_schema_sql() -> Result<String, &'static str> {
 }
 
 /// D1189a/0096: one native issuance body, two separately authorized entry points.
-/// The reset entry point has no production caller yet (follow-up packet).
+/// The reset entry point is called only by `game_world_reset_activate` (node boot reset run).
 /// Preserve the native replay/CAS/INSERT bytes and the public op4 check exactly.
 fn candidate_reset_issuance_sql() -> Result<String, &'static str> {
     const SOURCE: &str = include_str!("../../migrations/0008_native_entry_content_activation.sql");
@@ -846,7 +843,6 @@ CREATE TRIGGER game_world_reset_scopes_no_truncate BEFORE TRUNCATE ON game_world
 REVOKE ALL ON game_world_reset_jobs,game_world_reset_scopes FROM PUBLIC,oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_control;
 GRANT SELECT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_runtime;
-GRANT UPDATE(revision) ON game_world_reset_jobs TO oteryn_game_runtime;
 
 ALTER TABLE game_item_decay_retire_reservations ADD COLUMN cause_kind TEXT NOT NULL DEFAULT 'CORPSE_DECAY' CHECK(cause_kind IN('CORPSE_DECAY','WORLD_RESET'));
 ALTER TABLE game_item_decay_retire_reservations ADD COLUMN reset_epoch NUMERIC(20,0), ADD COLUMN reset_parent_item UUID;
@@ -864,6 +860,16 @@ ALTER TABLE game_item_decay_retire_receipts ADD CHECK (
 );
 ALTER TABLE game_item_decay_retire_reservations ADD FOREIGN KEY(world_id,reset_epoch) REFERENCES game_world_reset_jobs(world_id,reset_epoch);
 ALTER TABLE game_item_decay_retire_receipts ADD FOREIGN KEY(world_id,reset_epoch) REFERENCES game_world_reset_jobs(world_id,reset_epoch);
+-- The job revision advances only as the effect of an inserted WORLD_RESET receipt, whose
+-- deferred proof guards roll the whole transaction back unless the retirement is exact.
+-- No runtime login holds UPDATE on the job row itself.
+CREATE FUNCTION game_world_reset_receipt_revision() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ UPDATE game_world_reset_jobs SET revision=revision+1 WHERE world_id=NEW.world_id AND reset_epoch=NEW.reset_epoch AND phase='RETIRING';
+ IF NOT FOUND THEN RAISE EXCEPTION 'WorldReset receipt requires its RETIRING job' USING ERRCODE='23514'; END IF;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER game_world_reset_receipt_revision AFTER INSERT ON game_item_decay_retire_receipts FOR EACH ROW WHEN (NEW.cause_kind='WORLD_RESET') EXECUTE FUNCTION game_world_reset_receipt_revision();
 
 CREATE FUNCTION game_world_reset_cohort_current(w UUID,e NUMERIC,n UUID,r NUMERIC) RETURNS BOOLEAN
 LANGUAGE SQL SECURITY DEFINER AS $$
@@ -912,7 +918,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 DO $$ DECLARE f TEXT; BEGIN
- FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()'] LOOP
+ FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);

@@ -3,6 +3,9 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use production_server::admission_evidence;
+#[allow(dead_code)] // the durability test modules mounted here share the native harness
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/character_bootstrap_intent.rs"]
 pub mod character_bootstrap_intent;
