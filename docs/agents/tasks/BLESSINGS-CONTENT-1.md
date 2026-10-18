@@ -13,13 +13,14 @@ owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
-  - content/services/blessings/evidence-00000-00009.json
-  - content/services/blessings/index.json
   - rulesets/character/blessings/reference-evidence.json
   - rulesets/character/blessings/index.json
   - docs/reference/content-prep/blessings-content-1/sources.json
   - docs/reference/content-prep/blessings-content-1/README.md
   - docs/agents/tasks/BLESSINGS-CONTENT-1.md
+  - docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/evidence-00000-00009.json
+  - docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/index.json
+  - docs/reference/content-prep/blessings-content-1/service-apply-plan.json
 ```
 
 ## Outcome
@@ -55,3 +56,7 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Service placement constraint
+
+Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.
