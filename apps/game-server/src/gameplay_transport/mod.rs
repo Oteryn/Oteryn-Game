@@ -7056,3 +7056,5 @@ pub(crate) use spell_presentation_publisher::{
 pub(crate) use spell_presentations::SpellPresentationOwner;
 
 mod spell_presentations;
+
+pub mod house_intent;

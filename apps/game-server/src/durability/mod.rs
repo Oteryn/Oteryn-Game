@@ -3437,3 +3437,5 @@ mod terminal_replacement_foundation_red_tests {
 }
 
 pub(crate) mod house_spell_acl;
+
+pub(crate) mod house_acl;
