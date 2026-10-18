@@ -853,3 +853,7 @@ mod creature_source_items;
 // D1287: selection-source component tests, without a production runtime caller.
 #[cfg(test)]
 mod world_change;
+
+pub mod house_bed {
+    pub mod sleeper;
+}
