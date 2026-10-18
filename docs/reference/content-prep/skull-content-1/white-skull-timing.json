@@ -1,0 +1,40 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SKULL-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "coordinator_target": {
+    "path": "rulesets/pvp/skulls/reference-evidence.json",
+    "record_key": "skull.white",
+    "fact": "duration_seconds",
+    "index_path": "rulesets/pvp/skulls/index.json",
+    "hold_reason": "Index overlaps open PR2203; supplemental source qualification does not mutate the claimed index or its payload."
+  },
+  "records": [
+    {
+      "key": "skull.white.timing_supplement",
+      "facts": {
+        "duration_seconds": {
+          "value": {
+            "after_nonlethal_offense": 60,
+            "after_player_kill_minimum": 900,
+            "further_combat_refresh_seconds": 60,
+            "expires_when": "linked_logout_block_expires"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3 logout/PZ blocks +5.3.12 white skull"
+            }
+          ],
+          "note": "Combine two explicit official manual statements: white skull follows the logout block; ordinary block refreshes for60seconds, player killers are blocked for15minutes and further combat extends it. Conditional reference policy, not a fixed timer for every situation."
+        }
+      }
+    }
+  ]
+}

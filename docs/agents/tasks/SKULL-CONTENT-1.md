@@ -60,3 +60,13 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 White/red/black/orange behavior, official day/week/month windows, durations, revenge and black-skull respawn penalties are captured. Official 3–5/5–9/10–19 red and 6+/10+/20+ black kill counts are labeled rule-of-thumb guidance, not deterministic thresholds. Exact unjustified-point allocation, white duration and clock boundaries are not invented.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Full outstanding-field source sweep —2026-10-18
+
+skull.white/duration_seconds.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+
+## Index overlap preserved
+
+PR#2203 currently claims `rulesets/pvp/skulls/index.json`. The source successor therefore preserves both ruleset/index bytes from its frozen predecessor. The new[white-skull timing supplement](white-skull-timing.json) qualifies the conditional60/900-second rule for coordinator application. The old ruleset placeholder remains counted as held until integration; it is no longer an external-source research gap. No unqualified category or timer is invented.

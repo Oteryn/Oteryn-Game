@@ -7,11 +7,13 @@
   "coverage": "White/red/black/orange behavior, official day/week/month windows, durations, revenge and black-skull respawn penalties are captured. Official 3–5/5–9/10–19 red and 6+/10+/20+ black kill counts are labeled rule-of-thumb guidance, not deterministic thresholds. Exact unjustified-point allocation, white duration and clock boundaries are not invented.",
   "source_registry": "sources.json",
   "record_counts": {
-    "rulesets/pvp/skulls/reference-evidence.json": 5
+    "rulesets/pvp/skulls/reference-evidence.json": 5,
+    "docs/reference/content-prep/skull-content-1/white-skull-timing.json": 1
   },
   "evidence_field_counts": {
     "PROVEN": 13,
-    "UNKNOWN": 4
+    "UNKNOWN": 4,
+    "DERIVED": 1
   },
   "unresolved_fields": [
     {
@@ -19,7 +21,9 @@
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
-      "limitation": "Official notes do not give a numeric white-skull timer."
+      "limitation": "Official notes do not give a numeric white-skull timer.",
+      "qualified_source_supplement": "docs/reference/content-prep/skull-content-1/white-skull-timing.json",
+      "coordinator_application_pending": true
     },
     {
       "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
@@ -43,5 +47,21 @@
       "limitation": "Rolling-vs-calendar accounting and exact reset/server-save boundaries require official or controlled evidence."
     }
   ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "Conditional60/900-second white-skull logout policy qualified in an independent documentation supplement; claimed ruleset/index unchanged."
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable.",
+    "coordinator_only_application": {
+      "qualified_source": "docs/reference/content-prep/skull-content-1/white-skull-timing.json",
+      "unchanged_conflicting_paths": [
+        "rulesets/pvp/skulls/reference-evidence.json",
+        "rulesets/pvp/skulls/index.json"
+      ],
+      "overlap_pr": 2203
+    }
+  }
 }
