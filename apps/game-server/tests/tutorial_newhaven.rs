@@ -9,7 +9,9 @@ use oteryn_game_server::domain::tutorial::{
     TutorialCell, TutorialEffect, TutorialEvent, TutorialGate, TutorialProgress, TutorialStep,
     apply,
 };
-use std::path::PathBuf;
+use oteryn_world_bundle::{bundle, sector};
+use oteryn_world_bundle_compiler::b3;
+use std::{collections::HashSet, path::PathBuf};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -50,6 +52,173 @@ fn area(footprint: &serde_json::Value) -> Result<TutorialArea, Box<dyn std::erro
     })
 }
 
+fn newhaven() -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let shard = content("world/areas/islands/islands-00000-00059.json")?;
+    shard
+        .get("records")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("missing records")?
+        .iter()
+        .filter_map(|record| record.get("declaration"))
+        .find(|declaration| {
+            declaration.pointer("/identity/key")
+                == Some(&serde_json::json!("oteryn:area.island.newhaven"))
+        })
+        .cloned()
+        .ok_or_else(|| "missing oteryn:area.island.newhaven".into())
+}
+
+/// The island converter classifies the first ground item as land unless it is water or lava;
+/// absent tiles are void. This includes every walkable land tile, even behind blocking items.
+fn committed_land(
+    bounds: TutorialArea,
+) -> Result<HashSet<TutorialCell>, Box<dyn std::error::Error>> {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let classes: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
+        root.join("tools/content-schema/world-authoring/island-ground-classes.json"),
+    )?)?;
+    let mut non_land = HashSet::new();
+    for kind in ["water", "lava"] {
+        for ranges in classes[kind]
+            .as_object()
+            .ok_or("missing ground classes")?
+            .values()
+        {
+            for range in ranges.as_str().ok_or("missing ground range")?.split(',') {
+                let (low, high) = range.split_once('-').unwrap_or((range, range));
+                non_land.extend(low.parse::<i64>()?..=high.parse::<i64>()?);
+            }
+        }
+    }
+    let index = content("world/placements/index.json")?;
+    let palette = index["palette"].as_array().ok_or("missing palette")?;
+    let mut land = HashSet::new();
+    let mut budget = sector::Budget {
+        tiles: 4 * 256 * 256,
+        entries: 4 * 256 * 256 * 256,
+    };
+    // Include the boundary neighbours, so growth beyond the recorded footprint fails below.
+    for rx in (bounds.min_x - 1) / 256..=(bounds.max_x + 1) / 256 {
+        for ry in (bounds.min_y - 1) / 256..=(bounds.max_y + 1) / 256 {
+            let path = root.join(format!(
+                "content/world/placements/region-z{:02}-x{rx:03}-y{ry:03}.b3",
+                bounds.floor
+            ));
+            let region =
+                b3::decode_region(&std::fs::read(path)?, bundle::TILE_LIMITS, &mut budget)?;
+            assert_eq!(i16::from(region.z), bounds.floor);
+            for (_, _, tiles) in region.sectors {
+                for tile in tiles {
+                    let is_land = match tile.items.first() {
+                        Some(ground) => !non_land.contains(&int(
+                            palette
+                                .get(usize::try_from(ground.palette)?)
+                                .ok_or("missing ground")?,
+                            "source_item_id",
+                        )?),
+                        None => true,
+                    };
+                    if is_land {
+                        land.insert(TutorialCell::new(
+                            tile.x.into(),
+                            tile.y.into(),
+                            bounds.floor,
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    Ok(land)
+}
+
+#[test]
+fn a_different_land_component_inside_the_newhaven_bounds_is_inert() {
+    let other = TutorialCell::new(32604, 32406, 7);
+    assert!(NEWHAVEN_ISLAND.contains(other));
+    assert_eq!(TutorialGate::for_start(other), TutorialGate::Inert);
+}
+
+/// Independently flood-fill the committed B3 ground from each content anchor. Check every
+/// component tile and the entire bounding box, including other land components, water and void.
+#[test]
+fn the_gate_matches_exactly_the_two_committed_newhaven_land_components() -> TestResult {
+    let declaration = newhaven()?;
+    let land = committed_land(NEWHAVEN_ISLAND)?;
+    let mut newhaven_land = HashSet::new();
+    let mut components = vec![&declaration];
+    components.extend(
+        declaration["additional_components"]
+            .as_array()
+            .ok_or("missing components")?,
+    );
+    assert_eq!(components.len(), 2);
+    for component in components {
+        let anchor = &component["anchor"];
+        let start = TutorialCell::new(
+            i32::try_from(int(anchor, "x")?)?,
+            i32::try_from(int(anchor, "y")?)?,
+            i16::try_from(int(anchor, "floor")?)?,
+        );
+        assert!(land.contains(&start), "{start:?} must anchor land");
+        let footprint = &component["footprint"];
+        let bounds = area(footprint)?;
+        let mut found = HashSet::from([start]);
+        let mut pending = vec![start];
+        while let Some(cell) = pending.pop() {
+            assert!(
+                bounds.contains(cell),
+                "component grew beyond {bounds:?}: {cell:?}"
+            );
+            assert_eq!(
+                TutorialGate::for_start(cell),
+                TutorialGate::Newhaven,
+                "{cell:?}"
+            );
+            for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                let neighbour = TutorialCell::new(cell.x + dx, cell.y + dy, cell.floor);
+                if land.contains(&neighbour) && found.insert(neighbour) {
+                    pending.push(neighbour);
+                }
+            }
+        }
+        assert_eq!(found.len(), usize::try_from(int(footprint, "tile_count")?)?);
+        assert!(newhaven_land.is_disjoint(&found));
+        newhaven_land.extend(found);
+    }
+    let other = TutorialCell::new(32604, 32406, 7);
+    assert!(land.contains(&other));
+    assert!(!newhaven_land.contains(&other));
+    let mut other_land_count = 0;
+    for y in NEWHAVEN_ISLAND.min_y..=NEWHAVEN_ISLAND.max_y {
+        for x in NEWHAVEN_ISLAND.min_x..=NEWHAVEN_ISLAND.max_x {
+            let cell = TutorialCell::new(x, y, NEWHAVEN_ISLAND.floor);
+            let expected = if newhaven_land.contains(&cell) {
+                TutorialGate::Newhaven
+            } else {
+                other_land_count += usize::from(land.contains(&cell));
+                TutorialGate::Inert
+            };
+            assert_eq!(TutorialGate::for_start(cell), expected, "{cell:?}");
+        }
+    }
+    assert!(other_land_count > 0, "must exercise other land components");
+    for cell in [
+        ISLET_TEMPLE,
+        ISLET_HOLE,
+        ISLET_FORCEFIELD,
+        ISLAND_ARRIVAL,
+        HUNTING_TILES[0],
+        HUNTING_TILES[1],
+    ] {
+        assert!(
+            newhaven_land.contains(&cell),
+            "scripted cell {cell:?} must be on Newhaven"
+        );
+    }
+    Ok(())
+}
+
 /// The World's current start: the StartThais pin `entry_start` (native floor).
 fn current_start() -> Result<TutorialCell, Box<dyn std::error::Error>> {
     let pin = content("world/pins/oteryn.json")?;
@@ -76,23 +245,11 @@ fn step_in(progress: Option<TutorialProgress>, to: TutorialCell) -> TutorialEffe
 
 type TutorialEffectAndProgress = (Option<TutorialEffect>, Option<TutorialProgress>);
 
-/// The gate's island is the content record `oteryn:area.island.newhaven`: its footprint and its
-/// additional component (the islet), and every scripted cell is on one of them.
+/// The documented bounds match the content record `oteryn:area.island.newhaven`: its footprint
+/// and its additional component (the islet), and every scripted cell is inside the bounds.
 #[test]
 fn the_gate_island_is_the_newhaven_content_record() -> TestResult {
-    let shard = content("world/areas/islands/islands-00000-00059.json")?;
-    let records = shard
-        .get("records")
-        .and_then(serde_json::Value::as_array)
-        .ok_or("missing records")?;
-    let declaration = records
-        .iter()
-        .filter_map(|record| record.get("declaration"))
-        .find(|declaration| {
-            declaration.pointer("/identity/key")
-                == Some(&serde_json::json!("oteryn:area.island.newhaven"))
-        })
-        .ok_or("missing oteryn:area.island.newhaven")?;
+    let declaration = newhaven()?;
     let footprint = declaration.get("footprint").ok_or("missing footprint")?;
     assert_eq!(
         footprint.get("coordinate_frame"),
