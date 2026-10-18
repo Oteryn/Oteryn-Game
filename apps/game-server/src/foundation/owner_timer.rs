@@ -54,6 +54,7 @@
 use super::{
     ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeOwnershipGeneration, ScopeRuntimeFence,
 };
+use std::collections::BinaryHeap;
 
 /// Process-local monotonic microsecond instant (FND-03 §8.2). It is never a durable or
 /// portable timestamp and is valid only inside the owning process incarnation.
@@ -394,22 +395,41 @@ where
         }
         self.entries
             .retain(|entry| entry.target.is_none_or(&mut target_is_current));
-        let mut due = self
-            .entries
-            .iter()
-            .filter(|entry| {
-                entry.due <= now
-                    && self.policy_for_family(entry.family).catch_up == CatchUpPolicy::DeadlineState
-            })
-            .collect::<Vec<_>>();
-        due.sort_by_key(|entry| (entry.due, entry.scheduling_stamp.ordinal(), entry.sequence));
-        due.truncate(maximum);
+        if maximum == 0 {
+            return Vec::new();
+        }
+        // Keep only the earliest window while scanning the backlog. The entry index also
+        // preserves stable ordering if the scheduling sequence has saturated.
+        let mut due = BinaryHeap::with_capacity(maximum.min(self.entries.len()));
+        for (index, entry) in self.entries.iter().enumerate() {
+            if entry.due > now
+                || self.policy_for_family(entry.family).catch_up != CatchUpPolicy::DeadlineState
+            {
+                continue;
+            }
+            let key = (
+                entry.due,
+                entry.scheduling_stamp.ordinal(),
+                entry.sequence,
+                index,
+            );
+            if due.len() < maximum {
+                due.push(key);
+            } else if due.peek().is_some_and(|latest| key < *latest) {
+                let _ = due.pop();
+                due.push(key);
+            }
+        }
+        let due = due.into_sorted_vec();
         due.into_iter()
-            .map(|entry| FiredTimer {
-                family: entry.family,
-                occurrence: entry.occurrence,
-                target: entry.target,
-                due: entry.due,
+            .map(|(_, _, _, index)| {
+                let entry = &self.entries[index];
+                FiredTimer {
+                    family: entry.family,
+                    occurrence: entry.occurrence,
+                    target: entry.target,
+                    due: entry.due,
+                }
             })
             .collect()
     }
@@ -1012,6 +1032,72 @@ mod tests {
 
         let clock = VirtualOwnerClock::new(due);
         assert!(lane.drain_due(&clock, &owner_fence, |_| true).is_empty());
+    }
+
+    #[test]
+    fn bounded_deadline_inputs_equal_full_sort_with_mixed_ties() {
+        const COUNT: usize = 5_000;
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        struct DeadlineFamily;
+        impl TimerFamily for DeadlineFamily {
+            fn registered_maximum(self) -> usize {
+                COUNT
+            }
+        }
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut owner = fence(scope, generation);
+        let stamps = (0..7)
+            .map(|_| issue_stamp(&mut owner, generation))
+            .collect::<Vec<_>>();
+        let mut lane = OwnerTimerLane::for_generation(
+            scope,
+            generation,
+            [(
+                DeadlineFamily,
+                FamilyPolicy {
+                    max_pending: COUNT,
+                    catch_up: CatchUpPolicy::DeadlineState,
+                },
+            )],
+        )
+        .expect("test deadline family");
+        let mut expected = Vec::new();
+        for index in 0..COUNT {
+            let due = SemanticTimeMicros::from_micros(
+                u64::try_from((index * 17) % 13).expect("small deadline"),
+            );
+            let stamp = stamps[(index * 3) % stamps.len()];
+            let sequence = u64::try_from(index).expect("small sequence");
+            let occurrence = u64::try_from(COUNT - index).expect("small occurrence");
+            lane.schedule(&owner, stamp, DeadlineFamily, occurrence, None, due)
+                .expect("schedule deadline");
+            expected.push(((due, stamp.ordinal(), sequence), occurrence));
+        }
+        expected.sort_by_key(|(key, _)| *key);
+        let now = SemanticTimeMicros::from_micros(12);
+        for maximum in [0, 1, 37, 113, COUNT, COUNT + 1] {
+            let actual = lane.due_deadline_inputs(now, &owner, maximum, |_| true);
+            assert!(actual.len() <= maximum);
+            assert_eq!(actual.len(), maximum.min(COUNT));
+            assert_eq!(
+                actual
+                    .iter()
+                    .map(|timer| (timer.due, timer.occurrence))
+                    .collect::<Vec<_>>(),
+                expected
+                    .iter()
+                    .take(maximum)
+                    .map(|((due, _, _), occurrence)| (*due, *occurrence))
+                    .collect::<Vec<_>>(),
+                "earliest deadlines for maximum {maximum}",
+            );
+            assert_eq!(
+                lane.pending_len(),
+                COUNT,
+                "selection retains all live timers"
+            );
+        }
     }
 
     #[test]

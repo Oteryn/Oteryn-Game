@@ -141,21 +141,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // CREATURE-AI-1 §2.1: every qualified monster is admitted to the think table, which
             // decides its target; the swing below only swings at that target. A monster already
             // admitted is not qualified again.
-            for (actor, ..) in &monsters {
-                if melee_owner.creature_ai.state(*actor).is_some() {
-                    continue;
-                }
-                if qualified_melee(&runtime, content, *actor).is_none() {
-                    continue;
-                }
-                let _ = admit_native_creature_ai(
-                    &runtime,
-                    &mut melee_owner.creature_ai,
-                    content,
-                    *actor,
-                    now.get(),
-                );
-            }
+            admit_native_creature_census(
+                &runtime,
+                &mut melee_owner.creature_ai,
+                content,
+                monsters.iter().map(|(actor, ..)| *actor),
+                now.get(),
+            );
             // An idle creature that died or despawned has no due think to remove it.
             melee_owner.creature_ai.forget_dead(&runtime);
         }
@@ -554,6 +546,21 @@ fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
         cursor % len,
         len.min(crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW),
     )
+}
+
+fn admit_native_creature_census(
+    runtime: &ChannelRuntimeV1,
+    ai: &mut CreatureAiTable,
+    content: &crate::content::native_gameplay::NativeGameplayState,
+    actors: impl IntoIterator<Item = ExactActorRef>,
+    now_us: u64,
+) {
+    for actor in actors {
+        if ai.state(actor).is_some() {
+            continue;
+        }
+        let _ = admit_native_creature_ai(runtime, ai, content, actor, now_us);
+    }
 }
 
 /// Admit into the one native think table. Melee still belongs to the existing swing owner;
@@ -2826,6 +2833,98 @@ mod tests {
         );
         assert!(states.monster_melee.creature_ai.is_empty());
         assert_eq!(states.monster_melee.creature_ai.earliest_due(), None);
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn native_census_admits_summoning_creature_without_melee_and_never_swings() {
+        let mut fixture = current_owner_summon_fixture(8, true);
+        let parent = fixture.proposal.occurrence.actor;
+        let target = fixture.proposal.target_with_path;
+        fixture
+            .runtime
+            .install_creature_policy(parent, &fixture.parent.key)
+            .expect("source parent policy");
+        let record = current_native_creature_record(&fixture.runtime, &fixture.content, parent)
+            .expect("source-qualified native creature");
+        assert!(record.monster_melee.is_none());
+        assert!(fixture.content.summon_catalog(&fixture.parent).is_some());
+        let target_health = fixture.runtime.live_creature_health(target);
+        let mut states = ChannelSpellStates::default();
+        admit_native_creature_census(
+            &fixture.runtime,
+            &mut states.monster_melee.creature_ai,
+            &fixture.content,
+            [parent],
+            17,
+        );
+        let state = states
+            .monster_melee
+            .creature_ai
+            .state(parent)
+            .expect("non-melee creature enters the think table");
+        assert!(state.profile().behavior().movement.can_walk);
+        assert!(state.profile().behavior().summons.is_some());
+        assert!(
+            states
+                .monster_melee
+                .creature_ai
+                .native_movement(parent)
+                .is_some()
+        );
+        let candidates = [TargetCandidate {
+            actor: target,
+            position: fixture
+                .runtime
+                .read_actor_position(target)
+                .expect("target")
+                .position(),
+            eligible: true,
+            invisible: false,
+            health: 20,
+            damage: 0,
+        }];
+        let root = GameplayDecisionRoot::from_bytes(fixture.content.source_digest());
+        let (reports, _) = run_native_monster_thinks(
+            &mut fixture.runtime,
+            &mut states.monster_melee.creature_ai,
+            &mut states.native_summons,
+            &fixture.content,
+            17,
+            &root,
+            &fixture.proposal.revisions,
+            &candidates,
+            |_| false,
+            Some(&mut CurrentOwnerSummonMap),
+        )
+        .expect("one native think");
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].1.target, Some(target));
+        assert_eq!(reports[0].1.refusal, None);
+        assert_eq!(reports[0].1.summon_proposals.len(), 1);
+        assert!(reports[0].1.proposals.is_empty());
+        assert!(
+            qualified_melee(&fixture.runtime, &fixture.content, parent).is_none(),
+            "the swing path rejects a creature without a melee profile"
+        );
+        assert_eq!(fixture.runtime.live_creature_health(target), target_health);
+
+        let due = states.monster_melee.creature_ai.due(parent);
+        // A later census must preserve this actor's existing schedule and target.
+        admit_native_creature_census(
+            &fixture.runtime,
+            &mut states.monster_melee.creature_ai,
+            &fixture.content,
+            [parent],
+            99,
+        );
+        assert_eq!(states.monster_melee.creature_ai.due(parent), due);
+        let state = states
+            .monster_melee
+            .creature_ai
+            .state(parent)
+            .expect("same AI");
+        assert_eq!(state.target(), Some(target));
     }
 
     #[test]

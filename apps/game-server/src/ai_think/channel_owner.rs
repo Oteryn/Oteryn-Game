@@ -221,7 +221,7 @@ impl CreatureAiTable {
         let mut due = lane.due_deadline_inputs(
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now_us),
             fence,
-            entries.len(),
+            CREATUREAI0_THINKS_PER_WINDOW,
             |actor| {
                 runtime.contains_live_creature(actor)
                     && entries
@@ -230,7 +230,6 @@ impl CreatureAiTable {
             },
         );
         due.sort_by_key(|timer| (timer.due, timer.occurrence.actor.placement_identity()));
-        due.truncate(CREATUREAI0_THINKS_PER_WINDOW);
         due.into_iter().map(|timer| timer.occurrence).collect()
     }
 

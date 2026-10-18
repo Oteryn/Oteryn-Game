@@ -620,6 +620,76 @@ fn thinks_past_the_window_budget_stay_due_and_run_in_the_next_window() {
     );
 }
 
+#[test]
+fn native_steps_return_only_the_earliest_window_in_order() {
+    use crate::ai_think::{CREATUREAI0_THINKS_PER_WINDOW, NativeStepFamily, ThinkOccurrence};
+    use crate::foundation::owner_timer::{CatchUpPolicy, FamilyPolicy, OwnerTimerLane};
+    const COUNT: usize = 1_500;
+    let mut channel = Channel::with_capacity(COUNT + 1);
+    let binding = channel.runtime.binding();
+    let mut lane = OwnerTimerLane::for_generation(
+        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        binding.scope_generation(),
+        [(
+            NativeStepFamily,
+            FamilyPolicy {
+                max_pending: 1,
+                catch_up: CatchUpPolicy::DeadlineState,
+            },
+        )],
+    )
+    .expect("native movement deadlines");
+    let stamp = channel
+        .runtime
+        .issue_owner_work()
+        .expect("current owner stamp");
+    let mut expected = Vec::new();
+    for index in 0..COUNT {
+        let actor = channel.admit(at(200 + i32::try_from(index).expect("x"), 300), 0);
+        let due = u64::try_from((index * 17) % 13).expect("small due time");
+        let occurrence = ThinkOccurrence { actor, sequence: 1 };
+        lane.schedule(
+            channel.runtime.owner_fence().expect("live owner"),
+            stamp,
+            NativeStepFamily,
+            occurrence,
+            Some(actor),
+            SemanticTimeMicros::from_micros(due),
+        )
+        .expect("native step");
+        expected.push((due, index, actor.placement_identity(), occurrence));
+    }
+    channel.table.native_steps = Some(lane);
+    // The lane keeps the earliest window by (due, scheduling order); the owner then orders
+    // that window by (due, placement identity). A deadline tied at the cutoff is served in the
+    // next window, never dropped.
+    expected.sort_by_key(|(due, index, ..)| (*due, *index));
+    let window = |from: usize, to: usize| {
+        let mut slice = expected[from..to.min(expected.len())].to_vec();
+        slice.sort_by_key(|(due, _, identity, _)| (*due, *identity));
+        slice
+            .into_iter()
+            .map(|(.., occurrence)| occurrence)
+            .collect::<Vec<_>>()
+    };
+    let first = channel.table.due_native_steps(&channel.runtime, 12);
+    assert_eq!(first.len(), CREATUREAI0_THINKS_PER_WINDOW);
+    assert_eq!(first, window(0, CREATUREAI0_THINKS_PER_WINDOW));
+    let lane = channel.table.native_steps.as_mut().expect("retained lane");
+    assert_eq!(lane.pending_len(), COUNT);
+    for occurrence in first {
+        assert!(lane.cancel(NativeStepFamily, occurrence));
+    }
+    assert_eq!(
+        channel.table.due_native_steps(&channel.runtime, 12),
+        window(
+            CREATUREAI0_THINKS_PER_WINDOW,
+            2 * CREATUREAI0_THINKS_PER_WINDOW
+        ),
+        "remaining native deadlines are served in the next window",
+    );
+}
+
 /// SPAWN-CEILINGS-1 (Codex 4243397472): the owner's bounded selection takes exactly the thinks
 /// `take_due`'s full sort takes, in the same order and against the same window budget, and
 /// reports the earliest think it left; after a pass, the reported next think is the table's
