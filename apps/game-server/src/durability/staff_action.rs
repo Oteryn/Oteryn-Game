@@ -70,6 +70,16 @@ pub(crate) struct Pending {
     physical_transaction: i64,
     occurred_at: i64,
 }
+impl Pending {
+    /// GM-1: the verified request an action executor applies before finishing.
+    pub(crate) fn request(&self) -> &VerifiedRequest {
+        &self.request
+    }
+    /// The audited time of this operation, in Unix ms; effects use this clock.
+    pub(crate) fn occurred_at(&self) -> i64 {
+        self.occurred_at
+    }
+}
 
 async fn physical_transaction(connection: &mut PgConnection) -> Result<i64, StaffError> {
     Ok(sqlx::query_scalar("SELECT txid_current()::bigint")

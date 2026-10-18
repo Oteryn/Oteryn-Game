@@ -1973,6 +1973,8 @@ fn load_staff_trust(
     let configs: Vec<ActivationConfig> =
         serde_json::from_slice(&bytes).map_err(|_| Error::Binding)?;
     let history = History::load(configs, &trust)?;
+    // D1437: every roster signer has exactly one role; a roster without them fails boot closed.
+    trust.roles()?;
     Ok((std::sync::Arc::new(trust), std::sync::Arc::new(history)))
 }
 
@@ -1986,6 +1988,10 @@ async fn control_loop(
     evidence: &FreshEvidenceSource,
     intents: &ProducerDescriptor,
     staff_trust: Option<&StaffTrust>,
+    staff: (
+        &std::sync::Arc<crate::staff::live::StaffDesk>,
+        crate::durability::staff_moderation::StaffNode,
+    ),
     stop: &CancellationToken,
 ) {
     let capacity = TransientCapacity::new();
@@ -2007,23 +2013,18 @@ async fn control_loop(
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
             let input = handle_control(&mut stream).await;
             if let Some(ControlInput::Staff(message)) = input {
+                // GM-1: every staff action runs through its audited executor; data and
+                // live effects (a kick, a mute reaching chat) follow only a committed audit.
                 let answer = if let Some((trust, history)) = staff_trust {
-                    match message {
-                        crate::staff::signature::ControlMessage::Request(signed) => root
-                            .audit_staff_read(
-                                std::sync::Arc::clone(trust),
-                                std::sync::Arc::clone(history),
-                                signed,
-                            )
-                            .await
-                            .ok()
-                            .map(|outcome| outcome.bytes),
-                        crate::staff::signature::ControlMessage::Receipt(signed) => root
-                            .store_staff_receipt(std::sync::Arc::clone(trust), signed)
-                            .await
-                            .ok()
-                            .map(|()| b"receipt-stored".to_vec()),
-                    }
+                    root.serve_staff_control(
+                        std::sync::Arc::clone(trust),
+                        std::sync::Arc::clone(history),
+                        std::sync::Arc::clone(staff.0),
+                        staff.1,
+                        message,
+                    )
+                    .await
+                    .ok()
                 } else {
                     None
                 };
@@ -2094,6 +2095,15 @@ async fn audit_expiry_loop(
         event(&format!(
             "event=audit_expiry deleted={deleted} result={}",
             if failed { "failed" } else { "ok" }
+        ));
+        // GM-1 / WRITE0 §6: item-text reports expire at WRITE0-RL-03 on the same cadence.
+        let reports = root
+            .expire_item_text_reports(crate::staff::live::wall_ms())
+            .await;
+        event(&format!(
+            "event=report_expiry expired={} result={}",
+            reports.as_ref().map_or(0, |count| *count),
+            if reports.is_ok() { "ok" } else { "failed" }
         ));
         if first(tokio::time::sleep(AUDIT_INTERVAL), stop.cancelled())
             .await
@@ -2775,6 +2785,7 @@ async fn boot_and_serve(
         entry_deadline: Duration::from_millis(config.listener.entry_deadline_ms),
     };
     let last_position_flush = crate::gameplay_transport::LastPositionFlush::default();
+    let staff_desk = crate::staff::live::StaffDesk::new();
     // PREM-WIRE-1: the one Premium fence every Premium gate reads, the system trusted clock
     // (PREMIUM-ACTIVATION-0 §1.1) and the durable activation latch. No activation is configured
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
@@ -2802,6 +2813,7 @@ async fn boot_and_serve(
         npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
         quest_catalogue: &quest_catalogue,
         last_position_flush: Some(&last_position_flush),
+        staff: Some(std::sync::Arc::clone(&staff_desk)),
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
@@ -2818,6 +2830,13 @@ async fn boot_and_serve(
         evidence,
         &material.intents,
         staff_trust.as_ref(),
+        (
+            &staff_desk,
+            crate::durability::staff_moderation::StaffNode {
+                world: *material.world.as_bytes(),
+                channel: *material.channel.as_bytes(),
+            },
+        ),
         &shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));

@@ -1639,16 +1639,26 @@ async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
             let stem = format!("staff-link-{sequence}-{}", signature::sha256(&wire));
             retain_staff(operator, &format!("{stem}.json"), &wire)?;
             let answer = staff_control_request(&socket, &wire).await?;
+            // GM-1: the stored outcome, then optionally a newline and the data a
+            // committed read (or a live kick result) discloses after commit.
+            let (answer, data) = match answer.iter().position(|byte| *byte == b'\n') {
+                Some(split) => (answer[..split].to_vec(), Some(answer[split + 1..].to_vec())),
+                None => (answer, None),
+            };
             // Preserve exact response before displaying any successful result.
             // A transport response is not an operator-signed COMMITTED receipt.
             if command == "submit" {
                 let _: StaffOutcome =
                     jcs::decode(&answer, signature::MAX_OUTCOME_BYTES).map_err(staff_failure)?;
-            } else if answer != b"receipt-stored" {
+            } else if answer != b"receipt-stored" || data.is_some() {
                 return Err(staff_failure("receipt not committed"));
             }
             retain_staff(operator, &format!("{stem}.outcome"), &answer)?;
             event("staff_submission=stored_operator_receipt_required");
+            if let Some(data) = data {
+                let data = String::from_utf8(data).map_err(|_| staff_failure("staff data"))?;
+                event(&format!("staff_data={data}"));
+            }
             Ok(())
         }
         "prepare-receipt" => {
@@ -1861,11 +1871,11 @@ async fn staff_control_request(socket: &str, wire: &[u8]) -> Result<Vec<u8>, Fai
         stream.shutdown().await.ok()?;
         let mut answer = Vec::new();
         (&mut stream)
-            .take(signature::MAX_OUTCOME_BYTES as u64 + 1)
+            .take(signature::MAX_ANSWER_BYTES as u64 + 1)
             .read_to_end(&mut answer)
             .await
             .ok()?;
-        (answer.len() <= signature::MAX_OUTCOME_BYTES).then_some(answer)
+        (answer.len() <= signature::MAX_ANSWER_BYTES).then_some(answer)
     };
     match tokio::time::timeout(std::time::Duration::from_secs(60), exchange).await {
         Ok(Some(answer)) => Ok(answer),

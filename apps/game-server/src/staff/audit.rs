@@ -265,6 +265,13 @@ fn encode_bounded(message: &impl Message, maximum: usize) -> Result<Vec<u8>, Err
     Ok(message.encode_to_vec())
 }
 
+/// The bounded server build identity: 1..=128 visible ASCII bytes. The
+/// default `oteryn-game-server/<version>` carries a `/`, so the signed-field
+/// `token` alphabet does not apply to it.
+fn build_id(text: &str) -> bool {
+    !text.is_empty() && text.len() <= 128 && text.bytes().all(|b| b.is_ascii_graphic())
+}
+
 pub fn encode(
     contract: Contract,
     request: &VerifiedRequest,
@@ -274,7 +281,7 @@ pub fn encode(
 ) -> Result<Vec<u8>, Error> {
     if occurred_at <= 0
         || u64::try_from(occurred_at).ok() != Some(outcome.occurred_at.0)
-        || !signature::token(server_build)
+        || !build_id(server_build)
     {
         return Err(Error::Invalid);
     }
@@ -581,6 +588,23 @@ mod tests {
             verify_event(contract, &request, &outcome, &envelope.encode_to_vec()),
             Err(Error::Bounds)
         );
+    }
+
+    #[test]
+    fn the_running_server_build_id_is_an_accepted_envelope_build() {
+        // The node's executor records `oteryn-game-server/<version>`; a `/`
+        // must not turn every live staff action into a rejected audit.
+        let build = crate::durability::character_authority::SERVER_BUILD_ID;
+        let (request, outcome) = verified_event_fixture();
+        let contract = Contract::registered().expect("D1343 registry");
+        let bytes = encode(contract, &request, &outcome, 1_000_000, build).expect("live build");
+        assert!(verify_event(contract, &request, &outcome, &bytes).is_ok());
+        for refused in ["", "has space", "tab\t", &"x".repeat(129)] {
+            assert_eq!(
+                encode(contract, &request, &outcome, 1_000_000, refused),
+                Err(Error::Invalid)
+            );
+        }
     }
 
     #[test]

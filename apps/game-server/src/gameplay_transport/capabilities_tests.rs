@@ -1906,6 +1906,8 @@ mod logout_wire {
         steps: Cell<u32>,
         /// SPEED-1: the pace each step records; zero leaves steps unpaced.
         pace: Duration,
+        /// GM-1: the staff desk the served connection registers with, if any.
+        staff: Option<std::sync::Arc<crate::staff::live::StaffDesk>>,
     }
 
     impl LogoutAuthority {
@@ -1916,6 +1918,7 @@ mod logout_wire {
                 logouts: Cell::new(0),
                 steps: Cell::new(0),
                 pace: Duration::ZERO,
+                staff: None,
             }
         }
     }
@@ -1970,6 +1973,19 @@ mod logout_wire {
                 tokio::time::sleep(self.delay).await;
             }
             self.reply.get()
+        }
+
+        async fn staff_presence(
+            &self,
+            admitted: AdmittedSession,
+        ) -> Option<crate::staff::live::LiveGuard> {
+            self.staff.as_ref().map(|desk| {
+                desk.register(
+                    *admitted.game_session_id.as_bytes(),
+                    [0x61; 16],
+                    Some([0x62; 16]),
+                )
+            })
         }
     }
 
@@ -2350,6 +2366,114 @@ mod logout_wire {
             .await?;
             assert_eq!(authority.logouts.get(), 2);
             assert_eq!(results(&written)?.len(), 2);
+            Ok(())
+        })
+    }
+
+    // GM-1 (D1437): a committed staff kick reaches the served connection, which runs the
+    // session's own fenced logout release; only an accepted release ends the session.
+    use crate::staff::live::{KickResult, StaffDesk};
+
+    /// Polls both futures to completion on this task.
+    async fn both<A: Future, B: Future>(a: A, b: B) -> Option<(A::Output, B::Output)> {
+        let (mut a, mut b) = (std::pin::pin!(a), std::pin::pin!(b));
+        let (mut first, mut second) = (None, None);
+        std::future::poll_fn(|context| {
+            if first.is_none()
+                && let std::task::Poll::Ready(value) = a.as_mut().poll(context)
+            {
+                first = Some(value);
+            }
+            if second.is_none()
+                && let std::task::Poll::Ready(value) = b.as_mut().poll(context)
+            {
+                second = Some(value);
+            }
+            if first.is_some() && second.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        first.zip(second)
+    }
+
+    /// Serves one session registered with a staff desk and kicks it after 20 ms.
+    async fn serve_kicked(
+        reply: LogoutReply,
+    ) -> Result<(LogoutAuthority, ConnectionEnd, Vec<Vec<u8>>, KickResult), Box<dyn Error>> {
+        let desk = StaffDesk::new();
+        let mut authority = LogoutAuthority::new(reply);
+        authority.staff = Some(std::sync::Arc::clone(&desk));
+        let admitted = admitted(&[21])?;
+        let session = *admitted.game_session_id.as_bytes();
+        let kicking = async {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            desk.kick(&session).await
+        };
+        let serving = serve_open(&authority, admitted, &[], Duration::from_millis(200));
+        let (served, kick) = both(serving, kicking).await.ok_or("join")?;
+        let (end, written) = served?;
+        // The served connection unregistered when it ended.
+        assert!(!desk.is_live(&session));
+        Ok((authority, end, written, kick))
+    }
+
+    #[test]
+    fn a_staff_kick_runs_the_fenced_logout_and_ends_the_session() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let (authority, end, written, kick) =
+                serve_kicked(LogoutReply::Result(LogoutResult::Accepted)).await?;
+            assert_eq!(kick, KickResult::Released);
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)),
+                "{end:?}"
+            );
+            assert_eq!(authority.logouts.get(), 1);
+            // No command asked for a result, so none is written.
+            assert!(results(&written)?.is_empty());
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_staff_kick_of_an_in_fight_or_busy_session_keeps_it_playing() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            for (reply, wanted) in [
+                (
+                    LogoutReply::Result(LogoutResult::InFight {
+                        retry_after_ms: 1_500,
+                    }),
+                    KickResult::InFight,
+                ),
+                (LogoutReply::Result(LogoutResult::Busy), KickResult::Busy),
+            ] {
+                let (authority, end, written, kick) = serve_kicked(reply).await?;
+                assert_eq!(kick, wanted);
+                // The session is served until its client closes.
+                assert!(
+                    matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                    "{end:?}"
+                );
+                assert_eq!(authority.logouts.get(), 1);
+                assert!(results(&written)?.is_empty());
+            }
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_staff_kick_with_an_unknown_release_ends_as_a_disconnect() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let (authority, end, _, kick) = serve_kicked(LogoutReply::Unknown).await?;
+            assert_eq!(kick, KickResult::Unknown);
+            assert!(
+                matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
+                "{end:?}"
+            );
+            assert_eq!(authority.logouts.get(), 1);
             Ok(())
         })
     }

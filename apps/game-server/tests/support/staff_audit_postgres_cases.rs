@@ -35,6 +35,10 @@ struct Signer {
 }
 impl Signer {
     fn new() -> Self {
+        Self::with_role(None)
+    }
+    /// GM-1 (D1437): `role` names the roster role line of the one signer.
+    fn with_role(role: Option<&str>) -> Self {
         use std::os::unix::fs::DirBuilderExt;
         let nonce = node::operator_files::random_bytes::<32>().expect("fixture nonce");
         let path =
@@ -62,9 +66,13 @@ impl Signer {
             .take(2)
             .collect::<Vec<_>>()
             .join(" ");
-        signer.roster =
-            format!("operator namespaces=\"{REQUEST_NAMESPACE},{RECEIPT_NAMESPACE}\" {key}\n")
-                .into_bytes();
+        let role = role.map_or_else(String::new, |role| {
+            format!("{}operator {role}\n", signature::ROLE_PREFIX)
+        });
+        signer.roster = format!(
+            "{role}operator namespaces=\"{REQUEST_NAMESPACE},{RECEIPT_NAMESPACE}\" {key}\n"
+        )
+        .into_bytes();
         signer.write("allowed_signers", &signer.roster);
         signer
     }
@@ -240,6 +248,9 @@ struct Fixture {
 }
 impl Fixture {
     async fn create(tag: &str) -> TestResult<Option<Self>> {
+        Self::create_as(tag, None).await
+    }
+    async fn create_as(tag: &str, role: Option<&str>) -> TestResult<Option<Self>> {
         let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
             eprintln!(
                 "PRE-ROUTING / NONCANONICAL: staff PG cases were not executed; missing OTERYN_TEST_POSTGRES_ADMIN_URL"
@@ -285,7 +296,7 @@ impl Fixture {
             .await?;
         assert!(installed, "staff migration 0116 must be installed");
         sqlx::raw_sql("CREATE TABLE staff_fixture_domain(operation_id text PRIMARY KEY); GRANT SELECT,INSERT ON staff_fixture_domain TO oteryn_game_runtime").execute(&pool).await?;
-        let signer = Signer::new();
+        let signer = Signer::with_role(role);
         let (trust, activation) = signer.activation();
         let checked = trust.verify_request(activation.clone()).map_err(debug)?;
         let mut tx = pool.begin().await?;
@@ -2475,4 +2486,772 @@ fn staff_pg_activation_waits_for_the_pending_mutation_receipt() -> TestResult {
         f.cleanup().await?;
         result
     })
+}
+
+// GM-1 (D1437): the audited staff executor, served through the node's control
+// dispatch entry (`serve_staff_control`, and its fixture-clock twin for
+// requests) on a runtime LOGIN, with the live desk that the node's served
+// connections and chat read. Every mutation is followed by its signed receipt,
+// as the operator tool does, so the chain keeps accepting new work.
+mod executor {
+    use super::*;
+    use crate::durability::staff_moderation::{
+        ItemTextReport, MAX_MUTE_MS, OPEN_SNAPSHOTS_PER_WORLD, REPORT_RETENTION_MS,
+        ReportAdmission, StaffNode,
+    };
+    use crate::staff::live::{self, KickResult, StaffDesk};
+    use crate::staff::signature::{ControlMessage, ReportState, Target};
+
+    const NOW: u64 = 1_000_000;
+    const TARGET: &str = "00000000-0000-7000-8000-000000000001";
+    const REPORTER: &str = "00000000-0000-7000-8000-000000000002";
+    const FOREIGN: &str = "00000000-0000-7000-8000-000000000003";
+    const ACCOUNT: &str = "00000000-0000-7000-8000-0000000000a1";
+    const REPORTER_ACCOUNT: &str = "00000000-0000-7000-8000-0000000000a2";
+    const WORLD: &str = "00000000-0000-7000-8000-000000000010";
+    const CHANNEL: &str = "00000000-0000-7000-8000-000000000011";
+    const HOUR: u64 = 3_600_000;
+    /// Report time: a whole hour, far after the staff fixture clock.
+    const REPORTED: u64 = HOUR * 500_000;
+
+    // Three Characters (two in this node's World, one in another) and 24 items
+    // in this World, each carrying text revision 1. Loaded as the owner with
+    // the replica role, as fixtures of other aggregates are.
+    const SEED: &str = "\
+INSERT INTO game_character_account_guards(account_id) VALUES
+ ('00000000-0000-7000-8000-0000000000a1'),('00000000-0000-7000-8000-0000000000a2'),
+ ('00000000-0000-7000-8000-0000000000a3');
+INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,
+ profile_revision,ruleset_revision,content_revision,starter_template_revision,name) VALUES
+ ('00000000-0000-7000-8000-000000000001','00000000-0000-7000-8000-0000000000a1',
+  '00000000-0000-7000-8000-000000000010',1,1,'profile-1','ruleset-1','content-1','starter-1','Alda'),
+ ('00000000-0000-7000-8000-000000000002','00000000-0000-7000-8000-0000000000a2',
+  '00000000-0000-7000-8000-000000000010',1,1,'profile-1','ruleset-1','content-1','starter-1','Brin'),
+ ('00000000-0000-7000-8000-000000000003','00000000-0000-7000-8000-0000000000a3',
+  '00000000-0000-7000-8000-000000000020',1,1,'profile-1','ruleset-1','content-1','starter-1','Cato');
+INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,
+ definition_revision_ref,quantity,lifecycle,minted_transaction_id)
+ SELECT format('00000000-0000-7000-8000-%s',lpad(to_hex(256+n),12,'0'))::uuid,
+  '00000000-0000-7000-8000-000000000010','book','oteryn:item.book','revision-1',1,1,
+  format('00000000-0000-7000-8000-%s',lpad(to_hex(512+n),12,'0'))::uuid
+ FROM generate_series(0,23) AS n;
+INSERT INTO game_item_text_revisions(item_instance_id,last_revision)
+ SELECT item_instance_id,1 FROM game_item_instances;
+INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at,text_revision)
+ SELECT item_instance_id,'Reported text '||item_instance_id::text,
+  '00000000-0000-7000-8000-000000000001','2026-01-01T00:00:00Z',1 FROM game_item_instances;";
+
+    fn id(text: &str) -> [u8; 16] {
+        node::uuid_bytes(text).expect("fixture uuid")
+    }
+    fn item(n: u16) -> String {
+        format!("00000000-0000-7000-8000-{:012x}", 0x100 + n)
+    }
+    fn here() -> StaffNode {
+        StaffNode {
+            world: id(WORLD),
+            channel: id(CHANNEL),
+        }
+    }
+
+    struct Answer {
+        outcome: Outcome,
+        data: Option<serde_json::Value>,
+    }
+
+    struct Exec {
+        f: Fixture,
+        root: durability::DurabilityRoot,
+        login: String,
+        desk: Arc<StaffDesk>,
+        sequence: u64,
+        head: String,
+        operation: u8,
+    }
+    impl Exec {
+        async fn create(tag: &str, role: Option<&str>) -> TestResult<Option<Self>> {
+            let Some(f) = Fixture::create_as(tag, role).await? else {
+                return Ok(None);
+            };
+            let nonce = f.name.rsplit('_').next().ok_or("fixture name")?.to_owned();
+            let login = format!("gm_rt_{nonce}");
+            let made: TestResult<durability::DurabilityRoot> = async {
+                let mut tx = f.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::raw_sql(SEED).execute(&mut *tx).await?;
+                tx.commit().await?;
+                let password = signature::sha256(&node::operator_files::random_bytes::<32>()?);
+                // Generated ASCII identifiers only; nothing comes from the URL.
+                for statement in [
+                    format!(
+                        "CREATE ROLE {login} LOGIN PASSWORD '{password}' IN ROLE oteryn_game_runtime"
+                    ),
+                    format!("GRANT CONNECT ON DATABASE {} TO {login}", f.name),
+                ] {
+                    sqlx::query(sqlx::AssertSqlSafe(statement))
+                        .execute(&f.pool)
+                        .await?;
+                }
+                let (_, address) = f.url.split_once('@').ok_or("fixture URL")?;
+                let root = durability::DurabilityRoot::connect_test_runtime(&format!(
+                    "postgresql://{login}:{password}@{address}"
+                ))?;
+                if !root.maintain_ready_once().await? {
+                    return Err("runtime staff root did not become ready".into());
+                }
+                Ok(root)
+            }
+            .await;
+            match made {
+                Ok(root) => Ok(Some(Self {
+                    head: f.trust.activation_digest().to_owned(),
+                    f,
+                    root,
+                    login,
+                    desk: StaffDesk::new(),
+                    sequence: 1,
+                    operation: 1,
+                })),
+                Err(error) => {
+                    let admin = f.admin.clone();
+                    let _ = f.cleanup().await;
+                    drop_login(&admin, &login).await?;
+                    Err(error)
+                }
+            }
+        }
+        async fn cleanup(self) -> TestResult {
+            let Self { f, root, login, .. } = self;
+            drop(root);
+            let admin = f.admin.clone();
+            let database = f.cleanup().await;
+            drop_login(&admin, &login).await?;
+            database
+        }
+        async fn send(&mut self, action: Action) -> Result<Answer, StaffError> {
+            self.send_to(action, here()).await
+        }
+        async fn send_to(&mut self, action: Action, node: StaffNode) -> Result<Answer, StaffError> {
+            self.operation += 1;
+            let mut request = self
+                .f
+                .signer
+                .request(self.operation, self.sequence + 1, &self.head);
+            let mutation = !action.kind().is_read();
+            request.action = action;
+            let operation_id = request.operation_id.clone();
+            let signed = self
+                .f
+                .signer
+                .sign(request.canonical_bytes()?, REQUEST_NAMESPACE);
+            let digest = signature::sha256(&signed.bytes);
+            let answer = self
+                .root
+                .fixture_serve_staff_request(
+                    Arc::clone(&self.f.trust),
+                    Arc::clone(&self.f.history),
+                    Arc::clone(&self.desk),
+                    node,
+                    signed,
+                    NOW,
+                )
+                .await?;
+            self.sequence += 1;
+            self.head = digest.clone();
+            let (stored, data) = match answer.iter().position(|byte| *byte == b'\n') {
+                Some(at) => (&answer[..at], Some(&answer[at + 1..])),
+                None => (answer.as_slice(), None),
+            };
+            let outcome: Outcome = serde_json::from_slice(stored).map_err(|_| Error::Invalid)?;
+            let data = data
+                .map(serde_json::from_slice::<serde_json::Value>)
+                .transpose()
+                .map_err(|_| Error::Invalid)?;
+            if mutation {
+                self.receipt(operation_id, digest, stored, outcome.disposition)
+                    .await?;
+            }
+            Ok(Answer { outcome, data })
+        }
+        /// The operator's signed receipt of one mutation, through the same
+        /// control dispatch entry the node's control socket uses.
+        async fn receipt(
+            &mut self,
+            operation_id: String,
+            request: String,
+            stored: &[u8],
+            disposition: Disposition,
+        ) -> Result<(), StaffError> {
+            let receipt = Receipt {
+                version: 1,
+                environment: self.f.trust.environment().into(),
+                roster_sha256: self.f.trust.roster_digest().into(),
+                operation_id,
+                request_sha256: request.clone(),
+                outcome_sha256: signature::sha256(stored),
+                disposition,
+                issued_at: Decimal(NOW),
+                control_seq: Decimal(self.sequence + 1),
+                previous_link_sha256: request,
+            };
+            let bytes =
+                oteryn_release_manifest::jcs::encode(&receipt, signature::MAX_REQUEST_BYTES)
+                    .map_err(|_| Error::Invalid)?;
+            let signed = self.f.signer.sign(bytes, RECEIPT_NAMESPACE);
+            let digest = signature::sha256(&signed.bytes);
+            let answer = self
+                .root
+                .serve_staff_control(
+                    Arc::clone(&self.f.trust),
+                    Arc::clone(&self.f.history),
+                    Arc::clone(&self.desk),
+                    here(),
+                    ControlMessage::Receipt(signed),
+                )
+                .await?;
+            if answer != b"receipt-stored" {
+                return Err(Error::Receipt.into());
+            }
+            self.sequence += 1;
+            self.head = digest;
+            Ok(())
+        }
+        async fn scalar(&self, sql: &'static str) -> TestResult<i64> {
+            Ok(sqlx::query_scalar(sql).fetch_one(&self.f.pool).await?)
+        }
+    }
+
+    async fn drop_login(admin: &str, login: &str) -> TestResult {
+        let mut connection = sqlx::PgConnection::connect(admin).await?;
+        connection
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DROP ROLE IF EXISTS {login}"
+            ))))
+            .await?;
+        connection.close().await?;
+        Ok(())
+    }
+
+    /// Runs `case` on a fresh executor fixture; the database and the runtime
+    /// LOGIN are dropped whether or not the case passes.
+    fn exec_case(
+        tag: &'static str,
+        role: Option<&'static str>,
+        case: impl AsyncFnOnce(&mut Exec) -> TestResult,
+    ) -> TestResult {
+        runtime()?.block_on(async move {
+            let Some(mut exec) = Exec::create(tag, role).await? else {
+                return Ok(());
+            };
+            let result = case(&mut exec).await;
+            let cleanup = exec.cleanup().await;
+            result?;
+            cleanup
+        })
+    }
+
+    fn mute(character: &str, duration_ms: u64) -> Action {
+        Action::Mute {
+            character_id: character.into(),
+            duration_ms: Decimal(duration_ms),
+        }
+    }
+    fn inspect(character: &str) -> Action {
+        Action::Inspect {
+            character_id: character.into(),
+        }
+    }
+    fn kick(target: Target) -> Action {
+        Action::Kick { target }
+    }
+    fn of(answer: &Answer) -> (Disposition, ResultCode) {
+        (answer.outcome.disposition, answer.outcome.result)
+    }
+    const COMMITTED: (Disposition, ResultCode) = (Disposition::Committed, ResultCode::Ok);
+
+    #[test]
+    fn staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit() -> TestResult {
+        exec_case("exec", Some("GM"), async |e| {
+            let target = id(TARGET);
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let data = muted.data.ok_or("mute data")?;
+            let sanction = data["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            assert_eq!(data["ends_at"], "1060000");
+            // The committed mute reaches the desk chat admission reads.
+            assert_eq!(e.desk.mute_seconds(&target, NOW), Some(60));
+            let row: (String, String, i64, String) = sqlx::query_as(
+                "SELECT status,actor_principal,ends_at,mute_action_id::text \
+                 FROM game_character_sanctions WHERE sanction_id=$1::uuid",
+            )
+            .bind(&sanction)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(
+                row,
+                (
+                    "ACTIVE".into(),
+                    "operator".into(),
+                    1_060_000,
+                    muted.outcome.action_id.clone()
+                )
+            );
+            // A restarted node reads the durable sanction back.
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(target, NOW)
+                    .await
+                    .map_err(debug)?,
+                Some(1_060_000)
+            );
+
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            let data = seen.data.ok_or("inspect data")?;
+            assert_eq!(data["name"], "Alda");
+            assert_eq!(data["online"], false);
+            assert_eq!(data["active_mutes"][0]["sanction_id"], sanction.as_str());
+            assert_eq!(data["open_reports_filed"], "0");
+
+            let lifted = e
+                .send(Action::Unmute {
+                    sanction_id: sanction.clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            assert_eq!(e.desk.mute_seconds(&target, NOW), None);
+            let again = e
+                .send(Action::Unmute {
+                    sanction_id: sanction.clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                of(&again),
+                (Disposition::Refused, ResultCode::AlreadyReleased)
+            );
+            let row: (String, i16, String) = sqlx::query_as(
+                "SELECT status,revision,lift_action_id::text FROM game_character_sanctions \
+                 WHERE sanction_id=$1::uuid",
+            )
+            .bind(&sanction)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(row, ("LIFTED".into(), 2, lifted.outcome.action_id));
+
+            // No connection serves the target: refused, audited, no data.
+            let by_character = || {
+                kick(Target::Character {
+                    character_id: TARGET.into(),
+                })
+            };
+            let missing = e.send(by_character()).await.map_err(debug)?;
+            assert_eq!(
+                of(&missing),
+                (Disposition::Refused, ResultCode::TargetNotInChannel)
+            );
+            assert!(missing.data.is_none());
+            // A served connection runs its fenced release and answers.
+            let mut guard = e.desk.register([0x51; 16], id(ACCOUNT), Some(target));
+            let serving = tokio::spawn(async move {
+                guard.next_kick().await.answer(KickResult::Released);
+                guard
+            });
+            let kicked = e.send(by_character()).await.map_err(debug)?;
+            assert_eq!(of(&kicked), COMMITTED);
+            assert_eq!(kicked.data, Some(serde_json::json!({"kick": "RELEASED"})));
+            let mut guard = serving.await?;
+            // By account reference; the logout rule keeps an in-fight session.
+            let serving = tokio::spawn(async move {
+                guard.next_kick().await.answer(KickResult::InFight);
+                guard
+            });
+            let kicked = e
+                .send(kick(Target::Account {
+                    account_ref: live::account_ref("alpha-test", &id(ACCOUNT)),
+                }))
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&kicked), COMMITTED);
+            assert_eq!(kicked.data, Some(serde_json::json!({"kick": "IN_FIGHT"})));
+            drop(serving.await?);
+
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_operations")
+                    .await?,
+                7
+            );
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_action_outbox")
+                    .await?,
+                7
+            );
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_action_receipts")
+                    .await?,
+                6
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_executor_refuses_scope_bounds_tier_and_foreign_targets() -> TestResult {
+        exec_case("refuse", Some("GM"), async |e| {
+            let before = e.f.counts().await?;
+            // The node scope is part of the signed request: another channel or
+            // World is refused before anything is written.
+            for node in [
+                StaffNode {
+                    world: id(WORLD),
+                    channel: id("00000000-0000-7000-8000-000000000012"),
+                },
+                StaffNode {
+                    world: id("00000000-0000-7000-8000-000000000020"),
+                    channel: id(CHANNEL),
+                },
+            ] {
+                let refused = e.send_to(inspect(TARGET), node).await;
+                assert!(
+                    matches!(refused, Err(StaffError::Rejected(Error::Binding))),
+                    "{:?}",
+                    refused.err()
+                );
+            }
+            let over = e.send(mute(TARGET, MAX_MUTE_MS + 1)).await;
+            assert!(
+                matches!(over, Err(StaffError::Rejected(Error::Invalid))),
+                "{:?}",
+                over.err()
+            );
+            // A roster activation never runs through the executor.
+            let roster = e.f.trust.roster_digest().to_owned();
+            let activation = e
+                .send(Action::RosterActivate {
+                    roster_sha256: roster,
+                })
+                .await;
+            assert!(
+                matches!(
+                    activation,
+                    Err(StaffError::UnsupportedAction | StaffError::Rejected(_))
+                ),
+                "{:?}",
+                activation.err()
+            );
+            assert_eq!(e.f.counts().await?, before);
+
+            // A GM may not clear report text: refused and audited, no effect.
+            let tier = e
+                .send(Action::ReportClearText {
+                    report_id: "00000000-0000-7000-8000-000000000040".into(),
+                    text_revision: Decimal(1),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                of(&tier),
+                (Disposition::Refused, ResultCode::TierInsufficient)
+            );
+            assert!(tier.data.is_none());
+            // A Character of another World is not this node's target.
+            let foreign = e.send(mute(FOREIGN, 60_000)).await.map_err(debug)?;
+            assert_eq!(
+                of(&foreign),
+                (Disposition::Refused, ResultCode::TargetNotFound)
+            );
+            assert_eq!(e.desk.mute_seconds(&id(FOREIGN), NOW), None);
+            let foreign = e.send(inspect(FOREIGN)).await.map_err(debug)?;
+            assert_eq!(
+                of(&foreign),
+                (Disposition::Refused, ResultCode::TargetNotFound)
+            );
+            assert!(foreign.data.is_none());
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_character_sanctions")
+                    .await?,
+                0
+            );
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_operations")
+                    .await?,
+                3
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_executor_without_a_roster_role_fails_closed_before_any_write() -> TestResult {
+        exec_case("norole", None, async |e| {
+            // The node refuses to boot on this roster (`roles()`), and a loaded
+            // one still refuses every request before its first write.
+            assert!(matches!(e.f.trust.roles(), Err(Error::Binding)));
+            let before = e.f.counts().await?;
+            for action in [inspect(TARGET), mute(TARGET, 60_000)] {
+                let refused = e.send(action).await;
+                assert!(
+                    matches!(refused, Err(StaffError::Rejected(Error::Binding))),
+                    "{:?}",
+                    refused.err()
+                );
+            }
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(e.desk.mute_seconds(&id(TARGET), NOW), None);
+            Ok(())
+        })
+    }
+
+    /// Boundary rows 16-17 at the executor: an audit write failure rolls back
+    /// the action's own writes, returns no data and applies no live effect.
+    #[test]
+    fn staff_pg_executor_audit_failure_rolls_back_the_action_and_its_effect() -> TestResult {
+        exec_case("auditfail", Some("GM"), async |e| {
+            sqlx::raw_sql("CREATE FUNCTION staff_fixture_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture audit failure' USING ERRCODE='23514'; END $$; CREATE TRIGGER staff_fixture_fail BEFORE INSERT ON game_staff_action_outbox FOR EACH ROW EXECUTE FUNCTION staff_fixture_fail()").execute(&e.f.pool).await?;
+            let before = e.f.counts().await?;
+            let mut guard = e.desk.register([0x52; 16], id(ACCOUNT), Some(id(TARGET)));
+            for action in [
+                mute(TARGET, 60_000),
+                inspect(TARGET),
+                kick(Target::Character {
+                    character_id: TARGET.into(),
+                }),
+            ] {
+                let failed = e.send(action).await;
+                assert!(
+                    matches!(failed, Err(StaffError::Database(_))),
+                    "{:?}",
+                    failed.err()
+                );
+            }
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_character_sanctions")
+                    .await?,
+                0
+            );
+            assert_eq!(e.desk.mute_seconds(&id(TARGET), NOW), None);
+            // No kick reached the served connection.
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(50), guard.next_kick())
+                    .await
+                    .is_err()
+            );
+            sqlx::query("DROP TRIGGER staff_fixture_fail ON game_staff_action_outbox")
+                .execute(&e.f.pool)
+                .await?;
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            drop(guard);
+            Ok(())
+        })
+    }
+
+    /// REPORT-3 / WRITE0 §6 on the runtime LOGIN: admission, dedup, STALE,
+    /// WRITE0-RL-04..06, the audited close and clear, and RL-03 expiry.
+    #[test]
+    fn staff_pg_item_text_reports_admit_close_clear_and_expire_under_write0_limits() -> TestResult {
+        exec_case("reports", Some("ADMIN"), async |e| {
+            let report = |reporter: &str, n: u16, text_revision: u64| ItemTextReport {
+                world: id(WORLD),
+                reporter_character: id(reporter),
+                item_instance: id(&item(n)),
+                text_revision,
+            };
+            let root = e.root.clone();
+            let pool = e.f.pool.clone();
+            let admit = |reporter: &'static str, n: u16, revision: u64, at: u64, capacity: i32| {
+                let root = &root;
+                async move {
+                    root.create_item_text_report(report(reporter, n, revision), at, capacity)
+                        .await
+                        .map_err(debug)
+                }
+            };
+            let cap = OPEN_SNAPSHOTS_PER_WORLD;
+            let ReportAdmission::Open {
+                report_id: first,
+                first: true,
+                alarm: false,
+            } = admit(REPORTER, 0, 1, REPORTED, cap).await?
+            else {
+                return Err("first report not admitted".into());
+            };
+            // Dedup returns the first OPEN report; a revision that is not the
+            // item's current text is STALE and stores nothing.
+            assert_eq!(
+                admit(REPORTER, 0, 1, REPORTED, cap).await?,
+                ReportAdmission::Open {
+                    report_id: first.clone(),
+                    first: false,
+                    alarm: false
+                }
+            );
+            assert_eq!(
+                admit(REPORTER, 0, 2, REPORTED, cap).await?,
+                ReportAdmission::Stale
+            );
+            let mut reports = vec![first.clone()];
+            for n in 1..10 {
+                match admit(REPORTER, n, 1, REPORTED, cap).await? {
+                    ReportAdmission::Open {
+                        report_id,
+                        first: true,
+                        ..
+                    } => reports.push(report_id),
+                    other => return Err(format!("report {n}: {other:?}").into()),
+                }
+            }
+            // WRITE0-RL-04: ten per reporter Character per hour.
+            assert_eq!(
+                admit(REPORTER, 10, 1, REPORTED, cap).await?,
+                ReportAdmission::RateLimited
+            );
+            for n in 10..20 {
+                match admit(REPORTER, n, 1, REPORTED + HOUR, cap).await? {
+                    ReportAdmission::Open {
+                        report_id,
+                        first: true,
+                        ..
+                    } => reports.push(report_id),
+                    other => return Err(format!("report {n}: {other:?}").into()),
+                }
+            }
+            // WRITE0-RL-05: twenty OPEN per reporter account.
+            assert_eq!(
+                admit(REPORTER, 20, 1, REPORTED + 2 * HOUR, cap).await?,
+                ReportAdmission::Quota
+            );
+            // WRITE0-RL-06: the World's open snapshot capacity.
+            assert_eq!(
+                admit(TARGET, 20, 1, REPORTED + 2 * HOUR, 20).await?,
+                ReportAdmission::Capacity
+            );
+            // A reporter outside this World cannot report its items.
+            assert!(
+                e.root
+                    .create_item_text_report(report(FOREIGN, 21, 1), REPORTED, cap)
+                    .await
+                    .is_err()
+            );
+            let counters = || async {
+                sqlx::query_as::<_, (i16, i32)>(
+                    "SELECT (SELECT open_reports FROM game_item_text_report_accounts \
+                     WHERE account_id=$1::uuid),(SELECT open_snapshots FROM \
+                     game_item_text_report_worlds WHERE world_id=$2::uuid)",
+                )
+                .bind(REPORTER_ACCOUNT)
+                .bind(WORLD)
+                .fetch_one(&pool)
+                .await
+            };
+            assert_eq!(counters().await?, (20, 20));
+            let snapshot: String = sqlx::query_scalar(
+                "SELECT snapshot_text FROM game_item_text_reports WHERE report_id=$1::uuid",
+            )
+            .bind(&first)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(snapshot, format!("Reported text {}", item(0)));
+
+            let listed = e
+                .send(Action::ReportsList {
+                    state: ReportState::Open,
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&listed), COMMITTED);
+            let data = listed.data.ok_or("list data")?;
+            assert_eq!(data["reports"].as_array().map(Vec::len), Some(20));
+            assert_eq!(data["truncated"], false);
+            assert_eq!(data["reports"][0]["report_id"], first.as_str());
+            assert_eq!(data["reports"][0]["text"], snapshot.as_str());
+
+            // Close: one conditional transition; the counters fall once.
+            let close = || Action::ReportClose {
+                report_id: first.clone(),
+            };
+            let closed = e.send(close()).await.map_err(debug)?;
+            assert_eq!(of(&closed), COMMITTED);
+            assert_eq!(counters().await?, (19, 19));
+            let row: (String, String) = sqlx::query_as(
+                "SELECT state,closed_action_id::text FROM game_item_text_reports \
+                 WHERE report_id=$1::uuid",
+            )
+            .bind(&first)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(row, ("CLOSED".into(), closed.outcome.action_id));
+            let stale = e.send(close()).await.map_err(debug)?;
+            assert_eq!(of(&stale), (Disposition::Refused, ResultCode::Stale));
+            assert_eq!(counters().await?, (19, 19));
+
+            // Clear: the live text goes and the item's revision advances, only
+            // while the reported revision is still current.
+            let clear = |report: &str, revision: u64| Action::ReportClearText {
+                report_id: report.into(),
+                text_revision: Decimal(revision),
+            };
+            let cleared = e.send(clear(reports[1].as_str(), 1)).await.map_err(debug)?;
+            assert_eq!(of(&cleared), COMMITTED);
+            let item_row: (i64, String, String) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_item_texts WHERE item_instance_id=$1::uuid),\
+                 (SELECT last_revision::text FROM game_item_text_revisions WHERE item_instance_id=$1::uuid),\
+                 (SELECT cleared_action_id::text FROM game_item_text_reports WHERE report_id=$2::uuid)",
+            )
+            .bind(item(1))
+            .bind(&reports[1])
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(item_row, (0, "2".into(), cleared.outcome.action_id));
+            for (report, revision) in [(reports[1].as_str(), 1), (reports[2].as_str(), 2)] {
+                let stale = e.send(clear(report, revision)).await.map_err(debug)?;
+                assert_eq!(of(&stale), (Disposition::Refused, ResultCode::Stale));
+            }
+            assert_eq!(
+                e.scalar(
+                    "SELECT count(*) FROM game_item_texts WHERE item_instance_id=\
+                     '00000000-0000-7000-8000-000000000102'"
+                )
+                .await?,
+                1
+            );
+            let seen = e.send(inspect(REPORTER)).await.map_err(debug)?;
+            assert_eq!(seen.data.ok_or("inspect")?["open_reports_filed"], "19");
+
+            // WRITE0-RL-03: every OPEN report past retention expires, ended
+            // snapshots are deleted and finished hours' counters removed.
+            let expired = e
+                .root
+                .expire_item_text_reports(REPORTED + 2 * HOUR + u64::try_from(REPORT_RETENTION_MS)?)
+                .await
+                .map_err(debug)?;
+            assert_eq!(expired, 19);
+            assert_eq!(counters().await?, (0, 0));
+            assert_eq!(
+                e.scalar(
+                    "SELECT count(*) FROM game_item_text_reports WHERE snapshot_text IS NOT NULL"
+                )
+                .await?,
+                0
+            );
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_item_text_reports WHERE state='EXPIRED'")
+                    .await?,
+                19
+            );
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_item_text_report_hourly")
+                    .await?,
+                0
+            );
+            Ok(())
+        })
+    }
 }

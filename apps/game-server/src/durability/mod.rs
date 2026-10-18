@@ -95,6 +95,7 @@ pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
 pub mod sqlstate_codes;
 pub mod staff_action;
+pub mod staff_moderation;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
 

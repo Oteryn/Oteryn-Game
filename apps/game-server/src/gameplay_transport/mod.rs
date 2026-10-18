@@ -443,6 +443,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// CHAR-POSITION-1: the node's shutdown write of the tracked last positions; `None` when the
     /// caller never withdraws readiness through it.
     pub(crate) last_position_flush: Option<&'a LastPositionFlush>,
+    /// GM-1: the node's staff desk, through which staff kicks reach the served connections and
+    /// committed staff mutes refuse chat; `None` on a node without staff control.
+    pub(crate) staff: Option<std::sync::Arc<crate::staff::live::StaffDesk>>,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -583,6 +586,9 @@ pub async fn serve_gameplay(
     };
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
+    }
+    if let Some(desk) = owners.staff {
+        authority.chat.install_staff(desk);
     }
     // CHAT-2B: the World chat relay, when its key file is configured.
     if let Some(relay) = chat_relay::configured(
@@ -3898,6 +3904,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await
+    }
+
+    async fn staff_presence(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<crate::staff::live::LiveGuard> {
+        let desk = self.chat.staff_desk()?;
+        let account = admitted.controller?.account_id;
+        let character = match admitted.item_fence {
+            Some(fence) => Some(*fence.character_id.as_bytes()),
+            None => FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(admitted.game_session_id)
+                .await
+                .ok()
+                .map(|(current, _)| *current.commit().character_id().as_bytes()),
+        };
+        Some(desk.register(*admitted.game_session_id.as_bytes(), account, character))
     }
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {

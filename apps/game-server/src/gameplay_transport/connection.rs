@@ -905,6 +905,15 @@ pub(crate) trait FreshAdmissionAuthority {
         async { LogoutReply::Result(LogoutResult::Busy) }
     }
 
+    /// GM-1: registers the admitted connection with the node's staff desk while it is served, so
+    /// a committed staff kick reaches it. Authorities without a desk register nothing.
+    fn staff_presence(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<crate::staff::live::LiveGuard>> {
+        async { None }
+    }
+
     /// Once the original grace deadline of the recorded loss passes without resumed
     /// control, terminally release the session and remove its Channel actor (FND-04B §6).
     fn expire_control_loss(
@@ -1968,8 +1977,12 @@ where
     // CHASE-1: a ready client frame was already read ahead of the due chase step; the next poll
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let mut chase_yielded = false;
+    // GM-1: a committed staff kick of this session arrives here while the connection is served.
+    let mut staff = authority.staff_presence(admitted).await;
     loop {
         enum Next {
+            /// GM-1: a committed staff kick; it runs the session's fenced logout release.
+            Kicked(crate::staff::live::KickRequest),
             Frame(std::io::Result<Vec<u8>>),
             /// A frame read while a step waited in the buffer, or while a logout ran.
             Held(Vec<u8>, bool),
@@ -2046,7 +2059,17 @@ where
                     None => std::future::pending().await,
                 }
             });
+            // Cancel-safe: an unreceived kick stays queued for the next poll.
+            let mut kicked = std::pin::pin!(async {
+                match staff.as_mut() {
+                    Some(staff) => staff.next_kick().await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
+                if let std::task::Poll::Ready(kick) = kicked.as_mut().poll(context) {
+                    return std::task::Poll::Ready(Next::Kicked(kick));
+                }
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
                 }
@@ -2090,6 +2113,32 @@ where
             .await
         };
         let (frame, arrived_while_buffered) = match next {
+            // GM-1 (D1437): a staff kick is the session's own fenced logout release, with its
+            // spell reconcile and in-fight refusal; only a committed release ends the session,
+            // as a logout. The transport closes without a result: no command asked for one.
+            Next::Kicked(kick) => {
+                use crate::staff::live::KickResult;
+                match authority.logout(admitted).await {
+                    LogoutReply::Result(LogoutResult::Accepted) => {
+                        kick.answer(KickResult::Released);
+                        let _ = tokio::time::timeout(
+                            policy.interval,
+                            tokio::io::AsyncWriteExt::shutdown(stream),
+                        )
+                        .await;
+                        return ConnectionEnd::AdmittedThenLoggedOut(admitted);
+                    }
+                    LogoutReply::Result(LogoutResult::InFight { .. }) => {
+                        kick.answer(KickResult::InFight);
+                    }
+                    LogoutReply::Result(LogoutResult::Busy) => kick.answer(KickResult::Busy),
+                    LogoutReply::Unknown => {
+                        kick.answer(KickResult::Unknown);
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+                continue;
+            }
             // SPEED-1: the buffered step is due; its frame runs now, before any frame held
             // behind it.
             Next::StepDue => match buffered.take() {

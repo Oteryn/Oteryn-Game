@@ -20,6 +20,11 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
+// `durability/npc_travel.rs` mounts its PG fixture under cfg(test), which needs this harness.
+#[allow(dead_code, unused_imports)]
+#[path = "support/bestiary_postgres_harness.rs"]
+mod bestiary_postgres_harness;
+
 // The canonical durability target mounts these same cases.
 #[path = "support/staff_audit_postgres_cases.rs"]
 mod staff_audit_postgres_cases;

@@ -20,6 +20,12 @@ pub const MAX_REQUEST_BYTES: usize = 32_768;
 pub const MAX_SIGNATURE_BYTES: usize = 8_192;
 pub const MAX_ROSTER_BYTES: usize = 65_536;
 pub const MAX_OUTCOME_BYTES: usize = 4_096;
+/// One control answer: the stored outcome, then optionally `\n` and the bounded
+/// JCS data a committed read or a kick discloses after its audit committed.
+pub const MAX_ANSWER_BYTES: usize = 65_536;
+/// D1437: a roster comment line `# oteryn-staff-role <principal> <GM|SENIOR_GM|ADMIN>`
+/// names each signer's role. It is covered by the roster digest and ignored by OpenSSH.
+pub const ROLE_PREFIX: &str = "# oteryn-staff-role ";
 pub const MAX_EVIDENCE_BATCH: i64 = 64;
 pub const EXECUTION_WINDOW_MS: u64 = 600_000;
 pub const FUTURE_SKEW_MS: u64 = 300_000;
@@ -86,6 +92,38 @@ pub enum ReportState {
     Expired,
 }
 
+/// D1437: the role a roster names for a signer decides the actions it may run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Role {
+    Gm,
+    SeniorGm,
+    Admin,
+}
+impl Role {
+    fn parse(text: &str) -> Option<Self> {
+        match text {
+            "GM" => Some(Self::Gm),
+            "SENIOR_GM" => Some(Self::SeniorGm),
+            "ADMIN" => Some(Self::Admin),
+            _ => None,
+        }
+    }
+    /// A GM runs the ALPHA moderation actions; clearing report text needs a
+    /// senior GM; every other kind (roster, restore, economy, privacy) an admin.
+    pub fn allows(self, kind: ActionKind) -> bool {
+        match kind {
+            ActionKind::Inspect
+            | ActionKind::ReportsList
+            | ActionKind::Kick
+            | ActionKind::Mute
+            | ActionKind::Unmute
+            | ActionKind::ReportClose => true,
+            ActionKind::ReportClearText => self >= Self::SeniorGm,
+            _ => self == Self::Admin,
+        }
+    }
+}
+
 /// The ALPHA request codec. Other child commands are added with their accepted
 /// complete typed parameters by those allocated owners, never as opaque JSON.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -107,7 +145,11 @@ pub enum Action {
     #[serde(rename = "REPORT_CLOSE")]
     ReportClose { report_id: String },
     #[serde(rename = "REPORT_CLEAR_TEXT")]
-    ReportClearText { report_id: String },
+    ReportClearText {
+        report_id: String,
+        /// WRITE-0 §6: the clear acts only while the report's text is this revision.
+        text_revision: Decimal,
+    },
     #[serde(rename = "ROSTER_ACTIVATE")]
     RosterActivate { roster_sha256: String },
 }
@@ -134,7 +176,7 @@ impl Action {
                 sanction_id: sanction_id.clone(),
             },
             Self::ReportsList { state } => Target::Reports { state: *state },
-            Self::ReportClose { report_id } | Self::ReportClearText { report_id } => {
+            Self::ReportClose { report_id } | Self::ReportClearText { report_id, .. } => {
                 Target::Report {
                     report_id: report_id.clone(),
                 }
@@ -201,9 +243,11 @@ impl Request {
             } => digest_text(account_ref),
             Action::Kick { .. } => false,
             Action::Unmute { sanction_id } => uuid(sanction_id),
-            Action::ReportClose { report_id } | Action::ReportClearText { report_id } => {
-                uuid(report_id)
-            }
+            Action::ReportClose { report_id } => uuid(report_id),
+            Action::ReportClearText {
+                report_id,
+                text_revision,
+            } => uuid(report_id) && text_revision.0 > 0,
             Action::ReportsList { .. } => true,
             Action::RosterActivate { roster_sha256 } => {
                 roster_sha256 == &self.roster_sha256 && self.reason == Reason::Roster
@@ -641,6 +685,42 @@ impl VerifierTrust {
     pub fn activation_digest(&self) -> &str {
         &self.activation_sha256
     }
+    /// D1437: the role of every roster signer. A malformed or duplicate role
+    /// line, a role for a principal the roster does not sign for, a signer
+    /// without a role, or a wildcard or multi-principal signer line fails closed.
+    pub fn roles(&self) -> Result<std::collections::BTreeMap<String, Role>, Error> {
+        let text = std::str::from_utf8(&self.roster).map_err(|_| Error::Binding)?;
+        let mut roles = std::collections::BTreeMap::new();
+        let mut signers = std::collections::BTreeSet::new();
+        for line in text.lines().map(str::trim) {
+            if let Some(rest) = line.strip_prefix(ROLE_PREFIX.trim_end()) {
+                let fields: Vec<&str> = rest.split_whitespace().collect();
+                let [principal, role] = fields[..] else {
+                    return Err(Error::Binding);
+                };
+                let role = Role::parse(role).ok_or(Error::Binding)?;
+                if !token(principal) || roles.insert(principal.to_owned(), role).is_some() {
+                    return Err(Error::Binding);
+                }
+            } else if line.is_empty() || line.starts_with('#') {
+                continue;
+            } else {
+                let principal = line.split_whitespace().next().ok_or(Error::Binding)?;
+                if !token(principal) {
+                    return Err(Error::Binding);
+                }
+                signers.insert(principal.to_owned());
+            }
+        }
+        if signers.is_empty() || roles.keys().ne(signers.iter()) {
+            return Err(Error::Binding);
+        }
+        Ok(roles)
+    }
+    /// The role of one verified principal, under [`Self::roles`].
+    pub fn role_of(&self, principal: &str) -> Result<Role, Error> {
+        self.roles()?.remove(principal).ok_or(Error::Binding)
+    }
 
     pub fn verify_request(&self, signed: SignedBytes) -> Result<VerifiedRequest, Error> {
         let fingerprint = self.verify(&signed, REQUEST_NAMESPACE)?;
@@ -864,9 +944,10 @@ pub(crate) mod tests {
                 .take(2)
                 .collect::<Vec<_>>()
                 .join(" ");
-            let roster =
-                format!("operator namespaces=\"{REQUEST_NAMESPACE},{RECEIPT_NAMESPACE}\" {key}\n")
-                    .into_bytes();
+            let roster = format!(
+                "{ROLE_PREFIX}operator ADMIN\noperator namespaces=\"{REQUEST_NAMESPACE},{RECEIPT_NAMESPACE}\" {key}\n"
+            )
+            .into_bytes();
             Self { scratch, roster }
         }
         pub fn trust(&self, environment: &str, activation: &str) -> VerifierTrust {
@@ -937,6 +1018,58 @@ pub(crate) mod tests {
             (self.trust("alpha-test", &sha256(&signed.bytes)), signed)
         }
     }
+    /// D1437: the roster names each signer's role; anything else fails closed.
+    #[test]
+    fn roster_roles_bind_every_signer_and_fail_closed() {
+        let key =
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOk9wVJzbw0XPJRCu7JPD4Lh3BRVmfAJWzXjHu0F3hPu";
+        let trust = |roster: String| {
+            VerifierTrust::from_reviewed_bytes(
+                "alpha-test".into(),
+                roster.clone().into_bytes(),
+                sha256(roster.as_bytes()),
+                "a".repeat(64),
+            )
+            .expect("fixture roster")
+        };
+        let lines = |roles: &str, signers: &str| {
+            let mut roster = String::new();
+            for line in roles.lines() {
+                roster.push_str(&format!("{ROLE_PREFIX}{line}\n"));
+            }
+            for principal in signers.split_whitespace() {
+                roster.push_str(&format!("{principal} {key}\n"));
+            }
+            roster
+        };
+        let roles = trust(lines(
+            "gm GM\nsenior SENIOR_GM\nadmin ADMIN",
+            "gm senior admin",
+        ))
+        .roles()
+        .expect("valid roles");
+        assert_eq!(roles.get("gm"), Some(&Role::Gm));
+        assert_eq!(roles.get("senior"), Some(&Role::SeniorGm));
+        assert_eq!(roles.get("admin"), Some(&Role::Admin));
+        for (name, roster) in [
+            ("signer without role", lines("gm GM", "gm other")),
+            ("role without signer", lines("gm GM\nghost ADMIN", "gm")),
+            ("duplicate role", lines("gm GM\ngm ADMIN", "gm")),
+            ("unknown role", lines("gm OWNER", "gm")),
+            ("malformed role", lines("gm", "gm")),
+            ("wildcard signer", lines("gm GM", "g*")),
+            ("multi-principal signer", lines("gm GM", "gm,other")),
+            ("no signer", "# comment only\n".into()),
+        ] {
+            assert_eq!(trust(roster).roles(), Err(Error::Binding), "{name}");
+        }
+        assert!(Role::Gm.allows(ActionKind::Mute) && Role::Gm.allows(ActionKind::Kick));
+        assert!(!Role::Gm.allows(ActionKind::ReportClearText));
+        assert!(Role::SeniorGm.allows(ActionKind::ReportClearText));
+        assert!(!Role::SeniorGm.allows(ActionKind::RestoreResolve));
+        assert!(Role::Admin.allows(ActionKind::RestoreResolve));
+    }
+
     #[test]
     fn ordinary_requests_require_signed_world_and_channel_scope() {
         let signer = Signer::new();
@@ -1006,6 +1139,7 @@ pub(crate) mod tests {
                 "report clear text",
                 Action::ReportClearText {
                     report_id: id.into(),
+                    text_revision: Decimal(1),
                 },
             ),
         ];

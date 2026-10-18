@@ -41,15 +41,142 @@ owned_paths:
   - "apps/game-server/src/{lib.rs,durability/mod.rs} (D1160: own module registration line only)"
   - "apps/game-server/tests/*.rs (D1161: 26 exact production node/staff forwarding lines only)"
   - "content/world/pins/oteryn.json (D1328: compiler-derived inputs_digest correction only)"
+  - "apps/game-server/migrations/0123_staff_moderation.sql (D1437: minimal moderation writers; WRITE-MOD-1 not on main)"
+  - "apps/game-server/src/durability/staff_moderation.rs (D1437: staff executor, sanctions, item-text reports)"
+  - "apps/game-server/src/staff/live.rs (D1437: live staff desk, kick and mute fan-out)"
+  - "apps/game-server/src/gameplay_transport/{chat_intent,connection,mod,qualification,capabilities_tests}.rs (D1437: staff mute refusal, kick-to-fenced-logout and desk registration hunks only)"
+  - "apps/game-server/src/node/serve.rs (D1437: staff executor and desk wiring hunks)"
 slot_only_paths:
   - "Cargo.toml and further apps/game-server/Cargo.toml integration outside the exact D1343e test-target hunk (CP grant required; D1328 integration already landed in 647053e9)"
-  - "migrations: game_character_sanctions, game_staff_roles, game_player_reports"
+  - "migrations: game_staff_roles, game_player_reports (D1437: sanctions and item-text reports landed in 0123; roles stay in the signed roster)"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (staff panel)"
-  - "apps/game-server/src/gameplay_transport/connection.rs, mod.rs, capabilities.rs, crates/protocol-oteryn/src/lib.rs"
+  - "apps/game-server/src/gameplay_transport/capabilities.rs, crates/protocol-oteryn/src/lib.rs (connection.rs and mod.rs GM-1 hunks are owned under D1437)"
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — Codex review of `39fa9d3b` repairs, REPORT_ONLY (2026-10-18)
+## Current checkpoint — D1437 mechanic complete and wired, REPORT_ONLY (2026-10-18)
+
+Parent `aeaf11f1`, merged with `main` `64d5e4da` (merge `bf88a534`). CP D1437
+resolved the architect UNKNOWNs; where the PR already implied a choice it is kept:
+
+- **Signed bytes.** The request and receipt rows already hash JCS
+  (`oteryn_release_manifest::jcs`), so JCS stays the canonical encoding. The
+  `ssh-keygen -Y` namespaces stay `oteryn-ops-request-v1` and
+  `oteryn-ops-submission-receipt-v1`. D1437 named `oteryn-staff`; see the owner question below.
+- **Roster.** The server-side signed roster loaded at boot (`[staff.trust]`
+  plus `activation_history_file`) now also carries exactly one role comment
+  line per signer: `# oteryn-staff-role <principal> GM|SENIOR_GM|ADMIN`. The
+  roster digest covers that line and OpenSSH ignores it. Boot fails closed
+  (`trust.roles()`) on a role that is missing, duplicated, malformed or unknown. The role decides
+  the action: GM may Inspect, ReportsList, Kick, Mute, Unmute and ReportClose;
+  SENIOR_GM may also ReportClearText; ADMIN may run every action.
+- **Writers.** WRITE-MOD-1 is not on `main`, so this PR owns the minimal
+  writers: migration `0123_staff_moderation.sql` (sanctions, item-text reports
+  and the WRITE0-RL-04..06 counters) and `durability/staff_moderation.rs`.
+
+What runs in the game now:
+
+- `serve_staff_control` routes every signed request through the audited
+  executor. It verifies the request, then checks the scope (node world and
+  channel), the role tier and the mute bound. The action, its sanction or
+  report rows, the operation row and the outbox row all commit in one
+  transaction. A failed audit insert rolls back everything, and no live
+  effect runs.
+- **Mute / Unmute** write `game_character_sanctions`. After the commit, the
+  node's `StaffDesk` refuses that Character's chat. Chat admission also reads
+  `staff_active_mute_until`, so the mute survives a restart or reconnect.
+- **Kick** reaches the connection registered on the desk at admission. It
+  runs that session's real fenced logout release (LOGOUT-WIRE-1): an accepted
+  release ends the session as a logout; an in-fight or busy session keeps
+  playing; an unknown release ends it as a disconnect.
+- **Inspect** and **ReportsList** are audited reads.
+- **REPORT-3 (WRITE0 §6):** item-text reports are admitted with dedup, then
+  the hourly (10), account (20) and world capacity limits, then the
+  current-text check. Staff can close a report or clear its text with a
+  revision fence. Expiry runs on the node's maintenance cadence.
+
+- **Audit build id (found by the executor tests).** `audit::encode` checked
+  the server build id with the signed-field `token` alphabet. The node's
+  default `oteryn-game-server/<version>` carries a `/`, so every live staff
+  action failed as `Invalid` before its audit row. The check now takes 1-128
+  visible ASCII bytes; lib
+  `the_running_server_build_id_is_an_accepted_envelope_build` covers it.
+- **Report close clock (found by the executor tests).** A close stamped
+  `ended_at` with the staff request clock, which may precede the report's
+  `created_at` from the reporter's node clock. The row CHECK then refused the
+  close as a database error. A close now ends at `GREATEST(now, created_at)`.
+
+The 18 boundary rows map to tests as follows. Rows 1-12 and 16-18 are covered;
+rows 13-15 (restore) have no restore path and stay BLOCKED.
+
+| Row | Covered by |
+| --- | --- |
+| 1 | lib `missing_signature_unknown_principal_and_wrong_namespace_are_independent` |
+| 2 | `environment_roster_and_parameter_binding_have_no_unsigned_sibling` |
+| 3 | `authenticated_unknown_duplicate_missing_and_noncanonical_fields_refuse` |
+| 4 | `first_execution_clock_bounds…` and PG `staff_pg_stale_future_clock…` |
+| 5-6 | PG `staff_pg_identical_expired_retry…` |
+| 7 | PG `staff_pg_stale_future_clock_sequence_previous_and_roster…` and `old_loaded_config…` |
+| 8 | PG `staff_pg_same_predecessor_two_connections_have_one_typed_loser` |
+| 9 | lib `chain_gaps_forks_digest_substitution_and_unrecorded_activation_fail` |
+| 10 | lib `removed_key_cannot_append…` and `receipts_cannot_replace_recorded_activation_anchors` |
+| 11 | lib `event_kind_target_reason_parameters_and_missing_bytes_each_fail_binding` |
+| 12 | PG `staff_pg_receipt_requires_exact_digests…` and lib `receipt_signature_namespace…` |
+| 13-15 | BLOCKED: no restore path yet |
+| 16-17 | PG `staff_pg_failed_audit_insert_rolls_back…` and `staff_pg_executor_audit_failure_rolls_back_the_action_and_its_effect` |
+| 18 | lib `retained_operation_mirrors_verify_without_any_outbox_row` and `unsigned_read_timestamp_cannot_excuse_missing_unexpired_audit` |
+
+New integration cases go through the real dispatch path
+(`serve_staff_request`, the runtime LOGIN and the receipt chain):
+
+- `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`;
+- `staff_pg_executor_refuses_scope_bounds_tier_and_foreign_targets`;
+- `staff_pg_executor_without_a_roster_role_fails_closed_before_any_write`;
+- `staff_pg_executor_audit_failure_rolls_back_the_action_and_its_effect`;
+- `staff_pg_item_text_reports_admit_close_clear_and_expire_under_write0_limits`.
+
+New connection cases in `capabilities_tests::logout_wire` cover a kick that
+releases, a kick of an in-fight or busy session, and a kick whose release is
+unknown.
+
+Remaining:
+
+- A mute committed on another node reaches chat only at that Character's next
+  chat open, through `staff_active_mute_until`.
+- The player-facing report intent is WRITE-WIRE-1; only the storage writer
+  exists here.
+- Map-object reports are out of scope.
+
+Owner questions:
+
+- **Namespace.** D1437 says `oteryn-staff`, but the PR signs with
+  `oteryn-ops-request-v1` / `oteryn-ops-submission-receipt-v1`.
+  Recommendation: keep these, because the existing chain and evidence verify
+  under them.
+- **Migration number.** `0123` is free on `main` `64d5e4da` today. It is
+  renumbered at the queue turn if taken.
+
+Validation of Rust tree `64102214`, before this card's results table (Ubuntu/mole,
+shared `~/oteryn-cache`, one CP D1429 `slot-run.sh` slot per run,
+`apps/game-server/src/lib.rs` touched before every cargo run, `cargo fetch
+--locked` first, PG through the unchanged `in-pg-netns.sh` against shared
+PostgreSQL 17.6):
+
+| Check | Result |
+| --- | --- |
+| RED: the executor cases before the build-id fix | 4 failed (`Rejected(Invalid)` before any audit row) |
+| RED: the reports case before the close-clock fix | 1 failed (`game_item_text_reports_check1` on close) |
+| `cargo fmt --all --check` | pass |
+| strict Clippy `-p oteryn-game-server --all-targets -D warnings` | pass |
+| strict Clippy `--test staff_audit_postgres -D warnings` | pass |
+| lib `-- staff chat_intent logout_wire` | 56 passed, 0 failed |
+| `staff_audit_postgres` | 1185 passed, 0 failed |
+| canonical `durability_postgres staff_pg_` | 25 passed, 0 failed |
+| `python3 tools/agents/validate_governance.py` | passed (22 policy documents, 9 project lanes) |
+
+Runtime remains REPORT_ONLY.
+
+## Previous checkpoint — Codex review of `39fa9d3b` repairs, REPORT_ONLY (2026-10-18)
 
 Parent `39fa9d3b`, not behind `main` `afa97ba0`, so no merge. Both findings were accepted:
 
@@ -946,6 +1073,11 @@ family path inventory below does not allocate a child or authorize slot work.
 - workspace-boundaries.toml (D1091's exact inventory/edge additions only)
 - apps/game-server/src/bin/oteryn-game-ops.rs (existing executable, signed requests)
 - docs/agents/tasks/GM-1.md
+- D1437 additions: apps/game-server/migrations/0123_staff_moderation.sql,
+  apps/game-server/src/durability/staff_moderation.rs,
+  apps/game-server/src/staff/live.rs, the GM-1 hunks of
+  apps/game-server/src/gameplay_transport/{chat_intent,connection,mod,qualification,capabilities_tests}.rs
+  and apps/game-server/src/node/serve.rs
 
 ## Slot-only paths (ONLY in the final commit at the merge-queue turn, after merging main)
 

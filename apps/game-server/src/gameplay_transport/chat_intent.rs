@@ -80,6 +80,8 @@ pub(crate) struct ChatRuntime {
     relay: OnceLock<Arc<ChatRelay>>,
     /// The last customer queue position handed out.
     joins: AtomicU64,
+    /// GM-1: the node's staff desk, whose committed staff mutes refuse chat.
+    staff: OnceLock<Arc<crate::staff::live::StaffDesk>>,
 }
 
 impl ChatRuntime {
@@ -125,6 +127,28 @@ impl ChatRuntime {
     /// Installs the World relay once; a second install is ignored.
     pub(crate) fn install_relay(&self, relay: Arc<ChatRelay>) {
         let _ = self.relay.set(relay);
+    }
+
+    /// Installs the node's staff desk once; a second install is ignored.
+    pub(crate) fn install_staff(&self, desk: Arc<crate::staff::live::StaffDesk>) {
+        let _ = self.staff.set(desk);
+    }
+
+    /// The node's staff desk, once installed.
+    pub(crate) fn staff_desk(&self) -> Option<&Arc<crate::staff::live::StaffDesk>> {
+        self.staff.get()
+    }
+
+    /// GM-1: a committed staff mute of `character` refuses its line as `MUTED`, with the whole
+    /// seconds left on the wall clock its sanction was written on, capped at the wire's bound.
+    fn staff_muted(&self, character: Option<[u8; 16]>) -> Option<ChatIntentResult> {
+        let seconds = self
+            .staff
+            .get()?
+            .mute_seconds(&character?, crate::staff::live::wall_ms())?;
+        Some(refusal(ChatRefusal::Muted {
+            seconds: seconds.clamp(1, oteryn_protocol_oteryn::chat::MAX_CHAT_WAIT_SECONDS),
+        }))
     }
 
     /// The World relay, once installed.
@@ -499,6 +523,9 @@ impl ChatRuntime {
         let Some(entry) = sessions.get_mut(&session) else {
             return unavailable();
         };
+        if let Some(muted) = self.staff_muted(entry.character) {
+            return Some(muted);
+        }
         entry
             .limiter
             .pre_gate(speech_mode(*mode), now)
@@ -533,6 +560,9 @@ impl ChatRuntime {
         if room.is_some_and(|room| !entry.rooms.contains(room)) {
             return Some(result(ChatDisposition::RoomNotOpen));
         }
+        if let Some(muted) = self.staff_muted(entry.character) {
+            return Some(muted);
+        }
         entry
             .limiter
             .pre_gate_relay(room == Some(ChatRoom::Advertising), now)
@@ -553,6 +583,9 @@ impl ChatRuntime {
         let mut sessions = self.sessions.lock().map_err(|_| unavailable)?;
         let entry = sessions.get_mut(&session).ok_or(unavailable)?;
         let name = CharacterName::parse(&entry.name).map_err(|_| unavailable)?;
+        if let Some(muted) = self.staff_muted(entry.character) {
+            return Err(muted);
+        }
         if let Some(recipient) = recipient {
             if entry.character == Some(recipient) {
                 return Err(result(ChatDisposition::Rejected));
@@ -573,7 +606,11 @@ impl ChatRuntime {
         self.sessions
             .lock()
             .ok()
-            .and_then(|sessions| sessions.get(&session).map(|s| s.limiter.is_muted(now)))
+            .and_then(|sessions| {
+                sessions
+                    .get(&session)
+                    .map(|s| s.limiter.is_muted(now) || self.staff_muted(s.character).is_some())
+            })
             .unwrap_or(false)
     }
 }
@@ -673,6 +710,9 @@ pub(crate) fn chat_in_premium_channel(
             .map_or(speaking.level, |state| state.character_facts().level),
         premium_current: premium.premium_current(),
     };
+    if let Some(muted) = chat.staff_muted(speaking.character) {
+        return muted;
+    }
     if let Err(why) = speaking.limiter.admit_local(mode, gate, now) {
         return refusal(why);
     }
@@ -846,6 +886,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?
             .map_or(1, |progression| progression.level);
+        // GM-1: a durable staff mute (a restart, a reconnect, another node's mute) is loaded with
+        // the name; an unreadable one leaves the session unadmitted like a failed name read.
+        if let Some(desk) = self.chat.staff_desk() {
+            let until = self
+                .root
+                .staff_active_mute_until(character, crate::staff::live::wall_ms())
+                .await
+                .ok()?;
+            desk.set_mute(character, until);
+        }
         Some((name.as_str().to_owned(), character, level))
     }
 
@@ -1136,6 +1186,38 @@ mod tests {
             );
         }
         assert!(chat.drain(second.1).is_empty());
+    }
+
+    #[test]
+    fn a_staff_mute_refuses_every_line_until_it_is_lifted() {
+        let (runtime, chat, first, second) = two_players(0);
+        let character = [0x55; 16];
+        chat.admit_as(first.1, "Aela", Some(character), BASE);
+        let desk = crate::staff::live::StaffDesk::new();
+        chat.install_staff(Arc::clone(&desk));
+        // A day-long mute answers the wire's longest wait.
+        desk.set_mute(character, Some(crate::staff::live::wall_ms() + 86_400_000));
+        let refused = speak(&chat, &runtime, first, &say("hi"), BASE);
+        assert_eq!(refused.disposition, ChatDisposition::Muted);
+        assert_eq!(
+            refused.wait_seconds,
+            oteryn_protocol_oteryn::chat::MAX_CHAT_WAIT_SECONDS
+        );
+        assert_eq!(
+            chat.pre_gate(first.1, &say("hi"), BASE)
+                .map(|refused| refused.disposition),
+            Some(ChatDisposition::Muted)
+        );
+        assert!(chat.muted_cast(first.1, BASE).is_some());
+        assert!(chat.drain(second.1).is_empty());
+        // Another player still speaks; a lift ends the mute at once.
+        assert!(chat.pre_gate(second.1, &say("yo"), BASE).is_none());
+        desk.set_mute(character, None);
+        assert_eq!(
+            speak(&chat, &runtime, first, &say("hi"), BASE).disposition,
+            ChatDisposition::Ok
+        );
+        assert_eq!(chat.drain(second.1).len(), 1);
     }
 
     #[test]

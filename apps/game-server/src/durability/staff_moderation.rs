@@ -1,0 +1,1036 @@
+//! GM-1 / CP D1437: the staff action executor and the minimal moderation
+//! writers (WRITE-MOD-1 is not on main). Every action is one semantic
+//! transaction: the staff participant (`staff_action`) locks the control head,
+//! the effect rows are written, then the same participant inserts the audit
+//! link, operation and outbox row. Any failure before commit, the audit
+//! included, rolls the effect back. A live effect (a kick, a mute pushed to
+//! chat) and any disclosed data happen only after that commit.
+//!
+//! Sanctions are staff records (migration 0123), never Character aggregate
+//! writes; no action creates value. Item-text reports follow WRITE0 §6.
+use super::DurabilityRoot;
+use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::staff_action::{
+    Begin, Pending, StaffError, StoredOutcome, begin_in_transaction, finish_in_transaction,
+};
+use crate::staff::audit::{Contract, ResultCode};
+use crate::staff::live::{KickResult, StaffDesk};
+use crate::staff::signature::{
+    self, Action, ControlMessage, Decimal, Disposition, Error, History, Outcome, ReportState,
+    SignedBytes, Target, VerifiedRequest, VerifierTrust,
+};
+use serde_json::{Value, json};
+use sqlx::{PgConnection, Row};
+use std::sync::Arc;
+
+/// Longest staff mute: 365 days, the sanction table's own bound.
+pub const MAX_MUTE_MS: u64 = 31_536_000_000;
+/// WRITE0-RL-03: a report snapshot is kept 180 days after the report.
+pub const REPORT_RETENTION_MS: i64 = 15_552_000_000;
+/// WRITE0-RL-04: reports per reporting character per hour.
+pub const REPORTS_PER_HOUR: i16 = 10;
+/// WRITE0-RL-05: open reports per reporting account.
+pub const OPEN_REPORTS_PER_ACCOUNT: i16 = 20;
+/// WRITE0-RL-06: open report snapshots per World; the alarm fires at 80%.
+pub const OPEN_SNAPSHOTS_PER_WORLD: i32 = 100_000;
+/// Most reports one list answer names.
+pub const REPORT_PAGE: i64 = 32;
+/// Most OPEN reports one expiry run ends, one transaction each.
+pub const REPORT_EXPIRY_BATCH: u32 = 64;
+const HOUR_MS: i64 = 3_600_000;
+const MAX_REVISION: u64 = u64::MAX;
+
+/// The node a staff request must be scoped to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StaffNode {
+    pub world: [u8; 16],
+    pub channel: [u8; 16],
+}
+
+/// One served request: the stored outcome, data for the operator and the
+/// live effect to apply after commit. A replay carries neither.
+struct Executed {
+    stored: StoredOutcome,
+    data: Option<Value>,
+    effect: Effect,
+}
+enum Effect {
+    None,
+    Kick([u8; 16]),
+    Mute {
+        character: [u8; 16],
+        until: Option<u64>,
+    },
+}
+
+/// What the action decided inside the transaction, before the audit row.
+struct Decision {
+    result: ResultCode,
+    data: Option<Value>,
+    effect: Effect,
+}
+impl Decision {
+    fn refused(result: ResultCode) -> Self {
+        Self {
+            result,
+            data: None,
+            effect: Effect::None,
+        }
+    }
+}
+
+/// WRITE0 §6 admission of one item-text report; each refusal stores nothing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReportAdmission {
+    /// The report is OPEN; `first` is false for a deduplicated repeat, which
+    /// returns the first report. `alarm` is set at 80% of WRITE0-RL-06.
+    Open {
+        report_id: String,
+        first: bool,
+        alarm: bool,
+    },
+    RateLimited,
+    Quota,
+    Capacity,
+    Stale,
+}
+
+/// The reporter's view the report is about (WRITE0 §6: the revision read).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ItemTextReport {
+    pub world: [u8; 16],
+    pub reporter_character: [u8; 16],
+    pub item_instance: [u8; 16],
+    pub text_revision: u64,
+}
+
+fn uuid(bytes: &[u8; 16]) -> String {
+    crate::node::uuid_text(bytes)
+}
+fn new_id() -> Result<String, StaffError> {
+    Ok(uuid(
+        &crate::node::operator_files::uuid_v7().map_err(|_| Error::Invalid)?,
+    ))
+}
+fn same_uuid(text: &str, bytes: &[u8; 16]) -> bool {
+    crate::node::uuid_bytes(text).as_ref() == Some(bytes)
+}
+fn ms(value: i64) -> Result<u64, StaffError> {
+    Ok(u64::try_from(value).map_err(|_| Error::Clock)?)
+}
+
+/// The answer bytes of one control message: the stored outcome, then
+/// optionally `\n` and bounded JCS data; `receipt-stored`, or `rejected`.
+fn answer(stored: &StoredOutcome, data: Option<&Value>) -> Vec<u8> {
+    let mut bytes = stored.bytes.clone();
+    if let Some(data) = data {
+        let room = signature::MAX_ANSWER_BYTES.saturating_sub(bytes.len() + 1);
+        if let Ok(encoded) = oteryn_release_manifest::jcs::encode(data, room) {
+            bytes.push(b'\n');
+            bytes.extend_from_slice(&encoded);
+        }
+    }
+    bytes
+}
+
+async fn begin_at(
+    connection: &mut PgConnection,
+    trust: &VerifierTrust,
+    history: &History,
+    request: VerifiedRequest,
+    now: Option<u64>,
+) -> Result<Begin, StaffError> {
+    #[cfg(test)]
+    if let Some(now) = now {
+        return super::staff_action::fixture_begin_in_transaction(
+            connection,
+            trust,
+            history,
+            request,
+            Ok(now),
+        )
+        .await;
+    }
+    // Production always reads the synchronized clock inside the participant.
+    #[cfg(not(test))]
+    let _ = now;
+    begin_in_transaction(connection, trust, history, request).await
+}
+
+/// The ACTIVE staff mutes of `character` still running at `now`, longest end.
+async fn active_mute_until(
+    connection: &mut PgConnection,
+    character: &str,
+    now: i64,
+) -> Result<Option<u64>, StaffError> {
+    let until: Option<i64> = sqlx::query_scalar(
+        "SELECT max(ends_at) FROM game_character_sanctions \
+         WHERE character_id=$1::uuid AND status='ACTIVE' AND ends_at>$2",
+    )
+    .bind(character)
+    .bind(now)
+    .fetch_one(&mut *connection)
+    .await?;
+    until.map(ms).transpose()
+}
+
+/// The target Character if it lives in this node's World.
+async fn character_in_world(
+    connection: &mut PgConnection,
+    character: &str,
+    world: &[u8; 16],
+) -> Result<Option<String>, StaffError> {
+    Ok(sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=$1::uuid AND world_id=$2::uuid",
+    )
+    .bind(character)
+    .bind(uuid(world))
+    .fetch_optional(&mut *connection)
+    .await?)
+}
+
+async fn decide(
+    connection: &mut PgConnection,
+    pending: &Pending,
+    desk: &StaffDesk,
+    trust: &VerifierTrust,
+    node: StaffNode,
+    action_id: &str,
+) -> Result<Decision, StaffError> {
+    let request = pending.request();
+    let now = pending.occurred_at();
+    let principal = &request.signed().principal;
+    let role = trust.role_of(principal)?;
+    let kind = request.request().action.kind();
+    if !role.allows(kind) {
+        return Ok(Decision::refused(ResultCode::TierInsufficient));
+    }
+    match &request.request().action {
+        Action::Inspect { character_id } => {
+            let Some(name) = character_in_world(connection, character_id, &node.world).await?
+            else {
+                return Ok(Decision::refused(ResultCode::TargetNotFound));
+            };
+            let bytes = crate::node::uuid_bytes(character_id).ok_or(Error::Invalid)?;
+            let mutes = sqlx::query(
+                "SELECT sanction_id::text,ends_at FROM game_character_sanctions \
+                 WHERE character_id=$1::uuid AND status='ACTIVE' AND ends_at>$2 \
+                 ORDER BY ends_at DESC LIMIT 16",
+            )
+            .bind(character_id)
+            .bind(now)
+            .fetch_all(&mut *connection)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok::<_, sqlx::Error>(json!({
+                    "sanction_id": row.try_get::<String, _>(0)?,
+                    "ends_at": row.try_get::<i64, _>(1)?.to_string(),
+                }))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+            let reports: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_text_reports \
+                 WHERE reporter_character_id=$1::uuid AND state='OPEN'",
+            )
+            .bind(character_id)
+            .fetch_one(&mut *connection)
+            .await?;
+            Ok(Decision {
+                result: ResultCode::Ok,
+                data: Some(json!({
+                    "character_id": character_id,
+                    "name": name,
+                    "online": desk.session_for_character(&bytes).is_some(),
+                    "active_mutes": mutes,
+                    "open_reports_filed": reports.to_string(),
+                })),
+                effect: Effect::None,
+            })
+        }
+        Action::Kick { target } => {
+            let session = match target {
+                Target::Character { character_id } => {
+                    let bytes = crate::node::uuid_bytes(character_id).ok_or(Error::Invalid)?;
+                    desk.session_for_character(&bytes)
+                }
+                Target::Account { account_ref } => {
+                    desk.session_for_account_ref(trust.environment(), account_ref)
+                }
+                _ => return Err(Error::Invalid.into()),
+            };
+            Ok(match session {
+                Some(session) => Decision {
+                    result: ResultCode::Ok,
+                    data: None,
+                    effect: Effect::Kick(session),
+                },
+                None => Decision::refused(ResultCode::TargetNotInChannel),
+            })
+        }
+        Action::Mute {
+            character_id,
+            duration_ms,
+        } => {
+            if character_in_world(connection, character_id, &node.world)
+                .await?
+                .is_none()
+            {
+                return Ok(Decision::refused(ResultCode::TargetNotFound));
+            }
+            let duration = i64::try_from(duration_ms.0).map_err(|_| Error::Invalid)?;
+            let ends_at = now.checked_add(duration).ok_or(Error::Invalid)?;
+            let sanction = new_id()?;
+            sqlx::query(
+                "INSERT INTO game_character_sanctions(sanction_id,environment,character_id,kind,\
+                 starts_at,ends_at,actor_principal,mute_action_id,status,revision) \
+                 VALUES($1::uuid,$2,$3::uuid,'MUTE',$4,$5,$6,$7::uuid,'ACTIVE',1)",
+            )
+            .bind(&sanction)
+            .bind(trust.environment())
+            .bind(character_id)
+            .bind(now)
+            .bind(ends_at)
+            .bind(principal)
+            .bind(action_id)
+            .execute(&mut *connection)
+            .await?;
+            let until = active_mute_until(connection, character_id, now).await?;
+            Ok(Decision {
+                result: ResultCode::Ok,
+                data: Some(json!({"sanction_id": sanction, "ends_at": ends_at.to_string()})),
+                effect: Effect::Mute {
+                    character: crate::node::uuid_bytes(character_id).ok_or(Error::Invalid)?,
+                    until,
+                },
+            })
+        }
+        Action::Unmute { sanction_id } => {
+            let row = sqlx::query(
+                "SELECT s.character_id::text,s.status,s.ends_at FROM game_character_sanctions s \
+                 JOIN game_character_roots r ON r.character_id=s.character_id \
+                 WHERE s.sanction_id=$1::uuid AND s.environment=$2 AND r.world_id=$3::uuid \
+                 FOR UPDATE OF s",
+            )
+            .bind(sanction_id)
+            .bind(trust.environment())
+            .bind(uuid(&node.world))
+            .fetch_optional(&mut *connection)
+            .await?;
+            let Some(row) = row else {
+                return Ok(Decision::refused(ResultCode::TargetNotFound));
+            };
+            let character: String = row.try_get(0)?;
+            let status: String = row.try_get(1)?;
+            let ends_at: i64 = row.try_get(2)?;
+            if status != "ACTIVE" || ends_at <= now {
+                return Ok(Decision::refused(ResultCode::AlreadyReleased));
+            }
+            let changed = sqlx::query(
+                "UPDATE game_character_sanctions SET status='LIFTED',revision=2,lifted_at=$2,\
+                 lift_action_id=$3::uuid WHERE sanction_id=$1::uuid AND status='ACTIVE'",
+            )
+            .bind(sanction_id)
+            .bind(now)
+            .bind(action_id)
+            .execute(&mut *connection)
+            .await?
+            .rows_affected();
+            if changed != 1 {
+                return Ok(Decision::refused(ResultCode::AlreadyReleased));
+            }
+            let until = active_mute_until(connection, &character, now).await?;
+            Ok(Decision {
+                result: ResultCode::Ok,
+                data: None,
+                effect: Effect::Mute {
+                    character: crate::node::uuid_bytes(&character).ok_or(Error::Invalid)?,
+                    until,
+                },
+            })
+        }
+        Action::ReportsList { state } => {
+            let state = match state {
+                ReportState::Open => "OPEN",
+                ReportState::Closed => "CLOSED",
+                ReportState::Expired => "EXPIRED",
+            };
+            let rows = sqlx::query(
+                "SELECT report_id::text,item_instance_id::text,text_revision::text,created_at,\
+                 writer_character_id::text,snapshot_text,cleared_action_id IS NOT NULL \
+                 FROM game_item_text_reports WHERE world_id=$1::uuid AND state=$2 \
+                 ORDER BY created_at,report_id LIMIT $3",
+            )
+            .bind(uuid(&node.world))
+            .bind(state)
+            .bind(REPORT_PAGE)
+            .fetch_all(&mut *connection)
+            .await?;
+            // The snapshot reaches only the operator's answer, never a log;
+            // rows past the answer bound are left for the next page.
+            let mut reports = Vec::new();
+            let mut size = signature::MAX_OUTCOME_BYTES + 256;
+            let mut truncated = false;
+            for row in rows {
+                let report = json!({
+                    "report_id": row.try_get::<String, _>(0)?,
+                    "item_instance_id": row.try_get::<String, _>(1)?,
+                    "text_revision": row.try_get::<String, _>(2)?,
+                    "created_at": row.try_get::<i64, _>(3)?.to_string(),
+                    "writer_character_id": row.try_get::<Option<String>, _>(4)?,
+                    "text": row.try_get::<Option<String>, _>(5)?,
+                    "cleared": row.try_get::<bool, _>(6)?,
+                });
+                let length = serde_json::to_vec(&report).map_or(usize::MAX, |b| b.len());
+                size = size.saturating_add(length + 1);
+                if size > signature::MAX_ANSWER_BYTES {
+                    truncated = true;
+                    break;
+                }
+                reports.push(report);
+            }
+            Ok(Decision {
+                result: ResultCode::Ok,
+                data: Some(json!({"state": state, "reports": reports, "truncated": truncated})),
+                effect: Effect::None,
+            })
+        }
+        Action::ReportClose { report_id } => {
+            let Some((account, world)) = report_owner(connection, report_id, &node.world).await?
+            else {
+                return Ok(Decision::refused(ResultCode::TargetNotFound));
+            };
+            Ok(
+                match end_report(
+                    connection,
+                    report_id,
+                    &account,
+                    &world,
+                    now,
+                    Some(action_id),
+                )
+                .await?
+                {
+                    true => Decision {
+                        result: ResultCode::Ok,
+                        data: None,
+                        effect: Effect::None,
+                    },
+                    false => Decision::refused(ResultCode::Stale),
+                },
+            )
+        }
+        Action::ReportClearText {
+            report_id,
+            text_revision,
+        } => {
+            clear_report_text(
+                connection,
+                report_id,
+                *text_revision,
+                &node.world,
+                action_id,
+            )
+            .await
+        }
+        Action::RosterActivate { .. } => Err(StaffError::UnsupportedAction),
+    }
+}
+
+/// The reporter account and World of a report in this node's World.
+async fn report_owner(
+    connection: &mut PgConnection,
+    report_id: &str,
+    world: &[u8; 16],
+) -> Result<Option<(String, String)>, StaffError> {
+    let row = sqlx::query(
+        "SELECT reporter_account_id::text,world_id::text FROM game_item_text_reports \
+         WHERE report_id=$1::uuid AND world_id=$2::uuid",
+    )
+    .bind(report_id)
+    .bind(uuid(world))
+    .fetch_optional(&mut *connection)
+    .await?;
+    row.map(|row| Ok((row.try_get(0)?, row.try_get(1)?)))
+        .transpose()
+}
+
+async fn lock_open_counters(
+    connection: &mut PgConnection,
+    account: &str,
+    world: &str,
+) -> Result<(i16, i32), StaffError> {
+    sqlx::query(
+        "INSERT INTO game_item_text_report_accounts(account_id,open_reports) VALUES($1::uuid,0) \
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(account)
+    .execute(&mut *connection)
+    .await?;
+    let open: i16 = sqlx::query_scalar(
+        "SELECT open_reports FROM game_item_text_report_accounts WHERE account_id=$1::uuid FOR UPDATE",
+    )
+    .bind(account)
+    .fetch_one(&mut *connection)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_item_text_report_worlds(world_id,open_snapshots) VALUES($1::uuid,0) \
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(world)
+    .execute(&mut *connection)
+    .await?;
+    let snapshots: i32 = sqlx::query_scalar(
+        "SELECT open_snapshots FROM game_item_text_report_worlds WHERE world_id=$1::uuid FOR UPDATE",
+    )
+    .bind(world)
+    .fetch_one(&mut *connection)
+    .await?;
+    Ok((open, snapshots))
+}
+
+/// WRITE0 §6 close or expiry: counters, then the report, then one conditional
+/// update from OPEN; the counters fall only if that update changed a row.
+async fn end_report(
+    connection: &mut PgConnection,
+    report_id: &str,
+    account: &str,
+    world: &str,
+    now: i64,
+    closed_by: Option<&str>,
+) -> Result<bool, StaffError> {
+    lock_open_counters(connection, account, world).await?;
+    sqlx::query("SELECT state FROM game_item_text_reports WHERE report_id=$1::uuid FOR UPDATE")
+        .bind(report_id)
+        .fetch_one(&mut *connection)
+        .await?;
+    let changed = match closed_by {
+        // A close never ends before the report began: the staff request clock
+        // and the reporter's node clock may differ.
+        Some(action) => sqlx::query(
+            "UPDATE game_item_text_reports SET state='CLOSED',revision=2,\
+             ended_at=GREATEST($2,created_at),closed_action_id=$3::uuid \
+             WHERE report_id=$1::uuid AND state='OPEN'",
+        )
+        .bind(report_id)
+        .bind(now)
+        .bind(action),
+        None => sqlx::query(
+            "UPDATE game_item_text_reports SET state='EXPIRED',revision=2,ended_at=$2,\
+             snapshot_text=NULL WHERE report_id=$1::uuid AND state='OPEN' AND expires_at<=$2",
+        )
+        .bind(report_id)
+        .bind(now),
+    }
+    .execute(&mut *connection)
+    .await?
+    .rows_affected()
+        == 1;
+    if changed {
+        sqlx::query(
+            "UPDATE game_item_text_report_accounts SET open_reports=open_reports-1 \
+             WHERE account_id=$1::uuid",
+        )
+        .bind(account)
+        .execute(&mut *connection)
+        .await?;
+        sqlx::query(
+            "UPDATE game_item_text_report_worlds SET open_snapshots=open_snapshots-1 \
+             WHERE world_id=$1::uuid",
+        )
+        .bind(world)
+        .execute(&mut *connection)
+        .await?;
+    }
+    Ok(changed)
+}
+
+/// WRITE0 §6 removal: under the item row lock, delete the live text only while
+/// it is still the reported revision, and advance the revision; else STALE.
+async fn clear_report_text(
+    connection: &mut PgConnection,
+    report_id: &str,
+    text_revision: Decimal,
+    world: &[u8; 16],
+    action_id: &str,
+) -> Result<Decision, StaffError> {
+    let row = sqlx::query(
+        "SELECT item_instance_id::text,text_revision::text FROM game_item_text_reports \
+         WHERE report_id=$1::uuid AND world_id=$2::uuid",
+    )
+    .bind(report_id)
+    .bind(uuid(world))
+    .fetch_optional(&mut *connection)
+    .await?;
+    let Some(row) = row else {
+        return Ok(Decision::refused(ResultCode::TargetNotFound));
+    };
+    let item: String = row.try_get(0)?;
+    let reported: String = row.try_get(1)?;
+    if reported != text_revision.0.to_string() {
+        return Ok(Decision::refused(ResultCode::Stale));
+    }
+    sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=$1::uuid FOR UPDATE")
+        .bind(&item)
+        .fetch_optional(&mut *connection)
+        .await?;
+    let last: Option<String> = sqlx::query_scalar(
+        "SELECT last_revision::text FROM game_item_text_revisions \
+         WHERE item_instance_id=$1::uuid FOR UPDATE",
+    )
+    .bind(&item)
+    .fetch_optional(&mut *connection)
+    .await?;
+    let current: Option<String> = sqlx::query_scalar(
+        "SELECT text_revision::text FROM game_item_texts WHERE item_instance_id=$1::uuid FOR UPDATE",
+    )
+    .bind(&item)
+    .fetch_optional(&mut *connection)
+    .await?;
+    let last = last.and_then(|last| last.parse::<u64>().ok());
+    let (Some(last), Some(current)) = (last, current) else {
+        return Ok(Decision::refused(ResultCode::Stale));
+    };
+    if current != reported || last == MAX_REVISION {
+        return Ok(Decision::refused(ResultCode::Stale));
+    }
+    sqlx::query("DELETE FROM game_item_texts WHERE item_instance_id=$1::uuid")
+        .bind(&item)
+        .execute(&mut *connection)
+        .await?;
+    sqlx::query(
+        "UPDATE game_item_text_revisions SET last_revision=$2::text::numeric \
+         WHERE item_instance_id=$1::uuid",
+    )
+    .bind(&item)
+    .bind((last + 1).to_string())
+    .execute(&mut *connection)
+    .await?;
+    sqlx::query(
+        "UPDATE game_item_text_reports SET cleared_action_id=$2::uuid \
+         WHERE report_id=$1::uuid AND cleared_action_id IS NULL",
+    )
+    .bind(report_id)
+    .bind(action_id)
+    .execute(&mut *connection)
+    .await?;
+    Ok(Decision {
+        result: ResultCode::Ok,
+        data: None,
+        effect: Effect::None,
+    })
+}
+
+/// WRITE0 §6 steps 2-7 in the caller's transaction, after its step-1 fence.
+pub(crate) async fn create_item_text_report_in_transaction(
+    connection: &mut PgConnection,
+    report: &ItemTextReport,
+    now: i64,
+    world_capacity: i32,
+) -> Result<ReportAdmission, StaffError> {
+    let reporter = uuid(&report.reporter_character);
+    let world = uuid(&report.world);
+    let item = uuid(&report.item_instance);
+    let account: String = sqlx::query_scalar(
+        "SELECT account_id::text FROM game_character_roots WHERE character_id=$1::uuid AND world_id=$2::uuid",
+    )
+    .bind(&reporter)
+    .bind(&world)
+    .fetch_optional(&mut *connection)
+    .await?
+    .ok_or(Error::Binding)?;
+    let hour = now.div_euclid(HOUR_MS);
+    // 2. Counter rows, upserted then locked, in the fixed order.
+    sqlx::query(
+        "INSERT INTO game_item_text_report_hourly(reporter_character_id,hour,reports) \
+         VALUES($1::uuid,$2,0) ON CONFLICT DO NOTHING",
+    )
+    .bind(&reporter)
+    .bind(hour)
+    .execute(&mut *connection)
+    .await?;
+    let hourly: i16 = sqlx::query_scalar(
+        "SELECT reports FROM game_item_text_report_hourly \
+         WHERE reporter_character_id=$1::uuid AND hour=$2 FOR UPDATE",
+    )
+    .bind(&reporter)
+    .bind(hour)
+    .fetch_one(&mut *connection)
+    .await?;
+    let (open, snapshots) = lock_open_counters(connection, &account, &world).await?;
+    // 3. Dedup among OPEN reports only.
+    let existing = open_report(connection, &reporter, &item, report.text_revision).await?;
+    if let Some(report_id) = existing {
+        return Ok(ReportAdmission::Open {
+            report_id,
+            first: false,
+            alarm: false,
+        });
+    }
+    // 4. Limits against the locked counters.
+    if hourly >= REPORTS_PER_HOUR {
+        return Ok(ReportAdmission::RateLimited);
+    }
+    if open >= OPEN_REPORTS_PER_ACCOUNT {
+        return Ok(ReportAdmission::Quota);
+    }
+    if snapshots >= world_capacity.min(OPEN_SNAPSHOTS_PER_WORLD) {
+        return Ok(ReportAdmission::Capacity);
+    }
+    // 5. The reported revision is still the item's current text.
+    let current: Option<i32> = sqlx::query_scalar(
+        "SELECT 1 FROM game_item_texts t \
+         JOIN game_item_text_revisions r ON r.item_instance_id=t.item_instance_id \
+         JOIN game_item_instances i ON i.item_instance_id=t.item_instance_id \
+         WHERE t.item_instance_id=$1::uuid AND i.world_id=$2::uuid \
+         AND t.text_revision=$3::text::numeric AND r.last_revision=t.text_revision \
+         FOR SHARE OF t",
+    )
+    .bind(&item)
+    .bind(&world)
+    .bind(report.text_revision.to_string())
+    .fetch_optional(&mut *connection)
+    .await?;
+    if current.is_none() {
+        return Ok(ReportAdmission::Stale);
+    }
+    // 6. Insert the snapshot, copied in SQL so the text never enters this
+    // process; a uniqueness race maps to the first report.
+    let report_id = new_id()?;
+    let inserted: Option<String> = sqlx::query_scalar(
+        "INSERT INTO game_item_text_reports(report_id,world_id,reporter_character_id,\
+         reporter_account_id,item_instance_id,text_revision,snapshot_text,writer_character_id,\
+         written_at,created_at,expires_at,state,revision) \
+         SELECT $1::uuid,$2::uuid,$3::uuid,$4::uuid,t.item_instance_id,t.text_revision,t.text,\
+         t.writer_character_id,t.written_at,$6,$7,'OPEN',1 FROM game_item_texts t \
+         WHERE t.item_instance_id=$5::uuid \
+         ON CONFLICT (reporter_character_id,item_instance_id,text_revision) WHERE state='OPEN' \
+         DO NOTHING RETURNING report_id::text",
+    )
+    .bind(&report_id)
+    .bind(&world)
+    .bind(&reporter)
+    .bind(&account)
+    .bind(&item)
+    .bind(now)
+    .bind(now.checked_add(REPORT_RETENTION_MS).ok_or(Error::Clock)?)
+    .fetch_optional(&mut *connection)
+    .await?;
+    let Some(report_id) = inserted else {
+        let first = open_report(connection, &reporter, &item, report.text_revision).await?;
+        return Ok(ReportAdmission::Open {
+            report_id: first.ok_or(StaffError::Conflict)?,
+            first: false,
+            alarm: false,
+        });
+    };
+    // 7. Increment the three counters.
+    sqlx::query(
+        "UPDATE game_item_text_report_hourly SET reports=reports+1 \
+         WHERE reporter_character_id=$1::uuid AND hour=$2",
+    )
+    .bind(&reporter)
+    .bind(hour)
+    .execute(&mut *connection)
+    .await?;
+    sqlx::query(
+        "UPDATE game_item_text_report_accounts SET open_reports=open_reports+1 WHERE account_id=$1::uuid",
+    )
+    .bind(&account)
+    .execute(&mut *connection)
+    .await?;
+    sqlx::query(
+        "UPDATE game_item_text_report_worlds SET open_snapshots=open_snapshots+1 WHERE world_id=$1::uuid",
+    )
+    .bind(&world)
+    .execute(&mut *connection)
+    .await?;
+    let alarm = i64::from(snapshots) + 1 >= i64::from(OPEN_SNAPSHOTS_PER_WORLD) * 4 / 5;
+    Ok(ReportAdmission::Open {
+        report_id,
+        first: true,
+        alarm,
+    })
+}
+
+async fn open_report(
+    connection: &mut PgConnection,
+    reporter: &str,
+    item: &str,
+    revision: u64,
+) -> Result<Option<String>, StaffError> {
+    Ok(sqlx::query_scalar(
+        "SELECT report_id::text FROM game_item_text_reports WHERE reporter_character_id=$1::uuid \
+         AND item_instance_id=$2::uuid AND text_revision=$3::text::numeric AND state='OPEN'",
+    )
+    .bind(reporter)
+    .bind(item)
+    .bind(revision.to_string())
+    .fetch_optional(&mut *connection)
+    .await?)
+}
+
+impl DurabilityRoot {
+    /// GM-1: serve one staff control message and return the exact answer.
+    /// The signature and the node scope are checked before any connection.
+    pub async fn serve_staff_control(
+        &self,
+        trust: Arc<VerifierTrust>,
+        history: Arc<History>,
+        desk: Arc<StaffDesk>,
+        node: StaffNode,
+        message: ControlMessage,
+    ) -> Result<Vec<u8>, StaffError> {
+        match message {
+            ControlMessage::Request(signed) => {
+                self.serve_staff_request(trust, history, desk, node, signed, None)
+                    .await
+            }
+            ControlMessage::Receipt(signed) => {
+                self.store_staff_receipt(trust, signed).await?;
+                Ok(b"receipt-stored".to_vec())
+            }
+        }
+    }
+
+    /// The source-included PostgreSQL fixture runs the same executor on its
+    /// own synchronized clock reading.
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "Used by the source-included PostgreSQL fixture, not library unit tests"
+    )]
+    pub(crate) async fn fixture_serve_staff_request(
+        &self,
+        trust: Arc<VerifierTrust>,
+        history: Arc<History>,
+        desk: Arc<StaffDesk>,
+        node: StaffNode,
+        signed: SignedBytes,
+        now: u64,
+    ) -> Result<Vec<u8>, StaffError> {
+        self.serve_staff_request(trust, history, desk, node, signed, Some(now))
+            .await
+    }
+
+    async fn serve_staff_request(
+        &self,
+        trust: Arc<VerifierTrust>,
+        history: Arc<History>,
+        desk: Arc<StaffDesk>,
+        node: StaffNode,
+        signed: SignedBytes,
+        now: Option<u64>,
+    ) -> Result<Vec<u8>, StaffError> {
+        let request = trust.verify_request(signed)?;
+        if matches!(request.request().action, Action::RosterActivate { .. }) {
+            return Err(StaffError::UnsupportedAction);
+        }
+        let in_scope = request.request().scope.as_ref().is_some_and(|scope| {
+            same_uuid(&scope.world_id, &node.world) && same_uuid(&scope.channel_id, &node.channel)
+        });
+        if !in_scope {
+            return Err(Error::Binding.into());
+        }
+        // A principal without a role fails closed before anything is written.
+        trust.role_of(&request.signed().principal)?;
+        if let Action::Mute { duration_ms, .. } = &request.request().action
+            && duration_ms.0 > MAX_MUTE_MS
+        {
+            return Err(Error::Invalid.into());
+        }
+        let contract = Contract::registered()?;
+        let worker_desk = Arc::clone(&desk);
+        let executed = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result: Result<Executed, StaffError> = async {
+                        match begin_at(&mut tx, &trust, &history, request, now).await? {
+                            Begin::Replay(stored) => Ok(Executed {
+                                stored,
+                                data: None,
+                                effect: Effect::None,
+                            }),
+                            Begin::Fresh(pending) => {
+                                let action_id = new_id()?;
+                                let transaction_id = new_id()?;
+                                let decision = decide(
+                                    &mut tx,
+                                    &pending,
+                                    &worker_desk,
+                                    &trust,
+                                    node,
+                                    &action_id,
+                                )
+                                .await?;
+                                let occurred_at = Decimal(ms(pending.occurred_at())?);
+                                let committed = decision.result == ResultCode::Ok;
+                                let stored = finish_in_transaction(
+                                    &mut tx,
+                                    pending,
+                                    contract,
+                                    Outcome {
+                                        disposition: if committed {
+                                            Disposition::Committed
+                                        } else {
+                                            Disposition::Refused
+                                        },
+                                        result: decision.result,
+                                        action_id,
+                                        transaction_id,
+                                        occurred_at,
+                                    },
+                                    super::character_authority::SERVER_BUILD_ID,
+                                )
+                                .await?;
+                                Ok(Executed {
+                                    stored,
+                                    data: decision.data,
+                                    effect: decision.effect,
+                                })
+                            }
+                        }
+                    }
+                    .await;
+                    if result.is_ok() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(result)
+                })
+            })
+            .await??;
+        // Only a committed audit reaches here: the live effect follows it.
+        let mut data = executed.data;
+        match executed.effect {
+            Effect::None => {}
+            Effect::Mute { character, until } => desk.set_mute(character, until),
+            Effect::Kick(session) => {
+                let result: KickResult = desk.kick(&session).await;
+                data = Some(json!({"kick": result.token()}));
+            }
+        }
+        Ok(answer(&executed.stored, data.as_ref()))
+    }
+
+    /// The end (Unix ms) of `character`'s longest staff mute running at `now`.
+    pub async fn staff_active_mute_until(
+        &self,
+        character: [u8; 16],
+        now: u64,
+    ) -> Result<Option<u64>, StaffError> {
+        let now = i64::try_from(now).map_err(|_| Error::Clock)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    Ok(active_mute_until(&mut tx, &uuid(&character), now).await)
+                })
+            })
+            .await?
+    }
+
+    /// WRITE0 §6 report admission in one transaction. The caller's fence
+    /// (WRITE-WIRE-1, the player report intent) is not composed yet.
+    pub async fn create_item_text_report(
+        &self,
+        report: ItemTextReport,
+        now: u64,
+        world_capacity: i32,
+    ) -> Result<ReportAdmission, StaffError> {
+        let now = i64::try_from(now).map_err(|_| Error::Clock)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = create_item_text_report_in_transaction(
+                        &mut tx,
+                        &report,
+                        now,
+                        world_capacity,
+                    )
+                    .await;
+                    if result.is_ok() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(result)
+                })
+            })
+            .await?
+    }
+
+    /// WRITE0 §6 expiry: each OPEN report past WRITE0-RL-03 expires in its own
+    /// transaction (the close lock order); then ended snapshots past it are
+    /// deleted and hourly rows of finished hours removed. Returns reports expired.
+    pub async fn expire_item_text_reports(&self, now: u64) -> Result<u64, StaffError> {
+        let now = i64::try_from(now).map_err(|_| Error::Clock)?;
+        let mut expired = 0_u64;
+        for _ in 0..REPORT_EXPIRY_BATCH {
+            let ended = self
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        let result = async {
+                            let row = sqlx::query(
+                                "SELECT report_id::text,reporter_account_id::text,world_id::text \
+                                 FROM game_item_text_reports WHERE state='OPEN' AND expires_at<=$1 \
+                                 ORDER BY expires_at,report_id LIMIT 1",
+                            )
+                            .bind(now)
+                            .fetch_optional(&mut *tx)
+                            .await?;
+                            let Some(row) = row else {
+                                return Ok(None);
+                            };
+                            let (report, account, world): (String, String, String) =
+                                (row.try_get(0)?, row.try_get(1)?, row.try_get(2)?);
+                            Ok::<_, StaffError>(Some(
+                                end_report(&mut tx, &report, &account, &world, now, None).await?,
+                            ))
+                        }
+                        .await;
+                        if result.is_ok() {
+                            commit_semantic_transaction(tx, deadline).await?;
+                        }
+                        Ok(result)
+                    })
+                })
+                .await??;
+            match ended {
+                None => break,
+                Some(true) => expired = expired.saturating_add(1),
+                Some(false) => {}
+            }
+        }
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = async {
+                        sqlx::query(
+                            "UPDATE game_item_text_reports SET snapshot_text=NULL WHERE report_id IN \
+                             (SELECT report_id FROM game_item_text_reports WHERE state<>'OPEN' \
+                              AND snapshot_text IS NOT NULL AND expires_at<=$1 LIMIT 1024)",
+                        )
+                        .bind(now)
+                        .execute(&mut *tx)
+                        .await?;
+                        sqlx::query("DELETE FROM game_item_text_report_hourly WHERE hour<$1")
+                            .bind(now.div_euclid(HOUR_MS))
+                            .execute(&mut *tx)
+                            .await?;
+                        Ok::<_, StaffError>(())
+                    }
+                    .await;
+                    if result.is_ok() {
+                        commit_semantic_transaction(tx, deadline).await?;
+                    }
+                    Ok(result)
+                })
+            })
+            .await??;
+        Ok(expired)
+    }
+}
