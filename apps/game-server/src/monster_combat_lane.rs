@@ -2268,15 +2268,30 @@ mod tests {
         CurrentWorld,
         VirtualOwnerClock,
     ) {
+        setup_with_pinned_positions(false)
+    }
+    fn setup_with_pinned_positions(
+        pinned: bool,
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        ScopeRuntimeFence,
+        MonsterCombatLane,
+        CurrentWorld,
+        VirtualOwnerClock,
+    ) {
         let (mut r, t, s) = runtime_with_player(0x58);
-        r.initialize_movement_test_position(
-            t,
-            MovementLocalPosition {
-                x: 100,
-                y: 100,
-                floor: 7,
-            },
-        )
+        let player_position = MovementLocalPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        if pinned {
+            r.initialize_pinned_test_position(t, player_position)
+        } else {
+            r.initialize_movement_test_position(t, player_position)
+        }
         .expect("monster_combat_lane.rs:tests:2229: qualified fixture operation must succeed");
         let value: serde_json::Value = serde_json::from_str(include_str!(
             "creature_auto_attack_test_data.json"
@@ -2300,17 +2315,17 @@ mod tests {
                 _ => None,
             })
             .expect("monster_combat_lane.rs:tests:2247: qualified fixture operation must succeed");
-        let issuer = r
-            .admit_monster_lab_creature(
-                MovementLocalPosition {
-                    x: 101,
-                    y: 100,
-                    floor: 7,
-                },
-                &key.key,
-                hp as i64,
-            )
-            .expect("monster_combat_lane.rs:tests:2258: qualified fixture operation must succeed");
+        let creature_position = MovementLocalPosition {
+            x: 101,
+            y: 100,
+            floor: 7,
+        };
+        let issuer = if pinned {
+            r.admit_source_pinned_lab_creature(creature_position, &key.key, hp as i64)
+        } else {
+            r.admit_monster_lab_creature(creature_position, &key.key, hp as i64)
+        }
+        .expect("monster_combat_lane.rs:tests:2258: qualified fixture operation must succeed");
         let b = r.binding();
         let (mut fence, _) = crystal_timer_fixture(
             RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
@@ -2472,7 +2487,80 @@ mod tests {
     fn actual_aggregate_native_regular_movement_uses_current_ground_pacing_and_fence() {
         use crate::content::static_cell_engine::*;
         use crate::content::*;
-        let (mut runtime, mut states, actor, mut fence, mut lane, mut reader, clock) = setup();
+        let (mut runtime, mut states, actor, mut fence, mut lane, mut reader, clock) =
+            setup_with_pinned_positions(true);
+        // Both sides start under the actual pin; the negative speed check below therefore
+        // proves missing physical policy, not a foreign position context masking that check.
+        for positioned in [actor, reader.target] {
+            assert_eq!(
+                runtime
+                    .read_actor_position(positioned)
+                    .expect("source-pinned fixture position")
+                    .context(),
+                runtime.pinned_movement_context(),
+            );
+        }
+        // This fixture previously bound source speed without installing its physical policy.
+        // Decode the exact same source Creature/Behavior/Presentation through the native
+        // policy decoder; the current speed reader must retain its exact installed-policy guard.
+        let source = lane.actors[0]
+            .native_speed
+            .as_ref()
+            .expect("native source speed");
+        assert_eq!(
+            crate::movement::speed::runtime_creature_speed(
+                &runtime,
+                actor,
+                source,
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(clock.now().get()),
+            ),
+            None,
+            "source definition alone does not install the physical creature policy",
+        );
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("creature_auto_attack_test_data.json"))
+                .expect("existing exact native source fixture");
+        let creature = serde_json::to_value(&lane.actors[0].creature).expect("exact creature ref");
+        let records = fixture["records"].as_array().expect("source core records");
+        let record = records
+            .iter()
+            .find(|record| record["identity"] == creature)
+            .expect("source creature membership");
+        let profiles = fixture["authoring_profiles"]
+            .as_array()
+            .expect("source profiles");
+        let profile = |reference: &serde_json::Value| {
+            profiles
+                .iter()
+                .find(|profile| profile["target"] == *reference)
+                .expect("exact source profile")
+        };
+        let creatures = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
+            "records": [{
+                "profile": profile(&creature),
+                "presentation": record["presentation"],
+                "behavior": profile(&record["behavior"]),
+            }],
+        }))
+        .expect("source creature document");
+        let presentations = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+            "records": [profile(&record["presentation"])],
+        }))
+        .expect("source presentation document");
+        let policies = crate::content::native_gameplay::callback_source_native_test_policies(
+            &creatures,
+            &presentations,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("actual native policy decoder");
+        runtime
+            .install_companion_policies(policies)
+            .expect("source policy installation");
+        runtime
+            .install_creature_policy(actor, &lane.actors[0].creature.key)
+            .expect("exact physical source policy binding");
         let before = runtime
             .read_actor_position(actor)
             .expect("monster_combat_lane.rs:tests:2410: qualified fixture operation must succeed");

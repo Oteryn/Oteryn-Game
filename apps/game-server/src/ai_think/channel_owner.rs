@@ -65,6 +65,201 @@ impl CreatureAiState {
 }
 
 impl CreatureAiTable {
+    /// Bind only the current physical actor, loader-owned speed and (when present) the
+    /// actual spawn census cell. Existing AI entries remain the single Movement state owner.
+    pub(crate) fn bind_native_movement(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        source: crate::movement::speed::NativeCreatureSpeed,
+        home: Option<MovementLocalPosition>,
+    ) -> Result<(), CarrierError> {
+        use crate::foundation::owner_timer::{CatchUpPolicy, FamilyPolicy, OwnerTimerLane};
+        let binding = runtime.binding();
+        let scope = RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id());
+        if let Some(lane) = &self.native_steps {
+            if lane.scope() != scope || lane.generation() != binding.scope_generation() {
+                return Err(CarrierError::WrongScope);
+            }
+        } else {
+            self.native_steps = Some(
+                OwnerTimerLane::for_generation(
+                    scope,
+                    binding.scope_generation(),
+                    [(
+                        super::NativeStepFamily,
+                        FamilyPolicy {
+                            max_pending: 1,
+                            catch_up: CatchUpPolicy::DeadlineState,
+                        },
+                    )],
+                )
+                .map_err(|_| CarrierError::ProfileInvalid)?,
+            );
+        }
+        let cadence = crate::movement::speed::CreatureMovementCadence::bind(runtime, actor)
+            .ok_or(CarrierError::NotCreature)?;
+        let is_summon = runtime.native_summon_role(actor)?.is_some();
+        let entry = self.entry_mut(actor).ok_or(CarrierError::ProfileMissing)?;
+        if entry.movement.is_none() {
+            entry.movement = Some(super::NativeCreatureMovement {
+                home: home.filter(|_| !is_summon),
+                source,
+                cadence,
+                near: Default::default(),
+                goal: super::NativeCreatureGoal::Stand,
+                goal_sequence: 0,
+                request_sequence: 0,
+                path: None,
+                search_pending: false,
+                pending: None,
+                step_sequence: 0,
+            });
+        }
+        Ok(())
+    }
+
+    pub(crate) fn native_movement(
+        &self,
+        actor: ExactActorRef,
+    ) -> Option<&super::NativeCreatureMovement> {
+        self.entry(actor)?.movement.as_ref()
+    }
+
+    pub(crate) fn native_movement_mut(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Option<&mut super::NativeCreatureMovement> {
+        self.entry_mut(actor)?.movement.as_mut()
+    }
+
+    pub(crate) fn cancel_native_step(&mut self, actor: ExactActorRef) {
+        let pending = self
+            .entry_mut(actor)
+            .and_then(|entry| entry.movement.as_mut())
+            .and_then(|movement| movement.pending.take());
+        if let (Some(lane), Some(pending)) = (&mut self.native_steps, pending) {
+            lane.cancel(super::NativeStepFamily, pending);
+        }
+    }
+
+    pub(crate) fn idle_native_movement(&mut self, actor: ExactActorRef, stop_thinking: bool) {
+        self.cancel_native_step(actor);
+        if let Some(entry) = self.entry_mut(actor) {
+            entry.state.target = None;
+            if stop_thinking {
+                entry.due_us = None;
+            }
+            if let Some(movement) = &mut entry.movement {
+                movement.goal = super::NativeCreatureGoal::Stand;
+                movement.path = None;
+                movement.search_pending = false;
+            }
+        }
+    }
+
+    pub(crate) fn forget_unreachable_target(&mut self, actor: ExactActorRef) {
+        if let Some(entry) = self.entry_mut(actor) {
+            entry.state.target = None;
+        }
+    }
+
+    pub(crate) fn arm_native_step(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        actor: ExactActorRef,
+        due_us: u64,
+    ) -> Result<(), CarrierError> {
+        let fence = runtime.owner_fence()?;
+        if !fence.accepts_stamp(stamp) {
+            return Err(CarrierError::WrongScope);
+        }
+        let movement = self
+            .native_movement_mut(actor)
+            .ok_or(CarrierError::ProfileMissing)?;
+        if movement.pending.is_some() {
+            return Ok(());
+        }
+        let sequence = movement
+            .step_sequence
+            .checked_add(1)
+            .ok_or(CarrierError::ProfileInvalid)?;
+        let occurrence = super::ThinkOccurrence { actor, sequence };
+        self.native_steps
+            .as_mut()
+            .ok_or(CarrierError::ProfileMissing)?
+            .schedule(
+                fence,
+                stamp,
+                super::NativeStepFamily,
+                occurrence,
+                Some(actor),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(due_us),
+            )
+            .map_err(|_| CarrierError::ProfileInvalid)?;
+        let movement = self
+            .native_movement_mut(actor)
+            .ok_or(CarrierError::ProfileMissing)?;
+        movement.pending = Some(occurrence);
+        movement.step_sequence = sequence;
+        Ok(())
+    }
+
+    pub(crate) fn due_native_steps(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        now_us: u64,
+    ) -> Vec<super::ThinkOccurrence> {
+        let Ok(fence) = runtime.owner_fence() else {
+            return Vec::new();
+        };
+        let Some(lane) = &mut self.native_steps else {
+            return Vec::new();
+        };
+        let entries = &self.entries;
+        let mut due = lane.due_deadline_inputs(
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now_us),
+            fence,
+            entries.len(),
+            |actor| {
+                runtime.contains_live_creature(actor)
+                    && entries
+                        .get(&actor.placement_identity())
+                        .is_some_and(|entry| entry.state.actor() == actor)
+            },
+        );
+        due.sort_by_key(|timer| (timer.due, timer.occurrence.actor.placement_identity()));
+        due.truncate(CREATUREAI0_THINKS_PER_WINDOW);
+        due.into_iter().map(|timer| timer.occurrence).collect()
+    }
+
+    pub(crate) fn consume_native_step(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        occurrence: super::ThinkOccurrence,
+    ) -> bool {
+        if !runtime
+            .owner_fence()
+            .is_ok_and(|fence| fence.accepts_stamp(stamp))
+            || self
+                .native_movement(occurrence.actor)
+                .is_none_or(|movement| movement.pending != Some(occurrence))
+        {
+            return false;
+        }
+        self.cancel_native_step(occurrence.actor);
+        true
+    }
+
+    pub(crate) fn earliest_native_step_due(&self) -> Option<u64> {
+        self.native_steps
+            .as_ref()?
+            .earliest_due()
+            .map(|due| due.get())
+    }
+
     /// Admits live creature `actor` of `runtime` to thinking with its projected behaviour
     /// profile; its first think is due at `now_us`. A missing or invalid profile is refused and
     /// admits nothing.
@@ -76,12 +271,43 @@ impl CreatureAiTable {
         abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
         now_us: u64,
     ) -> Result<(), CarrierError> {
-        let profile = CreatureBehaviourProfile::project(behavior, abilities).map_err(
-            |refusal| match refusal {
-                ProfileRefusal::Missing => CarrierError::ProfileMissing,
-                ProfileRefusal::Invalid => CarrierError::ProfileInvalid,
-            },
-        )?;
+        self.admit_projected_creature(
+            runtime,
+            actor,
+            CreatureBehaviourProfile::project(behavior, abilities),
+            now_us,
+        )
+    }
+
+    /// The composed native caller retains authored summons in this same think table. Source
+    /// qualification and live admission stay the catalog and physical owner's responsibility.
+    pub(crate) fn admit_creature_with_summons(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        behavior: Option<&ProjectV2BehaviorAuthoring>,
+        abilities: &BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
+        now_us: u64,
+    ) -> Result<(), CarrierError> {
+        self.admit_projected_creature(
+            runtime,
+            actor,
+            CreatureBehaviourProfile::project_with_summons(behavior, abilities),
+            now_us,
+        )
+    }
+
+    fn admit_projected_creature(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        profile: Result<CreatureBehaviourProfile, ProfileRefusal>,
+        now_us: u64,
+    ) -> Result<(), CarrierError> {
+        let profile = profile.map_err(|refusal| match refusal {
+            ProfileRefusal::Missing => CarrierError::ProfileMissing,
+            ProfileRefusal::Invalid => CarrierError::ProfileInvalid,
+        })?;
         if !runtime.contains_live_creature(actor) {
             return Err(CarrierError::NotCreature);
         }
@@ -95,8 +321,15 @@ impl CreatureAiTable {
     /// without this its entry would outlive its slot. The table then holds at most one entry per
     /// live creature, so at most `CREATUREAI0-RL-04`.
     pub(crate) fn forget_dead(&mut self, runtime: &ChannelRuntimeV1) {
-        self.entries
-            .retain(|_, entry| runtime.contains_live_creature(entry.state.actor()));
+        let dead = self
+            .entries
+            .values()
+            .filter(|entry| !runtime.contains_live_creature(entry.state.actor()))
+            .map(|entry| entry.state.actor())
+            .collect::<Vec<_>>();
+        for actor in dead {
+            self.remove(actor);
+        }
     }
 
     /// The earliest pending think, `None` while every creature is idle (SPAWN-CEILINGS-1, Codex
@@ -104,7 +337,11 @@ impl CreatureAiTable {
     /// time, so after a pass this is at most that pass's time while a backlog remains. One pass
     /// over the table, like `forget_dead`.
     pub(crate) fn earliest_due(&self) -> Option<u64> {
-        self.entries.values().filter_map(|entry| entry.due_us).min()
+        self.entries
+            .values()
+            .filter_map(|entry| entry.due_us)
+            .chain(self.earliest_native_step_due())
+            .min()
     }
 
     /// §2.1 item 1: `player` moved or was admitted; wakes the idle creatures it sees.

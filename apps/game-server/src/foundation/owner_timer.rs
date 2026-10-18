@@ -373,6 +373,47 @@ where
         self.entries.len()
     }
 
+    /// Earliest owner wakeup; inspecting a deadline grants no right to execute it.
+    pub(crate) fn earliest_due(&self) -> Option<SemanticTimeMicros> {
+        self.entries.iter().map(|entry| entry.due).min()
+    }
+
+    /// Current DEADLINE_STATE inputs in the same order as `drain_due`, retained until the
+    /// caller's synchronous completion cancels their exact occurrences. An owner which must
+    /// await current Item reads cannot first remove a live timer: cancellation would lose it.
+    /// Stale targets are purged exactly as in `drain_due`; a superseded fence mutates nothing.
+    pub(crate) fn due_deadline_inputs(
+        &mut self,
+        now: SemanticTimeMicros,
+        owner_fence: &ScopeRuntimeFence,
+        maximum: usize,
+        mut target_is_current: impl FnMut(ExactActorRef) -> bool,
+    ) -> Vec<FiredTimer<Family, Occurrence>> {
+        if !owner_fence.is_current_for_scope(self.scope, self.generation) {
+            return Vec::new();
+        }
+        self.entries
+            .retain(|entry| entry.target.is_none_or(&mut target_is_current));
+        let mut due = self
+            .entries
+            .iter()
+            .filter(|entry| {
+                entry.due <= now
+                    && self.policy_for_family(entry.family).catch_up == CatchUpPolicy::DeadlineState
+            })
+            .collect::<Vec<_>>();
+        due.sort_by_key(|entry| (entry.due, entry.scheduling_stamp.ordinal(), entry.sequence));
+        due.truncate(maximum);
+        due.into_iter()
+            .map(|entry| FiredTimer {
+                family: entry.family,
+                occurrence: entry.occurrence,
+                target: entry.target,
+                due: entry.due,
+            })
+            .collect()
+    }
+
     /// Removes and returns every timer whose deadline is at or before `clock.now()`, in
     /// deterministic order: due time, then scheduling ordinal, then within-resolution sequence
     /// (FND-03 §10.1).
@@ -971,6 +1012,62 @@ mod tests {
 
         let clock = VirtualOwnerClock::new(due);
         assert!(lane.drain_due(&clock, &owner_fence, |_| true).is_empty());
+    }
+
+    #[test]
+    fn deadline_inputs_survive_cancellation_and_purge_dead_future_targets() {
+        let generation = generation(1);
+        let scope = scope_for(1);
+        let mut lane = generous_lane(scope, generation);
+        let mut owner = fence(scope, generation);
+        let live = actor(31);
+        let dead = actor(32);
+        let stamp = issue_stamp(&mut owner, generation);
+        let due = SemanticTimeMicros::from_micros(10);
+        lane.schedule(&owner, stamp, TestFamily::Respawn, 1, Some(live), due)
+            .expect("live deadline");
+        lane.schedule(
+            &owner,
+            stamp,
+            TestFamily::Respawn,
+            2,
+            Some(dead),
+            SemanticTimeMicros::from_micros(100),
+        )
+        .expect("future target before retirement");
+        let wrong = fence(scope_for(2), generation);
+        assert!(
+            lane.due_deadline_inputs(due, &wrong, 1, |_| false)
+                .is_empty()
+        );
+        assert_eq!(
+            lane.pending_len(),
+            2,
+            "foreign owner cannot even purge the lane"
+        );
+        let first = lane.due_deadline_inputs(due, &owner, 1, |target| target == live);
+        assert_eq!(first.len(), 1);
+        assert_eq!(first[0].occurrence, 1);
+        assert_eq!(
+            lane.pending_len(),
+            1,
+            "dead target's future deadline is removed now"
+        );
+        assert_eq!(lane.earliest_due(), Some(due));
+        let retry = lane.due_deadline_inputs(due, &owner, 1, |_| true);
+        assert_eq!(retry.len(), 1);
+        assert_eq!(
+            retry[0].occurrence, first[0].occurrence,
+            "unfinished read retains its exact input"
+        );
+        assert_eq!(retry[0].due, first[0].due);
+        assert!(lane.cancel(TestFamily::Respawn, first[0].occurrence));
+        assert!(!lane.cancel(TestFamily::Respawn, first[0].occurrence));
+        assert_eq!(lane.earliest_due(), None);
+        assert!(
+            lane.due_deadline_inputs(SemanticTimeMicros::from_micros(100), &owner, 1, |_| true)
+                .is_empty()
+        );
     }
 
     #[test]

@@ -554,6 +554,9 @@ impl NativeGameplayState {
         if digest == [0; 32] {
             return Err(invalid("native gameplay outer content pin"));
         }
+        // Requalify from the retained closure so catalog, source specs and physical admission
+        // specs all carry the independently checked outer pin before any state is changed.
+        let summon_catalogs = qualified_summon_catalogs(&self.creatures, digest)?;
         self.policies
             .bind_qualified_outer_artifact(digest)
             .map_err(|_| invalid("native gameplay outer creature pin"))?;
@@ -577,6 +580,7 @@ impl NativeGameplayState {
                 .bind_qualified_outer_artifact(digest)
                 .map_err(|_| invalid("native gameplay outer Wheel pin"))?;
         }
+        self.summon_catalogs = summon_catalogs;
         self.source_digest = digest;
         Ok(())
     }
@@ -1681,6 +1685,43 @@ pub(crate) mod tests {
         .unwrap();
         let artifact = compile_native_gameplay(&baseline, input).unwrap();
         decode(&artifact.server_artifact).unwrap().state
+    }
+
+    pub(crate) fn decoded_summon_fixture() -> (NativeGameplayState, ProjectV2DefinitionRef) {
+        let (input, parent) = summon_catalog_input();
+        (decode_summon_input(&input), parent)
+    }
+
+    /// Explicit admitted test source with summons, activated with its real qualified source
+    /// world. SQL/Map composition tests use these exact pins instead of synthetic map digests.
+    pub(crate) fn activated_summon_fixture(
+        world: crate::foundation::WorldId,
+        source_world: &[u8],
+    ) -> (
+        ContentActivationController,
+        crate::content::NativeEntryContentPin,
+        ProjectV2DefinitionRef,
+    ) {
+        let (mut supplied, parent) = summon_catalog_input();
+        supplied.source_world = Some(pinned(source_world));
+        let room = crate::content::qualify_selected_native_gameplay_room(world, &supplied).unwrap();
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = ContentActivationController::new();
+        let pin = activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &supplied,
+        )
+        .unwrap();
+        (controller, pin, parent)
     }
 
     #[test]

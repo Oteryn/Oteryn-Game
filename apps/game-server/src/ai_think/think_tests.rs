@@ -883,3 +883,94 @@ fn summon_entry_evaluation_is_charged_before_reading_owner_facts() {
     assert!(report.proposals.is_empty() && report.summon_proposals.is_empty());
     assert_eq!(state.target(), None);
 }
+
+/// The async owner read may be cancelled after target selection. Its retry retains the same
+/// schedule occurrence, and a completed replay does not read or redraw even when Map changed.
+#[test]
+fn current_summon_read_cancellation_preserves_one_schedule_and_step_replay() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("current-thread test runtime")
+        .block_on(async {
+            use std::future::Future;
+            let clock = Facts::new();
+            let players = [player(100, at(103, 101))];
+            let facts = clock.at(at(100, 100), 20, &players, 0);
+            let mut state = CreatureAiState::new(rat(), summon_think_profile(), at(100, 100));
+            let reads = std::cell::Cell::new(0);
+            {
+                let mut waiting = std::pin::pin!(state.think_with_current_summon_facts(
+                    1,
+                    &facts,
+                    |_| false,
+                    async |input, _| {
+                        assert_eq!(
+                            input.target.map(|target| target.actor),
+                            Some(players[0].actor)
+                        );
+                        reads.set(reads.get() + 1);
+                        std::future::pending::<Result<Option<MonsterSummonFacts>, ScheduleError>>()
+                            .await
+                    },
+                ));
+                let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+                assert!(waiting.as_mut().poll(&mut context).is_pending());
+            }
+            assert_eq!(reads.get(), 1);
+            assert_eq!(state.target(), None);
+            assert!(
+                state.last.is_none(),
+                "cancelled read did not finish the think"
+            );
+            let report = state
+                .think_with_current_summon_facts(
+                    1,
+                    &facts,
+                    |_| false,
+                    async |input, step| {
+                        reads.set(reads.get() + 1);
+                        tokio::task::yield_now().await;
+                        assert!(
+                            step.is_some(),
+                            "blocked direct chase still reaches current path owner"
+                        );
+                        // The actual reader may refuse a proposed step; the one retained report records it.
+                        *step = None;
+                        Ok(Some(MonsterSummonFacts {
+                            occurrence: input.occurrence,
+                            is_summon: false,
+                            target_with_path: input.target.map(|target| target.actor),
+                            total_count: 0,
+                            entry_counts: vec![profile_schedule::ObservedSummonCount {
+                                creature: input.behavior.summons.as_ref().expect("summons").entries
+                                    [0]
+                                .creature
+                                .clone(),
+                                count: 0,
+                            }],
+                        }))
+                    },
+                )
+                .await
+                .expect("retry after cancelled read");
+            assert_eq!(report.proposals.len(), 1);
+            assert_eq!(report.summon_proposals.len(), 1);
+            assert_eq!(report.summon_proposals[0].occurrence.sequence, 1);
+            assert_eq!(report.step, None);
+            let replay = state
+                .think_with_current_summon_facts(
+                    1,
+                    &facts,
+                    |_| true,
+                    async |_, _| {
+                        reads.set(reads.get() + 1);
+                        Err(ScheduleError::InvalidSummonFacts)
+                    },
+                )
+                .await
+                .expect("completed replay");
+            assert_eq!(replay, report);
+            assert_eq!(reads.get(), 2, "replay never reads newer Map facts");
+        });
+}
