@@ -885,3 +885,18 @@ must keep the `game_world_reset_item_proven` early-return.
 `CREATE OR REPLACE` resets `SECURITY DEFINER`, so 0096 re-applies it to the
 two guards that hold it on main (0015 header, 0095 `ALTER`); the PG fixture
 pins `prosecdef` for all four.
+
+### Codex P1 4305018171 — activation owner capability — 2026-10-18
+
+Accepted and repaired. The SQL rechecks of the drain digest and House evidence
+compare caller values with rows a runtime login can read, so they cannot stand
+in for the in-memory drain witness or the qualified catalogues. 0096 now
+creates the plain NOLOGIN group `oteryn_game_world_reset` and grants EXECUTE on
+`game_world_reset_activate` to it alone (revoked from PUBLIC, runtime and
+control). The migration and every call refuse (42501) if a Game group holds the
+capability. The rechecks remain as defense in depth. Deployment must grant the
+group only to the reset owner's login (also a runtime member), which reaches the
+call only after the Rust checks; that deployment row lands with the production
+reset wiring (D1416 (2)). The PG case proves runtime and control are denied
+with the exact evidence, and the owner capability still refuses each single
+changed input.

@@ -651,7 +651,7 @@ fn reset_activation_refuses_legacy_target_without_any_issuance_or_epoch_write() 
             .fetch_one(&h.pool).await?;
         let fact=h.node.fact();
         let mut tx=h.pool.begin().await?;
-        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_world_reset").execute(&mut *tx).await?;
         let rejected=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
             .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
             .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
@@ -688,7 +688,7 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
         sqlx::query("LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE")
             .execute(&mut *admission).await?;
         let mut contender=h.pool.begin().await?;
-        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *contender).await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_world_reset").execute(&mut *contender).await?;
         sqlx::query("SET LOCAL lock_timeout='100ms'").execute(&mut *contender).await?;
         let fact=h.node.fact();
         let blocked=sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
@@ -703,7 +703,7 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
         let node_id = *fact.node_id().as_bytes();
         for missing_node in [true, false] {
             let mut invalid = h.pool.begin().await?;
-            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *invalid).await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_world_reset").execute(&mut *invalid).await?;
             sqlx::query("SET LOCAL lock_timeout='100ms'").execute(&mut *invalid).await?;
             let refused = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,$2::text::numeric,$3,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,$8,$9)")
                 .bind(id(WORLD).as_slice())
@@ -731,10 +731,11 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
     })
 }
 
-// Codex P1 4300751311 regression, PRIVATE PROPOSAL, NOT_RUN. With every other durable
-// prerequisite current, direct runtime SQL that skips the Rust drain/House checks must
-// still refuse: the SQL owner recomputes the drain cohort digest and requires House
-// evidence. Each refusal changes exactly one input; the exact evidence activates.
+// Codex P1 4300751311 and 4305018171 regression. A generic runtime or control login can
+// derive the digest and stable keys from readable durable rows, so it is refused EXECUTE
+// even with the exact evidence. The owner capability still rechecks: the SQL owner
+// recomputes the drain cohort digest and requires House evidence. Each refusal changes
+// exactly one input; only the owner capability with the exact evidence activates.
 #[test]
 fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestResult {
     let Some(admin) = configured_admin() else {
@@ -780,6 +781,24 @@ fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestRes
         let before = activation_state().await?;
         assert_eq!((before.2.as_str(), before.3.as_str()), ("0", "RETIRING"));
         let stable = vec![house_key.to_owned()];
+        for (role, set_role) in [
+            ("oteryn_game_runtime", "SET LOCAL ROLE oteryn_game_runtime"),
+            ("oteryn_game_control", "SET LOCAL ROLE oteryn_game_control"),
+        ] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query(set_role).execute(&mut *tx).await?;
+            let may_execute: bool = sqlx::query_scalar("SELECT has_function_privilege(current_user,'game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[])','EXECUTE')")
+                .fetch_one(&mut *tx).await?;
+            assert!(!may_execute, "{role}");
+            let denied = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
+                .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
+                .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
+                .bind(exact.as_slice()).bind(Vec::<String>::new()).bind(Vec::<Vec<u8>>::new()).bind(stable.clone())
+                .execute(&mut *tx).await;
+            assert!(matches!(denied,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("42501")), "{role}");
+            tx.rollback().await?;
+            assert_eq!(activation_state().await?, before);
+        }
         for (digest, stable_keys, activates) in [
             (flipped, stable.clone(), false),
             (drained(generation + 1)?, stable.clone(), false),
@@ -788,7 +807,7 @@ fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestRes
             (exact, stable, true),
         ] {
             let mut tx = h.pool.begin().await?;
-            sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_world_reset").execute(&mut *tx).await?;
             let result = sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,0,1,$2,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8)")
                 .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
                 .bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
@@ -796,6 +815,7 @@ fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestRes
                 .execute(&mut *tx).await;
             if activates {
                 result?;
+                sqlx::query("RESET ROLE").execute(&mut *tx).await?;
                 let phase: String = sqlx::query_scalar("SELECT phase FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
                     .bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?;
                 assert_eq!(phase, "ACTIVATED");

@@ -1188,18 +1188,38 @@ mod world_drain_binding_data_tests {
 mod reset_activation_source_tests {
     use super::RESET_ACTIVATION_SCHEMA;
 
-    // Codex P1 4300751311: the runtime-executable SQL owner must recheck the drain and
-    // House evidence itself, after the fences it reads them under, before any write.
+    // Codex P1 4300751311 and 4305018171: only the owner capability may execute the SQL
+    // owner, which still rechecks the drain and House evidence under its fences, before
+    // any write.
     #[test]
-    fn direct_runtime_activation_rechecks_drain_digest_and_house_evidence() {
+    fn owner_capability_activation_rechecks_drain_digest_and_house_evidence() {
         let sql = RESET_ACTIVATION_SCHEMA;
         let signature = "game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[])";
+        // Codex P1 4305018171: EXECUTE is the owner capability only, never a Game group.
         assert!(sql.contains(&format!(
-            "REVOKE ALL ON FUNCTION {signature} FROM PUBLIC,oteryn_game_control;"
+            "REVOKE ALL ON FUNCTION {signature} FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;"
         )));
         assert!(sql.contains(&format!(
-            "GRANT EXECUTE ON FUNCTION {signature} TO oteryn_game_runtime;"
+            "GRANT EXECUTE ON FUNCTION {signature} TO oteryn_game_world_reset;"
         )));
+        assert_eq!(
+            sql.matches("GRANT EXECUTE ON FUNCTION game_world_reset_activate(")
+                .count(),
+            1
+        );
+        assert!(sql.contains("CREATE ROLE oteryn_game_world_reset NOLOGIN;"));
+        let capability = sql
+            .find("'World reset activation capability is held by a generic Game group'")
+            .unwrap_or(usize::MAX);
+        let body = sql
+            .find("RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$")
+            .unwrap_or(usize::MAX);
+        assert!(body < capability && capability < sql.len());
+        for group in ["oteryn_game_runtime", "oteryn_game_control"] {
+            let check = format!("pg_has_role('{group}','oteryn_game_world_reset','MEMBER')");
+            assert_eq!(sql.matches(&check).count(), 2, "{check}");
+            assert!(sql[body..capability].contains(&check), "{check}");
+        }
         assert!(sql.contains("ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path"));
         assert!(!sql.contains("BYTEA,UUID,NUMERIC) "));
         let position = |needle: &str| sql.find(needle).unwrap_or(usize::MAX);
@@ -1212,7 +1232,7 @@ mod reset_activation_source_tests {
         let drain = position("'World reset drain binding refused'");
         let house = position("'World reset House evidence refused'");
         let first_write = position("PERFORM game_content_record_activation_core(");
-        assert!(evidence_data < first_fence);
+        assert!(body < capability && capability < evidence_data && evidence_data < first_fence);
         assert!(assignment_lock < drain && house_lock < drain);
         assert!(drain < house && house < first_write && first_write < usize::MAX);
         // The same D1233 domain, fields and Channel order as `world_drain_cohort_digest`.
@@ -1608,6 +1628,8 @@ pub(crate) enum WorldResetActivationDisposition {
 /// The source and witness must be genuine C/I implementations; this module creates neither.
 /// Historical exact replay is checked first and does not require today's drain/cohort.
 /// No publication or in-memory readiness transition may precede the commit receipt.
+/// The TX must run as the reset owner's login, the only member of `oteryn_game_world_reset`;
+/// a generic runtime or control login is refused EXECUTE (42501).
 pub(crate) async fn activate_world_reset_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     node: &NodeIncarnationProof,
@@ -1660,8 +1682,8 @@ pub(crate) async fn activate_world_reset_in_transaction(
     check_world_drain_in_transaction(tx, node, identity.world, drain).await?;
     let evidence = preflight_world_reset_houses(tx, identity.world, houses).await?;
     let fact = node.fact();
-    // The SQL owner rechecks the same drain digest and House evidence itself, so a direct
-    // runtime call that skipped the checks above cannot activate.
+    // Only the reset owner capability may execute this; the SQL owner still rechecks the
+    // same drain digest and House evidence under its own fences before any write.
     sqlx::query("SELECT game_world_reset_activate(encode($1,'hex')::uuid,$2::text::numeric,$3::text::numeric,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10)")
         .bind(identity.world.as_bytes().as_slice()).bind(identity.epoch.to_string())
         .bind(identity.revision.to_string()).bind(identity.retirement_binding.as_slice())
@@ -1713,15 +1735,31 @@ impl DurabilityRoot {
 }
 
 // Private successor installed by 0096; no production root mounting yet.
-// Direct runtime SQL is not trusted to have run the Rust owner's checks: the function
-// itself recomputes the D1233 drain cohort digest from the locked assignments and
-// requires catalogue-derived House evidence covering every locked durable House fact.
+// A generic runtime login can read every durable fact the SQL rechecks, so those rechecks
+// cannot stand in for the in-memory drain witness or the qualified catalogues. EXECUTE is
+// therefore an owner-specific capability (`oteryn_game_world_reset`) that no Game group
+// holds; the function also recomputes the D1233 drain cohort digest from the locked
+// assignments and requires catalogue-derived House evidence for every locked House fact.
 const RESET_ACTIVATION_SCHEMA: &str = r#"
 CREATE FUNCTION game_world_reset_u64_be(v NUMERIC) RETURNS BYTEA LANGUAGE SQL IMMUTABLE STRICT AS $$
  SELECT set_byte(x,0,get_byte(x,0)#128) FROM (SELECT int8send((v-9223372036854775808)::int8) AS x) s;
 $$;
 REVOKE ALL ON FUNCTION game_world_reset_u64_be(NUMERIC) FROM PUBLIC;
 ALTER FUNCTION game_world_reset_u64_be(NUMERIC) SET search_path=pg_catalog,pg_temp;
+-- Activation is an owner-specific capability, never a generic runtime or control grant.
+-- Deployment grants this NOLOGIN group only to the reset owner's login, which reaches the
+-- call only after the Rust drain witness and catalogue House checks; no group may hold it.
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset') THEN
+  BEGIN CREATE ROLE oteryn_game_world_reset NOLOGIN;
+  EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+ END IF;
+ IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset'
+ AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication))
+ OR pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
+ OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
+ THEN RAISE EXCEPTION 'oteryn_game_world_reset must be a plain NOLOGIN group outside the Game groups' USING ERRCODE='42501'; END IF;
+END $$;
 CREATE FUNCTION game_world_reset_activate(w UUID,e NUMERIC,r NUMERIC,b BYTEA,n UUID,nr NUMERIC,
  d BYTEA,hk TEXT[],hp BYTEA[],hs TEXT[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -1729,6 +1767,11 @@ DECLARE j game_world_reset_jobs%ROWTYPE; a NUMERIC; v_channel RECORD;
  v_history game_world_reset_epoch_history%ROWTYPE; v_current game_content_activations%ROWTYPE;
  v_previous NUMERIC; v_sequence NUMERIC; v_instant TIMESTAMPTZ; v_month TEXT;
 BEGIN
+ -- EXECUTE is granted only to the owner capability. A generic Game group holding it
+ -- would hand every runtime or control login the activation boundary, so refuse first.
+ IF pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
+ OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
+ THEN RAISE EXCEPTION 'World reset activation capability is held by a generic Game group' USING ERRCODE='42501'; END IF;
  -- SQL NULL must never turn a current-authority predicate into UNKNOWN/false IF.
  -- Refuse malformed occurrence/node data before taking any mutation fence.
  IF w IS NULL OR e IS NULL OR r IS NULL OR b IS NULL OR n IS NULL OR nr IS NULL
@@ -1824,8 +1867,8 @@ BEGIN
  UPDATE game_world_reset_jobs SET phase='ACTIVATED',revision=r+1 WHERE world_id=w AND reset_epoch=e AND phase='RETIRING' AND revision=r;
  IF NOT FOUND THEN RAISE EXCEPTION 'World reset job CAS refused' USING ERRCODE='OTR03'; END IF;
 END $$;
-REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_control;
-GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_runtime;
+REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_world_reset;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;

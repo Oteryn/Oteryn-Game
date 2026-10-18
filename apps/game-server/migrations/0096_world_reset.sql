@@ -251,6 +251,20 @@ CREATE FUNCTION game_world_reset_u64_be(v NUMERIC) RETURNS BYTEA LANGUAGE SQL IM
 $$;
 REVOKE ALL ON FUNCTION game_world_reset_u64_be(NUMERIC) FROM PUBLIC;
 ALTER FUNCTION game_world_reset_u64_be(NUMERIC) SET search_path=pg_catalog,pg_temp;
+-- Activation is an owner-specific capability, never a generic runtime or control grant.
+-- Deployment grants this NOLOGIN group only to the reset owner's login, which reaches the
+-- call only after the Rust drain witness and catalogue House checks; no group may hold it.
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset') THEN
+  BEGIN CREATE ROLE oteryn_game_world_reset NOLOGIN;
+  EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+ END IF;
+ IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='oteryn_game_world_reset'
+ AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication))
+ OR pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
+ OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
+ THEN RAISE EXCEPTION 'oteryn_game_world_reset must be a plain NOLOGIN group outside the Game groups' USING ERRCODE='42501'; END IF;
+END $$;
 CREATE FUNCTION game_world_reset_activate(w UUID,e NUMERIC,r NUMERIC,b BYTEA,n UUID,nr NUMERIC,
  d BYTEA,hk TEXT[],hp BYTEA[],hs TEXT[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -258,6 +272,11 @@ DECLARE j game_world_reset_jobs%ROWTYPE; a NUMERIC; v_channel RECORD;
  v_history game_world_reset_epoch_history%ROWTYPE; v_current game_content_activations%ROWTYPE;
  v_previous NUMERIC; v_sequence NUMERIC; v_instant TIMESTAMPTZ; v_month TEXT;
 BEGIN
+ -- EXECUTE is granted only to the owner capability. A generic Game group holding it
+ -- would hand every runtime or control login the activation boundary, so refuse first.
+ IF pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
+ OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
+ THEN RAISE EXCEPTION 'World reset activation capability is held by a generic Game group' USING ERRCODE='42501'; END IF;
  -- SQL NULL must never turn a current-authority predicate into UNKNOWN/false IF.
  -- Refuse malformed occurrence/node data before taking any mutation fence.
  IF w IS NULL OR e IS NULL OR r IS NULL OR b IS NULL OR n IS NULL OR nr IS NULL
@@ -353,8 +372,8 @@ BEGIN
  UPDATE game_world_reset_jobs SET phase='ACTIVATED',revision=r+1 WHERE world_id=w AND reset_epoch=e AND phase='RETIRING' AND revision=r;
  IF NOT FOUND THEN RAISE EXCEPTION 'World reset job CAS refused' USING ERRCODE='OTR03'; END IF;
 END $$;
-REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_control;
-GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_runtime;
+REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_world_reset;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
