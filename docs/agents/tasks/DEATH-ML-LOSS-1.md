@@ -26,14 +26,15 @@ owned_paths:
   - apps/game-server/src/durability/character_revision_sequencer.rs
   - apps/game-server/tests/death_ml_loss_*.rs (new)
   - apps/game-server/src/gameplay_transport/monk_save_postgres_tests.rs (CP D1440)
+  - apps/game-server/src/gameplay_transport/training_save.rs (CP D1452: re-fence of a proven-uncommitted checkpoint)
 slot_only_paths:
-  - apps/game-server/src/gameplay_transport/mod.rs (runtime caller; not allocated)
-  - apps/game-server/src/spell/mana_training.rs (CP D1433: `rebase_after_death` only)
+  - apps/game-server/src/gameplay_transport/mod.rs (runtime caller; CP D1425-D1440 death hunks)
+  - apps/game-server/src/spell/mana_training.rs (CP D1433 `rebase_after_death`; CP D1452 `refence_uncommitted_training_checkpoint`)
 public_contracts: []
 depends_on:
   - "CHAR-BUILD-1: MERGED"
   - "DEATH-1: MERGED #1278"
-  - "LOOP-PROGRESS-1: BLOCKING: chain #3 not merged"
+  - "LOOP-PROGRESS-1: MERGED #2192 (main 04e48240)"
   - "A13 ACCEPTED: ACCEPT-BATCH-2026-10-15 #2209 integrated (control-plane verified)"
 blocks: []
 cross_repository_coordination_id: null
@@ -57,7 +58,7 @@ Training/build progress is flushed before a death and the death receipt carries 
 | LOOP-PROGRESS-1 | MERGED #2192 (CP D1439 check) |
 | A13 ACCEPTED | ACCEPTED: ACCEPT-BATCH-2026-10-15 §1, #2209 main `e2da9805d296a27b06b32335bf67394509d4910b` (control-plane verified) |
 
-**BLOCKING for full integration:** LOOP-PROGRESS-1. A13 acceptance is effective; owned choreography preparation is allocated. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
+**BLOCKING for full integration:** none. LOOP-PROGRESS-1 merged as #2192 (main `04e48240`); the single-slot drain it was to own is integrated in this PR (CP D1433-D1452 checkpoints below). A13 acceptance is effective; owned choreography preparation is allocated. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
 
 ## Owned paths (builder edits freely)
 
@@ -108,12 +109,12 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: "CP D1440: composed-owner death case through respawn_after_death; FencedOut release behaviour documented"
+last_progress: "CP D1452: a proven-uncommitted rejected flush checkpoint is re-fenced; live dispatch path verified end to end"
 status: waiting
 branch: skeleton/death-ml-loss-1
 merge_authority: CP_ONLY
 blocker: null
-next_action: "CP reviews the D1440 head and decides ready and merge"
+next_action: "CP reviews the D1452 head and decides ready and merge"
 ```
 
 ## Local choreography preparation (2026-10-15, draft #2193)
@@ -697,3 +698,72 @@ re-run. With only the `mod.rs` fix reverted, the new case fails at the
 
 Status stays `waiting`. The record is not archived. No ready, queue or merge
 action is taken; CP alone decides merge.
+
+## CP D1452 checkpoint: Codex P1 4307264455 and liveness (2026-10-18)
+
+Finding (PRRT_kwDOT8SzxM6trAeP): a forced checkpoint the store refuses before
+any write (`AuthorityRejected`, because the session's connection, lease or
+scope generation moved after it was prepared) kept its immutable stale fence.
+Every later save replayed that fence and was refused again, and
+`adopt_committed_training_checkpoint` found no receipt. Neither the live nor
+the release path could clear it, so the dead actor never respawned or
+released. The root cause is in `save_spell_training_once`, which also runs
+the cadence and actor-end saves.
+
+Fix (CP D1452 paths):
+- `training_save.rs`: on `AuthorityRejected` the save reconciles the
+  checkpoint's occurrence. A receipt is history and takes the existing
+  post-write authority check (and the adopt step). No receipt proves nothing
+  committed. The save then resolves the current fence independently: build
+  unchanged, Character revision bracketed, session not terminal, and runtime
+  scope and generation equal to the Channel binding. It re-fences the
+  checkpoint and returns `Unknown`, so the next attempt retries under the
+  current authority. `RespawnPending` is still `FencedOut`. The rollback path
+  (`CharacterRevisionMismatch`) shares the same fence helper, with unchanged
+  behaviour.
+- `spell/mana_training.rs`: the new
+  `PlayerSpellState::refence_uncommitted_training_checkpoint` keeps the
+  occurrence, request and formula, so a replay can never commit a second
+  build. It refuses an unmoved fence, another Character or session, a lower
+  revision or another retained checkpoint.
+- `mod.rs` is unchanged: `Unknown` already keeps the actor dead for the next
+  cadence or release retry.
+
+Pinning cases (`monk_save_postgres_tests.rs`):
+- `composed_release_refences_a_rejected_flush_then_settles_on_postgres`
+  (it replaces `composed_release_keeps_a_death_whose_flush_was_rejected_on_postgres`
+  and keeps all its assertions). The first release returns `false` with no
+  death receipt, the durable build still pre-try, the actor dead, and the
+  checkpoint (occurrence 93) re-fenced to the current fence. The retried
+  release settles: the receipt's `before` holds the flushed try, and the
+  durable build is the SKILLS-0 §3.6 loss of it.
+- `composed_live_death_refences_a_rejected_flush_then_respawns_on_postgres`:
+  the first `respawn_after_death` keeps the actor dead and re-fences. The
+  next one flushes, prices the death from the flushed build, respawns,
+  rebases, and the next training save commits.
+
+Liveness through the real dispatch path (verified on this head):
+- `connection.rs` calls `tick_vitals` on the actor cadence.
+- `tick_vitals` calls `respawn_after_death`, then `settle_death`, then
+  `flush_training_before_death`, then `commit_death`, then
+  `settle_runtime_player_death` with the active generation's
+  `training_formula()`.
+- `content/spells.manifest.json` on main pins `build_training`, so production
+  training and the build-aware death are both active.
+- The actor-end release runs `settle_released_death` on the same chain.
+- The runtime capture and drain, the `commit_death` integration and the
+  actor rebase therefore already land in this PR (CP D1425, D1433, D1439,
+  D1440 and D1452). They are not left with other slot owners.
+- LOOP-PROGRESS-1 merged as #2192. No unmerged PR blocks this task.
+- What remains is CP review, CI and the merge decision.
+
+Validation (PC, shared PostgreSQL 17.6, `-j 4`): `cargo fmt --all --check`
+and `cargo clippy --locked -p oteryn-game-server --all-targets -- -D
+warnings` pass. `--lib -- death_ml_loss fenced_out_training_flush` 7/7 pass.
+`--lib -- gameplay_transport spell::` 1099 passed, 0 failed, 12 ignored.
+With only `training_save.rs` reverted, both new cases fail at the re-fence
+assertion. `validate_governance.py` and the `tools/agents/tests` suite (124)
+pass.
+
+Status stays `waiting` for CP review and CI. The record is not archived, and
+no ready, queue or merge action is taken.

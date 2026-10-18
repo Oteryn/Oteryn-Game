@@ -1384,4 +1384,33 @@ impl super::cast::PlayerSpellState {
         retained.fence = current;
         Ok(())
     }
+
+    /// #2193 Codex P1 4307264455: the store refused this exact retained checkpoint's fence
+    /// before any write (`AuthorityRejected`, no receipt for its occurrence), so the session's
+    /// connection, lease or scope generation moved after it was prepared. The checkpoint is
+    /// re-fenced to the independently resolved current authority of the same Character and
+    /// session; its occurrence, request and formula stay, so a later replay can never commit a
+    /// second build. A fence that did not move, another Character or session, a lower revision
+    /// or another retained checkpoint is refused and changes nothing.
+    pub(crate) fn refence_uncommitted_training_checkpoint(
+        &mut self,
+        expected: &RetainedTrainingCheckpoint,
+        current: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    ) -> Result<(), TrainingError> {
+        let retained = self
+            .training_checkpoint
+            .as_mut()
+            .ok_or(TrainingError::InvalidBuild)?;
+        if retained.as_ref() != expected
+            || current == expected.fence
+            || current.character_id != expected.fence.character_id
+            || current.game_session_id != expected.fence.game_session_id
+            || current.expected_character_revision.get()
+                < expected.fence.expected_character_revision.get()
+        {
+            return Err(TrainingError::InvalidBuild);
+        }
+        retained.fence = current;
+        Ok(())
+    }
 }

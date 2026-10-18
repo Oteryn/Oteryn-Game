@@ -716,18 +716,35 @@ mod death_ml_loss_composed {
             .map_err(Into::into)
     }
 
-    /// #2193 Codex P1 4307011952: the actor-end release's death flush replays a checkpoint the
-    /// store refuses before any write (`AuthorityRejected`: its fence predates the session's
-    /// moved lease), so the flushed try and the checkpoint stay only in memory. The release keeps
-    /// the dead actor for a retry instead of committing the death from the older durable build.
+    /// #2193 Codex P1 4307011952, 4307264455: the actor-end release's death flush replays a
+    /// checkpoint the store refuses before any write (`AuthorityRejected`: its fence predates the
+    /// session's moved lease), so the flushed try and the checkpoint stay only in memory. The
+    /// release keeps the dead actor instead of committing the death from the older durable
+    /// build, the proven-uncommitted checkpoint is re-fenced to the session's current authority,
+    /// and the retried release flushes the try and settles the death priced from it.
     #[test]
-    fn composed_release_keeps_a_death_whose_flush_was_rejected_on_postgres() -> TestResult {
+    fn composed_release_refences_a_rejected_flush_then_settles_on_postgres() -> TestResult {
         std::thread::Builder::new()
             .name("death-ml-loss-rejected".into())
             .stack_size(SCENARIO_STACK_BYTES)
             .spawn(|| scenario(Case::ReleaseRejected).map_err(|error| error.to_string()))?
             .join()
             .map_err(|_| "death ML loss rejected thread panicked")?
+            .map_err(Into::into)
+    }
+
+    /// #2193 Codex P1 4307264455: the live death's flush checkpoint is refused before any write
+    /// under a fence the session's lease has moved past. The first cadence keeps the actor dead
+    /// and re-fences the proven-uncommitted checkpoint to the current authority; the next one
+    /// flushes the try, prices the death from it and respawns, so the actor is never stuck.
+    #[test]
+    fn composed_live_death_refences_a_rejected_flush_then_respawns_on_postgres() -> TestResult {
+        std::thread::Builder::new()
+            .name("death-ml-loss-live-rejected".into())
+            .stack_size(SCENARIO_STACK_BYTES)
+            .spawn(|| scenario(Case::LiveRejected).map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "death ML loss live rejected thread panicked")?
             .map_err(Into::into)
     }
 
@@ -740,6 +757,8 @@ mod death_ml_loss_composed {
         CommittedFenced,
         /// The flush's checkpoint is refused before any write, and the actor-end release settles.
         ReleaseRejected,
+        /// The flush's checkpoint is refused before any write, and the live cadence respawns.
+        LiveRejected,
     }
 
     /// The production manifest's generation, activated for `world`, with its training section
@@ -833,6 +852,17 @@ mod death_ml_loss_composed {
         )
     }
 
+    /// The Character's death receipts.
+    async fn death_receipts(h: &Harness) -> TestResult<i64> {
+        Ok(sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_death_receipts \
+             WHERE character_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?)
+    }
+
     /// Independent restatement of SKILLS-0 §3.6: sum the paid requirements and current progress,
     /// remove `floor(total * lost / before)` and re-level from the family floor.
     fn expected_loss(
@@ -881,6 +911,7 @@ mod death_ml_loss_composed {
                 Case::Clean => "death_ml_composed",
                 Case::CommittedFenced => "death_ml_fenced",
                 Case::ReleaseRejected => "death_ml_rejected",
+                Case::LiveRejected => "death_ml_live_rejected",
             };
             let harness = Harness::create_with_admission_seed(admin, name, false, false).await?;
             prepare_current_session(&harness).await?;
@@ -1115,49 +1146,84 @@ mod death_ml_loss_composed {
                 );
             }
 
-            if case == Case::ReleaseRejected {
-                // The store refuses the stale fence before any write: fenced out, the checkpoint
-                // retained and nothing committed.
-                assert_eq!(
-                    owner.save_spell_training(actor, session, true).await,
-                    TrainingSave::FencedOut
-                );
+            // The death flush's try, durable before the death is priced.
+            let mut flushed_skills = trained.skills();
+            flushed_skills[2].1 += 1;
+            let flushed =
+                DurableBuildState::new("druid", trained.magic(), flushed_skills).map_err(debug)?;
+            let durable = format!(
+                "SELECT {} FROM game_character_build_state \
+                 WHERE character_id = encode($1,'hex')::uuid",
+                columns("")
+            );
+            if matches!(case, Case::ReleaseRejected | Case::LiveRejected) {
+                // The store refuses the stale fence before any write. The first attempt keeps the
+                // actor dead with nothing committed, and re-fences the proven-uncommitted
+                // checkpoint (same occurrence) to the session's current authority.
                 let mut settled = None;
-                assert!(
-                    !owner
-                        .settle_released_death(actor, session, &mut settled)
-                        .await,
-                    "a release must not settle a death whose flush was refused"
-                );
-                assert!(settled.is_none());
-                let receipts: i64 = sqlx::query_scalar(
-                    "SELECT count(*) FROM game_character_death_receipts \
-                     WHERE character_id = encode($1,'hex')::uuid",
-                )
-                .bind(id(41).as_slice())
-                .fetch_one(&harness.pool)
-                .await?;
-                assert_eq!(receipts, 0);
-                let durable = format!(
-                    "SELECT {} FROM game_character_build_state \
-                     WHERE character_id = encode($1,'hex')::uuid",
-                    columns("")
-                );
+                if case == Case::ReleaseRejected {
+                    assert!(
+                        !owner
+                            .settle_released_death(actor, session, &mut settled)
+                            .await,
+                        "a release must not settle a death whose flush was refused"
+                    );
+                    assert!(settled.is_none());
+                } else {
+                    assert!(
+                        owner
+                            .respawn_after_death(actor, session, death)
+                            .await
+                            .is_none(),
+                        "a live death must not settle a death whose flush was refused"
+                    );
+                }
+                assert_eq!(death_receipts(&harness).await?, 0);
                 assert_eq!(build_row(&harness, &durable).await?, trained);
                 assert!(owner.spell_states.lock().await.is_dead(actor));
+                let current = current_fence(&owner, session).await?;
                 {
                     let runtime = dependencies.runtime.lock().await;
                     let mut states = owner.spell_states.lock().await;
                     let state = states
                         .get_mut(&runtime, actor, session)
                         .ok_or("dead actor")?;
-                    assert!(state.pending_training_checkpoint().is_some());
+                    let retained = state
+                        .pending_training_checkpoint()
+                        .ok_or("the refused checkpoint stays retained")?;
+                    assert_eq!(retained.fence, current);
+                    assert_eq!(retained.prepared.request.occurrence, occurrence(93)?);
                     assert!(state.has_training_to_flush());
                 }
-                drop(owner);
-                drop(authority);
-                drop(seal);
-                return harness.cleanup().await;
+                if case == Case::ReleaseRejected {
+                    // The retried release flushes the try under the current fence, then settles
+                    // the death priced from it.
+                    assert!(
+                        owner
+                            .settle_released_death(actor, session, &mut settled)
+                            .await,
+                        "the retried release settles once the re-fenced flush is durable"
+                    );
+                    assert_eq!(settled, Some(death));
+                    assert_eq!(death_receipts(&harness).await?, 1);
+                    let before = format!(
+                        "SELECT {} FROM game_character_death_receipts \
+                         WHERE character_id = encode($1,'hex')::uuid",
+                        columns("_before")
+                    );
+                    assert_eq!(build_row(&harness, &before).await?, flushed);
+                    let lost = u64::try_from(
+                        crate::domain::death::death_experience_loss(20, 0, false).map_err(debug)?,
+                    )?;
+                    assert_eq!(
+                        build_row(&harness, &durable).await?,
+                        expected_loss(table, &flushed, LEVEL_20_EXPERIENCE, lost)?
+                    );
+                    drop(owner);
+                    drop(authority);
+                    drop(seal);
+                    return harness.cleanup().await;
+                }
             }
 
             // The composed respawn: flush, priced death, placement, rebase and refill.
@@ -1170,10 +1236,6 @@ mod death_ml_loss_composed {
 
             // The death receipt: binding version 2, its before build holds the flushed try, and
             // its after build is the SKILLS-0 §3.6 loss of the receipt's experience share.
-            let mut flushed_skills = trained.skills();
-            flushed_skills[2].1 += 1;
-            let flushed =
-                DurableBuildState::new("druid", trained.magic(), flushed_skills).map_err(debug)?;
             let (binding, experience_before, experience_lost): (i32, i64, i64) = sqlx::query_as(
                 "SELECT get_byte(command_binding, 0), experience_before, experience_lost \
                  FROM game_character_death_receipts WHERE character_id = encode($1,'hex')::uuid",
@@ -1203,11 +1265,6 @@ mod death_ml_loss_composed {
             assert!(lowered.magic() < flushed.magic());
             assert!(lowered.skills()[2] < flushed.skills()[2]);
             // The durable build is the lowered one, and the respawn obligation is consumed.
-            let durable = format!(
-                "SELECT {} FROM game_character_build_state \
-                 WHERE character_id = encode($1,'hex')::uuid",
-                columns("")
-            );
             assert_eq!(build_row(&harness, &durable).await?, lowered);
             let pending: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_character_pending_respawns \
