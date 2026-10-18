@@ -112,26 +112,9 @@ async fn verify_head_in_transaction(
     environment: &str,
     head: &Head,
 ) -> Result<(), StaffError> {
-    let row=sqlx::query("SELECT previous_link_sha256,link_sha256,roster_sha256,key_fingerprint,signed_bytes,principal,signature,link_kind FROM game_staff_control_links WHERE environment=$1 AND control_seq=$2::text::numeric")
+    let row=sqlx::query("SELECT control_seq::text,previous_link_sha256,link_sha256,roster_sha256,key_fingerprint,signed_bytes,principal,signature,link_kind FROM game_staff_control_links WHERE environment=$1 AND control_seq=$2::text::numeric")
         .bind(environment).bind(head.sequence.to_string()).fetch_optional(&mut *connection).await?.ok_or(Error::Chain)?;
-    let link = signature::ChainLink {
-        sequence: head.sequence,
-        previous: row.try_get(0)?,
-        digest: row.try_get(1)?,
-        roster: row.try_get(2)?,
-        fingerprint: row.try_get(3)?,
-        signed: SignedBytes {
-            bytes: row.try_get(4)?,
-            principal: row.try_get(5)?,
-            signature: row.try_get(6)?,
-        },
-        kind: match row.try_get::<String, _>(7)?.as_str() {
-            "REQUEST" => signature::LinkKind::Request,
-            "RECEIPT" => signature::LinkKind::Receipt,
-            "ACTIVATION" => signature::LinkKind::Activation,
-            _ => return Err(Error::Invalid.into()),
-        },
-    };
+    let link = chain_link(&row)?;
     if head.activation_digest != trust.activation_digest() || link.digest != head.digest {
         return Err(Error::Binding.into());
     }
@@ -141,6 +124,46 @@ async fn verify_head_in_transaction(
         }
         signature::VerifiedLink::Receipt(_) => Ok(()),
     }
+}
+
+fn chain_link(row: &sqlx::postgres::PgRow) -> Result<signature::ChainLink, StaffError> {
+    Ok(signature::ChainLink {
+        sequence: row
+            .try_get::<String, _>(0)?
+            .parse()
+            .map_err(|_| Error::Invalid)?,
+        previous: row.try_get(1)?,
+        digest: row.try_get(2)?,
+        roster: row.try_get(3)?,
+        fingerprint: row.try_get(4)?,
+        signed: SignedBytes {
+            bytes: row.try_get(5)?,
+            principal: row.try_get(6)?,
+            signature: row.try_get(7)?,
+        },
+        kind: match row.try_get::<String, _>(8)?.as_str() {
+            "REQUEST" => signature::LinkKind::Request,
+            "RECEIPT" => signature::LinkKind::Receipt,
+            "ACTIVATION" => signature::LinkKind::Activation,
+            _ => return Err(Error::Invalid.into()),
+        },
+    })
+}
+
+/// ALPHA-OPS ruling 8: a retained request re-applied after a database restore
+/// keeps its recorded execution time. The caller holds the locked head, has
+/// verified the restored chain and this request's place on it, and finishes in
+/// this same transaction.
+pub(crate) async fn restored_pending(
+    connection: &mut PgConnection,
+    request: VerifiedRequest,
+    occurred_at: i64,
+) -> Result<Box<Pending>, StaffError> {
+    Ok(Box::new(Pending {
+        physical_transaction: physical_transaction(connection).await?,
+        request,
+        occurred_at,
+    }))
 }
 
 /// A signed REQUEST link authenticates only the request. Its outcome, receipt
@@ -278,7 +301,7 @@ pub(crate) async fn fixture_begin_with_clock(
 
 /// D1412: the caller holds the locked head in this same transaction. Every
 /// COMMITTED mutation needs a COMMITTED receipt row (a refused one changed
-/// nothing and needs none; a receipt never acknowledges a refusal), and the receipt of the latest mutation, the
+/// nothing and needs none; an optional REFUSED receipt only records it), and the receipt of the latest mutation, the
 /// one that releases its pending fence, must pass the existing verifier under
 /// the reviewed activation in effect at that receipt's own sequence. Row
 /// existence never opens the fence; an unknown activation or any mismatch
@@ -467,8 +490,7 @@ pub(crate) async fn receipt_in_transaction(
         || row.try_get::<String, _>(1)? != value.outcome_sha256
         || row.try_get::<String, _>(2)? != receipt.signed().principal
         || row.try_get::<String, _>(3)? != receipt.fingerprint()
-        || outcome.disposition != Disposition::Committed
-        || value.disposition != Disposition::Committed
+        || outcome.disposition != value.disposition
     {
         return Err(Error::Receipt.into());
     }

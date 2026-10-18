@@ -92,12 +92,13 @@ pub enum ReportState {
     Expired,
 }
 /// A REPORTS_LIST keyset position: the last report of the previous page in
-/// `(created_at, report_id)` order. The next page starts strictly after it,
-/// so a page stays stable while reports are added, closed or expire.
+/// `(entry_seq, report_id)` order. A report draws its entry when it enters a
+/// state, so the next page, strictly after it, still reaches a report closed
+/// or expired after the cursor passed its creation time.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReportCursor {
-    pub created_at: Decimal,
+    pub entry_seq: Decimal,
     pub report_id: String,
 }
 
@@ -1092,7 +1093,7 @@ pub(crate) mod tests {
         let cursor = |report_id: &str| Action::ReportsList {
             state: ReportState::Open,
             after: Some(ReportCursor {
-                created_at: Decimal(1),
+                entry_seq: Decimal(1),
                 report_id: report_id.into(),
             }),
         };

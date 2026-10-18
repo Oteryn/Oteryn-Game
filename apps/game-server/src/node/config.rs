@@ -292,6 +292,18 @@ pub struct OpsConfig {
     pub projection: Option<ProjectionOpsConfig>,
     /// `public-projection resync`: absent, the command refuses.
     pub public_projection: Option<ProjectionOpsConfig>,
+    /// `staff restore-replay`: absent, the command refuses.
+    pub staff_restore: Option<StaffRestoreOpsConfig>,
+}
+
+/// The operator-only staff replay after a database restore (`alpha-ops`
+/// ruling 8). Its login is a member of the executor role
+/// `oteryn_game_runtime`, used only while the node is stopped, never the
+/// node's own login or the control login.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StaffRestoreOpsConfig {
+    pub database: DatabaseConfig,
 }
 
 /// The operator-only projection resync (`oteryn-game-list-characters-for-account-v1`
@@ -737,6 +749,11 @@ impl OpsConfig {
             }
             check_database(&public.database).map_err(|_| ConfigError {
                 key: "public_projection.database",
+            })?;
+        }
+        if let Some(restore) = &config.staff_restore {
+            check_database(&restore.database).map_err(|_| ConfigError {
+                key: "staff_restore.database",
             })?;
         }
         Ok(config)
@@ -1482,6 +1499,39 @@ root_ca_file = "/etc/oteryn/ops/db-ca.pem"
                 Some("public_projection.epoch_fence_file")
             );
         }
+        assert!(
+            OpsConfig::parse(ops.as_bytes())
+                .expect("ops")
+                .staff_restore
+                .is_none()
+        );
+        let restore = format!(
+            "{ops}{}",
+            r#"
+[staff_restore.database]
+transport_ip = "127.0.0.1"
+port = 5432
+tls_server_name = "db.internal"
+database = "oteryn"
+username = "restore_owner"
+password_file = "/etc/oteryn/ops/restore-pg-password"
+root_ca_file = "/etc/oteryn/ops/db-ca.pem"
+"#
+        );
+        assert_eq!(
+            OpsConfig::parse(restore.as_bytes())
+                .expect("staff restore")
+                .staff_restore
+                .map(|restore| restore.database.username),
+            Some("restore_owner".to_owned())
+        );
+        let relative = restore.replace("/etc/oteryn/ops/restore-pg-password", "pg-password");
+        assert_eq!(
+            OpsConfig::parse(relative.as_bytes()).err().map(|e| e.key),
+            Some("staff_restore.database")
+        );
+        let unknown = format!("{restore}extra = 1\n");
+        assert!(OpsConfig::parse(unknown.as_bytes()).is_err());
         let root = ops.replace("service_uid = 990", "service_uid = 0");
         assert_eq!(
             OpsConfig::parse(root.as_bytes()).err(),

@@ -2497,7 +2497,7 @@ mod executor {
     use super::*;
     use crate::durability::staff_moderation::{
         ItemTextReport, MAX_MUTE_MS, OPEN_SNAPSHOTS_PER_WORLD, REPORT_RETENTION_MS,
-        ReportAdmission, StaffNode,
+        ReportAdmission, RestoreError, RestoreKind, RestoreStep, RetainedLink, StaffNode,
     };
     use crate::staff::live::{self, KickResult, StaffDesk};
     use crate::staff::signature::{ControlMessage, ReportState, Target};
@@ -2511,8 +2511,9 @@ mod executor {
     const WORLD: &str = "00000000-0000-7000-8000-000000000010";
     const CHANNEL: &str = "00000000-0000-7000-8000-000000000011";
     const HOUR: u64 = 3_600_000;
-    /// Report time: a whole hour, far after the staff fixture clock.
-    const REPORTED: u64 = HOUR * 500_000;
+    /// Report time: a whole hour far after the staff fixture clock, and far
+    /// enough before the database clock that its retention has ended on it.
+    const REPORTED: u64 = HOUR * 480_000;
 
     // Three Characters (two in this node's World, one in another) and 24 items
     // in this World, each carrying text revision 1. Loaded as the owner with
@@ -2571,6 +2572,8 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         last: Option<(String, String, Vec<u8>)>,
         /// Further member LOGINs a case created, dropped with the fixture.
         logins: Vec<String>,
+        /// Every link sent and its answer, as `oteryn-game-ops` retains them.
+        retained: Vec<RetainedLink>,
     }
     impl Exec {
         async fn create(tag: &str, role: Option<&str>) -> TestResult<Option<Self>> {
@@ -2619,6 +2622,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     operation: 1,
                     last: None,
                     logins: Vec::new(),
+                    retained: Vec::new(),
                 })),
                 Err(error) => {
                     let admin = f.admin.clone();
@@ -2700,6 +2704,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 .signer
                 .sign(request.canonical_bytes()?, REQUEST_NAMESPACE);
             let digest = signature::sha256(&signed.bytes);
+            let message = ControlMessage::Request(signed.clone());
             let answer = self
                 .root
                 .fixture_serve_staff_request(
@@ -2722,6 +2727,10 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 .map(serde_json::from_slice::<serde_json::Value>)
                 .transpose()
                 .map_err(|_| Error::Invalid)?;
+            self.retained.push(RetainedLink {
+                message,
+                outcome: Some(stored.to_vec()),
+            });
             // Only a COMMITTED mutation awaits the operator's receipt.
             if mutation && outcome.disposition == Disposition::Committed {
                 self.receipt(
@@ -2768,15 +2777,74 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     Arc::clone(&self.f.history),
                     Arc::clone(&self.desk),
                     here(),
-                    ControlMessage::Receipt(signed),
+                    ControlMessage::Receipt(signed.clone()),
                 )
                 .await?;
             if answer != b"receipt-stored" {
                 return Err(Error::Receipt.into());
             }
+            self.retained.push(RetainedLink {
+                message: ControlMessage::Receipt(signed),
+                outcome: Some(answer),
+            });
             self.sequence += 1;
             self.head = digest;
             Ok(())
+        }
+        /// The database as restored from a backup taken at `(sequence, head)`:
+        /// every staff row above that head is gone. Written as the owner with
+        /// the replica role, as the seed is; the retained links stay.
+        async fn restore_to(&mut self, sequence: u64, head: &str) -> TestResult {
+            let environment = self.f.trust.environment().to_owned();
+            let through = sequence.to_string();
+            let mut tx = self.f.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            for statement in [
+                "DELETE FROM game_character_sanctions WHERE mute_action_id IN (SELECT action_id \
+                 FROM game_staff_operations WHERE environment=$1 AND control_seq>$2::text::numeric)",
+                "DELETE FROM game_staff_action_receipts WHERE environment=$1 \
+                 AND control_seq>$2::text::numeric",
+                "DELETE FROM game_staff_action_outbox WHERE environment=$1 AND operation_id IN \
+                 (SELECT operation_id FROM game_staff_operations WHERE environment=$1 \
+                 AND control_seq>$2::text::numeric)",
+                "DELETE FROM game_staff_operations WHERE environment=$1 \
+                 AND control_seq>$2::text::numeric",
+                "DELETE FROM game_staff_control_links WHERE environment=$1 \
+                 AND control_seq>$2::text::numeric",
+            ] {
+                sqlx::query(statement)
+                    .bind(&environment)
+                    .bind(&through)
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            sqlx::query(
+                "UPDATE game_staff_control_heads SET control_seq=$2::text::numeric,link_sha256=$3 \
+                 WHERE environment=$1",
+            )
+            .bind(&environment)
+            .bind(&through)
+            .bind(head)
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            self.sequence = sequence;
+            self.head = head.to_owned();
+            Ok(())
+        }
+        async fn replay(
+            &self,
+            retained: Vec<RetainedLink>,
+        ) -> Result<Vec<RestoreStep>, RestoreError> {
+            self.root
+                .staff_restore_replay(
+                    Arc::clone(&self.f.trust),
+                    Arc::clone(&self.f.history),
+                    retained,
+                )
+                .await
         }
         async fn scalar(&self, sql: &'static str) -> TestResult<i64> {
             Ok(sqlx::query_scalar(sql).fetch_one(&self.f.pool).await?)
@@ -3327,11 +3395,14 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         })
     }
 
-    /// A REFUSED mutation changed nothing: it awaits no receipt, and a receipt
-    /// (REFUSED or COMMITTED) for it is refused, so no receipt ever releases a
-    /// fence by acknowledging a refusal. A COMMITTED mutation still fences.
+    /// A receipt carries its outcome's disposition. A REFUSED mutation changed
+    /// nothing and awaits no receipt: a COMMITTED receipt of it is refused, and
+    /// a REFUSED one only records the refusal on the chain (ALPHA-OPS ruling 8).
+    /// A COMMITTED mutation fences until its COMMITTED receipt; a REFUSED
+    /// receipt of it is refused, so no refusal ever releases a fence.
     #[test]
-    fn staff_pg_executor_only_committed_receipts_release_mutation_fences() -> TestResult {
+    fn staff_pg_executor_receipts_match_their_outcome_and_committed_ones_release_fences()
+    -> TestResult {
         exec_case("refusedrcpt", Some("GM"), async |e| {
             let refused = e
                 .send(Action::Unmute {
@@ -3355,21 +3426,40 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             let receipts = e
                 .scalar("SELECT count(*) FROM game_staff_action_receipts")
                 .await?;
-            for disposition in [Disposition::Refused, Disposition::Committed] {
-                let receipt = e
-                    .receipt(operation.clone(), digest.clone(), &stored, disposition)
-                    .await;
-                assert!(
-                    matches!(receipt, Err(StaffError::Rejected(Error::Receipt))),
-                    "{disposition:?} receipt of a refusal: {:?}",
-                    receipt.err()
-                );
-            }
+            let committed = e
+                .receipt(
+                    operation.clone(),
+                    digest.clone(),
+                    &stored,
+                    Disposition::Committed,
+                )
+                .await;
+            assert!(
+                matches!(committed, Err(StaffError::Rejected(Error::Receipt))),
+                "COMMITTED receipt of a refusal: {:?}",
+                committed.err()
+            );
             assert_eq!(e.f.counts().await?, before);
             assert_eq!(
                 e.scalar("SELECT count(*) FROM game_staff_action_receipts")
                     .await?,
                 receipts
+            );
+            // The REFUSED receipt is stored on its own chain link.
+            let sequence = e.sequence;
+            e.receipt(
+                operation.clone(),
+                digest.clone(),
+                &stored,
+                Disposition::Refused,
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(e.sequence, sequence + 1);
+            assert_eq!(
+                e.scalar("SELECT count(*) FROM game_staff_action_receipts")
+                    .await?,
+                receipts + 1
             );
             // The refusal left no fence: the next request runs.
             let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
@@ -3583,14 +3673,15 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         })
     }
 
-    /// REPORTS_LIST pages by a signed `(created_at, report_id)` keyset cursor:
+    /// REPORTS_LIST pages by a signed `(entry_seq, report_id)` keyset cursor:
     /// more than one page of reports is read in order, each exactly once, and
     /// the answer bound ends a page early without losing a report.
     #[test]
     fn staff_pg_executor_reports_list_pages_past_one_page_by_signed_cursor() -> TestResult {
         exec_case("reportpages", Some("GM"), async |e| {
-            // 70 OPEN reports in this World (pairs share a creation time), 3 in
-            // another World and 12 CLOSED ones near the snapshot size bound.
+            // 70 OPEN reports in this World (pairs share a creation time, each
+            // draws its own entry), 3 in another World and 12 CLOSED ones near
+            // the snapshot size bound.
             let mut tx = e.f.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
@@ -3656,7 +3747,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 async move {
                     sqlx::query_scalar::<_, String>(
                         "SELECT report_id::text FROM game_item_text_reports WHERE world_id=$1::uuid \
-                         AND state=$2 ORDER BY created_at,report_id",
+                         AND state=$2 ORDER BY entry_seq,report_id",
                     )
                     .bind(WORLD)
                     .bind(state)
@@ -3683,7 +3774,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 .send(Action::ReportsList {
                     state: ReportState::Open,
                     after: Some(signature::ReportCursor {
-                        created_at: Decimal(REPORTED + HOUR),
+                        entry_seq: Decimal(u64::try_from(i64::MAX)?),
                         report_id: TARGET.into(),
                     }),
                 })
@@ -3692,6 +3783,521 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             let data = last.data.ok_or("list data")?;
             assert_eq!(data["reports"].as_array().map(Vec::len), Some(0));
             assert_eq!(data["truncated"], false);
+            Ok(())
+        })
+    }
+
+    fn admitted(admission: ReportAdmission) -> TestResult<String> {
+        match admission {
+            ReportAdmission::Open {
+                report_id,
+                first: true,
+                ..
+            } => Ok(report_id),
+            other => Err(format!("report not admitted: {other:?}").into()),
+        }
+    }
+    fn reported(n: u16) -> ItemTextReport {
+        ItemTextReport {
+            world: id(WORLD),
+            reporter_character: id(REPORTER),
+            item_instance: id(&item(n)),
+            text_revision: 1,
+        }
+    }
+
+    /// A report is closed or cleared only as the effect of its own signed
+    /// action: a runtime member LOGIN cannot end or clear one by borrowing the
+    /// action id of an INSPECT or of another report's committed close.
+    #[test]
+    fn staff_pg_member_logins_cannot_end_or_clear_reports_without_their_signed_action() -> TestResult
+    {
+        exec_case("forgereport", Some("ADMIN"), async |e| {
+            let mut reports = Vec::new();
+            for n in 0..2 {
+                reports.push(admitted(
+                    e.root
+                        .create_item_text_report(reported(n), REPORTED, OPEN_SNAPSHOTS_PER_WORLD)
+                        .await
+                        .map_err(debug)?,
+                )?);
+            }
+            let inspected = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&inspected), COMMITTED);
+            let closed = e
+                .send(Action::ReportClose {
+                    report_id: reports[0].clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&closed), COMMITTED);
+            let close = "UPDATE game_item_text_reports SET state='CLOSED',revision=revision+1,\
+                         ended_at=created_at,closed_action_id=$2::uuid WHERE report_id=$1::uuid";
+            let clear = "UPDATE game_item_text_reports SET cleared_action_id=$2::uuid \
+                         WHERE report_id=$1::uuid";
+            let mut connection = e.member("forgerep", "oteryn_game_runtime").await?;
+            let mut failures = Vec::new();
+            let bound = ("23514", "report transition is not its signed staff action");
+            // Another report's close id is already refused by its unique key,
+            // before the deferred binding check runs.
+            let unique = (
+                "23505",
+                "duplicate key value violates unique constraint \
+                 \"game_item_text_reports_closed_action_id_key\"",
+            );
+            let (inspect_id, close_id) = (&inspected.outcome.action_id, &closed.outcome.action_id);
+            for (case, statement, borrowed, expected) in [
+                ("close by an inspect", close, inspect_id, bound),
+                ("close by another close", close, close_id, unique),
+                ("clear by an inspect", clear, inspect_id, bound),
+                ("clear by a close", clear, close_id, bound),
+            ] {
+                let mut tx = connection.begin().await?;
+                let updated = sqlx::query(statement)
+                    .bind(&reports[1])
+                    .bind(borrowed)
+                    .execute(&mut *tx)
+                    .await;
+                let refusal = match updated {
+                    Ok(_) => tx.commit().await.err(),
+                    Err(error) => {
+                        drop(tx);
+                        Some(error)
+                    }
+                };
+                match refusal.as_ref().and_then(sql_state) {
+                    Some((code, message)) if code == expected.0 && message == expected.1 => {}
+                    other => failures.push(format!("{case}: {other:?}")),
+                }
+            }
+            connection.close().await?;
+            assert!(
+                failures.is_empty(),
+                "forged report transitions: {failures:?}"
+            );
+            let row: (String, Option<String>, Option<String>) = sqlx::query_as(
+                "SELECT state,closed_action_id::text,cleared_action_id::text \
+                 FROM game_item_text_reports WHERE report_id=$1::uuid",
+            )
+            .bind(&reports[1])
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(row, ("OPEN".into(), None, None));
+            // The executor's own close binds to its REPORT_CLOSE and commits.
+            let own = e
+                .send(Action::ReportClose {
+                    report_id: reports[1].clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&own), COMMITTED);
+            Ok(())
+        })
+    }
+
+    /// WRITE0-RL-03: a snapshot stays until its retention ends on the database
+    /// clock. An expiry passed a later time removes nothing, and a runtime
+    /// member LOGIN cannot clear the snapshot or expire the report early.
+    #[test]
+    fn staff_pg_report_snapshots_stay_until_retention_ends_on_the_database_clock() -> TestResult {
+        exec_case("retention", Some("ADMIN"), async |e| {
+            let now = u64::try_from(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)?
+                    .as_millis(),
+            )?;
+            let at = now - now % HOUR;
+            let report = admitted(
+                e.root
+                    .create_item_text_report(reported(0), at, OPEN_SNAPSHOTS_PER_WORLD)
+                    .await
+                    .map_err(debug)?,
+            )?;
+            let late = at + u64::try_from(REPORT_RETENTION_MS)? + 2 * HOUR;
+            assert_eq!(
+                e.root.expire_item_text_reports(late).await.map_err(debug)?,
+                0
+            );
+            let mut connection = e.member("snapclear", "oteryn_game_runtime").await?;
+            let mut failures = Vec::new();
+            for (case, statement) in [
+                (
+                    "clear",
+                    "UPDATE game_item_text_reports SET snapshot_text=NULL WHERE report_id=$1::uuid",
+                ),
+                (
+                    "expire",
+                    "UPDATE game_item_text_reports SET state='EXPIRED',revision=revision+1,\
+                     ended_at=expires_at,snapshot_text=NULL WHERE report_id=$1::uuid",
+                ),
+            ] {
+                let refused = sqlx::query(statement)
+                    .bind(&report)
+                    .execute(&mut connection)
+                    .await;
+                match refused.as_ref().err().and_then(sql_state) {
+                    Some((code, message))
+                        if code == "23514" && message == "immutable staff evidence" => {}
+                    other => failures.push(format!("{case}: {other:?}")),
+                }
+            }
+            connection.close().await?;
+            assert!(failures.is_empty(), "early snapshot removal: {failures:?}");
+            assert_eq!(
+                e.scalar(
+                    "SELECT count(*) FROM game_item_text_reports \
+                     WHERE state='OPEN' AND snapshot_text IS NOT NULL"
+                )
+                .await?,
+                1
+            );
+            Ok(())
+        })
+    }
+
+    /// A report draws a new list entry when it changes state: a report closed
+    /// after a CLOSED page was read appears after that page's cursor, though it
+    /// was created first and has the smaller id.
+    #[test]
+    fn staff_pg_reports_closed_after_a_page_stay_reachable_by_its_cursor() -> TestResult {
+        exec_case("reportentry", Some("ADMIN"), async |e| {
+            let mut reports = Vec::new();
+            for n in 0..3 {
+                reports.push(admitted(
+                    e.root
+                        .create_item_text_report(reported(n), REPORTED, OPEN_SNAPSHOTS_PER_WORLD)
+                        .await
+                        .map_err(debug)?,
+                )?);
+            }
+            async fn page(
+                e: &mut Exec,
+                state: ReportState,
+                after: Option<signature::ReportCursor>,
+            ) -> TestResult<Vec<String>> {
+                let page = e
+                    .send(Action::ReportsList { state, after })
+                    .await
+                    .map_err(debug)?;
+                assert_eq!(of(&page), COMMITTED);
+                let data = page.data.ok_or("list data")?;
+                assert_eq!(data["truncated"], false);
+                Ok(data["reports"]
+                    .as_array()
+                    .ok_or("reports")?
+                    .iter()
+                    .filter_map(|report| report["report_id"].as_str().map(str::to_owned))
+                    .collect())
+            }
+            async fn close(e: &mut Exec, report: &str) -> TestResult {
+                let closed = e
+                    .send(Action::ReportClose {
+                        report_id: report.into(),
+                    })
+                    .await
+                    .map_err(debug)?;
+                assert_eq!(of(&closed), COMMITTED);
+                Ok(())
+            }
+            close(e, &reports[2]).await?;
+            assert_eq!(
+                page(e, ReportState::Closed, None).await?,
+                [reports[2].clone()]
+            );
+            let entry: String = sqlx::query_scalar(
+                "SELECT entry_seq::text FROM game_item_text_reports WHERE report_id=$1::uuid",
+            )
+            .bind(&reports[2])
+            .fetch_one(&e.f.pool)
+            .await?;
+            let cursor = signature::ReportCursor {
+                entry_seq: Decimal(entry.parse()?),
+                report_id: reports[2].clone(),
+            };
+            assert!(reports[0] < reports[2]);
+            close(e, &reports[0]).await?;
+            assert_eq!(
+                page(e, ReportState::Closed, Some(cursor)).await?,
+                [reports[0].clone()]
+            );
+            assert_eq!(
+                page(e, ReportState::Open, None).await?,
+                [reports[1].clone()]
+            );
+            Ok(())
+        })
+    }
+
+    fn kinds(steps: &[RestoreStep]) -> Vec<RestoreKind> {
+        steps.iter().map(|step| step.kind).collect()
+    }
+    fn chain_stop(result: &Result<Vec<RestoreStep>, RestoreError>) -> bool {
+        matches!(
+            result,
+            Err(RestoreError::Staff(StaffError::Rejected(Error::Chain)))
+        )
+    }
+    async fn sanctions(e: &Exec, character: &str) -> TestResult<i64> {
+        Ok(sqlx::query_scalar(
+            "SELECT count(*) FROM game_character_sanctions WHERE character_id=$1::uuid",
+        )
+        .bind(character)
+        .fetch_one(&e.f.pool)
+        .await?)
+    }
+    async fn head_of(e: &Exec) -> TestResult<(u64, String)> {
+        let head = e
+            .root
+            .staff_receipt_head(e.f.trust.environment().into())
+            .await
+            .map_err(debug)?;
+        Ok((head.sequence, head.digest))
+    }
+    /// A signed request at `sequence` after `previous`, answered with a
+    /// well-formed outcome, as a retained pair.
+    fn answered(
+        e: &mut Exec,
+        sequence: u64,
+        previous: &str,
+        action: Action,
+    ) -> TestResult<RetainedLink> {
+        e.operation += 1;
+        let mut request = e.f.signer.request(e.operation, sequence, previous);
+        request.action = action;
+        let signed =
+            e.f.signer
+                .sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+        let outcome = Outcome {
+            disposition: Disposition::Committed,
+            result: ResultCode::Ok,
+            action_id: format!(
+                "00000000-0000-7000-8000-{:012x}",
+                0xa00 + u64::from(e.operation)
+            ),
+            transaction_id: format!(
+                "00000000-0000-7000-8000-{:012x}",
+                0xb00 + u64::from(e.operation)
+            ),
+            occurred_at: Decimal(NOW),
+        };
+        Ok(RetainedLink {
+            message: ControlMessage::Request(signed),
+            outcome: Some(outcome.canonical_bytes().map_err(debug)?),
+        })
+    }
+
+    /// GM-1 row 9 (ALPHA-OPS ruling 8): the retained links must extend the
+    /// restored head gaplessly. An answered link missing its predecessor, two
+    /// answered links at one sequence, an answered link off the head and an
+    /// answered link that differs from the restored chain each stop the
+    /// replay with nothing applied.
+    #[test]
+    fn staff_pg_restore_stops_on_a_gap_a_fork_or_a_changed_link() -> TestResult {
+        exec_case("restorechain", Some("GM"), async |e| {
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let retained = e.retained.clone();
+            assert_eq!(retained.len(), 3);
+            e.restore_to(base, &base_head).await?;
+            let before = e.f.counts().await?;
+            let gap = vec![retained[0].clone(), retained[2].clone()];
+            let fork = answered(e, base + 1, &base_head, inspect(REPORTER))?;
+            let off = answered(e, base + 1, &"f".repeat(64), inspect(REPORTER))?;
+            let changed = answered(e, base, &"0".repeat(64), inspect(REPORTER))?;
+            for (case, links) in [
+                ("gap", gap),
+                ("fork", [retained.clone(), vec![fork]].concat()),
+                ("off the head", [retained.clone(), vec![off]].concat()),
+                ("changed", [retained.clone(), vec![changed]].concat()),
+            ] {
+                let result = e.replay(links).await;
+                assert!(chain_stop(&result), "{case}: {result:?}");
+            }
+            assert_eq!(e.f.counts().await?, before);
+            assert_eq!(sanctions(e, TARGET).await?, 0);
+            assert_eq!(head_of(e).await?, (base, base_head));
+            Ok(())
+        })
+    }
+
+    /// GM-1 row 13 (ALPHA-OPS ruling 8): a COMMITTED mute with its verifying
+    /// receipt is re-run through its own checks at its recorded time, reads
+    /// are recorded, and a second run applies nothing. A mute the current
+    /// state refuses (its target left the World) applies no sanction.
+    #[test]
+    fn staff_pg_restore_replays_receipted_mutes_once_and_rechecks_them() -> TestResult {
+        exec_case("restoremute", Some("GM"), async |e| {
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let base_counts = e.f.counts().await?;
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let read = e.send(inspect(REPORTER)).await.map_err(debug)?;
+            assert_eq!(of(&read), COMMITTED);
+            let top = (e.sequence, e.head.clone());
+            let top_counts = e.f.counts().await?;
+            let retained = e.retained.clone();
+            e.restore_to(base, &base_head).await?;
+            assert_eq!(e.f.counts().await?, base_counts);
+            assert_eq!(sanctions(e, TARGET).await?, 0);
+            let steps = e.replay(retained.clone()).await.map_err(debug)?;
+            assert_eq!(
+                kinds(&steps),
+                [
+                    RestoreKind::Replayed,
+                    RestoreKind::Receipt,
+                    RestoreKind::Recorded
+                ]
+            );
+            assert_eq!(
+                steps.iter().map(|step| step.sequence).collect::<Vec<_>>(),
+                [base + 1, base + 2, base + 3]
+            );
+            assert_eq!(head_of(e).await?, top);
+            assert_eq!(e.f.counts().await?, top_counts);
+            assert_eq!(sanctions(e, TARGET).await?, 1);
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(id(TARGET), NOW)
+                    .await
+                    .map_err(debug)?,
+                Some(NOW + 60_000)
+            );
+            // A second run finds every link stored.
+            assert!(e.replay(retained).await.map_err(debug)?.is_empty());
+            assert_eq!(sanctions(e, TARGET).await?, 1);
+            assert_eq!(head_of(e).await?, top);
+            (e.sequence, e.head) = top;
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+
+            // The current state refuses a mute whose target left the World.
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let muted = e.send(mute(REPORTER, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let top = (e.sequence, e.head.clone());
+            let retained = e.retained.clone();
+            e.restore_to(base, &base_head).await?;
+            let mut tx = e.f.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(
+                "UPDATE game_character_roots SET world_id='00000000-0000-7000-8000-000000000020' \
+                 WHERE character_id=$1::uuid",
+            )
+            .bind(REPORTER)
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            let steps = e.replay(retained).await.map_err(debug)?;
+            assert_eq!(
+                kinds(&steps),
+                [
+                    RestoreKind::RefusedNow(ResultCode::TargetNotFound),
+                    RestoreKind::Receipt
+                ]
+            );
+            assert_eq!(head_of(e).await?, top);
+            assert_eq!(sanctions(e, REPORTER).await?, 0);
+            Ok(())
+        })
+    }
+
+    /// GM-1 row 14 (ALPHA-OPS ruling 8): a refused mutation with its REFUSED
+    /// receipt is stored, never run, and a resubmission returns that refusal.
+    #[test]
+    fn staff_pg_restore_stores_receipted_refusals_and_resubmits_return_them() -> TestResult {
+        exec_case("restorerefusal", Some("GM"), async |e| {
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let refused = e.send(mute(FOREIGN, 60_000)).await.map_err(debug)?;
+            assert_eq!(
+                of(&refused),
+                (Disposition::Refused, ResultCode::TargetNotFound)
+            );
+            let (operation, digest, stored) = e.last.clone().ok_or("last request")?;
+            e.receipt(operation, digest.clone(), &stored, Disposition::Refused)
+                .await
+                .map_err(debug)?;
+            let top = (e.sequence, e.head.clone());
+            let retained = e.retained.clone();
+            let request = retained
+                .iter()
+                .find_map(|link| match &link.message {
+                    ControlMessage::Request(signed)
+                        if signature::sha256(&signed.bytes) == digest =>
+                    {
+                        Some(signed.clone())
+                    }
+                    _ => None,
+                })
+                .ok_or("retained request")?;
+            e.restore_to(base, &base_head).await?;
+            let steps = e.replay(retained).await.map_err(debug)?;
+            assert_eq!(
+                kinds(&steps),
+                [RestoreKind::RefusalStored, RestoreKind::Receipt]
+            );
+            assert_eq!(head_of(e).await?, top);
+            let answer = e
+                .root
+                .fixture_serve_staff_request(
+                    Arc::clone(&e.f.trust),
+                    Arc::clone(&e.f.history),
+                    Arc::clone(&e.desk),
+                    here(),
+                    request,
+                    NOW,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(answer, stored);
+            assert_eq!(head_of(e).await?, top);
+            assert_eq!(sanctions(e, FOREIGN).await?, 0);
+            Ok(())
+        })
+    }
+
+    /// GM-1 row 15 (ALPHA-OPS ruling 8): a mutation without a verifying
+    /// receipt, or a request without its retained answer, is ambiguous: the
+    /// replay names it and applies nothing until the signed `restore resolve`
+    /// of DATA-RESTORE-OPS-2. With its receipt the same links replay.
+    #[test]
+    fn staff_pg_restore_without_a_verifying_receipt_applies_nothing() -> TestResult {
+        exec_case("restoreambig", Some("GM"), async |e| {
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let (operation, _, _) = e.last.clone().ok_or("last request")?;
+            let top = (e.sequence, e.head.clone());
+            let mut retained = e.retained.clone();
+            let receipt = retained.pop().ok_or("receipt")?;
+            assert!(matches!(receipt.message, ControlMessage::Receipt(_)));
+            e.restore_to(base, &base_head).await?;
+            let before = e.f.counts().await?;
+            let mut unanswered = retained.clone();
+            unanswered.last_mut().ok_or("request")?.outcome = None;
+            unanswered.push(receipt.clone());
+            for (case, links) in [("no receipt", retained.clone()), ("no answer", unanswered)] {
+                match e.replay(links).await {
+                    Err(RestoreError::Ambiguous(operations)) => {
+                        assert_eq!(operations, std::slice::from_ref(&operation), "{case}")
+                    }
+                    other => return Err(format!("{case}: {other:?}").into()),
+                }
+                assert_eq!(e.f.counts().await?, before, "{case}");
+                assert_eq!(head_of(e).await?, (base, base_head.clone()), "{case}");
+                assert_eq!(sanctions(e, TARGET).await?, 0, "{case}");
+            }
+            retained.push(receipt);
+            let steps = e.replay(retained).await.map_err(debug)?;
+            assert_eq!(kinds(&steps), [RestoreKind::Replayed, RestoreKind::Receipt]);
+            assert_eq!(head_of(e).await?, top);
+            assert_eq!(sanctions(e, TARGET).await?, 1);
             Ok(())
         })
     }

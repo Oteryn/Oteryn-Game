@@ -51,8 +51,9 @@ pub struct StoredOperation {
     pub occurred_at: i64,
 }
 /// Only a COMMITTED mutation awaits an operator receipt. A refused mutation
-/// changed nothing, and a receipt never acknowledges a refusal, so it would
-/// fence the chain for good. Derived from the signed action, never from SQL.
+/// changed nothing, so awaiting one would fence the chain for good; an
+/// optional REFUSED receipt only records the refusal for a restore replay
+/// (ALPHA-OPS ruling 8). Derived from the signed action, never from SQL.
 pub fn requires_receipt(request: &VerifiedRequest, outcome: &Outcome) -> bool {
     !request.request().action.kind().is_read()
         && outcome.disposition == signature::Disposition::Committed
@@ -439,7 +440,8 @@ pub fn verify_event(
     Ok(())
 }
 
-/// A mutation requires a verifying COMMITTED receipt. Optional read receipts
+/// A COMMITTED mutation requires a verifying COMMITTED receipt; a receipt
+/// always carries its outcome's own disposition. Optional read receipts
 /// give the same exact timestamp proof. Without one, use the signed request's
 /// latest possible execution time for a conservative expiry exception: an
 /// unsigned DB timestamp never excuses premature loss of an audit row.
@@ -454,8 +456,7 @@ pub fn evidence_expiry(
         if value.operation_id != request.request().operation_id
             || value.request_sha256 != request.digest()
             || value.outcome_sha256 != signature::sha256(&outcome.canonical_bytes()?)
-            || value.disposition != signature::Disposition::Committed
-            || outcome.disposition != signature::Disposition::Committed
+            || value.disposition != outcome.disposition
             || receipt.signed().principal != request.signed().principal
             || receipt.fingerprint() != request.fingerprint()
         {

@@ -1475,6 +1475,11 @@ async fn dispatch(
     if arguments.words.first().map(String::as_str) == Some("public-projection") {
         return public_projection(&config, arguments, connect).await;
     }
+    if arguments.words.first().map(String::as_str) == Some("staff")
+        && arguments.words.get(1).map(String::as_str) == Some("restore-replay")
+    {
+        return staff_restore_replay(&config, invoking, arguments, connect).await;
+    }
     let state = secure_file::open_state_directory(&config.operator.state_directory, invoking)
         .map_err(|error| Failure::Input(format!("operator.state_directory: {error:?}")))?;
     let root = connect(&config.database).await?;
@@ -1500,6 +1505,126 @@ async fn dispatch(
             "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection|public-projection|staff|audit ...",
         )),
     }
+}
+
+const STAFF_RESTORE_USAGE: &str = "staff restore-replay --trust-config <path> \
+--activation-history <path>: replay the retained staff links above the restored head (ALPHA-OPS \
+ruling 8). It uses the [staff_restore] operator credential of the ops config. After a database \
+restore: stop the node, restore, run `staff restore-replay`, then start the node; ambiguous \
+requests wait for the signed `restore resolve` of DATA-RESTORE-OPS-2.";
+
+/// `staff restore-replay`: like `projection resync`, it connects only its own
+/// login, before and instead of the operator root. It reads every retained
+/// `staff-link-*` pair of the state directory and prints one line per link it
+/// applied; nothing is applied when any request lacks a verifying receipt.
+async fn staff_restore_replay(
+    config: &OpsConfig,
+    invoking: u32,
+    mut arguments: Arguments,
+    connect: impl AsyncFn(&DatabaseConfig) -> Result<DurabilityRoot, Failure>,
+) -> Outcome {
+    use oteryn_game_server::durability::staff_moderation::{
+        RestoreError, RestoreKind, RetainedLink,
+    };
+    use oteryn_game_server::staff::signature::{
+        self as signature, ActivationConfig, ControlMessage, History, TrustConfig,
+    };
+    use oteryn_release_manifest::jcs;
+    if arguments.words.len() != 2 {
+        return Err(Failure::Usage(STAFF_RESTORE_USAGE));
+    }
+    let trust_path = arguments.take("trust-config")?;
+    let history_path = arguments.take("activation-history")?;
+    arguments.finish()?;
+    let restore = config.staff_restore.as_ref().ok_or(Failure::Usage(
+        "staff restore-replay requires the [staff_restore] section",
+    ))?;
+    let root = connect(&restore.database).await?;
+    let trust: TrustConfig =
+        serde_json::from_slice(&staff_input(&trust_path, 4096)?).map_err(staff_failure)?;
+    let trust = trust.load().map_err(staff_failure)?;
+    let configs: Vec<ActivationConfig> =
+        serde_json::from_slice(&staff_input(&history_path, 65_536)?).map_err(staff_failure)?;
+    let history = History::load(configs, &trust).map_err(staff_failure)?;
+    let state = secure_file::open_state_directory(&config.operator.state_directory, invoking)
+        .map_err(|error| Failure::Input(format!("operator.state_directory: {error:?}")))?;
+    let mut names = std::collections::BTreeSet::new();
+    for entry in std::fs::read_dir(&config.operator.state_directory)
+        .map_err(|error| Failure::Unavailable(format!("operator.state_directory: {error}")))?
+    {
+        let entry = entry
+            .map_err(|error| Failure::Unavailable(format!("operator.state_directory: {error}")))?;
+        if let Some(name) = entry.file_name().to_str()
+            && name.starts_with("staff-link-")
+        {
+            names.insert(name.to_owned());
+        }
+    }
+    let mut retained = Vec::new();
+    for name in &names {
+        let Some(stem) = name.strip_suffix(".json") else {
+            continue;
+        };
+        let wire = secure_file::read_in(
+            &state,
+            name,
+            FileClass::Secret,
+            invoking,
+            signature::MAX_CONTROL_BYTES,
+        )
+        .map_err(staff_failure)?;
+        if !stem.ends_with(&format!("-{}", signature::sha256(&wire))) {
+            return Err(staff_failure("retained link name differs"));
+        }
+        let message: ControlMessage =
+            jcs::decode(&wire, signature::MAX_CONTROL_BYTES).map_err(staff_failure)?;
+        let outcome_name = format!("{stem}.outcome");
+        let outcome = if names.contains(&outcome_name) {
+            Some(
+                secure_file::read_in(
+                    &state,
+                    &outcome_name,
+                    FileClass::Secret,
+                    invoking,
+                    signature::MAX_OUTCOME_BYTES,
+                )
+                .map_err(staff_failure)?,
+            )
+        } else {
+            None
+        };
+        retained.push(RetainedLink { message, outcome });
+    }
+    let steps = root
+        .staff_restore_replay(
+            std::sync::Arc::new(trust),
+            std::sync::Arc::new(history),
+            retained,
+        )
+        .await
+        .map_err(|error| match error {
+            RestoreError::Ambiguous(operations) => Failure::Ambiguous(format!(
+                "staff requests without a verifying receipt: {}",
+                operations.join(",")
+            )),
+            RestoreError::Staff(error) => staff_failure(error),
+        })?;
+    for step in &steps {
+        let kind = match step.kind {
+            RestoreKind::Replayed => "replayed",
+            RestoreKind::RefusedNow(_) => "refused_now",
+            RestoreKind::RefusalStored => "refusal_stored",
+            RestoreKind::Recorded => "recorded",
+            RestoreKind::NotReapplied => "not_reapplied",
+            RestoreKind::Receipt => "receipt",
+        };
+        event(&format!(
+            "staff_restore={kind} control_seq={} operation_id={}",
+            step.sequence, step.operation_id
+        ));
+    }
+    event(&format!("staff_restore_applied={}", steps.len()));
+    Ok(())
 }
 
 fn staff_failure(_: impl std::fmt::Debug) -> Failure {
@@ -1682,11 +1807,11 @@ async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
             let outcome_bytes = staff_input(&outcome, signature::MAX_OUTCOME_BYTES)?;
             let outcome: StaffOutcome =
                 jcs::decode(&outcome_bytes, signature::MAX_OUTCOME_BYTES).map_err(staff_failure)?;
-            // Only a COMMITTED mutation awaits a receipt; a refusal changed nothing.
-            if outcome.disposition != signature::Disposition::Committed
-                || checked.request().action.kind().is_read()
-            {
-                return Err(staff_failure("only a committed mutation takes a receipt"));
+            // A COMMITTED mutation awaits its receipt. A refused mutation may take
+            // a REFUSED one, which only records the refusal for a restore replay
+            // (ALPHA-OPS ruling 8); a read takes none.
+            if checked.request().action.kind().is_read() {
+                return Err(staff_failure("only a mutation takes a receipt"));
             }
             let head = operator
                 .root
@@ -2029,6 +2154,66 @@ mod tests {
         let outcome = block_on(dispatch(config, 0, other, &connect));
         assert!(matches!(outcome, Err(Failure::Input(_))));
         assert!(connected.borrow().is_empty());
+    }
+
+    #[test]
+    fn staff_restore_replay_connects_only_the_restore_login() {
+        let database = |username: &str, password: &str| {
+            format!(
+                "transport_ip = \"127.0.0.1\"\nport = 5432\ntls_server_name = \"db.internal\"\n\
+                 database = \"oteryn\"\nusername = \"{username}\"\n\
+                 password_file = \"/etc/oteryn/ops/{password}\"\n\
+                 root_ca_file = \"/etc/oteryn/ops/db-ca.pem\"\n"
+            )
+        };
+        let base = format!(
+            "[operator]\nstate_directory = \"/nonexistent/oteryn-ops-state\"\nservice_uid = 990\n\
+             [database]\n{}\
+             [character]\nfence_directory = \"/var/lib/oteryn/character-fence\"\n\
+             authority_scope_id = \"character-primary\"\nissuer_identity = \"game-ops\"\n",
+            database("control_login", "pg-password"),
+        );
+        let block_on = |future| {
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap()
+                .block_on(future)
+        };
+        let connected = RefCell::new(Vec::new());
+        let connect = async |database: &DatabaseConfig| {
+            connected.borrow_mut().push(database.username.clone());
+            Err(Failure::Unavailable("not connected in tests".into()))
+        };
+        let words = || {
+            Arguments::parse(
+                [
+                    "staff",
+                    "restore-replay",
+                    "--trust-config",
+                    "/etc/oteryn/ops/trust.json",
+                    "--activation-history",
+                    "/etc/oteryn/ops/history.json",
+                ]
+                .iter()
+                .map(|word| (*word).to_owned())
+                .collect(),
+            )
+            .unwrap()
+        };
+        // Without its section the replay refuses before any login or state.
+        let config = OpsConfig::parse(base.as_bytes()).unwrap();
+        let outcome = block_on(dispatch(config, 0, words(), &connect));
+        assert!(matches!(outcome, Err(Failure::Usage(text)) if text.contains("[staff_restore]")));
+        assert!(connected.borrow().is_empty());
+        // With it, only the restore login connects, never the control login.
+        let document = format!(
+            "{base}[staff_restore.database]\n{}",
+            database("restore_owner", "restore-pg-password")
+        );
+        let config = OpsConfig::parse(document.as_bytes()).unwrap();
+        let outcome = block_on(dispatch(config, 0, words(), &connect));
+        assert!(matches!(outcome, Err(Failure::Unavailable(_))));
+        assert_eq!(*connected.borrow(), ["restore_owner"]);
     }
 
     #[test]

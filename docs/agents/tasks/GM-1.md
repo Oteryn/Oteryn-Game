@@ -54,7 +54,118 @@ slot_only_paths:
   - "Other handwritten wiring and contract changes require the current CP allocation. D1328 removes exclusive slots for generated Cargo.lock, pins and registries; regenerate those outputs after merge-up."
 ```
 
-## Current checkpoint — Codex review of `adc0e0a5` repairs, REPORT_ONLY (2026-10-18)
+## Current checkpoint — Codex review of `7e2f70bc` repairs and staff restore replay, REPORT_ONLY (2026-10-18)
+
+Parent `7e2f70bc`. This round has three parts.
+
+**Already resolved before this round.** The four cited P2s were fixed and
+resolved earlier: `PRRT_kwDOT8SzxM6tffQV`, `PRRT_kwDOT8SzxM6tf6Xp`,
+`PRRT_kwDOT8SzxM6thcai` and `PRRT_kwDOT8SzxM6tgnXA`. The earlier P1/P2
+findings are also resolved, each with a test that still exists:
+
+| Thread | Finding | Fixed in | Test |
+| --- | --- | --- | --- |
+| `tkDg-` | member LOGINs forge request links | `39fa9d3b` | `staff_pg_member_logins_cannot_roll_back_head_or_get_forged_links_extended` |
+| `tkDhA` | head monotonicity | `39fa9d3b` | the same case |
+| `tkDhD` | null scope on scoped actions | `39fa9d3b` | lib `ordinary_requests_require_signed_world_and_channel_scope` |
+| `tl8ns` | genuine links with forged rows | `aeaf11f1` | `staff_pg_member_logins_cannot_get_genuine_links_with_forged_rows_extended` |
+| `tl8nt` | activation before the pending receipt | `aeaf11f1` | `staff_pg_activation_waits_for_the_pending_mutation_receipt` |
+| `tqCoi` | REPORTS_LIST pagination | `7e2f70bc` | `staff_pg_executor_reports_list_pages_past_one_page_by_signed_cursor` |
+| `tffQU` | member LOGINs insert activations | earlier | `staff_pg_member_logins_cannot_insert_activations` |
+
+**Open findings on `7e2f70bc`, all accepted:**
+
+- [P1 PRRT_kwDOT8SzxM6tq-Vs](https://github.com/Oteryn/Oteryn-Game/pull/2181):
+  a report transition was not bound to its signed action. A member LOGIN
+  could close, dismiss or clear a report directly. The deferred constraint
+  trigger `game_item_text_report_bound` now requires that each state change
+  or snapshot clear names an operation that:
+  - was committed in the same transaction and environment;
+  - has a COMMITTED/OK outcome;
+  - signs that transition for this report.
+
+  Otherwise it raises `23514`, `report transition is not its signed staff
+  action`.
+- [P1 PRRT_kwDOT8SzxM6tq-Vu](https://github.com/Oteryn/Oteryn-Game/pull/2181):
+  a snapshot clear had no retention check. The transition trigger now
+  refuses to clear `snapshot_text` while `expires_at` is still ahead of the
+  database clock (`immutable staff evidence`). The executor's expiry also
+  uses the database clock.
+- [P2 PRRT_kwDOT8SzxM6tq-Vy](https://github.com/Oteryn/Oteryn-Game/pull/2181):
+  a report that changed state after a page was read could fall behind the
+  cursor and be skipped. Every insert or state change now draws a fresh
+  `entry_seq` from a sequence, under the worlds row lock. The list pages by
+  `(entry_seq, report_id)`, and the signed cursor is `{entry_seq,
+  report_id}`. A report that changes state after a page moves past the
+  cursor, so the next page still reaches it.
+- `to430` (receipt disposition): a receipt now always carries its outcome's
+  own disposition. Only a COMMITTED receipt of a COMMITTED mutation releases
+  the fence. An optional REFUSED receipt records a refusal for restore, as
+  ALPHA-OPS ruling 8 asks. `staff prepare-receipt` now refuses only reads.
+
+**Restore path (boundary rows 13-15).** The repo's durability restores follow
+one pattern. An operator-only `oteryn-game-ops` command runs while the node is
+stopped, through its own `[section]` login, and checks before it writes. GM
+data now follows it with `oteryn-game-ops staff restore-replay` and
+`DurabilityRoot::staff_restore_replay`. It applies ALPHA-OPS ruling 8 to the
+retained `staff-link-*` files:
+
+1. It verifies the restored chain against the retained links. A gap, fork
+   or changed link stops the replay and applies nothing.
+2. It walks the links after the restored head:
+   - A COMMITTED MUTE with a verifying receipt is re-run once with its own
+     checks (role, duration, target in the signed world), without
+     freshness. A check that now fails applies nothing (`RefusedNow`).
+   - A REFUSED receipt stores the refusal. A resubmit returns the stored
+     refusal bytes.
+   - A mutation without a verifying receipt, or a link without its outcome,
+     is ambiguous. The command stops and applies nothing.
+3. Other COMMITTED mutations are recorded but not re-applied; only mutes are
+   replayed.
+4. Everything is written in one semantic-pass transaction. It first checks
+   that the locked head is still the verified one.
+
+New cases:
+
+| Row | Test |
+| --- | --- |
+| 9 (restore side) | `staff_pg_restore_stops_on_a_gap_a_fork_or_a_changed_link` |
+| 13 | `staff_pg_restore_replays_receipted_mutes_once_and_rechecks_them` |
+| 14 | `staff_pg_restore_stores_receipted_refusals_and_resubmits_return_them` |
+| 15 | `staff_pg_restore_without_a_verifying_receipt_applies_nothing` |
+| Vs | `staff_pg_member_logins_cannot_end_or_clear_reports_without_their_signed_action` |
+| Vu | `staff_pg_report_snapshots_stay_until_retention_ends_on_the_database_clock` |
+| Vy | `staff_pg_reports_closed_after_a_page_stay_reachable_by_its_cursor` |
+| to430 | `staff_pg_executor_receipts_match_their_outcome_and_committed_ones_release_fences` |
+| ops | bin `staff_restore_replay_connects_only_the_restore_login` |
+
+The restore path does not yet cover these. Each is named with its owner, and
+none blocks this PR:
+
+- **DATA-RESTORE-OPS-2** (no PR yet): the full `oteryn-game-ops restore`
+  sequence (lock, journal, fence) and `restore resolve` for an ambiguous
+  link. Until it lands, an ambiguous link stops the replay and needs the
+  owner.
+- **ARCH-CONTROL-ANCHOR-0**: an off-host signed head. Until then, a restore
+  that lost both the database head and the retained files cannot detect a
+  truncated tail.
+
+Validation on WSL `Ubuntu` (Rust 1.94, `cargo fetch --locked` first, PG
+through the unchanged `in-pg-netns.sh` against shared PostgreSQL 17.6, D1450):
+
+| Check | Result |
+|---|---|
+| `cargo fmt --all --check` | pass |
+| `tools/agents/validate_governance.py` | pass |
+| `cargo clippy -p oteryn-game-server --all-targets -- -D warnings` | pass |
+| lib `staff chat_intent logout_wire config` | 80 passed, 0 failed |
+| bin `oteryn-game-ops` | 8 passed, 0 failed |
+| `--test staff_audit_postgres` | 1195 passed, 0 failed |
+| `--test durability_postgres staff_pg_` | 35 passed, 0 failed |
+
+Runtime remains REPORT_ONLY.
+
+## Previous checkpoint — Codex review of `adc0e0a5` repairs, REPORT_ONLY (2026-10-18)
 
 Parent `adc0e0a5`. All three findings were accepted:
 
@@ -175,8 +286,8 @@ What runs in the game now:
   `created_at` from the reporter's node clock. The row CHECK then refused the
   close as a database error. A close now ends at `GREATEST(now, created_at)`.
 
-The 18 boundary rows map to tests as follows. Rows 1-12 and 16-18 are covered;
-rows 13-15 (restore) have no restore path and stay BLOCKED.
+The 18 boundary rows map to tests as follows. All 18 rows are covered; rows
+13-15 (restore) were added in the `7e2f70bc` repair checkpoint above.
 
 | Row | Covered by |
 | --- | --- |
@@ -191,7 +302,9 @@ rows 13-15 (restore) have no restore path and stay BLOCKED.
 | 10 | lib `removed_key_cannot_append…` and `receipts_cannot_replace_recorded_activation_anchors` |
 | 11 | lib `event_kind_target_reason_parameters_and_missing_bytes_each_fail_binding` |
 | 12 | PG `staff_pg_receipt_requires_exact_digests…` and lib `receipt_signature_namespace…` |
-| 13-15 | BLOCKED: no restore path yet |
+| 13 | PG `staff_pg_restore_replays_receipted_mutes_once_and_rechecks_them` |
+| 14 | PG `staff_pg_restore_stores_receipted_refusals_and_resubmits_return_them` |
+| 15 | PG `staff_pg_restore_without_a_verifying_receipt_applies_nothing` |
 | 16-17 | PG `staff_pg_failed_audit_insert_rolls_back…` and `staff_pg_executor_audit_failure_rolls_back_the_action_and_its_effect` |
 | 18 | lib `retained_operation_mirrors_verify_without_any_outbox_row` and `unsigned_read_timestamp_cannot_excuse_missing_unexpired_audit` |
 
@@ -1322,8 +1435,10 @@ disclosure. This table is a test contract, **not executed runtime evidence**.
 
 Session-generation mutation tests are **NOT_APPLICABLE to this no-runtime-change
 packet**; future kick/sanction consumers must preserve their own current session
-fences. Signature/chain/clock/receipt cases above are **BLOCKED, not passed**,
-until the prerequisite interfaces and accepted fixture bytes exist.
+fences. The signature, chain, clock and receipt cases above were BLOCKED in
+this preparation. They now run as real tests; the row map in the D1437
+checkpoint names each one, and rows 13-15 (restore) are in the `7e2f70bc`
+repair checkpoint.
 
 ### Cross-domain findings and next allocation
 
