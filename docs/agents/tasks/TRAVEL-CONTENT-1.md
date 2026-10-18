@@ -77,3 +77,9 @@ This authoring successor replaces the previous reference candidate only after fu
 ### Final source-gap sweep
 
 The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.
+
+## Full outstanding-field source sweep —2026-10-18
+
+oteryn:service.travel.captain_max_calassa/liberty_bay/origin; oteryn:service.travel.captain_seahorse/krailos/fare_gold; oteryn:service.travel.captain_waverider_island/liberty_bay/origin; oteryn:service.travel.gewen/marapur/fare_gold; oteryn:service.travel.gewen/marapur/quest_requirements; oteryn:service.travel.iyad/marapur/fare_gold; oteryn:service.travel.iyad/marapur/quest_requirements; oteryn:service.travel.melian/marapur/fare_gold; oteryn:service.travel.melian/marapur/quest_requirements; oteryn:service.travel.pino/marapur/fare_gold; oteryn:service.travel.pino/marapur/quest_requirements; oteryn:service.travel.tanyt/marapur/fare_gold; oteryn:service.travel.tanyt/marapur/quest_requirements; oteryn:service.travel.urks_the_mute/cormaya/fare_gold; oteryn:service.travel.ziyad/darama/fare_gold; oteryn:service.travel.ziyad/darashia/fare_gold; oteryn:service.travel.ziyad/edron/fare_gold; oteryn:service.travel.ziyad/femor_hills/fare_gold; oteryn:service.travel.ziyad/hills/fare_gold; oteryn:service.travel.ziyad/issavi/fare_gold; oteryn:service.travel.ziyad/kazor/fare_gold; oteryn:service.travel.ziyad/kazordoon/fare_gold; oteryn:service.travel.ziyad/svargrond/fare_gold.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

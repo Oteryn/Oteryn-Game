@@ -6207,17 +6207,17 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Liberty Bay on one of the eastern Boats at the dock ({{Mapper Coords|126.42|128.128|6|4|text=here}}), and on a boat above Calassa ({{Mapper Coords|124.171|127.197|6|4|text=here}}).",
-          "classification": "UNKNOWN",
+          "value": "Calassa",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:8982:1178788",
-              "selector": "Infobox NPC / location"
+              "source": "wiki-br:npc:captain_max:416338",
+              "selector": "Location / named placement; existing service identity selects the place"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Wiki BR explicitly lists this placement; selection derives from the existing service suffix (or the outbound default placement). This establishes the place name only, not exact instance/arrival coordinates."
         },
         "destination": {
           "value": "liberty_bay",
@@ -8577,17 +8577,17 @@
           "note": "Role-derived transport family; steamship, cart, turtle and alternate placements require explicit qualification."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 100,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:4876:1178781",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:captain_seahorse:352868",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -9780,17 +9780,17 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "origin": {
-          "value": "Liberty Bay ({{Mapper Coords|126.88|128.87|7|2|text=here}}), Treasure Island ({{Mapper Coords|125.132|128.145|7|4|text=here}}) and Treasure Hunt Island ({{Mapper Coords|125.45|128.163|7|4|text=here}})",
-          "classification": "UNKNOWN",
+          "value": "Treasure Island",
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:8554:1178786",
-              "selector": "Infobox NPC / location"
+              "source": "wiki-br:npc:captain_waverider:367404",
+              "selector": "Location / named placement; existing service identity selects the place"
             }
           ],
-          "note": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
+          "note": "Wiki BR explicitly lists this placement; selection derives from the existing service suffix (or the outbound default placement). This establishes the place name only, not exact instance/arrival coordinates."
         },
         "destination": {
           "value": "liberty_bay",
@@ -11655,17 +11655,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:61735:933420",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:gewen:357231",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -11681,17 +11681,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Within the Tides Quest",
+            "mission": "Of Feathers and Flowers",
+            "milestone": "completed"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:61735:933420",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:gewen:357231",
+              "selector": "Notes / Marapur prerequisite"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Explicit positive access prerequisite; no claim of an exhaustive list of all possible restrictions."
         },
         "minimum_level": {
           "value": null,
@@ -14146,17 +14150,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:17132:908784",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:iyad:408513",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -14172,17 +14176,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Within the Tides Quest",
+            "mission": "Of Feathers and Flowers",
+            "milestone": "completed"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:17132:908784",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:iyad:408513",
+              "selector": "Notes / Marapur prerequisite"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Explicit positive access prerequisite; no claim of an exhaustive list of all possible restrictions."
         },
         "minimum_level": {
           "value": null,
@@ -19411,17 +19419,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:41713:933418",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:melian:353462",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -19437,17 +19445,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Within the Tides Quest",
+            "mission": "Of Feathers and Flowers",
+            "milestone": "completed"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:41713:933418",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:melian:353462",
+              "selector": "Notes / Marapur prerequisite"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Explicit positive access prerequisite; no claim of an exhaustive list of all possible restrictions."
         },
         "minimum_level": {
           "value": null,
@@ -21845,17 +21857,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:4673:933415",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:pino:353461",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -21871,17 +21883,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Within the Tides Quest",
+            "mission": "Of Feathers and Flowers",
+            "milestone": "completed"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:4673:933415",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:pino:353461",
+              "selector": "Notes / Marapur prerequisite"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Explicit positive access prerequisite; no claim of an exhaustive list of all possible restrictions."
         },
         "minimum_level": {
           "value": null,
@@ -24161,17 +24177,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:88957:933417",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:tanyt:367461",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -24187,17 +24203,21 @@
           "note": "Current source observation; native/runtime qualification remains separate."
         },
         "quest_requirements": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": {
+            "quest": "Within the Tides Quest",
+            "mission": "Of Feathers and Flowers",
+            "milestone": "completed"
+          },
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:88957:933417",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:tanyt:367461",
+              "selector": "Notes / Marapur prerequisite"
             }
           ],
-          "note": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Explicit positive access prerequisite; no claim of an exhaustive list of all possible restrictions."
         },
         "minimum_level": {
           "value": null,
@@ -25174,17 +25194,17 @@
           "note": "Steamship route to the named Gnomprona hub is explicit in the quest source, not inferred from dwarf race."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 210,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98763:938305",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:urks_the_mute:365360",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -26613,17 +26633,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 40,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -26747,17 +26767,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 40,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -26881,17 +26901,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 60,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -27015,17 +27035,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 60,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -27149,17 +27169,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 60,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -27283,17 +27303,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 60,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -27417,17 +27437,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -27551,17 +27571,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 70,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,
@@ -27685,17 +27705,17 @@
           "note": "Named carpet manager placement cross-checked with NPC page. Quest-only Uzon passage is excluded from regular network assumptions."
         },
         "fare_gold": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": 60,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:98785:938311",
-              "selector": "Full NPC page / travel notes and location"
+              "source": "wiki-br:npc:ziyad:365367",
+              "selector": "Own NPC notes / directional destination fare"
             }
           ],
-          "note": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
+          "note": "Wiki BR explicitly gives this fare for the named NPC and destination. Aliases darama/Darashia, hills/Femor Hills and kazor/Kazordoon are normalized only for matching. No Postman discount is silently subtracted."
         },
         "premium_required": {
           "value": true,

@@ -707,6 +707,138 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "ff66ea4bce1de2d91199356d0b77b5321e2431136c2587f19c32ec222e4b066f",
       "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-quests.json"
+    },
+    "wiki-br:npc:captain_max:416338": {
+      "title": "Captain Max",
+      "url": "https://www.tibiawiki.com.br/wiki/Captain_Max",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Captain_Max&oldid=416338",
+      "revid": 416338,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "3b5f071d93b24e44077a18cb01b3e23c7385a8abe12292e4704e70aeb7f8b1e8",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:captain_seahorse:352868": {
+      "title": "Captain Seahorse",
+      "url": "https://www.tibiawiki.com.br/wiki/Captain_Seahorse",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Captain_Seahorse&oldid=352868",
+      "revid": 352868,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "da6fb0304e9708e192c4049f12cb1c908d4e350d9c3346e9d27a4a5a88a65fef",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:captain_waverider:367404": {
+      "title": "Captain Waverider",
+      "url": "https://www.tibiawiki.com.br/wiki/Captain_Waverider",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Captain_Waverider&oldid=367404",
+      "revid": 367404,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "bb400748bb18e5ef42abfcb207030878d337bb197182336c9647941f8689d878",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:cornell:392091": {
+      "title": "Cornell",
+      "url": "https://www.tibiawiki.com.br/wiki/Cornell",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Cornell&oldid=392091",
+      "revid": 392091,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "5ff60946339241ee865ee9fb71e13764eb94941f1ad46bb68b1a2d30dda46ea4",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:gewen:357231": {
+      "title": "Gewen",
+      "url": "https://www.tibiawiki.com.br/wiki/Gewen",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Gewen&oldid=357231",
+      "revid": 357231,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "2fa69b211d97745480fe6821239e4b2f7ddd3b86fdd96a18279480a50aab7164",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:iyad:408513": {
+      "title": "Iyad",
+      "url": "https://www.tibiawiki.com.br/wiki/Iyad",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Iyad&oldid=408513",
+      "revid": 408513,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "4970e6c00b3af823d38fab21280f0de4c2639154bd49c33ac59b4197d07e6270",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:kendra:353019": {
+      "title": "Kendra",
+      "url": "https://www.tibiawiki.com.br/wiki/Kendra",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Kendra&oldid=353019",
+      "revid": 353019,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "5342eedd2e9c6ab013d69cf2ac40ee03427006faaf878a5b12664a18df8018d2",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:melian:353462": {
+      "title": "Melian",
+      "url": "https://www.tibiawiki.com.br/wiki/Melian",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Melian&oldid=353462",
+      "revid": 353462,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "bbf8b8df5c3aee051b868275d05584bbccb580ba36d143ec03e3fe65fc6c2fa2",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:pino:353461": {
+      "title": "Pino",
+      "url": "https://www.tibiawiki.com.br/wiki/Pino",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Pino&oldid=353461",
+      "revid": 353461,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "e891417651be110c618ae8de2ba30dd77d58495f9743bdad067c9e65cb6d7443",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:tanyt:367461": {
+      "title": "Tanyt",
+      "url": "https://www.tibiawiki.com.br/wiki/Tanyt",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Tanyt&oldid=367461",
+      "revid": 367461,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "b5d6c85e7dbb65d1255be57b3a96d61b67c836956bddaf1e99f7b2d0beaf0a59",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:urks_the_mute:365360": {
+      "title": "Urks The Mute",
+      "url": "https://www.tibiawiki.com.br/wiki/Urks_The_Mute",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Urks_The_Mute&oldid=365360",
+      "revid": 365360,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "6780b2f417ec267ee32f51d19cc7f7f9be7957733ed66ca15b5a2e62902e4901",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
+    },
+    "wiki-br:npc:ziyad:365367": {
+      "title": "Ziyad",
+      "url": "https://www.tibiawiki.com.br/wiki/Ziyad",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Ziyad&oldid=365367",
+      "revid": 365367,
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_WIKI_BR",
+      "retained_scope": "RENDERED_OWN_NPC_LOCATION_NOTES_AND_REVISION",
+      "retained_text_sha256": "fa645482f3da45fc0d251dee1f8b7e11bc1b4ed03d91947e45660cae242cf5ef",
+      "qualification": "NPC notes are source observations. Direction, placement and route aliases must be matched separately; NPC coordinates do not prove an arrival tile."
     }
   }
 }

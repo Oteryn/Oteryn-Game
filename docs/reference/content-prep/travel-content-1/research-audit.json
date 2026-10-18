@@ -12,8 +12,8 @@
   },
   "evidence_field_counts": {
     "PROVEN": 670,
-    "DERIVED": 559,
-    "UNKNOWN": 658,
+    "DERIVED": 582,
+    "UNKNOWN": 635,
     "CONFLICT": 4
   },
   "unresolved_fields": [
@@ -1806,18 +1806,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/45/facts/origin",
-      "candidate": "Liberty Bay on one of the eastern Boats at the dock ({{Mapper Coords|126.42|128.128|6|4|text=here}}), and on a boat above Calassa ({{Mapper Coords|124.171|127.197|6|4|text=here}}).",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:8982:1178788",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/45/facts/fare_gold",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2466,18 +2454,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/62/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4876:1178781",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/62/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -2800,18 +2776,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/71/facts/origin",
-      "candidate": "Liberty Bay ({{Mapper Coords|126.88|128.87|7|2|text=here}}), Treasure Island ({{Mapper Coords|125.132|128.145|7|4|text=here}}) and Treasure Hunt Island ({{Mapper Coords|125.45|128.163|7|4|text=here}})",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:8554:1178786",
-          "selector": "Infobox NPC / location"
-        }
-      ],
-      "limitation": "Current source lists multiple NPC placements. This is the source location description, not a resolved origin for this native service instance; no arrival or instance coordinate inferred."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/71/facts/quest_requirements",
@@ -3340,30 +3304,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/84/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:61735:933420",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/84/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:61735:933420",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/84/facts/minimum_level",
@@ -3952,30 +3892,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/101/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17132:908784",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/101/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:17132:908784",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/101/facts/minimum_level",
@@ -5518,30 +5434,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/136/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41713:933418",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/136/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:41713:933418",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/136/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6178,30 +6070,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/153/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4673:933415",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/153/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:4673:933415",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/153/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -6778,30 +6646,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/169/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:88957:933417",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/169/facts/quest_requirements",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:88957:933417",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "No exhaustive quest-gate proof; absence of a note does not mean no requirement. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/169/facts/minimum_level",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7064,18 +6908,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/176/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98763:938305",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/176/facts/quest_requirements",
@@ -7558,18 +7390,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/186/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/186/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7604,18 +7424,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/187/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/187/facts/quest_requirements",
@@ -7654,18 +7462,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/188/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/188/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7700,18 +7496,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/189/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/189/facts/quest_requirements",
@@ -7750,18 +7534,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/190/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/190/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7796,18 +7568,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/191/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/191/facts/quest_requirements",
@@ -7846,18 +7606,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/192/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/192/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7892,18 +7640,6 @@
         }
       ],
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/193/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/193/facts/quest_requirements",
@@ -7942,18 +7678,6 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     },
     {
-      "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/194/facts/fare_gold",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98785:938311",
-          "selector": "Full NPC page / travel notes and location"
-        }
-      ],
-      "limitation": "Route absent or ambiguous in current NPC TransportCell; existing fare is only a historical candidate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
-    },
-    {
       "field_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json/records/194/facts/quest_requirements",
       "candidate": null,
       "status": "UNKNOWN",
@@ -7990,5 +7714,35 @@
       "limitation": "Existing destination is retained as a historical candidate, not a current Wiki arrival-tile proof. NPC position is not an arrival coordinate. Current NPC page checked on 2026-10-18; no qualifying explicit value found."
     }
   ],
-  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion."
+  "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "oteryn:service.travel.captain_max_calassa/liberty_bay/origin",
+      "oteryn:service.travel.captain_seahorse/krailos/fare_gold",
+      "oteryn:service.travel.captain_waverider_island/liberty_bay/origin",
+      "oteryn:service.travel.gewen/marapur/fare_gold",
+      "oteryn:service.travel.gewen/marapur/quest_requirements",
+      "oteryn:service.travel.iyad/marapur/fare_gold",
+      "oteryn:service.travel.iyad/marapur/quest_requirements",
+      "oteryn:service.travel.melian/marapur/fare_gold",
+      "oteryn:service.travel.melian/marapur/quest_requirements",
+      "oteryn:service.travel.pino/marapur/fare_gold",
+      "oteryn:service.travel.pino/marapur/quest_requirements",
+      "oteryn:service.travel.tanyt/marapur/fare_gold",
+      "oteryn:service.travel.tanyt/marapur/quest_requirements",
+      "oteryn:service.travel.urks_the_mute/cormaya/fare_gold",
+      "oteryn:service.travel.ziyad/darama/fare_gold",
+      "oteryn:service.travel.ziyad/darashia/fare_gold",
+      "oteryn:service.travel.ziyad/edron/fare_gold",
+      "oteryn:service.travel.ziyad/femor_hills/fare_gold",
+      "oteryn:service.travel.ziyad/hills/fare_gold",
+      "oteryn:service.travel.ziyad/issavi/fare_gold",
+      "oteryn:service.travel.ziyad/kazor/fare_gold",
+      "oteryn:service.travel.ziyad/kazordoon/fare_gold",
+      "oteryn:service.travel.ziyad/svargrond/fare_gold"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  }
 }
