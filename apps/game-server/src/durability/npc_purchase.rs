@@ -19,6 +19,10 @@ use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::CharacterId;
 use sqlx::Row;
 
+/// Boxed future an [`NpcPurchaseOperation`] returns from inside the held transaction.
+pub(crate) type NpcPurchaseFuture<'a, T, E> =
+    Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'a>>;
+
 /// A source operation runs in the already-open native Type2 transaction. Only
 /// the outer owner can commit; a typed refusal rolls back all callback writes.
 pub(crate) trait NpcPurchaseOperation: Send {
@@ -29,7 +33,7 @@ pub(crate) trait NpcPurchaseOperation: Send {
         self,
         context: &'a NpcPurchaseWriteContext,
         tx: &'a mut Type2Transaction<'t>,
-    ) -> Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>>
+    ) -> NpcPurchaseFuture<'a, Self::Output, Self::Error>
     where
         Self: 'a;
 }
