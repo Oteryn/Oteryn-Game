@@ -695,7 +695,7 @@ mod death_ml_loss_composed {
         std::thread::Builder::new()
             .name("death-ml-loss-composed".into())
             .stack_size(SCENARIO_STACK_BYTES)
-            .spawn(|| scenario(false).map_err(|error| error.to_string()))?
+            .spawn(|| scenario(Case::Clean).map_err(|error| error.to_string()))?
             .join()
             .map_err(|_| "death ML loss composed thread panicked")?
             .map_err(Into::into)
@@ -710,10 +710,36 @@ mod death_ml_loss_composed {
         std::thread::Builder::new()
             .name("death-ml-loss-fenced".into())
             .stack_size(SCENARIO_STACK_BYTES)
-            .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+            .spawn(|| scenario(Case::CommittedFenced).map_err(|error| error.to_string()))?
             .join()
             .map_err(|_| "death ML loss fenced thread panicked")?
             .map_err(Into::into)
+    }
+
+    /// #2193 Codex P1 4307011952: the actor-end release's death flush replays a checkpoint the
+    /// store refuses before any write (`AuthorityRejected`: its fence predates the session's
+    /// moved lease), so the flushed try and the checkpoint stay only in memory. The release keeps
+    /// the dead actor for a retry instead of committing the death from the older durable build.
+    #[test]
+    fn composed_release_keeps_a_death_whose_flush_was_rejected_on_postgres() -> TestResult {
+        std::thread::Builder::new()
+            .name("death-ml-loss-rejected".into())
+            .stack_size(SCENARIO_STACK_BYTES)
+            .spawn(|| scenario(Case::ReleaseRejected).map_err(|error| error.to_string()))?
+            .join()
+            .map_err(|_| "death ML loss rejected thread panicked")?
+            .map_err(Into::into)
+    }
+
+    /// Which death flush a scenario composes.
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Case {
+        /// The flush saves the pending try under the current fence.
+        Clean,
+        /// The flush's checkpoint committed, but under a fence the session has since moved past.
+        CommittedFenced,
+        /// The flush's checkpoint is refused before any write, and the actor-end release settles.
+        ReleaseRejected,
     }
 
     /// The production manifest's generation, activated for `world`, with its training section
@@ -849,12 +875,12 @@ mod death_ml_loss_composed {
         clippy::too_many_lines,
         reason = "one end-to-end scenario: setup, the lethal hit, the respawn and its checks"
     )]
-    fn scenario(committed_fenced: bool) -> TestResult {
+    fn scenario(case: Case) -> TestResult {
         run(async move |admin| {
-            let name = if committed_fenced {
-                "death_ml_fenced"
-            } else {
-                "death_ml_composed"
+            let name = match case {
+                Case::Clean => "death_ml_composed",
+                Case::CommittedFenced => "death_ml_fenced",
+                Case::ReleaseRejected => "death_ml_rejected",
             };
             let harness = Harness::create_with_admission_seed(admin, name, false, false).await?;
             prepare_current_session(&harness).await?;
@@ -1028,7 +1054,7 @@ mod death_ml_loss_composed {
                     .ok_or("the lethal hit records the death")?
             };
             assert!(owner.spell_states.lock().await.is_dead(actor));
-            if committed_fenced {
+            if case != Case::Clean {
                 // The death flush's own checkpoint for the try, retained under the stale fence
                 // (a retained checkpoint refuses creature hits, so it follows the death).
                 let runtime = dependencies.runtime.lock().await;
@@ -1045,7 +1071,9 @@ mod death_ml_loss_composed {
                     )
                     .map_err(debug)?
                     .ok_or("a checkpoint for the try")?;
-                retained_request = Some(prepared.request.clone());
+                if case == Case::CommittedFenced {
+                    retained_request = Some(prepared.request.clone());
+                }
                 state
                     .retain_training_checkpoint(RetainedTrainingCheckpoint {
                         fence: stale,
@@ -1085,6 +1113,51 @@ mod death_ml_loss_composed {
                         .pending_training_checkpoint()
                         .is_some()
                 );
+            }
+
+            if case == Case::ReleaseRejected {
+                // The store refuses the stale fence before any write: fenced out, the checkpoint
+                // retained and nothing committed.
+                assert_eq!(
+                    owner.save_spell_training(actor, session, true).await,
+                    TrainingSave::FencedOut
+                );
+                let mut settled = None;
+                assert!(
+                    !owner
+                        .settle_released_death(actor, session, &mut settled)
+                        .await,
+                    "a release must not settle a death whose flush was refused"
+                );
+                assert!(settled.is_none());
+                let receipts: i64 = sqlx::query_scalar(
+                    "SELECT count(*) FROM game_character_death_receipts \
+                     WHERE character_id = encode($1,'hex')::uuid",
+                )
+                .bind(id(41).as_slice())
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(receipts, 0);
+                let durable = format!(
+                    "SELECT {} FROM game_character_build_state \
+                     WHERE character_id = encode($1,'hex')::uuid",
+                    columns("")
+                );
+                assert_eq!(build_row(&harness, &durable).await?, trained);
+                assert!(owner.spell_states.lock().await.is_dead(actor));
+                {
+                    let runtime = dependencies.runtime.lock().await;
+                    let mut states = owner.spell_states.lock().await;
+                    let state = states
+                        .get_mut(&runtime, actor, session)
+                        .ok_or("dead actor")?;
+                    assert!(state.pending_training_checkpoint().is_some());
+                    assert!(state.has_training_to_flush());
+                }
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
             }
 
             // The composed respawn: flush, priced death, placement, rebase and refill.

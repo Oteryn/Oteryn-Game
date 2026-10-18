@@ -1505,7 +1505,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// DEATH-ML-LOSS-1 (A13 §4.6, CP D1433): before a new death the actor's pending training is
     /// force-saved ([`Self::flush_training_before_death`]), and a committed death that lowered the
     /// build returns its post-loss build for the respawn's rebase. `releasing` marks the actor-end
-    /// release, which settles a session whose training writes may already be fenced out.
+    /// release, which settles a session whose training writes are fenced out once the fence left
+    /// no training in memory (Codex P1 4307011952).
     async fn settle_death(
         &self,
         actor: ExactActorRef,
@@ -1556,19 +1557,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(Some(_)) => true,
             Ok(None) => {
                 let mut save = self.save_spell_training(actor, session, true).await;
-                // #2193 Codex P1 4306765047: a live flush whose retained checkpoint committed
-                // under a since-moved session fence replays that fence forever; its durable
-                // receipt is applied first, and the post-checkpoint training saves under the
-                // current fence.
+                // #2193 Codex P1 4306765047, 4307011952: a flush whose retained checkpoint
+                // committed under a since-moved session fence replays that fence forever; its
+                // durable receipt is applied first, on the live and the release path, and the
+                // post-checkpoint training saves under the current fence.
                 if save == actor_spell::TrainingSave::FencedOut
-                    && !releasing
                     && self
                         .adopt_committed_training_checkpoint(actor, session)
                         .await
                 {
                     save = self.save_spell_training(actor, session, true).await;
                 }
-                death_flush_permits_settle(save, releasing)
+                // #2193 Codex P1 4307011952: a fenced-out flush proves nothing committed (a
+                // write the store refused as `AuthorityRejected` keeps its checkpoint and the
+                // pending training only in memory), so whether the actor still holds training is
+                // read back before the release may settle from the durable build.
+                let training_left = save == actor_spell::TrainingSave::FencedOut && {
+                    let runtime = self.runtime.lock().await;
+                    self.spell_states
+                        .lock()
+                        .await
+                        .has_training_to_flush(&runtime, actor, session)
+                };
+                death_flush_permits_settle(save, releasing, training_left)
             }
             Err(error) => {
                 operator_event(&format!("player_death_reconcile_failed reason={error}"));
@@ -5362,13 +5373,23 @@ fn respawn_cell_admissible(
 /// DEATH-ML-LOSS-1 (#2193 Codex P1 4306417846): a live death settles only after its training
 /// flush is durable (`Saved`) or had nothing to write (`NotApplicable`). A fenced-out flush may
 /// leave a merged successor only in memory, so the live actor stays dead and retries (a
-/// committed checkpoint behind a moved fence is applied first, Codex P1 4306765047); the
-/// actor-end release, whose own training saves also accept a fenced-out session, settles the
-/// death from the durable build instead of retrying a write that can no longer land.
-fn death_flush_permits_settle(save: actor_spell::TrainingSave, releasing: bool) -> bool {
+/// committed checkpoint behind a moved fence is applied first, Codex P1 4306765047).
+///
+/// The actor-end release settles a fenced-out flush from the durable build only when the fence
+/// left no training in memory (`training_left` is `false`): the durable build then holds all of
+/// the actor's training, and no write remains to land. A fenced-out flush that still holds a
+/// retained checkpoint or pending training (a pre-commit `AuthorityRejected` that raced a
+/// reconnect or a generation change, Codex P1 4307011952) keeps the actor dead, and the release
+/// retries the flush under the session's current authority, so the death is never priced from
+/// a build its training would have moved and the pending progress is never discarded.
+fn death_flush_permits_settle(
+    save: actor_spell::TrainingSave,
+    releasing: bool,
+    training_left: bool,
+) -> bool {
     match save {
         actor_spell::TrainingSave::Saved | actor_spell::TrainingSave::NotApplicable => true,
-        actor_spell::TrainingSave::FencedOut => releasing,
+        actor_spell::TrainingSave::FencedOut => releasing && !training_left,
         actor_spell::TrainingSave::Unknown => false,
     }
 }
@@ -7143,25 +7164,49 @@ mod tests {
         }
     }
 
-    /// DEATH-ML-LOSS-1 (#2193 Codex P1 4306417846): a live death settles only on a durable or
-    /// empty training flush; a fenced-out flush keeps the live actor dead, and only the actor-end
-    /// release settles past it. An unknown flush never settles.
+    /// DEATH-ML-LOSS-1 (#2193 Codex P1 4306417846, 4307011952): a live death settles only on a
+    /// durable or empty training flush; a fenced-out flush keeps the live actor dead, and only
+    /// the actor-end release settles past it, and only when the fence left no training in
+    /// memory. An unknown flush never settles.
     #[test]
     fn a_fenced_out_training_flush_refuses_a_live_death() {
         use super::actor_spell::TrainingSave;
         for releasing in [false, true] {
-            assert!(death_flush_permits_settle(TrainingSave::Saved, releasing));
-            assert!(death_flush_permits_settle(
-                TrainingSave::NotApplicable,
-                releasing
-            ));
+            for training_left in [false, true] {
+                assert!(death_flush_permits_settle(
+                    TrainingSave::Saved,
+                    releasing,
+                    training_left
+                ));
+                assert!(death_flush_permits_settle(
+                    TrainingSave::NotApplicable,
+                    releasing,
+                    training_left
+                ));
+                assert!(!death_flush_permits_settle(
+                    TrainingSave::Unknown,
+                    releasing,
+                    training_left
+                ));
+            }
+            // #2193 Codex P1 4307011952: a refused write that keeps training in memory never
+            // settles, on the live or the release path.
             assert!(!death_flush_permits_settle(
-                TrainingSave::Unknown,
-                releasing
+                TrainingSave::FencedOut,
+                releasing,
+                true
             ));
         }
-        assert!(!death_flush_permits_settle(TrainingSave::FencedOut, false));
-        assert!(death_flush_permits_settle(TrainingSave::FencedOut, true));
+        assert!(!death_flush_permits_settle(
+            TrainingSave::FencedOut,
+            false,
+            false
+        ));
+        assert!(death_flush_permits_settle(
+            TrainingSave::FencedOut,
+            true,
+            false
+        ));
     }
 
     /// #2199: a familiar Login that did not complete refuses the playable first entry, so the

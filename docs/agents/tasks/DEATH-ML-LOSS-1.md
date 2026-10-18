@@ -652,3 +652,48 @@ retry.
 
 Status stays `waiting`. The record is not archived. No ready, queue or merge
 action is taken; CP alone decides merge.
+
+## Codex P1 4307011952 follow-up (2026-10-18)
+
+Finding (PRRT_kwDOT8SzxM6tqaKI): the actor-end release settled every
+`FencedOut` death flush from the durable build. `save_spell_training_once`
+also returns `FencedOut` for a pre-commit `AuthorityRejected`: a flush
+whose retained checkpoint predates a reconnect or a generation change is
+refused before any write. Its checkpoint and pending mana or tries then stay
+only in memory. `commit_death` resolves the newer fence and commits from the
+older durable build, and the rebase or the actor's removal discards the
+pending progress.
+
+Fix (in `gameplay_transport/mod.rs`): a fenced-out flush first applies a
+retained checkpoint proven committed (`adopt_committed_training_checkpoint`)
+on the release path too, then saves again. If the flush is still
+`FencedOut`, the actor's in-memory training is read back.
+`death_flush_permits_settle` lets the release settle only when no retained
+checkpoint and no pending training remain, so the durable build already
+holds everything and no write remains to land. Otherwise the release keeps
+the dead actor and retries the flush under the session's current authority,
+as for `Unknown`. The live path is unchanged: a fenced-out flush never
+settles a live death. `training_save.rs` (not owned) is not changed.
+
+The pinning case,
+`death_ml_loss_composed::composed_release_keeps_a_death_whose_flush_was_rejected_on_postgres`,
+retains the death flush's checkpoint under a stale lease fence without
+committing it. It checks that the forced save is `FencedOut` and that
+`settle_released_death` returns `false`. No death receipt is written, the
+durable build is still the pre-try build, and the actor stays dead with its
+checkpoint and pending training. The unit case
+`a_fenced_out_training_flush_refuses_a_live_death` covers the new
+`training_left` input.
+
+Validation (PC, shared PostgreSQL 17.6, `-j 4`): `cargo fmt --all --check`
+and `cargo clippy --locked -p oteryn-game-server --all-targets -- -D
+warnings` pass. `--lib -- death_ml_loss fenced_out_training_flush` 6/6 pass,
+including the new case. `--lib -- gameplay_transport` 710 passed, 0 failed,
+6 ignored. A first run lost `kill_reward_e2e` to an unavailable progression
+store while the shared PostgreSQL restarted; it passes alone and in the
+re-run. With only the `mod.rs` fix reverted, the new case fails at the
+`settle_released_death` assertion, so it pins the release settle.
+`validate_governance.py` and the `tools/agents/tests` suite (124) pass.
+
+Status stays `waiting`. The record is not archived. No ready, queue or merge
+action is taken; CP alone decides merge.
