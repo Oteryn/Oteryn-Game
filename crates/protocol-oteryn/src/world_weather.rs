@@ -1,7 +1,7 @@
 //! WEATHER-1 candidate visual payload codec (CP D1111, D1026–D1027).
 //!
-//! Registered in `PROTOCOL_OTERYN_V1_REGISTRY.json` (offered per connection, never from a static
-//! set); protocol-owner D1027 sign-off is pending.
+//! Registered in `PROTOCOL_OTERYN_V1_REGISTRY.json` (`offered: true`; a connection keeps it only
+//! while its authority exposes a weather source). Protocol-owner D1027 sign-off was given.
 //! Candidate protobuf layout: required field 1 varint status (1 Unavailable, 2 Active);
 //! Active additionally requires field 2 bytes binding token (exactly 32 public, non-secret
 //! revision-identity bytes), field 3 uint64 period start slot (present even at zero), field 4
@@ -18,7 +18,7 @@ use crate::charm_wire::{
     WireResult, push_message_field, push_varint_field, read_bytes, read_varint, set_once,
 };
 
-/// D1137 allocated leaf ID; registry publication and D1027 frozen protocol review are pending.
+/// D1137 allocated leaf ID; registered, and D1027 signed off.
 pub const CAPABILITY_WORLD_WEATHER_V1: u32 = 26;
 /// D1027: weather requires the World-spatial context.
 pub const CAPABILITY_WORLD_WEATHER_V1_REQUIRES: [u32; 1] =
@@ -309,7 +309,7 @@ mod tests {
         assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_WORLD_WEATHER_V1));
         let capability = only("capabilities", CAPABILITY_WORLD_WEATHER_V1);
         assert_eq!(capability["name"], "WORLD_WEATHER_V1");
-        assert_eq!(capability["offered"], false);
+        assert_eq!(capability["offered"], true);
         assert_eq!(capability["requires"], serde_json::json!([6]));
         assert_eq!(capability["command_types"], serde_json::json!([]));
         assert_eq!(

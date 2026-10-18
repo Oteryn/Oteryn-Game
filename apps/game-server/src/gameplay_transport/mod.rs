@@ -3000,6 +3000,13 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
+        // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
+        // offered) when it is missing or invalid. The data is public and stateless: its binding
+        // token is the content revision, so no per-World secret is read.
+        crate::world_weather::shipped()
+    }
+
     async fn chat_admit(
         &self,
         _actor: ExactActorRef,

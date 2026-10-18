@@ -74,9 +74,9 @@ const WORLD_LIGHT: OfferedCapability = OfferedCapability {
     requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
 };
 
-/// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. It is in no static
-/// set: a connection adds it only when its authority exposes a weather source (the shipped
-/// Oteryn-designed data by default, CP D1448), see [`with_weather_offer`].
+/// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. It is the highest
+/// offered ID (D1027 signed off). A connection keeps it only when its authority exposes a weather
+/// source (the shipped Oteryn-designed data in production, CP D1448), see [`with_weather_offer`].
 pub(crate) const WORLD_WEATHER: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_WEATHER_V1,
     requires: &CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
@@ -99,8 +99,8 @@ pub(crate) fn with_weather_offer(
     offered
 }
 
-/// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. It is the
-/// highest offered ID, so every offered set ends with it.
+/// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Only
+/// capability 26 is higher, so every offered set ends with 21 then 26.
 const LOGOUT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_LOGOUT_V1,
     requires: &[],
@@ -131,6 +131,7 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     WORLD_LIGHT,
     LOGOUT,
+    WORLD_WEATHER,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a): capability 3
@@ -157,12 +158,13 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
     let mut set = [WORLD_MAP_VIEW; LEN];
     set[0] = NPC_SERVICE;
     let mut index = 0;
-    while index + 2 < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
+    while index + 3 < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
         set[index + 1] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
         index += 1;
     }
-    set[LEN - 2] = WORLD_LIGHT;
-    set[LEN - 1] = LOGOUT;
+    set[LEN - 3] = WORLD_LIGHT;
+    set[LEN - 2] = LOGOUT;
+    set[LEN - 1] = WORLD_WEATHER;
     set
 };
 
@@ -193,6 +195,7 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     WORLD_LIGHT,
     LOGOUT,
+    WORLD_WEATHER,
 ];
 
 /// `ITEM_LOOK_V1`, registry capability 28.

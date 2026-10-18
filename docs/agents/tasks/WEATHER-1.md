@@ -188,15 +188,15 @@ protocol-owner sign-off. This authoring allocation does not grant it.
 - [x] Owned candidate codec and negative tests authored; no registration/sign-off claim.
 - [x] Residue checked against observed main and exact CP ruling before this batch.
 - [x] Historical exact-source native component compilation, strict lint, discovery and11 tests:6 server +5 protocol.
-- [x] Registry (capability 26, state domain 22), proto, constants and requirement rows registered, `offered: false`.
+- [x] Registry (capability 26, state domain 22), proto, constants and requirement rows registered; `offered: true` after the D1027 sign-off.
 - [x] Canonical occurrence/token (`WorldWeatherSource`) over the retained World binding; no seed or slot in the public token.
 - [x] Server module, offer seam and connection wiring (admission snapshot, `Next::Visibility` delta); e2e in `capabilities_tests.rs::weather_wire`.
 - [x] No binding means no offer; binding loss emits one full Unavailable; restart/reconnect/Channel move never reroll (e2e).
-- [ ] Production head integration and normal all-target/package CI qualification (CI).
-- [ ] Protocol-owner D1027 sign-off (pending; blocks flipping `offered`).
-- [ ] A2: World-config load + sourced preset table/selector (CP D1446: none exists, so production holds no source and offers nothing).
+- [x] Production head integration (`ComposedFreshAdmission::world_weather()` returns the shipped data); normal all-target/package CI qualification runs in the PR lanes.
+- [x] Protocol-owner D1027 sign-off: owner "tak" on 2026-10-18 (kind 1..9, intensity 1..3, capability 26 offered once the data loads); registry `offered` flipped to true.
+- [x] A2: production offer and runtime stream. The D1448 Oteryn-designed `content/weather` data is the source; it is offered once it loads and validates, and fails closed otherwise.
 - [x] Visual-only isolation at the wire: the e2e asserts only domain 22 deltas move with weather.
-- [ ] WEATHER-CLIENT-1 consumer/assets.
+- [x] WEATHER-CLIENT-1 consumer/assets: handed to the client task; the server side carries the values (D1448).
 
 No standalone `lib.rs` declaration, lint allowance, path harness, fixture binding,
 client/renderer edit, content file or slot wiring is part of this batch. Shared
@@ -250,8 +250,8 @@ Later caller/slot integration retains the repository's normal package gates:
 last_progress: CP D1446 fail-closed seam wired end to end; unsourced rain/fog/snow weights removed
 status: NOT_FULLY_QUALIFIED
 branch: skeleton/weather-1
-blocker: D1027 protocol-owner sign-off; A2 World-config load; sourced preset data (D1446)
-next_action: after sign-off and data, supply a source in production and flip registry offered; until then no weather effects
+blocker: none; CI qualification of the final head
+next_action: merge after CI and review are green; archive this record with the closeout
 ```
 
 Lead independent source review PASS for the owned retained-config leaf; changed-file
@@ -315,9 +315,10 @@ and weather stays visual only (no gameplay effect).
   fog 10. Climates are assigned by area name (the weather content family #2246 has no climate
   taxonomy, so everything else is temperate); this assignment is an Oteryn design guess.
 - Wire: `Active{binding_token, absolute_slot (period start), kind 1..9, intensity 1..3}`, at most 51 bytes.
-- Production: `FreshAdmissionAuthority::world_weather()` defaults to the shipped data. Capability 26
-  is offered once it loads and validates, and fails closed (never offered) when it is missing or
-  invalid. The registry keeps `offered: false` with an `offer_gate`, like capabilities 3 and 18.
+- Production: the trait default of `FreshAdmissionAuthority::world_weather()` is `None`; the
+  production `ComposedFreshAdmission` returns the shipped data. Capability 26 is in the static
+  offered sets and the registry (`offered: true`, D1027 signed off), and a connection drops it
+  when its authority exposes no source, so missing or invalid data still fails closed.
 - Approximation: no area geometry exists server-side, so a player maps to the nearest area anchor
   (region position or city hometown temple) by x and y; 12 areas have no anchor and never win.
   Where a region and a city share an anchor, the city (lower key) wins.
@@ -325,4 +326,4 @@ and weather stays visual only (no gameplay effect).
   area allow a later live real-world binding. It is not implemented.
 - CLIENT follow-up: rendering of kinds 1..9 with intensity 1..3 (and of `Unavailable`) is a client
   task; the server only carries the values.
-- D1027 protocol-owner sign-off is still pending, so the card stays active.
+- D1027 protocol-owner sign-off was given by the owner on 2026-10-18. The card stays active until CI is green.

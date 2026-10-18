@@ -524,10 +524,11 @@ pub(crate) trait FreshAdmissionAuthority {
 
     /// WEATHER-1 (D1025/D1026/D1448): the weather source, or `None`. With `None` capability 26 is
     /// never offered at fresh admission, and a session that selected it earlier is sent one full
-    /// `Unavailable`. The default is the shipped Oteryn-designed data (`content/weather`), which
-    /// is `None` (fail closed) when that data is missing or invalid.
+    /// `Unavailable`. The default is `None` (fail closed): only an authority that has resolved
+    /// the retained World binding for its World exposes a source (D1027 gate in the production
+    /// authority).
     fn world_weather(&self) -> Option<&WorldWeatherSource> {
-        crate::world_weather::shipped()
+        None
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,

@@ -248,13 +248,12 @@
     {
       "id": 26,
       "name": "WORLD_WEATHER_V1",
-      "owner_decision": "CP D1023-D1028 (#2202 comment6216591471); D1137 allocates capability 26 and state domain 22 as leaf constants; D1446 fails closed without sourced data; D1448 ships Oteryn-designed weather values",
+      "owner_decision": "CP D1023-D1028 (#2202 comment6216591471); D1137 allocates capability 26 and state domain 22 as leaf constants; D1446 fails closed without sourced data; D1448 ships Oteryn-designed weather values; D1027 protocol-owner sign-off given (kind 1..9, intensity 1..3, offered once the data loads); a connection still drops 26 from its offer when the authority exposes no weather source (fail closed)",
       "owner": "WEATHER-1; the Weather content family (content/weather) supplies the OTERYN_DESIGN climate weights and area anchors",
       "requires": [6],
       "command_types": [],
       "state_domains": [22],
-      "offered": false,
-      "offer_gate": "Offered per connection and never from a static set: the authority must expose a weather source and a retained binding. Production exposes the shipped content/weather data (D1448, OTERYN_DESIGN values: a deterministic public draw per region and per city, 15 to 45 minute periods aligned to 15 minute slots, kind and intensity weighted per climate), so it offers 26 once that data loads and validates, and fails closed (never offers 26) when it is missing or invalid. Without a source a session never selects 26. With 26 selected, domain 22 carries a full snapshot at admission, reconnect and channel transfer and a full-replacement delta when the weather period or the player area changes; a lost binding sends one Unavailable. Visual only. D1027 protocol-owner sign-off is pending."
+      "offered": true
     },
     {
       "id": 28,

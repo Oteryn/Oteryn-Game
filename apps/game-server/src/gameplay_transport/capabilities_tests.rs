@@ -269,14 +269,14 @@ fn the_production_set_selects_only_capabilities_6_7_13_17_and_19_whatever_the_cl
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 7, 13, 17, 19, 21][..])
+        Some(&[6, 7, 13, 17, 19, 21, 26][..])
     );
     // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 7, 13, 17, 19, 21][..])
+        Some(&[4, 6, 7, 13, 17, 19, 21, 26][..])
     );
     assert_eq!(
         SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
@@ -738,15 +738,21 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_and_18_requiring_4_and_6(
     // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) with 18 before its
     // last entries 19 and 21 (LOGOUT-WIRE-1); 18's crate and registry `requires` stay [4, 6] and
     // the registry keeps 18 `offered: false`.
-    let (logout, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    let (weather, rest) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
+    assert_eq!(
+        weather.id,
+        oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1
+    );
+    let (logout, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (light, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (last, rest) = rest.split_last().ok_or("empty bundle set")?;
     let (npc, item_view) = rest.split_first().ok_or("empty bundle set")?;
-    let (item_logout, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
+    let (_item_weather, item_rest) = ITEM_VIEW_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty item view set")?;
+    let (item_logout, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
     let (item_light, item_rest) = item_rest.split_last().ok_or("empty item view set")?;
     assert_eq!(light, item_light);
     assert_eq!(light.id, 19);
@@ -2373,6 +2379,7 @@ mod logout_wire {
 mod weather_wire {
     use super::*;
     use crate::world_weather::{WEATHER_SLOT_MS, shipped};
+
     use oteryn_protocol_oteryn::world_weather::{
         CAPABILITY_WORLD_WEATHER_V1, DELTA_TYPE_WORLD_WEATHER_V1, SNAPSHOT_TYPE_WORLD_WEATHER_V1,
         STATE_DOMAIN_WORLD_WEATHER, WorldWeather, decode_world_weather,
@@ -2449,15 +2456,20 @@ mod weather_wire {
     #[test]
     fn production_offers_capability_26_with_the_shipped_data_and_fails_closed_without_it()
     -> Result<(), Box<dyn Error>> {
-        // Never from a static set: the registry keeps `offered: false` with an offer gate.
+        // D1027 signed off: the static sets list 26 (registry `offered: true`); a connection
+        // keeps it only while its authority exposes a source.
         for set in [
             PRODUCTION_OFFERED_CAPABILITIES,
             ITEM_VIEW_OFFERED_CAPABILITIES,
+            BUNDLE_WORLD_OFFERED_CAPABILITIES,
         ] {
+            assert_eq!(set.last().map(|c| c.id), Some(CAPABILITY_WORLD_WEATHER_V1));
             assert!(
-                set.iter()
+                with_weather_offer(set, false)
+                    .iter()
                     .all(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
             );
+            assert_eq!(with_weather_offer(set, true).len(), set.len());
         }
         assert!(shipped().is_some());
         run(async {
