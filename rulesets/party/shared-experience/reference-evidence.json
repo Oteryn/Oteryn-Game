@@ -1,0 +1,97 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "shared_experience.eligibility",
+      "facts": {
+        "level_rule": {
+          "value": "3 * lowest_level >= 2 * highest_level",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Integer-equivalent form of lowest >= two thirds of highest; no floating-point boundary assumption."
+        },
+        "distance_tiles": {
+          "value": 30,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "activity_timeout": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:3582:1189634",
+              "selector": "Requirements to Share Experience"
+            }
+          ],
+          "note": "Official notes say recently active without an exact timeout."
+        },
+        "bonus_by_distinct_vocations": {
+          "value": null,
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [
+            {
+              "source": "wiki:3582:1189634",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Official capture: 20/30/60/100% for 1/2/3/4+ vocations. Current Party Wiki bullet list: 20/35/70/100%; its worked example still uses 60% for three. No current bonus selected."
+        },
+        "rounding": {
+          "value": "Round each uneven shared-XP split up to the next integer.",
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "selector": "5.3.13.c"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "floors": {
+          "value": "One floor above/below",
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:3582:1189634",
+              "selector": "Requirements to Share Experience"
+            }
+          ],
+          "note": "Official notes do not specify an exact floor delta."
+        }
+      }
+    }
+  ]
+}

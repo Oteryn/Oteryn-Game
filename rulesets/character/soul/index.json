@@ -4,7 +4,17 @@
   "kind": "ruleset",
   "owner": "Character progression",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Soul rules; current value durable."
+  "notes": "Soul rules; current value durable.",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "source_snapshot_target": "current-at-fetch-2026-10-18",
+  "payloads": [
+    {
+      "path": "rulesets/character/soul/reference-evidence.json",
+      "sha256": "5a0d0cb889b8521da7ec3e606eeadffc7ce140b9825ddf1981abe4b517af313e"
+    }
+  ]
 }

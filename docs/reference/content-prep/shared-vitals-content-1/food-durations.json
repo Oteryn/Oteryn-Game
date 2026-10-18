@@ -1,0 +1,1360 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "SHARED-VITALS-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i169",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:20462:1114497",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i229",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:20683:1114510",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i836",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:20499:1017462",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i901",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:21668:1114520",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3577",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1208:1113663",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3578",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 144,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1192:1113662",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3579",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2943:1113915",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3580",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 204,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:16985:1114421",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3582",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 360,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1207:1113656",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3583",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 720,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2889:1181747",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3584",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2988:1200942",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3585",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1250:1200917",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3586",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 156,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1334:1113686",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3587",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1333:1113685",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3588",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1190:1113660",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3589",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 216,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1303:1113683",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3590",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1773:1113807",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3591",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2997:1016682",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3592",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2891:1113911",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3593",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2983:1113923",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3594",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 204,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:3003:1113929",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3595",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1263:1113681",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3596",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2999:1113928",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3597",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2885:1113908",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3598",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2884:1113907",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3600",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1741:1090735",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3601",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 36,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2995:1113927",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3602",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2869:1113903",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3606",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1669:1113787",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3607",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1191:1113661",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3723",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:1335:1113687",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3724",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2993:1113926",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3725",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 264,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2877:1113905",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3726",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 360,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2986:1113924",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3727",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:3001:1110487",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3728",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2887:1113909",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3731",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 432,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2890:1110485",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i3732",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:2893:1113912",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i5096",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 48,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:9136:1114286",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6277",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12330:1114349",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i6392",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 144,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:12515:1017277",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7158",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:16905:1114409",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i7159",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:17082:1114425",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8010",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37588:1180188",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8011",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25525:1114591",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8012",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25522:1014861",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8013",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25524:1114590",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8014",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 84,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25552:1114596",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8015",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25638:1114605",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8016",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 12,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25639:1114606",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8017",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25553:1114597",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i8197",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:30974:1114695",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i10453",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 60,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42128:1016907",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11459",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 240,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46414:1014598",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11460",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46408:1007908",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11461",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 96,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46409:1008668",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11462",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 108,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46410:1009427",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11681",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 660,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46716:1010316",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11682",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 216,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46411:1010165",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i11683",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 24,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:46413:1014472",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i16103",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 396,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:59791:1115133",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21143",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 180,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:67877:1115365",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21144",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 84,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:67881:1115366",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21145",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 72,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:67879:1008589",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i21146",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 300,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:67883:1115367",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i32009",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 360,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:89631:1136238",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48251",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 25,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106521:1071267",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48252",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 45,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106522:1202849",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48254",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 65,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106524:1066282",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48255",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 125,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106525:1203029",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48256",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 605,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106527:1066756",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48508",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 125,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106565:1202810",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48509",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106567:1203101",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48511",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 120,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106571:1203099",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i48544",
+      "facts": {
+        "food_duration_seconds": {
+          "value": 124,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:106585:1071266",
+              "selector": "Infobox Object / regenseconds"
+            }
+          ],
+          "note": "Current own-ID community timer; no official per-food numeric observation."
+        }
+      }
+    }
+  ]
+}
