@@ -3,11 +3,11 @@
 ```yaml
 task_id: WEATHER-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/weather-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2246
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -17,6 +17,7 @@ owned_paths:
   - docs/reference/content-prep/weather-content-1/sources.json
   - docs/reference/content-prep/weather-content-1/README.md
   - docs/agents/tasks/WEATHER-CONTENT-1.md
+  - docs/reference/content-prep/weather-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -52,3 +53,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+Delivery is the requested Markdown specification with embedded sample JSON only. Weather taxonomy is source-grounded; unsupported intensity/timing parameters remain UNKNOWN. Architecture approval and executable content/weather population are expressly deferred by owner scope.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
