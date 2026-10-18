@@ -62,7 +62,8 @@ DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_world_reset_month_key(timestamptz,text,numeric) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 
--- These are reset records/cohorts, NOT a second retirement ledger. Only control publishes them.
+-- These are reset records/cohorts, NOT a second retirement ledger. Only the reset owner
+-- publishes them, through game_world_reset_publish after the House preflight.
 CREATE TABLE game_world_reset_jobs (
  world_id UUID NOT NULL, reset_epoch NUMERIC(20,0) NOT NULL CHECK(reset_epoch BETWEEN 0 AND 18446744073709551614),
  target_digest BYTEA NOT NULL CHECK(octet_length(target_digest)=32),
@@ -117,9 +118,8 @@ CREATE TRIGGER game_world_reset_job_change BEFORE UPDATE OR DELETE ON game_world
 CREATE TRIGGER game_world_reset_scope_immutable BEFORE UPDATE OR DELETE ON game_world_reset_scopes FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
 CREATE TRIGGER game_world_reset_jobs_no_truncate BEFORE TRUNCATE ON game_world_reset_jobs FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 CREATE TRIGGER game_world_reset_scopes_no_truncate BEFORE TRUNCATE ON game_world_reset_scopes FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
-REVOKE ALL ON game_world_reset_jobs,game_world_reset_scopes FROM PUBLIC,oteryn_game_runtime;
-GRANT SELECT,INSERT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_control;
-GRANT SELECT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_runtime;
+REVOKE ALL ON game_world_reset_jobs,game_world_reset_scopes FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT ON game_world_reset_jobs,game_world_reset_scopes TO oteryn_game_runtime,oteryn_game_control;
 
 ALTER TABLE game_item_decay_retire_reservations ADD COLUMN cause_kind TEXT NOT NULL DEFAULT 'CORPSE_DECAY' CHECK(cause_kind IN('CORPSE_DECAY','WORLD_RESET'));
 ALTER TABLE game_item_decay_retire_reservations ADD COLUMN reset_epoch NUMERIC(20,0), ADD COLUMN reset_parent_item UUID;
@@ -385,6 +385,72 @@ REVOKE ALL ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID
 GRANT EXECUTE ON FUNCTION game_world_reset_activate(UUID,NUMERIC,NUMERIC,BYTEA,UUID,NUMERIC,BYTEA,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_world_reset;
 DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_world_reset_activate(uuid,numeric,numeric,bytea,uuid,numeric,bytea,text[],bytea[],text[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+-- D1272 publication: the only writer of a RETIRING job and its Channel cohort. The reset
+-- owner's Rust preflight binds both House catalogues first; this owner rechecks that House
+-- evidence under the SHARE House locks, so a refused preflight leaves no job and closes no
+-- admission. Same owner capability as activation: no Game group may hold it.
+CREATE FUNCTION game_world_reset_publish(w UUID,e NUMERIC,b BYTEA,tm TEXT,ts BYTEA,tc BYTEA,tf BYTEA,
+ cp TEXT,cr NUMERIC,hk TEXT[],hp BYTEA[],hs TEXT[])
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_active game_world_reset_epoch_history%ROWTYPE;
+BEGIN
+ IF pg_has_role('oteryn_game_runtime','oteryn_game_world_reset','MEMBER')
+ OR pg_has_role('oteryn_game_control','oteryn_game_world_reset','MEMBER')
+ THEN RAISE EXCEPTION 'World reset publication capability is held by a generic Game group' USING ERRCODE='42501'; END IF;
+ IF w IS NULL OR e IS NULL OR b IS NULL OR tm IS NULL OR ts IS NULL OR tc IS NULL OR tf IS NULL
+ OR cp IS NULL OR cr IS NULL OR NOT game_node_is_uuid_v7(w)
+ OR octet_length(b)<>32 OR octet_length(ts)<>32 OR octet_length(tc)<>32 OR octet_length(tf)<>32
+ OR octet_length(tm) NOT BETWEEN 1 AND 512 OR cp<>'TIBIA_SERVER_SAVE_BERLIN_10'
+ OR e<0 OR e>=18446744073709551615 OR trunc(e)<>e
+ OR cr<1 OR cr>18446744073709551615 OR trunc(cr)<>cr
+ THEN RAISE EXCEPTION 'World reset publication target data refused' USING ERRCODE='OTR03'; END IF;
+ IF hk IS NULL OR hp IS NULL OR hs IS NULL
+ OR coalesce(array_ndims(hk),1)<>1 OR coalesce(array_ndims(hp),1)<>1 OR coalesce(array_ndims(hs),1)<>1
+ OR cardinality(hk)<>cardinality(hp) OR cardinality(hk)>4194304 OR cardinality(hs)>1024
+ OR EXISTS(SELECT 1 FROM unnest(hk) x WHERE x IS NULL) OR EXISTS(SELECT 1 FROM unnest(hp) x WHERE x IS NULL)
+ OR EXISTS(SELECT 1 FROM unnest(hs) x WHERE x IS NULL)
+ THEN RAISE EXCEPTION 'World reset publication House evidence refused' USING ERRCODE='OTR03'; END IF;
+ LOCK TABLE game_durability_admission_account_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_character_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_guard_history IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_lifecycle_receipts IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_runtime_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_admission_signing_trust_guards IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_control_loss_continuity IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_executor_custody IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_fresh_admission_receipts IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_reconnect_attempts IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_reconnect_pending_commands IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_reconnect_sessions IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_recovery_grant_consumptions IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_session_replacements IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_session_use_ledgers IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_session_use_memberships IN EXCLUSIVE MODE;
+ LOCK TABLE game_durability_transport_ref_reservations IN EXCLUSIVE MODE;
+ SELECT h.* INTO v_active FROM game_world_reset_active_epochs a JOIN game_world_reset_epoch_history h USING(world_id,reset_epoch)
+ WHERE a.world_id=w FOR SHARE OF a;
+ IF NOT FOUND OR v_active.reset_epoch<>e
+ THEN RAISE EXCEPTION 'World reset publication epoch is not the active epoch' USING ERRCODE='OTR03'; END IF;
+ LOCK TABLE game_runtime_scope_assignments IN SHARE MODE;
+ LOCK TABLE game_item_house_interior_locations,game_house_ownership,game_world_house_instances IN SHARE MODE;
+ IF EXISTS(SELECT house_key,spatial_position FROM game_item_house_interior_locations WHERE world_id=w
+ EXCEPT SELECT k,p FROM unnest(hk,hp) AS c(k,p))
+ OR EXISTS(SELECT house_key FROM game_house_ownership WHERE world_id=w
+ UNION SELECT house_key FROM game_world_house_instances WHERE world_id=w
+ EXCEPT SELECT k FROM unnest(hs) AS s(k))
+ THEN RAISE EXCEPTION 'World reset publication House evidence refused' USING ERRCODE='OTR03'; END IF;
+ INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,target_map_revision,
+  target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision,
+  target_calendar_parity,phase)
+ VALUES(w,e,b,v_active.map_revision,tm,ts,tc,tf,cp,cr,'PARITY_PENDING','RETIRING');
+ INSERT INTO game_world_reset_scopes(world_id,reset_epoch,channel_id,predecessor_generation)
+ SELECT world_id,e,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1;
+END $$;
+REVOKE ALL ON FUNCTION game_world_reset_publish(UUID,NUMERIC,BYTEA,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC,TEXT[],BYTEA[],TEXT[]) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_world_reset_publish(UUID,NUMERIC,BYTEA,TEXT,BYTEA,BYTEA,BYTEA,TEXT,NUMERIC,TEXT[],BYTEA[],TEXT[]) TO oteryn_game_world_reset;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_world_reset_publish(uuid,numeric,bytea,text,bytea,bytea,bytea,text,numeric,text[],bytea[],text[]) SET search_path=pg_catalog,%I,pg_temp',current_schema());
 END $$;
 
 CREATE OR REPLACE FUNCTION game_item_decay_retire_consistency_guard() RETURNS trigger

@@ -75,16 +75,33 @@ merge_authority: CP_ONLY (builder never marks ready)
   - The bundle-world House catalogue is Unknown, so a bundle World reset refuses
     (HOUSE-RUNTIME owner).
   - Only one Channel per node: a multi-Channel World waits as `NotCurrent`.
-  - The boot House source uses the active qualified room for both sides, so only a
-    same-server-digest target activates.
   - A crash-left reconnect session in state 1 or 2 blocks the cohort until it is released.
-  - The control-owned reset publisher is not built.
-  - `cross_domain_finding` (LOOP-GROUND-1, REPORT_ONLY): native map source-item receipts
-    (`game_native_map_item_receipts`, migration 0049, `native_map_items.rs`) are keyed
-    without a reset epoch. So a source item the reset retired is treated as a historical
-    replay and is not reminted on epoch N+1. Fixing it needs an epoch in the receipt key
-    (a migration) or a reset-time re-materialization, which is a LOOP-GROUND-1/CP decision.
+  - The reset owner login must also be granted EXECUTE use of `game_world_reset_publish`
+    through `oteryn_game_world_reset` (same D1447 deploy grant); no operator command calls
+    `publish_world_reset` yet (follow-up wiring, not in this packet).
   - `MAP01-RESET-RETIRE-MS` (600,000 ms) needs a real-data measurement.
+- D1451 (CP, option a; replaces the LOOP-GROUND-1 cross_domain_finding): source-map Item
+  receipts are keyed by the active reset epoch. Migration `0123_native_map_item_reset_epoch.sql`
+  (provisional number, renumbered at the queue turn) adds `reset_epoch` to
+  `game_native_map_item_receipts`, replaces the unique key with
+  `(world_id,channel_id,reset_epoch,content_digest,placement_key)` and makes the stamp trigger
+  refuse a receipt outside the active epoch. Epoch 0 keeps its intent bytes; epoch N > 0
+  binds `reset_epoch` into the intent and audit envelope. `native_map_items.rs` reads the
+  epoch under the admission fence and mints the source set once under N+1;
+  `world_execution.rs` resolves only the active epoch's receipt. The boot PG case mints a
+  source Item in epoch 0, the reset retires it, the first initialization after activation
+  mints it again under epoch 1, and the second boot replays it with no duplicate. The
+  owned_paths widening below is approved under D1451.
+- Codex P1 4307187662: boot reads the Target House catalogue from the operator-staged
+  bundle `OTERYN_WORLD_RESET_TARGET_MANIFEST` (qualified before recovery; a refused
+  manifest refuses readiness), and Active from the currently issued room. Once the
+  issuance is the staged bundle's server digest, activation qualifies that manifest. With
+  nothing staged, the reset keeps its own bundle (same-digest target).
+- Codex P1 4307187667: `game_world_reset_publish` (SECURITY DEFINER, EXECUTE only for
+  `oteryn_game_world_reset`) is the only RETIRING publisher. `publish_world_reset` runs the
+  House preflight of the proposed target under the admission fence, and the SQL owner
+  rechecks its House evidence before inserting the job and its Channel cohort in the same
+  TX. Runtime and control keep SELECT only on jobs and scopes.
 
 ## Current authoring checkpoint — D1260/D1269/D1270/D1272/D1283
 
@@ -237,6 +254,9 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `apps/game-server/migrations/0096_world_reset.sql`
 - `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (`MAP01-RESET-RETIRE-MS` row only)
 - `apps/game-server/tests/spell_lane_key33_pin.rs` (`world_reset_phase` pin row only)
+- `apps/game-server/migrations/0123_native_map_item_reset_epoch.sql` (D1451; provisional number)
+- `apps/game-server/src/durability/native_map_items.rs` (D1451 reset-epoch receipt key)
+- `apps/game-server/src/spell/world_execution.rs` (D1451 active-epoch receipt lookup)
 
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 

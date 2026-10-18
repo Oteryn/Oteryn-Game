@@ -66,12 +66,12 @@ async fn install(h: &Harness) -> TestResult {
     );
     Ok(())
 }
-async fn admit(h: &Harness) -> TestResult {
+/// Explicit Control bootstrap of epoch 0 through the real initializer.
+async fn initialize_epoch(h: &Harness) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL ROLE oteryn_game_control")
         .execute(&mut *tx)
         .await?;
-    // Explicit Control bootstrap via the same operation; never seed epoch0 rows directly.
     sqlx::query(
         "SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,'map-1',$2,$3,$4,$5,1)",
     )
@@ -82,6 +82,15 @@ async fn admit(h: &Harness) -> TestResult {
     .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str())
     .execute(&mut *tx)
     .await?;
+    tx.commit().await?;
+    Ok(())
+}
+async fn admit(h: &Harness) -> TestResult {
+    // Explicit Control bootstrap via the same operation; never seed epoch0 rows directly.
+    initialize_epoch(h).await?;
+    // Codex P1 4307187667: control holds no job INSERT. This legacy-shape job (no target)
+    // is a fixture written as the test admin; `admit_qualified` uses the real publisher.
+    let mut tx = h.pool.begin().await?;
     sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')").bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_world_reset_scopes SELECT world_id,0,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
@@ -336,6 +345,10 @@ fn reset_native_unprivileged_job_publication_and_unproven_delete_are_refused() -
   assert!(sqlx::query("TRUNCATE game_world_reset_scopes").execute(&mut *tx).await.is_err());tx.rollback().await?;
   let mut tx=h.pool.begin().await?;sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
   assert!(sqlx::query("INSERT INTO game_world_reset_jobs VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING',1)").bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *tx).await.is_err());tx.rollback().await?;
+  // Codex P1 4307187667: control publishes no RETIRING job directly either.
+  let mut tx=h.pool.begin().await?;sqlx::query("SET LOCAL ROLE oteryn_game_control").execute(&mut *tx).await?;
+  let refused=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')").bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *tx).await;
+  assert!(matches!(refused,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("42501")));tx.rollback().await?;
   let mut tx=h.pool.begin().await?;sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).execute(&mut *tx).await?;
   assert!(tx.commit().await.is_err());assert_eq!(footprint(&h).await?,before);
   // The job revision is no runtime or control capability: only a WORLD_RESET receipt advances it.
@@ -597,10 +610,14 @@ fn reset_epoch_requires_explicit_control_initialization_and_preserves_exact_hist
         tx.rollback().await?;
         let mut tx=h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_control").execute(&mut *tx).await?;
-        let missing=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')")
+        let denied=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')")
             .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *tx).await;
-        assert!(matches!(missing,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("OTR02")));
+        assert!(matches!(denied,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("42501")));
         tx.rollback().await?;
+        // Even a privileged writer cannot publish a job before the epoch is initialized.
+        let missing=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','RETIRING')")
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&h.pool).await;
+        assert!(matches!(missing,Err(sqlx::Error::Database(ref error)) if error.code().as_deref()==Some("OTR02")));
         // Existing native fixture entrypoint uses the real Control initializer, no SQL seed.
         admit(&h).await?;
         let mut tx=h.pool.begin().await?;
@@ -744,11 +761,15 @@ fn reset_direct_sql_waits_for_admission_fence_and_control_cannot_insert_activate
         admission.rollback().await?;
         let mut control=h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_control").execute(&mut *control).await?;
+        // Codex P1 4307187667: control holds no job INSERT at all.
+        let denied=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','ACTIVATED')")
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *control).await;
+        assert!(matches!(denied,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("42501")));
+        control.rollback().await?;
         // The BEFORE INSERT rule must refuse the phase before PK/current-epoch checks.
         let refused=sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','ACTIVATED')")
-            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&mut *control).await;
+            .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice()).execute(&h.pool).await;
         assert!(matches!(refused,Err(sqlx::Error::Database(ref e)) if e.code().as_deref()==Some("23514")));
-        control.rollback().await?;
         let after: (i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_content_activations),(SELECT count(*) FROM game_world_reset_epoch_history),(SELECT count(*) FROM game_world_reset_jobs)")
             .fetch_one(&h.pool).await?;
         assert_eq!(before,after);
@@ -854,29 +875,35 @@ fn reset_direct_activation_rechecks_drain_digest_and_house_evidence() -> TestRes
     })
 }
 
-/// [`admit`] with a qualified target: the separate target facts final activation requires.
+/// The qualified target of [`admit_qualified`]: map-2 with server/client/frame 4/5/6.
+fn qualified_target() -> TestResult<crate::durability::world_reset::WorldResetTarget> {
+    use crate::durability::world_reset::{
+        ResetCalendar, ResetCalendarPolicy, WorldResetArtifactDigests, WorldResetTarget,
+    };
+    Ok(WorldResetTarget {
+        world: world()?,
+        reset_epoch: 0,
+        map_revision: "map-2".to_owned(),
+        digests: WorldResetArtifactDigests {
+            server: [4; 32],
+            client: [5; 32],
+            frame: [6; 32],
+        },
+        calendar: ResetCalendar {
+            policy: ResetCalendarPolicy::TibiaServerSaveBerlin10,
+            revision: 1,
+        },
+    })
+}
+
+/// [`admit`] with a qualified target, published by the only RETIRING publisher
+/// (Codex P1 4307187667): its House preflight, the job and the Channel cohort commit together.
 async fn admit_qualified(h: &Harness) -> TestResult {
-    let mut tx = h.pool.begin().await?;
-    sqlx::query("SET LOCAL ROLE oteryn_game_control")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query(
-        "SELECT game_world_reset_initialize_epoch(encode($1,'hex')::uuid,'map-1',$2,$3,$4,$5,1)",
-    )
-    .bind(id(WORLD).as_slice())
-    .bind([1_u8; 32].as_slice())
-    .bind([2_u8; 32].as_slice())
-    .bind([3_u8; 32].as_slice())
-    .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str())
-    .execute(&mut *tx)
-    .await?;
-    sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision,target_calendar_parity,phase) VALUES(encode($1,'hex')::uuid,0,$2,'map-1','map-2',$3,$4,$5,$6,1,'PARITY_PENDING','RETIRING')")
-        .bind(id(WORLD).as_slice()).bind([7_u8;32].as_slice())
-        .bind([4_u8;32].as_slice()).bind([5_u8;32].as_slice()).bind([6_u8;32].as_slice())
-        .bind(crate::durability::world_reset::ResetCalendarPolicy::TibiaServerSaveBerlin10.as_str())
-        .execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_world_reset_scopes SELECT world_id,0,channel_id,ownership_generation FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
-    tx.commit().await?;
+    initialize_epoch(h).await?;
+    h.root
+        .publish_world_reset(&qualified_target()?, [7; 32], &ResetRunHouses)
+        .await
+        .map_err(debug)?;
     Ok(())
 }
 
@@ -1194,12 +1221,35 @@ impl crate::durability::world_reset_port::WorldResetHouseSource for ResetRunHous
         crate::durability::world_reset_port::QualifiedHouseResetCatalogue,
         crate::durability::world_reset_port::WorldResetSourceRefused,
     > {
+        VariantHouses {
+            target_map: "map-2",
+            target_definition: [9; 32],
+        }
+        .reset_houses(world, side)
+    }
+}
+
+/// [`ResetRunHouses`] with one Target fact changed: a target map revision other than the
+/// published one, or a changed definition of the owned House.
+struct VariantHouses {
+    target_map: &'static str,
+    target_definition: [u8; 32],
+}
+impl crate::durability::world_reset_port::WorldResetHouseSource for VariantHouses {
+    fn reset_houses(
+        &self,
+        world: WorldId,
+        side: crate::durability::world_reset_port::CatalogueSide,
+    ) -> Result<
+        crate::durability::world_reset_port::QualifiedHouseResetCatalogue,
+        crate::durability::world_reset_port::WorldResetSourceRefused,
+    > {
         use crate::durability::world_reset_port::{
             CatalogueSide, HouseResetFact, QualifiedHouseResetCatalogue,
         };
-        let (map_revision, server_artifact_digest) = match side {
-            CatalogueSide::Active => ("map-1", [1_u8; 32]),
-            CatalogueSide::Target => ("map-2", [4_u8; 32]),
+        let (map_revision, server_artifact_digest, definition_digest) = match side {
+            CatalogueSide::Active => ("map-1", [1_u8; 32], [9_u8; 32]),
+            CatalogueSide::Target => (self.target_map, [4_u8; 32], self.target_definition),
         };
         Ok(QualifiedHouseResetCatalogue {
             world,
@@ -1207,11 +1257,165 @@ impl crate::durability::world_reset_port::WorldResetHouseSource for ResetRunHous
             server_artifact_digest,
             facts: vec![HouseResetFact {
                 house_key: house_custody::HOUSE.to_owned(),
-                definition_digest: [9_u8; 32],
+                definition_digest,
                 spatial_position: vec![1, 2, 3],
             }],
         })
     }
+}
+
+/// D1451: one source-map placement of the active room, initialized through the real
+/// native map owner. The same placement before and after a reset: only the epoch differs.
+struct ResetSourceMap {
+    binding: crate::durability::native_map_items_abi::NativeMapOwnerBinding,
+    placements: Vec<crate::durability::native_map_items_abi::NativeMapItemPlacement>,
+}
+impl crate::durability::native_map_items_abi::map_initializer_seal::Sealed for ResetSourceMap {}
+impl crate::durability::native_map_items_abi::NativeMapInitializationProof for ResetSourceMap {
+    fn current_binding(
+        &self,
+    ) -> Result<crate::durability::native_map_items_abi::NativeMapOwnerBinding, &'static str> {
+        Ok(self.binding.clone())
+    }
+    fn placements(&self) -> &[crate::durability::native_map_items_abi::NativeMapItemPlacement] {
+        &self.placements
+    }
+}
+fn reset_source_map(scope_generation: u64) -> TestResult<ResetSourceMap> {
+    use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
+    use crate::durability::native_map_items_abi::{NativeMapItemPlacement, NativeMapOwnerBinding};
+    let hex = |bytes: &[u8]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let (content, map, frame) = ([1_u8; 32], [2_u8; 32], [3_u8; 32]);
+    Ok(ResetSourceMap {
+        binding: NativeMapOwnerBinding {
+            world: world()?,
+            channel: channel()?,
+            scope_generation,
+            content_digest: content,
+            map_digest: map,
+            frame_digest: frame,
+        },
+        placements: vec![NativeMapItemPlacement {
+            placement_key: "map:source-stone".to_owned(),
+            definition: TypedDefinitionRef {
+                family: "Item".to_owned(),
+                production_key: "fixture:b3.stone".to_owned(),
+                revision_ref: "definition-r1".to_owned(),
+            },
+            quantity: 1,
+            ground: GroundPlacement {
+                spatial_position: vec![0x51, 0, 0x52, 0, 0x53, 0, 7, 0, 0, 0],
+                corpse_ref: b"native-source-map-init-r21".to_vec(),
+                map_revision: format!("sha256:{}", hex(&map)),
+                content_revision: format!("sha256:{}", hex(&content)),
+                native_room_placement_context: frame.to_vec(),
+            },
+            source_binding: vec![0x5b; 32],
+            source_attributes: serde_json::json!({}),
+            blocks_movement: false,
+            blocks_projectile: false,
+            immovable_block_solid: false,
+            owner_kind: None,
+        }],
+    })
+}
+async fn initialize_source_map(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    scope_generation: u64,
+) -> TestResult<Vec<crate::durability::native_map_items_abi::MaterializedNativeMapItem>> {
+    let permit = SpellLanePermit::of_fresh_lane(world()?, channel()?).await;
+    h.root
+        .initialize_native_map_current_owner(
+            &permit,
+            authority,
+            &h.node,
+            &reset_source_map(scope_generation)?,
+        )
+        .await
+        .map_err(|error| debug(error).into())
+}
+/// `(reset_epoch, item)` of every source-map receipt, oldest epoch first.
+async fn source_map_receipts(h: &Harness) -> TestResult<Vec<(String, Vec<u8>)>> {
+    Ok(sqlx::query_as("SELECT reset_epoch::text,uuid_send(item_instance_id) FROM game_native_map_item_receipts ORDER BY reset_epoch")
+        .fetch_all(&h.pool).await?)
+}
+
+struct ResetRuntimeReadiness(
+    crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationChangeV1,
+);
+impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for ResetRuntimeReadiness {}
+impl crate::foundation::admission_authority_publication::AdmissionAuthorityOwningPublisherV1
+    for ResetRuntimeReadiness
+{
+    fn resolve_publication(
+        &self,
+        _now: i64,
+    ) -> Result<
+        Vec<crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationChangeV1>,
+        crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
+    >{
+        Ok(vec![self.0.clone()])
+    }
+}
+/// The boot's readiness publication of `ownership_generation` after the reset: the successor
+/// of the guard's current (not-ready) publication.
+async fn publish_ready(h: &Harness, ownership_generation: u64) -> TestResult {
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+        AdmissionAuthorityPublicationChangeV1, AdmissionAuthorityPublicationV1,
+        AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
+        AdmissionPublicationSourceV1,
+    };
+    let (revision, source): (String, String) = sqlx::query_as("SELECT g.publication_revision::text,g.source_revision::text FROM game_durability_admission_runtime_guards g JOIN game_runtime_scope_assignments s USING(scope_key) WHERE s.world_id=encode($1,'hex')::uuid AND s.channel_id=encode($2,'hex')::uuid")
+        .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).fetch_one(&h.pool).await?;
+    let revision: u64 = revision.parse()?;
+    let source: u64 = source.parse()?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let change = AdmissionAuthorityPublicationChangeV1 {
+        key: AdmissionAuthorityGuardKeyV1::Runtime(scope()?),
+        source: AdmissionPublicationSourceV1 {
+            authority: "game-runtime-publisher".into(),
+            purpose: AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
+            source_revision: source + 1,
+            decision_identity: format!("world-reset-runtime-ready-{ownership_generation}"),
+            source_observed_at: now,
+            clock_uncertainty_seconds: 0,
+        },
+        precondition: AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: revision,
+        },
+        publication_revision: revision + 1,
+        state: AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready: true,
+            route_revision: "route-1".into(),
+            runtime_observation_revision: "runtime-1".into(),
+            protocol_major: 1,
+            transport_profile: 1,
+            ruleset_revision: "ruleset-1".into(),
+            content_revision: "content-1".into(),
+            map_revision: "map-1".into(),
+            world_policy_revision: "world-policy-1".into(),
+            offer_revision: "offer-1".into(),
+        },
+    };
+    let publication = AdmissionAuthorityPublicationV1::prepare(&ResetRuntimeReadiness(change), now)
+        .map_err(debug)?;
+    let disposition = h
+        .root
+        .publish_runtime_readiness(&h.node, &publication)
+        .await
+        .map_err(debug)?;
+    if disposition
+        != crate::durability::admission_authority_guards::GuardPublicationDisposition::Applied
+    {
+        return Err(format!("unexpected readiness outcome: {disposition:?}").into());
+    }
+    Ok(())
 }
 
 /// The boot witness shape: the durable cohort binding, held where no Channel runtime exists.
@@ -1258,6 +1462,11 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
         let second_content = crate::corpse_transfer_postgres_cases::put_loot(&h, corpse, 400, 2, 81).await?;
         let stone = h.mint(&authority, "fixture:b3.stone", 2).await?;
         let coin = h.mint(&authority, "fixture:b3.coin", 3).await?;
+        // D1451: one source-map Item, minted in epoch 0 by the real native map owner.
+        let source = initialize_source_map(&h, &authority, 1).await?;
+        assert!(!source[0].replayed);
+        let source_item = source[0].item_instance_id;
+        assert_eq!(source_map_receipts(&h).await?, vec![("0".to_owned(), source_item.to_vec())]);
         drop(authority);
         // A character container entry can never sit under a Ground container: its parent must
         // be a backpack slot item (FK), so the corpse family is the only Ground content.
@@ -1341,14 +1550,14 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
         let WorldResetActivationDisposition::NewEpoch(activated) = &run.disposition else {
             return Err("NewEpoch disposition".into());
         };
-        assert_eq!((run.reset_epoch, activated.epoch, run.retired), (0, 1, 5));
+        assert_eq!((run.reset_epoch, activated.epoch, run.retired), (0, 1, 6));
         // Boot hands the map consumers the activated epoch N+1, not epoch 0.
         assert_eq!(
             h.root.read_map_reset_epoch(world()?).await.map_err(debug)?,
             activated.epoch
         );
         assert!(run.within_budget());
-        for retired in [first_content, second_content, corpse, stone, coin] {
+        for retired in [first_content, second_content, corpse, stone, coin, source_item] {
             assert_eq!(h.item_state(retired).await?, (0, 2));
         }
         assert_eq!(h.count("game_item_corpse_container_entries").await?, 0);
@@ -1377,6 +1586,27 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
         let state: (String, String) = sqlx::query_as("SELECT (SELECT phase FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0),(SELECT reset_epoch::text FROM game_world_reset_active_epochs WHERE world_id=encode($1,'hex')::uuid)")
             .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!((state.0.as_str(), state.1.as_str()), ("ACTIVATED", "1"));
+        // D1451: the reset is complete only when the source Items it retired come back. The
+        // activated epoch's first initialization mints the same placement once, under N+1;
+        // the retired epoch-0 receipt stays immutable history.
+        publish_ready(&h, 2).await?;
+        let restored = initialize_source_map(&h, &authority, 2).await?;
+        assert_eq!(restored.len(), 1);
+        assert!(!restored[0].replayed);
+        let restored_item = restored[0].item_instance_id;
+        assert_ne!(restored_item, source_item);
+        assert_ne!(restored[0].transaction_id, source[0].transaction_id);
+        assert_eq!(
+            source_map_receipts(&h).await?,
+            vec![
+                ("0".to_owned(), source_item.to_vec()),
+                ("1".to_owned(), restored_item.to_vec()),
+            ]
+        );
+        assert_eq!(h.item_state(restored_item).await?, (1, 1));
+        assert!(h.on_ground(restored_item).await?);
+        assert_eq!(h.item_state(source_item).await?, (0, 2));
+        assert_eq!(h.count("game_item_ground_locations").await?, 1);
         // The next boot finds no RETIRING reset and changes nothing.
         let after = footprint(&h).await?;
         assert_eq!(h.root.read_retiring_world_reset(world()?).await.map_err(debug)?, None);
@@ -1394,8 +1624,128 @@ fn reset_run_resumes_a_crashed_reset_retires_ground_keeps_houses_and_activates()
         assert_eq!(footprint(&h).await?, after);
         // The next boot's map consumers stay on N+1.
         assert_eq!(h.root.read_map_reset_epoch(world()?).await.map_err(debug)?, 1);
+        // Its source initialization replays epoch 1's receipt: no second Item.
+        let replayed = initialize_source_map(&h, &authority, 2).await?;
+        assert_eq!(replayed.len(), 1);
+        assert!(replayed[0].replayed);
+        assert_eq!(
+            (replayed[0].transaction_id, replayed[0].item_instance_id),
+            (restored[0].transaction_id, restored_item)
+        );
+        assert_eq!(source_map_receipts(&h).await?.len(), 2);
+        assert_eq!(h.count("game_item_ground_locations").await?, 1);
+        assert_eq!(footprint(&h).await?, after);
         drop(authority);
         drop(seal);
+        h.cleanup().await
+    })
+}
+
+/// Codex P1 4307187667: a RETIRING job closes admission, so it is published only through the
+/// reset owner, after the House preflight of the proposed target and in the same TX. Runtime
+/// and control hold no publication path; an incompatible House catalogue, a direct owner call
+/// without House evidence or a non-active epoch creates no job, closes no admission and
+/// leaves the boot reset run nothing to resume.
+#[test]
+fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        // The accepted House fixture only installs into an `it_house_interior_*` database.
+        let h = Harness::create(admin, "house_interior_reset_publish").await?;
+        install(&h).await?;
+        initialize_epoch(&h).await?;
+        let (backpack, item) = house_custody::funded(&h).await?;
+        house_custody::seed(&h).await?;
+        house_custody::place(&h, backpack, item).await?;
+        // The placed House is owned, so its Active and Target definitions must agree.
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+            .bind(id(WORLD).as_slice()).bind(house_custody::HOUSE).bind(id(crate::item_transfer_postgres_cases::CHARACTER).as_slice()).bind(id(90).as_slice())
+            .execute(&h.pool).await?;
+        let house_before = house_snapshot(&h, item).await?;
+        let published = || async {
+            let jobs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_reset_jobs")
+                .fetch_one(&h.pool)
+                .await?;
+            let scopes: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_reset_scopes")
+                .fetch_one(&h.pool)
+                .await?;
+            let retiring = h.root.read_retiring_world_reset(world()?).await.map_err(debug)?;
+            Ok::<_, Box<dyn std::error::Error>>((jobs, scopes, retiring))
+        };
+        let target = qualified_target()?;
+        // Runtime and control hold no EXECUTE on the publisher, even with exact evidence.
+        for role in ["SET LOCAL ROLE oteryn_game_runtime", "SET LOCAL ROLE oteryn_game_control"] {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query(role).execute(&mut *tx).await?;
+            let denied = sqlx::query("SELECT game_world_reset_publish(encode($1,'hex')::uuid,0,$2,'map-2',$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_10',1,$6,$7,$8)")
+                .bind(id(WORLD).as_slice()).bind([7_u8; 32].as_slice())
+                .bind([4_u8; 32].as_slice()).bind([5_u8; 32].as_slice()).bind([6_u8; 32].as_slice())
+                .bind(vec![house_custody::HOUSE.to_owned()]).bind(vec![vec![1_u8, 2, 3]]).bind(vec![house_custody::HOUSE.to_owned()])
+                .execute(&mut *tx).await;
+            assert!(matches!(denied, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("42501")), "{role}: {denied:?}");
+            tx.rollback().await?;
+        }
+        assert_eq!(published().await?, (0, 0, None));
+        // A Target catalogue bound to another map revision, or one that changes the owned
+        // House's definition, refuses before any job exists.
+        let wrong_map = h
+            .root
+            .publish_world_reset(&target, [7; 32], &VariantHouses { target_map: "map-3", target_definition: [9; 32] })
+            .await;
+        assert!(matches!(wrong_map, Err(WorldResetError::HouseSourceRefused)), "{wrong_map:?}");
+        let changed = h
+            .root
+            .publish_world_reset(&target, [7; 32], &VariantHouses { target_map: "map-2", target_definition: [8; 32] })
+            .await;
+        assert!(
+            matches!(changed, Err(WorldResetError::HouseCatalogueChanged { ref house_key }) if house_key == house_custody::HOUSE),
+            "{changed:?}"
+        );
+        // A target of a non-active epoch is not current.
+        let stale = h
+            .root
+            .publish_world_reset(&crate::durability::world_reset::WorldResetTarget { reset_epoch: 1, ..target.clone() }, [7; 32], &ResetRunHouses)
+            .await;
+        assert!(matches!(stale, Err(WorldResetError::NotCurrent)), "{stale:?}");
+        assert_eq!(published().await?, (0, 0, None));
+        // The SQL owner rechecks: the owner capability without House evidence for the owned
+        // House and its interior cell is refused, with no job.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_world_reset").execute(&mut *tx).await?;
+        let bare = sqlx::query("SELECT game_world_reset_publish(encode($1,'hex')::uuid,0,$2,'map-2',$3,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_10',1,$6,$7,$8)")
+            .bind(id(WORLD).as_slice()).bind([7_u8; 32].as_slice())
+            .bind([4_u8; 32].as_slice()).bind([5_u8; 32].as_slice()).bind([6_u8; 32].as_slice())
+            .bind(Vec::<String>::new()).bind(Vec::<Vec<u8>>::new()).bind(Vec::<String>::new())
+            .execute(&mut *tx).await;
+        assert!(matches!(bare, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("OTR03")), "{bare:?}");
+        tx.rollback().await?;
+        assert_eq!(published().await?, (0, 0, None));
+        assert_eq!(house_snapshot(&h, item).await?, house_before);
+        // The checked publisher commits the job and its Channel cohort together.
+        h.root
+            .publish_world_reset(&target, [7; 32], &ResetRunHouses)
+            .await
+            .map_err(debug)?;
+        let channels: i64 = sqlx::query_scalar("SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1")
+            .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(channels, 1);
+        assert_eq!(published().await?, (1, channels, Some(0)));
+        let cohort: Vec<(Vec<u8>, String)> = sqlx::query_as("SELECT uuid_send(channel_id),predecessor_generation::text FROM game_world_reset_scopes WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+            .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
+        assert_eq!(cohort, vec![(id(CHANNEL).to_vec(), "1".to_owned())]);
+        let mut tx = h.pool.begin().await?;
+        let job = crate::durability::world_reset::read_locked_world_reset_target(&mut tx, world()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!(job, target);
+        tx.rollback().await?;
+        // One RETIRING job per World: a second publication is refused and changes nothing.
+        let again = h.root.publish_world_reset(&target, [7; 32], &ResetRunHouses).await;
+        assert!(again.is_err(), "{again:?}");
+        assert_eq!(published().await?, (1, channels, Some(0)));
+        assert_eq!(house_snapshot(&h, item).await?, house_before);
         h.cleanup().await
     })
 }

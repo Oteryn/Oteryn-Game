@@ -1539,6 +1539,59 @@ pub(crate) fn load_quest_catalogue(
     Ok((std::sync::Arc::new(lowered.catalogue().clone()), line))
 }
 
+/// Operator-staged bundle of a pending World reset (Codex P1 4307187662).
+const WORLD_RESET_TARGET_MANIFEST: &str = "OTERYN_WORLD_RESET_TARGET_MANIFEST";
+
+/// The staged target bundle of a World reset: qualified for its House catalogue only, never
+/// activated before the reset commits its issuance. Its manifest serves only once the
+/// current issuance is this bundle's.
+struct WorldResetTargetBundle {
+    manifest: std::ffi::OsString,
+    room: crate::content::QualifiedNativeEntryRoom,
+}
+
+/// Qualifies the operator's staged reset target, if any. A staged manifest that does not
+/// qualify refuses readiness; it is never silently replaced by the active bundle.
+fn qualify_world_reset_target(
+    world: WorldId,
+    manifest: Option<std::ffi::OsString>,
+) -> Result<Option<WorldResetTargetBundle>, BootError> {
+    manifest
+        .map(|manifest| {
+            crate::content::qualify_native_entry_room_from_gameplay_manifest(
+                world,
+                Path::new(&manifest),
+            )
+            .map(|room| WorldResetTargetBundle { manifest, room })
+            .map_err(|_| BootError::ContentActivation("world reset target manifest"))
+        })
+        .transpose()
+}
+
+/// The Target House catalogue: the staged bundle's when one is staged, otherwise the active
+/// room's (a same-bundle reset). Active is always the currently issued room's.
+fn world_reset_target_tiles<'a>(
+    active: &'a crate::content::QualifiedHouseTiles,
+    staged: Option<&'a WorldResetTargetBundle>,
+) -> &'a crate::content::QualifiedHouseTiles {
+    staged.map_or(active, |target| target.room.movement_cells().house_tiles())
+}
+
+/// The manifest qualifying the current issuance: the staged reset target once the issuance
+/// is its server artifact (the reset activated it), otherwise the operator's gameplay one.
+fn activation_manifest(
+    staged: Option<&WorldResetTargetBundle>,
+    issued_server_digest: [u8; 32],
+    gameplay: Option<std::ffi::OsString>,
+) -> Option<std::ffi::OsString> {
+    match staged {
+        Some(target) if target.room.compiled().server_digest() == issued_server_digest => {
+            Some(target.manifest.clone())
+        }
+        _ => gameplay,
+    }
+}
+
 /// #935 activation issuer: before the Channel runtime, listener or control socket exists, activate
 /// the scope's current control-plane issuance of the committed native entry room. A missing,
 /// stale or mismatching issuance refuses readiness; nothing is guessed or reset.
@@ -1546,6 +1599,7 @@ async fn activate_content(
     root: &DurabilityRoot,
     world: WorldId,
     channel: ChannelId,
+    staged: Option<&WorldResetTargetBundle>,
 ) -> Result<(ContentActivationController, NativeEntryContentPin), BootError> {
     let record = root
         .read_current_content_activation(world, channel)
@@ -1560,14 +1614,18 @@ async fn activate_content(
         frame_binding_digest: record.frame_binding_digest,
     };
     let mut controller = ContentActivationController::new();
-    let gameplay = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST")
-        .map(|path| {
-            crate::content::native_gameplay::NativeGameplayInput::from_manifest(
-                std::path::Path::new(&path),
-            )
-        })
-        .transpose()
-        .map_err(|_| BootError::ContentActivation("native gameplay manifest"))?;
+    let gameplay = activation_manifest(
+        staged,
+        record.server_artifact_digest,
+        std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST"),
+    )
+    .map(|path| {
+        crate::content::native_gameplay::NativeGameplayInput::from_manifest(std::path::Path::new(
+            &path,
+        ))
+    })
+    .transpose()
+    .map_err(|_| BootError::ContentActivation("native gameplay manifest"))?;
     let quiescence = NodeBootQuiescence::before_channel_runtime();
     let pin = match &gameplay {
         Some(input) => crate::content::activate_native_entry_room_with_gameplay(
@@ -1634,8 +1692,9 @@ const fn world_reset_refusal(error: &WorldResetError) -> &'static str {
 /// content or builds any Channel runtime, so admission stays closed until epoch N+1 is active.
 /// The census waits, within the assignment wait, for the operator's fresh generation of every
 /// Channel and for every reconnect session to be released; any other refusal fails readiness
-/// (retryable) and the next boot resumes the same durable run. The House catalogues are the
-/// active qualified room's, so only a same-digest target can activate.
+/// (retryable) and the next boot resumes the same durable run. The Active House catalogue is
+/// the currently issued room's; the Target is the operator-staged bundle
+/// (`OTERYN_WORLD_RESET_TARGET_MANIFEST`), or the active room's when none is staged.
 ///
 /// Returns the World's map reset epoch (`read_map_reset_epoch`) for the map consumers of this
 /// serve lifetime: N+1 after an activation here, which must equal the active pointer read
@@ -1646,6 +1705,7 @@ async fn recover_world_reset(
     proof: &NodeIncarnationProof,
     world: WorldId,
     channel: ChannelId,
+    staged: Option<&WorldResetTargetBundle>,
     wait: Duration,
 ) -> Result<u64, BootError> {
     let Some(epoch) = root
@@ -1658,9 +1718,9 @@ async fn recover_world_reset(
     event(&format!(
         "event=world_reset state=resume reset_epoch={epoch}"
     ));
-    let (_controller, content) = activate_content(root, world, channel).await?;
-    let tiles = content.qualified_room().movement_cells().house_tiles();
-    let houses = QualifiedHouseResetSources::new(tiles, tiles);
+    let (_controller, content) = activate_content(root, world, channel, staged).await?;
+    let active = content.qualified_room().movement_cells().house_tiles();
+    let houses = QualifiedHouseResetSources::new(active, world_reset_target_tiles(active, staged));
     let deadline = tokio::time::Instant::now() + wait;
     loop {
         let attempt = match root.read_world_drain_binding(proof, world).await {
@@ -2610,6 +2670,10 @@ async fn boot_and_serve(
     // MAP-OVERLAY-1c (ADR-0021 §4.7): a RETIRING World reset completes before this
     // incarnation activates content or builds any Channel runtime. Its map consumers bind the
     // resulting epoch (N+1 after a reset) for the whole serve lifetime.
+    let staged = qualify_world_reset_target(
+        material.world,
+        std::env::var_os(WORLD_RESET_TARGET_MANIFEST),
+    )?;
     let Some(reset_epoch) = first(
         recover_world_reset(
             root,
@@ -2617,6 +2681,7 @@ async fn boot_and_serve(
             &proof,
             material.world,
             material.channel,
+            staged.as_ref(),
             Duration::from_millis(config.scope.assignment_wait_ms),
         ),
         signalled.cancelled(),
@@ -2630,7 +2695,7 @@ async fn boot_and_serve(
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
     let (active_content, content) =
-        activate_content(root, material.world, material.channel).await?;
+        activate_content(root, material.world, material.channel, staged.as_ref()).await?;
     let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
@@ -3103,6 +3168,75 @@ async fn boot_and_serve(
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    fn reset_target_world() -> WorldId {
+        WorldId::decode(&[1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1]).expect("world")
+    }
+
+    /// Codex P1 4307187662: the Target House catalogue is the staged bundle's, never the
+    /// active room's, once a target is staged; without one the reset keeps its own bundle.
+    #[test]
+    fn world_reset_target_houses_come_from_the_staged_bundle() {
+        let world = reset_target_world();
+        let active = crate::content::qualify_native_entry_room(world).expect("active room");
+        let staged = WorldResetTargetBundle {
+            manifest: "staged.manifest.json".into(),
+            room: crate::content::qualify_native_entry_room(world).expect("staged room"),
+        };
+        let active_tiles = active.movement_cells().house_tiles();
+        assert!(std::ptr::eq(
+            world_reset_target_tiles(active_tiles, None),
+            active_tiles
+        ));
+        let target = world_reset_target_tiles(active_tiles, Some(&staged));
+        assert!(std::ptr::eq(
+            target,
+            staged.room.movement_cells().house_tiles()
+        ));
+        assert!(!std::ptr::eq(target, active_tiles));
+    }
+
+    /// The staged manifest serves activation only once the issuance is its server artifact.
+    #[test]
+    fn activation_uses_the_staged_manifest_only_after_its_issuance() {
+        let world = reset_target_world();
+        let staged = WorldResetTargetBundle {
+            manifest: "staged.manifest.json".into(),
+            room: crate::content::qualify_native_entry_room(world).expect("staged room"),
+        };
+        let digest = staged.room.compiled().server_digest();
+        let mut other = digest;
+        other[0] ^= 1;
+        let gameplay = || Some(std::ffi::OsString::from("gameplay.manifest.json"));
+        assert_eq!(
+            activation_manifest(Some(&staged), digest, gameplay()),
+            Some("staged.manifest.json".into())
+        );
+        assert_eq!(
+            activation_manifest(Some(&staged), other, gameplay()),
+            gameplay()
+        );
+        assert_eq!(activation_manifest(None, digest, gameplay()), gameplay());
+        assert_eq!(activation_manifest(Some(&staged), other, None), None);
+    }
+
+    #[test]
+    fn a_staged_world_reset_target_qualifies_or_refuses_readiness() {
+        let world = reset_target_world();
+        assert!(matches!(qualify_world_reset_target(world, None), Ok(None)));
+        let manifest = std::ffi::OsString::from(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../content/spells.manifest.json"
+        ));
+        let staged = qualify_world_reset_target(world, Some(manifest.clone()))
+            .expect("current manifest qualifies")
+            .expect("staged");
+        assert_eq!(staged.manifest, manifest);
+        assert!(matches!(
+            qualify_world_reset_target(world, Some("/nonexistent/reset.manifest.json".into())),
+            Err(BootError::ContentActivation("world reset target manifest"))
+        ));
+    }
 
     #[test]
     fn a_busy_holder_delays_the_privilege_answer_without_refusing() {
