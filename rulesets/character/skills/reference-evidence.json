@@ -24,29 +24,37 @@
         },
         "intrinsic_chance": {
           "value": 5,
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:78086:1113308",
-              "selector": "Opening paragraph"
+              "source": "official:news:8421:20261018",
+              "selector": "Critical-hit base attributes"
+            },
+            {
+              "source": "official:news:8436:20261018",
+              "selector": "Weapon Proficiency feature released"
             }
           ],
-          "note": "Summer 2025 intrinsic critical chance claim has no inspected official or controlled confirmation."
+          "note": "Explicit primary official announcement; feature release is separately corroborated by the official Summer Update2025 news. Equipment/proficiency modifiers are additional and not folded into these base percentages."
         },
         "intrinsic_extra_damage": {
           "value": 10,
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "continuity": "CURRENT_CROSS_SOURCE_REFERENCE_AT_FETCH",
           "sources": [
             {
-              "source": "wiki:78086:1113308",
-              "selector": "Opening paragraph"
+              "source": "official:news:8421:20261018",
+              "selector": "Critical-hit base attributes"
+            },
+            {
+              "source": "official:news:8436:20261018",
+              "selector": "Weapon Proficiency feature released"
             }
           ],
-          "note": "Wiki-only intrinsic extra critical damage claim."
+          "note": "Explicit primary official announcement; feature release is separately corroborated by the official Summer Update2025 news. Equipment/proficiency modifiers are additional and not folded into these base percentages."
         }
       }
     },
@@ -111,7 +119,25 @@
       "key": "skills.knight",
       "facts": {
         "skill_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Knight",
+            "next_level_points": "A*b^(skill-c)",
+            "constants": {
+              "melee": 50,
+              "distance": 30,
+              "shielding": 100,
+              "fishing": 20
+            },
+            "vocation_factors": {
+              "melee": 1.1,
+              "fist": 1.1,
+              "distance": 1.4,
+              "shielding": 1.1,
+              "fishing": 1.1
+            },
+            "offset": 10
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -121,10 +147,16 @@
               "selector": "Skills / vocation multipliers"
             }
           ],
-          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         },
         "magic_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Knight",
+            "next_level_mana": "1600*b^magic_level",
+            "vocation_factor": 3.0,
+            "offset": 0
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -134,7 +166,7 @@
               "selector": "Magic Level"
             }
           ],
-          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         }
       }
     },
@@ -142,7 +174,25 @@
       "key": "skills.paladin",
       "facts": {
         "skill_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Paladin",
+            "next_level_points": "A*b^(skill-c)",
+            "constants": {
+              "melee": 50,
+              "distance": 30,
+              "shielding": 100,
+              "fishing": 20
+            },
+            "vocation_factors": {
+              "melee": 1.2,
+              "fist": 1.2,
+              "distance": 1.1,
+              "shielding": 1.1,
+              "fishing": 1.1
+            },
+            "offset": 10
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -152,10 +202,16 @@
               "selector": "Skills / vocation multipliers"
             }
           ],
-          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         },
         "magic_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Paladin",
+            "next_level_mana": "1600*b^magic_level",
+            "vocation_factor": 1.4,
+            "offset": 0
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -165,7 +221,7 @@
               "selector": "Magic Level"
             }
           ],
-          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         }
       }
     },
@@ -173,7 +229,25 @@
       "key": "skills.druid",
       "facts": {
         "skill_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Druid",
+            "next_level_points": "A*b^(skill-c)",
+            "constants": {
+              "melee": 50,
+              "distance": 30,
+              "shielding": 100,
+              "fishing": 20
+            },
+            "vocation_factors": {
+              "melee": 1.8,
+              "fist": 1.5,
+              "distance": 1.8,
+              "shielding": 1.5,
+              "fishing": 1.1
+            },
+            "offset": 10
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -183,10 +257,16 @@
               "selector": "Skills / vocation multipliers"
             }
           ],
-          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         },
         "magic_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Druid",
+            "next_level_mana": "1600*b^magic_level",
+            "vocation_factor": 1.1,
+            "offset": 0
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -196,7 +276,7 @@
               "selector": "Magic Level"
             }
           ],
-          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         }
       }
     },
@@ -204,7 +284,25 @@
       "key": "skills.sorcerer",
       "facts": {
         "skill_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Sorcerer",
+            "next_level_points": "A*b^(skill-c)",
+            "constants": {
+              "melee": 50,
+              "distance": 30,
+              "shielding": 100,
+              "fishing": 20
+            },
+            "vocation_factors": {
+              "melee": 2.0,
+              "fist": 1.5,
+              "distance": 2.0,
+              "shielding": 1.5,
+              "fishing": 1.1
+            },
+            "offset": 10
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -214,10 +312,16 @@
               "selector": "Skills / vocation multipliers"
             }
           ],
-          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         },
         "magic_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Sorcerer",
+            "next_level_mana": "1600*b^magic_level",
+            "vocation_factor": 1.1,
+            "offset": 0
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -227,7 +331,7 @@
               "selector": "Magic Level"
             }
           ],
-          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         }
       }
     },
@@ -235,7 +339,25 @@
       "key": "skills.monk",
       "facts": {
         "skill_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Monk",
+            "next_level_points": "A*b^(skill-c)",
+            "constants": {
+              "melee": 50,
+              "distance": 30,
+              "shielding": 100,
+              "fishing": 20
+            },
+            "vocation_factors": {
+              "melee": 1.4,
+              "fist": 1.1,
+              "distance": 1.5,
+              "shielding": 1.15,
+              "fishing": 1.1
+            },
+            "offset": 10
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -245,10 +367,16 @@
               "selector": "Skills / vocation multipliers"
             }
           ],
-          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+          "note": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         },
         "magic_advance": {
-          "value": null,
+          "value": {
+            "candidate_model_reference": "skills.community_model",
+            "vocation": "Monk",
+            "next_level_mana": "1600*b^magic_level",
+            "vocation_factor": 1.25,
+            "offset": 0
+          },
           "classification": "UNKNOWN",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
@@ -258,7 +386,7 @@
               "selector": "Magic Level"
             }
           ],
-          "note": "No official closed formula for cumulative spent mana and vocation multiplier."
+          "note": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
         }
       }
     },

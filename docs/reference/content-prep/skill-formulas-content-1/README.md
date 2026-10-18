@@ -11,3 +11,9 @@ These files prepare Reference data for CP. They add no runtime admission, Rust c
 The live official qualitative critical/leech behavior and the complete community skill-advance candidates, constants and vocation multipliers are retained. Numeric critical, multi-target leech, rounding and skill formulas lack official or controlled evidence and remain held. No OTS implementation is promoted into proof.
 
 The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+
+## Full outstanding-field source sweep —2026-10-18
+
+combat.critical/intrinsic_chance; combat.critical/intrinsic_extra_damage.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

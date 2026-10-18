@@ -61,3 +61,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 The live official qualitative critical/leech behavior and the complete community skill-advance candidates, constants and vocation multipliers are retained. Numeric critical, multi-target leech, rounding and skill formulas lack official or controlled evidence and remain held. No OTS implementation is promoted into proof.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Full outstanding-field source sweep —2026-10-18
+
+combat.critical/intrinsic_chance; combat.critical/intrinsic_extra_damage.
+
+Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.

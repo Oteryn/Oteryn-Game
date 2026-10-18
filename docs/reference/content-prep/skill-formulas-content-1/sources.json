@@ -82,6 +82,32 @@
       "capture_method": "Public URL read through owner-authorized connected computer",
       "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
       "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "official:news:8421:20261018": {
+      "title": "Weapon Proficiency System",
+      "url": "https://www.tibia.com/news/?id=8421&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dce51014aa5c777d6f11c0efc8f554fbb8bc65ebc1e48bede23dc8d3a58c697f",
+      "supported_claim": "Character base critical chance5% and base critical extra damage10%.",
+      "publication_date": "2025-06-23",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "official:news:8436:20261018": {
+      "title": "Summer Update2025 release",
+      "url": "https://www.tibia.com/news/?id=8436&subtopic=newsarchive",
+      "fetched_at": "2026-10-18",
+      "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
+      "retained_scope": "TARGETED_SOURCE_RETRIEVAL",
+      "retained_response_sha256": "dfa87ca7f6a94ab6dc3bff910d1d97985ae76656ae44ccce220b3315b244cda2",
+      "supported_claim": "Weapon Proficiency System released on2025-07-21.",
+      "publication_date": "2025-07-21",
+      "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
+      "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
+      "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
     }
   }
 }

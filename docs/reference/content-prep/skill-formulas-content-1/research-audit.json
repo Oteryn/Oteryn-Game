@@ -10,34 +10,10 @@
     "rulesets/character/skills/reference-evidence.json": 9
   },
   "evidence_field_counts": {
-    "PROVEN": 2,
-    "UNKNOWN": 21
+    "PROVEN": 4,
+    "UNKNOWN": 19
   },
   "unresolved_fields": [
-    {
-      "field_path": "rulesets/character/skills/reference-evidence.json/records/0/facts/intrinsic_chance",
-      "candidate": 5,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:78086:1113308",
-          "selector": "Opening paragraph"
-        }
-      ],
-      "limitation": "Summer 2025 intrinsic critical chance claim has no inspected official or controlled confirmation."
-    },
-    {
-      "field_path": "rulesets/character/skills/reference-evidence.json/records/0/facts/intrinsic_extra_damage",
-      "candidate": 10,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:78086:1113308",
-          "selector": "Opening paragraph"
-        }
-      ],
-      "limitation": "Wiki-only intrinsic extra critical damage claim."
-    },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/1/facts/life_formula",
       "candidate": null,
@@ -76,7 +52,25 @@
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/2/facts/skill_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Knight",
+        "next_level_points": "A*b^(skill-c)",
+        "constants": {
+          "melee": 50,
+          "distance": 30,
+          "shielding": 100,
+          "fishing": 20
+        },
+        "vocation_factors": {
+          "melee": 1.1,
+          "fist": 1.1,
+          "distance": 1.4,
+          "shielding": 1.1,
+          "fishing": 1.1
+        },
+        "offset": 10
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -84,11 +78,17 @@
           "selector": "Skills / vocation multipliers"
         }
       ],
-      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/2/facts/magic_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Knight",
+        "next_level_mana": "1600*b^magic_level",
+        "vocation_factor": 3.0,
+        "offset": 0
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -96,11 +96,29 @@
           "selector": "Magic Level"
         }
       ],
-      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier."
+      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/3/facts/skill_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Paladin",
+        "next_level_points": "A*b^(skill-c)",
+        "constants": {
+          "melee": 50,
+          "distance": 30,
+          "shielding": 100,
+          "fishing": 20
+        },
+        "vocation_factors": {
+          "melee": 1.2,
+          "fist": 1.2,
+          "distance": 1.1,
+          "shielding": 1.1,
+          "fishing": 1.1
+        },
+        "offset": 10
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -108,11 +126,17 @@
           "selector": "Skills / vocation multipliers"
         }
       ],
-      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/3/facts/magic_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Paladin",
+        "next_level_mana": "1600*b^magic_level",
+        "vocation_factor": 1.4,
+        "offset": 0
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -120,11 +144,29 @@
           "selector": "Magic Level"
         }
       ],
-      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier."
+      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/4/facts/skill_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Druid",
+        "next_level_points": "A*b^(skill-c)",
+        "constants": {
+          "melee": 50,
+          "distance": 30,
+          "shielding": 100,
+          "fishing": 20
+        },
+        "vocation_factors": {
+          "melee": 1.8,
+          "fist": 1.5,
+          "distance": 1.8,
+          "shielding": 1.5,
+          "fishing": 1.1
+        },
+        "offset": 10
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -132,11 +174,17 @@
           "selector": "Skills / vocation multipliers"
         }
       ],
-      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/4/facts/magic_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Druid",
+        "next_level_mana": "1600*b^magic_level",
+        "vocation_factor": 1.1,
+        "offset": 0
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -144,11 +192,29 @@
           "selector": "Magic Level"
         }
       ],
-      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier."
+      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/5/facts/skill_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Sorcerer",
+        "next_level_points": "A*b^(skill-c)",
+        "constants": {
+          "melee": 50,
+          "distance": 30,
+          "shielding": 100,
+          "fishing": 20
+        },
+        "vocation_factors": {
+          "melee": 2.0,
+          "fist": 1.5,
+          "distance": 2.0,
+          "shielding": 1.5,
+          "fishing": 1.1
+        },
+        "offset": 10
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -156,11 +222,17 @@
           "selector": "Skills / vocation multipliers"
         }
       ],
-      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/5/facts/magic_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Sorcerer",
+        "next_level_mana": "1600*b^magic_level",
+        "vocation_factor": 1.1,
+        "offset": 0
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -168,11 +240,29 @@
           "selector": "Magic Level"
         }
       ],
-      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier."
+      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/6/facts/skill_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Monk",
+        "next_level_points": "A*b^(skill-c)",
+        "constants": {
+          "melee": 50,
+          "distance": 30,
+          "shielding": 100,
+          "fishing": 20
+        },
+        "vocation_factors": {
+          "melee": 1.4,
+          "fist": 1.1,
+          "distance": 1.5,
+          "shielding": 1.15,
+          "fishing": 1.1
+        },
+        "offset": 10
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -180,11 +270,17 @@
           "selector": "Skills / vocation multipliers"
         }
       ],
-      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate."
+      "limitation": "No official formula for accumulated skill tries by vocation, exponent, base level or rounding. Wiki formula may be retained only as a research candidate. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/6/facts/magic_advance",
-      "candidate": null,
+      "candidate": {
+        "candidate_model_reference": "skills.community_model",
+        "vocation": "Monk",
+        "next_level_mana": "1600*b^magic_level",
+        "vocation_factor": 1.25,
+        "offset": 0
+      },
       "status": "UNKNOWN",
       "sources": [
         {
@@ -192,7 +288,7 @@
           "selector": "Magic Level"
         }
       ],
-      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier."
+      "limitation": "No official closed formula for cumulative spent mana and vocation multiplier. Structured own-vocation candidate is populated from the retained community model; this does not qualify its rounding, exact level convention or current server implementation."
     },
     {
       "field_path": "rulesets/character/skills/reference-evidence.json/records/7/facts/next_level_points",
@@ -325,5 +421,14 @@
       "limitation": "Community candidate; source says independently round each target up and includes overkill; no official or controlled proof."
     }
   ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "complete_source_sweep": {
+    "review_date": "2026-10-18",
+    "scope": "FANDOM_WIKI_BR_AND_PRIMARY_OFFICIAL_CROSS_CHECK",
+    "changes": [
+      "combat.critical/intrinsic_chance",
+      "combat.critical/intrinsic_extra_damage"
+    ],
+    "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
+  }
 }
