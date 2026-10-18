@@ -5,9 +5,9 @@ use crate::bestiary_postgres_harness::{
     runtime, scope,
 };
 use crate::domain::CharacterId;
-use crate::durability::character_progression::CharacterProgressionError;
 use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
 use crate::durability::character_death::{CharacterDeathRequest, DeathCell, PlayerDeathOccurrence};
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::pvp_state::{
     PvpCleanup, PvpDeadlineKinds, PvpDeathConsequences, PvpDeathContributor, PvpSkull,
@@ -93,7 +93,13 @@ fn occurrence(n: u8) -> [u8; 16] {
 /// Runs `sql` as the owner inside a fixture death transaction of `victim` (0123): a receipt
 /// inserted with triggers off and the victim's ledger naming `contributor` now. Commits when
 /// `sql` succeeds and reports whether it did.
-async fn in_death_of(h: &Harness, n: u8, victim: u8, contributor: u8, sql: &str) -> TestResult<bool> {
+async fn in_death_of(
+    h: &Harness,
+    n: u8,
+    victim: u8,
+    contributor: u8,
+    sql: &str,
+) -> TestResult<bool> {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
@@ -286,7 +292,10 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
             .bind(id(WORLD).as_slice())
             .execute(&h.pool)
             .await?;
-        let hex: String = id(CHARACTER).iter().map(|byte| format!("{byte:02x}")).collect();
+        let hex: String = id(CHARACTER)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         let kill_block = format!(
             "UPDATE game_character_pvp_state SET kill_block_until = clock_timestamp(), \
              revision = revision + 1 WHERE character_id = '{hex}'::uuid"
@@ -304,7 +313,14 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
             "a Character outside the victim's ledger"
         );
         assert!(
-            !in_death_of(h, 1, OTHER, CHARACTER, &kill_block.replace("+ 1 WHERE", "+ 2 WHERE")).await?,
+            !in_death_of(
+                h,
+                1,
+                OTHER,
+                CHARACTER,
+                &kill_block.replace("+ 1 WHERE", "+ 2 WHERE")
+            )
+            .await?,
             "a skipped revision"
         );
         assert!(in_death_of(h, 1, OTHER, CHARACTER, kill_block).await?);
@@ -925,7 +941,10 @@ async fn skull_deaths(h: &Harness) -> TestResult {
             )
             .await
             .map_err(debug)?;
-        assert_eq!(committed.committed_character_revision.get(), u64::from(kill) + 1);
+        assert_eq!(
+            committed.committed_character_revision.get(),
+            u64::from(kill) + 1
+        );
         // The placement consumed the respawn (DEATH-2), so the victim can die again.
         sqlx::query("DELETE FROM game_character_pending_respawns")
             .execute(&h.pool)
@@ -939,7 +958,11 @@ async fn skull_deaths(h: &Harness) -> TestResult {
             (i64::from(kill), 1000 * i64::from(kill), i64::from(kill), 0)
         );
         if kill < 3 {
-            assert_eq!((skull, skull_ms), (0, None), "white skull only after kill {kill}");
+            assert_eq!(
+                (skull, skull_ms),
+                (0, None),
+                "white skull only after kill {kill}"
+            );
         } else {
             assert_eq!(skull, 1, "red skull at 3000 milli-points in 24 h");
             let skull_ms = skull_ms.ok_or("red skull end")?;
@@ -957,7 +980,14 @@ async fn skull_deaths(h: &Harness) -> TestResult {
     // An exact replay writes nothing more; other contributors conflict; a death whose
     // contributors are not the victim's ledger is refused and writes nothing.
     h.root
-        .settle_player_pvp_death(&sequencer, &authority, &h.node, fence(4)?, death(3)?, killer.clone())
+        .settle_player_pvp_death(
+            &sequencer,
+            &authority,
+            &h.node,
+            fence(4)?,
+            death(3)?,
+            killer.clone(),
+        )
         .await
         .map_err(debug)?;
     assert!(
@@ -968,7 +998,14 @@ async fn skull_deaths(h: &Harness) -> TestResult {
     );
     assert!(
         h.root
-            .settle_player_pvp_death(&sequencer, &authority, &h.node, fence(4)?, death(4)?, killer.clone())
+            .settle_player_pvp_death(
+                &sequencer,
+                &authority,
+                &h.node,
+                fence(4)?,
+                death(4)?,
+                killer.clone()
+            )
             .await
             .is_err()
     );
@@ -987,7 +1024,10 @@ async fn skull_deaths(h: &Harness) -> TestResult {
         "UPDATE game_durability_admission_account_guards SET presence_character_id = encode($1,'hex')::uuid",
         "UPDATE game_durability_admission_character_guards SET character_id = encode($1,'hex')::uuid",
     ] {
-        sqlx::query(sql).bind(id(OTHER).as_slice()).execute(&mut *tx).await?;
+        sqlx::query(sql)
+            .bind(id(OTHER).as_slice())
+            .execute(&mut *tx)
+            .await?;
     }
     tx.commit().await?;
     let relogged = crate::durability::character_progression::CurrentCharacterGameplayFence {
@@ -1044,7 +1084,10 @@ async fn skull_deaths(h: &Harness) -> TestResult {
         .await
         .map_err(debug)?
         .ok_or("killer row")?;
-    assert_eq!((stored.skull, stored.skull_remaining_ms), (PvpSkull::None, None));
+    assert_eq!(
+        (stored.skull, stored.skull_remaining_ms),
+        (PvpSkull::None, None)
+    );
     // The points stay for their 45 days (`PARTYPVP0-RL-23`).
     assert_eq!(consequences(h).await?, (3, 3000, 3, 0));
     Ok(())

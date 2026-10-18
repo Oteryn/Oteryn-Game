@@ -48,12 +48,12 @@ use super::character_wheel::{
 };
 use super::charm_state::{CharmCommandOutcome, CharmCommandRequest, CharmFacts, CharmStateError};
 use super::monk_state::{MonkStateSaveOutcome, MonkStateSaveRequest};
+use super::pvp_state::PvpDeathConsequences;
 use super::quest_state::quest::QuestStateCatalogue;
 use super::quest_state::{
     QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
     report_refused_experience,
 };
-use super::pvp_state::PvpDeathConsequences;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};

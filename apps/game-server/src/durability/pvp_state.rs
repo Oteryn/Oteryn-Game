@@ -212,7 +212,10 @@ impl PvpDeathConsequences {
             return Ok(Vec::new());
         }
         let mut bytes = b"pvp".to_vec();
-        bytes.push(u8::try_from(contributors.len()).map_err(|_| CharacterProgressionError::InvalidInput)?);
+        bytes.push(
+            u8::try_from(contributors.len())
+                .map_err(|_| CharacterProgressionError::InvalidInput)?,
+        );
         for contributor in contributors {
             bytes.extend_from_slice(contributor.character_id.as_bytes());
             bytes.push(u8::from(contributor.damage) | (u8::from(contributor.justified) << 1));
@@ -637,7 +640,8 @@ pub(crate) async fn apply_pvp_death_in_transaction(
         let id = contributor.character_id.as_bytes().as_slice();
         let mut skull_write: Option<(i16, i64)> = None;
         if !contributor.justified {
-            let Some(points) = skull::unjustified_points_milli(contributor.damage, damage_contributors)
+            let Some(points) =
+                skull::unjustified_points_milli(contributor.damage, damage_contributors)
             else {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             };

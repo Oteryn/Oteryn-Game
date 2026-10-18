@@ -315,7 +315,12 @@ fn constants_match_the_skull_policy_ruleset() -> Result<(), serde_json::Error> {
         policy
             .pointer(pointer)
             .and_then(serde_json::Value::as_array)
-            .map(|values| values.iter().filter_map(serde_json::Value::as_u64).collect())
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(serde_json::Value::as_u64)
+                    .collect()
+            })
             .unwrap_or_default()
     };
     let number = |pointer: &str| policy.pointer(pointer).and_then(serde_json::Value::as_u64);
@@ -344,7 +349,10 @@ fn constants_match_the_skull_policy_ruleset() -> Result<(), serde_json::Error> {
         number("/max_contributors/value"),
         Some(MAX_DEATH_CONTRIBUTORS as u64)
     );
-    for pointer in ["/red_thresholds_milli/evidence", "/black_thresholds_milli/evidence"] {
+    for pointer in [
+        "/red_thresholds_milli/evidence",
+        "/black_thresholds_milli/evidence",
+    ] {
         assert_eq!(
             policy.pointer(pointer).and_then(serde_json::Value::as_str),
             Some("OTS_HYPOTHESIS_ONLY")

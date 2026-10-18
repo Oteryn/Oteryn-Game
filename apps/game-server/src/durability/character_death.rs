@@ -778,7 +778,15 @@ impl DurabilityRoot {
             .await?
             .map(|death| death.original_character_revision);
         let outcome = match slot
-            .commit_pvp_death(self, authority, node, fence, request.clone(), &pvp, original)
+            .commit_pvp_death(
+                self,
+                authority,
+                node,
+                fence,
+                request.clone(),
+                &pvp,
+                original,
+            )
             .await
         {
             Err(CharacterProgressionError::MissingProgressionState) if original.is_none() => {
@@ -939,6 +947,7 @@ fn push_bytes(semantic: &mut Vec<u8>, bytes: &[u8]) -> Result<()> {
 /// revision, occurrence, policy contents and revisions, blessings held, the
 /// promotion and Premium evaluation, the item-effect inputs and the death
 /// cell and respawn position.  Retry-local session authority is excluded.
+#[cfg(test)]
 fn command_binding<const N: usize>(
     fence: &CurrentCharacterGameplayFence,
     request: &CharacterDeathRequest<N>,
@@ -946,8 +955,8 @@ fn command_binding<const N: usize>(
     death_binding(fence, request, &[])
 }
 
-/// [`command_binding`] with the PvP contributors appended (PVP-1b); `pvp` is empty for a death
-/// without contributors, so a PvE binding is unchanged.
+/// The death command binding with the PvP contributors appended (PVP-1b); `pvp` is empty for a
+/// death without contributors, so a PvE binding is unchanged.
 fn death_binding<const N: usize>(
     fence: &CurrentCharacterGameplayFence,
     request: &CharacterDeathRequest<N>,
