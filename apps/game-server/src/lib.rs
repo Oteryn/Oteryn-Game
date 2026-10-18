@@ -90,6 +90,7 @@ pub mod domain;
 pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
+pub(crate) mod house;
 pub mod house_scope;
 pub mod map;
 #[allow(
