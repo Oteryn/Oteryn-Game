@@ -1,0 +1,29 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_APPLY_PLAN/v1",
+  "task": "PREY-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "status": "STAGED_FOR_COORDINATOR",
+  "reason": "Every tracked content/services/ file participates in the World Bundle input fingerprint. Owner forbids content/world/pins/* mutation and regeneration; coordinator applies these data packets together with separately qualified pin regeneration.",
+  "target_files": [
+    {
+      "target_path": "content/services/tasks/evidence-00000-00004.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json",
+      "sha256": "571207bb336414d227639269e3543f8e62c0fa0e6e6bf88b1889b54b10641e7b"
+    },
+    {
+      "target_path": "content/services/tasks/index.json",
+      "staged_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/index.json",
+      "sha256": "0b3de8777e566eb3b1a11160324b612ef7b455c9494338a782f032150f88d7a1"
+    }
+  ],
+  "generated_service_declarations_changed": false,
+  "runtime_switch_authorized": false,
+  "coordinator_must_verify": [
+    "current task target ownership",
+    "target-source conflicts and UNKNOWN fields",
+    "approved native/runtime schema wiring",
+    "generated catalogue equivalence",
+    "World Bundle pins and deterministic bundle",
+    "required exact-head validators"
+  ]
+}

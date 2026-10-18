@@ -1,0 +1,13 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Service.TaskBoardEvidence",
+  "record_count": 5,
+  "shard_size": 500,
+  "shards": [
+    "content/services/tasks/evidence-00000-00004.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS"
+}
