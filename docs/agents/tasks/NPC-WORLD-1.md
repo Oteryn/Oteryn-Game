@@ -793,3 +793,15 @@ PostgreSQL execution are NOT_RUN and require results for the published successor
 The D1357 native NPC source producer is a separate work item; D1358 complete
 height/trigger admission remains deferred. The PR stays draft and
 NOT_FULLY_QUALIFIED.
+
+## Main composition after APP-2 merge (D1385, 2026-10-18)
+
+Normal merge of main `afa97ba0` (APP-2 #2173) into the branch; the merge was
+clean with no conflicts. Validation on the merged tree: `cargo fmt --all --check`
+pass; strict `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`
+pass; `cargo test -p oteryn-game-server --lib` 3427 passed, 0 failed, 29 ignored
+(npc_travel 5, npc_voice 10, npc_actor 12, runtime_actor_carrier npc_actor 13,
+bundle_npcs 4, all passing); the native PostgreSQL travel case passed through
+`in-pg-netns.sh` against shared PostgreSQL 17.6. The D1357/D1385 13-file native NPC
+source packet is not yet integrated, and D1358 remains deferred. The PR stays
+draft and NOT_FULLY_QUALIFIED.
