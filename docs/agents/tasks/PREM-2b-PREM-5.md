@@ -594,8 +594,11 @@ is superseded by this PR and closes after the merge.
 - The DEATH_COMPLETE0 §4.7 hook: `commit_death` sends the held blessing set,
   either the set of the already-committed death or the current set read under
   the revision slot. The loss table of the source matches
-  `domain::death::death_experience_loss`. #2193 is not merged, so the
-  death-side reduction stays as it is on main.
+  `domain::death::death_experience_loss`. #2193 (DEATH-ML-LOSS-1) merged as
+  3aa52fd3e but still sent an empty held set. This PR supplies the set to
+  `settle_runtime_player_death`: the settlement counts it as regular blessings
+  in the experience loss, keeps the #2193 build-loss formula and consumes the
+  held blessings.
 
 E2E: `gameplay_transport::monk_save::postgres_tests::promotion_npc_e2e::blessing_talk_through_dispatch_burns_fee_and_blesses`.
 It covers the prompt, the 7800 gold burn at level 50, the held key, the receipt
