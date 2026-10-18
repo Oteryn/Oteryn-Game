@@ -270,15 +270,8 @@ impl NpcConversations {
         }
     }
 
-    /// Installs the Premium NPC service source once; a second install is refused. No qualified
-    /// source exists in production yet (PREM-5), so the node never installs one there.
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "PREM-5: no qualified promotion/blessing NPC source is pinned yet; fail closed"
-        )
-    )]
+    /// Installs the Premium NPC service source once; a second install is refused. The node
+    /// installs the source-backed one at composition (PREM-5, `serve_gameplay`).
     pub(crate) fn install_premium_services(
         &self,
         catalogue: Arc<dyn PremiumNpcServiceCatalogue>,

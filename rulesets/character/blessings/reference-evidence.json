@@ -2,7 +2,7 @@
   "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
   "task": "BLESSINGS-CONTENT-1",
   "target_cut": "2026-10-18",
-  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_admission": "ADMITTED_BY_PREM_5_OWNER_RULING_2026_10_18",
   "runtime_switch_authorized": false,
   "reference_only": true,
   "records": [
@@ -25,10 +25,18 @@
               "gold": "20000+75*(L-120)"
             }
           ],
-          "classification": "CONFLICT",
+          "classification": "PROVEN_BY_OWNER",
           "target_cut": "2026-10-18",
           "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
           "sources": [
+            {
+              "source": "owner:ruling:2026-10-18",
+              "selector": "Owner pricing ruling"
+            },
+            {
+              "source": "tibiamonk:calculators:blessings:2026-10-18",
+              "selector": "Blessings calculator (owner-provided cross-reference)"
+            },
             {
               "source": "wiki:1630:1113782",
               "selector": "Price / R(L)"
@@ -46,7 +54,13 @@
               "selector": "Conflicting statements identified in note"
             }
           ],
-          "note": "Current Wiki piecewise formula is preserved, but its above-120 segment conflicts with live official manual wording that regular prices stop rising while PvP blessing prices continue. Do not admit the aggregate regular formula without resolving this segment."
+          "note": "Owner ruling 2026-10-18 selects the piecewise formula, including 20000+75*(L-120) from level 120; 200*(L-20) equals the ruled 2000+200*(L-30). The Wiki revision states the same formula. The live official manual wording that regular prices stop rising past 120 remains an observed difference the ruling resolves.",
+          "owner_ruling": {
+            "date": "2026-10-18",
+            "ruling_source": "owner:ruling:2026-10-18",
+            "cross_reference": "tibiamonk:calculators:blessings:2026-10-18",
+            "scope": "regular: The Spiritual Shielding, The Embrace of Tibia, The Fire of the Suns, The Spark of the Phoenix, The Wisdom of Solitude"
+          }
         },
         "enhanced": {
           "value": [
@@ -71,9 +85,23 @@
             {
               "source": "wiki:1630:1113782",
               "selector": "Price / E(L)"
+            },
+            {
+              "source": "owner:ruling:2026-10-18",
+              "selector": "Owner pricing ruling"
+            },
+            {
+              "source": "tibiamonk:calculators:blessings:2026-10-18",
+              "selector": "Blessings calculator (owner-provided cross-reference)"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Owner ruling 2026-10-18 confirms this formula (260*(L-20) equals 2600+260*(L-30); 200*(L-20) equals 2000+200*(L-30)).",
+          "owner_ruling": {
+            "date": "2026-10-18",
+            "ruling_source": "owner:ruling:2026-10-18",
+            "cross_reference": "tibiamonk:calculators:blessings:2026-10-18",
+            "scope": "Blood of the Mountain, Heart of the Mountain"
+          }
         },
         "twist": {
           "value": [
@@ -98,16 +126,43 @@
             {
               "source": "wiki:1630:1113782",
               "selector": "Price / ToF(L)"
+            },
+            {
+              "source": "owner:ruling:2026-10-18",
+              "selector": "Owner pricing ruling"
+            },
+            {
+              "source": "tibiamonk:calculators:blessings:2026-10-18",
+              "selector": "Blessings calculator (owner-provided cross-reference)"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Owner ruling 2026-10-18 confirms this formula (200*(L-20) equals 2000+200*(L-30)). Data only: no Twist of Fate purchase is admitted.",
+          "owner_ruling": {
+            "date": "2026-10-18",
+            "ruling_source": "owner:ruling:2026-10-18",
+            "cross_reference": "tibiamonk:calculators:blessings:2026-10-18",
+            "scope": "Twist of Fate (data only)"
+          }
         },
         "regular_above_120": {
-          "value": null,
-          "classification": "CONFLICT",
+          "value": [
+            {
+              "level_min": 120,
+              "gold": "20000+75*(L-120)"
+            }
+          ],
+          "classification": "PROVEN_BY_OWNER",
           "target_cut": "2026-10-18",
-          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "continuity": "OWNER_RULING",
           "sources": [
+            {
+              "source": "owner:ruling:2026-10-18",
+              "selector": "Owner pricing ruling"
+            },
+            {
+              "source": "tibiamonk:calculators:blessings:2026-10-18",
+              "selector": "Blessings calculator (owner-provided cross-reference)"
+            },
             {
               "source": "wiki:1630:1113782",
               "selector": "Conflicting statements identified in note"
@@ -121,15 +176,61 @@
               "selector": "Conflicting statements identified in note"
             }
           ],
-          "note": "Wiki current Blessings price formula grows 75 gp/level above 120; official manual 2026-09-28 describes a flat regular price past 120. Keep both observations; no runtime formula selected."
+          "note": "Owner ruling 2026-10-18: regular prices grow 75 gp per level from 120 (the Wiki formula); the official manual's flat wording is not selected.",
+          "owner_ruling": {
+            "date": "2026-10-18",
+            "ruling_source": "owner:ruling:2026-10-18",
+            "cross_reference": "tibiamonk:calculators:blessings:2026-10-18",
+            "scope": "regular blessings from level 120"
+          }
         },
         "promotion_price_effect": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": "none",
+          "classification": "PROVEN_BY_OWNER",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No explicit promotion-specific purchase discount in the cited current source."
+          "continuity": "OWNER_RULING",
+          "sources": [
+            {
+              "source": "owner:ruling:2026-10-18",
+              "selector": "Owner pricing ruling"
+            }
+          ],
+          "note": "Owner ruling 2026-10-18: a promotion has no blessing price effect; a promoted buyer pays the same band.",
+          "owner_ruling": {
+            "date": "2026-10-18",
+            "ruling_source": "owner:ruling:2026-10-18",
+            "cross_reference": "tibiamonk:calculators:blessings:2026-10-18",
+            "scope": "every blessing price"
+          }
+        },
+        "store_tibia_coins": {
+          "value": {
+            "all_seven": 130,
+            "twist_of_fate": 8,
+            "blood_of_the_mountain": 25,
+            "heart_of_the_mountain": 25,
+            "the_spark_of_the_phoenix": 20,
+            "the_spiritual_shielding": 15,
+            "the_embrace_of_tibia": 15,
+            "the_fire_of_the_suns": 15,
+            "the_wisdom_of_solitude": 15
+          },
+          "classification": "PROVEN_BY_OWNER",
+          "target_cut": "2026-10-18",
+          "continuity": "OWNER_RULING",
+          "sources": [
+            {
+              "source": "owner:ruling:2026-10-18",
+              "selector": "Owner pricing ruling / Store"
+            }
+          ],
+          "owner_ruling": {
+            "date": "2026-10-18",
+            "ruling_source": "owner:ruling:2026-10-18",
+            "cross_reference": "tibiamonk:calculators:blessings:2026-10-18",
+            "scope": "Store prices in Tibia Coins (data only)"
+          },
+          "note": "Data only: no Store purchase path is admitted."
         },
         "premium_effect": {
           "value": "Named NPC acquisition of Wisdom, Blood, Heart requires Premium; this does not imply a surcharge for other blessings.",
@@ -140,9 +241,13 @@
             {
               "source": "wiki:1630:1113782",
               "selector": "Useful facts"
+            },
+            {
+              "source": "official:premiumfeatures:2026-10-18",
+              "selector": "Premium features list"
             }
           ],
-          "note": "Reference evidence; runtime admission is separate."
+          "note": "Reference evidence; runtime admission is separate. Official Premium features page (2026-10-18) lists character promotion as Premium only and lists no blessing; it attributes a 30% death penalty reduction to Premium, which this packet attributes to the (Premium-gated) promotion."
         },
         "phoenix": {
           "value": "Kawill then Pydar; both parts required. Phoenix Egg + completed Paradox Tower gives 10% price discount.",
@@ -693,5 +798,6 @@
         }
       }
     }
-  ]
+  ],
+  "runtime_admission_note": "PREM-5 (PR #2194) admits the Wisdom of Solitude, Blood of the Mountain and Heart of the Mountain NPC prices of this record under the owner pricing ruling of 2026-10-18. Twist of Fate and the Store prices are data only. No other fact is admitted at runtime by this note."
 }

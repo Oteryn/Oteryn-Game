@@ -46,6 +46,42 @@
       "capture_method": "Public URL read through owner-authorized connected computer",
       "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
       "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "owner:ruling:2026-10-18": {
+      "title": "Owner pricing ruling: blessing prices, promotion price effect and Store prices",
+      "ruled_at": "2026-10-18",
+      "channel": "PREM-2b+PREM-5 coordinator round, Oteryn/Oteryn-Game PR #2194",
+      "source_class": "OWNER_RULING",
+      "evidence_role": "PROVEN_BY_OWNER",
+      "retained_scope": "RULING_TEXT",
+      "ruling": "Owner pricing ruling 2026-10-18 (PR #2194). Five regular blessings: level <=30: 2000; 30<level<120: 2000+200*(level-30); level >=120: 20000+75*(level-120). Blood and Heart of the Mountain: level <=30: 2600; 30<level<120: 2600+260*(level-30); level >=120: 26000+100*(level-120). Twist of Fate: level <=30: 2000; 30<level<270: 2000+200*(level-30); level >=270: 50000. A promotion has no blessing price effect. Store prices in Tibia Coins: all seven 130; Twist of Fate 8; Blood and Heart of the Mountain 25 each; The Spark of the Phoenix 20; the four other regular blessings 15 each."
+    },
+    "tibiamonk:calculators:blessings:2026-10-18": {
+      "title": "TibiaMonk blessings calculator",
+      "url": "https://www.tibiamonk.com/pl/calculators/blessings",
+      "fetched_at": "2026-10-18",
+      "source_class": "COMMUNITY_CALCULATOR",
+      "evidence_role": "OWNER_PROVIDED_CROSS_REFERENCE",
+      "retained_scope": "URL_AND_FETCH_DATE",
+      "note": "Owner-provided cross-reference for the ruling. The page computes prices client-side; no formula text or response digest is retained, so it is not an independent source."
+    },
+    "official:premiumfeatures:2026-10-18": {
+      "title": "Tibia official: Premium features",
+      "url": "https://www.tibia.com/abouttibia/?subtopic=premiumfeatures",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "snapshot_sha256": "addac5f63f40e8c729bc6d22aad2cad0c872dce8dac2512c188918d12aa8c8bb",
+      "capture_method": "Rendered DOM through a headless browser on the owner-authorized computer (a plain HTTP client is refused with 403)",
+      "retained_scope": "SNAPSHOT_DIGEST_AND_PARAPHRASED_FACTS",
+      "paraphrased_facts": [
+        "Character promotion: Premium only",
+        "Death penalty reduction: 0% free, 30% Premium",
+        "Areas: 6 free, 20+ Premium",
+        "Wheel of Destiny: Premium only",
+        "No blessing is listed"
+      ],
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
     }
   }
 }

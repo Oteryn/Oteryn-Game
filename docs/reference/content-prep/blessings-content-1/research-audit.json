@@ -3,85 +3,20 @@
   "review_date": "2026-10-18",
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
   "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
-  "runtime_admission": "BLOCKED",
-  "coverage": "The seven ordinary blessings, Twist of Fate, Inquisition bundle and Adventurer protection are covered with NPCs/locations and available price rules. Reduction tables are derived from the live official manual. Conflicting above-120 regular prices, Retro Hardcore community wording and unsupported promotion-specific purchase discounts remain explicit.",
+  "runtime_admission": "PARTIAL_PREM_5",
+  "coverage": "The seven ordinary blessings, Twist of Fate, Inquisition bundle and Adventurer protection are covered with NPCs/locations and available price rules. Reduction tables are derived from the live official manual. The owner pricing ruling of 2026-10-18 resolves the above-120 regular prices and the promotion price effect (none) and adds the Store prices as data; the Retro Hardcore community wording remains explicit.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/character/blessings/reference-evidence.json": 10,
     "docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/evidence-00000-00009.json": 10
   },
   "evidence_field_counts": {
-    "CONFLICT": 3,
+    "CONFLICT": 1,
     "PROVEN": 65,
-    "UNKNOWN": 1,
+    "PROVEN_BY_OWNER": 4,
     "DERIVED": 24
   },
   "unresolved_fields": [
-    {
-      "field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
-      "candidate": [
-        {
-          "level_max": 30,
-          "gold": "2000"
-        },
-        {
-          "level_min_exclusive": 30,
-          "level_max_exclusive": 120,
-          "gold": "200*(L-20)"
-        },
-        {
-          "level_min": 120,
-          "gold": "20000+75*(L-120)"
-        }
-      ],
-      "status": "CONFLICT",
-      "sources": [
-        {
-          "source": "wiki:1630:1113782",
-          "selector": "Price / R(L)"
-        },
-        {
-          "source": "wiki:1630:1113782",
-          "selector": "Conflicting statements identified in note"
-        },
-        {
-          "source": "wiki:1628:1140641",
-          "selector": "Conflicting statements identified in note"
-        },
-        {
-          "source": "official:manual:characters:2026-10-18",
-          "selector": "Conflicting statements identified in note"
-        }
-      ],
-      "limitation": "Current Wiki piecewise formula is preserved, but its above-120 segment conflicts with live official manual wording that regular prices stop rising while PvP blessing prices continue. Do not admit the aggregate regular formula without resolving this segment."
-    },
-    {
-      "field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
-      "candidate": null,
-      "status": "CONFLICT",
-      "sources": [
-        {
-          "source": "wiki:1630:1113782",
-          "selector": "Conflicting statements identified in note"
-        },
-        {
-          "source": "wiki:1628:1140641",
-          "selector": "Conflicting statements identified in note"
-        },
-        {
-          "source": "official:manual:characters:2026-10-18",
-          "selector": "Conflicting statements identified in note"
-        }
-      ],
-      "limitation": "Wiki current Blessings price formula grows 75 gp/level above 120; official manual 2026-09-28 describes a flat regular price past 120. Keep both observations; no runtime formula selected."
-    },
-    {
-      "field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "No explicit promotion-specific purchase discount in the cited current source."
-    },
     {
       "field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
       "candidate": null,
@@ -101,6 +36,29 @@
         }
       ],
       "limitation": "Official manual: 6.31% per blessing; current Death Wiki: 6.4%. Neither silently selected."
+    }
+  ],
+  "owner_resolved_fields": [
+    {
+      "field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
+      "previous_status": "CONFLICT",
+      "status": "PROVEN_BY_OWNER",
+      "owner_ruling": "owner:ruling:2026-10-18",
+      "cross_reference": "tibiamonk:calculators:blessings:2026-10-18"
+    },
+    {
+      "field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
+      "previous_status": "CONFLICT",
+      "status": "PROVEN_BY_OWNER",
+      "owner_ruling": "owner:ruling:2026-10-18",
+      "cross_reference": "tibiamonk:calculators:blessings:2026-10-18"
+    },
+    {
+      "field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
+      "previous_status": "UNKNOWN",
+      "status": "PROVEN_BY_OWNER",
+      "owner_ruling": "owner:ruling:2026-10-18",
+      "cross_reference": "tibiamonk:calculators:blessings:2026-10-18"
     }
   ],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."

@@ -206,6 +206,16 @@ impl Dependencies {
             evidence: &self.evidence,
             world_id: self.admitted.world_id,
             channel_id: self.admitted.channel_id,
+            // Gameplay-only fixture: it never admits through this owner, so the ADMIT0 binding
+            // declares nothing and only has to be a valid Channel boot binding.
+            required_capabilities: crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+                &[],
+                crate::foundation::RuntimeScopeRefV1::channel(self.admitted.world_id, self.admitted.channel_id),
+                1,
+                "policy-1",
+                crate::gameplay_transport::world_required_capabilities::offered_for_scope(false, None),
+            )
+            .expect("an empty declared set binds"),
             runtime: &self.runtime,
             movement_cells: self.room.movement_cells(),
             door: &self.door,
@@ -243,6 +253,7 @@ impl Dependencies {
                 self.admitted.world_id,
                 self.admitted.channel_id,
             ),
+            loop_ground: Default::default(),
         }
     }
     async fn initialize(&self, owner: &ComposedFreshAdmission<'_, '_, '_>) {

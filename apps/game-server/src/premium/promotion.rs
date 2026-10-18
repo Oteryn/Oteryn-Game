@@ -716,6 +716,7 @@ mod purchase_binding_tests {
                     platinum: definition("oteryn:item.platinum_coin"),
                     crystal: definition("oteryn:item.crystal_coin"),
                     backpack: ItemDefinitionFacts {
+                        weight: None,
                         definition: definition("oteryn:item.fixture_bag"),
                         stack: ItemStackClass::NonStackable,
                         container_capacity: Some(20),

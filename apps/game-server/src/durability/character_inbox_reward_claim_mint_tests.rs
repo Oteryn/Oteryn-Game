@@ -24,6 +24,7 @@ fn request() -> RewardClaimInboxMintRequest {
         outputs: vec![RewardClaimInboxMintOutput {
             source_line: 0,
             item: ItemDefinitionFacts {
+                weight: None,
                 definition: TypedDefinitionRef {
                     family: "Item".into(),
                     production_key: "item-fixture".into(),

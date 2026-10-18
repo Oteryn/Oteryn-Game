@@ -1,10 +1,10 @@
 //! PREM-5 NPC policy and D1106 native promotion and blessing purchase consumers.
 //! `npc_command` dispatches the talk topics here (command 7): `promotion` or a blessing name
 //! opens one offer prompt, and the next `yes` of the same conversation buys it through the
-//! native owner. The offers come only from an installed [`PremiumNpcServiceCatalogue`]. No
-//! qualified catalogue is installed in production yet (no admitted NPC service names the
-//! promotion or a blessing, and no blessing price table is sourced), so every topic fails closed:
-//! no prompt, no purchase, nothing written.
+//! native owner. The offers come only from the installed [`PremiumNpcServiceCatalogue`]: the
+//! node installs the source-backed one (`premium_blessing_catalogue`) over its pinned NPC
+//! catalogue. An NPC that declares no admitted promotion or blessing Service answers no offer, so
+//! the topic fails closed: no prompt, no purchase, nothing written.
 //!
 //! A quote or successful Premium check is data, not a payment/authority permit. The future
 //! owner must recheck current Character facts and Premium inside the actual command boundary,
@@ -74,10 +74,9 @@ pub(crate) struct BlessingNpcOffer {
     pub(crate) source: PromotionNpcOffer,
     pub(crate) blessing: PremiumBlessingService,
     pub(crate) storage_key: String,
+    /// The same bands for a promoted buyer: a promotion has no price effect (owner ruling
+    /// 2026-10-18).
     pub(crate) prices: Vec<BlessingPriceBand>,
-    /// Whether the source admits a price for a promoted buyer. While its effect is not known,
-    /// a promoted buyer gets no price (fail closed).
-    pub(crate) promoted_price_admitted: bool,
 }
 
 /// One source price band: `gold_units + gold_per_level × (level − base_level)` for every level

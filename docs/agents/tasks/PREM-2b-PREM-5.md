@@ -39,9 +39,10 @@ owned_paths:
   - apps/game-server/src/premium/blessing_catalogue.rs (new; BLESSINGS-CONTENT-1 source reader)
   - apps/game-server/src/gameplay_transport/promotion_npc_postgres_tests.rs (PREM-5 e2e)
   - apps/game-server/src/gameplay_transport/npc_command.rs (Premium talk and reconcile hunks; slot unlocked after #2197)
-  - apps/game-server/src/gameplay_transport/mod.rs (Premium module registration, resume and death held-set hunks; slot unlocked after #2197)
-  - rulesets/character/blessings/ (taken unchanged from #2237 BLESSINGS-CONTENT-1)
-  - docs/reference/content-prep/blessings-content-1/ (taken unchanged from #2237 BLESSINGS-CONTENT-1)
+  - apps/game-server/src/gameplay_transport/mod.rs (Premium module registration, resume, death held-set and NpcTalkOwners install hunks; slot unlocked after #2197)
+  - apps/game-server/src/node/serve.rs (production Premium NPC service install; CP authorization 2026-10-18)
+  - rulesets/character/blessings/ (from #2237 BLESSINGS-CONTENT-1; owner pricing ruling 2026-10-18 edits)
+  - docs/reference/content-prep/blessings-content-1/ (from #2237 BLESSINGS-CONTENT-1; owner pricing ruling 2026-10-18 edits)
 slot_only_paths:
   - apps/game-server/src/lib.rs (premium module registration after #2197)
   - migration number
@@ -607,3 +608,46 @@ the unoffered Heart and Wisdom, and the promoted fail-closed price. The
 promotion e2e also covers the reconcile.
 
 Qualification is recorded in PR #2194.
+
+## 2026-10-18 — owner pricing ruling and production install
+
+Owner ruling 2026-10-18 (`PROVEN_BY_OWNER`, recorded in
+`rulesets/character/blessings/reference-evidence.json` and
+`docs/reference/content-prep/blessings-content-1/sources.json`):
+
+- Regular blessings: level <= 30: 2000; 30 < L < 120: 2000 + 200 (L - 30);
+  L >= 120: 20000 + 75 (L - 120). Wisdom of Solitude is regular.
+- Blood and Heart of the Mountain: <= 30: 2600; 30 < L < 120: 2600 + 260 (L - 30);
+  L >= 120: 26000 + 100 (L - 120).
+- Twist of Fate (data only): <= 30: 2000; 30 < L < 270: 2000 + 200 (L - 30);
+  L >= 270: 50000.
+- Promotion has no price effect: the promoted fail-closed, its receipt binding
+  bit and its DB check are removed. The source refuses to load unless
+  `promotion_price_effect` is admitted as `none`.
+- Store Tibia Coins (data only): all seven 130; Twist of Fate 8; Blood and
+  Heart 25 each; Spark 20; the other four regular 15 each.
+- Cross-references: tibiamonk blessings calculator (owner-provided, fetched
+  2026-10-18, client-side); TibiaWiki revision 1630:1113782 (identical
+  formulas); official premiumfeatures page (snapshot sha256
+  `addac5f6…8bb`; lists no blessings). Differences, reported not acted on:
+  the official manual has flat regular prices above 120; premiumfeatures
+  attributes the 30% death reduction to Premium; it lists promotion as
+  Premium-only, while the accepted WHEEL-0 §6.2 admits it pre-delivery.
+
+`admitted()` accepts `PROVEN_BY_OWNER` only with an owner ruling date. The
+storage key stays `oteryn:blessing.<service>`.
+
+Production install (CP authorization): `node/serve.rs` builds
+`SourcePremiumNpcCatalogue::embedded` over the boot NPC catalogue and installs
+it with the talk book (`NpcTalkOwners`, `install_npcs`). The catalogue offers
+promotion for a declared `oteryn:service.promotion.<npc stem>` Service and a
+blessing for a declared source service at a source NPC. The content NPC
+records declare none of these services yet; their declarations and pins are
+the slot-only content step, so production answers no Premium offer until then.
+
+The e2e tests install the same production catalogue over a declared NPC
+catalogue: `promotion_talk_through_dispatch_burns_fee_and_promotes` and
+`blessing_talk_through_dispatch_burns_fee_and_blesses` (promote, then Blood
+of the Mountain at level 50 for 7800 gold, band 31..119, replay, reconcile,
+death held set, refusal, Heart and Wisdom not offered). Boundary tests at
+30/31, 119/120 and 269/270 are in `premium::blessing_catalogue::tests`.

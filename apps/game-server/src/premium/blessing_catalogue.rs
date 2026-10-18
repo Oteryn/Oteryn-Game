@@ -1,26 +1,31 @@
-//! PREM-5 Premium blessing offers from the BLESSINGS-CONTENT-1 source (#2237): the ruleset
-//! price evidence (`rulesets/character/blessings/reference-evidence.json`) and the staged
-//! blessing Service evidence (`content/services/blessings`, staged under
+//! PREM-5 Premium NPC services from the BLESSINGS-CONTENT-1 source (#2237): the ruleset price
+//! evidence (`rulesets/character/blessings/reference-evidence.json`) and the staged blessing
+//! Service evidence (`content/services/blessings`, staged under
 //! `docs/reference/content-prep/blessings-content-1/target-files/` until CP applies it to the
-//! World Bundle). Both are embedded unchanged and read once.
+//! World Bundle). Both are embedded and read once.
 //!
-//! Only `PROVEN` and `DERIVED` facts are admitted. A `CONFLICT` or `UNKNOWN` fact stays held:
-//! - the `regular` price family is `CONFLICT` (its above-120 segment), so The Wisdom of Solitude
-//!   has no price and is never offered;
-//! - `promotion_price_effect` is `UNKNOWN`, so no offer admits a promoted buyer
-//!   ([`BlessingNpcOffer::promoted_price_admitted`] stays `false`).
+//! `PROVEN` and `DERIVED` facts are admitted, and `PROVEN_BY_OWNER` facts that carry their dated
+//! `owner_ruling` (the owner pricing ruling of 2026-10-18). A `CONFLICT` or `UNKNOWN` fact stays
+//! held. The ruling prices the `regular` family (The Wisdom of Solitude) and the `enhanced` one
+//! (Blood and Heart of the Mountain), and states that a promotion has no price effect: the
+//! source refuses to load unless `promotion_price_effect` is admitted as `none`.
 //!
-//! An offer also needs the NPC catalogue: the speaking NPC's native key must be the source NPC
-//! (`oteryn:npc.` and its lowercase name) and that NPC must declare the blessing's Service under
-//! the source key. No such declaration exists in the production content yet, so a production
-//! catalogue answers no offer until CP applies the Service source (fail closed).
+//! An offer also needs the NPC catalogue. A blessing is offered when the speaking NPC's native
+//! key is the source NPC (`oteryn:npc.` and its lowercase name) and that NPC declares the
+//! blessing's Service under the source key; the promotion is offered when the NPC declares
+//! `oteryn:service.promotion.<its key stem>`. Every declared Service must resolve to a Service
+//! declaration. The node installs this catalogue over its pinned NPC catalogue
+//! (`node::serve`); content without such declarations answers no offer (fail closed).
 
-use crate::content::{NpcDataCatalogue, ProjectV2Declaration, ProjectV2Family};
+use crate::content::{
+    NpcDataCatalogue, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family,
+};
 use crate::gameplay_transport::npc_promotion::{
     BlessingNpcOffer, BlessingPriceBand, PremiumBlessingService, PremiumNpcServiceCatalogue,
     PromotionNpcOffer,
 };
 use serde_json::Value;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 const PRICE_EVIDENCE: &str =
@@ -30,6 +35,7 @@ const SERVICE_EVIDENCE: &str = include_str!(
 );
 const PRICES_KEY: &str = "blessings.prices";
 const SERVICE_PREFIX: &str = "oteryn:service.blessing.";
+const PROMOTION_PREFIX: &str = "oteryn:service.promotion.";
 const STORAGE_PREFIX: &str = "oteryn:blessing.";
 const NPC_PREFIX: &str = "oteryn:npc.";
 
@@ -101,20 +107,36 @@ fn record<'a>(records: &'a [Value], key: &str) -> Result<&'a Value, BlessingSour
     }
 }
 
-/// The value of an admitted (`PROVEN` or `DERIVED`) fact; `None` for a held one.
+/// The value of an admitted fact; `None` for a held one. An owner-classified fact must carry
+/// its dated `owner_ruling`.
 fn admitted<'a>(record: &'a Value, fact: &str) -> Result<Option<&'a Value>, BlessingSourceError> {
     let fact = record
         .get("facts")
         .and_then(|facts| facts.get(fact))
         .ok_or(BlessingSourceError("blessing evidence fact missing"))?;
-    match fact.get("classification").and_then(Value::as_str) {
-        Some("PROVEN" | "DERIVED") => fact
-            .get("value")
+    let value = || {
+        fact.get("value")
             .filter(|value| !value.is_null())
             .map(Some)
             .ok_or(BlessingSourceError(
                 "admitted blessing fact without a value",
-            )),
+            ))
+    };
+    match fact.get("classification").and_then(Value::as_str) {
+        Some("PROVEN" | "DERIVED") => value(),
+        Some("PROVEN_BY_OWNER") => {
+            let dated = fact
+                .get("owner_ruling")
+                .and_then(|ruling| ruling.get("date"))
+                .and_then(Value::as_str)
+                .is_some_and(|date| !date.is_empty());
+            if !dated {
+                return Err(BlessingSourceError(
+                    "an owner-classified blessing fact without its owner ruling",
+                ));
+            }
+            value()
+        }
         Some("CONFLICT" | "UNKNOWN") => Ok(None),
         _ => Err(BlessingSourceError("unclassified blessing evidence fact")),
     }
@@ -269,8 +291,22 @@ impl BlessingSources {
                 prices,
             });
         }
-        // No price is admitted for a promoted buyer while the effect is not known.
-        if admitted(price_record, "promotion_price_effect")?.is_some() {
+        // The owner ruling restates the regular above-120 segment on its own: it must be the
+        // last `regular` band.
+        if let Some(above) = admitted(price_record, "regular_above_120")? {
+            let last = admitted(price_record, "regular")?
+                .and_then(Value::as_array)
+                .and_then(|bands| bands.last());
+            if above.as_array().map(Vec::as_slice) != last.map(std::slice::from_ref) {
+                return Err(BlessingSourceError(
+                    "the regular above-120 price disagrees with its family",
+                ));
+            }
+        }
+        // Owner ruling 2026-10-18: a promotion has no price effect, so a promoted buyer pays the
+        // same band. Any other or a held effect would need its own admission.
+        if admitted(price_record, "promotion_price_effect")?.and_then(Value::as_str) != Some("none")
+        {
             return Err(BlessingSourceError(
                 "a promotion price effect needs its own admission",
             ));
@@ -283,98 +319,271 @@ impl BlessingSources {
     }
 }
 
-/// The source-backed [`PremiumNpcServiceCatalogue`] of one NPC catalogue. It offers no
-/// promotion: that has its own source.
-pub(crate) struct SourceBlessingCatalogue {
+/// The Premium Services one NPC declares, as the source admits them.
+struct NpcPremiumServices {
+    npc: ProjectV2DefinitionRef,
+    promotion: Option<ProjectV2DefinitionRef>,
+    blessings: Vec<(PremiumBlessingService, ProjectV2DefinitionRef)>,
+}
+
+/// The source-backed [`PremiumNpcServiceCatalogue`] of one NPC catalogue: the promotion and the
+/// Premium blessings its NPCs declare, indexed once at construction.
+pub(crate) struct SourcePremiumNpcCatalogue {
     npcs: Arc<NpcDataCatalogue>,
     content_revision: String,
     sources: BlessingSources,
+    offers: BTreeMap<String, NpcPremiumServices>,
 }
 
-impl SourceBlessingCatalogue {
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "PREM-5: the node installs it once CP applies the blessing Service source to \
-                      the World Bundle NPCs"
-        )
-    )]
-    pub(crate) fn new(
+impl SourcePremiumNpcCatalogue {
+    /// The node's catalogue: the embedded source over its pinned NPC catalogue, at the Content
+    /// revision the node serves.
+    pub(crate) fn embedded(
+        npcs: Arc<NpcDataCatalogue>,
+        content_revision: String,
+    ) -> Result<Self, BlessingSourceError> {
+        Ok(Self::new(
+            npcs,
+            content_revision,
+            BlessingSources::embedded()?,
+        ))
+    }
+
+    fn new(
         npcs: Arc<NpcDataCatalogue>,
         content_revision: String,
         sources: BlessingSources,
     ) -> Self {
+        let service = |reference: &ProjectV2DefinitionRef| {
+            reference.family == ProjectV2Family::Service
+                && matches!(
+                    npcs.declaration(reference),
+                    Some(ProjectV2Declaration::Service { .. })
+                )
+        };
+        let mut offers = BTreeMap::new();
+        for (npc, declaration) in npcs.records() {
+            let ProjectV2Declaration::Npc { services, .. } = declaration else {
+                continue;
+            };
+            if npc.family != ProjectV2Family::Npc {
+                continue;
+            }
+            let promotion_key = npc
+                .key
+                .strip_prefix(NPC_PREFIX)
+                .map(|stem| format!("{PROMOTION_PREFIX}{stem}"));
+            let promotion = services
+                .iter()
+                .find(|reference| {
+                    Some(&reference.key) == promotion_key.as_ref() && service(reference)
+                })
+                .cloned();
+            let blessings: Vec<_> = SERVICES
+                .iter()
+                .filter_map(|&blessing| {
+                    let source = sources.get(blessing)?;
+                    if source.prices.is_empty() || !source.npc_keys.contains(&npc.key) {
+                        return None;
+                    }
+                    services
+                        .iter()
+                        .find(|reference| reference.key == source.service_key && service(reference))
+                        .map(|reference| (blessing, reference.clone()))
+                })
+                .collect();
+            if promotion.is_some() || !blessings.is_empty() {
+                offers.insert(
+                    npc.key.clone(),
+                    NpcPremiumServices {
+                        npc: npc.clone(),
+                        promotion,
+                        blessings,
+                    },
+                );
+            }
+        }
         Self {
             npcs,
             content_revision,
             sources,
+            offers,
         }
+    }
+
+    /// How many NPCs offer the promotion and how many blessing offers there are.
+    pub(crate) fn offer_counts(&self) -> (usize, usize) {
+        self.offers
+            .values()
+            .fold((0, 0), |(promotions, blessings), npc| {
+                (
+                    promotions + usize::from(npc.promotion.is_some()),
+                    blessings + npc.blessings.len(),
+                )
+            })
     }
 }
 
-impl PremiumNpcServiceCatalogue for SourceBlessingCatalogue {
+impl PremiumNpcServiceCatalogue for SourcePremiumNpcCatalogue {
     fn content_revision(&self) -> &str {
         &self.content_revision
     }
     fn npcs(&self) -> &NpcDataCatalogue {
         &self.npcs
     }
-    fn promotion(&self, _native_npc_key: &str) -> Option<PromotionNpcOffer> {
-        None
+    fn promotion(&self, native_npc_key: &str) -> Option<PromotionNpcOffer> {
+        let npc = self.offers.get(native_npc_key)?;
+        Some(PromotionNpcOffer {
+            npc: npc.npc.clone(),
+            service: npc.promotion.clone()?,
+        })
     }
     fn blessing(
         &self,
         native_npc_key: &str,
         service: PremiumBlessingService,
     ) -> Option<BlessingNpcOffer> {
+        let npc = self.offers.get(native_npc_key)?;
+        let (_, service_ref) = npc
+            .blessings
+            .iter()
+            .find(|(blessing, _)| *blessing == service)?;
         let source = self.sources.get(service)?;
-        if source.prices.is_empty() || !source.npc_keys.iter().any(|key| key == native_npc_key) {
-            return None;
-        }
-        let (npc, declaration) = self.npcs.records().find(|(reference, _)| {
-            reference.family == ProjectV2Family::Npc && reference.key == native_npc_key
-        })?;
-        let ProjectV2Declaration::Npc { services, .. } = declaration else {
-            return None;
-        };
-        let service_ref = services.iter().find(|reference| {
-            reference.family == ProjectV2Family::Service && reference.key == source.service_key
-        })?;
         Some(BlessingNpcOffer {
             source: PromotionNpcOffer {
-                npc: npc.clone(),
+                npc: npc.npc.clone(),
                 service: service_ref.clone(),
             },
             blessing: service,
             storage_key: source.storage_key.clone(),
             prices: source.prices.clone(),
-            promoted_price_admitted: false,
         })
     }
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
+    use crate::content::{
+        CanonicalProjectDocuments, ProjectDraft, ProjectV2Draft, ProjectV2Identity, ProjectV2State,
+        npc_catalogue_preproduction_limits,
+    };
+    use crate::gameplay_transport::npc_promotion::{
+        admitted_blessing_offer, admitted_promotion_offer,
+    };
 
-    fn price(source: &BlessingSource, level: u32) -> Option<u64> {
-        source
-            .prices
+    fn price(prices: &[BlessingPriceBand], level: u32) -> Option<u64> {
+        prices
             .iter()
             .find(|band| (band.minimum_level..=band.maximum_level).contains(&level))
             .map(|band| band.gold_units + band.gold_per_level * u64::from(level - band.base_level))
     }
 
+    fn price_facts() -> Value {
+        let prices: Value = serde_json::from_str(PRICE_EVIDENCE).expect("json");
+        record(records(&prices).expect("records"), PRICES_KEY)
+            .expect("prices")
+            .clone()
+    }
+
+    /// The embedded price evidence with one price fact replaced.
+    fn with_price_fact(fact: &str, value: Value) -> String {
+        let mut prices: Value = serde_json::from_str(PRICE_EVIDENCE).expect("json");
+        let record = prices["records"]
+            .as_array_mut()
+            .expect("records")
+            .iter_mut()
+            .find(|record| record["key"] == PRICES_KEY)
+            .expect("prices");
+        record["facts"][fact] = value;
+        prices.to_string()
+    }
+
+    /// A native NPC catalogue of `npcs`, each with its declared Service keys; every key in
+    /// `services` is declared as a Service.
+    pub(crate) fn npc_catalogue(npcs: &[(&str, &[&str])], services: &[&str]) -> NpcDataCatalogue {
+        let identity = |key: &str| ProjectV2Identity {
+            key: key.into(),
+            revision: "definition-r1".into(),
+        };
+        let reference = |key: &str| ProjectV2DefinitionRef {
+            family: ProjectV2Family::Service,
+            key: key.into(),
+            revision: "definition-r1".into(),
+        };
+        let mut declarations: Vec<_> = npcs
+            .iter()
+            .map(|(npc, declared)| ProjectV2Declaration::Npc {
+                identity: identity(npc),
+                presentation: None,
+                behavior: None,
+                dialogue: None,
+                services: declared.iter().map(|key| reference(key)).collect(),
+                fields: vec![],
+            })
+            .collect();
+        declarations.extend(services.iter().map(|key| ProjectV2Declaration::Service {
+            bank: false,
+            identity: identity(key),
+            offers: vec![],
+            recipes: vec![],
+            routes: vec![],
+            fields: vec![],
+        }));
+        let draft = ProjectV2Draft {
+            core: ProjectDraft {
+                project_revision: "premium-npc-r1".into(),
+                package_key: "oteryn:content.world-project".into(),
+                semantic_schema_version: "reference-schema-v1".into(),
+                licensing_metadata: "license:project-owned-v1".into(),
+                world_id: "0123456789ab70cd8ef0123456789abc".into(),
+                coordinate_frame: "global-target-2026-09-27".into(),
+                records: vec![],
+                imports: vec![],
+                metadata: vec![],
+            },
+            state: ProjectV2State {
+                declarations,
+                ..ProjectV2State::default()
+            },
+        };
+        let limits = npc_catalogue_preproduction_limits().project;
+        let project = CanonicalProjectDocuments::from_v2_draft(draft, limits)
+            .expect("native documents")
+            .into_snapshot(limits)
+            .expect("snapshot")
+            .parse(limits)
+            .expect("native project");
+        NpcDataCatalogue::from_project(project, limits).expect("native NPC catalogue")
+    }
+
+    /// The owner pricing ruling of 2026-10-18 at every band boundary.
     #[test]
-    fn the_embedded_source_admits_only_the_proven_enhanced_prices() {
+    fn the_embedded_source_admits_the_owner_ruled_prices() {
         let sources = BlessingSources::embedded().expect("the embedded blessing source");
         let wisdom = sources
             .get(PremiumBlessingService::WisdomOfSolitude)
             .expect("wisdom");
         assert_eq!(wisdom.npc_keys, ["oteryn:npc.eremo"]);
-        assert!(wisdom.prices.is_empty(), "the regular family is CONFLICT");
+        assert_eq!(wisdom.storage_key, "oteryn:blessing.the-wisdom-of-solitude");
+        // Regular: 2000 to 30, 2000+200*(L-30) from 31 to 119, 20000+75*(L-120) from 120.
+        for (level, gold) in [
+            (1, 2_000),
+            (30, 2_000),
+            (31, 2_200),
+            (50, 6_000),
+            (119, 19_800),
+            (120, 20_000),
+            (121, 20_075),
+            (200, 26_000),
+        ] {
+            assert_eq!(
+                price(&wisdom.prices, level),
+                Some(gold),
+                "wisdom at {level}"
+            );
+        }
         for (service, npc, storage) in [
             (
                 PremiumBlessingService::BloodOfTheMountain,
@@ -390,7 +599,7 @@ mod tests {
             let source = sources.get(service).expect("an enhanced blessing");
             assert_eq!(source.npc_keys, [npc]);
             assert_eq!(source.storage_key, storage);
-            // 2600 to 30, 260*(L-20) from 31 to 119, 26000+100*(L-120) from 120.
+            // 2600 to 30, 2600+260*(L-30) from 31 to 119, 26000+100*(L-120) from 120.
             for (level, gold) in [
                 (1, 2_600),
                 (30, 2_600),
@@ -398,11 +607,57 @@ mod tests {
                 (50, 7_800),
                 (119, 25_740),
                 (120, 26_000),
+                (121, 26_100),
                 (200, 34_000),
                 (u32::MAX, 26_000 + 100 * (u64::from(u32::MAX) - 120)),
             ] {
-                assert_eq!(price(source, level), Some(gold), "{service:?} at {level}");
+                assert_eq!(
+                    price(&source.prices, level),
+                    Some(gold),
+                    "{service:?} at {level}"
+                );
             }
+        }
+    }
+
+    /// Twist of Fate is data only (no NPC purchase here), but its ruled bands parse:
+    /// 2000 to 30, 2000+200*(L-30) from 31 to 269, 50000 from 270.
+    #[test]
+    fn the_twist_of_fate_bands_match_the_owner_ruling() {
+        let facts = price_facts();
+        let twist = bands(
+            admitted(&facts, "twist")
+                .expect("fact")
+                .expect("an admitted twist price"),
+        )
+        .expect("twist bands");
+        for (level, gold) in [
+            (1, 2_000),
+            (30, 2_000),
+            (31, 2_200),
+            (269, 49_800),
+            (270, 50_000),
+            (271, 50_000),
+            (u32::MAX, 50_000),
+        ] {
+            assert_eq!(price(&twist, level), Some(gold), "twist at {level}");
+        }
+        // The Store prices are recorded as data only.
+        let coins = admitted(&facts, "store_tibia_coins")
+            .expect("fact")
+            .expect("admitted Store prices");
+        for (blessing, tibia_coins) in [
+            ("all_seven", 130),
+            ("twist_of_fate", 8),
+            ("blood_of_the_mountain", 25),
+            ("heart_of_the_mountain", 25),
+            ("the_spark_of_the_phoenix", 20),
+            ("the_spiritual_shielding", 15),
+            ("the_embrace_of_tibia", 15),
+            ("the_fire_of_the_suns", 15),
+            ("the_wisdom_of_solitude", 15),
+        ] {
+            assert_eq!(coins[blessing].as_u64(), Some(tibia_coins), "{blessing}");
         }
     }
 
@@ -432,6 +687,7 @@ mod tests {
         ] {
             assert_eq!(bands(&value), None, "{value}");
         }
+        // The first `PROVEN` fact is the enhanced family: held, Blood has no price.
         let held = PRICE_EVIDENCE.replacen("\"PROVEN\"", "\"CONFLICT\"", 1);
         let enhanced_held = BlessingSources::parse(&held, SERVICE_EVIDENCE).expect("parsed");
         assert!(
@@ -443,6 +699,110 @@ mod tests {
         );
         let unclassified = PRICE_EVIDENCE.replacen("\"PROVEN\"", "\"LIKELY\"", 1);
         assert!(BlessingSources::parse(&unclassified, SERVICE_EVIDENCE).is_err());
+    }
+
+    /// An owner class needs its dated ruling, and the source loads only while the ruling's
+    /// "no promotion price effect" and its above-120 segment agree with the families.
+    #[test]
+    fn owner_facts_need_their_ruling_and_agree() {
+        let facts = price_facts();
+        let mut unruled = facts.clone();
+        unruled["facts"]["regular"]
+            .as_object_mut()
+            .expect("regular")
+            .remove("owner_ruling");
+        assert!(admitted(&unruled, "regular").is_err());
+        assert!(admitted(&facts, "regular").expect("ruled").is_some());
+        let effect = &facts["facts"]["promotion_price_effect"];
+        for (class, value) in [("PROVEN_BY_OWNER", "half"), ("UNKNOWN", "none")] {
+            let mut changed = effect.clone();
+            changed["classification"] = class.into();
+            changed["value"] = value.into();
+            let prices = with_price_fact("promotion_price_effect", changed);
+            assert!(
+                BlessingSources::parse(&prices, SERVICE_EVIDENCE).is_err(),
+                "{class} {value}"
+            );
+        }
+        let mut above = facts["facts"]["regular_above_120"].clone();
+        above["value"] = serde_json::json!([{"level_min": 120, "gold": "20000"}]);
+        let prices = with_price_fact("regular_above_120", above);
+        assert!(BlessingSources::parse(&prices, SERVICE_EVIDENCE).is_err());
+    }
+
+    /// Offers come only from declared Services of the source NPCs: the promotion under the
+    /// NPC's own stem, a blessing under its source key and only at its source NPC.
+    #[test]
+    fn the_catalogue_offers_only_declared_source_services() {
+        const WISDOM: &str = "oteryn:service.blessing.the_wisdom_of_solitude";
+        const BLOOD: &str = "oteryn:service.blessing.blood_of_the_mountain";
+        const HEART: &str = "oteryn:service.blessing.heart_of_the_mountain";
+        let npcs = npc_catalogue(
+            &[
+                (
+                    "oteryn:npc.eremo",
+                    &[WISDOM, "oteryn:service.promotion.eremo"],
+                ),
+                // Kais declares the Heart too, but Nomad is its source NPC.
+                ("oteryn:npc.kais", &[BLOOD, HEART]),
+                // Another NPC's promotion stem is not this NPC's promotion.
+                (
+                    "oteryn:npc.king_tibianus",
+                    &["oteryn:service.promotion.eremo"],
+                ),
+                ("oteryn:npc.nomad", &[HEART]),
+            ],
+            &[WISDOM, BLOOD, HEART, "oteryn:service.promotion.eremo"],
+        );
+        let catalogue = SourcePremiumNpcCatalogue::embedded(Arc::new(npcs), "content-1".into())
+            .expect("the embedded source");
+        assert_eq!(catalogue.offer_counts(), (1, 3));
+        let promotion =
+            admitted_promotion_offer(&catalogue, "oteryn:npc.eremo").expect("Eremo's promotion");
+        assert_eq!(promotion.service.key, "oteryn:service.promotion.eremo");
+        assert!(admitted_promotion_offer(&catalogue, "oteryn:npc.king_tibianus").is_none());
+        assert!(admitted_promotion_offer(&catalogue, "oteryn:npc.kais").is_none());
+        let wisdom = admitted_blessing_offer(
+            &catalogue,
+            "oteryn:npc.eremo",
+            PremiumBlessingService::WisdomOfSolitude,
+        )
+        .expect("Eremo's Wisdom of Solitude");
+        assert_eq!(wisdom.source.service.key, WISDOM);
+        assert_eq!(price(&wisdom.prices, 50), Some(6_000));
+        let blood = admitted_blessing_offer(
+            &catalogue,
+            "oteryn:npc.kais",
+            PremiumBlessingService::BloodOfTheMountain,
+        )
+        .expect("Kais' Blood of the Mountain");
+        assert_eq!(blood.storage_key, "oteryn:blessing.blood-of-the-mountain");
+        let heart = admitted_blessing_offer(
+            &catalogue,
+            "oteryn:npc.nomad",
+            PremiumBlessingService::HeartOfTheMountain,
+        )
+        .expect("Nomad's Heart of the Mountain");
+        assert_eq!(heart.source.service.key, HEART);
+        for (npc, service) in [
+            (
+                "oteryn:npc.kais",
+                PremiumBlessingService::HeartOfTheMountain,
+            ),
+            (
+                "oteryn:npc.eremo",
+                PremiumBlessingService::BloodOfTheMountain,
+            ),
+            (
+                "oteryn:npc.unknown",
+                PremiumBlessingService::WisdomOfSolitude,
+            ),
+        ] {
+            assert!(
+                admitted_blessing_offer(&catalogue, npc, service).is_none(),
+                "{npc} {service:?}"
+            );
+        }
     }
 
     /// The DEATH writer consumes every held blessing and reduces the experience loss by 8% each

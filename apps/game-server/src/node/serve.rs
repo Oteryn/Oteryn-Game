@@ -42,6 +42,8 @@ use crate::foundation::{
     ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use crate::gameplay_transport::FreshEvidenceSource;
+use crate::gameplay_transport::npc_promotion::PremiumNpcServiceCatalogue;
+use crate::gameplay_transport::premium_blessing_catalogue::SourcePremiumNpcCatalogue;
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
@@ -2051,8 +2053,8 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
 
 /// Optionally retain a pinned NPC authoring catalogue for the process lifetime. With a
 /// `[world_bundle]` World it also decides which of the bundle's NPC placements become NPC
-/// actors at Channel start (NPC-LOAD-1, NPC-PLACE-1 §7, [`bundle_npcs`]); NPC services and
-/// talk stay inactive.
+/// actors at Channel start (NPC-LOAD-1, NPC-PLACE-1 §7, [`bundle_npcs`]). The promotion and
+/// Premium blessing Services its NPCs declare (PREM-5) are installed beside their talk.
 pub async fn run_with_npc_data_project(
     config_path: &Path,
     npc_data: Option<(&Path, &str)>,
@@ -2062,7 +2064,8 @@ pub async fn run_with_npc_data_project(
     let npc_catalogue = npc_data
         .map(|(root, digest)| crate::content::load_data_only_npc_catalogue(root, digest))
         .transpose()
-        .map_err(|_| BootError::Readiness("NPC data import"))?;
+        .map_err(|_| BootError::Readiness("NPC data import"))?
+        .map(std::sync::Arc::new);
     if let Some(catalogue) = &npc_catalogue {
         event(&format!(
             "event=npc_data_imported mode=data_only npcs={} dialogues={} services={} profiles={} source_tree_sha256={} spawned_actors=0 activated_services=0",
@@ -2078,6 +2081,26 @@ pub async fn run_with_npc_data_project(
         "event=configuration_accepted world_id={} channel_id={}",
         config.scope.world_id, config.scope.channel_id
     ));
+    // PREM-5: the promotion and Premium blessing offers the pinned NPCs declare, priced from the
+    // embedded BLESSINGS-CONTENT-1 source at the served Content revision. Installed beside the
+    // NPC talk (`serve_gameplay`); NPCs that declare none answer no offer.
+    let premium_npc_services = npc_catalogue
+        .as_ref()
+        .map(|catalogue| {
+            SourcePremiumNpcCatalogue::embedded(
+                std::sync::Arc::clone(catalogue),
+                config.readiness.content_revision.clone(),
+            )
+        })
+        .transpose()
+        .map_err(|_| BootError::ContentActivation("Premium NPC service source"))?
+        .map(|services| {
+            let (promotions, blessings) = services.offer_counts();
+            event(&format!(
+                "event=premium_npc_services state=loaded promotion_offers={promotions} blessing_offers={blessings}"
+            ));
+            std::sync::Arc::new(services) as std::sync::Arc<dyn PremiumNpcServiceCatalogue>
+        });
     // MAP-CUTOVER-1a: a bundle World is checked before any durable or fixture step.
     let mut npc_frame = None;
     let bundle = world_bundle_gate(config, |path| {
@@ -2094,7 +2117,7 @@ pub async fn run_with_npc_data_project(
     let npc_boot = bundle_npcs::prepare(
         npc_frame,
         npc_catalogue
-            .as_ref()
+            .as_deref()
             .zip(npc_data.map(|(project_root, _)| project_root)),
         config
             .world_bundle
@@ -2113,7 +2136,15 @@ pub async fn run_with_npc_data_project(
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
     let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
-    let result = boot_and_serve(&root, &material, bundle, npc_boot, &signalled).await;
+    let result = boot_and_serve(
+        &root,
+        &material,
+        bundle,
+        npc_boot,
+        premium_npc_services,
+        &signalled,
+    )
+    .await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
@@ -2407,6 +2438,7 @@ async fn boot_and_serve(
     material: &Material,
     bundle: Option<crate::map::boot::CheckedBundle>,
     npc_boot: Option<bundle_npcs::NpcBoot>,
+    premium_npc_services: Option<std::sync::Arc<dyn PremiumNpcServiceCatalogue>>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
@@ -2477,6 +2509,20 @@ async fn boot_and_serve(
     if let Some(world) = &bundle {
         activate_floor_changes(world)?;
     }
+    // ADMIT0/D1081: validate the real scope offer before any readiness publication.
+    // The generation is the operator assignment just resolved above, not config.
+    // D1442 registers WORLD_SPATIAL_FIELDS=30 behind a closed offer gate; D1083 keeps
+    // WORLD_INTERACTION's gate closed, so only offered floor members bind (fail closed).
+    let required_capabilities =
+        crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
+            &config.readiness.required_gameplay_capabilities,
+            scope,
+            generation,
+            &config.readiness.world_policy_revision,
+            crate::gameplay_transport::world_required_capabilities::offered_for_scope(
+                bundle.is_some(), active_content.active(),
+            ),
+        ).map_err(|_| BootError::Readiness("required gameplay capabilities"))?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -2695,6 +2741,7 @@ async fn boot_and_serve(
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        required_capabilities: required_capabilities.clone(),
         runtime: &runtime,
         movement_cells: &movement_cells,
         door: &door,
@@ -2708,7 +2755,12 @@ async fn boot_and_serve(
         ),
         achievements: &achievements,
         imported_charms: &imported_charms,
-        npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()),
+        npc_talk: bundle_npcs::talk_book(npc_boot.as_ref()).map(|book| {
+            crate::gameplay_transport::NpcTalkOwners {
+                book,
+                premium_services: premium_npc_services,
+            }
+        }),
         quest_catalogue: &quest_catalogue,
         last_position_flush: Some(&last_position_flush),
     };

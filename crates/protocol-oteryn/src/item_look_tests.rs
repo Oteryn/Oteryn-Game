@@ -396,11 +396,11 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[28]), Ok(()));
     assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[]), Ok(()));
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[29]),
+        crate::validate_acceptance_value(1, 1, 1, &[31]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[28, 29]),
+        crate::validate_acceptance_value(1, 1, 1, &[28, 31]),
         Err(crate::FoundationProtocolError::CapabilityMismatch)
     );
     assert_eq!(
@@ -429,7 +429,7 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(entry["state_domains"], serde_json::json!([]));
     assert_eq!(
         registry["allocation_ranges"]["capability_id"]["next_unallocated"],
-        29
+        31
     );
     // CP D1268/D1292: command 30 is registered once, gated by 28, with the codec's byte bounds.
     let commands: Vec<_> = registry["command_types"]

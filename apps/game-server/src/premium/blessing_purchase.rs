@@ -276,7 +276,6 @@ fn binding(
         hash.update(band.gold_per_level.to_be_bytes());
         hash.update(band.base_level.to_be_bytes());
     }
-    hash.update([u8::from(r.offer.promoted_price_admitted)]);
     let mut value = vec![1];
     value.extend_from_slice(&hash.finalize());
     Ok(value)
@@ -317,15 +316,9 @@ pub(crate) async fn prepare_blessing_purchase(
     let level:i64=sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
     let level = u32::try_from(level).map_err(|_| DurabilityError::InvalidStoredState)?;
+    // A promoted buyer pays the same band: a promotion has no price effect (owner ruling
+    // 2026-10-18).
     let (band, price) = price_at(&request.offer, level)?;
-    // A promoted buyer's price is not admitted while the source leaves its effect unknown.
-    if !request.offer.promoted_price_admitted {
-        let promoted: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid AND promoted)")
-            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
-        if promoted {
-            return Err(BlessingPurchaseError::PriceUnavailable);
-        }
-    }
     // Admission already holds the character root and progression row locks through COMMIT.
     // Blessing purchases and deaths serialize there; held rows need no additional lock.
     // FOR UPDATE would require UPDATE authority on the append/consume-only blessing table.
@@ -570,7 +563,6 @@ mod tests {
             blessing: PremiumBlessingService::BloodOfTheMountain,
             storage_key: "oteryn:blessing.blood-of-the-mountain".into(),
             prices,
-            promoted_price_admitted: false,
         }
     }
 
