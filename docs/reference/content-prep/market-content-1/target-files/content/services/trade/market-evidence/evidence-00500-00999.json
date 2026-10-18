@@ -7287,17 +7287,21 @@
       "key": "oteryn:item.tibia.i2469",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:4631:1042336",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2469",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2469 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_AND_CAPACITY as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Containers",
@@ -7450,17 +7454,21 @@
       "key": "oteryn:item.tibia.i2471",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:4368:1113993",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2471",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2471 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_AND_CAPACITY as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Containers",
@@ -7613,17 +7621,21 @@
       "key": "oteryn:item.tibia.i2472",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:4370:1015643",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2472",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2472 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_AND_CAPACITY as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Containers",
@@ -15838,17 +15850,21 @@
       "key": "oteryn:item.tibia.i2664",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:103312:1103033",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2664",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2664 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_SIGNATURE as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Decoration",
@@ -26794,17 +26810,21 @@
       "key": "oteryn:item.tibia.i2856",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:3141:1113935",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2856",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2856 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_AND_CAPACITY as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Containers",
@@ -31022,17 +31042,21 @@
       "key": "oteryn:item.tibia.i2881",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:3723:1043630",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2881",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2881 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_SIGNATURE as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Containers",
@@ -33003,17 +33027,21 @@
       "key": "oteryn:item.tibia.i2920",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:1396:1147123",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i2920",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=2920 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_SIGNATURE as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Tools",
@@ -62710,17 +62738,21 @@
       "key": "oteryn:item.tibia.i3218",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:17166:1114442",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:variant-i3218",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=3218 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses NPC_SIGNATURE as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Others",

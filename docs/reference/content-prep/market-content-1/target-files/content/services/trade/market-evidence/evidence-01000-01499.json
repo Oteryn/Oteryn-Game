@@ -60473,17 +60473,25 @@
       "key": "oteryn:item.tibia.i39340",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_VARIANT_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
+            {
+              "source": "official-ui:cyclopedia:20261018:variant-i39340",
+              "selector": "Explicit selected variant / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:full-variant-bindings",
+              "selector": "object/id=39340 plus all exact-name candidates / Cyclopedia, Market and positive NPC identity metadata"
+            },
             {
               "source": "wiki:98659:1194167",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this identified type/state tradeable in Market. Native-ID attribution uses OWN_ID_DESCRIPTION_WEIGHT as documented in the source registry, preserving description, weight, NPC and Cyclopedia/Market alias evidence. This is an official type/state declaration, not a server transaction or proof for every filled, charged, rotated or seller-bound instance. Exhaustive additional restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Others",

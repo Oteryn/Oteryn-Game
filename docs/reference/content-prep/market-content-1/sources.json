@@ -26688,6 +26688,1254 @@
         }
       ],
       "qualification": "No positive per-ID server-listing fact admitted. Searches returned empty results/offers, ambiguous native variants, or other selected names; stale selection details were never attached to the searched item. Empty/absent results are not evidence of false. All screenshots retained privately."
+    },
+    "official-client:15.33.9d148f:full-variant-bindings": {
+      "title": "Read-only full same-name appearance variant scan including Cyclopedia and NPC metadata",
+      "url": "https://www.tibia.com/",
+      "source_class": "INSTALLED_OFFICIAL_CLIENT_DATA",
+      "asset_source": "official-client:15.33.9d148f:501594e8",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "retained_export_sha256": "f54163bc8d1b29de668b7b1e9ff99062304f01517d95c66e1dd894a49eebd2fb",
+      "extraction_script_sha256": "174b80aa684d8ff255aa9049030bb7de61482b4279486069c5786e5ff5a81e00",
+      "object_rows": 255,
+      "name_groups": 107,
+      "coverage": "Full object-family scan of the identical installed appearance asset, selecting all 255 occurrences of the 107 previously scanned exact names. Candidate native IDs exactly match the earlier independently retained name scan.",
+      "observed_fields": [
+        "appearance name",
+        "flags/market/trade_as_object_id",
+        "flags/market/show_as_object_id",
+        "flags/cyclopediaitem/cyclopedia_type",
+        "flags/npcsaledata/name, location, sale_price, buy_price"
+      ],
+      "qualification": "These raw fields bind the selected UI variant; metadata presence or absence alone is not server tradeability proof. NPC rows are used as positive identity fingerprints, not as evidence that NPC sale implies Market admission. Binary assets and sprites are not redistributed."
+    },
+    "official-ui:cyclopedia:20261018:quest-variants": {
+      "title": "Official Cyclopedia quest/state variant inspection, 2026-10-18",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "capture_start_utc": "2026-10-18T15:14:11Z",
+      "capture_end_utc": "2026-10-18T15:37:44Z",
+      "capture_count": 86,
+      "admitted_type_declarations": 23,
+      "filters": "Items, global text query, no category selected, vocation All; selected row and loaded details visually checked. Additional list scrolling and explicit row selection used where substrings returned other items.",
+      "method": "Ordinary UI search, selection, direct X11 framebuffer inspection. Duplicate names are resolved using positive NPC signatures, exact description plus weight matched to own-ID Wiki fields, or a documented shared Cyclopedia identity with canonical Market ID. Display names, sprites and quest states are not flattened. No trades or purchases performed.",
+      "stale_detail_exclusion": "Query-only captures may retain prior details until a result is selected. Those details and mismatching selected names are never admitted for the new query. Clicking an empty list row is not a new observation.",
+      "qualification": "Only the literal Tradeable In Market: yes is used affirmatively. Missing declarations, filled/used variants and empty Market offers do not establish false. Declarations qualify the identified type/state at capture time, not every instance/seller, a completed transaction, live server listing admission, or future continuity. All exhaustive instance restrictions remain separately held.",
+      "retention": "All 86 screenshots and their SHA256 receipts are retained in an owner-authorized private NAS archive. Only literal mechanical observations, ID binding evidence and digests are redistributed; no screenshots, inventory quantities, balances, character identity, credentials or proprietary assets."
+    },
+    "official-ui:cyclopedia:20261018:variant-i2920": {
+      "title": "Explicit Cyclopedia variant declaration: torch / native 2920",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:14:11Z",
+      "screenshot_sha256": "958c73d2c6ddb2e6633a4eb362448fc15d0bbdd72f35bc7ba56a2d98bbae0a2b",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "torch",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "torch; 2 gp Bashira, Zethra and Ahmet",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 2920,
+          "cyclopedia_type": 2920,
+          "market_trade_as": 2920,
+          "market_show_as": 2920
+        },
+        {
+          "appearance_object_id": 2922,
+          "cyclopedia_type": 2920,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 2924,
+          "cyclopedia_type": 2920,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 54609,
+          "cyclopedia_type": 54609,
+          "market_trade_as": null,
+          "market_show_as": null
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:1396:1147123",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2920",
+          "actualname_literal": "torch",
+          "description_literal": null,
+          "weight_literal": "5.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i5080": {
+      "title": "Explicit Cyclopedia variant declaration: panda teddy / native 5080",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:17:02Z",
+      "screenshot_sha256": "7563fff6bfb7b7f11fd60c452a51273c8b071d055da1bf33d44454991072c5d3",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "panda teddy",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "panda teddy; Sell To 30000 gp Gnomission",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 5080,
+          "cyclopedia_type": 5080,
+          "market_trade_as": 5080,
+          "market_show_as": 5080
+        },
+        {
+          "appearance_object_id": 6568,
+          "cyclopedia_type": 6568,
+          "market_trade_as": 5080,
+          "market_show_as": 5080
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:5005:1114048",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "5080, 6568",
+          "actualname_literal": "panda teddy",
+          "description_literal": null,
+          "weight_literal": "6.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i5791": {
+      "title": "Explicit Cyclopedia variant declaration: stuffed dragon / native 5791",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:17:12Z",
+      "screenshot_sha256": "b42b565b89f18d0e0efa8df055914e1ae3895b81959091427418ff74609e6d6c",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "stuffed dragon",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "stuffed dragon; Sell To 6000 gp Gnomission",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 5791,
+          "cyclopedia_type": 5791,
+          "market_trade_as": 5791,
+          "market_show_as": 5791
+        },
+        {
+          "appearance_object_id": 6566,
+          "cyclopedia_type": 6566,
+          "market_trade_as": 5791,
+          "market_show_as": 5791
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:12222:1114338",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "5791, 6566",
+          "actualname_literal": "stuffed dragon",
+          "description_literal": null,
+          "weight_literal": "8.50"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i6572": {
+      "title": "Explicit Cyclopedia variant declaration: party trumpet / native 6572",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:17:22Z",
+      "screenshot_sha256": "b74453ba7b17429a254365311623969dfc6b6e977bf351c168d5e676ee111748",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "party trumpet",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "party trumpet; Buy From 80 gp Stan, 500 gp Hireling",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 6572,
+          "cyclopedia_type": 6572,
+          "market_trade_as": 6572,
+          "market_show_as": 6572
+        },
+        {
+          "appearance_object_id": 6573,
+          "cyclopedia_type": 6573,
+          "market_trade_as": 6572,
+          "market_show_as": 6572
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:13166:1114366",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "6572, 6573",
+          "actualname_literal": "party trumpet",
+          "description_literal": null,
+          "weight_literal": "0.50"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i8453": {
+      "title": "Explicit Cyclopedia variant declaration: blood crystal / native 8453",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:17:35Z",
+      "screenshot_sha256": "0ba79f44dfcf6ef8f5fa99222e3918d1526b47ec6bdc7d0f758717fd42e1b54f",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "blood crystal",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "blood crystal; Buy From 50000 gp Black Bert",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 8225,
+          "cyclopedia_type": 8225,
+          "market_trade_as": 8453,
+          "market_show_as": 8453
+        },
+        {
+          "appearance_object_id": 8453,
+          "cyclopedia_type": 8453,
+          "market_trade_as": 8453,
+          "market_show_as": 8453
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:30790:1114680",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "8453",
+          "actualname_literal": "blood crystal",
+          "description_literal": "It has the power to store magic energy.",
+          "weight_literal": "8.90"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i6092": {
+      "title": "Explicit Cyclopedia variant declaration: very noble-looking watch / native 6092",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:17:47Z",
+      "screenshot_sha256": "48d4c3cfe8df05f946da73b9d09cd5d93962bd265f8bdca8366e868be0973005",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "very noble-looking watch",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_WEIGHT",
+      "literal_identity_observations": "very noble-looking watch; Unfortunately it seems to be broken; 0.50 oz",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 6091,
+          "cyclopedia_type": 6091,
+          "market_trade_as": 6092,
+          "market_show_as": 6092
+        },
+        {
+          "appearance_object_id": 6092,
+          "cyclopedia_type": 6092,
+          "market_trade_as": 6092,
+          "market_show_as": 6092
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:80596:1017360",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "6092",
+          "actualname_literal": "very noble-looking watch",
+          "description_literal": "Unfortunately it seems to be broken.",
+          "weight_literal": "0.50"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i9616": {
+      "title": "Explicit Cyclopedia variant declaration: bejeweled ship's telescope / native 9616",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:17:55Z",
+      "screenshot_sha256": "6e471735db7b0abc1cfaca1d718e14bed382ba1d757eb9b3fe5d76419dae9f8f",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "bejeweled ship's telescope",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "SHARED_CYCLOPEDIA_TYPE",
+      "literal_identity_observations": "All four same-name appearances reference Cyclopedia type 9619 and Market trade-as 9616; one exact-name UI result",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 9616,
+          "cyclopedia_type": 9619,
+          "market_trade_as": 9616,
+          "market_show_as": 9616
+        },
+        {
+          "appearance_object_id": 9617,
+          "cyclopedia_type": 9619,
+          "market_trade_as": 9616,
+          "market_show_as": 9616
+        },
+        {
+          "appearance_object_id": 9618,
+          "cyclopedia_type": 9619,
+          "market_trade_as": 9616,
+          "market_show_as": 9616
+        },
+        {
+          "appearance_object_id": 9619,
+          "cyclopedia_type": 9619,
+          "market_trade_as": 9616,
+          "market_show_as": 9616
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "shared_identity_fence": "All four appearance rotations 9616..9619 reference Cyclopedia type 9619 and Market trade-as/show-as 9616. One exact-name UI result has the matching pirate-treasure description and 45 oz weight. This qualifies the canonical type 9616, not exhaustive rotated-instance admission.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:40249:1114881",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "9616, 9617, 9618, 9619",
+          "actualname_literal": "bejeweled ship's telescope",
+          "description_literal": "It's the only left-over from a famous pirate treasure.",
+          "weight_literal": "45.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i4842": {
+      "title": "Explicit Cyclopedia variant declaration: sheet of tracing paper / native 4842",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:18:06Z",
+      "screenshot_sha256": "f3921e345d286d6cfd6d4996a9b3818c1e8ea618371cdb00f37152e55ecb4c90",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "sheet of tracing paper",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_WEIGHT",
+      "literal_identity_observations": "sheet of tracing paper; It is blank; 1.00 oz",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 4842,
+          "cyclopedia_type": 4842,
+          "market_trade_as": 4842,
+          "market_show_as": 4842
+        },
+        {
+          "appearance_object_id": 4843,
+          "cyclopedia_type": 4843,
+          "market_trade_as": 4843,
+          "market_show_as": 4843
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:77617:1115621",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "4842",
+          "actualname_literal": "sheet of tracing paper",
+          "description_literal": "It is blank.",
+          "weight_literal": "1.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i4843": {
+      "title": "Explicit Cyclopedia variant declaration: sheet of tracing paper / native 4843",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:18:09Z",
+      "screenshot_sha256": "db9916baa14bd79a1a3458c099308e7840878402a9cce59c888cb9e38a84b1ef",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "sheet of tracing paper",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_WEIGHT",
+      "literal_identity_observations": "sheet of tracing paper; It contains some strange symbols of the lizard language; 1.00 oz",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 4842,
+          "cyclopedia_type": 4842,
+          "market_trade_as": 4842,
+          "market_show_as": 4842
+        },
+        {
+          "appearance_object_id": 4843,
+          "cyclopedia_type": 4843,
+          "market_trade_as": 4843,
+          "market_show_as": 4843
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:77616:1115620",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "4843",
+          "actualname_literal": "sheet of tracing paper",
+          "description_literal": "It contains some strange symbols of the lizard language.",
+          "weight_literal": "1.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i117": {
+      "title": "Explicit Cyclopedia variant declaration: crate / native 117",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:18:19Z",
+      "screenshot_sha256": "c5f7f2e1e7b9f518c8f5e40f75a3e38fb77446a880cd172d63a66eca3ea3bcdd",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "crate",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_AND_DESCRIPTION",
+      "literal_identity_observations": "crate; It contains a lot of wine flasks; 80.00 oz; Buy From 1000 gp Black Bert",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 117,
+          "cyclopedia_type": 117,
+          "market_trade_as": 117,
+          "market_show_as": 117
+        },
+        {
+          "appearance_object_id": 118,
+          "cyclopedia_type": 118,
+          "market_trade_as": 118,
+          "market_show_as": 118
+        },
+        {
+          "appearance_object_id": 2471,
+          "cyclopedia_type": 2471,
+          "market_trade_as": 2471,
+          "market_show_as": 2471
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:41285:1114892",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "117",
+          "actualname_literal": "crate",
+          "description_literal": "It contains a lot of wine flasks.",
+          "weight_literal": "80.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i2472": {
+      "title": "Explicit Cyclopedia variant declaration: chest / native 2472",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:18:43Z",
+      "screenshot_sha256": "abfbd5a13a5a8245a856c0238769c355cc5431e510cfb99f3f0efdd812501aed",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "chest",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_AND_CAPACITY",
+      "literal_identity_observations": "chest; Capacity 15; Weight 120 oz; Buy From 10 gp Ukea and Feizuhl",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 2472,
+          "cyclopedia_type": 2472,
+          "market_trade_as": 2472,
+          "market_show_as": 2472
+        },
+        {
+          "appearance_object_id": 2480,
+          "cyclopedia_type": 2472,
+          "market_trade_as": 2472,
+          "market_show_as": 2472
+        },
+        {
+          "appearance_object_id": 2481,
+          "cyclopedia_type": 2472,
+          "market_trade_as": 2472,
+          "market_show_as": 2472
+        },
+        {
+          "appearance_object_id": 2482,
+          "cyclopedia_type": 2472,
+          "market_trade_as": 2472,
+          "market_show_as": 2472
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:4370:1015643",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2472, 2480, 2481, 2482",
+          "actualname_literal": "chest",
+          "description_literal": null,
+          "weight_literal": "120.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i2664": {
+      "title": "Explicit Cyclopedia variant declaration: cuckoo clock / native 2664",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:19:08Z",
+      "screenshot_sha256": "c9c1dd6e2db888c0ed7566ca06e7a61c7654fee9651418ebc753b239b353ee79",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "cuckoo clock",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "cuckoo clock; Weight 8 oz; Buy From 40 gp Ukea, Feizuhl and Nydala; Market trade-as 2668 retained separately",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 2664,
+          "cyclopedia_type": 2664,
+          "market_trade_as": 2668,
+          "market_show_as": 2668
+        },
+        {
+          "appearance_object_id": 2668,
+          "cyclopedia_type": 2668,
+          "market_trade_as": 2668,
+          "market_show_as": 2668
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:103312:1103033",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2664, 2668",
+          "actualname_literal": "cuckoo clock",
+          "description_literal": null,
+          "weight_literal": "8.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i4852": {
+      "title": "Explicit Cyclopedia variant declaration: ectoplasm container / native 4852",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:19:31Z",
+      "screenshot_sha256": "dc6932664251d5d57b6f4b4527baa69442dd22e5430a076da746eef43b5d3802",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "ectoplasm container",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_WEIGHT",
+      "literal_identity_observations": "ectoplasm container; It is empty; 6.00 oz",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 131,
+          "cyclopedia_type": 131,
+          "market_trade_as": 131,
+          "market_show_as": 131
+        },
+        {
+          "appearance_object_id": 4852,
+          "cyclopedia_type": 4852,
+          "market_trade_as": 4852,
+          "market_show_as": 4852
+        },
+        {
+          "appearance_object_id": 4853,
+          "cyclopedia_type": 4853,
+          "market_trade_as": 4853,
+          "market_show_as": 4853
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:5795:1114136",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "4852",
+          "actualname_literal": "ectoplasm container",
+          "description_literal": "It is empty.",
+          "weight_literal": "6.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i4867": {
+      "title": "Explicit Cyclopedia variant declaration: botanist's container / native 4867",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:19:40Z",
+      "screenshot_sha256": "eb30ccb0e09b0a59448cc7e10a8dad79763c7c87610a22ce1af5b51014990517",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "botanist's container",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_WEIGHT",
+      "literal_identity_observations": "botanist's container; It is empty; 18.00 oz",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 4867,
+          "cyclopedia_type": 4867,
+          "market_trade_as": 4867,
+          "market_show_as": 4867
+        },
+        {
+          "appearance_object_id": 4868,
+          "cyclopedia_type": 4868,
+          "market_trade_as": 4867,
+          "market_show_as": 4867
+        },
+        {
+          "appearance_object_id": 4869,
+          "cyclopedia_type": 4869,
+          "market_trade_as": 4867,
+          "market_show_as": 4867
+        },
+        {
+          "appearance_object_id": 4870,
+          "cyclopedia_type": 4870,
+          "market_trade_as": 4867,
+          "market_show_as": 4867
+        },
+        {
+          "appearance_object_id": 22704,
+          "cyclopedia_type": 22704,
+          "market_trade_as": 22704,
+          "market_show_as": 22704
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:5067:1114064",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "4867",
+          "actualname_literal": "botanist's container",
+          "description_literal": "It is empty.",
+          "weight_literal": "18.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i2469": {
+      "title": "Explicit Cyclopedia variant declaration: box / native 2469",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:24:08Z",
+      "screenshot_sha256": "d3c10e5a9f04e274eae6b000cbd42b0a9331198b18629a62aeca2bd63308e97a",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "box",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_AND_CAPACITY",
+      "literal_identity_observations": "box; Capacity 10; Weight 35 oz; Buy From 10 gp Ukea and Feizuhl",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 119,
+          "cyclopedia_type": 119,
+          "market_trade_as": 119,
+          "market_show_as": 119
+        },
+        {
+          "appearance_object_id": 2469,
+          "cyclopedia_type": 2469,
+          "market_trade_as": 2469,
+          "market_show_as": 2469
+        },
+        {
+          "appearance_object_id": 2473,
+          "cyclopedia_type": 2473,
+          "market_trade_as": 2473,
+          "market_show_as": 2473
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:4631:1042336",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2469",
+          "actualname_literal": "box",
+          "description_literal": null,
+          "weight_literal": "35.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i4863": {
+      "title": "Explicit Cyclopedia variant declaration: butterfly conservation kit / native 4863",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:19:51Z",
+      "screenshot_sha256": "cb4ea04bc002f63248d291082da8b843cd10abf2ee3811290f4e7bb6a6ef29e3",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "butterfly conservation kit",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_AND_DESCRIPTION",
+      "literal_identity_observations": "butterfly conservation kit; It is empty; 7 oz; Buy From 40000 gp Black Bert",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 4863,
+          "cyclopedia_type": 4863,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 4864,
+          "cyclopedia_type": 4864,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 4865,
+          "cyclopedia_type": 4865,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 4866,
+          "cyclopedia_type": 4866,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 5089,
+          "cyclopedia_type": 5089,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 39340,
+          "cyclopedia_type": 39340,
+          "market_trade_as": 39340,
+          "market_show_as": 39340
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:5066:1114063",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "4863",
+          "actualname_literal": "butterfly conservation kit",
+          "description_literal": "It is empty.",
+          "weight_literal": "7.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i2471": {
+      "title": "Explicit Cyclopedia variant declaration: crate / native 2471",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:26:36Z",
+      "screenshot_sha256": "65f2a6f692b0cc99be5a5f7ddde2b30c9ca0254e885071f133ecbec399053e23",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "crate",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_AND_CAPACITY",
+      "literal_identity_observations": "crate; Capacity 15; Weight 80 oz; Buy From 10 gp Ukea, Feizuhl and Nydala",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 117,
+          "cyclopedia_type": 117,
+          "market_trade_as": 117,
+          "market_show_as": 117
+        },
+        {
+          "appearance_object_id": 118,
+          "cyclopedia_type": 118,
+          "market_trade_as": 118,
+          "market_show_as": 118
+        },
+        {
+          "appearance_object_id": 2471,
+          "cyclopedia_type": 2471,
+          "market_trade_as": 2471,
+          "market_show_as": 2471
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:4368:1113993",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2471",
+          "actualname_literal": "crate",
+          "description_literal": null,
+          "weight_literal": "80.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i3218": {
+      "title": "Explicit Cyclopedia variant declaration: present / native 3218",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:28:11Z",
+      "screenshot_sha256": "b5eea49bf4d924501bfc123c847f3cf163a1bf92ed8833179d5385fa3a450c19",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "present",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "present; Weight 12 oz; Buy From 16000 gp Black Bert",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 906,
+          "cyclopedia_type": 906,
+          "market_trade_as": 906,
+          "market_show_as": 906
+        },
+        {
+          "appearance_object_id": 2856,
+          "cyclopedia_type": 2856,
+          "market_trade_as": 2856,
+          "market_show_as": 2856
+        },
+        {
+          "appearance_object_id": 3218,
+          "cyclopedia_type": 3218,
+          "market_trade_as": 3218,
+          "market_show_as": 3218
+        },
+        {
+          "appearance_object_id": 25302,
+          "cyclopedia_type": 25302,
+          "market_trade_as": null,
+          "market_show_as": null
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:17166:1114442",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "3218",
+          "actualname_literal": "present",
+          "description_literal": null,
+          "weight_literal": "12.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i2881": {
+      "title": "Explicit Cyclopedia variant declaration: cup / native 2881",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:29:11Z",
+      "screenshot_sha256": "fc8372e207511e53a8c46679932d9658822da6ebd722ba2755fa83af462fdc57",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "cup",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "cup; Weight 2 oz; Buy From 2 gp Bashira and Ahmet, 3 gp Sarina",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 2881,
+          "cyclopedia_type": 2881,
+          "market_trade_as": 2881,
+          "market_show_as": 2881
+        },
+        {
+          "appearance_object_id": 2883,
+          "cyclopedia_type": 2883,
+          "market_trade_as": 2883,
+          "market_show_as": 2883
+        },
+        {
+          "appearance_object_id": 2884,
+          "cyclopedia_type": 2884,
+          "market_trade_as": 2884,
+          "market_show_as": 2884
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:3723:1043630",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2881",
+          "actualname_literal": "cup",
+          "description_literal": null,
+          "weight_literal": "2.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i2856": {
+      "title": "Explicit Cyclopedia variant declaration: present / native 2856",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:32:15Z",
+      "screenshot_sha256": "ca5efe4620abb8b6c89bf34921c601233e22932a88f6b2580675b57b95ad6223",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "present",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_AND_CAPACITY",
+      "literal_identity_observations": "present; Capacity 5; Weight 6 oz; Buy From 10 gp Bashira, Ahmet and Sarina",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 906,
+          "cyclopedia_type": 906,
+          "market_trade_as": 906,
+          "market_show_as": 906
+        },
+        {
+          "appearance_object_id": 2856,
+          "cyclopedia_type": 2856,
+          "market_trade_as": 2856,
+          "market_show_as": 2856
+        },
+        {
+          "appearance_object_id": 3218,
+          "cyclopedia_type": 3218,
+          "market_trade_as": 3218,
+          "market_show_as": 3218
+        },
+        {
+          "appearance_object_id": 25302,
+          "cyclopedia_type": 25302,
+          "market_trade_as": null,
+          "market_show_as": null
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:3141:1113935",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "2856",
+          "actualname_literal": "present",
+          "description_literal": null,
+          "weight_literal": "6.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i6277": {
+      "title": "Explicit Cyclopedia variant declaration: cake / native 6277",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:32:59Z",
+      "screenshot_sha256": "476f58765074fc3b14dac5bc55fad2f374b3933dc4ec8daa933d1424d576fd89",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "cake",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "NPC_SIGNATURE",
+      "literal_identity_observations": "cake; Weight 5 oz; Buy From 50 gp Jehan the Baker, Toffee, Tanaro and Christine",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 6277,
+          "cyclopedia_type": 6277,
+          "market_trade_as": 6277,
+          "market_show_as": 6277
+        },
+        {
+          "appearance_object_id": 6278,
+          "cyclopedia_type": 6278,
+          "market_trade_as": 6278,
+          "market_show_as": 6278
+        },
+        {
+          "appearance_object_id": 12147,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 12150,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 12151,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 12152,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 12153,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 12154,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        },
+        {
+          "appearance_object_id": 12155,
+          "cyclopedia_type": 12155,
+          "market_trade_as": null,
+          "market_show_as": null
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:12330:1114349",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "6277",
+          "actualname_literal": "cake",
+          "description_literal": null,
+          "weight_literal": "5.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i39340": {
+      "title": "Explicit Cyclopedia variant declaration: butterfly conservation kit / native 39340",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:34:23Z",
+      "screenshot_sha256": "640f5a096be714b071a68b9dd689b5cef7233acdbfd8b0d7706ed2bdb35625ca",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "butterfly conservation kit",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_WEIGHT",
+      "literal_identity_observations": "butterfly conservation kit; It contains a damselfly; Weight 8 oz",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 4863,
+          "cyclopedia_type": 4863,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 4864,
+          "cyclopedia_type": 4864,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 4865,
+          "cyclopedia_type": 4865,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 4866,
+          "cyclopedia_type": 4866,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 5089,
+          "cyclopedia_type": 5089,
+          "market_trade_as": 4863,
+          "market_show_as": 4863
+        },
+        {
+          "appearance_object_id": 39340,
+          "cyclopedia_type": 39340,
+          "market_trade_as": 39340,
+          "market_show_as": 39340
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:98659:1194167",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "39340",
+          "actualname_literal": "butterfly conservation kit",
+          "description_literal": "It contains a damselfly.",
+          "weight_literal": "8.00"
+        }
+      ]
+    },
+    "official-ui:cyclopedia:20261018:variant-i9035": {
+      "title": "Explicit Cyclopedia variant declaration: dracoyle statue / native 9035",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "identity_export_source": "official-client:15.33.9d148f:full-variant-bindings",
+      "observed_at_utc": "2026-10-18T15:34:28Z",
+      "screenshot_sha256": "2fde3347ab2d87a762c5cb18eb7a611d4a3b31f1cdfd8120f2cd89ecaf7b147d",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "query": "dracoyle statue",
+      "literal_property": "Tradeable In Market: yes",
+      "identity_binding_method": "OWN_ID_DESCRIPTION_AND_CANONICAL_MARKET_GROUP",
+      "literal_identity_observations": "Both exact-name Cyclopedia entries explicitly declare yes, have unenchanted description This rare treasure can be charged with an enchanted emerald and Weight 15 oz; own-ID Wiki normal rotations 9035/9040, both Market trade-as 9035. Enchanted 9034 remains held.",
+      "same_name_native_candidates": [
+        {
+          "appearance_object_id": 9034,
+          "cyclopedia_type": 9035,
+          "market_trade_as": 9035,
+          "market_show_as": 9035
+        },
+        {
+          "appearance_object_id": 9035,
+          "cyclopedia_type": 9035,
+          "market_trade_as": 9035,
+          "market_show_as": 9035
+        },
+        {
+          "appearance_object_id": 9039,
+          "cyclopedia_type": 9040,
+          "market_trade_as": 9035,
+          "market_show_as": 9035
+        },
+        {
+          "appearance_object_id": 9040,
+          "cyclopedia_type": 9040,
+          "market_trade_as": 9035,
+          "market_show_as": 9035
+        }
+      ],
+      "qualification": "Native-ID attribution is DERIVED from the stated identity witnesses, not direct native-ID telemetry. The positive official UI declaration applies to this identified type/state; it is not an exhaustive instance/seller admission predicate.",
+      "corroborating_captures": [
+        {
+          "observed_at_utc": "2026-10-18T15:34:31Z",
+          "screenshot_sha256": "f812d89d70edfea7b23ff6d0f4d6cf7e7e58b933e9d52cc58fc7b25b5a630472"
+        }
+      ],
+      "state_fence": "Both observed UI rotations have the unenchanted description; native Market canonical 9035 is admitted. Enchanted identity 9034 remains UNKNOWN; the shared name and alias mapping are not used to promote it.",
+      "own_id_description_bindings": [
+        {
+          "source": "wiki:30395:1148769",
+          "selector": "Infobox Object / itemid, actualname, flavortext, weight",
+          "itemid_literal": "9035, 9040",
+          "actualname_literal": "dracoyle statue",
+          "description_literal": "This rare treasure can be charged with an enchanted emerald.",
+          "weight_literal": "15.00"
+        }
+      ]
+    },
+    "official-ui:look:20261018:store-ultimate-mana-look": {
+      "title": "Read-only Store Inbox Look observation: ultimate mana potions",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "observed_at_utc": "2026-10-18T15:37:42Z",
+      "screenshot_sha256": "e54399b9e809813b9a2e66e0c9a5969b1db802830bcb35fa7e9d54c63a26dafb",
+      "literal_extracts": [
+        "ultimate mana potions",
+        "This item cannot be traded."
+      ],
+      "native_identity_attribution": "NOT_ESTABLISHED",
+      "qualification": "Explicit negative observation for the inspected Store Inbox object only. No native item ID, regular-potion type marketability, or universal restriction is inferred from the shared display name. Private inventory quantities are omitted."
+    },
+    "official-ui:look:20261018:store-second-look": {
+      "title": "Read-only Store Inbox Look observation: great mana potions",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:20261018:quest-variants",
+      "observed_at_utc": "2026-10-18T15:37:44Z",
+      "screenshot_sha256": "94496937e32588d29e477974c5ee59e058d44bda6558a3878749a4d470f8aa88",
+      "literal_extracts": [
+        "great mana potions",
+        "This item cannot be traded."
+      ],
+      "native_identity_attribution": "NOT_ESTABLISHED",
+      "qualification": "Explicit negative observation for the inspected Store Inbox object only. No native item ID, regular-potion type marketability, or universal restriction is inferred from the shared display name. Private inventory quantities are omitted."
     }
   }
 }
