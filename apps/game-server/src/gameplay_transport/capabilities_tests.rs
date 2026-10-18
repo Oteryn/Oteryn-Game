@@ -648,7 +648,7 @@ fn run<F: Future<Output = Result<(), Box<dyn Error>>>>(test: F) -> Result<(), Bo
     tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()?
-        .block_on(test)
+        .block_on(Box::pin(test))
 }
 
 /// One entry frame through `admit_frame`: the end (or session) and the frames written.
@@ -2581,7 +2581,11 @@ mod weather_wire {
             ITEM_VIEW_OFFERED_CAPABILITIES,
             BUNDLE_WORLD_OFFERED_CAPABILITIES,
         ] {
-            assert_eq!(set.last().map(|c| c.id), Some(CAPABILITY_WORLD_WEATHER_V1));
+            assert!(
+                set.iter()
+                    .any(|capability| capability.id == CAPABILITY_WORLD_WEATHER_V1)
+            );
+            assert_eq!(with_weather_offer(set, true), set);
             assert!(
                 with_weather_offer(set, false)
                     .iter()

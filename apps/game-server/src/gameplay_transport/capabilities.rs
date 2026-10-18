@@ -74,16 +74,17 @@ const WORLD_LIGHT: OfferedCapability = OfferedCapability {
     requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
 };
 
-/// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. It is the highest
-/// offered ID (D1027 signed off). A connection keeps it only when its authority exposes a weather
-/// source (the shipped Oteryn-designed data in production, CP D1448), see [`with_weather_offer`].
+/// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. Offered sets
+/// stay ascending, so a higher ID follows it (D1027 signed off). A connection keeps it only when
+/// its authority exposes a weather source (the shipped Oteryn-designed data in production, CP
+/// D1448), see [`with_weather_offer`].
 pub(crate) const WORLD_WEATHER: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_WEATHER_V1,
     requires: &CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
 };
 
 /// The offered set of one connection: `base` without capability 26 unless `weather_bound`, plus
-/// 26 when `weather_bound` (no source means no offer: fail closed).
+/// 26 at its ascending position when `weather_bound` (no source means no offer: fail closed).
 pub(crate) fn with_weather_offer(
     base: &[OfferedCapability],
     weather_bound: bool,
@@ -94,7 +95,8 @@ pub(crate) fn with_weather_offer(
         .filter(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
         .collect();
     if weather_bound {
-        offered.push(WORLD_WEATHER);
+        let at = offered.partition_point(|capability| capability.id < CAPABILITY_WORLD_WEATHER_V1);
+        offered.insert(at, WORLD_WEATHER);
     }
     offered
 }
