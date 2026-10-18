@@ -493,17 +493,18 @@ remain unchanged. This record does not upgrade the original failed run to PASS.
 ## CP takeover checkpoint — 2026-10-17
 
 Bounded checkpoint on draft #2164 under CP takeover (D1379). Merges protected
-`main@1d632319eb2ebfc234609c97fb944523bb1615ad` with a merge commit; no conflict and no
-production/test source change in `vip/presence.rs` or `presence_tests.rs`. Dependency state
-on that main: VIP0 ACCEPTED; CHAT-2 accepted by CP; VIP-1 merged as #2143
+`main@f094e0320289975a220852ff60ca7baf6d234ff4` (via `1d632319`) with merge commits; no
+conflict and no production/test source change in `vip/presence.rs` or `presence_tests.rs`.
+Dependency state on that main: VIP0 ACCEPTED; CHAT-2 accepted by CP and CHAT-2B merged
+(#2227); VIP-1 merged as #2143
 (`durability/vip.rs`, `domain/vip.rs`), still unregistered and without an installed VIP
 migration, as this component is. The historical BLOCKING rows above are history.
 
 **Validation on the merged tree** (PC, shared PostgreSQL 17.6 through the unchanged
-`in-pg-netns.sh`; tree `b721fe73`):
+`in-pg-netns.sh`; code tree of the `main@f094e032` merge):
 
 Every cargo run touched this worktree's `apps/game-server/src/lib.rs` inside the shared
-heavy lock (D1420); an earlier run without that touch tested a foreign lib (0 VIP cases
+build slot (`slot-run.sh`, D1420/D1429); an earlier run without that touch tested a foreign lib (0 VIP cases
 selected) and is discarded.
 
 - `cargo fmt --all --check`: pass (committed tree and overlay).
@@ -513,7 +514,7 @@ selected) and is discarded.
 - Overlay `cargo clippy --locked -p oteryn-game-server --lib --profile test -- -D warnings`: pass.
 - Overlay `in-pg-netns.sh cargo test --locked -p oteryn-game-server --lib -- vip_presence`:
   22 passed, 0 failed, 0 ignored; all 7 native cases reached PostgreSQL (no PRE-ROUTING line).
-- Overlay `cargo test --locked -p oteryn-game-server --lib` without a PostgreSQL URL: 3,315
+- Overlay `cargo test --locked -p oteryn-game-server --lib` without a PostgreSQL URL: 3,387
   passed, 29 ignored, 7 failed. The 7 are this module's native cases, which refuse by design
   ("no silent skip") when `OTERYN_TEST_POSTGRES_ADMIN_URL` is unset; they pass in the PG run
   above. Sibling durability tests return early instead. Registration must put them in a lane
@@ -530,7 +531,7 @@ after `mod world_party` in `durability/mod.rs`) and is not committed.
   seams (`character_authority`, `assert_session_fence`, `lock_admission_relations`), so it can
   only compile as a durability child; moving it changes paths outside this record.
 - P2 unregistered module: deferred to the CP slot. A committed registration in
-  `durability/mod.rs` would also enter all 29 `tests/*.rs` wrapper crates that mount
+  `durability/mod.rs` would also enter all 30 `tests/*.rs` wrapper crates that mount
   `src/durability/mod.rs`; none of them mounts `world_clock.rs` (and 17 lack the
   `bestiary_postgres_harness` the tests use), so `--all-targets` would break. The CP slot must register it
   lib-only (or give those wrappers the needed modules), same as VIP-1's `durability/vip.rs`.
@@ -539,8 +540,8 @@ after `mod world_party` in `durability/mod.rs`) and is not committed.
   the private, request-bound `named_house_current` in `durability/house_interior.rs`
   (HOUSE-RUNTIME-1a, #2163). Copying its SQL here is forbidden; the House owner must expose a
   scope-only `pub(super)` session fence (session, node, house key) for presence to consume.
-- Relay hint rate limit, RL-10/RL-11: blocked. `chat/relay` has only `Private` and `Room`
-  kinds; the sealed presence kind, listener and post-commit admission/logout senders are slot
+- Relay hint rate limit, RL-10/RL-11: blocked. With CHAT-2B (#2227) merged, `chat/relay`
+  still has only `Private` and `Room` kinds; the sealed presence kind, listener and post-commit admission/logout senders are slot
   or CHAT owner work, and RL-10/RL-11 are runtime measurements of that integrated path.
 - Sealed relay codec/listener and final socket custody: CP slot (`chat/`, `connection.rs`).
 
