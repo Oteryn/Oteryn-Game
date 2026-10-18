@@ -24791,6 +24791,14 @@
       "sha256": "d04ca5eae998f99850ea30b079b3b241e6b51244e1395b194f3ad35b94de7817",
       "source_class": "CIPSOFT_OFFICIAL / PRIMARY_OFFICIAL",
       "fetched_at": "2026-10-18"
+    },
+    "repo:content/services/trade/trade-00000-00323.json": {
+      "path": "content/services/trade/trade-00000-00323.json",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/services/trade/trade-00000-00323.json",
+      "commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "a032b1778dc6a705743f66ece4ad6721ff70bcd848d95d00cb5066facd10622d",
+      "source_class": "REPOSITORY_REFERENCE",
+      "fetched_at": "2026-10-18"
     }
   }
 }

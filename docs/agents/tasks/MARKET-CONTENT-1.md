@@ -13,17 +13,19 @@ owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
-  - content/services/trade/market-evidence/evidence-00000-00499.json
-  - content/services/trade/market-evidence/evidence-00500-00999.json
-  - content/services/trade/market-evidence/evidence-01000-01499.json
-  - content/services/trade/market-evidence/evidence-01500-01999.json
-  - content/services/trade/market-evidence/evidence-02000-02075.json
-  - content/services/trade/market-evidence/index.json
-  - content/services/trade/trade-00000-00323.json
   - docs/reference/content-prep/market-content-1/listing-restrictions.json
   - docs/reference/content-prep/market-content-1/sources.json
   - docs/reference/content-prep/market-content-1/README.md
   - docs/agents/tasks/MARKET-CONTENT-1.md
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00000-00499.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-02000-02075.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/index.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/services/evidence-00000-00323.json
+  - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/services/index.json
+  - docs/reference/content-prep/market-content-1/service-apply-plan.json
 ```
 
 ## Outcome
@@ -59,3 +61,7 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Service placement constraint
+
+Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.

@@ -6,4 +6,6 @@ Source registry: [sources.json](sources.json). Facts link to exact revision IDs 
 
 These files prepare Reference data for CP. They add no runtime admission, Rust change, generated content regeneration, or interaction/world-pin mutation. `POPULATED` describes the evidence packet, not complete gameplay readiness. The packet schema is an evidence envelope, not a newly accepted runtime schema.
 
-- All 324 trade services link their exact offered Item keys; 2076 unique wares are covered. NPC saleability does not prove marketability. Unsupported categories, additional restrictions and 1H/2H filtering remain UNKNOWN.
+- Staged link evidence covers all 324 existing trade services and their exact offered Item keys; 2076 unique wares are covered. NPC saleability does not prove marketability. Unsupported categories, additional restrictions and 1H/2H filtering remain UNKNOWN.
+
+Service data placement: **STAGED_FOR_COORDINATOR**. The World Bundle fingerprint includes every tracked `content/services/` file. Updating pins/regenerating content is forbidden in this task. Therefore the proposed files are under `target-files/`, with their intended canonical paths and SHA-256 in [service-apply-plan.json](service-apply-plan.json). CP/coordinator applies them together with qualified regeneration; no current generated Service declaration is changed. This is a concrete data handoff, not a claim that the canonical Service family is populated.
