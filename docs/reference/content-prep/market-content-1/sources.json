@@ -26236,6 +26236,458 @@
       "review_result": "POSITIVE_LISTING_UNIQUE_NATIVE_ID",
       "literal_observation": "Selected exact item simple jo staff; at least one nonempty current server row is visible in sell offers.",
       "retention": "Owner-authorized private evidence capture; screenshot digest and literal observations only are redistributed."
+    },
+    "official-ui:cyclopedia:2026-10-18:controlled-session": {
+      "title": "Official Tibia Cyclopedia explicit Market declarations, 2026-10-18",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "client_version": "15.33.9d148f",
+      "appearance_sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "capture_start_utc": "2026-10-18T14:09:13Z",
+      "capture_end_utc": "2026-10-18T14:21:18Z",
+      "method": "Ordinary Cyclopedia Items search, explicit item selection, wait for details to load, and direct X11 framebuffer inspection. Each selected exact name and literal Tradeable In Market: yes was visually verified.",
+      "qualification": "Explicit official UI declaration supports type-level marketability. Unlike the earlier Market-offer observations, these captures are not independent live server offer, listing-admission or completed-transaction receipts. No Market offers or NPC prices are inferred from this declaration. Individual instance, seller and future continuity predicates remain held. Absence of this UI field is never treated as false.",
+      "name_binding_method": "Exact selected name must occur once across the complete installed appearance object family; trade-as and show-as must equal the target object ID.",
+      "name_scan_sha256": "6efdd066b01d61a24eb9feb9912aafa892fe7d4faedace6b49eaf7ef8c7c08b1",
+      "retention": "Full captures retained privately by owner; only digests and literal observations redistributed. No character identity, credentials, balances or proprietary assets published."
+    },
+    "official-ui:cyclopedia:20261018:i2917": {
+      "title": "Cyclopedia: candlestick",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T14:09:13Z",
+      "screenshot_sha256": "df4b2632d6065b27b75bd5737e483acb1179bf695676eeda65ef51d1f3d080a5",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "candlestick",
+      "selected_display_name": "candlestick",
+      "native_name_matches": [
+        2917
+      ],
+      "literal_observation": "Tradeable In Market: yes",
+      "review_result": "EXPLICIT_AFFIRMATIVE_OFFICIAL_UI_DECLARATION_UNIQUE_NATIVE_ID",
+      "qualification": "Official type-level declaration, not a server offer or transaction receipt; no negative inference from empty Market offer panes."
+    },
+    "official-ui:cyclopedia:20261018:i39037": {
+      "title": "Cyclopedia: cobalt ridge",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T14:09:16Z",
+      "screenshot_sha256": "f1a42bf06a3730830820ca4663d7515d78e600bc2cde8a063b6982f2a042146f",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "cobalt ridge",
+      "selected_display_name": "cobalt ridge",
+      "native_name_matches": [
+        39037
+      ],
+      "literal_observation": "Tradeable In Market: yes",
+      "review_result": "EXPLICIT_AFFIRMATIVE_OFFICIAL_UI_DECLARATION_UNIQUE_NATIVE_ID",
+      "qualification": "Official type-level declaration, not a server offer or transaction receipt; no negative inference from empty Market offer panes."
+    },
+    "official-ui:cyclopedia:20261018:i50171": {
+      "title": "Cyclopedia: jo staff",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T14:09:20Z",
+      "screenshot_sha256": "0603ccc3e9bbee437e7a7ef518627a4b35f7013bf19312ae6469d892f616bfcd",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "jo staff",
+      "selected_display_name": "jo staff",
+      "native_name_matches": [
+        50171
+      ],
+      "literal_observation": "Tradeable In Market: yes",
+      "review_result": "EXPLICIT_AFFIRMATIVE_OFFICIAL_UI_DECLARATION_UNIQUE_NATIVE_ID",
+      "qualification": "Official type-level declaration, not a server offer or transaction receipt; no negative inference from empty Market offer panes."
+    },
+    "official-ui:cyclopedia:20261018:i2914": {
+      "title": "Cyclopedia: lamp",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "session_source": "official-ui:cyclopedia:2026-10-18:controlled-session",
+      "observed_at_utc": "2026-10-18T14:21:18Z",
+      "screenshot_sha256": "6317c48ae73e168bff8ae5c3ad593407a53f53601f52bc64505e8e2b33477277",
+      "screenshot_dimensions": [
+        1280,
+        800
+      ],
+      "search_query": "lamp",
+      "selected_display_name": "lamp",
+      "native_name_matches": [
+        2914
+      ],
+      "literal_observation": "Tradeable In Market: yes",
+      "review_result": "EXPLICIT_AFFIRMATIVE_OFFICIAL_UI_DECLARATION_UNIQUE_NATIVE_ID",
+      "qualification": "Official type-level declaration, not a server offer or transaction receipt; no negative inference from empty Market offer panes."
+    },
+    "official-ui:market:20261018:round2-held": {
+      "title": "Additional 50 Market search queries, all visually reviewed and held",
+      "url": "https://www.tibia.com/",
+      "source_class": "CONTROLLED_OFFICIAL_CLIENT_UI_OBSERVATION",
+      "observations": [
+        {
+          "query": "crate",
+          "candidate_native_id": 117,
+          "observed_at_utc": "2026-10-18T14:01:16Z",
+          "screenshot_sha256": "3e8832760b3f0cc9bd5a92cd8caefa1eb6848ea4d52b8d27df3ce72fb99223e8",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "swarmer drum",
+          "candidate_native_id": 14253,
+          "observed_at_utc": "2026-10-18T14:02:47Z",
+          "screenshot_sha256": "3ef90ede4d5d9c980a8b6c82b1b78730859de8d01a87605ac49ab3d90b442c6f",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "gnomish crystal package",
+          "candidate_native_id": 15802,
+          "observed_at_utc": "2026-10-18T14:01:56Z",
+          "screenshot_sha256": "7aba33f44dfd3f330d3c57479f62a14437e50f1fbb5525a53c50167392b9f565",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "gnomish spore gatherer",
+          "candidate_native_id": 15821,
+          "observed_at_utc": "2026-10-18T14:01:59Z",
+          "screenshot_sha256": "ead1911ea82cae83491d81cbcec5971dd8d29700efc6618afdf8c40209125cd7",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "little pig",
+          "candidate_native_id": 15828,
+          "observed_at_utc": "2026-10-18T14:02:23Z",
+          "screenshot_sha256": "6c72c194e0306f30d317a59bd74c6dbde20c06085ef2c01ee7de8d87aaa729f1",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "guardcatcher",
+          "candidate_native_id": 17669,
+          "observed_at_utc": "2026-10-18T14:02:11Z",
+          "screenshot_sha256": "4da02e988f94d0b5a75ed2245679aa0a536787ec08167312c20b0f79427763de",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "bottle with rat urine",
+          "candidate_native_id": 17671,
+          "observed_at_utc": "2026-10-18T14:00:56Z",
+          "screenshot_sha256": "767654f18bf28a799d57ad7dc8bdd2e82d395a067e4b114cdd676ffa4a1b7099",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "trunkhammer",
+          "candidate_native_id": 17676,
+          "observed_at_utc": "2026-10-18T14:02:56Z",
+          "screenshot_sha256": "dd1ebd9cafaa30027b27bc57e6695d1c0d823b5268d5467dca2c2ec89c5c8018",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "used red chair kit",
+          "candidate_native_id": 23456,
+          "observed_at_utc": "2026-10-18T14:03:03Z",
+          "screenshot_sha256": "33f3927bd7773f2d861022b54f18a9c5c7411943f646c85a611b0cfeb773bde5",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "used globe kit",
+          "candidate_native_id": 23457,
+          "observed_at_utc": "2026-10-18T14:02:59Z",
+          "screenshot_sha256": "5b9916ce0a2181f1ac21387885a5599f037c2d77cc7540a38c5c76d49e3ad9b0",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "used telescope kit",
+          "candidate_native_id": 23458,
+          "observed_at_utc": "2026-10-18T14:03:09Z",
+          "screenshot_sha256": "95111c5f898bd2d94625fc39a5d334c2b61507365aff333e61bd6af645915e81",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "used rocking horse kit",
+          "candidate_native_id": 23459,
+          "observed_at_utc": "2026-10-18T14:03:06Z",
+          "screenshot_sha256": "8af8d18f3b9e8f44356a82df96649f58be95190e822d9e4793376382e4b27f14",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "large used amphora kit",
+          "candidate_native_id": 23460,
+          "observed_at_utc": "2026-10-18T14:02:18Z",
+          "screenshot_sha256": "65adac8a998491a944ab1e124907785ec78f86740f9b14b27fba63b4f23284bf",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "box",
+          "candidate_native_id": 2469,
+          "observed_at_utc": "2026-10-18T14:00:59Z",
+          "screenshot_sha256": "a2b3e8c106f2f76d63f254cc4ae6db1c053aafa894f8d699c3811239c3468be3",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "chest",
+          "candidate_native_id": 2472,
+          "observed_at_utc": "2026-10-18T14:01:11Z",
+          "screenshot_sha256": "182f7fa18af176a2775bfe7e829e5b948c31123da5fed868ec8c4884295236e5",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "fur of a wolf whelp",
+          "candidate_native_id": 25238,
+          "observed_at_utc": "2026-10-18T14:01:53Z",
+          "screenshot_sha256": "f692b86c7b4940564940b681022904e5d25e89036bd6618648118d886b3e3476",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "empty starlight vial",
+          "candidate_native_id": 25731,
+          "observed_at_utc": "2026-10-18T14:01:43Z",
+          "screenshot_sha256": "36e0be31c8dfb3b0f98192076cb06423a910dd8c8e2a3adf8da3de65f2f76ce9",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "cuckoo clock",
+          "candidate_native_id": 2664,
+          "observed_at_utc": "2026-10-18T14:01:19Z",
+          "screenshot_sha256": "9bec60bb61c7ae4628750d3dba1554d2e19778ce7a5daf54ea5e197a0a780daf",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "sample of monster blood",
+          "candidate_native_id": 27874,
+          "observed_at_utc": "2026-10-18T14:02:35Z",
+          "screenshot_sha256": "84352520f65419d26545308f361e534f82daf77d354be87b489e04566997a75e",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "christmas tree package",
+          "candidate_native_id": 2812,
+          "observed_at_utc": "2026-10-18T14:01:14Z",
+          "screenshot_sha256": "e6671fb56432de3b7b9a121df0b2fa2a70d0badb335fc0d2776df68f1864b52d",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "parchment",
+          "candidate_native_id": 2814,
+          "observed_at_utc": "2026-10-18T14:02:26Z",
+          "screenshot_sha256": "90e67fa2174b8afd688f87683e7f1af77e01ee11e95bc786d8dbd623a5b71772",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "document",
+          "candidate_native_id": 2818,
+          "observed_at_utc": "2026-10-18T14:01:36Z",
+          "screenshot_sha256": "8be10333578dbb321f072ba43222aa3418469d5946b138b337a7216b6429c082",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "book",
+          "candidate_native_id": 2837,
+          "observed_at_utc": "2026-10-18T14:00:53Z",
+          "screenshot_sha256": "d095bebb6d5c97cf7660ef60c37a4586b20a0a537cd15b7f8d552eaf11500b7f",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "present",
+          "candidate_native_id": 2856,
+          "observed_at_utc": "2026-10-18T14:02:29Z",
+          "screenshot_sha256": "e4629d777ed216c83802e473afa9dd32de3bb3954dcdfa9f01b1ae784f854c12",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "cup",
+          "candidate_native_id": 2881,
+          "observed_at_utc": "2026-10-18T14:01:22Z",
+          "screenshot_sha256": "bc328e7456e9811d83e63045057432e5eeb9d8d08f2acf4e2768b170f0f6c3aa",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "lamp",
+          "candidate_native_id": 2914,
+          "observed_at_utc": "2026-10-18T14:00:44Z",
+          "screenshot_sha256": "3529bd5b1208975d1cd70b9c87d9ba13989298927cd10f49656468a2c2b93555",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "candlestick",
+          "candidate_native_id": 2917,
+          "observed_at_utc": "2026-10-18T14:00:41Z",
+          "screenshot_sha256": "093e49783f0010705254769e5cfc45ec6a2654974214b1e5d5c82cb81a72898c",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "torch",
+          "candidate_native_id": 2920,
+          "observed_at_utc": "2026-10-18T14:02:54Z",
+          "screenshot_sha256": "380304c6e7d307b37bf63ceedf46a1c24e9ba27420362788a3f9e116c453c5d9",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "lit candelabrum",
+          "candidate_native_id": 2927,
+          "observed_at_utc": "2026-10-18T14:02:21Z",
+          "screenshot_sha256": "dd61792733259a79251c7f364c7ee2c53a14a4a39630bd771c7c91d093f994a5",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "spell rune",
+          "candidate_native_id": 3201,
+          "observed_at_utc": "2026-10-18T14:02:45Z",
+          "screenshot_sha256": "6ed942bf8b4fc4e9a0ab7af3e3ead13ce1e49bca05bb320b4b44142377030e0e",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "schnitzel meat grinder",
+          "candidate_native_id": 32093,
+          "observed_at_utc": "2026-10-18T14:02:39Z",
+          "screenshot_sha256": "fe9cc93796f4ad0d7e33fbd4c7adf897782bbc262187e4fa80ebbb5fc5899ef0",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "celestial chart",
+          "candidate_native_id": 39136,
+          "observed_at_utc": "2026-10-18T14:01:08Z",
+          "screenshot_sha256": "e663f2cd99677da26d83cbcc61a7302762150af0549964cef29442a49742eb23",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "butterfly conservation kit",
+          "candidate_native_id": 39340,
+          "observed_at_utc": "2026-10-18T14:01:02Z",
+          "screenshot_sha256": "a44c20dc27b69c904f4fc4cf11b4d9d412151a5497c01ff2fb30f68475981461",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "icicle chisel",
+          "candidate_native_id": 39578,
+          "observed_at_utc": "2026-10-18T14:02:14Z",
+          "screenshot_sha256": "b6a5e30c51aff697a0a43483c8893ffe454bd57dd1dfdabe0aeed478f0871b86",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "dead spider",
+          "candidate_native_id": 3988,
+          "observed_at_utc": "2026-10-18T14:01:31Z",
+          "screenshot_sha256": "f1b1578eb06a6511ca71c582375221207448fd6cf9cbc1ef8d3e1952bfb33de3",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "dead rat",
+          "candidate_native_id": 3994,
+          "observed_at_utc": "2026-10-18T14:01:28Z",
+          "screenshot_sha256": "b123a2680e8b8993ebb402411fe6f918a484f14ce283daaa9230288e73afd4b1",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "dead wolf",
+          "candidate_native_id": 4007,
+          "observed_at_utc": "2026-10-18T14:01:34Z",
+          "screenshot_sha256": "34cfee3e04b1e224d7aed76da9a83bd9be8de47f74bc8b061384c70705d600d9",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "family signet ring",
+          "candidate_native_id": 406,
+          "observed_at_utc": "2026-10-18T14:01:49Z",
+          "screenshot_sha256": "92e218271309156ef83c8f3375ce446a34c5d2f9903eeb1e1370c2aca0170915",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "dead rabbit",
+          "candidate_native_id": 4173,
+          "observed_at_utc": "2026-10-18T14:01:25Z",
+          "screenshot_sha256": "fa408c5a698244816f37325d945743a962a4d7bad343bbc92d576f9c298b3301",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "sheet of tracing paper",
+          "candidate_native_id": 4842,
+          "observed_at_utc": "2026-10-18T14:02:42Z",
+          "screenshot_sha256": "e411ff67c18f83953557f2e28b99f4ad8a6737b205090cad39cc9eb379072781",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "enigmatic voodoo skull",
+          "candidate_native_id": 5669,
+          "observed_at_utc": "2026-10-18T14:01:46Z",
+          "screenshot_sha256": "e8ee68a738a9550ed3cc840fb33876f1671a9f9ac2955525dee873bbc50adcd0",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "golden figurine",
+          "candidate_native_id": 5799,
+          "observed_at_utc": "2026-10-18T14:02:02Z",
+          "screenshot_sha256": "337988f06a20cd7bc509393b48f68a7a94ce85ffa48d79ab8772bb18e9fe6575",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "cake",
+          "candidate_native_id": 6277,
+          "observed_at_utc": "2026-10-18T14:01:05Z",
+          "screenshot_sha256": "68df648ac41ab8ea672d57bc9f63c5a76ba7ecee9519700c05625247b5372622",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "greeting card",
+          "candidate_native_id": 6386,
+          "observed_at_utc": "2026-10-18T14:02:08Z",
+          "screenshot_sha256": "97c1cf6a1305753f6c737e2da9e7dfbcd566103544d487b301a70ecb753894b3",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "red christmas bundle",
+          "candidate_native_id": 6506,
+          "observed_at_utc": "2026-10-18T14:02:32Z",
+          "screenshot_sha256": "6b662fd33a76f537a1488bb65317bb1286880f04c26b3a8e1849454323494124",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "blue christmas bundle",
+          "candidate_native_id": 6507,
+          "observed_at_utc": "2026-10-18T14:00:50Z",
+          "screenshot_sha256": "3783981d9cc82ab104fdb6b8d9d0525455e707902c2f918125e9aca66e0fc09e",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "green christmas bundle",
+          "candidate_native_id": 6508,
+          "observed_at_utc": "2026-10-18T14:02:05Z",
+          "screenshot_sha256": "c77afaaa664c161e9e10de22100afca69ed472254fc6d284880fb1e7c47a8a4c",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "the witches' grimoire",
+          "candidate_native_id": 7874,
+          "observed_at_utc": "2026-10-18T14:02:51Z",
+          "screenshot_sha256": "41be2ca7da5fddc53d85655d447e9b9f5995f3c89cdf8756d77e18120835c118",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "blood crystal",
+          "candidate_native_id": 8453,
+          "observed_at_utc": "2026-10-18T14:00:47Z",
+          "screenshot_sha256": "2877996827fe0f561d728e5e9a1dd6440ac797940c615bb701ad44db9d762411",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        },
+        {
+          "query": "dracoyle statue",
+          "candidate_native_id": 9034,
+          "observed_at_utc": "2026-10-18T14:01:39Z",
+          "screenshot_sha256": "e117b16e8cc5065141ff7df6c7cb86986d94fb12ad809dc58149ba048ba1bffc",
+          "review_result": "NO_QUALIFIED_POSITIVE_SERVER_LISTING_RECEIPT"
+        }
+      ],
+      "qualification": "No positive per-ID server-listing fact admitted. Searches returned empty results/offers, ambiguous native variants, or other selected names; stale selection details were never attached to the searched item. Empty/absent results are not evidence of false. All screenshots retained privately."
     }
   }
 }

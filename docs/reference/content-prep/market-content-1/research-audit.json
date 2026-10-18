@@ -4,7 +4,7 @@
   "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
   "research_status": "CONTROLLED_UI_SUPPLEMENT_WITH_REMAINING_FIELDS_EXPLICIT",
   "runtime_admission": "BLOCKED",
-  "coverage": "All 324 original trade services and 2076 distinct offered Item identities remain covered. Fresh read-only extraction from the owner-installed CipSoft client 15.33.9d148f (appearance SHA256 501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f) supplies 1868 positive category/display observations, including trade-as/show-as identity and level/profession filters where explicitly present. A market submessage is not proof of server listing permission. Current own-ID Wiki tradeability, explicit non-portable exclusions and inapplicable categories are distinguished. Complete state-dependent listing predicates remain held where unavailable. Controlled owner-authorized official-client Market observations on 2026-10-18 resolve 47 previously UNKNOWN trade.marketable fields. Each admitted native ID has positive current server Buy/Sell rows, an exact selected display name unique across the complete installed appearance object family, and matching trade-as/show-as IDs. The live Linux client version and appearance digest match the existing 15.33.9d148f evidence. 57 target queries plus a Magic Plate Armor positive control were visually reviewed. Seven duplicate-name identities, two empty-listing identities and one absent query result remain held. Solid Rage returned positive listings on the repeated check; its earlier empty result was never promoted to a negative fact. No trades were performed, and no price, balance, character identity, screenshot, proprietary asset or credential is redistributed. Exhaustive item-instance predicates and runtime admission remain held.",
+  "coverage": "All 324 original trade services and 2076 distinct offered Item identities remain covered. Fresh read-only extraction from the owner-installed CipSoft client 15.33.9d148f (appearance SHA256 501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f) supplies 1868 positive category/display observations, including trade-as/show-as identity and level/profession filters where explicitly present. A market submessage is not proof of server listing permission. Current own-ID Wiki tradeability, explicit non-portable exclusions and inapplicable categories are distinguished. Complete state-dependent listing predicates remain held where unavailable. Controlled owner-authorized official-client Market observations on 2026-10-18 resolve 47 previously UNKNOWN trade.marketable fields. Each admitted native ID has positive current server Buy/Sell rows, an exact selected display name unique across the complete installed appearance object family, and matching trade-as/show-as IDs. The live Linux client version and appearance digest match the existing 15.33.9d148f evidence. 57 target queries plus a Magic Plate Armor positive control were visually reviewed. Seven duplicate-name identities, two empty-listing identities and one absent query result remain held. Solid Rage returned positive listings on the repeated check; its earlier empty result was never promoted to a negative fact. No trades were performed, and no price, balance, character identity, screenshot, proprietary asset or credential is redistributed. Exhaustive item-instance predicates and runtime admission remain held. A second controlled inspection reviewed 50 additional distinct Market queries without admitting any new server-listing receipt: empty results/offers, ambiguous native variants and other or stale selected names remain non-affirmative. Separately, explicit official Cyclopedia declarations Tradeable In Market: yes were visually verified for lamp (2914), candlestick (2917), cobalt ridge (39037), and jo staff (50171). Four formerly UNKNOWN type-level trade.marketable fields are now DERIVED by binding those exact unique selected names to the matching native IDs. These are official UI declarations, not server-offer or transaction receipts; no trades were performed. Instance/seller restrictions remain held, and no prices, character identity, balances, screenshots, assets or credentials are redistributed.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/market-content-1/listing-restrictions.json": 1,
@@ -18,8 +18,8 @@
   "evidence_field_counts": {
     "PROVEN": 5634,
     "CONFLICT": 1,
-    "DERIVED": 9298,
-    "UNKNOWN": 2253
+    "DERIVED": 9302,
+    "UNKNOWN": 2249
   },
   "unresolved_fields": [
     {
@@ -7539,35 +7539,11 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/241/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3669:1148763",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/241/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/242/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:3517:1148764",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json/records/242/facts/trade.per_item_restrictions",
@@ -13381,18 +13357,6 @@
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
     },
     {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/403/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:98622:1082899",
-          "selector": "Infobox Object / itemid, marketable, primarytype"
-        }
-      ],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
-    },
-    {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json/records/403/facts/trade.per_item_restrictions",
       "candidate": null,
       "status": "UNKNOWN",
@@ -14864,13 +14828,6 @@
       "status": "UNKNOWN",
       "sources": [],
       "limitation": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
-    },
-    {
-      "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/60/facts/trade.marketable",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
     },
     {
       "field_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/60/facts/trade.per_item_restrictions",

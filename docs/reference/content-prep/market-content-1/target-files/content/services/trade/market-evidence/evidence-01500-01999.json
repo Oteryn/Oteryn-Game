@@ -9081,12 +9081,21 @@
       "key": "oteryn:item.tibia.i50171",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "continuity": "OFFICIAL_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
+          "sources": [
+            {
+              "source": "official-ui:cyclopedia:20261018:i50171",
+              "selector": "Selected exact item / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:501594e8",
+              "selector": "object/id=50171/name and market trade_as_object_id/show_as_object_id; full object-family name uniqueness scan"
+            }
+          ],
+          "note": "Official Cyclopedia explicitly declares this item type tradeable in Market. Native-ID attribution derives from the unique full-client selected name and matching trade-as/show-as IDs. This establishes the official type-level declaration, not independently observed server listing admission, current offers, every instance or seller, or future continuity. Per-item restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Weapons",

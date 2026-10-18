@@ -32747,17 +32747,21 @@
       "key": "oteryn:item.tibia.i2914",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:3669:1148763",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:i2914",
+              "selector": "Selected exact item / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:501594e8",
+              "selector": "object/id=2914/name and market trade_as_object_id/show_as_object_id; full object-family name uniqueness scan"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this item type tradeable in Market. Native-ID attribution derives from the unique full-client selected name and matching trade-as/show-as IDs. This establishes the official type-level declaration, not independently observed server listing admission, current offers, every instance or seller, or future continuity. Per-item restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Tools",
@@ -32871,17 +32875,21 @@
       "key": "oteryn:item.tibia.i2917",
       "facts": {
         "trade.marketable": {
-          "value": null,
-          "classification": "UNKNOWN",
+          "value": true,
+          "classification": "DERIVED",
           "target_cut": "2026-10-18",
-          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "continuity": "OFFICIAL_UI_DECLARATION_AT_CAPTURE_NOT_SERVER_TRANSACTION_RECEIPT",
           "sources": [
             {
-              "source": "wiki:3517:1148764",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "official-ui:cyclopedia:20261018:i2917",
+              "selector": "Selected exact item / Basic Item Details / Tradeable In Market: yes"
+            },
+            {
+              "source": "official-client:15.33.9d148f:501594e8",
+              "selector": "object/id=2917/name and market trade_as_object_id/show_as_object_id; full object-family name uniqueness scan"
             }
           ],
-          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+          "note": "Official Cyclopedia explicitly declares this item type tradeable in Market. Native-ID attribution derives from the unique full-client selected name and matching trade-as/show-as IDs. This establishes the official type-level declaration, not independently observed server listing admission, current offers, every instance or seller, or future continuity. Per-item restrictions remain separately UNKNOWN."
         },
         "trade.market_category": {
           "value": "Tools",
