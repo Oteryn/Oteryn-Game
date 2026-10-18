@@ -11,14 +11,19 @@
 //!   then may the action take effect;
 //! - the admission read ([`DurabilityRoot::read_pvp_state`]): the stored deadlines as time
 //!   remaining on the database clock, so a node with a skewed clock cannot shorten a block;
-//! - the World job ([`DurabilityRoot::drain_pvp_expiry`]): at most 100 rows per kind per pass.
+//! - the death-transaction adapter ([`apply_pvp_death_in_transaction`], PVP-1b, §9): inside the
+//!   victim's death transaction, the kill block of every contributor and, for each unjustified
+//!   one, its point row, revenge mark, white skull (PVP-0 §6.1, D971) and skull evaluation
+//!   ([`skull::evaluate_skull`], D1443 windows), then the deletion of the victim's ledger;
+//! - the World job ([`DurabilityRoot::drain_pvp_expiry`]): at most 100 rows per kind per pass,
+//!   including the normalization of expired skulls.
 //!
-//! The kill block, skull, unjustified points and revenge marks are written by the death
-//! transaction (PVP-DEATH-1), not here.
+//! The runtime classification of each contributor (justified or not, damage or assist) is the
+//! caller's (PVP-RT-1 / PVP-DEATH-1); avenging a revenge mark belongs to PVP-DEATH-1.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
-    CharacterProgressionError, CurrentCharacterGameplayFence, assert_session_fence,
+    CharacterProgressionError, CurrentCharacterGameplayFence, assert_session_fence, uuid_text,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -26,8 +31,13 @@ use super::db::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
-use crate::foundation::RuntimeScopeRefV1;
+use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
+
+/// The skull arithmetic lives with the PvP combat sources; it is mounted here because the death
+/// transaction is compiled into targets that hold the durability tree without the combat tree.
+#[path = "../combat/pvp/skull.rs"]
+pub(crate) mod skull;
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
@@ -143,12 +153,72 @@ pub struct StoredPvpState {
     pub revision: u64,
 }
 
-/// What one World cleanup pass deleted.
+/// What one World cleanup pass deleted, and how many expired skulls it cleared.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PvpCleanup {
     pub points: u64,
     pub marks: u64,
     pub ledger_rows: u64,
+    pub skulls: u64,
+}
+
+/// One contributor of a PvP death (§9) as the runtime classified it: every full and compact
+/// ledger row of the victim within the five-minute window is one contributor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PvpDeathContributor {
+    pub character_id: CharacterId,
+    /// A damage contributor; `false` for an assist-only one.
+    pub damage: bool,
+    /// Justified (marked victim, war or Hardcore); `false` for an unjustified Open-PvP kill.
+    pub justified: bool,
+}
+
+/// The PvP consequences of one death. Empty for a death without PvP contributors: the death
+/// transaction then writes no PvP row.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct PvpDeathConsequences {
+    pub contributors: Vec<PvpDeathContributor>,
+}
+
+impl PvpDeathConsequences {
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.contributors.is_empty()
+    }
+
+    /// The contributors in CharacterId order, after the §9 bounds: at most 80, distinct, none
+    /// the victim.
+    pub(crate) fn validated(&self, victim: CharacterId) -> Result<Vec<PvpDeathContributor>> {
+        let mut contributors = self.contributors.clone();
+        contributors.sort_by_key(|contributor| *contributor.character_id.as_bytes());
+        if contributors.len() > skull::MAX_DEATH_CONTRIBUTORS
+            || contributors
+                .windows(2)
+                .any(|pair| pair[0].character_id == pair[1].character_id)
+            || contributors
+                .iter()
+                .any(|contributor| contributor.character_id == victim)
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
+        Ok(contributors)
+    }
+
+    /// The death command binding's PvP part, empty for no contributors so an earlier receipt's
+    /// binding is unchanged.
+    pub(crate) fn binding_bytes(&self, victim: CharacterId) -> Result<Vec<u8>> {
+        let contributors = self.validated(victim)?;
+        if contributors.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut bytes = b"pvp".to_vec();
+        bytes.push(u8::try_from(contributors.len()).map_err(|_| CharacterProgressionError::InvalidInput)?);
+        for contributor in contributors {
+            bytes.extend_from_slice(contributor.character_id.as_bytes());
+            bytes.push(u8::from(contributor.damage) | (u8::from(contributor.justified) << 1));
+        }
+        Ok(bytes)
+    }
 }
 
 impl DurabilityRoot {
@@ -358,8 +428,9 @@ async fn load_pvp_state(
 /// §6.2 World job, inside a transaction that already holds the scope authority: at most
 /// [`PVP_CLEANUP_BATCH`] point rows older than 45 days (`PARTYPVP0-RL-23`), expired revenge marks
 /// and ledger rows whose `last_at` is older than 5 minutes (`PARTYPVP0-RL-18`) of the authority's
-/// World. The authority must belong to this transaction, as for the World party cleanup.
-#[allow(dead_code)] // The node's World job calls it in the PVP-RT-1b wiring slice.
+/// World, and clears at most as many skulls whose `skull_until` has passed (the effective skull
+/// is already none, §6.2). The authority must belong to this transaction, as for the World party
+/// cleanup.
 pub(crate) async fn cleanup_pvp_rows_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &super::spell_item_transaction::SpellItemScopeAuthority,
@@ -406,17 +477,31 @@ pub(crate) async fn cleanup_pvp_rows_in_transaction(
     .execute(&mut **tx)
     .await?
     .rows_affected();
+    let skulls = sqlx::query(
+        "UPDATE game_character_pvp_state AS s SET skull = 0, skull_until = NULL, \
+                revision = s.revision + 1 \
+          WHERE s.character_id IN \
+           (SELECT e.character_id FROM game_character_pvp_state e \
+             WHERE e.world_id = encode($1,'hex')::uuid AND e.skull > 0 \
+               AND e.skull_until <= clock_timestamp() \
+             ORDER BY e.skull_until, e.character_id LIMIT $2 FOR UPDATE OF e)",
+    )
+    .bind(world.as_slice())
+    .bind(PVP_CLEANUP_BATCH)
+    .execute(&mut **tx)
+    .await?
+    .rows_affected();
     Ok(PvpCleanup {
         points,
         marks,
         ledger_rows,
+        skulls,
     })
 }
 
 impl DurabilityRoot {
     /// One bounded World cleanup pass (§6.2) under the current scoped owner, the same source
     /// pass as the party invitation expiry: no command occurrence and no user payment exists.
-    #[allow(dead_code)] // The node's World job calls it in the PVP-RT-1b wiring slice.
     pub(crate) async fn drain_pvp_expiry(
         &self,
         permit: &super::spell_owner_commit::SpellLanePermit,
@@ -453,4 +538,233 @@ impl DurabilityRoot {
             .await
             .map_err(super::spell_item_transaction::SpellItemError::from)
     }
+}
+
+/// §9 inside the victim's death transaction, after its receipt is inserted (the 0081 and 0123
+/// guards require that receipt and the victim's ledger): the contributors must be exactly the
+/// victim's ledger rows within five minutes. State rows of the victim and every contributor are
+/// inserted when missing and locked in CharacterId order, then each contributor gets its kill
+/// block and each unjustified one its point row, revenge mark, white skull and skull
+/// evaluation; finally the victim's ledger rows are deleted. No CharacterRevision moves.
+/// A refusal (`Ok(Err(_))`) leaves the caller to roll the death transaction back.
+pub(crate) async fn apply_pvp_death_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    victim: CharacterId,
+    world: WorldId,
+    occurrence: &[u8; 16],
+    consequences: &PvpDeathConsequences,
+) -> std::result::Result<Result<()>, DurabilityError> {
+    let contributors = match consequences.validated(victim) {
+        Ok(contributors) if !contributors.is_empty() => contributors,
+        Ok(_) => return Ok(Ok(())),
+        Err(error) => return Ok(Err(error)),
+    };
+    let mut ids: Vec<Vec<u8>> = contributors
+        .iter()
+        .map(|contributor| contributor.character_id.as_bytes().to_vec())
+        .collect();
+    ids.push(victim.as_bytes().to_vec());
+    ids.sort();
+    let in_world: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_roots \
+          WHERE world_id = encode($2,'hex')::uuid \
+            AND character_id IN (SELECT encode(id,'hex')::uuid FROM unnest($1::bytea[]) id)",
+    )
+    .bind(&ids)
+    .bind(world.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    if usize::try_from(in_world).ok() != Some(ids.len()) {
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
+    for id in &ids {
+        sqlx::query(
+            "INSERT INTO game_character_pvp_state (character_id, world_id) \
+             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid) \
+             ON CONFLICT (character_id) DO NOTHING",
+        )
+        .bind(id.as_slice())
+        .bind(world.as_bytes().as_slice())
+        .execute(&mut **tx)
+        .await?;
+    }
+    let locked = sqlx::query(
+        "SELECT character_id::text, world_id::text, skull, \
+                floor(extract(epoch FROM skull_until) * 1000)::bigint AS skull_until_ms \
+           FROM game_character_pvp_state \
+          WHERE character_id IN (SELECT encode(id,'hex')::uuid FROM unnest($1::bytea[]) id) \
+          ORDER BY character_id FOR UPDATE",
+    )
+    .bind(&ids)
+    .fetch_all(&mut **tx)
+    .await?;
+    if locked.len() != ids.len()
+        || locked
+            .iter()
+            .map(|row| row.try_get::<String, _>("world_id"))
+            .collect::<std::result::Result<Vec<_>, _>>()?
+            .iter()
+            .any(|stored| uuid_text(stored).ok() != Some(*world.as_bytes()))
+    {
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
+    // Contribution evidence: the victim's ledger names exactly these contributors in the window.
+    let ledger = sqlx::query(
+        "SELECT contributor_character_id::text AS contributor, compact, compact_kind \
+           FROM game_character_pvp_ledger \
+          WHERE victim_character_id = encode($1,'hex')::uuid \
+            AND last_at >= clock_timestamp() - interval '5 minutes' \
+          ORDER BY contributor_character_id FOR UPDATE",
+    )
+    .bind(victim.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    if ledger.len() != contributors.len() {
+        return Ok(Err(CharacterProgressionError::InvalidInput));
+    }
+    for (row, contributor) in ledger.iter().zip(&contributors) {
+        let stored = uuid_text(&row.try_get::<String, _>("contributor")?)?;
+        let kind: Option<i16> = row.try_get("compact_kind")?;
+        let compact: bool = row.try_get("compact")?;
+        if stored != *contributor.character_id.as_bytes()
+            || (compact && kind != Some(if contributor.damage { 1 } else { 2 }))
+        {
+            return Ok(Err(CharacterProgressionError::InvalidInput));
+        }
+    }
+    let damage_contributors = contributors.iter().filter(|c| c.damage).count();
+    for contributor in &contributors {
+        let id = contributor.character_id.as_bytes().as_slice();
+        let mut skull_write: Option<(i16, i64)> = None;
+        if !contributor.justified {
+            let Some(points) = skull::unjustified_points_milli(contributor.damage, damage_contributors)
+            else {
+                return Ok(Err(CharacterProgressionError::InvalidInput));
+            };
+            let state = locked
+                .iter()
+                .find(|row| {
+                    row.try_get::<String, _>("character_id")
+                        .ok()
+                        .and_then(|text| uuid_text(&text).ok())
+                        == Some(*contributor.character_id.as_bytes())
+                })
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            let current = skull::SkullState {
+                skull: match state.try_get::<i16, _>("skull")? {
+                    0 => PvpSkull::None,
+                    1 => PvpSkull::Red,
+                    2 => PvpSkull::Black,
+                    _ => return Err(DurabilityError::InvalidStoredState),
+                },
+                until_ms: state
+                    .try_get::<Option<i64>, _>("skull_until_ms")?
+                    .map(u64::try_from)
+                    .transpose()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            };
+            let now_ms: i64 = sqlx::query_scalar(
+                "SELECT floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint",
+            )
+            .fetch_one(&mut **tx)
+            .await?;
+            let now_ms = u64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let history: Vec<(i64, i32)> = sqlx::query_as(
+                "SELECT floor(extract(epoch FROM committed_at) * 1000)::bigint, points_milli \
+                   FROM game_character_unjustified_points \
+                  WHERE character_id = encode($1,'hex')::uuid \
+                    AND death_occurrence_id <> encode($2,'hex')::uuid \
+                    AND committed_at <= to_timestamp($3::bigint / 1000.0) \
+                    AND committed_at > to_timestamp($3::bigint / 1000.0) - $4 * interval '1 millisecond'",
+            )
+            .bind(id)
+            .bind(occurrence.as_slice())
+            .bind(i64::try_from(now_ms).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .bind(i64::try_from(skull::HISTORY_WINDOW_MS).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .fetch_all(&mut **tx)
+            .await?;
+            let history = history
+                .into_iter()
+                .map(|(at, milli)| {
+                    Ok(skull::SkullPoint {
+                        committed_at_ms: u64::try_from(at)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        points_milli: u16::try_from(milli)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                    })
+                })
+                .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+            let evaluation = skull::evaluate_skull(now_ms, current, &history, points)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if evaluation.points_milli[0] < u64::from(points) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            if let (skull @ (PvpSkull::Red | PvpSkull::Black), Some(until)) =
+                (evaluation.state.skull, evaluation.state.until_ms)
+            {
+                skull_write = Some((
+                    if skull == PvpSkull::Red { 1 } else { 2 },
+                    i64::try_from(until).map_err(|_| DurabilityError::InvalidStoredState)?,
+                ));
+            }
+            sqlx::query(
+                "INSERT INTO game_character_unjustified_points \
+                    (character_id, death_occurrence_id, victim_character_id, points_milli) \
+                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, $4)",
+            )
+            .bind(id)
+            .bind(occurrence.as_slice())
+            .bind(victim.as_bytes().as_slice())
+            .bind(i32::from(points))
+            .execute(&mut **tx)
+            .await?;
+            sqlx::query(
+                "INSERT INTO game_character_revenge_marks \
+                    (victim_character_id, killer_character_id, death_occurrence_id) \
+                 VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid)",
+            )
+            .bind(victim.as_bytes().as_slice())
+            .bind(id)
+            .bind(occurrence.as_slice())
+            .execute(&mut **tx)
+            .await?;
+        }
+        // Every contributor: the kill block (RL-13); an unjustified one also keeps its white
+        // skull at least as long (PVP-0 §6.1); a new or refreshed skull never shortens an
+        // unexpired one (the 0081 guard enforces it too).
+        let updated = sqlx::query(
+            "UPDATE game_character_pvp_state AS s SET \
+                kill_block_until = GREATEST(s.kill_block_until, c.kill_until), \
+                white_skull_until = CASE WHEN $2 \
+                    THEN GREATEST(s.white_skull_until, s.kill_block_until, c.kill_until) \
+                    ELSE s.white_skull_until END, \
+                skull = COALESCE($3::smallint, s.skull), \
+                skull_until = CASE WHEN $3::smallint IS NULL THEN s.skull_until \
+                    ELSE GREATEST(CASE WHEN s.skull_until > clock_timestamp() THEN s.skull_until END, \
+                                  to_timestamp($4::bigint / 1000.0)) END, \
+                revision = s.revision + 1 \
+               FROM (SELECT clock_timestamp() + $5 * interval '1 millisecond' AS kill_until) c \
+              WHERE s.character_id = encode($1,'hex')::uuid",
+        )
+        .bind(id)
+        .bind(!contributor.justified)
+        .bind(skull_write.map(|(skull, _)| skull))
+        .bind(skull_write.map(|(_, until)| until))
+        .bind(i64::try_from(skull::KILL_BLOCK_MS).map_err(|_| DurabilityError::InvalidStoredState)?)
+        .execute(&mut **tx)
+        .await?
+        .rows_affected();
+        if updated != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
+    // §8.3: the death deletes the victim's ledger (the 0081 delete guard admits it in this
+    // transaction).
+    sqlx::query(
+        "DELETE FROM game_character_pvp_ledger WHERE victim_character_id = encode($1,'hex')::uuid",
+    )
+    .bind(victim.as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(Ok(()))
 }

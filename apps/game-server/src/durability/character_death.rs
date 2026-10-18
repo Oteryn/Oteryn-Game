@@ -33,6 +33,7 @@ use super::character_revision_sequencer::{CharacterRevisionSequencer, RevisionSl
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::pvp_state::{PvpDeathConsequences, apply_pvp_death_in_transaction};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::progression::{
@@ -140,8 +141,44 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
     ) -> Result<CharacterDeathOutcome> {
+        self.commit_death_transaction(
+            authority,
+            node,
+            fence,
+            request,
+            PvpDeathConsequences::default(),
+        )
+        .await
+    }
+
+    /// [`Self::commit_character_death`] of a PvP death (PVP-1b, PARTY-PVP-0 §9): the same
+    /// transaction also writes the PvP consequences of `pvp` against the victim's ledger
+    /// ([`apply_pvp_death_in_transaction`]). The contributors are part of the command binding,
+    /// so a replay with other contributors conflicts; no contributor binds exactly as a PvE
+    /// death. Runtime callers reach it only through a
+    /// [`RevisionSlot`](super::character_revision_sequencer::RevisionSlot).
+    pub async fn commit_character_pvp_death<const N: usize>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        pvp: PvpDeathConsequences,
+    ) -> Result<CharacterDeathOutcome> {
+        self.commit_death_transaction(authority, node, fence, request, pvp)
+            .await
+    }
+
+    async fn commit_death_transaction<const N: usize>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        pvp: PvpDeathConsequences,
+    ) -> Result<CharacterDeathOutcome> {
         validate_request(&fence, &request)?;
-        let binding = command_binding(&fence, &request)?;
+        let binding = death_binding(&fence, &request, &pvp.binding_bytes(fence.character_id)?)?;
         let policy_digest = policy_digest(&request.policy)?;
         let recovery = authority
             .record_for(self)
@@ -382,6 +419,18 @@ impl DurabilityRoot {
                     .bind(&request.respawn_position)
                     .execute(&mut *tx)
                     .await?;
+                    // PVP-1b: the PvP consequences commit with the receipt or not at all.
+                    if let Err(error) = apply_pvp_death_in_transaction(
+                        &mut tx,
+                        fence.character_id,
+                        request.death_cell.world_id,
+                        request.occurrence.as_bytes(),
+                        &pvp,
+                    )
+                    .await?
+                    {
+                        return Ok(Err(error));
+                    }
 
                     let committed = CommittedCharacterDeath {
                         occurrence: request.occurrence,
@@ -700,6 +749,28 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
     ) -> Result<CommittedCharacterDeath> {
+        self.settle_player_pvp_death(
+            sequencer,
+            authority,
+            node,
+            fence,
+            request,
+            PvpDeathConsequences::default(),
+        )
+        .await
+    }
+
+    /// [`Self::settle_player_death`] of a PvP death: every commit (and replay) of the death
+    /// carries the PvP consequences of `pvp` ([`Self::commit_character_pvp_death`]).
+    pub async fn settle_player_pvp_death<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        pvp: PvpDeathConsequences,
+    ) -> Result<CommittedCharacterDeath> {
         let occurrence = request.occurrence;
         let mut slot = sequencer.acquire(fence.character_id).await;
         let original = self
@@ -707,7 +778,7 @@ impl DurabilityRoot {
             .await?
             .map(|death| death.original_character_revision);
         let outcome = match slot
-            .commit_death(self, authority, node, fence, request.clone(), original)
+            .commit_pvp_death(self, authority, node, fence, request.clone(), &pvp, original)
             .await
         {
             Err(CharacterProgressionError::MissingProgressionState) if original.is_none() => {
@@ -727,7 +798,7 @@ impl DurabilityRoot {
                     },
                 )
                 .await?;
-                slot.commit_death(self, authority, node, fence, request, None)
+                slot.commit_pvp_death(self, authority, node, fence, request, &pvp, None)
                     .await?
             }
             // An earlier death's respawn was never consumed (its admission's consumption
@@ -744,7 +815,7 @@ impl DurabilityRoot {
                     None,
                 )
                 .await?;
-                slot.commit_death(self, authority, node, fence, request, None)
+                slot.commit_pvp_death(self, authority, node, fence, request, &pvp, None)
                     .await?
             }
             outcome => outcome?,
@@ -872,6 +943,16 @@ fn command_binding<const N: usize>(
     fence: &CurrentCharacterGameplayFence,
     request: &CharacterDeathRequest<N>,
 ) -> Result<Vec<u8>> {
+    death_binding(fence, request, &[])
+}
+
+/// [`command_binding`] with the PvP contributors appended (PVP-1b); `pvp` is empty for a death
+/// without contributors, so a PvE binding is unchanged.
+fn death_binding<const N: usize>(
+    fence: &CurrentCharacterGameplayFence,
+    request: &CharacterDeathRequest<N>,
+    pvp: &[u8],
+) -> Result<Vec<u8>> {
     let mut semantic = Vec::new();
     semantic.extend_from_slice(DEATH_BINDING_DOMAIN);
     semantic.push(DEATH_BINDING_VERSION);
@@ -899,6 +980,7 @@ fn command_binding<const N: usize>(
     push_bytes(&mut semantic, &request.death_cell.spatial_position)?;
     push_bytes(&mut semantic, request.death_cell.map_revision.as_bytes())?;
     push_bytes(&mut semantic, &request.respawn_position)?;
+    semantic.extend_from_slice(pvp);
     let digest: [u8; 32] = Sha256::digest(&semantic).into();
     let mut binding = Vec::with_capacity(33);
     binding.push(DEATH_BINDING_VERSION);

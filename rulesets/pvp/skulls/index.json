@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "PvP",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Skull/frag policy."
+  "notes": "Skull/frag policy (skull-policy.json: frag windows, red/black thresholds and durations, kill block, white skull after a kill, points, revenge marks, retention)."
 }

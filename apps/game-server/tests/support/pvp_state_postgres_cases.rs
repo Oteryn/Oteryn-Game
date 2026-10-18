@@ -1,14 +1,19 @@
 //! PVP-1 PvP state on PostgreSQL 17.6 (PARTY-PVP-0 §6.2, §8.1; migration 0081).
 //! The parent harness provides the migrations and an independently seeded current session.
 use crate::bestiary_postgres_harness::{
-    CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, debug, fence, id, runtime,
-    scope,
+    CHANNEL, CHARACTER, Harness, TestResult, WORLD, configured_admin, context, debug, fence, id,
+    runtime, scope,
 };
 use crate::domain::CharacterId;
 use crate::durability::character_progression::CharacterProgressionError;
+use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+use crate::durability::character_death::{CharacterDeathRequest, DeathCell, PlayerDeathOccurrence};
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::pvp_state::{
-    PvpCleanup, PvpDeadlineKinds, PvpSkull, PvpWriteAhead, cleanup_pvp_rows_in_transaction,
+    PvpCleanup, PvpDeadlineKinds, PvpDeathConsequences, PvpDeathContributor, PvpSkull,
+    PvpWriteAhead, cleanup_pvp_rows_in_transaction,
 };
+use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 
 const OTHER: u8 = 60;
 const THIRD: u8 = 61;
@@ -78,6 +83,64 @@ async fn remaining(h: &Harness, seed: u8, column: &str) -> TestResult<Option<i64
 
 async fn rows(h: &Harness) -> TestResult<i64> {
     h.count("game_character_pvp_state").await
+}
+
+/// A UUIDv7 death occurrence of tag `n`, distinct from the harness ids.
+fn occurrence(n: u8) -> [u8; 16] {
+    [n, 9, 2, 3, 4, 5, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, n]
+}
+
+/// Runs `sql` as the owner inside a fixture death transaction of `victim` (0123): a receipt
+/// inserted with triggers off and the victim's ledger naming `contributor` now. Commits when
+/// `sql` succeeds and reports whether it did.
+async fn in_death_of(h: &Harness, n: u8, victim: u8, contributor: u8, sql: &str) -> TestResult<bool> {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_death_receipts (death_occurrence_id, command_binding, \
+            policy_digest, character_id, original_character_revision, \
+            committed_character_revision, level_before, level_after, experience_before, \
+            experience_after, experience_lost, blessings_before, blessings_after, \
+            lost_item_ids, death_world_id, death_channel_id, death_spatial_position, \
+            death_map_revision, respawn_position, death_policy_revision, profile_revision, \
+            ruleset_revision, content_revision, simulation_revision, evidence_revision, \
+            declaration_revision, policy_revision, reward_revision, committed_at) \
+         VALUES (encode($1,'hex')::uuid, '\\x01', decode(repeat('00',32),'hex'), \
+            encode($2,'hex')::uuid, $3, $3 + 1, 1, 1, 0, 0, 0, '{}', '{}', '{}', \
+            encode($4,'hex')::uuid, encode($4,'hex')::uuid, '\\x01', 'm', '\\x01', \
+            'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 0)",
+    )
+    .bind(occurrence(n).as_slice())
+    .bind(id(victim).as_slice())
+    .bind(2000 + i64::from(n))
+    .bind(id(WORLD).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("SET LOCAL session_replication_role = origin")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "INSERT INTO game_character_pvp_ledger (victim_character_id, contributor_character_id, \
+            buckets, last_at) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, '[]', clock_timestamp()) \
+         ON CONFLICT DO NOTHING",
+    )
+    .bind(id(victim).as_slice())
+    .bind(id(contributor).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    let ok = sqlx::query(sqlx::AssertSqlSafe(sql.to_owned()))
+        .execute(&mut *tx)
+        .await
+        .is_ok();
+    if ok {
+        tx.commit().await?;
+    } else {
+        tx.rollback().await?;
+    }
+    Ok(ok)
 }
 
 /// §8.1: the write-ahead stores clock + 70 s for exactly the named columns of both Characters
@@ -214,19 +277,37 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
                 );
             }
         }
-        // A deadline may be raised, and an unset one set, but the revision advances by one.
+        // A deadline may be raised, and an unset one set, but the revision advances by one. The
+        // kill block and the skull are written only in a victim's death transaction (0123).
+        seed_root(h, OTHER, WORLD).await?;
+        seed_root(h, THIRD, WORLD).await?;
+        sqlx::query("INSERT INTO game_character_pvp_state (character_id, world_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid)")
+            .bind(id(OTHER).as_slice())
+            .bind(id(WORLD).as_slice())
+            .execute(&h.pool)
+            .await?;
+        let hex: String = id(CHARACTER).iter().map(|byte| format!("{byte:02x}")).collect();
+        let kill_block = format!(
+            "UPDATE game_character_pvp_state SET kill_block_until = clock_timestamp(), \
+             revision = revision + 1 WHERE character_id = '{hex}'::uuid"
+        );
+        let kill_block = kill_block.as_str();
         assert!(
-            sqlx::query("UPDATE game_character_pvp_state SET kill_block_until = clock_timestamp(), revision = revision + 2")
+            sqlx::query(sqlx::AssertSqlSafe(kill_block.to_owned()))
                 .execute(&h.pool)
                 .await
-                .is_err()
+                .is_err(),
+            "outside a death transaction"
         );
         assert!(
-            sqlx::query("UPDATE game_character_pvp_state SET kill_block_until = clock_timestamp(), revision = revision + 1")
-                .execute(&h.pool)
-                .await
-                .is_ok()
+            !in_death_of(h, 1, OTHER, THIRD, kill_block).await?,
+            "a Character outside the victim's ledger"
         );
+        assert!(
+            !in_death_of(h, 1, OTHER, CHARACTER, &kill_block.replace("+ 1 WHERE", "+ 2 WHERE")).await?,
+            "a skipped revision"
+        );
+        assert!(in_death_of(h, 1, OTHER, CHARACTER, kill_block).await?);
         // A row of another World than its Character's, and a skull without an end, are refused.
         seed_root(h, FOREIGN, FOREIGN_WORLD).await?;
         assert!(
@@ -238,18 +319,29 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
                 .is_err()
         );
         assert!(
-            sqlx::query("UPDATE game_character_pvp_state SET skull = 1, revision = revision + 1")
-                .execute(&h.pool)
-                .await
-                .is_err()
+            !in_death_of(
+                h,
+                2,
+                OTHER,
+                CHARACTER,
+                "UPDATE game_character_pvp_state SET skull = 1, revision = revision + 1"
+            )
+            .await?
         );
         // An unexpired skull is not cleared, shortened or downgraded; forfeiture is permanent.
         assert!(
-            sqlx::query("UPDATE game_character_pvp_state SET skull = 2, skull_until = clock_timestamp() + interval '1 hour', adventurer_forfeited = TRUE, revision = revision + 1 WHERE character_id = encode($1,'hex')::uuid")
-                .bind(id(CHARACTER).as_slice())
-                .execute(&h.pool)
-                .await
-                .is_ok()
+            in_death_of(
+                h,
+                2,
+                OTHER,
+                CHARACTER,
+                &kill_block.replace(
+                    "kill_block_until = clock_timestamp()",
+                    "skull = 2, skull_until = clock_timestamp() + interval '1 hour', \
+                     adventurer_forfeited = TRUE"
+                )
+            )
+            .await?
         );
         for change in [
             "skull = 0, skull_until = NULL",
@@ -259,14 +351,14 @@ fn the_database_never_lowers_a_deadline() -> TestResult {
             "adventurer_forfeited = FALSE",
         ] {
             assert!(
-                sqlx::query(sqlx::AssertSqlSafe(format!(
-                    "UPDATE game_character_pvp_state SET {change}, revision = revision + 1 \
-                      WHERE character_id = encode($1,'hex')::uuid"
-                )))
-                .bind(id(CHARACTER).as_slice())
-                .execute(&h.pool)
-                .await
-                .is_err(),
+                !in_death_of(
+                    h,
+                    3,
+                    OTHER,
+                    CHARACTER,
+                    &kill_block.replace("kill_block_until = clock_timestamp()", change)
+                )
+                .await?,
                 "{change}"
             );
         }
@@ -600,7 +692,8 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
                 .is_err()
         );
         tx.rollback().await?;
-        // The runtime role has no direct writer for skull, forfeiture, points or marks yet.
+        // The runtime role writes no forfeiture yet, and skull, kill block, points and marks only
+        // inside its victim's death transaction (0123 and 0081 guards).
         for sql in [
             "UPDATE game_character_pvp_state SET skull = 2, skull_until = now() + interval '1 day'",
             "UPDATE game_character_pvp_state SET adventurer_forfeited = TRUE",
@@ -679,4 +772,280 @@ fn ledger_caps_hold_and_the_world_job_is_bounded() -> TestResult {
         assert_eq!((second.points, second.marks, second.ledger_rows), (1, 0, 0));
         Ok(())
     })
+}
+
+/// Global thresholds of levels 1-10, as in the DEATH-1 writer cases.
+const GLOBAL: [i64; 11] = [0, 100, 200, 400, 800, 1500, 2600, 4200, 6400, 9300, 13000];
+
+fn death(n: u8) -> TestResult<CharacterDeathRequest<10>> {
+    let mut thresholds = [LevelThreshold {
+        level: 1,
+        minimum_experience: ExactI64::new(0),
+    }; 10];
+    for (index, threshold) in thresholds.iter_mut().enumerate() {
+        *threshold = LevelThreshold {
+            level: u32::try_from(index + 1)?,
+            minimum_experience: ExactI64::new(GLOBAL[index]),
+        };
+    }
+    Ok(CharacterDeathRequest {
+        occurrence: PlayerDeathOccurrence::from_bytes(occurrence(n)).map_err(debug)?,
+        context: context(),
+        policy_revision: "policy-1".into(),
+        reward_revision: "reward-1".into(),
+        policy: FiniteProgressionPolicy {
+            context: context(),
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+            death_policy_revision: "death-1".into(),
+            declared_difference_revision: "declaration-1".into(),
+            thresholds,
+            terminal_exclusive_experience: ExactI64::new(GLOBAL[10]),
+            death_loss_numerator: 1,
+            death_loss_denominator: 1,
+            death_loss_rounding: RoundingMode::Floor,
+        },
+        held_blessings: Vec::new(),
+        death_cell: DeathCell {
+            world_id: crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+            channel_id: crate::foundation::ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            spatial_position: vec![1, 2, 3, 7],
+            map_revision: "map-1".into(),
+        },
+        respawn_position: b"temple:thais".to_vec(),
+    })
+}
+
+/// The killer's stored row: skull, and the remaining ms of skull, kill block and white skull.
+async fn killer_row(h: &Harness) -> TestResult<(i16, Option<i64>, Option<i64>, Option<i64>)> {
+    Ok(sqlx::query_as(
+        "SELECT skull, \
+            (extract(epoch FROM (skull_until - clock_timestamp())) * 1000)::bigint, \
+            (extract(epoch FROM (kill_block_until - clock_timestamp())) * 1000)::bigint, \
+            (extract(epoch FROM (white_skull_until - clock_timestamp())) * 1000)::bigint \
+           FROM game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(OTHER).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+/// The killer's point rows and their sum, its revenge marks and the victim's ledger rows.
+async fn consequences(h: &Harness) -> TestResult<(i64, i64, i64, i64)> {
+    Ok(sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_character_unjustified_points \
+                  WHERE character_id = encode($1,'hex')::uuid), \
+                (SELECT coalesce(sum(points_milli), 0)::bigint FROM game_character_unjustified_points \
+                  WHERE character_id = encode($1,'hex')::uuid), \
+                (SELECT count(*) FROM game_character_revenge_marks \
+                  WHERE killer_character_id = encode($1,'hex')::uuid \
+                    AND victim_character_id = encode($2,'hex')::uuid), \
+                (SELECT count(*) FROM game_character_pvp_ledger \
+                  WHERE victim_character_id = encode($2,'hex')::uuid)",
+    )
+    .bind(id(OTHER).as_slice())
+    .bind(id(CHARACTER).as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+/// PVP-1b end to end on the real death writer (PARTY-PVP-0 §6.2, §9; PVP-0 §6.1; D1443): the
+/// killer A (`OTHER`) kills the victim B (the harness Character) unjustified three times within
+/// a day. Each death transaction writes A's kill block, white skull, point and revenge mark and
+/// deletes B's ledger; the third reaches the red threshold (3000 milli-points in 24 h) and sets
+/// a 30-day red skull. The skull survives A's relog (the admission read), and the World job
+/// clears it only after its end.
+#[test]
+fn unjustified_kills_raise_a_white_then_red_skull_that_the_world_job_clears() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "pvp_skull_deaths", false).await?;
+        let outcome = skull_deaths(&harness).await;
+        harness.cleanup().await?;
+        outcome
+    })
+}
+
+async fn skull_deaths(h: &Harness) -> TestResult {
+    // A level-9 victim at 6500 experience, as in the DEATH-1 writer cases.
+    sqlx::query(
+        "INSERT INTO game_character_progression_state VALUES \
+         (encode($1,'hex')::uuid,1,9,6500,'profile-1','ruleset-1','content-1',\
+          'simulation-1','evidence-1','declaration-1','policy-1','reward-1')",
+    )
+    .bind(id(CHARACTER).as_slice())
+    .execute(&h.pool)
+    .await?;
+    seed_root(h, OTHER, WORLD).await?;
+    sqlx::query("INSERT INTO game_character_pvp_state (character_id, world_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid)")
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(WORLD).as_slice())
+        .execute(&h.pool)
+        .await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let sequencer = CharacterRevisionSequencer::new();
+    let killer = PvpDeathConsequences {
+        contributors: vec![PvpDeathContributor {
+            character_id: character(OTHER)?,
+            damage: true,
+            justified: false,
+        }],
+    };
+    // The runtime's contribution ledger (PVP-RT-1) is a fixture: A damaged B just now.
+    let hit = async || -> TestResult {
+        sqlx::query(
+            "INSERT INTO game_character_pvp_ledger (victim_character_id, contributor_character_id, \
+                buckets, last_at) \
+             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, '[]', clock_timestamp())",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(OTHER).as_slice())
+        .execute(&h.pool)
+        .await?;
+        Ok(())
+    };
+    for kill in 1..=3u8 {
+        hit().await?;
+        let committed = h
+            .root
+            .settle_player_pvp_death(
+                &sequencer,
+                &authority,
+                &h.node,
+                fence(u64::from(kill))?,
+                death(kill)?,
+                killer.clone(),
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(committed.committed_character_revision.get(), u64::from(kill) + 1);
+        // The placement consumed the respawn (DEATH-2), so the victim can die again.
+        sqlx::query("DELETE FROM game_character_pending_respawns")
+            .execute(&h.pool)
+            .await?;
+        let (skull, skull_ms, kill_ms, white_ms) = killer_row(h).await?;
+        let kill_ms = kill_ms.ok_or("kill block")?;
+        assert!((14 * 60_000..=15 * 60_000).contains(&kill_ms), "{kill_ms}");
+        assert!(white_ms.ok_or("white skull")? >= kill_ms - 1_000);
+        assert_eq!(
+            consequences(h).await?,
+            (i64::from(kill), 1000 * i64::from(kill), i64::from(kill), 0)
+        );
+        if kill < 3 {
+            assert_eq!((skull, skull_ms), (0, None), "white skull only after kill {kill}");
+        } else {
+            assert_eq!(skull, 1, "red skull at 3000 milli-points in 24 h");
+            let skull_ms = skull_ms.ok_or("red skull end")?;
+            assert!((30 * 86_400_000 - 60_000..=30 * 86_400_000).contains(&skull_ms));
+        }
+    }
+    // The killer's CharacterRevision does not move (§6.2 composition rule 1 amendment).
+    let killer_revision: String = sqlx::query_scalar(
+        "SELECT character_revision::text FROM game_character_roots WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(OTHER).as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(killer_revision, "1");
+    // An exact replay writes nothing more; other contributors conflict; a death whose
+    // contributors are not the victim's ledger is refused and writes nothing.
+    h.root
+        .settle_player_pvp_death(&sequencer, &authority, &h.node, fence(4)?, death(3)?, killer.clone())
+        .await
+        .map_err(debug)?;
+    assert!(
+        h.root
+            .settle_player_death(&sequencer, &authority, &h.node, fence(4)?, death(3)?)
+            .await
+            .is_err()
+    );
+    assert!(
+        h.root
+            .settle_player_pvp_death(&sequencer, &authority, &h.node, fence(4)?, death(4)?, killer.clone())
+            .await
+            .is_err()
+    );
+    assert_eq!(consequences(h).await?, (3, 3000, 3, 0));
+    assert_eq!(h.count("game_character_death_receipts").await?, 3);
+
+    // A's relog: the session of the account now plays A on a new connection (fixture), and the
+    // fenced admission read returns the red skull.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    for sql in [
+        "UPDATE game_durability_reconnect_sessions SET character_id = encode($1,'hex')::uuid, \
+            current_generation = 2",
+        "UPDATE game_durability_admission_account_guards SET presence_character_id = encode($1,'hex')::uuid",
+        "UPDATE game_durability_admission_character_guards SET character_id = encode($1,'hex')::uuid",
+    ] {
+        sqlx::query(sql).bind(id(OTHER).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    let relogged = crate::durability::character_progression::CurrentCharacterGameplayFence {
+        character_id: character(OTHER)?,
+        connection_generation: crate::foundation::ConnectionGeneration::new(2).map_err(debug)?,
+        ..fence(1)?
+    };
+    let stored = h
+        .root
+        .read_pvp_state(&authority, &h.node, relogged)
+        .await
+        .map_err(debug)?
+        .ok_or("killer row")?;
+    assert_eq!(stored.skull, PvpSkull::Red);
+    assert!(stored.skull_remaining_ms.ok_or("red skull end")? > 29 * 86_400_000);
+    assert!(stored.kill_block_remaining_ms.is_some());
+
+    // The registered World job (`drain_pvp_expiry`): an unexpired skull stays; after its end
+    // (the 30 days are a fixture) one pass clears it.
+    let lane = crate::durability::spell_owner_commit::SpellLane::new(
+        crate::foundation::WorldId::decode(&id(WORLD)).map_err(debug)?,
+        crate::foundation::ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+    );
+    let permit = lane.acquire().await.map_err(|_| "spell lane unresolved")?;
+    let pass = h
+        .root
+        .drain_pvp_expiry(&permit, &authority, &h.node, scope()?, 1)
+        .await
+        .map_err(debug)?;
+    assert_eq!(pass.skulls, 0);
+    assert_eq!(killer_row(h).await?.0, 1);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query(
+        "UPDATE game_character_pvp_state SET skull_until = clock_timestamp() - interval '1 second' \
+          WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(OTHER).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    let pass = h
+        .root
+        .drain_pvp_expiry(&permit, &authority, &h.node, scope()?, 1)
+        .await
+        .map_err(debug)?;
+    assert_eq!(pass.skulls, 1);
+    assert_eq!(killer_row(h).await?.0, 0);
+    let stored = h
+        .root
+        .read_pvp_state(&authority, &h.node, relogged)
+        .await
+        .map_err(debug)?
+        .ok_or("killer row")?;
+    assert_eq!((stored.skull, stored.skull_remaining_ms), (PvpSkull::None, None));
+    // The points stay for their 45 days (`PARTYPVP0-RL-23`).
+    assert_eq!(consequences(h).await?, (3, 3000, 3, 0));
+    Ok(())
 }

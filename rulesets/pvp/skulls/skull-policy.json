@@ -1,0 +1,103 @@
+{
+  "schema": "OTERYN_GAME_PVP_SKULL_POLICY/v1",
+  "ruleset_key": "oteryn:ruleset.pvp.skull-policy",
+  "revision": "pvp-skull-policy-r1",
+  "owner": "PvP",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "amendments": [
+    "docs/architecture/reviews/OTERYN_GAME_PVP0_PVP_GAP_CLOSURE_CONTRACT_CANDIDATE_2026-10-10.md §6.1 (white skull after an unjustified kill; control plane D971)",
+    "control plane D1443 (rolling windows, exclusive end)"
+  ],
+  "consumer": "apps/game-server/src/combat/pvp/skull.rs (constants pinned by skull_tests.rs), evaluated in the victim's death transaction (apps/game-server/src/durability/pvp_state.rs)",
+  "evidence_classes": {
+    "CIPSOFT_OFFICIAL": "the official manual states the value",
+    "OTS_HYPOTHESIS_ONLY": "the manual gives no exact value; the Canary/OTS value is used until a primary source is found",
+    "OTERYN_DECISION": "no reference value exists; the accepted contract row decides it (PARITY_PENDING)"
+  },
+  "windows": {
+    "ms": [
+      86400000,
+      604800000,
+      2592000000
+    ],
+    "rule": "Rolling windows of 24 h, 7 d and 30 d. Each unjustified point counts from its committed timestamp (database clock) while 0 <= now - committed_at < window: the window end is exclusive.",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "source": "tibia.com manual §combat 5.3.12, capture 2026-09-28 (docs/reference/tibia-manual/combat.md); endpoint: control plane D1443"
+  },
+  "red_thresholds_milli": {
+    "values": [
+      3000,
+      5000,
+      10000
+    ],
+    "row": "PARTYPVP0-RL-14",
+    "evidence": "OTS_HYPOTHESIS_ONLY",
+    "source": "Manual gives rule-of-thumb ranges 3-5 / 5-9 / 10-19 kills; the value is the lower bound, equal to Canary/crystalserver config as cited in docs/architecture/reviews/OTERYN_GAME_PVP0_PVP_GAP_CLOSURE_CONTRACT_CANDIDATE_2026-10-10.md §3 (dayKillsToRedSkull, weekKillsToRedSkull, monthKillsToRedSkull) 3 / 5 / 10 (x 1,000 milli per full kill)"
+  },
+  "black_thresholds_milli": {
+    "values": [
+      6000,
+      10000,
+      20000
+    ],
+    "row": "PARTYPVP0-RL-15",
+    "evidence": "OTS_HYPOTHESIS_ONLY",
+    "source": "Manual gives 6+ / 10+ / 20+; Canary uses twice the red thresholds"
+  },
+  "skull_duration_days": {
+    "red": 30,
+    "black": 45,
+    "row": "PARTYPVP0-RL-16",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "rule": "skull_until = database clock + duration, reset by any new points; an unexpired skull is never lowered, shortened or cleared; it ends at skull_until (strict until > now).",
+    "source": "tibia.com manual §combat 5.3.12, capture 2026-09-28 (docs/reference/tibia-manual/combat.md)"
+  },
+  "kill_block_ms": {
+    "value": 900000,
+    "row": "PARTYPVP0-RL-13",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "rule": "Every contributor (justified or not) gets kill_block_until >= database clock + 15 minutes, on every World type.",
+    "source": "Manual: a kill sets a 15-minute logout and PZ-entry block (docs/architecture/reviews/OTERYN_GAME_PVP0_PVP_GAP_CLOSURE_CONTRACT_CANDIDATE_2026-10-10.md §3)"
+  },
+  "white_skull_after_kill": {
+    "rule": "An unjustified contributor's white_skull_until is raised to at least its kill_block_until in the victim's death transaction (Open PvP only; a red or black skull shows instead).",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "source": "Manual: the white skull lasts as long as the linked logout block; docs/architecture/reviews/OTERYN_GAME_PVP0_PVP_GAP_CLOSURE_CONTRACT_CANDIDATE_2026-10-10.md §6.1, control plane D971"
+  },
+  "points_milli": {
+    "damage": 1000,
+    "assist_only": 500,
+    "full_credit_damage_contributors": 5,
+    "split": "With more than 5 damage contributors each damage contributor gets floor(1,000 x 5 / n); assist-only contributors keep 500.",
+    "rows": [
+      "PARTYPVP0-RL-18",
+      "PARTYPVP0-RL-19"
+    ],
+    "evidence": {
+      "damage": "CIPSOFT_OFFICIAL",
+      "full_credit_damage_contributors": "CIPSOFT_OFFICIAL",
+      "split": "OTS_HYPOTHESIS_ONLY",
+      "assist_only": "OTERYN_DECISION"
+    },
+    "source": "Manual: a kill counts fully for at most 5 damage contributors and less beyond; Canary frag share 5 / N; the assist share has no reference value (PARTYPVP0-RL-19 PARITY_PENDING)"
+  },
+  "max_contributors": {
+    "value": 80,
+    "row": "PARTYPVP0-RL-25, PARTYPVP0-RL-32",
+    "evidence": "OTERYN_DECISION",
+    "source": "docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md §8.3: 16 full and 64 compact ledger rows"
+  },
+  "revenge_mark_days": {
+    "value": 7,
+    "row": "PARTYPVP0-RL-17",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "source": "tibia.com manual §combat 5.3.12, capture 2026-09-28 (docs/reference/tibia-manual/combat.md) (orange skull)",
+    "rule": "One mark per unjustified contributor (victim, killer, death); avenging belongs to PVP-DEATH-1."
+  },
+  "point_retention_days": {
+    "value": 45,
+    "row": "PARTYPVP0-RL-23",
+    "evidence": "OTERYN_DECISION",
+    "rule": "The World job deletes point rows older than 45 days, expired revenge marks and ledger rows older than 5 minutes, and clears expired skulls, at most 100 rows of each kind per pass."
+  }
+}

@@ -55,7 +55,7 @@ fn each_window_reaches_red_and_black_at_the_inclusive_milli_threshold()
 #[test]
 fn rolling_windows_include_now_and_exclude_the_exact_age_boundary()
 -> Result<(), SkullEvaluationError> {
-    // Endpoint convention is a detached technical assumption awaiting architect acceptance.
+    // D1443: rolling from each committed timestamp, exclusive end.
     let history = [
         (0, 100),
         (DAY_MS - 1, 200),
@@ -289,5 +289,66 @@ fn identical_and_reordered_inputs_are_deterministic_without_mutation()
     assert_eq!(evaluate_skull(NOW, none(), &history, 500)?, first);
     history.reverse();
     assert_eq!(evaluate_skull(NOW, none(), &history, 500)?, first);
+    Ok(())
+}
+
+#[test]
+fn unjustified_points_split_beyond_five_damage_contributors() {
+    assert_eq!(unjustified_points_milli(true, 1), Some(1_000));
+    assert_eq!(unjustified_points_milli(true, 5), Some(1_000));
+    assert_eq!(unjustified_points_milli(true, 6), Some(833));
+    assert_eq!(unjustified_points_milli(true, 80), Some(62));
+    assert_eq!(unjustified_points_milli(false, 0), Some(500));
+    assert_eq!(unjustified_points_milli(false, 80), Some(500));
+    assert_eq!(unjustified_points_milli(true, 0), None);
+    assert_eq!(unjustified_points_milli(true, 81), None);
+    assert_eq!(unjustified_points_milli(false, 81), None);
+}
+
+/// The policy row `rulesets/pvp/skulls/skull-policy.json` and these constants are one source.
+#[test]
+fn constants_match_the_skull_policy_ruleset() -> Result<(), serde_json::Error> {
+    let policy: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../rulesets/pvp/skulls/skull-policy.json"
+    ))?;
+    let numbers = |pointer: &str| -> Vec<u64> {
+        policy
+            .pointer(pointer)
+            .and_then(serde_json::Value::as_array)
+            .map(|values| values.iter().filter_map(serde_json::Value::as_u64).collect())
+            .unwrap_or_default()
+    };
+    let number = |pointer: &str| policy.pointer(pointer).and_then(serde_json::Value::as_u64);
+    assert_eq!(numbers("/windows/ms"), WINDOWS_MS.to_vec());
+    assert_eq!(
+        numbers("/red_thresholds_milli/values"),
+        RED_THRESHOLDS_MILLI.to_vec()
+    );
+    assert_eq!(
+        numbers("/black_thresholds_milli/values"),
+        BLACK_THRESHOLDS_MILLI.to_vec()
+    );
+    assert_eq!(number("/skull_duration_days/red"), Some(RED_DAYS));
+    assert_eq!(number("/skull_duration_days/black"), Some(BLACK_DAYS));
+    assert_eq!(number("/kill_block_ms/value"), Some(KILL_BLOCK_MS));
+    assert_eq!(number("/points_milli/damage"), Some(DAMAGE_POINTS_MILLI));
+    assert_eq!(
+        number("/points_milli/assist_only"),
+        Some(u64::from(ASSIST_POINTS_MILLI))
+    );
+    assert_eq!(
+        number("/points_milli/full_credit_damage_contributors"),
+        Some(FULL_CREDIT_DAMAGE_CONTRIBUTORS)
+    );
+    assert_eq!(
+        number("/max_contributors/value"),
+        Some(MAX_DEATH_CONTRIBUTORS as u64)
+    );
+    for pointer in ["/red_thresholds_milli/evidence", "/black_thresholds_milli/evidence"] {
+        assert_eq!(
+            policy.pointer(pointer).and_then(serde_json::Value::as_str),
+            Some("OTS_HYPOTHESIS_ONLY")
+        );
+    }
     Ok(())
 }

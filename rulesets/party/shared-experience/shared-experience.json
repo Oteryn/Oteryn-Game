@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_GAME_PARTY_SHARED_EXPERIENCE/v1",
+  "ruleset_key": "oteryn:ruleset.party.shared-experience",
+  "revision": "party-shared-experience-r1",
+  "owner": "Party",
+  "contract": "docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md",
+  "consumer": "None yet: the shared-experience split arrives with its PARTY-PVP-0 child slice; these rows record the accepted values and their provenance.",
+  "range": {
+    "tiles": 30,
+    "metric": "Chebyshev from the leader, any floor, same channel",
+    "row": "PARTYPVP0-RL-04",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "source": "tibia.com manual §combat 5.3.13.c, capture 2026-09-28"
+  },
+  "level_spread": {
+    "rule": "lowest level x 3 >= highest level x 2",
+    "row": "PARTYPVP0-RL-05",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "source": "tibia.com manual §combat 5.3.13.c"
+  },
+  "activity_window_ms": {
+    "value": 120000,
+    "rule": "Every participant healed a member or attacked an aggressive monster within the window.",
+    "row": "PARTYPVP0-RL-06",
+    "evidence": "OTERYN_DECISION",
+    "source": "The manual says only 'recently' (PARITY_PENDING)"
+  },
+  "bonus_percent": {
+    "base": 20,
+    "minimum_kill_experience": 20,
+    "by_distinct_vocations": {
+      "2": 30,
+      "3": 60,
+      "4": 100
+    },
+    "row": "PARTYPVP0-RL-07",
+    "evidence": "CIPSOFT_OFFICIAL",
+    "source": "tibia.com manual §combat 5.3.13.c"
+  },
+  "leader_condition": {
+    "rule": "The leader is not under a PZ block (the manual's 'battle sign').",
+    "evidence": "OTERYN_DECISION",
+    "source": "docs/architecture/reviews/OTERYN_GAME_PARTY_PVP0_PARTIES_AND_PVP_DECISION_2026-09-30.md §5 (PARITY_PENDING)"
+  }
+}

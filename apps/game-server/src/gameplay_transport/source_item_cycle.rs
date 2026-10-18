@@ -99,6 +99,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let _ = self.drain_source_party_expiry().await;
         let _ = self.drain_source_party_offline_presence().await;
+        let _ = self.drain_source_pvp_expiry().await;
+    }
+
+    /// The World PvP job (PVP-1b, PARTY-PVP-0 §6.2) on the same one-second pass as the party
+    /// deadlines: expired points, revenge marks and ledger rows, and expired skulls cleared.
+    pub(super) async fn drain_source_pvp_expiry(
+        &self,
+    ) -> Option<crate::durability::pvp_state::PvpCleanup> {
+        // Lock order (§1.2): the lane before any Channel guard.
+        let permit = self.spell_lane_permit().await?;
+        let runtime = self.runtime.lock().await;
+        let binding = runtime.binding();
+        runtime.owner_fence().ok()?;
+        self.root
+            .drain_pvp_expiry(
+                &permit,
+                self.character,
+                self.holder,
+                RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                binding.scope_generation().get(),
+            )
+            .await
+            .ok()
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {

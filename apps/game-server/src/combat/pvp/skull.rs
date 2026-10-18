@@ -1,22 +1,59 @@
-//! Detached PVP-1b arithmetic for PARTY-PVP-0 §6.2 and §9; not registered or activated.
+//! PVP-1b skull arithmetic for PARTY-PVP-0 §6.2 and §9, evaluated inside the victim's death
+//! transaction ([`crate::durability::pvp_state`]); the policy rows are
+//! `rulesets/pvp/skulls/skull-policy.json`.
 //!
-//! Thresholds are the accepted manual lower bounds, with numeric provenance still
-//! `PARITY_PENDING` (`PARTYPVP0-RL-14`/`-15`); this is not Global parity qualification.
-//! Durations follow `PARTYPVP0-RL-16`. No later unmerged gap-closure proposal is applied.
+//! Mounted from `durability/pvp_state.rs`, because the death transaction is compiled into
+//! targets that hold the durability tree without the combat tree.
 //!
-//! Inputs are unqualified data, not current authority. A future death-transaction adapter must
-//! establish contributor/World identity, classification, complete and deduplicated history,
-//! the new occurrence, database time and current fences. No adapter or durable writer exists
-//! here, and the result neither grants authority nor authorizes a mutation.
-//! Only the caller can establish that these are unjustified Open-PvP points (§9); this helper
-//! does not choose a World type, classify kills or enable PvP.
+//! Thresholds are the manual's lower bounds (`PARTYPVP0-RL-14`/`-15`); their exact values are
+//! not given by the manual, so they are the Canary values and stay `OTS_HYPOTHESIS_ONLY` in the
+//! ruleset. Durations follow `PARTYPVP0-RL-16` (manual). This is not Global parity
+//! qualification.
+//!
+//! Inputs are the caller's data: the death transaction establishes contributor/World identity,
+//! the runtime classification, complete history, the new occurrence, database time and the
+//! fences. Only the caller can establish that these are unjustified Open-PvP points (§9); this
+//! helper does not choose a World type, classify kills or enable PvP.
 
 use crate::durability::pvp_state::PvpSkull;
 
 const DAY_MS: u64 = 24 * 60 * 60 * 1_000;
 const WINDOWS_MS: [u64; 3] = [DAY_MS, 7 * DAY_MS, 30 * DAY_MS];
+/// The longest window: older points never count (they stay until `PARTYPVP0-RL-23`).
+pub(crate) const HISTORY_WINDOW_MS: u64 = WINDOWS_MS[2];
 const RED_THRESHOLDS_MILLI: [u64; 3] = [3_000, 5_000, 10_000];
 const BLACK_THRESHOLDS_MILLI: [u64; 3] = [6_000, 10_000, 20_000];
+const RED_DAYS: u64 = 30;
+const BLACK_DAYS: u64 = 45;
+/// `PARTYPVP0-RL-13`: a kill sets the database clock + 15 minutes for every contributor.
+pub(crate) const KILL_BLOCK_MS: u64 = 15 * 60 * 1_000;
+/// §8.3: at most 16 full and 64 compact ledger rows, so at most 80 contributors.
+pub(crate) const MAX_DEATH_CONTRIBUTORS: usize = 80;
+/// `PARTYPVP0-RL-18`: a kill counts in full for at most 5 damage contributors.
+const FULL_CREDIT_DAMAGE_CONTRIBUTORS: u64 = 5;
+const DAMAGE_POINTS_MILLI: u64 = 1_000;
+/// `PARTYPVP0-RL-19` (`PARITY_PENDING`): an assist-only contributor gains half.
+const ASSIST_POINTS_MILLI: u16 = 500;
+
+/// §9 points of one unjustified contributor: 1,000 milli for a damage contributor, 500 for an
+/// assist-only one; with more than 5 damage contributors each gets `1,000 × 5 / n`, rounded
+/// down. `None` when `damage_contributors` is out of range (0 for a damage contributor, more
+/// than [`MAX_DEATH_CONTRIBUTORS`]).
+pub(crate) fn unjustified_points_milli(damage: bool, damage_contributors: usize) -> Option<u16> {
+    let n = u64::try_from(damage_contributors).ok()?;
+    if n > MAX_DEATH_CONTRIBUTORS as u64 || (damage && n == 0) {
+        return None;
+    }
+    if !damage {
+        return Some(ASSIST_POINTS_MILLI);
+    }
+    let points = if n > FULL_CREDIT_DAMAGE_CONTRIBUTORS {
+        DAMAGE_POINTS_MILLI * FULL_CREDIT_DAMAGE_CONTRIBUTORS / n
+    } else {
+        DAMAGE_POINTS_MILLI
+    };
+    u16::try_from(points).ok()
+}
 
 /// A point row supplied by the caller, excluding the new point increment.
 /// Timestamps share the caller's millisecond time domain; they are not clock/commit evidence.
@@ -54,9 +91,9 @@ pub(crate) enum SkullEvaluationError {
 /// This is an arithmetic input convention, not evidence that a new death/commit occurred.
 /// No-points calls are refused rather than refreshing a deadline or evaluating old points.
 ///
-/// Rolling windows use `0 <= age < duration`, i.e. `(now - duration, now]`. §9 does not settle
-/// the exact endpoint: this detached technical assumption still needs architect acceptance
-/// before integration. Expiry itself follows §6.2's explicit strict `until > now` rule.
+/// Rolling windows use `0 <= age < duration`, i.e. `(now - duration, now]`: each point counts
+/// from its committed timestamp and the window end is exclusive (control-plane decision D1443).
+/// Expiry itself follows §6.2's explicit strict `until > now` rule.
 pub(crate) fn evaluate_skull(
     now_ms: u64,
     current: SkullState,
@@ -107,8 +144,8 @@ pub(crate) fn evaluate_skull(
     };
     let days = match skull {
         PvpSkull::None => None,
-        PvpSkull::Red => Some(30),
-        PvpSkull::Black => Some(45),
+        PvpSkull::Red => Some(RED_DAYS),
+        PvpSkull::Black => Some(BLACK_DAYS),
     };
     let until_ms = days
         .map(|days| now_ms.checked_add(days * DAY_MS).ok_or(E::DeadlineOverflow))

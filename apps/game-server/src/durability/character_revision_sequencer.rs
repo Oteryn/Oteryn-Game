@@ -53,6 +53,7 @@ use super::quest_state::{
     QuestTransitionAward, QuestTransitionOutcome, QuestTransitionRequest, QuestXpObligation,
     report_refused_experience,
 };
+use super::pvp_state::PvpDeathConsequences;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::progression::FiniteProgressionPolicy;
 use crate::domain::{CharacterId, CharacterRevision};
@@ -185,6 +186,35 @@ impl RevisionSlot {
             fence,
             Expect::from(original, OnMismatch::FailClosed),
             |fence| root.commit_character_death(authority, node, fence, request.clone()),
+        )
+        .await
+    }
+
+    /// One PvP death (PVP-1b) at the expected revision, like [`Self::commit_death`].
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_pvp_death<const N: usize>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        pvp: &PvpDeathConsequences,
+        original: Option<CharacterRevision>,
+    ) -> Result<CharacterDeathOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::from(original, OnMismatch::FailClosed),
+            |fence| {
+                root.commit_character_pvp_death(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    pvp.clone(),
+                )
+            },
         )
         .await
     }
@@ -1133,13 +1163,17 @@ mod tests {
 
     /// Revision-advancing durable writers and the only non-test source files allowed to call
     /// them. Every other writer reaches them through a [`RevisionSlot`].
-    const SEQUENCED_WRITERS: [(&str, &str); 13] = [
+    const SEQUENCED_WRITERS: [(&str, &str); 14] = [
         (
             ".commit_character_experience(",
             "durability/character_revision_sequencer.rs",
         ),
         (
             ".commit_character_death(",
+            "durability/character_revision_sequencer.rs",
+        ),
+        (
+            ".commit_character_pvp_death(",
             "durability/character_revision_sequencer.rs",
         ),
         (

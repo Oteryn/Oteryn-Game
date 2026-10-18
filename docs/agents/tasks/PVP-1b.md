@@ -18,7 +18,7 @@ registry: no
 owner: family_f_pvp
 control_plane: session_01XYC239givrMonrYoBwwECV
 created_at: 2026-10-15
-updated_at: 2026-10-15
+updated_at: 2026-10-18
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/combat/pvp/
@@ -26,6 +26,14 @@ owned_paths:
   - rulesets/pvp/ (new rows)
   - rulesets/party/ (new rows)
   - apps/game-server/tests/pvp_1b_*.rs (new)
+  # Widened by the lead for the death-transaction wiring (CP D1443 allocation, 2026-10-18).
+  - apps/game-server/src/durability/character_death.rs
+  - apps/game-server/src/durability/character_revision_sequencer.rs
+  - apps/game-server/src/gameplay_transport/source_item_cycle.rs
+  - apps/game-server/migrations/0123_pvp_death_consequences.sql (number slot-only)
+  - apps/game-server/tests/support/pvp_state_postgres_cases.rs
+  - rulesets/pvp/skulls/
+  - rulesets/party/shared-experience/
 slot_only_paths:
   - migration number (if any)
   - mod.rs (cleanup job composition)
@@ -65,6 +73,11 @@ Skull evaluation in the death transaction (points and revenge-mark inserts), the
 - rulesets/pvp/ (new rows)
 - rulesets/party/ (new rows)
 - apps/game-server/tests/pvp_1b_*.rs (new)
+- Widened (lead, D1443 allocation): `durability/character_death.rs`,
+  `durability/character_revision_sequencer.rs`, `gameplay_transport/source_item_cycle.rs`,
+  migration `0123_pvp_death_consequences.sql`, `tests/support/pvp_state_postgres_cases.rs`,
+  `rulesets/pvp/skulls/`, `rulesets/party/shared-experience/`. `combat/pvp/mod.rs` stays
+  untouched (PVP-DEATH-1 #2205 adds `mod death;` there).
 
 ## Slot-only paths (final commit only, at the merge-queue turn, after merging main)
 
@@ -84,7 +97,13 @@ migration+writer+durability.
 
 ## Acceptance criteria
 
-- [ ] Skull points written atomically with the death.
+- [x] Skull points written atomically with the death (`commit_character_pvp_death` /
+  `settle_player_pvp_death`; PG case
+  `unjustified_kills_raise_a_white_then_red_skull_that_the_world_job_clears`).
+- [x] World cleanup job registered in the Channel owner cycle (`drain_source_pvp_expiry`,
+  1 s pass with the party deadlines), including the expired-skull normalization.
+- [ ] Live PvP (attack, killer classification, skull wire/broadcast): PVP-RT-1b, PVP-DEATH-1,
+  PVP-WIRE-1, PVP-CLIENT-1 (PVP-0 §8 go-live gate).
 - [x] Builder confirms the residue against main before code (plan §4, 'each worker confirms the residue'); inspection used the allocated head documented below.
 
 ## Validation
@@ -109,12 +128,41 @@ PARTY_PVP0 l.33, §6, §9. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANIC
 ## Context checkpoint
 
 ```yaml
-last_progress: detached skull-window evaluator prepared locally; source-bound checks passed
+last_progress: death-transaction adapter, World job registration, rulesets and PG case
 status: waiting
 branch: skeleton/pvp-1b
-blocker: PARTY-1
-next_action: CP reviews the detached local diff; runtime remains blocked
+blocker: "no skull wire/broadcast path (PVP-WIRE-1/PVP-CLIENT-1); PvP attack and killer classification (PVP-RT-1b/PVP-DEATH-1); PARTY-1"
+next_action: Codex review of the pushed head; CP decides the go-live split
 ```
+
+## D1443 integration (2026-10-18)
+
+- **D1443 (CP):** frag windows roll from each unjustified kill's committed timestamp
+  (`committed_at`, stamped by the 0081 trigger), with an exclusive end: a point counts while
+  `now - committed_at < window`. The previous "endpoint assumption" is settled by D1443.
+- Skull module registered through `durability/pvp_state.rs` (`#[path]` mount; test crates hold
+  the durability tree without the combat tree). The adapter
+  `apply_pvp_death_in_transaction` runs in the victim's death transaction after the receipt:
+  contributors must equal the victim's ledger within 5 minutes (compact kind must match); state
+  rows locked in CharacterId order; kill block +15 min for every contributor; for each
+  unjustified one a point row (1000 / 500 assist / floor(5000/n) beyond five damage
+  contributors), a 7-day revenge mark, the white skull at least to the kill block (PVP-0 §6.1,
+  D971) and the skull evaluation; then the victim's ledger is deleted. The contributors are
+  part of the death command binding (empty for PvE, so PvE bindings are unchanged).
+- Migration 0123: runtime grants for skull/kill block/points/marks; an UPDATE guard that admits
+  a skull or kill-block change only in a death transaction of the row's World naming the
+  Character in the victim's ledger, except clearing an expired skull; the expiry index.
+- Ruleset rows: `rulesets/pvp/skulls/skull-policy.json`, pinned by a unit test against the Rust
+  constants; `rulesets/party/shared-experience/shared-experience.json` (no runtime consumer).
+- `OTS_HYPOTHESIS_ONLY` (Canary values; the manual gives only rule-of-thumb ranges): red
+  thresholds 3/5/10 kills per day/week/month, black thresholds 6/10/20, the 5/N damage split.
+  `OTERYN_DECISION` (`PARITY_PENDING`): assist 500 milli-points, 45-day point retention, at most
+  80 contributors, party activity window 2 minutes. Official (manual): red 30 d, black 45 d,
+  revenge 7 d, kill block 15 min.
+- Not wired here (go-live gate PVP-0 §8): no skull field exists on the creature wire or its
+  broadcast (PVP-WIRE-1/PVP-CLIENT-1, protocol slot-only); players cannot attack players
+  (`attackable_kind` creature-only); the runtime killer classification and mark avenging
+  belong to PVP-RT-1b/PVP-DEATH-1, which call `settle_player_pvp_death`.
 
 ## Detached local preparation (2026-10-15, unpublished)
 
