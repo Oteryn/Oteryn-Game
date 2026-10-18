@@ -894,18 +894,19 @@ async fn skull_deaths(h: &Harness) -> TestResult {
     .bind(id(CHARACTER).as_slice())
     .execute(&h.pool)
     .await?;
-    seed_root(h, OTHER, WORLD).await?;
-    sqlx::query("INSERT INTO game_character_pvp_state (character_id, world_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid)")
-        .bind(id(CHARACTER).as_slice())
-        .bind(id(WORLD).as_slice())
-        .execute(&h.pool)
-        .await?;
+    // The authority is opened before the killer's root is seeded, as in the other PvP cases.
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
         .open_character_authority(&seal)
         .await
         .map_err(debug)?;
+    seed_root(h, OTHER, WORLD).await?;
+    sqlx::query("INSERT INTO game_character_pvp_state (character_id, world_id) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid)")
+        .bind(id(CHARACTER).as_slice())
+        .bind(id(WORLD).as_slice())
+        .execute(&h.pool)
+        .await?;
     let sequencer = CharacterRevisionSequencer::new();
     let killer = PvpDeathConsequences {
         contributors: vec![PvpDeathContributor {
