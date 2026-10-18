@@ -14,7 +14,7 @@
   "payloads": [
     {
       "path": "rulesets/encounters/tibiadrome/reference-evidence.json",
-      "sha256": "c65fd6da1b9612b04fbc09428a292279eeff4131cc1ccbc9d4980a8cf00ba3d3"
+      "sha256": "5a5d59a6c41db688f96bf6034c11bc0ca5f3ccc4657816e3d3dc3318ca1d68e9"
     }
   ]
 }

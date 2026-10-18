@@ -1,0 +1,27 @@
+{
+  "task": "ARENA-RULES-CONTENT-1",
+  "review_date": "2026-10-18",
+  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
+  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Current Tibiadrome admission, scoring, rotations, rewards and combat behavior are captured without duplicating the occupied arena catalog. Removed Duelling Arena behavior is labeled historical; whether Oteryn reintroduces it is an architecture decision outside this task.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "rulesets/encounters/tibiadrome/reference-evidence.json": 21,
+    "rulesets/pvp/arena/reference-evidence.json": 1
+  },
+  "evidence_field_counts": {
+    "PROVEN": 58,
+    "UNKNOWN": 1
+  },
+  "unresolved_fields": [
+    {
+      "field_path": "rulesets/pvp/arena/reference-evidence.json/records/0/facts/oteryn_reintroduction",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Reintroducing the removed Global feature is an owner/architecture decision, not a data fact. Do not activate historic arena rules as current."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+}

@@ -35,6 +35,17 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "d3420b3cca49960162c84f5f0aaf7013bf51c805c63acbe65f468943c8a10f4e",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%2FCreature%20List%7CCitizen%20Outfits%7CFood%7CKnight%7CElite%20Knight%7CPaladin%7CRoyal%20Paladin%7CDruid%7CElder%20Druid%7CSorcerer%7CMaster%20Sorcerer%7CMonk%7CExalted%20Monk%7CDuelling%20Arena%7CArenas&redirects=1"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
     }
   }
 }

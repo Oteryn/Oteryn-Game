@@ -3,11 +3,11 @@
 ```yaml
 task_id: ARENA-RULES-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/arena-rules-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2244
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -20,6 +20,7 @@ owned_paths:
   - docs/reference/content-prep/arena-rules-content-1/sources.json
   - docs/reference/content-prep/arena-rules-content-1/README.md
   - docs/agents/tasks/ARENA-RULES-CONTENT-1.md
+  - docs/reference/content-prep/arena-rules-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -55,3 +56,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+Current Tibiadrome admission, scoring, rotations, rewards and combat behavior are captured without duplicating the occupied arena catalog. Removed Duelling Arena behavior is labeled historical; whether Oteryn reintroduces it is an architecture decision outside this task.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
