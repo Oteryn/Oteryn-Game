@@ -1206,6 +1206,22 @@ impl super::cast::PlayerSpellState {
         self.training_checkpoint = None;
         Ok(())
     }
+    /// DEATH-ML-LOSS-1 (A13 §4.6, CP D1433): a committed death lowered the durable build to
+    /// `build`, so the live actor continues from it. Owned training restarts from `build` with
+    /// nothing pending, the magic level and owned skill levels drop to its levels, and every
+    /// pre-death checkpoint and payment witness is retired: the next training save submits
+    /// `build` as its `before`. The caller drained pending training before the death.
+    pub(crate) fn rebase_after_death(&mut self, build: &DurableBuildState) {
+        if self.training.is_some() {
+            self.training = Some(LiveManaTraining::from_owned_build(build));
+        }
+        self.facts.magic_level = u32::from(build.magic().0);
+        if self.owned_skills.is_some() {
+            self.owned_skills = Some(build.skills().map(|(level, _)| level));
+        }
+        self.training_checkpoint = None;
+        self.training_payment = None;
+    }
 }
 impl super::cast::PlayerSpellState {
     /// Whether a forced checkpoint now has anything to write: a retained checkpoint to replay or
@@ -1362,6 +1378,35 @@ impl super::cast::PlayerSpellState {
             || comparable != expected.fence
             || current.expected_character_revision.get()
                 <= expected.fence.expected_character_revision.get()
+        {
+            return Err(TrainingError::InvalidBuild);
+        }
+        retained.fence = current;
+        Ok(())
+    }
+
+    /// #2193 Codex P1 4307264455: the store refused this exact retained checkpoint's fence
+    /// before any write (`AuthorityRejected`, no receipt for its occurrence), so the session's
+    /// connection, lease or scope generation moved after it was prepared. The checkpoint is
+    /// re-fenced to the independently resolved current authority of the same Character and
+    /// session; its occurrence, request and formula stay, so a later replay can never commit a
+    /// second build. A fence that did not move, another Character or session, a lower revision
+    /// or another retained checkpoint is refused and changes nothing.
+    pub(crate) fn refence_uncommitted_training_checkpoint(
+        &mut self,
+        expected: &RetainedTrainingCheckpoint,
+        current: crate::durability::character_progression::CurrentCharacterGameplayFence,
+    ) -> Result<(), TrainingError> {
+        let retained = self
+            .training_checkpoint
+            .as_mut()
+            .ok_or(TrainingError::InvalidBuild)?;
+        if retained.as_ref() != expected
+            || current == expected.fence
+            || current.character_id != expected.fence.character_id
+            || current.game_session_id != expected.fence.game_session_id
+            || current.expected_character_revision.get()
+                < expected.fence.expected_character_revision.get()
         {
             return Err(TrainingError::InvalidBuild);
         }
