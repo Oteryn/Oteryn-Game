@@ -102123,7 +102123,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-20000-20499.json",
-        "canonical_definition_sha256": "ac3773430debbb8db6cfb7a20a70ec9903d2fcf469f46eabebfa50712280e49f",
+        "canonical_definition_sha256": "9a1a9b56126472d5b4e8334d56bbc6c261f24f579d21687b0bbe2ab63d2a46cf",
         "canonical_name": "crossbow",
         "wiki_observations": [
           {
@@ -112598,7 +112598,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31000-31499.json",
-        "canonical_definition_sha256": "c2a7ff0589e53296cab6a24be33d73ce82227e46840e3710978c1b57cfeac9af",
+        "canonical_definition_sha256": "fbc62e35bb9afa461f0b4e245730dc8bb9ed21487940a207a948c0c6f50c0ad1",
         "canonical_name": "elvish bow",
         "wiki_observations": [
           {
@@ -113896,7 +113896,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "fcb4bb3e983a12ef69595cb564ff66e08e70600db11dfd7eab6ea487a51215be",
+        "canonical_definition_sha256": "067f596ebf3f4d3c3fc643a4b2bc3b6ec652fc1a377293c0953e84ff4efa98c2",
         "canonical_name": "modified crossbow",
         "wiki_observations": [
           {
@@ -114259,7 +114259,7 @@
       "binding_status": "EXPLICIT_ARTICLE_ALIAS_AND_REVISIONED_WIKI",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "e69a6729ea20e824a13ed8f50edfa9b1ebd7bd69e7ea403bb8bc856f420f0b46",
+        "canonical_definition_sha256": "5cd7371f48ecd116996f8eaac24e28e7f20c065e727f2638b140fe3e4382446e",
         "canonical_name": "devileye",
         "wiki_observations": [
           {
@@ -114358,7 +114358,7 @@
       "binding_status": "EXPLICIT_ARTICLE_ALIAS_AND_REVISIONED_WIKI",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "ac601e8f20705acb7bb673fab327988b220e8929369c2387181f6c19df7a1494",
+        "canonical_definition_sha256": "8b03fff23b171fefd07182e17d26e5a27b8d4052ecbc41c6889ab6e27a61e126",
         "canonical_name": "ironworker",
         "wiki_observations": [
           {
@@ -114699,7 +114699,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-31500-31999.json",
-        "canonical_definition_sha256": "0d9fc7a45a1a482239ea76bbba58ac05b7f26b0a2e2fad2678acc92f7efb5dd7",
+        "canonical_definition_sha256": "5ec46c1e5611f9ff7de2fdf487cf686b69718f8d1bac06a8caeee9615519af94",
         "canonical_name": "silkweaver bow",
         "wiki_observations": [
           {
@@ -117402,7 +117402,7 @@
       "binding_status": "CLIENT_AND_CANONICAL_NAME",
       "identity_evidence": {
         "canonical_path": "content/items/definitions/items-33000-33499.json",
-        "canonical_definition_sha256": "ceca28ba793ab98f5f54082e980a0eb7d20e3d5c25a315890e01cacd0ce6e55a",
+        "canonical_definition_sha256": "d41dfabaf3892819915a54c0bc9fac21424de3eead2236a78b76afeb5b775346",
         "canonical_name": "musician's bow",
         "wiki_observations": [
           {

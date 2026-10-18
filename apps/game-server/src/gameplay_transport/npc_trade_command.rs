@@ -45,7 +45,7 @@ impl NpcTradeStep {
 }
 
 /// A UUIDv7-shaped identity of the command `command_id` of `session`, distinct per `tag`.
-fn derived(tag: &[u8], session: GameSessionId, command_id: u64) -> [u8; 16] {
+pub(super) fn derived(tag: &[u8], session: GameSessionId, command_id: u64) -> [u8; 16] {
     let hash = Sha256::new()
         .chain_update(tag)
         .chain_update(session.as_bytes())
@@ -97,7 +97,7 @@ fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent) -> bool {
         && receipt.unit_price == u64::from(intent.expected_unit_price)
 }
 
-fn unix_ms_now() -> i64 {
+pub(super) fn unix_ms_now() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .ok()

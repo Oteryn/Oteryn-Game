@@ -1850,6 +1850,34 @@ balance is checked under that lock before any write (`INSUFFICIENT_DUST`), and a
 location line or §39.1 audit event is involved; rows `DUR03-RL-03-PROF` (1 value line) and
 `DUR03-RL-06-PROF` (1 participant, 4 work units). The orb burn shape is not admitted yet.
 
+**Amendment (CRAFT-1, 2026-10-15; `reviews/OTERYN_GAME_CRAFT1_DECISION_2026-10-15.md` C3a and C8,
+`CRAFT1-ITEM-CONVERSIONS-V1`, accepted by the owner in ACCEPT-BATCH-2026-10-15 §8).** Effective
+on protected integration of that acceptance, in its CRAFT-RT-1 and CRAFT-NPC-1 children and for
+these shapes only:
+
+- **Conversion.** One bounded item conversion under the closed cause `ConversionCause {row,
+  occurrence}` (the occurrence bound 1:1 to the command's CommandRef, §14): DECREMENT, RETIRE and
+  SPLIT lines of the operands, TRANSFORM_PRESERVE or TRANSFORM_REPLACE of the used item and of one
+  carried target or C4b corpse, and MINT of fresh outputs straight into new direct entries of the
+  actor's containers, with the CRAFT1 C3a participant set, records and revision rules. One audit
+  event per transaction carries the closed `CONVERSION` aggregate. For this shape only it
+  supersedes the §39.1 exclusion of burn and of multiple touched items and the statement above that
+  a MINT first establishes Ground custody. Rows `DUR03-RL-01-CRAFT` (9 ItemInstances),
+  `DUR03-RL-02-CRAFT` (9 location/custody lines), `DUR03-RL-04-CRAFT` (4 transform inputs/outputs),
+  `DUR03-RL-06-CRAFT-PARTICIPANTS` (12) and `DUR03-RL-06-CRAFT-EFFECT-WORK-UNITS` (36) (the C3a
+  `DUR03-RL-06-CRAFT` row, registered as its two halves), `DUR03-RL-07-CRAFT-EVENTS` (1),
+  `DUR03-RL-07-CRAFT-PAYLOAD-BYTES` (42,138 B) and `DUR03-RL-07-CRAFT-ENVELOPE-BYTES` (42,452 B);
+  `DUR03-RL-03` and `DUR03-RL-05` stay 0.
+- **NPC exchange.** One item-only transaction on the NPC service amendment's trade writer, side
+  `EXCHANGE` under `NpcTradeCause {npc, offer, side: EXCHANGE, occurrence}`: up to 3 take BURN lines
+  from direct entries of the main backpack (§11.1, §11.5) and up to 3 give MINTs into new direct
+  entries, no gold and no `CharacterRevision` advance. Rows `DUR03-RL-01-NPC-TRADE-EXCHANGE` (6),
+  `DUR03-RL-02-NPC-TRADE-EXCHANGE` (6), `DUR03-RL-06-NPC-TRADE-EXCHANGE-PARTICIPANTS` (6) and
+  `DUR03-RL-06-NPC-TRADE-EXCHANGE-EFFECT-WORK-UNITS` (15); the audit event stays under
+  `DUR03-RL-07-NPC-TRADE-*`.
+
+Every other §39 obligation (fences, idempotency, current authority, conservation) is unchanged.
+
 ## 40. Durable acknowledgement
 
 For a durable DUR-03 mutation:
@@ -2115,3 +2143,80 @@ DDL/migration authority = NONE
 ```
 
 Architecture acceptance does **not** authorize item/value runtime implementation or production mutation. A later implementation task requires separate owner authority and section 50 evidence.
+
+### ITEM-FORGE-1 material-free DustLimit continuation proposal (§§15,17,18,39.3)
+
+This private draft specializes IMBUE-FORGE-0 §§9–10
+(`reviews/OTERYN_GAME_IMBUE_FORGE0_IMBUEMENTS_AND_EXALTATION_FORGE_DECISION_2026-09-30.md`)
+and [D1230](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6226138153)
+for the single `ForgeCause::DustLimit` operation. Its native representation is the dedicated
+`LIMIT_RAISE` dust entry with cause `forge_dust_limit`, one receipt and the closed
+`OneItemTransactionV1.forge_dust_limit` operation. Tag 13 is the current root's private
+composition proposal. Existing tags retain their interpretation, including HOUSE 11; the
+separately proposed Imbue 12 is unchanged. No new event type, schema revision or retention
+tuple is proposed.
+
+**Sink and exact state (§§15,17,18).** One acting Character burns `25+n` dust and changes its
+unlocked limit from `100+20*n` to `100+20*(n+1)`, for `n` in 0..224. The base, increment and
+initial cost have GUI/CIPSOFT S1 evidence; the general cost and maximum of 225 upgrades/4,600
+are explicitly `PARITY_WIKI` W1 under D1230. The debit is `BURN`; the unlocked-limit change
+is `STATE_MUTATION`. Together they form one closed before/after dust-asset operation with
+one immutable ledger entry, `lost_amount=0`, an unchanged predecessor chain and an exact
+balance successor. No ItemInstance, material, coin, bank, conversion, recipe or RNG line is
+part of this shape. Existing Gain and Proficiency Spend causes and their proofs are unchanged.
+
+For this successor, D1230's exact grid replaces the historical FORGE-1a §18 bound. Before
+installation, the append must prove that every legacy balance and ledger limit is 100, all
+old cause/arithmetic and predecessor/current-tail relationships hold, and every entry is
+reachable from its Character's first entry. Unexplained old limits or disconnected history
+refuse installation before the constraints change; they never create inferred paid unlocks.
+Every later high limit is reached through its preceding paid transitions. Gain still credits
+only available room and records lost dust; Spend preserves the unlocked limit and refuses
+overdraft. A further upgrade at 4,600 has no effect.
+
+**Binding, current authority and outcome (§39.3).** A reservation binds the acting Character,
+occurrence, expected unlocked stage, stable transaction/event/entry identities and timestamp,
+the actual current Content server-artifact digest, the D1230 formula revision and the actual
+`SimulationDeterminismProfileRevision`. The caller supplies neither a price nor an active
+revision. The Content activation's native shared lock protects that independently read binding.
+The SQL proof's current simulation revision 1 matches the native active profile; a future
+profile or formula successor must update its writer and proof together.
+
+Rules 2–4 of the Character/item composition decision apply: real root-bound recovery, cause
+lock and exact replay, current CommandRef/session, lease and connection generations, World,
+Channel, scope ownership, current node incarnation and admission guards, then the Character
+root lock before the dust row. The reservation must match the opaque candidate in every
+field. A concurrent paid upgrade refuses the old quoted stage; it cannot silently debit the
+next price. Runtime ingress and a still-pending CommandRef remain the runtime owner's duties.
+
+A successful physical transaction appends the exact dust ledger entry, updates the locked
+balance and limit, writes one native type-2 audit event, and inserts its immutable receipt and
+bounded history row. Bidirectional deferred proof binds ledger, receipt, fresh audit hash and
+history to that same physical transaction. The outbox's NULL ItemInstance case is allowed
+only through this exact successful receipt; its existing bank-only fee proof remains intact.
+Any missing or conflicting effect rolls back the operation. CharacterRevision is observed
+under the root lock and stays unchanged; there is no Character semantic or XP receipt.
+
+An existing terminal receipt is historical replay under the current recovery fence, including
+when a new CommandRef asks for the same occurrence. A changed occurrence binding conflicts.
+For an uncommitted occurrence, changed bound Content, formula or simulation revision produces
+terminal `REVISION_CHANGED`: a receipt with no item, dust, fee, gameplay-state, audit or history
+line. Restoring the old active revisions later cannot reactivate that occurrence. Ambiguous
+attempts resolve under the same cause lock and retained receipt before further evaluation;
+no receipt is a substitute for current authority for a new effect. The existing three-work-unit
+retry budget is retained per reservation, separately from value mutation. A terminal replay
+consumes no further budget, and bounded read-only reconciliation remains available afterward.
+
+The proposed `DUR03-RL-*-FORGE-DUST-LIMIT` children fix zero touched items, one Character asset
+participant, two value effects and three participant/effect work units. They do not raise any
+parent ceiling. Native type-2 payload/envelope bounds remain 7,936/9,216 bytes and audit retention
+remains P90D. Receipts and the dust ledger preserve non-reuse after audit expiry. Own history
+is capped at 1,000 rows, deleting only oldest overflow in a successful append; this family has
+at most 225 successes. Future Forge families must share the total budget before a combined
+FORGE_V1 history service is exposed.
+
+This text accompanies an uninstalled append proposal, not a reserved migration number or
+runtime admission. The root coordinator binds the final migration and composed source before
+publication and qualifies the native implementation. Existing HOUSE, bank, Proficiency and
+Imbue rules stay intact. Forge object/USE/window admission, other Forge operations and their
+Content, fee or RNG producers receive no authority from this specialization.

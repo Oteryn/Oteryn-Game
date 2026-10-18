@@ -144,6 +144,24 @@ pub(crate) async fn initialize_in_transaction(
         let transaction: Vec<u8> = ids.try_get(0)?;
         let event: Vec<u8> = ids.try_get(1)?;
         let item: Vec<u8> = ids.try_get(2)?;
+        // Historical/adoption rows continued above are not insertions. The real
+        // native scope issuer retains this transaction's key-33 lock; earlier
+        // fresh placements in this same batch are part of its complete census.
+        let item_id: [u8; 16] = item
+            .as_slice()
+            .try_into()
+            .map_err(|_| SpellItemError::Rejected("map Item UUID"))?;
+        super::ground_cell_limit::check_ground_cell_root_insert_with_recovery(
+            tx,
+            permit,
+            &record,
+            node,
+            (scope, binding.scope_generation),
+            &p.ground,
+            &item_id,
+        )
+        .await
+        .map_err(super::ground_cell_limit::GroundCellAdmissionError::into_spell_error)?;
         sqlx::query("INSERT INTO game_native_map_item_receipts(transaction_id,event_id,item_instance_id,world_id,channel_id,scope_generation,holder_node_id,holder_registration_revision,content_digest,map_digest,frame_digest,placement_key,definition_family,definition_key,definition_revision,quantity,spatial_position,map_revision,content_revision,placement_context,source_binding,source_attributes,blocks_movement,blocks_projectile,immovable_block_solid,owner_kind,binding,source_intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6::text::numeric(20,0),encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,sha256($27),$27)")
             .bind(&transaction).bind(&event).bind(&item).bind(binding.world.as_bytes().as_slice()).bind(binding.channel.as_bytes().as_slice()).bind(binding.scope_generation.to_string()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string())
             .bind(binding.content_digest.as_slice()).bind(binding.map_digest.as_slice()).bind(binding.frame_digest.as_slice()).bind(&p.placement_key).bind(&p.definition.family).bind(&p.definition.production_key).bind(&p.definition.revision_ref).bind(i64::from(p.quantity))

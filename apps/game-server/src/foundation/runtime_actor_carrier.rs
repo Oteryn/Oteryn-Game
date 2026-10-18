@@ -3867,27 +3867,92 @@ impl ChannelActorCarrier {
     /// (`health > 0`) generation reads exactly like a player slot here. `validate_ref` already
     /// rejects a stale generation, a vacant slot or an exhausted one before this is reached, and
     /// `read_position`/`compare_commit_position` already branch on `Slot::CreatureOccupied`
-    /// identically to `Slot::Occupied` for position facts, so no further creature-specific branch
-    /// is needed for Movement to serve a creature actor generically.
+    /// identically to `Slot::Occupied` for position facts. NPC-BEHAVIOUR-0 §4.4 also admits
+    /// the existing NPC slot to this Movement read; the separate combat/AI position read
+    /// continues to exclude NPCs.
     fn read_movement_position(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
-        self.validate_ref(continuity, actor_ref)?;
+        let index = self.validate_ref(continuity, actor_ref)?;
+        if let Slot::NpcOccupied {
+            generation,
+            position,
+            ..
+        } = &self.slots[index]
+        {
+            if *generation != actor_ref.actor_local_generation.0 {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            if position.actor_local_id != actor_ref.actor_local_id
+                || position.actor_local_generation != actor_ref.actor_local_generation
+            {
+                return Err(CarrierError::PositionSnapshotMismatch);
+            }
+            return Ok(MovementPositionSnapshot(PositionSnapshot {
+                actor_ref,
+                version: *position,
+            }));
+        }
         self.read_position(continuity, actor_ref)
             .map(MovementPositionSnapshot)
     }
 
     /// See [`Self::read_movement_position`]: a creature slot commits its cardinal step through
-    /// the same compare-commit path a player's does (§4.5).
+    /// the same compare-commit path a player's does (§4.5). The NPC branch writes that
+    /// actor's existing position only after current-owner, exact-snapshot and cardinal
+    /// checks. It does not grant NPCs the spell relocation or combat position paths.
     fn commit_movement_position(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         expected: PositionSnapshot,
         next: LocalPosition,
     ) -> Result<MovementPositionSnapshot, CarrierError> {
-        self.validate_ref(continuity, expected.actor_ref)?;
+        let index = self.validate_ref(continuity, expected.actor_ref)?;
+        if let Slot::NpcOccupied {
+            generation,
+            position,
+            ..
+        } = &self.slots[index]
+        {
+            self.validate_position_context(expected.version.context)?;
+            if *generation != expected.actor_ref.actor_local_generation.0
+                || position.actor_local_id != expected.actor_ref.actor_local_id
+                || position.actor_local_generation != expected.actor_ref.actor_local_generation
+                || *position != expected.version
+            {
+                return Err(CarrierError::PositionSnapshotMismatch);
+            }
+            let facing = match (
+                next.floor == position.position.floor,
+                next.x.checked_sub(position.position.x),
+                next.y.checked_sub(position.position.y),
+            ) {
+                (true, Some(1), Some(0)) => MovementFacing::East,
+                (true, Some(-1), Some(0)) => MovementFacing::West,
+                (true, Some(0), Some(1)) => MovementFacing::South,
+                (true, Some(0), Some(-1)) => MovementFacing::North,
+                _ => return Err(CarrierError::MovementNonCardinal),
+            };
+            let version = VersionedPosition {
+                position: next,
+                revision: position
+                    .revision
+                    .checked_add(1)
+                    .ok_or(CarrierError::PositionRevisionExhausted)?,
+                facing: Some(facing),
+                ..*position
+            };
+            let Slot::NpcOccupied { position, .. } = &mut self.slots[index] else {
+                unreachable!("exclusively borrowed NPC slot remains current");
+            };
+            *position = version;
+            return Ok(MovementPositionSnapshot(PositionSnapshot {
+                actor_ref: expected.actor_ref,
+                version,
+            }));
+        }
         // An exclusive carrier borrow prevents a slot replacement between this check and
         // the existing private exact-snapshot/revision compare-commit.
         self.compare_commit_position(continuity, expected, expected.version.context, next)
