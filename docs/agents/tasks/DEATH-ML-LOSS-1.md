@@ -53,7 +53,7 @@ Training/build progress is flushed before a death and the death receipt carries 
 |---|---|
 | CHAR-BUILD-1 | MERGED |
 | DEATH-1 | MERGED #1278 |
-| LOOP-PROGRESS-1 | BLOCKING: chain #3 not merged |
+| LOOP-PROGRESS-1 | MERGED #2192 (CP D1439 check) |
 | A13 ACCEPTED | ACCEPTED: ACCEPT-BATCH-2026-10-15 §1, #2209 main `e2da9805d296a27b06b32335bf67394509d4910b` (control-plane verified) |
 
 **BLOCKING for full integration:** LOOP-PROGRESS-1. A13 acceptance is effective; owned choreography preparation is allocated. The builder may prepare owned paths only for children whose gate is met; nothing in slot-only paths until every BLOCKING row is merged or waived by CP.
@@ -106,12 +106,12 @@ A13 §4.6; DEATH-0. Plan: `docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPL
 ## Context checkpoint
 
 ```yaml
-last_progress: "CP D1425: main f094e032 merged; mod.rs::commit_death settles through the build-aware path (condition 1, Codex P1 4303282822)"
+last_progress: "CP D1439: main 64d5e4da merged; release-path rebase; die-respawn-relog PostgreSQL case"
 status: waiting
 branch: skeleton/death-ml-loss-1
 merge_authority: CP_ONLY
-blocker: "conditions 2 (actor build re-base after death) and 3 (drain before death) need unowned spell/cast.rs or spell/mana_training.rs; LOOP-PROGRESS-1 not merged"
-next_action: "CP allocates the spell-state re-base hunk (condition 2), then the pre-death drain in commit_death (condition 3)"
+blocker: "composed-owner case through respawn_after_death needs unowned monk_save_postgres_tests.rs or a bundle_gates_tests.rs row"
+next_action: "CP decides the composed-owner fixture path, then marks ready"
 ```
 
 ## Local choreography preparation (2026-10-15, draft #2193)
@@ -471,6 +471,65 @@ Validation on this head (Molehill-PC, shared PostgreSQL 17.6 via
 passes; `--lib` filtered to `gameplay_transport spell:: durability::` 1520
 passed, 0 failed, 12 ignored; `character_progression_postgres` 1218 passed;
 `durability_postgres` 1312 passed, 0 failed.
+
+Status stays `waiting`. The record is not archived. No ready, queue or merge
+action is taken; CP alone decides merge.
+
+## CP D1439 checkpoint (2026-10-18)
+
+MERGE_AUTHORITY: CP_ONLY. CP D1439 settles skill-loss authority: server-side
+`domain/death.rs` from the durable build, applied in the one death commit
+transaction, before/after in the 0030 receipt columns under binding version 2,
+formula from Reference (A13 §4.6, SKILLS-0 §3.6, Canary `deathLossPercent`).
+The CP worker merged protected main `64d5e4da` with a merge commit (one
+`mod.rs` tail conflict, both sides kept; no rebase or force).
+
+Audit against the code:
+
+- Build loss: done. `calculate_death_build_loss` takes
+  `floor(cumulative * experience_lost / experience_before)` per family and
+  re-levels from the floor (magic 0, skills 10); vocation unchanged.
+- Receipt columns and binding version 2 with v1 replay: done (D1105).
+- Live caller: done. `commit_death` settles through
+  `settle_runtime_player_death` with the active training formula (D1425).
+- Flush before death and rebase at respawn: done (D1433).
+- Release path: done now. `settle_released_death` rebases a still-held actor
+  on the death's post-loss build, so the release save and a resumed epoch
+  never submit the pre-death build.
+- Fenced-out flush (Codex P1 `PRRT_kwDOT8SzxM6to_WN`): done. A live death
+  settles only on a `Saved` or `NotApplicable` flush; `FencedOut` keeps the
+  actor dead like `Unknown`. Only the actor-end release, whose own training
+  saves already accept a fenced-out session, settles past it from the durable
+  build (`death_flush_permits_settle`, unit case
+  `a_fenced_out_training_flush_refuses_a_live_death`).
+- Blessings reduce the loss only through the held `game_character_blessings`
+  rows. Promotion has no current owner (PREM-2b) and fails closed to
+  `promoted_with_current_premium: false`.
+
+New PostgreSQL case
+`gameplay_transport::death_ml_loss_postgres::trained_death_lowers_magic_and_skills_and_both_survive_respawn_and_relog`:
+a level 50 druid with magic 3 and sword 14 (and a flushed live try) dies
+losing L = 112,900 of 3L experience; the committed build equals an
+independent restatement of SKILLS-0 §3.6, the receipt row holds binding
+version 2 and the magic and sword before/after columns, the respawn rebases
+the actor, and a restarted root replays the same loss, admits the lowered
+magic level and build, and commits the next training save on them.
+
+Remaining: a composed-owner case through `respawn_after_death` needs the
+private composed fixture in `monk_save_postgres_tests.rs` or a new `src` file
+with a `bundle_gates_tests.rs` construction row; both are unowned.
+
+Validation (Molehill-PC WSL, slot-run slot 1, `-j 4`, `touch
+apps/game-server/src/lib.rs` before each cargo run, PostgreSQL through the
+unchanged `in-pg-netns.sh` against the shared 17.6 server):
+`cargo fetch --locked` ok; `cargo fmt --all --check` ok;
+`cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings` ok;
+`cargo test --lib -- death_ml_loss_postgres a_fenced_out_training_flush_refuses_a_live_death`
+3 passed; `cargo test --lib -- gameplay_transport spell:: durability:: domain::`
+1696 passed, 0 failed, 12 ignored;
+`cargo test --lib -- boundary_unknown_monk_save_keeps_lease_until_store_recovers`
+1 passed; `cargo test --test durability_postgres --test character_progression_postgres`
+1223 + 1 + 1317 passed; `python3 tools/agents/validate_governance.py` passed.
 
 Status stays `waiting`. The record is not archived. No ready, queue or merge
 action is taken; CP alone decides merge.
