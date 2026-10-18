@@ -1152,10 +1152,7 @@ pub(super) async fn resume_premium_talk(
     }
     let id = crate::foundation::CommandId::new(command.command_id).ok()?;
     let reference = crate::foundation::CommandRef::new(command.game_session_id, id);
-    match admission
-        .reconcile_premium_purchase(actor, reference)
-        .await
-    {
+    match admission.reconcile_premium_purchase(actor, reference).await {
         PremiumReconcile::None => None,
         PremiumReconcile::Committed { npc, line } => {
             let intent = NpcTalkIntent {
