@@ -31,7 +31,7 @@ use super::container_view::{
 use super::input_gate::InputPermit;
 use super::item_move::{
     self, EquipmentMove, EquipmentMoveRefusal, EquipmentMoveReplay, EquipmentMoveResult,
-    ItemMoveStep,
+    ItemMoveStep, LoopMove, LoopMoveRefusal, LoopMoveReplay, LoopMoveResult,
 };
 use super::item_view::{
     CloseTrigger, InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity,
@@ -584,6 +584,29 @@ pub(crate) trait FreshAdmissionAuthority {
         async { EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected) }
     }
 
+    /// ITEM-LOOP-1 replay: the item loop receipt of this command 9's CommandRef, read after the
+    /// equipment replay and before its handle is resolved. `None` when it cannot be read: the
+    /// connection ends before the CommandId is sequenced.
+    fn committed_loop_move(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+    ) -> impl Future<Output = Option<LoopMoveReplay>> {
+        async { Some(LoopMoveReplay::Absent) }
+    }
+
+    /// ITEM-LOOP-1 (CP D1438): one move, merge, drop or pickup of the carried tree through the
+    /// item loop owner, keyed by this command 9's CommandRef. The connection has resolved the
+    /// handles; the owner checks reach and decides the rest in one transaction.
+    fn move_loop_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _request: LoopMove,
+    ) -> impl Future<Output = LoopMoveResult> {
+        async { LoopMoveResult::Refused(LoopMoveRefusal::Rejected) }
+    }
+
     /// ITEM-VIEW-1b: the Channel owner's view of the item a `USE` handle resolved to, with the
     /// actor's position, read together. `None` when it cannot be observed (`STALE_STATE`).
     fn observe_item_target(
@@ -629,6 +652,7 @@ pub(crate) trait FreshAdmissionAuthority {
     fn observe_container(
         &self,
         _actor: ExactActorRef,
+        _fence: Option<CurrentCharacterItemFence>,
         _target: ItemKey,
     ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
@@ -2646,7 +2670,7 @@ where
                     // BAGS-WIRE-1: with capability 14 a container in reach opens in a new view,
                     // and one out of reach is TOO_FAR; anything else takes the corpse path.
                     let container = match (key, &container_views) {
-                        (Some(key), Some(_)) => authority.observe_container(actor, key).await,
+                        (Some(key), Some(_)) => authority.observe_container(actor, admitted.item_fence, key).await,
                         _ => None,
                     };
                     let container = container.filter(|observation| {
@@ -2779,8 +2803,9 @@ where
                     let decided = match views.plan(view, intent) {
                         Ok(ContainerPlan::Decided(outcome, delta)) => Ok((outcome, delta)),
                         Ok(ContainerPlan::Observe(pending)) => {
-                            let observation =
-                                authority.observe_container(actor, pending.key()).await;
+                            let observation = authority
+                                .observe_container(actor, admitted.item_fence, pending.key())
+                                .await;
                             views.apply(view, pending, observation)
                         }
                         Err(error) => Err(error),
@@ -2821,7 +2846,25 @@ where
                     .await;
                     admitted.continuity.item_view = view.continuity();
                     match step {
-                        ItemMoveStep::Result(outcome, deltas) => {
+                        ItemMoveStep::Result(outcome, mut deltas) => {
+                            // ITEM-LOOP-1: the open container views show the committed tree.
+                            if let (ItemMoveOutcome::Moved, Some(views)) =
+                                (outcome, container_views.as_mut())
+                            {
+                                let mut observed = Vec::new();
+                                for key in views.containers() {
+                                    let observation = authority
+                                        .observe_container(actor, admitted.item_fence, key)
+                                        .await;
+                                    observed.push((key, observation));
+                                }
+                                let refreshed = views.refresh(view, &observed);
+                                admitted.continuity.item_view = view.continuity();
+                                let Ok(delta) = refreshed else {
+                                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                                };
+                                deltas.extend(delta);
+                            }
                             Dispatch::ItemMove(outcome, deltas)
                         }
                         ItemMoveStep::Disconnect => {
@@ -3473,7 +3516,7 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
-            Dispatch::ItemMove(_, deltas) => {
+            Dispatch::ItemMove(outcome, deltas) => {
                 for delta in deltas {
                     let Some((delta_sequence, frame)) =
                         item_view_delta(generation, sequence, &delta)
@@ -3484,6 +3527,25 @@ where
                     admitted.continuity.server_sequence = sequence;
                     if write_frame(stream, &frame).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+                // ITEM-LOOP-1: a drop or pickup changed a tile in view; domain 17 shows it now.
+                if matches!(outcome, ItemMoveOutcome::Moved)
+                    && let (Some(view), Some(items)) = (world_map.as_mut(), item_view.as_mut())
+                {
+                    let update =
+                        world_map_delta(authority, actor, generation, sequence, view, items).await;
+                    admitted.continuity.item_view = items.continuity();
+                    let Some(update) = update else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    if let Some((delta_sequence, frame)) = update {
+                        sequence = delta_sequence;
+                        admitted.continuity.server_sequence = sequence;
+                        admitted.continuity.world_map_revision = view.revision();
+                        if write_frame(stream, &frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
                     }
                 }
             }

@@ -135,7 +135,7 @@
       "command_types": [],
       "state_domains": [],
       "offered": false,
-      "offer_gate": "ITEM-MOVE-2a: the server does not offer this capability before command type 9 equips. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
+      "offer_gate": "ITEM-MOVE-2a, ITEM-LOOP-1 (CP D1438): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), where command type 9 equips, swaps an occupied slot, drops onto a reachable ground cell and picks up from one; a fixture World never offers it, so this entry stays offered false. It extends command type 9 and domain 9 of capability 4 and owns neither. Without it selected, domain 9 carries no equipment (field 3 fails closed, at most 930 bytes), command type 9 keeps the main backpack destination only (fields 3 and 4 fail closed, at most 13 bytes) and the outcomes 10 to 12 are never sent. The command type 9 and domain 9 max_payload_bytes are the bounds under this capability."
     },
     {
       "id": 13,
@@ -156,7 +156,7 @@
       "command_types": [21],
       "state_domains": [14],
       "offered": false,
-      "offer_gate": "BAGS-1: the server does not offer this capability before command type 9 moves an item within the container tree. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
+      "offer_gate": "BAGS-1, ITEM-LOOP-1 (CP D1438): only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES), where command type 9 moves an item within the durable container tree (depth and size bounded) and command type 21 observes durable containers; a fixture World never offers it, so this entry stays offered false. Without it selected, domain 14 is never sent, command type 21 is refused as unsupported, the CONTAINER destination of command type 9 (field 5) fails closed and USE field 2 on a container handle keeps its capability 4 meaning. Views are not durable: domain 14 is empty after every admission, reconnect, resume and channel transfer, and views close on death and logout."
     },
     {
       "id": 15,

@@ -148,6 +148,7 @@ fn production_creature_loot_moves_out_of_a_corpse() -> TestResult {
         let definition = typed("Item", "oteryn:item.tibia.i3607", "definition-r1");
         let cheese = put_loot_of(&harness, &definition, corpse, 3000, 1, 140).await?;
         let facts = ItemDefinitionFacts {
+            weight: Some(400),
             definition,
             stack: ItemStackClass::Stackable {
                 proven_maximum: Some(100),

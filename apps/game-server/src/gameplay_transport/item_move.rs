@@ -1,17 +1,23 @@
 //! ITEM-MOVE-1: command 9 (`ItemMoveIntentV1`, ITEM-MOVE-WIRE-0 §5) taking an entry of the open
 //! corpse into the Character's main backpack, and (EQUIP-WIRE-1, ITEM-MOVE-WIRE-1 §4) equipping
-//! a main backpack entry into a free slot or unequipping a slot's item into the main backpack.
+//! a main backpack entry into a slot or unequipping a slot's item into the main backpack.
 //!
-//! - **Replay first.** The committed TRANSFER of the CommandRef, then its equipment receipt, is
-//!   looked up before the handle is resolved, so a command that committed before a reconnect
+//! - **Replay first.** The committed TRANSFER of the CommandRef, then its equipment receipt, then
+//!   its item loop receipt, is looked up before the handle is resolved, so a command that committed before a reconnect
 //!   answers `MOVED` although its handle is now stale.
 //! - **Source.** Only an entry of the open corpse, shown in it and in reach on the Channel owner's
 //!   observation (`corpse_open::within_reach`); the TRANSFER (`settle_corpse_pickup`) decides the
-//!   rest. Ground and container destinations answer `NOT_SUPPORTED`.
-//! - **Equipment (capability 12).** A main backpack entry to a free slot, or a slot's item to the
-//!   main backpack, through the equipment owner in one transaction. An occupied slot (the swap),
-//!   a slot-to-slot move and any other source answer `NOT_SUPPORTED`; the main backpack itself is
-//!   a container (`SLOT_MISMATCH`).
+//!   rest.
+//! - **Item loop (ITEM-LOOP-1, CP D1438).** Every other durable source goes to the loop owner
+//!   ([`LoopMove`]): a main-backpack or nested entry into the main backpack or into a visible
+//!   container of the carried tree (capability 14), whole or merged into the newest compatible
+//!   stack (ITEM-MOVE-2a, BAGS-1, STACK-1); a carried item onto a Ground cell in reach (capability
+//!   12 or 11), and a loop Ground item of the map view in reach back into the carried tree
+//!   (ITEM-MOVE-2b). The owner decides the rest, the B3-3 weight included, in one transaction.
+//! - **Equipment (capability 12).** A main backpack entry to a slot, or a slot's item to the main
+//!   backpack, through the equipment owner in one transaction. Into an occupied slot the owner
+//!   swaps the whole items atomically (ITEM-MOVE-2a) or refuses. A slot-to-slot move and any other
+//!   source answer `NOT_SUPPORTED`; the main backpack itself is a container (`SLOT_MISMATCH`).
 //! - **Deltas.** After `MOVED` the open corpse's domain 11 delta and then the domain 9 delta
 //!   follow the result; under capability 12 domain 9 carries the equipment.
 //! - **Unknown outcome.** When the TRANSFER or the replay read cannot tell whether the command
@@ -27,12 +33,13 @@ use crate::combat_pickup::GroundPickupError;
 pub(crate) use crate::durability::character_equipment::{
     EquipmentMoveRefusal, EquipmentMoveReplay,
 };
+pub(crate) use crate::durability::item_loop_move::{LoopMoveRefusal, LoopMoveReplay};
 use crate::durability::item_transfer::{
     ItemTransferError, ItemTransferOutcome, ItemTransferRefusal,
 };
 use crate::foundation::{ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::item_view::{
-    EquipmentSlot, ItemMoveDestination, ItemMoveOutcome, ItemMoveSelection,
+    EquipmentSlot, ItemMoveDestination, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
     decode_item_move_intent_for,
 };
 
@@ -43,6 +50,52 @@ pub(crate) enum EquipmentMove {
     Equip { item: ItemKey, to: EquipmentSlot },
     /// A slot's item into the main backpack.
     Unequip { item: ItemKey, from: EquipmentSlot },
+}
+
+/// Where one item loop move of command 9 puts its source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LoopTarget {
+    /// A direct entry of the main backpack.
+    MainBackpack,
+    /// A direct entry of this visible container of the carried tree.
+    Container(ItemKey),
+    /// The Ground cell, in reach of the actor.
+    Ground(WorldTilePosition),
+}
+
+/// One item loop move of command 9 (ITEM-LOOP-1), by the source's server-internal key. The whole
+/// stack moves: the wire carries no count.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LoopMove {
+    pub(crate) item: ItemKey,
+    pub(crate) target: LoopTarget,
+}
+
+/// What the loop owner did with one [`LoopMove`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LoopMoveResult {
+    Committed,
+    /// Nothing was written.
+    Refused(LoopMoveRefusal),
+    /// The Ground cell of a drop or a pickup is out of the actor's reach; nothing was written.
+    TooFar,
+    /// Whether it committed is unknown: the replay decides on the resend.
+    Unknown,
+}
+
+/// The §4 result of one refused loop move. The wire has no weight result: an overweight or
+/// unknown-weight pickup is `REJECTED`.
+pub(super) const fn loop_outcome(refusal: LoopMoveRefusal) -> ItemMoveOutcome {
+    match refusal {
+        LoopMoveRefusal::Stale => ItemMoveOutcome::Stale,
+        LoopMoveRefusal::NoBackpack => ItemMoveOutcome::NoBackpack,
+        LoopMoveRefusal::NoRoom => ItemMoveOutcome::NoRoom,
+        LoopMoveRefusal::Blocked => ItemMoveOutcome::Blocked,
+        LoopMoveRefusal::NotSupported => ItemMoveOutcome::NotSupported,
+        LoopMoveRefusal::Overweight
+        | LoopMoveRefusal::WeightUnknown
+        | LoopMoveRefusal::Rejected => ItemMoveOutcome::Rejected,
+    }
 }
 
 /// What the equipment owner did with one [`EquipmentMove`].
@@ -144,7 +197,11 @@ pub(super) fn outcome_of(
                 Refusal::CorpseExclusiveWindow => ItemMoveOutcome::NotOwner,
                 Refusal::CorpseNotPickupable => ItemMoveOutcome::NotPickupable,
                 Refusal::ContainerNotEmpty => ItemMoveOutcome::NotSupported,
-                Refusal::DefinitionMismatch
+                Refusal::WeightUnknown
+                | Refusal::WeightGenerationMismatch
+                | Refusal::WeightDefinitionMismatch
+                | Refusal::Overweight
+                | Refusal::DefinitionMismatch
                 | Refusal::UnknownStackClass
                 | Refusal::UnsupportedStackMaximum
                 | Refusal::QuantityAboveStackMaximum
@@ -188,11 +245,13 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
         }
         None => return ItemMoveStep::Disconnect,
     }
-    if matches!(
-        intent.destination,
-        ItemMoveDestination::Ground(_) | ItemMoveDestination::Container(_)
-    ) {
-        return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
+    match authority.committed_loop_move(actor, command).await {
+        Some(LoopMoveReplay::Moved) => return moved(authority, actor, command, view).await,
+        Some(LoopMoveReplay::Absent) => {}
+        Some(LoopMoveReplay::Conflicting) => {
+            return ItemMoveStep::Result(ItemMoveOutcome::Rejected, Vec::new());
+        }
+        None => return ItemMoveStep::Disconnect,
     }
     let Some(source) = view.resolve(intent.source) else {
         return ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new());
@@ -202,42 +261,91 @@ pub(super) async fn item_move<A: FreshAdmissionAuthority>(
             if view.is_main_backpack(&source) {
                 return ItemMoveStep::Result(ItemMoveOutcome::SlotMismatch, Vec::new());
             }
-            // Swap (an occupied slot) is ITEM-MOVE-2a's next slice; a view that does not show
-            // the slots never moves into one.
-            if !view.equip_drop()
-                || !view.is_backpack_entry(&source)
-                || view.equipped_item(to).is_some()
-            {
+            // An occupied slot reaches the owner, which swaps atomically or refuses
+            // (ITEM-MOVE-2a); a view that does not show the slots never moves into one.
+            if !view.equip_drop() || !view.is_backpack_entry(&source) {
                 return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
             }
             EquipmentMove::Equip { item: source, to }
         }
         ItemMoveDestination::MainBackpack => match view.equipped_slot(&source) {
             Some(from) => EquipmentMove::Unequip { item: source, from },
-            None => return take_from_corpse(authority, actor, command, source, view).await,
+            None if view.open_corpse_of(&source).is_some() => {
+                return take_from_corpse(authority, actor, command, source, view).await;
+            }
+            None => {
+                let target = LoopTarget::MainBackpack;
+                return loop_move(authority, actor, command, selection, source, target, view).await;
+            }
         },
-        ItemMoveDestination::Ground(_) | ItemMoveDestination::Container(_) => {
-            return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
+        ItemMoveDestination::Container(handle) => {
+            let Some(container) = view.resolve(handle) else {
+                return ItemMoveStep::Result(ItemMoveOutcome::Stale, Vec::new());
+            };
+            let target = if view.is_main_backpack(&container) {
+                LoopTarget::MainBackpack
+            } else {
+                LoopTarget::Container(container)
+            };
+            return loop_move(authority, actor, command, selection, source, target, view).await;
+        }
+        ItemMoveDestination::Ground(at) => {
+            let target = LoopTarget::Ground(at);
+            return loop_move(authority, actor, command, selection, source, target, view).await;
         }
     };
     match authority.move_equipment(actor, command, request).await {
         EquipmentMoveResult::Committed => moved(authority, actor, command, view).await,
         EquipmentMoveResult::Unknown => ItemMoveStep::Disconnect,
         EquipmentMoveResult::Refused(refusal) => {
-            let outcome = equipment_outcome(refusal);
-            // The results 10 to 12 are never sent without capability 12.
-            let needs_equip_drop = matches!(
-                outcome,
-                ItemMoveOutcome::SlotMismatch
-                    | ItemMoveOutcome::RequirementNotMet
-                    | ItemMoveOutcome::Blocked
-            );
-            let outcome = if needs_equip_drop && !selection.equip_drop {
-                ItemMoveOutcome::Rejected
-            } else {
-                outcome
-            };
-            ItemMoveStep::Result(outcome, Vec::new())
+            ItemMoveStep::Result(admitted(equipment_outcome(refusal), selection), Vec::new())
+        }
+    }
+}
+
+/// `outcome`, or `REJECTED` when the session's selection does not admit it: the results 10 to
+/// 12 are never sent without capability 12 (`BLOCKED` also with capability 11).
+fn admitted(outcome: ItemMoveOutcome, selection: ItemMoveSelection) -> ItemMoveOutcome {
+    let admitted = match outcome {
+        ItemMoveOutcome::SlotMismatch | ItemMoveOutcome::RequirementNotMet => selection.equip_drop,
+        ItemMoveOutcome::Blocked => selection.equip_drop || selection.world_interaction,
+        _ => true,
+    };
+    if admitted {
+        outcome
+    } else {
+        ItemMoveOutcome::Rejected
+    }
+}
+
+/// ITEM-LOOP-1: one move of `source` through the loop owner. A map base entry and every source
+/// that is not a durable item answer `NOT_SUPPORTED`, as does an equipped item to a container or
+/// to the Ground and the main backpack itself.
+async fn loop_move<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    command: UseCommand,
+    selection: ItemMoveSelection,
+    source: ItemKey,
+    target: LoopTarget,
+    view: &mut SessionItemView,
+) -> ItemMoveStep {
+    if !matches!(source, ItemKey::Instance(_))
+        || view.is_main_backpack(&source)
+        || view.equipped_slot(&source).is_some()
+    {
+        return ItemMoveStep::Result(ItemMoveOutcome::NotSupported, Vec::new());
+    }
+    let request = LoopMove {
+        item: source,
+        target,
+    };
+    match authority.move_loop_item(actor, command, request).await {
+        LoopMoveResult::Committed => moved(authority, actor, command, view).await,
+        LoopMoveResult::TooFar => ItemMoveStep::Result(ItemMoveOutcome::TooFar, Vec::new()),
+        LoopMoveResult::Unknown => ItemMoveStep::Disconnect,
+        LoopMoveResult::Refused(refusal) => {
+            ItemMoveStep::Result(admitted(loop_outcome(refusal), selection), Vec::new())
         }
     }
 }
