@@ -19,6 +19,12 @@ enum CarrierError {
     InjectedAdmissionFailure,
     NamespaceAlreadyClaimed,
     ContinuityGenerationNotNewer,
+    PositionUnavailable,
+    PositionAlreadyInitialized,
+    InvalidPreProductionPositionContext,
+    PositionContextMismatch,
+    PositionSnapshotMismatch,
+    PositionRevisionExhausted,
 }
 
 /// Authority supplied by a future, independently accepted assignment consumer.
@@ -121,11 +127,56 @@ impl CurrentOwnerExactActorLookup<'_> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorState(u64);
 
+/// These opaque numeric markers are fixture inputs, not Content/Reference
+/// activation evidence. Production composition must provide its own accepted
+/// context binding before this private carrier can be used by gameplay.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PreProductionPositionContext {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    scope_generation: ScopeOwnershipGeneration,
+    coordinate_frame_marker: u64,
+    map_revision_marker: u64,
+    content_generation_marker: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct LocalPosition {
+    x: i32,
+    y: i32,
+    floor: i16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct VersionedPosition {
+    actor_local_id: ActorLocalId,
+    actor_local_generation: ActorLocalGeneration,
+    context: PreProductionPositionContext,
+    position: LocalPosition,
+    revision: u64,
+}
+
+/// A value snapshot, never an authority token. Compare-commit revalidates
+/// actor, independently current owner, context and revision at the write.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PositionSnapshot {
+    actor_ref: ActorRef,
+    version: VersionedPosition,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Slot {
-    VacantReusable { generation: u64 },
-    Occupied { generation: u64, actor: ActorState },
-    Exhausted { generation: u64 },
+    VacantReusable {
+        generation: u64,
+    },
+    Occupied {
+        generation: u64,
+        actor: ActorState,
+        position: Option<VersionedPosition>,
+    },
+    Exhausted {
+        generation: u64,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -229,6 +280,7 @@ impl ChannelActorCarrier {
         self.slots[index] = Slot::Occupied {
             generation: next_generation,
             actor,
+            position: None,
         };
         Ok(actor_ref)
     }
@@ -240,11 +292,9 @@ impl ChannelActorCarrier {
     ) -> Result<&ActorState, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
         match &self.slots[index] {
-            Slot::Occupied { generation, actor }
-                if *generation == actor_ref.actor_local_generation.0 =>
-            {
-                Ok(actor)
-            }
+            Slot::Occupied {
+                generation, actor, ..
+            } if *generation == actor_ref.actor_local_generation.0 => Ok(actor),
             Slot::Occupied { .. } | Slot::VacantReusable { .. } | Slot::Exhausted { .. } => {
                 Err(CarrierError::StaleActorGeneration)
             }
@@ -258,9 +308,9 @@ impl ChannelActorCarrier {
     ) -> Result<ActorState, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
         match self.slots[index] {
-            Slot::Occupied { generation, actor }
-                if generation == actor_ref.actor_local_generation.0 =>
-            {
+            Slot::Occupied {
+                generation, actor, ..
+            } if generation == actor_ref.actor_local_generation.0 => {
                 self.slots[index] = Slot::VacantReusable { generation };
                 Ok(actor)
             }
@@ -268,6 +318,141 @@ impl ChannelActorCarrier {
                 Err(CarrierError::StaleActorGeneration)
             }
         }
+    }
+
+    fn validate_position_context(
+        &self,
+        context: PreProductionPositionContext,
+    ) -> Result<(), CarrierError> {
+        if context.world_id != self.world_id
+            || context.channel_id != self.channel_id
+            || context.scope_generation != self.scope_generation
+            || context.coordinate_frame_marker == 0
+            || context.map_revision_marker == 0
+            || context.content_generation_marker == 0
+        {
+            return Err(CarrierError::InvalidPreProductionPositionContext);
+        }
+        Ok(())
+    }
+
+    /// Private preproduction-only initial binding; existing actor admission
+    /// cannot silently invent a position or a Content activation context.
+    fn initialize_position(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        context: PreProductionPositionContext,
+        position: LocalPosition,
+    ) -> Result<PositionSnapshot, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        self.validate_position_context(context)?;
+        match &mut self.slots[index] {
+            Slot::Occupied {
+                generation,
+                position: stored @ None,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                let version = VersionedPosition {
+                    actor_local_id: actor_ref.actor_local_id,
+                    actor_local_generation: actor_ref.actor_local_generation,
+                    context,
+                    position,
+                    revision: 1,
+                };
+                *stored = Some(version);
+                Ok(PositionSnapshot { actor_ref, version })
+            }
+            Slot::Occupied {
+                generation,
+                position: Some(_),
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                Err(CarrierError::PositionAlreadyInitialized)
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+
+    /// One direct occupied-slot read under the independently current owner.
+    fn read_position(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<PositionSnapshot, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        match self.slots[index] {
+            Slot::Occupied {
+                generation,
+                position: Some(version),
+                ..
+            } if generation == actor_ref.actor_local_generation.0 => {
+                if version.actor_local_id != actor_ref.actor_local_id
+                    || version.actor_local_generation != actor_ref.actor_local_generation
+                {
+                    return Err(CarrierError::PositionSnapshotMismatch);
+                }
+                Ok(PositionSnapshot { actor_ref, version })
+            }
+            Slot::Occupied {
+                generation,
+                position: None,
+                ..
+            } if generation == actor_ref.actor_local_generation.0 => {
+                Err(CarrierError::PositionUnavailable)
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+
+    /// Compare and commit exactly one replacement in the same actor slot.
+    /// All fallible checks run before the sole mutation and no alternate store
+    /// or movement timing authority participates.
+    fn compare_commit_position(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        expected: PositionSnapshot,
+        next_context: PreProductionPositionContext,
+        next_position: LocalPosition,
+    ) -> Result<PositionSnapshot, CarrierError> {
+        let index = self.validate_ref(continuity, expected.actor_ref)?;
+        self.validate_position_context(next_context)?;
+        if next_context != expected.version.context {
+            return Err(CarrierError::PositionContextMismatch);
+        }
+        let Slot::Occupied {
+            generation,
+            position: Some(current),
+            ..
+        } = self.slots[index]
+        else {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        };
+        if generation != expected.actor_ref.actor_local_generation.0
+            || current.actor_local_id != expected.actor_ref.actor_local_id
+            || current.actor_local_generation != expected.actor_ref.actor_local_generation
+            || current != expected.version
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        let revision = current
+            .revision
+            .checked_add(1)
+            .ok_or(CarrierError::PositionRevisionExhausted)?;
+        let version = VersionedPosition {
+            actor_local_id: expected.actor_ref.actor_local_id,
+            actor_local_generation: expected.actor_ref.actor_local_generation,
+            context: next_context,
+            position: next_position,
+            revision,
+        };
+        if let Slot::Occupied { position, .. } = &mut self.slots[index] {
+            *position = Some(version);
+        }
+        Ok(PositionSnapshot {
+            actor_ref: expected.actor_ref,
+            version,
+        })
     }
 
     fn validate_ref(
@@ -332,6 +517,11 @@ const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
 #[allow(clippy::expect_used)]
 #[path = "ability_exact_actor_resolution_tests.rs"]
 mod ability_exact_actor_resolution_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "channel_actor_position_tests.rs"]
+mod channel_actor_position_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
