@@ -8,27 +8,27 @@
     {
       "target_path": "content/services/trade/market-evidence/evidence-00000-00499.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00000-00499.json",
-      "sha256": "b2a8c545be87aa7af736a35ae0f45654fd7ed5230d92c1dd15bf207ab2739c24"
+      "sha256": "7e141f4dedf5dd0a25f3523bb435150f1b2467ecd2ce75a2dcdfb569876533c5"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-00500-00999.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json",
-      "sha256": "d9bc58952e42c1ac6f64bd1917ea6aca348bd8a44cb203f5e90257e7e4eb5254"
+      "sha256": "305d39ad9c5ecb47417b89c15d92cd660006f290f6b8b404117adab309d78474"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-01000-01499.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json",
-      "sha256": "a2755ff713f10e8d9720f2f0712046e723e7310e60fea048b11f27334c997a34"
+      "sha256": "378412a15eadd5b6a00526425770407ecdd6d8545ae70b896da69a0314c3439f"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-01500-01999.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json",
-      "sha256": "53b41fc115bff8c0dd1cc2fcb6764c14e86575fbfa7127f98cf1475aec7cd43d"
+      "sha256": "73c8309794a4deed9532172e9e7663f4404fa8542ede734a3a8b22dddf2fd3c7"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-02000-02075.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-02000-02075.json",
-      "sha256": "926efd7481447ae8c532604fefe5dcff6a5d24f84ee87d6bdaee2a8fd47263c3"
+      "sha256": "5fa117beea165a85eb6d67ac22b83456fc85df634a5da252b3712d01a6b2dc8c"
     },
     {
       "target_path": "content/services/trade/market-evidence/index.json",

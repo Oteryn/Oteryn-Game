@@ -1,6 +1,6 @@
 # MARKET-CONTENT-1: Market wares and sourced category evidence
 
-Current own-item Wiki templates were revalidated against the latest API revisions, including seven changed templates and separately fetched missing item pages. Category assignment is an explicit conservative DERIVED crosswalk; unrecognized types remain UNKNOWN. Existing service prices and item definitions are preserved.
+Current own-item Wiki revisions and a fresh read-only capture of installed CipSoft client 15.33.9d148f supply the tradeability and category observations. Client category numbers and display filters are preserved separately from server listing permission. Existing service prices and item definitions are preserved.
 
 Source registry: [sources.json](sources.json). Facts link to exact revision IDs or immutable repository blobs. `PROVEN` means the cited source states the fact; `DERIVED` means the stated transformation is reproducible; `UNKNOWN` and `CONFLICT` must remain held. Community evidence is not controlled Global telemetry. Where cited, the official characters/combat/trading manual was re-read live on 2026-10-18; exact response digests and current URLs are in the source registry.
 
@@ -10,8 +10,8 @@ These files prepare Reference data for CP. They add no runtime admission, Rust c
 
 Service data placement: **STAGED_FOR_COORDINATOR**. The World Bundle fingerprint includes every tracked `content/services/` file. Updating pins/regenerating content is forbidden in this task. Therefore the proposed files are under `target-files/`, with their intended canonical paths and SHA-256 in [service-apply-plan.json](service-apply-plan.json). CP/coordinator applies them together with qualified regeneration; no current generated Service declaration is changed. This is a concrete data handoff, not a claim that the canonical Service family is populated.
 
-## Research completion and coverage
+## Supplemental source research — 2026-10-18
 
-All 324 original trade services and 2076 distinct offered Item identities are covered. Current own-item Wiki observations and the Market rules are preserved; 1868 items also have positive raw category/market metadata from the pinned official 15.30 client asset. That asset is explicitly not represented as a fresh live-client capture. Missing flags never become false. Global instance exclusions are linked on every item; unidentified current filters and exhaustive item-instance restrictions remain held.
+All 324 original trade services and 2076 distinct offered Item identities remain covered. Fresh read-only extraction from the owner-installed CipSoft client 15.33.9d148f (appearance SHA256 501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f) supplies 1868 positive category/display observations, including trade-as/show-as identity and level/profession filters where explicitly present. A market submessage is not proof of server listing permission. Current own-ID Wiki tradeability, explicit non-portable exclusions and inapplicable categories are distinguished. Complete state-dependent listing predicates remain held where unavailable.
 
-The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+This is a sourced reference handoff, not a claim of complete gameplay knowledge. The field-level [research audit](research-audit.json) enumerates all remaining UNKNOWN/CONFLICT fields. Runtime admission stays blocked pending CP qualification.

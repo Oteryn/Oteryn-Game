@@ -72,3 +72,9 @@ Service evidence is staged under docs/reference with an explicit apply plan. Wor
 All 324 original trade services and 2076 distinct offered Item identities are covered. Current own-item Wiki observations and the Market rules are preserved; 1868 items also have positive raw category/market metadata from the pinned official 15.30 client asset. That asset is explicitly not represented as a fresh live-client capture. Missing flags never become false. Global instance exclusions are linked on every item; unidentified current filters and exhaustive item-instance restrictions remain held.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Supplemental source completion — 2026-10-18
+
+All 324 original trade services and 2076 distinct offered Item identities remain covered. Fresh read-only extraction from the owner-installed CipSoft client 15.33.9d148f (appearance SHA256 501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f) supplies 1868 positive category/display observations, including trade-as/show-as identity and level/profession filters where explicitly present. A market submessage is not proof of server listing permission. Current own-ID Wiki tradeability, explicit non-portable exclusions and inapplicable categories are distinguished. Complete state-dependent listing predicates remain held where unavailable.
+
+This authoring successor replaces the previous reference candidate only after full local validation and exact remote-byte verification. The previous CI results do not qualify a new head. Draft-only publication; no ready transition, merge or runtime admission.

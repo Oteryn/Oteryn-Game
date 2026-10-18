@@ -14,7 +14,7 @@
       "source_class": "COMMUNITY_WIKI",
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "8b555438806c63a8c8755757b39ac9d24e8bc22b2b8a5c42adc3a2fd4ddfc31d",
-      "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=The%20Market%20(Object)%7CTravelling%7CEquipment%20Upgrade%7CBlessings&redirects=1"
+      "retrieval": "Public TibiaWiki API via owner-authorized Molehill-PC, 2026-10-18; retained supplement-market-forge.json"
     },
     "wiki:42597:1114929": {
       "title": "Flask of Crown Polisher",
@@ -24821,6 +24821,33 @@
       "fetched_at": "2026-10-18",
       "continuity": "PINNED_CLIENT_ASSET_NOT_LIVE_CURRENT",
       "qualification": "Only explicit positive market flag/category fields are retained. Absence is not proof of marketable=false. Asset does not prove current client continuity."
+    },
+    "official-client:15.33.9d148f:501594e8": {
+      "title": "Installed CipSoft client 15.33.9d148f appearance metadata, captured 2026-10-18",
+      "url": "https://www.tibia.com/account/?subtopic=downloadclient",
+      "source_class": "CIPSOFT_OFFICIAL_CLIENT_ASSET",
+      "version": "15.33.9d148f",
+      "filename": "appearances-501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f.dat",
+      "sha256": "501594e860be8a531ca465ae6e7638da05e3a4d5cef2d038d4f2321ae6729f5f",
+      "bytes": 5017983,
+      "package_sha256": "2b86e7711dcaf063cb16553c8dad4510f9a3995ffc91a23427ae0d92aa3ef217",
+      "package_creation_time_unix": 1791798230.8785236,
+      "fetched_at": "2026-10-18",
+      "continuity": "INSTALLED_CLIENT_CAPTURE_AT_FETCH_NOT_SERVER_TELEMETRY",
+      "retrieval": "Read-only protobuf extraction from owner-authorized local Tibia installation via Remote Desktop Commander. Account, character, log and credential files were not read.",
+      "decoder_repository_commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "decoder_path": "tools/content-schema/item-authoring/engine_items.py",
+      "decoder_sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
+      "qualification": "Exact installed-version observations. Does not claim the installation is the latest vendor release or establish server-side listing permission. A market submessage supplies client display metadata; it alone does not prove item tradeability. No proprietary binary or sprite asset is redistributed."
+    },
+    "repo:client-market-category-projection": {
+      "title": "Bound native decoder category-number projection",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/tools/content-schema/item-authoring/engine_items.py",
+      "repository_commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "source_class": "REPOSITORY_PROJECTION_NOT_PRIMARY",
+      "selector": "ITEM_CATEGORY_NAMES",
+      "fetched_at": "2026-10-18",
+      "qualification": "Category labels normalize existing native tokens; only category numbers are direct client facts. Newer Quivers/Soul Cores/Fist labels are not claimed to have been read from the live Market window."
     }
   }
 }
