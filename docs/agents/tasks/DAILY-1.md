@@ -281,3 +281,44 @@ integration, the actual claim writer and its current fences, valuable sinks,
 E2E qualification and architect acceptance remain incomplete. Production
 schema installation, shared registration and runtime activation remain
 integration work in the assigned CP slot; DAILY-1 remains a partial draft.
+
+## Joker ledger consistency preparation (2026-10-17 continuation)
+
+This source batch starts from `ce3f8a3f74473aa24e91b3bff702eb8dbea3559c`.
+Its accepted basis is DAILY_REWARD0 §3.3, §3.4 and §5, including the
+BANK-0 §3 deferred balance/entry guard and immutable ledger pattern. It
+tightens the existing uninstalled schema candidate and adjacent SQLx tests;
+the arithmetic and read/lock APIs are unchanged. Current source comments also
+follow the newly resolved grant-month policy below.
+
+The candidate adds deferred checks that the stored joker balance and cursor
+match the latest entry, that every entry has its exact Account+World
+predecessor (or the zero opening balance), and that GRANT/SPEND arithmetic
+matches that predecessor. The function rereads the final transaction state
+instead of treating an earlier trigger's row image as the final head. Each
+check reads one state, one indexed latest entry and at most one predecessor,
+without a scan of the complete ledger. UPDATE, DELETE and TRUNCATE cannot
+rewrite its entries; the guard's schema binding prevents a same-named
+temporary table from replacing the installed state.
+
+Four new original `#[sqlx::test(migrations = "./migrations")]` cases cover
+multi-entry transactions in both state/ledger write orders, out-of-order
+insertion, deferred commit refusals, Account/World isolation, temporary-table
+substitution, immutable history, rollback and real row-lock contention with
+a stale losing debit. The previous four SQLx test bodies and three domain
+cases are preserved. Native PostgreSQL 17.6 execution of this successor is
+pending the root's isolated qualification run; the earlier seven-case
+evidence remains bound to its original source and validation registrations.
+
+These are stored-data invariants, not a grant or delivery authorization.
+[CP D1317-D1319](https://github.com/Oteryn/Oteryn-Game/pull/2131#issuecomment-6232842478)
+resolve the next integration boundaries: D1257 Berlin10 supersedes the
+historical UTC wording, epoch0 does not count, and a grant month requires a
+committed reset newer than the previous grant. The committed-month port stays
+with #2167 and is consumed after its merge; this leaf adds no substitute.
+The transaction Inbox seam stays with #2133. PREY_WILDCARD lines remain
+PENDING until HUNT supplies its actual sink in the assigned slot. The claim
+writer still must bind entries and the complete claim/line/sink transaction
+to native current authority, the shrine and admitted content. Migration
+installation, shared registration, runtime activation and full DAILY-1
+acceptance remain open.
