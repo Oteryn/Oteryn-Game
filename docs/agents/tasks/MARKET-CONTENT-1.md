@@ -3,11 +3,11 @@
 ```yaml
 task_id: MARKET-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/market-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2234
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -26,6 +26,7 @@ owned_paths:
   - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/services/evidence-00000-00323.json
   - docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/services/index.json
   - docs/reference/content-prep/market-content-1/service-apply-plan.json
+  - docs/reference/content-prep/market-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -65,3 +66,9 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 ## Service placement constraint
 
 Service evidence is staged under docs/reference with an explicit apply plan. World Bundle pin inputs cannot be updated under the owner's current scope. Existing native Service declarations are preserved exactly; canonical placement and qualified regeneration are the coordinator's integration step.
+
+## Reference delivery boundary
+
+All 324 original trade services and 2076 distinct offered Item identities are covered. Current own-item Wiki observations and the Market rules are preserved; 1868 items also have positive raw category/market metadata from the pinned official 15.30 client asset. That asset is explicitly not represented as a fresh live-client capture. Missing flags never become false. Global instance exclusions are linked on every item; unidentified current filters and exhaustive item-instance restrictions remain held.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

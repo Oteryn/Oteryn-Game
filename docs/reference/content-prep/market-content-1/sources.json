@@ -24799,6 +24799,28 @@
       "sha256": "a032b1778dc6a705743f66ece4ad6721ff70bcd848d95d00cb5066facd10622d",
       "source_class": "REPOSITORY_REFERENCE",
       "fetched_at": "2026-10-18"
+    },
+    "official:manual:controls_trading:2026-10-18": {
+      "title": "Tibia official manual: controls_trading",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls_trading",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "3b56a70cba2366b169dedaf9a230bc16e105b2a67a6a6f1fb99230b5a303db0b",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "official-client:15.30:2dfa943b": {
+      "title": "Pinned CipSoft appearance object metadata, client 15.30",
+      "url": "https://github.com/Oteryn/Oteryn-Game/blob/64d5e4dab918ed0274dd9b1479b6218887b644bb/content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+      "source_class": "CIPSOFT_OFFICIAL_CLIENT_ASSET",
+      "repository_commit": "64d5e4dab918ed0274dd9b1479b6218887b644bb",
+      "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+      "version": "15.30",
+      "fetched_at": "2026-10-18",
+      "continuity": "PINNED_CLIENT_ASSET_NOT_LIVE_CURRENT",
+      "qualification": "Only explicit positive market flag/category fields are retained. Absence is not proof of marketable=false. Asset does not prove current client continuity."
     }
   }
 }

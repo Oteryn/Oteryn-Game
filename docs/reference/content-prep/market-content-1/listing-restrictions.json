@@ -21,14 +21,14 @@
           ],
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/controls_trading.md",
+              "source": "official:manual:controls_trading:2026-10-18",
               "selector": "4.3.3"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "wiki_exclusions": {
           "value": [
@@ -55,18 +55,42 @@
           "value": null,
           "classification": "CONFLICT",
           "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
               "source": "wiki:56357:1017956",
               "selector": "Conflicting statements identified in note"
             },
             {
-              "source": "repo:docs/reference/tibia-manual/controls_trading.md",
+              "source": "official:manual:controls_trading:2026-10-18",
               "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-18",
+              "selector": "4.3.3 / fee maximum"
             }
           ],
-          "note": "Current Wiki revision 1017956 states maximum 250000 gp; official 2026-09-28 manual notes state 1000000 gp. No fee selected."
+          "note": "Live official manual retrieved 2026-10-18: maximum fee 2500000 gp (2.5%, min 20 gp). Current Wiki says 250000 gp; older repository manual capture says 1000000 gp. Current official limits are recorded separately; discrepancy is retained."
+        },
+        "current_official_offer_limits": {
+          "value": {
+            "fee_percent": 2.5,
+            "fee_min_gold": 20,
+            "fee_max_gold": 2500000,
+            "maximum_items": 64000,
+            "maximum_price_gold": 999999999999,
+            "validity_days": 30
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:controls_trading:2026-10-18",
+              "selector": "4.3.3 / Creating an offer"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
         }
       }
     }
