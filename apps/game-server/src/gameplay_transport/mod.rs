@@ -7135,3 +7135,6 @@ pub(crate) use spell_presentation_publisher::{
 pub(crate) use spell_presentations::SpellPresentationOwner;
 
 mod spell_presentations;
+
+#[path = "../interaction/vocation_choice.rs"]
+mod vocation_choice;
