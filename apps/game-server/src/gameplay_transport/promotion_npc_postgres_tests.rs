@@ -38,11 +38,12 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
-/// A Thalom cell outside the protection zone, and the open cell west of it for the NPC.
+/// The entry start, and the open cell west of it for the NPC. NPC placement works in the
+/// frame's legacy `z` (`0..=15`, native floor `-z`), so the start is legacy `z` 7.
 const PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 2,
     y: 11,
-    floor: -7,
+    floor: 7,
 };
 const NPC_KEY: &str = "oteryn:npc.promotion-test";
 const SERVICE_KEY: &str = "oteryn:service.promotion-test";
