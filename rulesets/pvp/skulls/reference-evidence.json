@@ -13,14 +13,14 @@
           "value": "Attacking an unmarked character marks the attacker. White mark persists with linked logout block and is extended by further offenses.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "duration_seconds": {
           "value": null,
@@ -39,27 +39,27 @@
           "value": 30,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "reset": {
           "value": "New unjustified points reset to a fresh 30-day duration.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "thresholds": {
           "value": null,
@@ -68,6 +68,34 @@
           "continuity": "NOT_ESTABLISHED",
           "sources": [],
           "note": "Official notes only give rule-of-thumb ranges: 3–5/24h, 5–9/7d, 10–19/30d. Exact frag-point thresholds and assist weights are not proven."
+        },
+        "official_threshold_guidance": {
+          "value": {
+            "24_hours": [
+              3,
+              5
+            ],
+            "7_days": [
+              5,
+              9
+            ],
+            "30_days": [
+              10,
+              19
+            ],
+            "qualification": "RULE_OF_THUMB_NOT_EXACT_KILL_THRESHOLD",
+            "trigger": "unjustified points bar filled"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b / Red Skulls"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
         }
       }
     },
@@ -78,40 +106,40 @@
           "value": 45,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "respawn_hp": {
           "value": 40,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "respawn_mana": {
           "value": 0,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "restrictions": {
           "value": [
@@ -121,14 +149,14 @@
           ],
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "thresholds": {
           "value": null,
@@ -137,6 +165,39 @@
           "continuity": "NOT_ESTABLISHED",
           "sources": [],
           "note": "Wiki 6/10/20 kill thresholds are not controlled evidence; official notes call these rule-of-thumb values."
+        },
+        "official_threshold_guidance": {
+          "value": {
+            "24_hours": 6,
+            "7_days": 10,
+            "30_days": 20,
+            "comparison": "at_least",
+            "qualification": "RULE_OF_THUMB_NOT_EXACT_KILL_THRESHOLD",
+            "trigger": "unjustified points bar filled"
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b / Black Skulls"
+            }
+          ],
+          "note": "Current source observation; native/runtime qualification remains separate."
+        },
+        "incoming_pvp_damage_percent": {
+          "value": 100,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "sources": [
+            {
+              "source": "official:manual:combat:2026-10-18",
+              "selector": "5.3.12.b / Black Skulls"
+            }
+          ],
+          "note": "Black-skull victim receives 100% PvP damage; ordinary victim receives 50%. This is incoming damage, not an outgoing damage bonus."
         }
       }
     },
@@ -147,27 +208,27 @@
           "value": 7,
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "revenge": {
           "value": "Private per-kill revenge mark, expires on revenge or after seven days; multiple unavenged kills keep it alive.",
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         }
       }
     },
@@ -182,14 +243,14 @@
           ],
           "classification": "PROVEN",
           "target_cut": "2026-10-18",
-          "continuity": "PINNED_CAPTURE_ONLY",
+          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
           "sources": [
             {
-              "source": "repo:docs/reference/tibia-manual/combat.md",
+              "source": "official:manual:combat:2026-10-18",
               "selector": "5.3.12.b"
             }
           ],
-          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+          "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "clock_boundaries": {
           "value": null,

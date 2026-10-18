@@ -1,0 +1,47 @@
+{
+  "task": "SKULL-CONTENT-1",
+  "review_date": "2026-10-18",
+  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
+  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "White/red/black/orange behavior, official day/week/month windows, durations, revenge and black-skull respawn penalties are captured. Official 3–5/5–9/10–19 red and 6+/10+/20+ black kill counts are labeled rule-of-thumb guidance, not deterministic thresholds. Exact unjustified-point allocation, white duration and clock boundaries are not invented.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "rulesets/pvp/skulls/reference-evidence.json": 5
+  },
+  "evidence_field_counts": {
+    "PROVEN": 13,
+    "UNKNOWN": 4
+  },
+  "unresolved_fields": [
+    {
+      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Official notes do not give a numeric white-skull timer."
+    },
+    {
+      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Official notes only give rule-of-thumb ranges: 3–5/24h, 5–9/7d, 10–19/30d. Exact frag-point thresholds and assist weights are not proven."
+    },
+    {
+      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Wiki 6/10/20 kill thresholds are not controlled evidence; official notes call these rule-of-thumb values."
+    },
+    {
+      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+      "candidate": null,
+      "status": "UNKNOWN",
+      "sources": [],
+      "limitation": "Rolling-vs-calendar accounting and exact reset/server-save boundaries require official or controlled evidence."
+    }
+  ],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+}

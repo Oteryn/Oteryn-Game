@@ -3,11 +3,11 @@
 ```yaml
 task_id: SKULL-CONTENT-1
 mode: MIGRATE
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: content-prep/skull-content-1
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/2240
 base_sha: 64d5e4dab918ed0274dd9b1479b6218887b644bb
 owner: Codex / current owner-authorized content preparation session
 created_at: 2026-10-18
@@ -18,6 +18,7 @@ owned_paths:
   - docs/reference/content-prep/skull-content-1/sources.json
   - docs/reference/content-prep/skull-content-1/README.md
   - docs/agents/tasks/SKULL-CONTENT-1.md
+  - docs/reference/content-prep/skull-content-1/research-audit.json
 ```
 
 ## Outcome
@@ -53,3 +54,9 @@ The implementing agent reviewed owned paths, provenance, factual field boundarie
 ## Independent review
 
 No external paid review triggered. Data-only draft Reference packets do not authorize gameplay changes or protected integration.
+
+## Reference delivery boundary
+
+White/red/black/orange behavior, official day/week/month windows, durations, revenge and black-skull respawn penalties are captured. Official 3–5/5–9/10–19 red and 6+/10+/20+ black kill counts are labeled rule-of-thumb guidance, not deterministic thresholds. Exact unjustified-point allocation, white duration and clock boundaries are not invented.
+
+Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.

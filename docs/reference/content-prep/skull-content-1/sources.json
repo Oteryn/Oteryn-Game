@@ -23,6 +23,17 @@
       "retained_scope": "FULL_PAGE_WIKITEXT",
       "retained_text_sha256": "bafa634f220b3cde7f19396d9b8929ec3d953571102b82b7d4319b363a27fd69",
       "retrieval": "https://tibia.fandom.com/api.php?action=query&format=json&formatversion=2&prop=revisions&rvprop=ids%7Ctimestamp%7Ccontent%7Csha1&rvslots=main&titles=Prey%20System%7CTask%20Board%7CSkull%20System%7CDeath&redirects=1"
+    },
+    "official:manual:combat:2026-10-18": {
+      "title": "Tibia official manual: combat",
+      "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-18",
+      "response_sha256": "62b54782e78348ea1cfc720dbddeea48564ab0c54934cec4ce8480eb9a06d58f",
+      "capture_method": "Public URL read through owner-authorized connected computer",
+      "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
+      "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
     }
   }
 }
