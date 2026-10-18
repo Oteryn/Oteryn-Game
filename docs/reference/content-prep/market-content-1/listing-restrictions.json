@@ -1,0 +1,74 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "MARKET-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "market.global",
+      "facts": {
+        "instance_exclusions": {
+          "value": [
+            "inscribed_documents",
+            "pourable_liquid_containers",
+            "keys",
+            "inscribed_goblets",
+            "inscribed_fansite_items",
+            "non_portable_items",
+            "nonempty_containers"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "PINNED_CAPTURE_ONLY",
+          "sources": [
+            {
+              "source": "repo:docs/reference/tibia-manual/controls_trading.md",
+              "selector": "4.3.3"
+            }
+          ],
+          "note": "Official owner capture 2026-09-28. Current live continuity has not been re-captured; do not silently promote to current runtime."
+        },
+        "wiki_exclusions": {
+          "value": [
+            "corpses",
+            "money",
+            "writable_items",
+            "filled_fluid_containers",
+            "used_non_brand_new_items",
+            "expiring_items",
+            "non_takeable_items"
+          ],
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Buy or Sell Offer Conditions"
+            }
+          ],
+          "note": "Reference evidence; runtime admission is separate."
+        },
+        "fee_cap_disagreement": {
+          "value": null,
+          "classification": "CONFLICT",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Conflicting statements identified in note"
+            },
+            {
+              "source": "repo:docs/reference/tibia-manual/controls_trading.md",
+              "selector": "Conflicting statements identified in note"
+            }
+          ],
+          "note": "Current Wiki revision 1017956 states maximum 250000 gp; official 2026-09-28 manual notes state 1000000 gp. No fee selected."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "family": "Market.ItemEvidence",
+  "record_count": 2076,
+  "shard_size": 500,
+  "shards": [
+    "content/services/trade/market-evidence/evidence-00000-00499.json",
+    "content/services/trade/market-evidence/evidence-00500-00999.json",
+    "content/services/trade/market-evidence/evidence-01000-01499.json",
+    "content/services/trade/market-evidence/evidence-01500-01999.json",
+    "content/services/trade/market-evidence/evidence-02000-02075.json"
+  ],
+  "population_state": "POPULATED",
+  "runtime_admission": "BLOCKED",
+  "runtime_switch_authorized": false,
+  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS"
+}

@@ -1,0 +1,4577 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
+  "task": "MARKET-CONTENT-1",
+  "target_cut": "2026-10-18",
+  "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
+  "runtime_switch_authorized": false,
+  "reference_only": true,
+  "records": [
+    {
+      "key": "oteryn:item.tibia.i9391",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37142:1114830",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37142:1114830",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37142:1114830",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9392",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37866:1194108",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Rings",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37866:1194108",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37866:1194108",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i940",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26145:1114635",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26145:1114635",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26145:1114635",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i941",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26143:1114634",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26143:1114634",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26143:1114634",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i942",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26057:1040860",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26057:1040860",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26057:1040860",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i944",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26858:1114641",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26858:1114641",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26858:1114641",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i945",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25584:1114603",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25584:1114603",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:25584:1114603",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i946",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26079:1114631",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26079:1114631",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26079:1114631",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i947",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26076:1114630",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26076:1114630",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26076:1114630",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i948",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26268:1114638",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26268:1114638",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26268:1114638",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i953",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:30668:1114675",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:30668:1114675",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:30668:1114675",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9537",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36908:1093687",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36908:1093687",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36908:1093687",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i954",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26322:1014075",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26322:1014075",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:26322:1014075",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9586",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36723:1017547",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Valuables",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36723:1017547",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36723:1017547",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9602",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36710:1147661",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Containers",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36710:1147661",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36710:1147661",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9603",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36721:1147662",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Containers",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36721:1147662",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:36721:1147662",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9606",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37900:1114855",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37900:1114855",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37900:1114855",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9613",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37856:1015279",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37856:1015279",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37856:1015279",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9615",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37043:1082142",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37043:1082142",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:37043:1082142",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9616",
+      "facts": {
+        "trade.marketable": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:40249:1114881",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_category": {
+          "value": "Decoration",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:40249:1114881",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:40249:1114881",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9626",
+      "facts": {
+        "trade.marketable": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41172:1147665",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Valuables",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41172:1147665",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41172:1147665",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9627",
+      "facts": {
+        "trade.marketable": {
+          "value": false,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41173:1147666",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Valuables",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41173:1147666",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41173:1147666",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9631",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41793:1203115",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41793:1203115",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41793:1203115",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9632",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41871:1202812",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41871:1202812",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41871:1202812",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9633",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42017:1089861",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42017:1089861",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42017:1089861",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9634",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41866:1114905",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41866:1114905",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41866:1114905",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9635",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41906:1098587",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41906:1098587",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41906:1098587",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9636",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41907:1098546",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41907:1098546",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41907:1098546",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9637",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41837:1202997",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41837:1202997",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41837:1202997",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9638",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41901:1188322",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41901:1188322",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41901:1188322",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9639",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41902:1098586",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41902:1098586",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41902:1098586",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9640",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41927:1188327",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41927:1188327",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41927:1188327",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9641",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41924:1098684",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41924:1098684",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41924:1098684",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9642",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:43154:1136270",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:43154:1136270",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:43154:1136270",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9643",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41937:1203168",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41937:1203168",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41937:1203168",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9644",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41955:1098647",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41955:1098647",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41955:1098647",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9645",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41899:1008168",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41899:1008168",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41899:1008168",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9646",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41900:1135940",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41900:1135940",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41900:1135940",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9647",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41903:1098683",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41903:1098683",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41903:1098683",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9648",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42019:1011661",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42019:1011661",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42019:1011661",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9649",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41910:1202965",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41910:1202965",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41910:1202965",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9650",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41928:1054445",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41928:1054445",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41928:1054445",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9651",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41929:1114908",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41929:1114908",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41929:1114908",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9652",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41952:1203208",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41952:1203208",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41952:1203208",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9653",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42270:1147667",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Helmets and Hats",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42270:1147667",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42270:1147667",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9654",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41947:1188318",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41947:1188318",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41947:1188318",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9655",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41911:1011720",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41911:1011720",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41911:1011720",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9656",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41862:1202853",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41862:1202853",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41862:1202853",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9657",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42018:1100518",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42018:1100518",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42018:1100518",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9658",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41909:1011650",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41909:1011650",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41909:1011650",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9659",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41921:1202989",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41921:1202989",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41921:1202989",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9660",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41917:1055231",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41917:1055231",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41917:1055231",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9661",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41908:1097116",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41908:1097116",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41908:1097116",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9662",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41856:1203057",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41856:1203057",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41856:1203057",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9663",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41922:1188324",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41922:1188324",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41922:1188324",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9664",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41923:1014546",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41923:1014546",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41923:1014546",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9665",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41954:1067778",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41954:1067778",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41954:1067778",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9666",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41931:1015278",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41931:1015278",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41931:1015278",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9667",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41829:1202833",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41829:1202833",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41829:1202833",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9668",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41918:1203058",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41918:1203058",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41918:1203058",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9683",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:43014:1136216",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:43014:1136216",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:43014:1136216",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9684",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41939:1016867",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41939:1016867",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41939:1016867",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9685",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41933:1188325",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41933:1188325",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41933:1188325",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9686",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41940:1098691",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41940:1098691",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41940:1098691",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9688",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41865:1202861",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41865:1202861",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41865:1202861",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9689",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41704:988173",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41704:988173",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41704:988173",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9690",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41913:1097001",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41913:1097001",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41913:1097001",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9691",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41920:1097124",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41920:1097124",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41920:1097124",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9692",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41705:1114896",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41705:1114896",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41705:1114896",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9693",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41926:1136233",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41926:1136233",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41926:1136233",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9694",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41826:1097125",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": "Creature Products",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41826:1097125",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Conservative crosswalk from current own-ID primarytype to documented Market UI labels; exact client filtering and handedness remain unqualified."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41826:1097125",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9696",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42266:1114928",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42266:1114928",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42266:1114928",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9697",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41991:1114914",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41991:1114914",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:41991:1114914",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9698",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42263:1114926",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42263:1114926",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42263:1114926",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9699",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42265:1114927",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42265:1114927",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42265:1114927",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    },
+    {
+      "key": "oteryn:item.tibia.i9843",
+      "facts": {
+        "trade.marketable": {
+          "value": true,
+          "classification": "PROVEN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42252:1114922",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            }
+          ],
+          "note": "Explicit own-ID Wiki marketability."
+        },
+        "trade.market_category": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42252:1114922",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.market_subcategory": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "LATEST_ITEM_REVISIONS_REVALIDATED_AT_FETCH",
+          "sources": [
+            {
+              "source": "wiki:42252:1114922",
+              "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "wiki:56357:1017956",
+              "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
+            }
+          ],
+          "note": "Missing/ambiguous current own-ID field; never infer false from absence or NPC offers."
+        },
+        "trade.per_item_restrictions": {
+          "value": null,
+          "classification": "UNKNOWN",
+          "target_cut": "2026-10-18",
+          "continuity": "NOT_ESTABLISHED",
+          "sources": [],
+          "note": "No exhaustive current per-instance restriction proof. Global listing exclusions remain applicable; marketable=true alone is not executable admission."
+        }
+      }
+    }
+  ],
+  "family": "Market.ItemEvidence",
+  "shard": {
+    "index": 4,
+    "start": 2000,
+    "end": 2075,
+    "count": 76
+  }
+}
