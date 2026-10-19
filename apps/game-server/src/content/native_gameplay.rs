@@ -2197,7 +2197,7 @@ pub(crate) mod tests {
         (input, serde_json::from_value(parent).unwrap())
     }
 
-    fn decode_summon_input(input: &NativeGameplayInput) -> NativeGameplayState {
+    pub(crate) fn decode_summon_input(input: &NativeGameplayInput) -> NativeGameplayState {
         let source = test_source(3).unwrap();
         let baseline = super::super::production::compile_first_production(
             &source,

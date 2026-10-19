@@ -2838,22 +2838,15 @@ mod tests {
         let mut input = NativeGameplayInput::from_manifest(&manifest).expect("fixture manifest");
         let bytes = serde_json::to_vec(&profiles).expect("fixture profiles");
         input.creature_profiles = PinnedGameplayBytes {
-            sha256: format!("{:x}", Sha256::digest(&bytes)),
+            sha256: Sha256::digest(&bytes)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect(),
             bytes,
         };
-        let source = crate::content::production::test_source(3).expect("fixture source");
-        let baseline = crate::content::production::compile_first_production(
-            &source,
-            crate::content::production::FirstProductionCompileTarget::OrdinaryRelease,
-        )
-        .expect("fixture baseline");
-        let compiled = crate::content::native_gameplay::compile_native_gameplay(&baseline, &input)
-            .expect("non-hostile summon content");
-        let content = crate::content::native_gameplay::decode(&compiled.server_artifact)
-            .expect("decoded content")
-            .state;
+        let content = crate::content::native_gameplay::tests::decode_summon_input(&input);
         let pin = crate::foundation::ChannelContentPin::from_activation(
-            source.world_id,
+            fixture.runtime.binding().world_id(),
             1,
             content.source_digest(),
             [2; 32],
