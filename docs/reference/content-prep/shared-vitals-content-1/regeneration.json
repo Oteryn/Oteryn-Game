@@ -699,18 +699,33 @@
       "facts": {
         "normal_hp": {
           "value": {
-            "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+            "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
             "interval_seconds": 4,
             "saturated_interval_seconds": 3,
-            "points_per_tick": "NOT_ESTABLISHED",
+            "points_per_tick": 2,
+            "saturated_points_per_tick": 2,
+            "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
             "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
-            "selected_for_native_runtime": false
+            "active_promotion": false,
+            "selected_for_native_runtime": false,
+            "reference_vocation": "Sorcerer",
+            "equivalent_measured_vocation": "Druid",
+            "direct_sorcerer_measurement": false,
+            "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
           },
-          "classification": "UNKNOWN",
+          "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
-          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "continuity": "OWNER_AUTHORIZED_EQUIVALENCE_FROM_CONTROLLED_DRUID_REFERENCE",
+          "evidence_scope": "OWNER_DERIVED_REFERENCE_NOT_DIRECT_SORCERER_MEASUREMENT",
           "sources": [
+            {
+              "source": "owner:sorcerer-druid-equivalence:20261019",
+              "selector": "Explicit1:1instruction"
+            },
+            {
+              "source": "controlled-global:regeneration:druid:20261019",
+              "selector": "Druid / hp / hungry and fed reviewed series"
+            },
             {
               "source": "official:regen-recheck:8543:20261019",
               "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -744,25 +759,42 @@
               "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             }
           ],
-          "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
-          "assumptions": [],
+          "note": "Owner explicitly instructs Sorcerer reference values to equal Druid1:1. Amounts and hungry/fed periods are copied from the controlled Druid reference. No Sorcerer character was measured. Promoted branches remain unresolved, and no native runtime formula is selected.",
+          "assumptions": [
+            "Owner-adopted equivalence: current unpromoted Sorcerer uses the measured unpromoted Druid amounts and intervals."
+          ],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "normal_mana": {
           "value": {
-            "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+            "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
             "interval_seconds": 6,
             "saturated_interval_seconds": 5,
-            "points_per_tick": "NOT_ESTABLISHED",
+            "points_per_tick": 4,
+            "saturated_points_per_tick": 4,
+            "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
             "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
-            "selected_for_native_runtime": false
+            "active_promotion": false,
+            "selected_for_native_runtime": false,
+            "reference_vocation": "Sorcerer",
+            "equivalent_measured_vocation": "Druid",
+            "direct_sorcerer_measurement": false,
+            "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
           },
-          "classification": "UNKNOWN",
+          "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
-          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "continuity": "OWNER_AUTHORIZED_EQUIVALENCE_FROM_CONTROLLED_DRUID_REFERENCE",
+          "evidence_scope": "OWNER_DERIVED_REFERENCE_NOT_DIRECT_SORCERER_MEASUREMENT",
           "sources": [
+            {
+              "source": "owner:sorcerer-druid-equivalence:20261019",
+              "selector": "Explicit1:1instruction"
+            },
+            {
+              "source": "controlled-global:regeneration:druid:20261019",
+              "selector": "Druid / mana / hungry and fed reviewed series"
+            },
             {
               "source": "official:regen-recheck:8543:20261019",
               "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -796,8 +828,10 @@
               "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             }
           ],
-          "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
-          "assumptions": [],
+          "note": "Owner explicitly instructs Sorcerer reference values to equal Druid1:1. Amounts and hungry/fed periods are copied from the controlled Druid reference. No Sorcerer character was measured. Promoted branches remain unresolved, and no native runtime formula is selected.",
+          "assumptions": [
+            "Owner-adopted equivalence: current unpromoted Sorcerer uses the measured unpromoted Druid amounts and intervals."
+          ],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -1226,5 +1260,5 @@
       }
     }
   ],
-  "evidence_scope": "CURRENT_CONTROLLED_FOUR_NORMAL_VOCATION_REFERENCE_WITH_OTHER_BRANCHES_UNRESOLVED"
+  "evidence_scope": "FOUR_MEASURED_NORMAL_VOCATIONS_AND_OWNER_DERIVED_SORCERER_PROMOTIONS_UNRESOLVED"
 }

@@ -3,8 +3,8 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "SOURCE_REFERENCE_WITH_FOUR_MEASURED_NORMAL_VOCATIONS",
-  "global_evidence_policy": "Historical facts and withdrawn defaults remain archived. Eight active regeneration fields use scoped controlled observations; Knight fed HP short-series limitation retained; no runtime selection.",
+  "status": "MEASURED_NORMAL_REFERENCES_AND_OWNER_DERIVED_SORCERER",
+  "global_evidence_policy": "Original historical facts and withdrawn defaults remain archived. Eight fields are measured; two Sorcerer fields are owner-derived from measured Druid. Sorcerer is not presented as a direct measurement. No runtime activation.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -1918,16 +1918,31 @@
       "subject": "regeneration.sorcerer",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
         "interval_seconds": 4,
         "saturated_interval_seconds": 3,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
-        "selected_for_native_runtime": false
+        "active_promotion": false,
+        "selected_for_native_runtime": false,
+        "reference_vocation": "Sorcerer",
+        "equivalent_measured_vocation": "Druid",
+        "direct_sorcerer_measurement": false,
+        "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "OWNER_AUTHORIZED_EQUIVALENCE_FROM_CONTROLLED_REFERENCE",
         "source_refs": [
+          {
+            "source": "owner:sorcerer-druid-equivalence:20261019",
+            "selector": "Explicit1:1instruction"
+          },
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / hp / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -1961,10 +1976,12 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Owner explicitly instructs Sorcerer reference values to equal Druid1:1. Amounts and hungry/fed periods are copied from the controlled Druid reference. No Sorcerer character was measured. Promoted branches remain unresolved, and no native runtime formula is selected."
       },
-      "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "assumptions": [
+        "Owner-adopted equivalence: current unpromoted Sorcerer uses the measured unpromoted Druid amounts and intervals."
+      ],
+      "acceptance_status": "OWNER_SELECTED_DERIVED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
         "subject": "regeneration.sorcerer",
@@ -2001,6 +2018,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -2008,16 +2036,31 @@
       "subject": "regeneration.sorcerer",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
         "interval_seconds": 6,
         "saturated_interval_seconds": 5,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
-        "selected_for_native_runtime": false
+        "active_promotion": false,
+        "selected_for_native_runtime": false,
+        "reference_vocation": "Sorcerer",
+        "equivalent_measured_vocation": "Druid",
+        "direct_sorcerer_measurement": false,
+        "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "OWNER_AUTHORIZED_EQUIVALENCE_FROM_CONTROLLED_REFERENCE",
         "source_refs": [
+          {
+            "source": "owner:sorcerer-druid-equivalence:20261019",
+            "selector": "Explicit1:1instruction"
+          },
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / mana / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -2051,10 +2094,12 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Owner explicitly instructs Sorcerer reference values to equal Druid1:1. Amounts and hungry/fed periods are copied from the controlled Druid reference. No Sorcerer character was measured. Promoted branches remain unresolved, and no native runtime formula is selected."
       },
-      "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "assumptions": [
+        "Owner-adopted equivalence: current unpromoted Sorcerer uses the measured unpromoted Druid amounts and intervals."
+      ],
+      "acceptance_status": "OWNER_SELECTED_DERIVED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
         "subject": "regeneration.sorcerer",
@@ -2091,6 +2136,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -2712,15 +2768,15 @@
   "materialization": {
     "parameter_document": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json",
     "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
-    "filled_field_count": 3,
+    "filled_field_count": 5,
     "not_runtime_activation": true,
-    "remaining_unresolved_source_fields": 14
+    "remaining_unresolved_source_fields": 12
   },
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 14,
+    "remaining_unresolved_source_fields": 12,
     "selected_for_native_runtime": false,
-    "summary": "Controlled observations establish normal Druid HP2/MP4, Monk HP3/MP3, Paladin HP3/MP3 and Knight HP4/MP2 in hungry/fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Knight fed HP has a short two-full-gain series, with capped gain excluded. Twelve regeneration fields, party activity timeout and initial stamina debit remain unresolved; Food and owner choices unchanged; no runtime selection."
+    "summary": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection."
   },
   "live_client_measurements": {
     "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
@@ -2737,5 +2793,12 @@
     "selected_for_native_runtime": false,
     "short_series": "Knight fed HP: two uncapped gains and one3s interval"
   },
-  "remaining_unresolved_source_fields": 14
+  "remaining_unresolved_source_fields": 12,
+  "owner_derived_sorcerer_equivalence": {
+    "source": "owner:sorcerer-druid-equivalence:20261019",
+    "field_count": 2,
+    "derived_from": "measured normal Druid",
+    "direct_sorcerer_measurement": false,
+    "runtime_selected": false
+  }
 }

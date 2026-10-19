@@ -2892,6 +2892,15 @@
       "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
       "retained_scope": "Reviewed numeric series, frame timestamps and SHA256; original media remain private.",
       "qualification": "Quattro Formaggi self-Look reports Knight, level8. Outside PZ, no combat or agent movement; leather boots have empty imbuement slot. Fed HP has only two full +4 gains and one measured3s interval before cap; weaker replication explicitly retained. No promoted Knight or native runtime admission."
+    },
+    "owner:sorcerer-druid-equivalence:20261019": {
+      "title": "Owner instruction: set Sorcerer equal to measured Druid",
+      "source_class": "OWNER_INSTRUCTION",
+      "observed_at": "2026-10-19",
+      "quote": "sorcerera zapisz tak samo jak druda bo sa 1:1",
+      "scope": "Authorize Sorcerer reference values by Druid equivalence; not a claim of direct Sorcerer measurement or runtime activation.",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "owner_derived_sorcerer_equivalence"
     }
   }
 }

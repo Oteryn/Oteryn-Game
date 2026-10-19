@@ -1,10 +1,10 @@
 {
   "task": "SHARED-VITALS-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "SOURCE_REFERENCE_AND_SCOPED_CONTROLLED_GLOBAL_OBSERVATIONS",
-  "research_status": "FOUR_NORMAL_VOCATIONS_MEASURED_WITH_SHORT_KNIGHT_FED_HP_SERIES",
+  "scope": "SOURCE_REFERENCE_CONTROLLED_OBSERVATIONS_AND_OWNER_DERIVED_EQUIVALENCE",
+  "research_status": "ALL_NORMAL_VOCATION_REFERENCE_VALUES_PRESENT_PROMOTIONS_UNRESOLVED",
   "runtime_admission": "BLOCKED",
-  "coverage": "Controlled observations establish normal Druid HP2/MP4, Monk HP3/MP3, Paladin HP3/MP3 and Knight HP4/MP2 in hungry/fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Knight fed HP has a short two-full-gain series, with capped gain excluded. Twelve regeneration fields, party activity timeout and initial stamina debit remain unresolved; Food and owner choices unchanged; no runtime selection.",
+  "coverage": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/party/shared-experience/reference-evidence.json": 1,
@@ -14,9 +14,9 @@
     "docs/reference/content-prep/shared-vitals-content-1/food-durations.json": 146
   },
   "evidence_field_counts": {
-    "DERIVED": 149,
+    "DERIVED": 151,
     "PROVEN": 40,
-    "UNKNOWN": 14
+    "UNKNOWN": 12
   },
   "unresolved_fields": [
     {
@@ -49,14 +49,6 @@
     },
     {
       "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_mana",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
       "classification": "UNKNOWN"
     },
     {
@@ -105,7 +97,7 @@
     ],
     "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
   },
-  "filled_parameter_fields": 3,
+  "filled_parameter_fields": 5,
   "remaining_unfilled_parameter_fields": 0,
   "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
@@ -143,12 +135,12 @@
       "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
     }
   ],
-  "remaining_unresolved_source_fields": 14,
+  "remaining_unresolved_source_fields": 12,
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 14,
+    "remaining_unresolved_source_fields": 12,
     "selected_for_native_runtime": false,
-    "summary": "Controlled observations establish normal Druid HP2/MP4, Monk HP3/MP3, Paladin HP3/MP3 and Knight HP4/MP2 in hungry/fed states. Approximate HP intervals4s/3s fed and mana6s/5s fed match official intervals. Knight fed HP has a short two-full-gain series, with capped gain excluded. Twelve regeneration fields, party activity timeout and initial stamina debit remain unresolved; Food and owner choices unchanged; no runtime selection."
+    "summary": "Four unpromoted vocations have controlled regeneration observations. Sorcerer is copied1:1from measured Druid by explicit owner instruction and classified DERIVED, not measured. Ten promoted regeneration fields, party activity timeout and initial stamina debit remain unresolved. Knight fed HP has only two full gains and one3s interval; capped gain excluded. Food observations and prior owner choices unchanged; no runtime selection."
   },
   "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts.",
   "live_client_measurements": {
@@ -165,5 +157,12 @@
     "active_promotion": false,
     "selected_for_native_runtime": false,
     "short_series": "Knight fed HP: two uncapped gains and one3s interval"
+  },
+  "owner_derived_sorcerer_equivalence": {
+    "source": "owner:sorcerer-druid-equivalence:20261019",
+    "field_count": 2,
+    "derived_from": "measured normal Druid",
+    "direct_sorcerer_measurement": false,
+    "runtime_selected": false
   }
 }

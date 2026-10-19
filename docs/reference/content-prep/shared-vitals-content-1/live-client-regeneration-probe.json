@@ -1491,11 +1491,11 @@
     "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana"
   ],
   "active_evidence_counts": {
-    "DERIVED": 149,
+    "DERIVED": 151,
     "PROVEN": 40,
-    "UNKNOWN": 14
+    "UNKNOWN": 12
   },
-  "remaining_unresolved_fields": 14,
+  "remaining_unresolved_fields": 12,
   "excluded_trials": [
     "PZ control with no regeneration",
     "Initial Druid hungry probe without fully assured exclusive control",
@@ -1504,7 +1504,7 @@
     "Initial Paladin fed recording: HP already capped and MP soon capped; retained only in private research, excluded from qualified field proof.",
     "Knight initial fed-HP capture started while hungry; excluded from fed proof. Capped HP in the separate fed mana capture is not used as an HP measurement."
   ],
-  "qualification": "Eight active reference facts establish the four observed unpromoted branches. Twelve regeneration fields for unmeasured vocations/promotions plus party activity timeout and initial stamina debit remain unresolved. Knight fed HP has two full gains and one interval before cap; explicitly short replication. No runtime formula selected.",
+  "qualification": "Eight active fields are controlled observations for four unpromoted vocations. Two Sorcerer fields are DERIVED by explicit owner instruction from Druid, not direct measurements. All five normal-vocation reference branches have values; ten promoted regeneration fields plus party timeout and initial stamina debit remain unresolved. Knight fed HP short-series limit retained. No runtime activation.",
   "short_measurement_limits": [
     {
       "vocation": "Knight",
@@ -1515,6 +1515,50 @@
       "points_per_full_gain": 4,
       "observed_interval_seconds": 3,
       "excluded_capped_gain": 3
+    }
+  ],
+  "owner_derived_sorcerer_equivalence": [
+    {
+      "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_hp",
+      "derived_from_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+      "classification": "DERIVED",
+      "source": "owner:sorcerer-druid-equivalence:20261019",
+      "value": {
+        "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
+        "interval_seconds": 4,
+        "saturated_interval_seconds": 3,
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "selected_for_native_runtime": false,
+        "reference_vocation": "Sorcerer",
+        "equivalent_measured_vocation": "Druid",
+        "direct_sorcerer_measurement": false,
+        "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
+      }
+    },
+    {
+      "target_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/normal_mana",
+      "derived_from_field": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+      "classification": "DERIVED",
+      "source": "owner:sorcerer-druid-equivalence:20261019",
+      "value": {
+        "status": "OWNER_AUTHORIZED_DRUID_EQUIVALENCE",
+        "interval_seconds": 6,
+        "saturated_interval_seconds": 5,
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+        "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "selected_for_native_runtime": false,
+        "reference_vocation": "Sorcerer",
+        "equivalent_measured_vocation": "Druid",
+        "direct_sorcerer_measurement": false,
+        "derivation": "Copy measured unpromoted Druid values under explicit owner1:1instruction"
+      }
     }
   ]
 }

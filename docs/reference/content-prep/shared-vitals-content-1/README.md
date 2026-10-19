@@ -1,18 +1,21 @@
-# Shared vitals: source reference and controlled regeneration observations
+# Shared vitals: measured references and owner-approved Sorcerer equivalence
 
-Current Global client measurements on 2026-10-19 establish the following for characters whose self-Look reports Druid, Monk, Paladin or Knight without active promotion:
+Current reference values for vocations without active promotion:
 
-| Vocation | Hungry HP | Fed HP | Hungry mana | Fed mana |
-|---|---|---|---|---|
-| Druid | +2 / approximately 4s | +2 / approximately 3s | +4 / approximately 6s | +4 / approximately 5s |
-| Monk | +3 / approximately 4s | +3 / approximately 3s | +3 / approximately 6s | +3 / approximately 5s |
-| Paladin | +3 / approximately 4s | +3 / approximately 3s | +3 / approximately 6s | +3 / approximately 5s |
-| Knight | +4 / approximately 4s | +4 / approximately 3s | +2 / approximately 6s | +2 / approximately 5s |
+| Vocation | Hungry HP | Fed HP | Hungry mana | Fed mana | Basis |
+|---|---|---|---|---|---|
+| Druid | +2 / ~4s | +2 / ~3s | +4 / ~6s | +4 / ~5s | Controlled client observations |
+| Sorcerer | +2 / ~4s | +2 / ~3s | +4 / ~6s | +4 / ~5s | DERIVED: owner-approved 1:1 Druid equivalence |
+| Monk | +3 / ~4s | +3 / ~3s | +3 / ~6s | +3 / ~5s | Controlled client observations |
+| Paladin | +3 / ~4s | +3 / ~3s | +3 / ~6s | +3 / ~5s | Controlled client observations |
+| Knight | +4 / ~4s | +4 / ~3s | +2 / ~6s | +2 / ~5s | Controlled observations; fed HP short series |
 
-Twelve qualified lossless recordings cover sixteen hunger/resource observations and resolve eight active normal-vocation fields. Positions outside PZ, equipment, food status and current vocation were checked. HP measurements used deficits and exclude capped readings. Original screenshots/videos stay private; reviewed series, timestamps and hashes are retained in [live-client-regeneration-probe.json](live-client-regeneration-probe.json).
+The owner explicitly instructed Sorcerer to equal Druid 1:1. Its two normal-vocation fields are DERIVED from measured Druid amounts and intervals. Sorcerer was not directly measured; the controlled recording and observation counts are unchanged.
 
-These are scoped client observations, with capture/network timing jitter and no server telemetry. Do not extrapolate to promotions or other vocations, and do not select a native runtime formula from these measurements alone. 12 regeneration fields plus party activity timeout and initial stamina debit remain UNKNOWN. Invented fractional accumulators stay withdrawn. Food observations and the owner's three explicit food choices are unchanged.
+Twelve qualified lossless recordings cover sixteen hunger/resource observations for four vocations and resolve eight active measured fields. Original game media remain private; reviewed values, timestamps and hashes are in [live-client-regeneration-probe.json](live-client-regeneration-probe.json). The same document retains the two owner-derived Sorcerer references separately from measurements.
 
-Active classifications: 149 DERIVED, 40 PROVEN, 14 UNKNOWN. Historical withdrawal evidence and exact remaining paths are in [gameplay-source-reconciliation.json](gameplay-source-reconciliation.json); source registry:[sources.json](sources.json). Reference/data only; no code, pins, runtime activation or merge.
+Knight fed HP is a short series: 174→178→182, two full +4 gains and one 3s interval. The following 182→185 gain is clipped and excluded. Timing agrees with the official 3s fed interval; replication is weaker than longer trials. All displayed periods are approximate, with capture/network jitter and no server telemetry.
 
-Knight fed HP is a short series:174→178→182, two full +4 gains and one3s inter-event interval. The following182→185gain is clipped by maximum HP and excluded. Timing agrees with the official3s fed interval; replication is weaker than the longer trials.
+All five normal-vocation reference branches now have values. Ten promoted regeneration fields, exact party activity timeout and initial stamina debit remain UNKNOWN. No promotion values are invented. Food observations and the owner's three food choices are preserved; withdrawn fractional accumulators remain withdrawn.
+
+Active classifications: 151 DERIVED, 40 PROVEN, 12 UNKNOWN. Exact remaining fields and historical changes:[gameplay-source-reconciliation.json](gameplay-source-reconciliation.json); source registry:[sources.json](sources.json). Reference/data only; no code, generated pins, native runtime selection, activation or merge.
