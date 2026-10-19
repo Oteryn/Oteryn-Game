@@ -3,7 +3,7 @@
   "task": "PREY-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "status": "SOURCE_RECONCILED_WITH_XP_CANDIDATES_NOT_NATIVE_SELECTED",
   "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
@@ -626,132 +626,449 @@
       "subject": "task_board.beginner",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
-        "rate_multiplier": 1,
-        "award_on": "completed_task_claim_once"
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 30,
+          "maximum": 50,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
       },
-      "assumptions": [
-        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward",
+        "subject": "task_board.beginner",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward",
       "subject": "task_board.adept",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
-        "rate_multiplier": 1,
-        "award_on": "completed_task_claim_once"
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 70,
+          "maximum": 100,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
       },
-      "assumptions": [
-        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward",
+        "subject": "task_board.adept",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward",
       "subject": "task_board.expert",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
-        "rate_multiplier": 1,
-        "award_on": "completed_task_claim_once"
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 150,
+          "maximum": 200,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
       },
-      "assumptions": [
-        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward",
+        "subject": "task_board.expert",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward",
       "subject": "task_board.master",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
-        "rate_multiplier": 1,
-        "award_on": "completed_task_claim_once"
+        "status": "PINNED_DONOR_CANDIDATE_GLOBAL_FORMULA_UNRESOLVED",
+        "expression": "creature_base_xp * sampled_tier_multiplier * grade_multiplier * max(config_exp_multiplier,1)",
+        "sampled_tier_multiplier": {
+          "distribution": "uniform_integer_inclusive",
+          "minimum": 300,
+          "maximum": 400,
+          "sampled_when": "offer_created",
+          "independent_of_assigned_kill_count": true
+        },
+        "grade_multipliers": {
+          "normal": 1,
+          "silver": 2,
+          "gold": 4
+        },
+        "donor_config_default": 1,
+        "award_on": "completed_task_claim_once",
+        "award_stage": "raw reward passed to player experience processing; downstream callbacks are not modeled here",
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "PINNED_SOURCE_CANDIDATE_NOT_ADOPTED_AS_GLOBAL",
+        "source_refs": [
+          {
+            "source": "ots:crystal-summer:task-xp:bounty:ddb4930",
+            "selector": "getExpReward L628-652; offer generation L139-155; claim L547-556"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:rng:ddb4930",
+            "selector": "uniform_random L431-440"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:config:ddb4930",
+            "selector": "bountyTasksExpMultiplier=1 L174"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:bounty:retained",
+            "selector": "Retained guide says task XP depends on difficulty, creature and required kill count; no exact equation"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Task Board Bounty rewards; exact XP equation not published"
+          }
+        ],
+        "rationale": "Withdraws invented10%rule. Crystal uses a tier-specific random multiplier of creature base XP, sampled separately from required kills. Retained community prose names kill-count dependence; current Global equality is unconfirmed. No executable Global or native formula is selected."
       },
-      "assumptions": [
-        "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_CANDIDATE_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_unsupported_proposal": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward",
+        "subject": "task_board.master",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+          "rate_multiplier": 1,
+          "award_on": "completed_task_claim_once"
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
       "subject": "task_board.current_system",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "delivery_piecewise": [
-          {
-            "level_max": 82,
-            "experience": "25*L^2-75*L+100"
+        "status": "SOURCE_CONFLICT_NO_CURRENT_GLOBAL_FORMULA_SELECTED",
+        "fandom_revision_1187430": {
+          "delivery_base_piecewise": [
+            {
+              "level_max": 82,
+              "expression": "25*L^2-75*L+100"
+            },
+            {
+              "level_min": 83,
+              "level_max": 999,
+              "expression": "ROUND_POSITIVE(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "expression": "2*L^2-6*L+8"
+            }
+          ],
+          "delivery_difficulty_cap": "NONE_STATED_BY_THIS_MODEL",
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
           },
-          {
-            "level_min_exclusive": 82,
-            "level_max_exclusive": 1000,
-            "experience": "ROUND(1994.008*L)"
+          "rounding": "positive nearest integer; retained ROUND matches donor std::lround on these positive values"
+        },
+        "wiki_br_revision_443622": {
+          "base_expression": "1995*L",
+          "per_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
           },
-          {
-            "level_min": 1000,
-            "experience": "2*L^2-6*L+8"
-          }
-        ],
-        "kill_task_caps": {
-          "beginner": 200000,
-          "adept": 800000,
-          "expert": 3000000,
-          "master": null
-        }
+          "delivery_cap_scope": "Article applies limits generally; does not preserve Fandom kill-only distinction"
+        },
+        "crystal_revision_ddb4930": {
+          "base_piecewise": [
+            {
+              "level_max": 82,
+              "expression": "25*L^2-75*L+100"
+            },
+            {
+              "level_min": 83,
+              "level_max": 999,
+              "expression": "ROUND_POSITIVE(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "expression": "2*L^2-6*L+8"
+            }
+          ],
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
+          },
+          "delivery_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": "NO_CAP"
+          },
+          "configuration": "same calculateRewardExp(level,difficulty) called for both kinds"
+        },
+        "master_cap_source_status": "NO_CAP corroborated by both wiki descriptions, retained Tibiopedia and pinned donor; not an invented project choice",
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1187430"
+        "kind": "SOURCE_FORMULA_CONFLICT_NOT_RUNTIME_SELECTION",
+        "source_refs": [
+          {
+            "source": "wiki:109860:1187430",
+            "selector": "Weekly Task Rewards / Experience: piecewise delivery formula; extra caps apply only to kill tasks"
+          },
+          {
+            "source": "wiki-br:task-xp:443622",
+            "selector": "Experience:1995*level and per-task difficulty caps"
+          },
+          {
+            "source": "ots:crystal-summer:task-xp:weekly:ddb4930",
+            "selector": "calculateRewardExp L989-1028; generateWeeklyTasks L207-209; recalculation L1074-1076"
+          },
+          {
+            "source": "community:tibiopedia:task-xp:weekly:retained",
+            "selector": "Retained article states caps only for Kill Tasks and no Master cap"
+          },
+          {
+            "source": "official:tibia:manual:task-board:indexed:20261019",
+            "selector": "Weekly rewards/limits; exact XP formula not supplied"
+          }
         ],
-        "observation_refs": [],
-        "donor_selection": null
+        "rationale": "Both source-backed formulas are retained without choosing a Global value. Master no-cap is sourced. Crystal also caps delivery tasks; Fandom and retained Tibiopedia describe the added caps as kill-only. No standalone Oteryn rounding/cap assumption remains."
       },
-      "assumptions": [
-        "Adopt retained community weekly-delivery model as a project choice; use floor(x+0.5) for positive ROUND and do not conflate delivery XP with creature bounty rewards."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_BACKED_ALTERNATIVES_GLOBAL_UNRESOLVED_NOT_NATIVE_ADMITTED",
+      "superseded_formula_selection": {
+        "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+        "subject": "task_board.current_system",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "delivery_piecewise": [
+            {
+              "level_max": 82,
+              "experience": "25*L^2-75*L+100"
+            },
+            {
+              "level_min_exclusive": 82,
+              "level_max_exclusive": 1000,
+              "experience": "ROUND(1994.008*L)"
+            },
+            {
+              "level_min": 1000,
+              "experience": "2*L^2-6*L+8"
+            }
+          ],
+          "kill_task_caps": {
+            "beginner": 200000,
+            "adept": 800000,
+            "expert": 3000000,
+            "master": null
+          }
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1187430"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Adopt retained community weekly-delivery model as a project choice; use floor(x+0.5) for positive ROUND and do not conflate delivery XP with creature bounty rewards."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     }
   ],
   "materialization": {
     "parameter_document": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json",
     "source_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json",
-    "filled_field_count": 17,
-    "not_runtime_activation": true
+    "filled_field_count": 12,
+    "not_runtime_activation": true,
+    "source_backed_unselected_candidate_fields": 5,
+    "remaining_unresolved_source_fields": 6
   },
   "native_binding_source_correction": {
     "source_check": "docs/reference/content-prep/prey-content-1/creature-identity-source-check.json",
@@ -774,5 +1091,23 @@
     "pool_conflicts": 13,
     "proven_native_import_errors": 0,
     "supersedes_automatic_thirteen_flag_change_plan": true
+  },
+  "task_reward_source_repair": {
+    "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json",
+    "withdrawn_ten_percent_defaults": 4,
+    "bounty_source_candidates": 4,
+    "weekly_formula_alternatives": 3,
+    "expert_kill_range_conflict": true,
+    "unresolved_active_source_fields": 6,
+    "current_global_numeric_xp_formula_selected": false,
+    "primary_official_htp_thresholds": [
+      4,
+      8,
+      12,
+      16
+    ],
+    "soulseals_per_task": 1,
+    "soulseal_weekly_multiplier": false,
+    "master_no_cap": "SOURCE_CORROBORATED"
   }
 }

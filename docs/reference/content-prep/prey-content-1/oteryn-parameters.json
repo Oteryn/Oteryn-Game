@@ -3,9 +3,9 @@
   "task": "PREY-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_CONFLICTS",
   "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
-  "filled_fields": 17,
+  "filled_fields": 12,
   "normalized_companion_fields": 0,
   "remaining_unfilled_fields": 0,
   "originating_proposals": "docs/reference/content-prep/prey-content-1/oteryn-proposals.json",
@@ -44,5 +44,25 @@
     "pool_conflicts": 13,
     "proven_native_import_errors": 0,
     "supersedes_automatic_thirteen_flag_change_plan": true
+  },
+  "source_backed_unselected_candidate_fields": 5,
+  "remaining_unresolved_source_fields": 6,
+  "task_reward_source_repair": {
+    "source_check": "docs/reference/content-prep/prey-content-1/task-reward-source-check.json",
+    "withdrawn_ten_percent_defaults": 4,
+    "bounty_source_candidates": 4,
+    "weekly_formula_alternatives": 3,
+    "expert_kill_range_conflict": true,
+    "unresolved_active_source_fields": 6,
+    "current_global_numeric_xp_formula_selected": false,
+    "primary_official_htp_thresholds": [
+      4,
+      8,
+      12,
+      16
+    ],
+    "soulseals_per_task": 1,
+    "soulseal_weekly_multiplier": false,
+    "master_no_cap": "SOURCE_CORROBORATED"
   }
 }

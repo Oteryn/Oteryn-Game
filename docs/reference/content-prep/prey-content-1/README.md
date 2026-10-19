@@ -1,3 +1,15 @@
+# Task Board reward source repair
+
+Four unsupported10% Bounty XP defaults are withdrawn. The tier records now retain the exact CrystalServer random-multiplier candidates, explicitly unselected for native/runtime use and qualified against retained community descriptions. No formula is presented as proven current Global behavior.
+
+Weekly XP retains three source-backed alternatives: pinned Fandom piecewise model with extra caps only for kill tasks; current Wiki BR1995*level model; and Crystal piecewise model with caps applied to both kill and delivery. Master no-cap is described by the sources and is no longer labelled a project assumption. Expert Bounty kill bounds also remain an explicit source conflict.
+
+The official manual confirms HTP multiplier thresholds4/8/12/16 and one Soulseal per completed task. The donor's5/9/13/17 thresholds and BR's Soulseal multiplication statement are not adopted. Existing official6+6weekly slots and expansion+3each are corroborated. [Source check and numerical comparisons](task-reward-source-check.json).
+
+Active field counts are PROVEN688, DERIVED1420, CONFLICT6. All six conflicts retain inspectable values/candidates, selectors and reasons; no runtime XP formula is selected. The staged Task Board payload/apply-plan hashes are updated; World Bundle inputs and pins are unchanged.
+
+Prior creature research and the reports below remain retained. Their earlier Bounty/Weekly completion wording is superseded by this source repair.
+
 # Five creature profiles and13pool conflicts
 
 [Five sourced creature profiles](creature-source-profiles/README.md) now retain current wiki observations and explicit discrepancies. Complete pinned TFS1.6 source definitions were recovered for Elder Forest Fury and Undead Jester; the other three remain sourced partial profiles. They are not admitted native definitions.

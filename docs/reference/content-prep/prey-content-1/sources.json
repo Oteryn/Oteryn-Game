@@ -375,6 +375,88 @@
       "retained_selector": "/records/67",
       "source_class": "COMMUNITY_WIKI",
       "qualification": "Stored wiki observations corroborate creature identity and named attributes, not a native Oteryn definition."
+    },
+    "ots:crystal-summer:task-xp:bounty:ddb4930": {
+      "title": "CrystalServer bounty reward generation and claim",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/iobountytasks.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/io/iobountytasks.cpp",
+      "sha256": "ba1a02f0f15fd392f1f7d9b6fbf1dfe202e1e62aa680ea9bf8db6fb4c21f03d3",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:crystal-summer:task-xp:weekly:ddb4930": {
+      "title": "CrystalServer weekly task rewards",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/ioweeklytasks.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/io/ioweeklytasks.cpp",
+      "sha256": "1666824a53e86c0c3e6b88e2ee4c4e0e6b38572e22e5471a0cada9ea2440a1c8",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:crystal-summer:task-xp:config:ddb4930": {
+      "title": "CrystalServer distributed bounty XP multiplier",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist#L174",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:crystal-summer:task-xp:rng:ddb4930": {
+      "title": "CrystalServer uniform integer generator",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/utils/tools.cpp#L431",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/utils/tools.cpp",
+      "sha256": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070",
+      "fetched_at": "2026-10-19"
+    },
+    "wiki-br:task-xp:443622": {
+      "title": "Weekly Tasks",
+      "url": "https://www.tibiawiki.com.br/wiki/Weekly_Tasks",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Weekly_Tasks&oldid=443622",
+      "revid": 443622,
+      "source_class": "COMMUNITY_WIKI",
+      "fetched_at": "2026-10-19",
+      "response_html_sha256": "a7a90bde7b6374ca814e59f22dd36a92367941167804605f706c41ec8af68dd6",
+      "retained_scope": "RENDERED_HTML_OBSERVATION"
+    },
+    "wiki-br:task-xp:436933": {
+      "title": "Bounty Tasks",
+      "url": "https://www.tibiawiki.com.br/wiki/Bounty_Tasks",
+      "revision_url": "https://www.tibiawiki.com.br/index.php?title=Bounty_Tasks&oldid=436933",
+      "revid": 436933,
+      "source_class": "COMMUNITY_WIKI",
+      "fetched_at": "2026-10-19",
+      "response_html_sha256": "9aa2b79a92782c62574d60bbb748b064bf50de688b0a8e1e155bf5b6f643cbf2",
+      "retained_scope": "RENDERED_HTML_OBSERVATION"
+    },
+    "community:tibiopedia:task-xp:bounty:retained": {
+      "title": "Bounty Tasks",
+      "url": "https://tibiopedia.pl/articles/30,Bounty-Tasks",
+      "source_class": "COMMUNITY_GUIDE_RETAINED_CACHE",
+      "retained_html_sha256": "67f2c88e78216fb3f1fa792280e1f2087eb178cf317ea710e163e12f64144fc8",
+      "fresh_access": "Current request returned Setup page, not article; retained article cache used explicitly. No fresh article revision is claimed.",
+      "retained_before_current_recheck": true
+    },
+    "community:tibiopedia:task-xp:weekly:retained": {
+      "title": "Weekly Tasks",
+      "url": "https://tibiopedia.pl/articles/31,Weekly-Tasks",
+      "source_class": "COMMUNITY_GUIDE_RETAINED_CACHE",
+      "retained_html_sha256": "a109e5c47459401450fb67e57cd3394c1b207ee2468af0c6ab830d23ce08c8f2",
+      "fresh_access": "Current request returned Setup page, not article; retained article cache used explicitly. No fresh article revision is claimed.",
+      "retained_before_current_recheck": true
+    },
+    "official:tibia:manual:task-board:indexed:20261019": {
+      "title": "Tibia Manual5.3.10 Task Board",
+      "url": "https://www.tibia.com/gameguides/?section=combat&subtopic=manual",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed official page text; direct news article8598 returned403. No numeric XP formula appears in the inspected Task Board section.",
+      "retained_scope": "Task Board parameter observations only"
     }
   }
 }
