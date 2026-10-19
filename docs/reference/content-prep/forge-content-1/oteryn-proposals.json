@@ -1,0 +1,323 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "FORGE-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "a6467e44ee8d3fc562be7e0f380c8c3975dfdea0",
+  "original_field_list_sha256": "84639b5562f657114c747d74a91e28e88fa8a157065a1086b45d8f4a4e83cc46",
+  "coverage": {
+    "held_fields": 4,
+    "proposals": 4,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 4
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [
+    {
+      "source_id": "crystalserver-summer",
+      "key": "forge.bonus_distribution",
+      "value": {
+        "draw_inclusive": [
+          0,
+          10000
+        ],
+        "outcomes": [
+          {
+            "bonus_id": 0,
+            "inclusive_range": [
+              0,
+              7399
+            ],
+            "probability_numerator": 7400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 1,
+            "inclusive_range": [
+              7400,
+              8999
+            ],
+            "probability_numerator": 1600,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 2,
+            "inclusive_range": [
+              9000,
+              9499
+            ],
+            "probability_numerator": 500,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 3,
+            "inclusive_range": [
+              9500,
+              9524
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 4,
+            "inclusive_range": [
+              9525,
+              9549
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 5,
+            "inclusive_range": [
+              9550,
+              9949
+            ],
+            "probability_numerator": 400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 6,
+            "inclusive_range": [
+              9950,
+              9974
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 7,
+            "inclusive_range": [
+              9975,
+              10000
+            ],
+            "probability_numerator": 26,
+            "probability_denominator": 10001
+          }
+        ],
+        "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/utils/tools.cpp",
+        "line": 1879,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/utils/tools.cpp#L1879",
+        "file_sha256": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Do not round ranges into neat percentages: inclusive draw has 10001 outcomes. Failure tier-retention bonus is a separate path, not a ninth uniformly drawn effect."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "forge.dust_upgrade",
+      "value": {
+        "cost": "L>100 ? 25+floor((L-100)/20) : 25",
+        "increment": 20,
+        "maximum_from_config": "225",
+        "cap_guard": "reject if current L>=configured maximum; no post-increment clamp in this path"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/creatures/players/player.cpp",
+        "line": 11016,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L11016",
+        "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Summer branch implements +20, unlike the historical-style main branches. Example config still says225; starting100 reaches240 before next upgrade is rejected. This is not proof of the actual Global maximum."
+    }
+  ],
+  "proposals": [
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit",
+      "subject": "forge.resources",
+      "original_classification": "UNKNOWN",
+      "proposed_value": 4600,
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1205481",
+          "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Project cap4600 is a new design choice on the100+20k grid; the observed character limit is not evidence of the Global maximum. Reject upgrades when L+20>4600."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost",
+      "subject": "forge.resources",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "L<=100 ? 25 : 25+floor((L-100)/20)",
+        "increment": 20,
+        "domain": "L=100+20k; k integer>=0; L+20<=4600"
+      },
+      "basis": {
+        "kind": "UPSTREAM_ADAPTATION",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1205481",
+          "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
+        ],
+        "observation_refs": [
+          {
+            "source_id": "crystalserver-summer",
+            "observation_key": "forge.dust_upgrade"
+          }
+        ],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost",
+      "subject": "forge.resources",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "k*(k+49)/2",
+        "k": "(target_limit-100)/20",
+        "domain": "target_limit=100+20k; 0<=k<=225",
+        "unit": "dust"
+      },
+      "basis": {
+        "kind": "UPSTREAM_DERIVATION",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1205481",
+          "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
+        ],
+        "observation_refs": [
+          {
+            "source_id": "crystalserver-summer",
+            "observation_key": "forge.dust_upgrade"
+          }
+        ],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Start100; sum integer upgrade costs25..24+k; no discounts."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+      "subject": "forge.resources",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "draw_inclusive": [
+          0,
+          10000
+        ],
+        "outcomes": [
+          {
+            "bonus_id": 0,
+            "inclusive_range": [
+              0,
+              7399
+            ],
+            "probability_numerator": 7400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 1,
+            "inclusive_range": [
+              7400,
+              8999
+            ],
+            "probability_numerator": 1600,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 2,
+            "inclusive_range": [
+              9000,
+              9499
+            ],
+            "probability_numerator": 500,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 3,
+            "inclusive_range": [
+              9500,
+              9524
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 4,
+            "inclusive_range": [
+              9525,
+              9549
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 5,
+            "inclusive_range": [
+              9550,
+              9949
+            ],
+            "probability_numerator": 400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 6,
+            "inclusive_range": [
+              9950,
+              9974
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 7,
+            "inclusive_range": [
+              9975,
+              10000
+            ],
+            "probability_numerator": 26,
+            "probability_denominator": 10001
+          }
+        ],
+        "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+      },
+      "basis": {
+        "kind": "UPSTREAM_ADAPTATION",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [
+          {
+            "source_id": "crystalserver-summer",
+            "observation_key": "forge.bonus_distribution"
+          }
+        ],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Preserve inclusive10001-outcome distribution and caller-dependent success/failure restrictions; convergence yields no lucky bonus."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
