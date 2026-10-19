@@ -153,6 +153,17 @@
         "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
       },
       "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "community:tibiopedia:exaltation-forge:20261019": {
+      "title": "Exaltation Forge - Kuznia Wzniesienia",
+      "url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia",
+      "fetched_at": "2026-10-19T08:03:12.927399+00:00",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_response_sha256": "62d8b1ac946368638cca07a19d627fdd42cdec1afd22ee2ec564925f5ce1856b",
+      "retained_scope": "TARGETED_FACT_OBSERVATIONS",
+      "retained_observations": "docs/reference/content-prep/forge-content-1/forge-dust-source-check.json",
+      "supported_claim": "Dust cap4600; start100; increment20; upgrade costs25..249; total30825.",
+      "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
     }
   }
 }

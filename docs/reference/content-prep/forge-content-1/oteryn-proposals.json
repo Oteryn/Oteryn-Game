@@ -144,19 +144,36 @@
       "original_classification": "UNKNOWN",
       "proposed_value": 4600,
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "COMMUNITY_SOURCE_CORROBORATED",
+        "rationale": "Tibiopedia now corroborates the selected dust values; no new project cap is required.",
         "original_source_urls": [
           "https://tibia.fandom.com/w/index.php?oldid=1205481",
           "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
         ],
         "observation_refs": [],
-        "donor_selection": null
+        "donor_selection": null,
+        "corroborating_source": "community:tibiopedia:exaltation-forge:20261019",
+        "corroborating_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia"
       },
       "assumptions": [
-        "Project cap4600 is a new design choice on the100+20k grid; the observed character limit is not evidence of the Global maximum. Reject upgrades when L+20>4600."
+        "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_SECONDARY_SOURCE_CORROBORATED_RUNTIME_UNQUALIFIED",
+      "previous_decision_before_source_correction": {
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1205481",
+            "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
+          ],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Project cap4600 is a new design choice on the100+20k grid; the observed character limit is not evidence of the Global maximum. Reject upgrades when L+20>4600."
+        ]
+      }
     },
     {
       "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost",
@@ -168,8 +185,8 @@
         "domain": "L=100+20k; k integer>=0; L+20<=4600"
       },
       "basis": {
-        "kind": "UPSTREAM_ADAPTATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "COMMUNITY_SOURCE_CORROBORATED",
+        "rationale": "Tibiopedia now corroborates the selected dust values; no new project cap is required.",
         "original_source_urls": [
           "https://tibia.fandom.com/w/index.php?oldid=1205481",
           "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
@@ -180,12 +197,34 @@
             "observation_key": "forge.dust_upgrade"
           }
         ],
-        "donor_selection": null
+        "donor_selection": null,
+        "corroborating_source": "community:tibiopedia:exaltation-forge:20261019",
+        "corroborating_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia"
       },
       "assumptions": [
-        "Select this documented value for Oteryn; not a claim of current official server behavior."
+        "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_SECONDARY_SOURCE_CORROBORATED_RUNTIME_UNQUALIFIED",
+      "previous_decision_before_source_correction": {
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1205481",
+            "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "forge.dust_upgrade"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ]
+      }
     },
     {
       "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost",
@@ -198,8 +237,8 @@
         "unit": "dust"
       },
       "basis": {
-        "kind": "UPSTREAM_DERIVATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "kind": "COMMUNITY_SOURCE_DERIVATION",
+        "rationale": "Tibiopedia now corroborates the selected dust values; no new project cap is required.",
         "original_source_urls": [
           "https://tibia.fandom.com/w/index.php?oldid=1205481",
           "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
@@ -210,12 +249,34 @@
             "observation_key": "forge.dust_upgrade"
           }
         ],
-        "donor_selection": null
+        "donor_selection": null,
+        "corroborating_source": "community:tibiopedia:exaltation-forge:20261019",
+        "corroborating_url": "https://tibiopedia.pl/articles/22,Exaltation-Forge-Kuznia-Wzniesienia"
       },
       "assumptions": [
-        "Start100; sum integer upgrade costs25..24+k; no discounts."
+        "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
       ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "acceptance_status": "MATERIALIZED_SECONDARY_SOURCE_CORROBORATED_RUNTIME_UNQUALIFIED",
+      "previous_decision_before_source_correction": {
+        "basis": {
+          "kind": "UPSTREAM_DERIVATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1205481",
+            "https://www.tibia.com/news/?id=8850&subtopic=newsarchive"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "forge.dust_upgrade"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Start100; sum integer upgrade costs25..24+k; no discounts."
+        ]
+      }
     },
     {
       "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",

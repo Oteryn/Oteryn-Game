@@ -1,3 +1,11 @@
+# Forge source correction
+
+Tibiopedia explicitly documents the dust cap4600, initial limit100, increments20, upgrade costs25 through249, and total30825. These values remain unchanged, but the three dust fields now cite the article as secondary corroboration instead of describing a newly invented project cap. See [source check](forge-dust-source-check.json).
+
+The exact fusion-bonus distribution still comes from the pinned Crystal implementation and remains an Oteryn working assumption without current Global confirmation. No runtime activation is authorized. Original source limitations and the previous decision rationale remain preserved as history.
+
+## Earlier materialization report
+
 # FORGE-CONTENT-1: populated reference data
 
 All 4 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.

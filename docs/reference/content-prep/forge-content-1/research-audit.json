@@ -35,5 +35,16 @@
     "UNKNOWN": 4
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "source_correction": {
+    "source": "community:tibiopedia:exaltation-forge:20261019",
+    "supported_fields": [
+      "maximum_dust_limit",
+      "dust_limit_increment_cost",
+      "total_upgrade_cost"
+    ],
+    "unchanged_values": true,
+    "remaining_unconfirmed_field": "bonus_distribution",
+    "qualification": "Secondary source corroborates these dust values. It does not provide exact fusion-bonus probabilities and is not an official or controlled-client measurement."
+  }
 }

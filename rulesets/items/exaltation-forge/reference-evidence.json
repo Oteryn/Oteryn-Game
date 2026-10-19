@@ -4726,9 +4726,13 @@
           "value": 4600,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SECONDARY_SOURCE_CORROBORATED",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
           "sources": [
+            {
+              "source": "community:tibiopedia:exaltation-forge:20261019",
+              "selector": "Dust resources and Konwersja; docs/reference/content-prep/forge-content-1/forge-dust-source-check.json"
+            },
             {
               "source": "owner:oteryn-data-completion:2026-10-19",
               "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit"
@@ -4742,9 +4746,9 @@
               "selector": "maximum amount raised considerably"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Tibiopedia explicitly supports the dust parameters. Earlier characterization as a newly invented Oteryn cap is superseded. Secondary corroboration does not constitute official/current-client proof.",
           "assumptions": [
-            "Project cap4600 is a new design choice on the100+20k grid; the observed character limit is not evidence of the Global maximum. Reject upgrades when L+20>4600."
+            "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
           ],
           "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -4770,9 +4774,13 @@
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SECONDARY_SOURCE_CORROBORATED",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
           "sources": [
+            {
+              "source": "community:tibiopedia:exaltation-forge:20261019",
+              "selector": "Dust resources and Konwersja; docs/reference/content-prep/forge-content-1/forge-dust-source-check.json"
+            },
             {
               "source": "owner:oteryn-data-completion:2026-10-19",
               "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost"
@@ -4790,9 +4798,9 @@
               "selector": "unlocking cost remains unchanged; increments now20"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Tibiopedia explicitly supports the dust parameters. Earlier characterization as a newly invented Oteryn cap is superseded. Secondary corroboration does not constitute official/current-client proof.",
           "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
+            "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
           ],
           "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -4806,9 +4814,13 @@
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "SECONDARY_SOURCE_CORROBORATED",
+          "evidence_scope": "COMMUNITY_GLOBAL_REFERENCE",
           "sources": [
+            {
+              "source": "community:tibiopedia:exaltation-forge:20261019",
+              "selector": "Dust resources and Konwersja; docs/reference/content-prep/forge-content-1/forge-dust-source-check.json"
+            },
             {
               "source": "owner:oteryn-data-completion:2026-10-19",
               "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost"
@@ -4826,9 +4838,9 @@
               "selector": "unlocking cost remains unchanged; increments now20"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Tibiopedia explicitly supports the dust parameters. Earlier characterization as a newly invented Oteryn cap is superseded. Secondary corroboration does not constitute official/current-client proof.",
           "assumptions": [
-            "Start100; sum integer upgrade costs25..24+k; no discounts."
+            "The article describes the2026 summer-update dust rules. The total-cost formula sums its225 upgrade costs from25 through249; no discount is assumed."
           ],
           "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"

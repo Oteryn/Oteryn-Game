@@ -14,7 +14,7 @@
   "payloads": [
     {
       "path": "rulesets/items/exaltation-forge/reference-evidence.json",
-      "sha256": "77d029e13b3edd7945fb81dba0ae6ae2e4620376bc859d31b6d186562f40324f"
+      "sha256": "d33f7d58ca371342780c5981aaec0506f6a317d3d9ae4f57d81b70cbd88bb6e7"
     }
   ]
 }
