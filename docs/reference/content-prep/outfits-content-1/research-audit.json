@@ -31,5 +31,29 @@
     "UNKNOWN": 1
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "source_correction": {
+    "subject": "Monk outfit addons",
+    "field": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
+    "removed_invented_gold": [
+      100000,
+      200000
+    ],
+    "replacement": {
+      "availability": "UNAVAILABLE",
+      "addon_1": {
+        "obtainable": false
+      },
+      "addon_2": {
+        "obtainable": false
+      },
+      "implementation_status": "AWAITING_FUTURE_CIPSOFT_UPDATE",
+      "acquisition_methods": [],
+      "release_date_announced": false
+    },
+    "classification": "DERIVED",
+    "source": "community:tibiaqa:monk-addons:36937:20261019",
+    "owner_resolution_source": "owner:monk-addon-unavailable:20261019",
+    "qualification": "Historical community evidence quoting an official forum statement plus the explicit owner resolution. No new current-client measurement or independently verified future release date is claimed."
+  }
 }

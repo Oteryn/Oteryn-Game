@@ -2714,6 +2714,21 @@
       "parameter_document": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json",
       "selection_actor": "assistant completing owner-authorized reference/data task",
       "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "community:tibiaqa:monk-addons:36937:20261019": {
+      "title": "How to obtain the Monk Outfit full?",
+      "url": "https://www.tibiaqa.com/36937/how-to-obtain-the-monk-outfit-full",
+      "fetched_at": "2026-10-19T08:49:19.554087+00:00",
+      "source_class": "COMMUNITY_REFERENCE",
+      "retained_observations": "docs/reference/content-prep/outfits-content-1/source-correction-check.json",
+      "qualification": "Historical community evidence quoting an official forum statement plus the explicit owner resolution. No new current-client measurement or independently verified future release date is claimed."
+    },
+    "owner:monk-addon-unavailable:20261019": {
+      "title": "Explicit owner resolution of Monk addon availability",
+      "url": "https://www.tibiaqa.com/36937/how-to-obtain-the-monk-outfit-full",
+      "source_class": "OWNER_DECISION",
+      "quote": "Addony Monka są obecnie niedostępne; czekamy aż CipSoft doda je w przyszłości.",
+      "qualification": "Owner selects unavailable status; does not turn the 2025 report into current official proof."
     }
   }
 }

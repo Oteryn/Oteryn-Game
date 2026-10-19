@@ -1,3 +1,11 @@
+# Monk addon source correction
+
+Both addons are recorded as unavailable, awaiting a future CipSoft update. The invented100,000/200,000gp purchase recipes are withdrawn. This applies the owner’s explicit resolution, supported by TibiaQA’s April2025 answer quoting the official announcement. The historical source does not establish a future release date. See [source check](source-correction-check.json). Runtime admission remains blocked.
+
+## Superseded materialization report
+
+The following earlier report is retained as history; the source correction above takes precedence.
+
 # OUTFITS-CONTENT-1: populated reference data
 
 All 1 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.

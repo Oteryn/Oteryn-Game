@@ -13154,35 +13154,34 @@
         },
         "addon_specific_requirements": {
           "value": {
+            "availability": "UNAVAILABLE",
             "addon_1": {
-              "gold": 100000,
-              "items": []
+              "obtainable": false
             },
             "addon_2": {
-              "gold": 200000,
-              "items": []
+              "obtainable": false
             },
-            "premium_required": true,
-            "requires_base_outfit": true,
-            "unlock_scope": "character_permanent"
+            "implementation_status": "AWAITING_FUTURE_CIPSOFT_UPDATE",
+            "acquisition_methods": [],
+            "release_date_announced": false
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "OWNER_RESOLUTION_WITH_HISTORICAL_SOURCE",
+          "evidence_scope": "COMMUNITY_REFERENCE_WITH_OWNER_RESOLUTION",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / field content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements"
+              "source": "community:tibiaqa:monk-addons:36937:20261019",
+              "selector": "Answer dated2025-04-12; forum reference"
             },
             {
-              "source": "wiki:108263:1102608",
-              "selector": "Infobox Outfit / addons (empty)"
+              "source": "owner:monk-addon-unavailable:20261019",
+              "selector": "Explicit owner resolution"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "note": "Unavailable addon acquisition, awaiting future CipSoft implementation. The invented gold purchases are withdrawn.",
           "assumptions": [
-            "New Oteryn gold-sink purchase alternative because actual Monk addon item requirements are unproven; no claimed Global quest recipe."
+            "Unavailable status follows the explicit owner resolution supported by the historical announcement. No purchase, quest recipe or release date is invented."
           ],
           "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"

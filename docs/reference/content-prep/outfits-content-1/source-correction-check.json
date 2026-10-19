@@ -1,0 +1,45 @@
+{
+  "source_url": "https://www.tibiaqa.com/36937/how-to-obtain-the-monk-outfit-full",
+  "checked_at": "2026-10-19T08:49:19.554087+00:00",
+  "answer_date": "2025-04-12",
+  "source_version": "15.00",
+  "official_reference": "https://www.tibia.com/forum/?action=thread&postid=39517618#post39517618",
+  "observation": "Both Monk addons were unavailable; future implementation was announced without a release date.",
+  "owner_resolution": "Addony Monka są obecnie niedostępne; czekamy aż CipSoft doda je w przyszłości.",
+  "qualification": "Historical community evidence quoting an official forum statement plus the explicit owner resolution. No new current-client measurement or independently verified future release date is claimed.",
+  "superseded_fact": {
+    "value": {
+      "addon_1": {
+        "gold": 100000,
+        "items": []
+      },
+      "addon_2": {
+        "gold": 200000,
+        "items": []
+      },
+      "premium_required": true,
+      "requires_base_outfit": true,
+      "unlock_scope": "character_permanent"
+    },
+    "classification": "DERIVED",
+    "target_cut": "2026-10-19",
+    "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+    "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+    "sources": [
+      {
+        "source": "owner:oteryn-data-completion:2026-10-19",
+        "selector": "docs/reference/content-prep/outfits-content-1/oteryn-parameters.json / field content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements"
+      },
+      {
+        "source": "wiki:108263:1102608",
+        "selector": "Infobox Outfit / addons (empty)"
+      }
+    ],
+    "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+    "assumptions": [
+      "New Oteryn gold-sink purchase alternative because actual Monk addon item requirements are unproven; no claimed Global quest recipe."
+    ],
+    "global_evidence_archive": "docs/reference/content-prep/outfits-content-1/tibia-source-archive.json#content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
+    "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+  }
+}
