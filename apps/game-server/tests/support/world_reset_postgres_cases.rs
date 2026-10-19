@@ -2191,14 +2191,24 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
         assert_eq!(cohort, vec![(id(CHANNEL).to_vec(), "1".to_owned())]);
         // Codex local P2: the committed job closes the Channel cohort, so a new Channel of the
         // World is refused (OTR03); the boot run's remint of an existing scope stays open.
+        // The session holds the control claim grant for the new Channel, so the control effect
+        // guard admits the insert and the refusal is the reset cohort trigger's own.
         let mut tx = h.pool.begin().await?;
-        let joined = sqlx::query("INSERT INTO game_runtime_scope_assignments(scope_key,world_id,channel_id,ownership_generation,state,source_revision,decision_identity,operation_key,decided_at) VALUES('\\x01'::bytea||uuid_send(encode($1,'hex')::uuid)||uuid_send($2::text::uuid),encode($1,'hex')::uuid,$2::text::uuid,1,2,9000000001,'reset-cohort-closed',$3,0)")
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,$2::text::uuid,1)")
+            .bind(id(WORLD).as_slice())
+            .bind("018f0000-0000-7000-8000-0000000000aa")
+            .execute(&mut *tx)
+            .await?;
+        let joined = sqlx::query("INSERT INTO game_runtime_scope_assignments(scope_key,world_id,channel_id,ownership_generation,state,holder_node_id,holder_registration_revision,source_revision,decision_identity,operation_key,decided_at) SELECT '\\x01'::bytea||uuid_send(a.world_id)||uuid_send($2::text::uuid),a.world_id,$2::text::uuid,1,1,a.holder_node_id,a.holder_registration_revision,9000000001,'reset-cohort-closed',$3,0 FROM game_runtime_scope_assignments a WHERE a.world_id=encode($1,'hex')::uuid AND a.scope_kind=1")
             .bind(id(WORLD).as_slice())
             .bind("018f0000-0000-7000-8000-0000000000aa")
             .bind([9_u8; 32].as_slice())
             .execute(&mut *tx)
             .await;
-        assert!(matches!(joined, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("OTR03")), "{joined:?}");
+        assert!(
+            matches!(joined, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("OTR03") && e.message().contains("the Channel cohort is closed")),
+            "{joined:?}"
+        );
         tx.rollback().await?;
         let mut tx = h.pool.begin().await?;
         let job = crate::durability::world_reset::read_locked_world_reset_target(&mut tx, world()?)
