@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # MARKET-CONTENT-1
 
 ```yaml
@@ -102,3 +104,7 @@ Owned lane returned to AUTHORING for one atomic expected-head successor. Existin
 Cross-check of93 named unresolved Market identities against Wiki BR:34 pages expose a Market declaration, while59 have no matching declaration at the checked URL or could not be accessed. Fifteen explicit negative declarations have matching own name, weight and a single Fandom item ID;50 formerly UNKNOWN reference fields are now DERIVED. Current positive declarations and multi-ID furniture/quest pages remain research candidates rather than being silently admitted across states. No current official server listing or transaction is claimed. The1958 repeated per-item restriction holds are not globally erased: a general exclusion list does not prove absence of additional item-specific restrictions.
 
 This is a local AUTHORING successor to the frozen draft. Publication and fresh exact-head CI remain outstanding.
+
+## Working-data completion —2026-10-19
+
+Populated2177 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/market-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

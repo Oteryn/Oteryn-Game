@@ -52,11 +52,20 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "fee_cap_disagreement": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "value": {
+            "fee_percent": 2.5,
+            "minimum_gold": 20,
+            "maximum_gold": 2500000
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/listing-restrictions.json/records/0/facts/fee_cap_disagreement"
+            },
             {
               "source": "wiki:56357:1017956",
               "selector": "Conflicting statements identified in note"
@@ -70,7 +79,12 @@
               "selector": "4.3.3 / fee maximum"
             }
           ],
-          "note": "Live official manual retrieved 2026-10-18: maximum fee 2500000 gp (2.5%, min 20 gp). Current Wiki says 250000 gp; older repository manual capture says 1000000 gp. Current official limits are recorded separately; discrepancy is retained."
+          "note": "Prefer retained current official manual over community and donor fee values.",
+          "assumptions": [
+            "Select this documented value for Oteryn; not a claim of current official server behavior."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/listing-restrictions.json/records/0/facts/fee_cap_disagreement",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "current_official_offer_limits": {
           "value": {
@@ -94,5 +108,6 @@
         }
       }
     }
-  ]
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }

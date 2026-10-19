@@ -28221,6 +28221,33 @@
         "matching_weight_oz": "30.00"
       },
       "qualification": "Wiki BR explicitly denies Market trade. Native-ID attribution derives from the single-ID Fandom item page with matching name and weight. Community reference data; no current official server listing test is claimed. Other item states are not inferred."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/market-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:market.instance_predicate": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/items/item.cpp",
+      "line": 3484,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/items/item.cpp#L3484",
+      "file_sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "uninitialized_attribute_pointer": "RETURN_TRUE_EARLY",
+        "reject_if_present_and_nondefault": [
+          "charges",
+          "duration"
+        ],
+        "tier_test": "reject when attribute tier differs from getTier()",
+        "after_attribute_loop": "not hasImbuements() and not isStoreItem() and not hasOwner()"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
     }
   }
 }
