@@ -76,7 +76,8 @@
     "community_report": "Partial mage/knight report contains differentHPintervals and a correcting mana comment; not controlled evidence.",
     "party_bonus": "Primary20/30/60/100resolved.",
     "soul": "Primary normal100/promoted200resolved.",
-    "deferred_test": "Owner postponed Global regeneration measurement; no game launch or new measurement claimed."
+    "deferred_test": "Superseded for unpromoted Druid and Monk by six qualified owner-authorized recordings on2026-10-19; other vocation/promotion measurements remain pending.",
+    "controlled_regeneration": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved."
   },
   "changes": [
     {
@@ -2324,8 +2325,8 @@
   "extracted_donor_functions": [],
   "active_evidence_counts": {
     "DERIVED": 149,
-    "PROVEN": 32,
-    "UNKNOWN": 22
+    "PROVEN": 36,
+    "UNKNOWN": 18
   },
   "remaining": [
     {
@@ -2369,14 +2370,6 @@
       "classification": "UNKNOWN"
     },
     {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
-      "classification": "UNKNOWN"
-    },
-    {
       "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
       "classification": "UNKNOWN"
     },
@@ -2401,14 +2394,6 @@
       "classification": "UNKNOWN"
     },
     {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
-      "classification": "UNKNOWN"
-    },
-    {
       "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/promoted_hp",
       "classification": "UNKNOWN"
     },
@@ -2422,5 +2407,480 @@
     "Fresh web checks used indexed primary/community text where direct pages were blocked. Retained Fandom revision hashes remain explicit.",
     "No current Global gameplay measurement or native runtime admission is claimed."
   ],
-  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts."
+  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts.",
+  "historical_changes_note": "The earlier changes array records the withdrawal of invented defaults at that earlier candidate; current active outcomes are additionally recorded under controlled_measurement_changes.",
+  "controlled_measurement_changes": [
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+      "before": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": 2,
+          "saturated_points_per_tick": 2,
+          "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "active_promotion": false,
+          "observed_character": "Osvier",
+          "selected_for_native_runtime": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+        "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
+        "sources": [
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+      "before": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": 4,
+          "saturated_points_per_tick": 4,
+          "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "active_promotion": false,
+          "observed_character": "Osvier",
+          "selected_for_native_runtime": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+        "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
+        "sources": [
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+      "before": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": 3,
+          "saturated_points_per_tick": 3,
+          "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "active_promotion": false,
+          "observed_character": "Czarci Ananas",
+          "selected_for_native_runtime": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+        "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
+        "sources": [
+          {
+            "source": "controlled-global:regeneration:monk:20261019",
+            "selector": "Monk / hp / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+      "before": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": 3,
+          "saturated_points_per_tick": 3,
+          "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "active_promotion": false,
+          "observed_character": "Czarci Ananas",
+          "selected_for_native_runtime": false
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-19",
+        "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+        "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
+        "sources": [
+          {
+            "source": "controlled-global:regeneration:monk:20261019",
+            "selector": "Monk / mana / hungry and fed reviewed series"
+          },
+          {
+            "source": "official:regen-recheck:8543:20261019",
+            "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
+          },
+          {
+            "source": "community:regen-recheck:reddit:1pnillt",
+            "selector": "Post and correcting comment; inconsistent intervals/mage mana claims"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/grouping/party.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          }
+        ],
+        "note": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 4,
+    "hungry_fed_observations": 8,
+    "qualified_recordings": 6,
+    "vocations": [
+      "Druid",
+      "Monk"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false
+  }
 }

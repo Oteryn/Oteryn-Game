@@ -2852,6 +2852,26 @@
       "fetched_at": "2026-10-19",
       "retrieval": "Fresh indexed primary support entry",
       "selector": "Normal100/promoted200; normal120s/promoted15s"
+    },
+    "controlled-global:regeneration:druid:20261019": {
+      "title": "Controlled official-client regeneration observations: Druid without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Druid",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numeric observations, timestamps and SHA256 digests. Original videos/screenshots remain private; no original game assets redistributed.",
+      "qualification": "Observed vocation, hunger state and equipment only; no extrapolation to promotions, other vocations or native runtime admission. Client display timestamps have capture/network jitter; no server telemetry."
+    },
+    "controlled-global:regeneration:monk:20261019": {
+      "title": "Controlled official-client regeneration observations: Monk without active promotion",
+      "source_class": "CONTROLLED_GLOBAL_CLIENT_OBSERVATION",
+      "observed_at": "2026-10-19",
+      "evidence_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+      "selector": "Monk",
+      "evidence_role": "SCOPED_CURRENT_CLIENT_MEASUREMENT",
+      "retained_scope": "Reviewed numeric observations, timestamps and SHA256 digests. Original videos/screenshots remain private; no original game assets redistributed.",
+      "qualification": "Observed vocation, hunger state and equipment only; no extrapolation to promotions, other vocations or native runtime admission. Client display timestamps have capture/network jitter; no server telemetry."
     }
   }
 }

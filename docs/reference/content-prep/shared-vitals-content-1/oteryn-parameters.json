@@ -3,7 +3,7 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "SOURCE_RECONCILED_WITH_EXPLICIT_QUALIFICATION_GAPS",
+  "status": "SOURCE_REFERENCE_WITH_CONTROLLED_DRUID_MONK_OBSERVATIONS",
   "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
   "filled_fields": 3,
   "normalized_companion_fields": 0,
@@ -11,12 +11,24 @@
   "originating_proposals": "docs/reference/content-prep/shared-vitals-content-1/oteryn-proposals.json",
   "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
   "shared_policies": {},
-  "selection_policy": "Source-backed observations/candidates only. Unsupported project defaults withdrawn; no new Global/runtime formula selected.",
-  "remaining_unresolved_source_fields": 22,
+  "selection_policy": "Controlled observations and source-backed candidates only; no universal or native runtime formula selected.",
+  "remaining_unresolved_source_fields": 18,
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 22,
+    "remaining_unresolved_source_fields": 18,
     "selected_for_native_runtime": false,
-    "summary": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved."
+    "summary": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved."
+  },
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 4,
+    "hungry_fed_observations": 8,
+    "qualified_recordings": 6,
+    "vocations": [
+      "Druid",
+      "Monk"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false
   }
 }

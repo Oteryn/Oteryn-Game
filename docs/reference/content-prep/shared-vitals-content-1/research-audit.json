@@ -1,10 +1,10 @@
 {
   "task": "SHARED-VITALS-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "SOURCE_RECONCILED_WITH_EXPLICIT_GAMEPLAY_QUALIFICATION_GAPS",
-  "research_status": "SOURCE_REPAIRED_RUNTIME_UNQUALIFIED",
+  "scope": "SOURCE_REFERENCE_AND_SCOPED_CONTROLLED_GLOBAL_OBSERVATIONS",
+  "research_status": "DRUID_MONK_NORMAL_MEASURED_OTHER_BRANCHES_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved.",
+  "coverage": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/party/shared-experience/reference-evidence.json": 1,
@@ -15,8 +15,8 @@
   },
   "evidence_field_counts": {
     "DERIVED": 149,
-    "PROVEN": 32,
-    "UNKNOWN": 22
+    "PROVEN": 36,
+    "UNKNOWN": 18
   },
   "unresolved_fields": [
     {
@@ -60,14 +60,6 @@
       "classification": "UNKNOWN"
     },
     {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
-      "classification": "UNKNOWN"
-    },
-    {
       "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/promoted_hp",
       "classification": "UNKNOWN"
     },
@@ -89,14 +81,6 @@
     },
     {
       "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/3/facts/promoted_mana",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
-      "classification": "UNKNOWN"
-    },
-    {
-      "path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
       "classification": "UNKNOWN"
     },
     {
@@ -175,12 +159,24 @@
       "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
     }
   ],
-  "remaining_unresolved_source_fields": 22,
+  "remaining_unresolved_source_fields": 18,
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 22,
+    "remaining_unresolved_source_fields": 18,
     "selected_for_native_runtime": false,
-    "summary": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved."
+    "summary": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved."
   },
-  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts."
+  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts.",
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 4,
+    "hungry_fed_observations": 8,
+    "qualified_recordings": 6,
+    "vocations": [
+      "Druid",
+      "Monk"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false
+  }
 }

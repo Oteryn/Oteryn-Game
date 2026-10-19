@@ -1,17 +1,14 @@
-# SHARED-VITALS-CONTENT-1 evidence
+# Shared experience and regeneration reference
 
-Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved.
+Current Global client measurements on 2026-10-19 establish the following for characters whose self-Look reports Druid or Monk without active promotion:
 
-fractional_regeneration: 20unsupported average-preservation values withdrawn; official intervals retained.
+| Vocation | Hungry HP | Fed HP | Hungry mana | Fed mana |
+|---|---|---|---|---|
+| Druid | +2 / approximately 4s | +2 / approximately 3s | +4 / approximately 6s | +4 / approximately 5s |
+| Monk | +3 / approximately 4s | +3 / approximately 3s | +3 / approximately 6s | +3 / approximately 5s |
 
-community_report: Partial mage/knight report contains differentHPintervals and a correcting mana comment; not controlled evidence.
+Six qualified lossless recordings cover eight hunger/resource observations and resolve four active normal-vocation fields. Positions outside PZ, equipment, food status and current vocation were checked. HP measurements used deficits and exclude capped readings. Original screenshots/videos stay private; reviewed series, timestamps and hashes are retained in [live-client-regeneration-probe.json](content-prep/shared-vitals-content-1/live-client-regeneration-probe.json).
 
-party_bonus: Primary20/30/60/100resolved.
+These are scoped client observations, with capture/network timing jitter and no server telemetry. Do not extrapolate to promotions or other vocations, and do not select a native runtime formula from these measurements alone. 16regeneration fields plus party activity timeout and initial stamina debit remain UNKNOWN. Invented fractional accumulators stay withdrawn. Food observations and the owner's three explicit food choices are unchanged.
 
-soul: Primary normal100/promoted200resolved.
-
-deferred_test: Owner postponed Global regeneration measurement; no game launch or new measurement claimed.
-
-The inspectable source candidates and unresolved fields are in [gameplay-source-reconciliation.json](content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json); all source URLs, revisions and digests are in [sources.json](content-prep/shared-vitals-content-1/sources.json). Historical project selections are retained only as superseded entries in the proposal audit. They are not current runtime defaults.
-
-Active classifications: 149 DERIVED, 32 PROVEN, 22 UNKNOWN. No Rust, Cargo, migration, generated pins, runtime activation or merge.
+Active classifications: 149 DERIVED, 36 PROVEN, 18 UNKNOWN. Historical withdrawal evidence and exact remaining paths are in [gameplay-source-reconciliation.json](content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json); source registry:[sources.json](content-prep/shared-vitals-content-1/sources.json). Reference/data only; no code, pins, runtime activation or merge.

@@ -3,8 +3,8 @@
   "task": "SHARED-VITALS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "SOURCE_RECONCILED_UNSELECTED_CANDIDATES_AND_EXPLICIT_GAPS",
-  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
+  "status": "SOURCE_REFERENCE_WITH_CONTROLLED_DRUID_MONK_OBSERVATIONS",
+  "global_evidence_policy": "Historical Global facts and withdrawn working defaults remain archived. Four active regeneration fields now use scoped controlled Global observations; remaining unqualified fields retain explicit gaps. No new runtime selection.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -1443,16 +1443,24 @@
       "subject": "regeneration.druid",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
         "interval_seconds": 4,
         "saturated_interval_seconds": 3,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 2,
+        "saturated_points_per_tick": 2,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Osvier",
         "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
         "source_refs": [
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / hp / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -1486,10 +1494,10 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
       },
       "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
         "subject": "regeneration.druid",
@@ -1526,6 +1534,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -1533,16 +1552,24 @@
       "subject": "regeneration.druid",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
         "interval_seconds": 6,
         "saturated_interval_seconds": 5,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 4,
+        "saturated_points_per_tick": 4,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Osvier",
         "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
         "source_refs": [
+          {
+            "source": "controlled-global:regeneration:druid:20261019",
+            "selector": "Druid / mana / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -1576,10 +1603,10 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
       },
       "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
         "subject": "regeneration.druid",
@@ -1616,6 +1643,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -2163,16 +2201,24 @@
       "subject": "regeneration.monk",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
         "interval_seconds": 4,
         "saturated_interval_seconds": 3,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 3,
+        "saturated_points_per_tick": 3,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Czarci Ananas",
         "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
         "source_refs": [
+          {
+            "source": "controlled-global:regeneration:monk:20261019",
+            "selector": "Monk / hp / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -2206,10 +2252,10 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
       },
       "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
         "subject": "regeneration.monk",
@@ -2246,6 +2292,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 4,
+          "saturated_interval_seconds": 3,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -2253,16 +2310,24 @@
       "subject": "regeneration.monk",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+        "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
         "interval_seconds": 6,
         "saturated_interval_seconds": 5,
-        "points_per_tick": "NOT_ESTABLISHED",
+        "points_per_tick": 3,
+        "saturated_points_per_tick": 3,
+        "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
         "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+        "active_promotion": false,
+        "observed_character": "Czarci Ananas",
         "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "kind": "CONTROLLED_GLOBAL_REFERENCE_OBSERVATION",
         "source_refs": [
+          {
+            "source": "controlled-global:regeneration:monk:20261019",
+            "selector": "Monk / mana / hungry and fed reviewed series"
+          },
           {
             "source": "official:regen-recheck:8543:20261019",
             "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -2296,10 +2361,10 @@
             "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
           }
         ],
-        "rationale": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending."
+        "rationale": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection."
       },
       "assumptions": [],
-      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "acceptance_status": "CONTROLLED_MEASURED_REFERENCE_NOT_RUNTIME_SELECTED",
       "superseded_working_default": {
         "original_field_path": "docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
         "subject": "regeneration.monk",
@@ -2336,6 +2401,17 @@
           "Project adaptation: preserve historical vocation/promotion average rate using a fractional accumulator at official unified intervals. This does not claim actual current Global points per tick. Saturated ticks use the same point amount at the shorter interval."
         ],
         "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      },
+      "superseded_unresolved_candidate": {
+        "value": {
+          "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+          "interval_seconds": 6,
+          "saturated_interval_seconds": 5,
+          "points_per_tick": "NOT_ESTABLISHED",
+          "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN"
       }
     },
     {
@@ -2561,12 +2637,25 @@
     "source_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json",
     "filled_field_count": 3,
     "not_runtime_activation": true,
-    "remaining_unresolved_source_fields": 22
+    "remaining_unresolved_source_fields": 18
   },
   "source_repair": {
     "source_check": "docs/reference/content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json",
-    "remaining_unresolved_source_fields": 22,
+    "remaining_unresolved_source_fields": 18,
     "selected_for_native_runtime": false,
-    "summary": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved."
-  }
+    "summary": "Controlled Global observations establish unpromoted Druid HP2 and MP4, and unpromoted Monk HP3 and MP3, each in hungry and fed states. HP periods are approximately4s/3s fed; mana6s/5s fed.16vocation/promotion amount fields, exact party activity timeout and initial stamina debit remain unresolved. Withdrawn fractional accumulators remain withdrawn; Food facts and owner-selected event-food values are preserved."
+  },
+  "live_client_measurements": {
+    "probe_document": "docs/reference/content-prep/shared-vitals-content-1/live-client-regeneration-probe.json",
+    "active_fields_resolved": 4,
+    "hungry_fed_observations": 8,
+    "qualified_recordings": 6,
+    "vocations": [
+      "Druid",
+      "Monk"
+    ],
+    "active_promotion": false,
+    "selected_for_native_runtime": false
+  },
+  "remaining_unresolved_source_fields": 18
 }

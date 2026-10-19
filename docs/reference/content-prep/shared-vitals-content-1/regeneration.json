@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_CONTENT_PREP_EVIDENCE/v1",
   "task": "SHARED-VITALS-CONTENT-1",
-  "target_cut": "2026-10-18",
+  "target_cut": "2026-10-19",
   "runtime_admission": "BLOCKED_PENDING_CP_QUALIFICATION",
   "runtime_switch_authorized": false,
   "reference_only": true,
@@ -437,18 +437,26 @@
       "facts": {
         "normal_hp": {
           "value": {
-            "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+            "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
             "interval_seconds": 4,
             "saturated_interval_seconds": 3,
-            "points_per_tick": "NOT_ESTABLISHED",
+            "points_per_tick": 2,
+            "saturated_points_per_tick": 2,
+            "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
             "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+            "active_promotion": false,
+            "observed_character": "Osvier",
             "selected_for_native_runtime": false
           },
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
-          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+          "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
           "sources": [
+            {
+              "source": "controlled-global:regeneration:druid:20261019",
+              "selector": "Druid / hp / hungry and fed reviewed series"
+            },
             {
               "source": "official:regen-recheck:8543:20261019",
               "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -482,25 +490,33 @@
               "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             }
           ],
-          "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+          "note": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
           "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_hp",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "normal_mana": {
           "value": {
-            "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+            "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
             "interval_seconds": 6,
             "saturated_interval_seconds": 5,
-            "points_per_tick": "NOT_ESTABLISHED",
+            "points_per_tick": 4,
+            "saturated_points_per_tick": 4,
+            "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
             "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+            "active_promotion": false,
+            "observed_character": "Osvier",
             "selected_for_native_runtime": false
           },
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
-          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+          "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
           "sources": [
+            {
+              "source": "controlled-global:regeneration:druid:20261019",
+              "selector": "Druid / mana / hungry and fed reviewed series"
+            },
             {
               "source": "official:regen-recheck:8543:20261019",
               "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -534,7 +550,7 @@
               "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             }
           ],
-          "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+          "note": "Measured on Osvier with self-Look identifying Druid without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
           "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/2/facts/normal_mana",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -863,18 +879,26 @@
       "facts": {
         "normal_hp": {
           "value": {
-            "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+            "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
             "interval_seconds": 4,
             "saturated_interval_seconds": 3,
-            "points_per_tick": "NOT_ESTABLISHED",
+            "points_per_tick": 3,
+            "saturated_points_per_tick": 3,
+            "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
             "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+            "active_promotion": false,
+            "observed_character": "Czarci Ananas",
             "selected_for_native_runtime": false
           },
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
-          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+          "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
           "sources": [
+            {
+              "source": "controlled-global:regeneration:monk:20261019",
+              "selector": "Monk / hp / hungry and fed reviewed series"
+            },
             {
               "source": "official:regen-recheck:8543:20261019",
               "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -908,25 +932,33 @@
               "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             }
           ],
-          "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+          "note": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
           "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_hp",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "normal_mana": {
           "value": {
-            "status": "CURRENT_POINTS_PER_TICK_UNRESOLVED",
+            "status": "CONTROLLED_CURRENT_GLOBAL_OBSERVATION",
             "interval_seconds": 6,
             "saturated_interval_seconds": 5,
-            "points_per_tick": "NOT_ESTABLISHED",
+            "points_per_tick": 3,
+            "saturated_points_per_tick": 3,
+            "interval_precision": "APPROXIMATE_CLIENT_DISPLAY_PERIOD",
             "fractional_accumulator": "NO_SOURCE_SUPPORT_WITHDRAWN",
+            "active_promotion": false,
+            "observed_character": "Czarci Ananas",
             "selected_for_native_runtime": false
           },
-          "classification": "UNKNOWN",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
-          "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+          "continuity": "CONTROLLED_CURRENT_GLOBAL_CLIENT_OBSERVATION",
+          "evidence_scope": "OBSERVED_UNPROMOTED_VOCATION_AND_FOOD_STATES_NOT_UNIVERSAL_RUNTIME_FORMULA",
           "sources": [
+            {
+              "source": "controlled-global:regeneration:monk:20261019",
+              "selector": "Monk / mana / hungry and fed reviewed series"
+            },
             {
               "source": "official:regen-recheck:8543:20261019",
               "selector": "HP4s/MP6s; saturatedHP3s/MP5s"
@@ -960,7 +992,7 @@
               "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
             }
           ],
-          "note": "Official intervals are known; the historical-average fractional accumulator was a project invention and is withdrawn. Pinned XML retains historical intervals and the newly inspected uncontrolled report conflicts internally/with the announcement. Owner-deferred Global measurements remain pending.",
+          "note": "Measured on Czarci Ananas with self-Look identifying Monk without active promotion, outside PZ, no combat or agent movement during recordings, regenerative equipment slots empty. Hungry and fed amounts are independently observed. Approximately timed display updates include capture/network jitter. Pinned OTS XML remains comparison evidence only; no promoted-vocation extrapolation or runtime selection.",
           "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#docs/reference/content-prep/shared-vitals-content-1/regeneration.json/records/4/facts/normal_mana",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
@@ -1161,5 +1193,5 @@
       }
     }
   ],
-  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
+  "evidence_scope": "CURRENT_CONTROLLED_DRUID_MONK_NORMAL_REFERENCE_WITH_OTHER_VOCATIONS_UNRESOLVED"
 }
