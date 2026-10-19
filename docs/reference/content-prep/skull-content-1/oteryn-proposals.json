@@ -1,0 +1,116 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "SKULL-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "b08e8a9303d7d5c0f375951275129918badb95f1",
+  "original_field_list_sha256": "f9bd228c7a49e3f54d9624672277c2ff0f58126d686d35b4f0dd2e320673d1bb",
+  "coverage": {
+    "held_fields": 4,
+    "proposals": 4,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 4
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [],
+  "proposals": [
+    {
+      "original_field_path": "rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
+      "subject": "skull.white",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "ordinary_attack": 60,
+        "after_player_kill_minimum": 900,
+        "further_combat_refresh_seconds": 60,
+        "expiry": "after_minimum_and_combat_logout_block_end"
+      },
+      "basis": {
+        "kind": "PRIMARY_SOURCE_PRECEDENCE",
+        "rationale": "Use existing qualified white-skull timing supplement; keep runtime index overlap untouched.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+      "subject": "skull.red",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "rolling_24h": 3,
+        "rolling_7d": 5,
+        "rolling_30d": 10
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Choose24h daily window; deliberately reject donor dayKills4h behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+      "subject": "skull.black",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "rolling_24h": 6,
+        "rolling_7d": 10,
+        "rolling_30d": 20
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Choose24h daily window; deliberately reject donor dayKills4h behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+      "subject": "skull.frag_windows",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "windows_seconds": [
+          86400,
+          604800,
+          2592000
+        ],
+        "clock": "server_utc_monotonic_elapsed",
+        "inclusive_boundary": true,
+        "calendar_reset": false
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
