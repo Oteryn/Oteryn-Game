@@ -1,10 +1,10 @@
 {
   "task": "TRAINING-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_RECONCILED_WITH_EXPLICIT_GAMEPLAY_QUALIFICATION_GAPS",
+  "research_status": "SOURCE_REPAIRED_RUNTIME_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "Offline statues, pool/delay rules and exercise behavior are documented. Exact existing Item identities carry 32 own-page charge facts, including normal/durable/lasting Monk wraps and eight daily-training weapon types. Community observed/estimated efficiency, contradictory bow units and unsupported stamina/skill-rate formulas remain held.",
+  "coverage": "Exercise rates retain exact donor and community candidates, including the7versus7.2melee disagreement and Bow unit differences.600base mana is corroborated but final gains and offline formulas remain unqualified. Owner-deferred measurements are pending;32item/charge facts are preserved.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/training-content-1/facts.json": 6,
@@ -12,9 +12,32 @@
   },
   "evidence_field_counts": {
     "PROVEN": 58,
-    "DERIVED": 9
+    "UNKNOWN": 3,
+    "DERIVED": 4,
+    "CONFLICT": 2
   },
-  "unresolved_fields": [],
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+      "classification": "UNKNOWN"
+    }
+  ],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
   "complete_source_sweep": {
     "review_date": "2026-10-18",
@@ -24,7 +47,7 @@
     ],
     "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
   },
-  "filled_parameter_fields": 5,
+  "filled_parameter_fields": 0,
   "remaining_unfilled_parameter_fields": 0,
   "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json",
@@ -33,5 +56,12 @@
     "CONFLICT": 1
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "remaining_unresolved_source_fields": 5,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/training-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 5,
+    "selected_for_native_runtime": false,
+    "summary": "Exercise rates retain exact donor and community candidates, including the7versus7.2melee disagreement and Bow unit differences.600base mana is corroborated but final gains and offline formulas remain unqualified. Owner-deferred measurements are pending;32item/charge facts are preserved."
+  }
 }

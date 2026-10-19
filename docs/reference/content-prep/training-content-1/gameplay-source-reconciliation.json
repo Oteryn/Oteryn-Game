@@ -1,0 +1,512 @@
+{
+  "task": "TRAINING-CONTENT-1",
+  "checked_at": "2026-10-19T10:46:56.838295+00:00",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "source_files": [
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/scripts/actions/items/exercise_training_weapons.lua",
+      "blob_sha": "05cf675f16057faca3092a0ddeb44787b1462cfb",
+      "sha256": "fa917d69d2423d246314af46d900de45c842fc7795244dca5a05e8617c752a6a",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/scripts/actions/items/exercise_training_weapons.lua",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/player.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/scripts/actions/items/exercise_training_weapons.lua",
+      "blob_sha": "d7c74a81b818675188f09884736828e1efd4ae02",
+      "sha256": "4909bc21656ea08df858c58d691eec3dcff34bf7e910d321a85a18f471e5de24",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/scripts/actions/items/exercise_training_weapons.lua",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "cd4dd674a64c5839ca6cec565e0772da4b4efacc",
+      "sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    {
+      "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    }
+  ],
+  "source_findings": {
+    "melee": "Donor7base tries versuscommunity7.2regular hits equivalent.",
+    "bow": "Donor7distance tries versuscommunity2.16blood/4.32missandolder3.6prose; units not interchangeable.",
+    "mana": "600base spent mana matches donor/wiki; final gain also depends on multipliers and callbacks.",
+    "offline": "Donor promoted-vocation timing and rate configuration retained; no Global per-vocation equivalence claimed.",
+    "stamina": "No exercise-local drain call does not prove absence of every downstream drain/regen path.",
+    "deferred_test": "Owner postponed Global exercise measurement; do not spend weapons or launch a test."
+  },
+  "changes": [
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+      "before": {
+        "value": {
+          "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
+          "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
+          "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
+          "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/training-content-1/oteryn-parameters.json / field docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:training.offline",
+            "selector": "training.offline"
+          },
+          {
+            "source": "wiki:59605:1101626",
+            "selector": "Mathematics"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+          "candidate": {
+            "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
+            "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
+            "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
+            "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
+          }
+        ],
+        "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+      "before": {
+        "value": 7,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/training-content-1/oteryn-parameters.json / field docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:training.exercise",
+            "selector": "training.exercise"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Types of Weapons"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Replace7.2 community candidate with donor base7; dummy and downstream training rates apply separately."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "DONOR_VS_COMMUNITY_RATE_CONFLICT",
+          "donor_base_skill_tries_per_charge": 7,
+          "community_regular_training_hits_equivalent": 7.2,
+          "dummy_multiplier": "dummyPercentage/100",
+          "charge_timing": "vocationBaseAttackSpeed/RATE_EXERCISE_TRAINING_SPEED;fast-exerciseeventmultiplier0.5",
+          "selected_for_native_runtime": false
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
+          }
+        ],
+        "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+      "before": {
+        "value": 600,
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/training-content-1/oteryn-parameters.json / field docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:training.exercise",
+            "selector": "training.exercise"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Types of Weapons"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+          "candidate": 600,
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
+          }
+        ],
+        "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+      "before": {
+        "value": {
+          "tries_per_charge": 7,
+          "charge_interval_ms": 2000,
+          "base_rate_multiplier": 1
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/training-content-1/oteryn-parameters.json / field docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate"
+          },
+          {
+            "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:training.exercise",
+            "selector": "training.exercise"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Use2s base interval, then configured speed and dummy multipliers."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "UNIT_AND_RATE_CONFLICT",
+          "donor_distance_tries_per_charge": 7,
+          "community_current_blood_hits_per_charge": 2.16,
+          "community_current_miss_hits_per_charge": 4.32,
+          "community_retained_older_prose_hits_per_charge": 3.6,
+          "warning": "Normal training hits and engine skill tries are distinct units; no equality assumed.",
+          "selected_for_native_runtime": false
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
+          }
+        ],
+        "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+      "before": {
+        "value": {
+          "stamina_consumed": false,
+          "stamina_regenerated_by_training": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/training-content-1/oteryn-parameters.json / field docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Training itself neither consumes nor restores stamina; independent rest systems remain separate."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+          "candidate": {
+            "stamina_consumed": false,
+            "stamina_regenerated_by_training": false
+          },
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_WORKING_DEFAULT_WITHDRAWN",
+        "evidence_scope": "SOURCE_BACKED_REFERENCE_NOT_GLOBAL_FORMULA_ADMISSION",
+        "sources": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
+          }
+        ],
+        "note": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json#docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "extracted_donor_functions": [],
+  "active_evidence_counts": {
+    "PROVEN": 58,
+    "UNKNOWN": 3,
+    "DERIVED": 4,
+    "CONFLICT": 2
+  },
+  "remaining": [
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+      "classification": "CONFLICT"
+    },
+    {
+      "path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+      "classification": "UNKNOWN"
+    }
+  ],
+  "retrieval_limits": [
+    "Pinned donor files verified against exact Git blobs; donor code is OTS_HYPOTHESIS_ONLY.",
+    "Fresh web checks used indexed primary/community text where direct pages were blocked. Retained Fandom revision hashes remain explicit.",
+    "No current Global gameplay measurement or native runtime admission is claimed."
+  ]
+}

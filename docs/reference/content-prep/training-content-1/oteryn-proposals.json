@@ -3,7 +3,7 @@
   "task": "TRAINING-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "status": "SOURCE_RECONCILED_UNSELECTED_CANDIDATES_AND_EXPLICIT_GAPS",
   "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
@@ -70,131 +70,383 @@
       "subject": "training.offline",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
-        "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
-        "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
-        "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+        "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+        "candidate": {
+          "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
+          "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
+          "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
+          "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+        },
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "UPSTREAM_ADAPTATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1101626"
-        ],
-        "observation_refs": [
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
           {
-            "source_id": "crystalserver-summer",
-            "observation_key": "training.offline"
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
           }
         ],
-        "donor_selection": null
+        "rationale": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending."
       },
-      "assumptions": [
-        "Select this documented value for Oteryn; not a claim of current official server behavior."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/0/facts/exact_skill_rates",
+        "subject": "training.offline",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
+          "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
+          "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
+          "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+        },
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1101626"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "training.offline"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
       "subject": "exercise.efficiency",
       "original_classification": "UNKNOWN",
-      "proposed_value": 7,
+      "proposed_value": {
+        "status": "DONOR_VS_COMMUNITY_RATE_CONFLICT",
+        "donor_base_skill_tries_per_charge": 7,
+        "community_regular_training_hits_equivalent": 7.2,
+        "dummy_multiplier": "dummyPercentage/100",
+        "charge_timing": "vocationBaseAttackSpeed/RATE_EXERCISE_TRAINING_SPEED;fast-exerciseeventmultiplier0.5",
+        "selected_for_native_runtime": false
+      },
       "basis": {
-        "kind": "UPSTREAM_ADAPTATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1126820"
-        ],
-        "observation_refs": [
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
           {
-            "source_id": "crystalserver-summer",
-            "observation_key": "training.exercise"
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
           }
         ],
-        "donor_selection": null
+        "rationale": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending."
       },
-      "assumptions": [
-        "Replace7.2 community candidate with donor base7; dummy and downstream training rates apply separately."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
+        "subject": "exercise.efficiency",
+        "original_classification": "UNKNOWN",
+        "proposed_value": 7,
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1126820"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "training.exercise"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Replace7.2 community candidate with donor base7; dummy and downstream training rates apply separately."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
       "subject": "exercise.efficiency",
       "original_classification": "UNKNOWN",
-      "proposed_value": 600,
+      "proposed_value": {
+        "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+        "candidate": 600,
+        "selected_for_native_runtime": false
+      },
       "basis": {
-        "kind": "UPSTREAM_ADAPTATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1126820"
-        ],
-        "observation_refs": [
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
           {
-            "source_id": "crystalserver-summer",
-            "observation_key": "training.exercise"
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
           }
         ],
-        "donor_selection": null
+        "rationale": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending."
       },
-      "assumptions": [
-        "Select this documented value for Oteryn; not a claim of current official server behavior."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
+        "subject": "exercise.efficiency",
+        "original_classification": "UNKNOWN",
+        "proposed_value": 600,
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1126820"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "training.exercise"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
       "subject": "exercise.efficiency",
       "original_classification": "CONFLICT",
       "proposed_value": {
-        "tries_per_charge": 7,
-        "charge_interval_ms": 2000,
-        "base_rate_multiplier": 1
+        "status": "UNIT_AND_RATE_CONFLICT",
+        "donor_distance_tries_per_charge": 7,
+        "community_current_blood_hits_per_charge": 2.16,
+        "community_current_miss_hits_per_charge": 4.32,
+        "community_retained_older_prose_hits_per_charge": 3.6,
+        "warning": "Normal training hits and engine skill tries are distinct units; no equality assumed.",
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "UPSTREAM_ADAPTATION",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [
-          "https://tibia.fandom.com/w/index.php?oldid=1126820"
-        ],
-        "observation_refs": [
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
           {
-            "source_id": "crystalserver-summer",
-            "observation_key": "training.exercise"
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
           }
         ],
-        "donor_selection": null
+        "rationale": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending."
       },
-      "assumptions": [
-        "Use2s base interval, then configured speed and dummy multipliers."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
+        "subject": "exercise.efficiency",
+        "original_classification": "CONFLICT",
+        "proposed_value": {
+          "tries_per_charge": 7,
+          "charge_interval_ms": 2000,
+          "base_rate_multiplier": 1
+        },
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1126820"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "training.exercise"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Use2s base interval, then configured speed and dummy multipliers."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
       "subject": "exercise.efficiency",
       "original_classification": "UNKNOWN",
       "proposed_value": {
-        "stamina_consumed": false,
-        "stamina_regenerated_by_training": false
+        "status": "SOURCE_CANDIDATE_GLOBAL_RATE_UNQUALIFIED",
+        "candidate": {
+          "stamina_consumed": false,
+          "stamina_regenerated_by_training": false
+        },
+        "selected_for_native_runtime": false
       },
       "basis": {
-        "kind": "DESIGN_CHOICE",
-        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-        "original_source_urls": [],
-        "observation_refs": [],
-        "donor_selection": null
+        "kind": "SOURCE_QUALIFIED_REFERENCE_OR_EXPLICIT_GAP",
+        "source_refs": [
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:canary:52550d5:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/scripts/actions/items/exercise_training_weapons.lua",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/player.cpp",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "ots:gameplay-recheck:crystalserver-summer:ddb4930:config.lua.dist",
+            "selector": "Pinned function/config observation; see gameplay-source-reconciliation.json"
+          },
+          {
+            "source": "wiki:84906:1126820",
+            "selector": "Per-charge values, current and older prose"
+          }
+        ],
+        "rationale": "Source value exists but original request requires qualified skill-rate evidence. Preserve donor/community candidate; owner-deferred Global test remains pending."
       },
-      "assumptions": [
-        "Training itself neither consumes nor restores stamina; independent rest systems remain separate."
-      ],
-      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      "assumptions": [],
+      "acceptance_status": "SOURCE_REFERENCE_NOT_RUNTIME_SELECTED",
+      "superseded_working_default": {
+        "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
+        "subject": "exercise.efficiency",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "stamina_consumed": false,
+          "stamina_regenerated_by_training": false
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Training itself neither consumes nor restores stamina; independent rest systems remain separate."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
     }
   ],
   "materialization": {
     "parameter_document": "docs/reference/content-prep/training-content-1/oteryn-parameters.json",
     "source_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json",
-    "filled_field_count": 5,
-    "not_runtime_activation": true
+    "filled_field_count": 0,
+    "not_runtime_activation": true,
+    "remaining_unresolved_source_fields": 5
+  },
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/training-content-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 5,
+    "selected_for_native_runtime": false,
+    "summary": "Exercise rates retain exact donor and community candidates, including the7versus7.2melee disagreement and Bow unit differences.600base mana is corroborated but final gains and offline formulas remain unqualified. Owner-deferred measurements are pending;32item/charge facts are preserved."
   }
 }
