@@ -8,7 +8,7 @@ Audyt na polecenie właściciela, dla koordynatora. Sprawdzony Oteryn-Game `main
 
 Klasyfikacja: **PROVEN** = bezpośrednio odczytany plik/rekord; **DERIVED** = wniosek z danych i kodu; **CONFLICT** = źródła różnią się; **UNKNOWN** = brak wystarczającego dowodu. Są to klasy dowodów, nie zgoda na zmianę produktu.
 
-Zakres obejmuje wszystkie pliki z `newhaven` w ścieżce, sześć lokalnych NPC, wszystkie referencje tekstowe Newhaven w zachowanych plikach Lua/XML przypiętego korpusu, powiązane katalogi Oteryn, wszystkie shard-y spawnów oraz regiony B3 przecinające wskazany prostokąt. Nie przeprowadzono sesji E2E, pełnego porównania każdej kratki z oryginalnym OTBM ani weryfikacji każdego sprite’a/animacji. Podziemny prostokąt może zawierać inne obszary; jego statystyk nie należy utożsamiać z granicami Newhaven.
+Zakres obejmuje wszystkie pliki z `newhaven` w ścieżce, sześć lokalnych NPC, wszystkie referencje tekstowe Newhaven w zachowanych plikach Lua/XML przypiętego korpusu, powiązane katalogi Oteryn, wszystkie shard-y spawnów oraz regiony B3 przecinające wskazany prostokąt. Po rozszerzeniu audytu porównano wszystkie źródłowe kratki wskazanego prostokąta z przypiętym OTBM oraz zweryfikowano zależności graficzne i dekodowanie użytych arkuszy. Nie przeprowadzono sesji E2E ani wizualnego porównania całego klienta z filmem; szczegóły w ostatniej sekcji. Podziemny prostokąt może zawierać inne obszary; jego statystyk nie należy utożsamiać z granicami Newhaven.
 
 Koordynacja: [#1622](https://github.com/Oteryn/Oteryn-Game/issues/1622). [Wstrzymanie #2186](https://github.com/Oteryn/Oteryn-Game/pull/2186#issuecomment-6254969126) pozostaje w mocy: brak nowych ramek/hintów/pushy do tego PR. Raport jest oddzielnym materiałem do decyzji koordynatora.
 
@@ -274,7 +274,7 @@ Wspólne sloty: i3355 head, i3561 armor, i3559 legs, i3552 feet, i34017 ammo; pl
 | CONFLICT | Komentarz arrival Targuna | movements_main_continent_hint.lua opisuje ID 7, ale wykonuje sendTutorial(13). To inna trasa niż nagrany Thais. |
 | UNKNOWN | Czas i próg bannerów | Film pokazuje Managing your riches i Off to New Shores, ale nie dowodzi dokładnego warunku/timera. |
 | UNKNOWN | Zliczanie Muglexów i źródło książki | Nie znaleziono producenta przyrostu newhavenMuglexKillCount w zachowanych Lua/XML; samo zerowanie i odczyt u Gustavo nie wystarczają. Brak powiązania otrzymania książki i44774. |
-| UNKNOWN | Pełna zgodność geometrii/grafiki | Brak porównania całego oryginalnego OTBM i assetów z bundle oraz testu wszystkich dojść. |
+| PROVEN / UNKNOWN | Geometria źródłowa i grafika | Porównanie całego prostokąta OTBM→B3 oraz zależności graficznych zamknięto w ostatniej sekcji. Nadal brak testu dojść i porównania wizualnego w kliencie. |
 
 ## Zamknięta lista braków dla koordynatora
 
@@ -742,8 +742,111 @@ Właściciel poprosił o sprawdzenie, czy zbadano wszystko. **Nie ma podstaw do 
 | Dokładnie po jakiej akcji i z jakim opóźnieniem | Część reguł ze skryptów ustalona; dokładne timery i progi dwóch bannerów nadal nieustalone. |
 | Cała kolejność, również inne profesje i odgałęzienia | Nagranie dokumentuje ścieżkę Paladina. Inne profesje, Rookgaard i zadania poboczne nie mają pełnego nagranego przejścia. |
 | Wszystkie pozycje i dojścia | Start, portal i wskazane POI ustalone źródłowo; dokładna kratka lądowania Thais Peninsula nadal nieznana. Dojścia nie zostały przegrane. |
-| Każda kratka mapy odpowiada oryginałowi | Zbadano regionalne B3 i katalog obszarów; brak porównania pełnego oryginalnego OTBM z wynikiem importu. Oryginalny `world.otbm` ma 52267895 bajtów, Git blob `e95e8f7c7a95d1b634b49a5dea5a5dc76021406b`; nie jest zawarty w użytym archiwum korpusu skryptów. |
-| Wszystkie grafiki, animacje i interfejs klienta | Nie przeprowadzono kompletnego porównania ani kontroli wizualnej w działającym kliencie Oteryn. |
+| Każda źródłowa kratka Newhaven odpowiada B3 | Zamknięte w rozszerzeniu poniżej: właściwa rewizja mapy 00ce02a5 ma SHA-256 dcb73554… i 53134513 bajtów. Zachowano wszystkie 91439 kratek źródłowych prostokąta po jawnych regułach importu. To dowód authoring, nie E2E bundle. |
+| Grafiki, animacje i interfejs klienta | Zależności i struktury użytych grafik/klatek zweryfikowano w rozszerzeniu poniżej. Wierność wizualna, prędkości animacji i interfejs względem filmu wymagają działającego klienta. |
 | Wszystko działa po restarcie, reconnect i śmierci | Brak przejścia E2E; same definicje i testy ogólnego teleportu tego nie dowodzą. |
 
 **Dyspozycja dla koordynatora:** raport jest inwentaryzacją z jawnymi lukami, nie certyfikatem kompletności ani gotowości do gry. Ustalenia dotyczące wyłączonego lootu i brakujących ID źródła supersedują wcześniejsze traktowanie ich jako jedynie niepotwierdzonych efektów portu. Implementacja pozostaje nieprzydzielona.
+
+## Rozszerzone potwierdzenie mapy, grafik i spawnów — 2026-10-19
+
+Ta sekcja superseduje wcześniejszy brak porównania OTBM i kontroli zależności graficznych. Referencyjny `main` odczytano ponownie: `466c9142ad41223181f998878fa9b8a633be4b4f` — bez zmiany. Nie wykonano żadnej zmiany implementacji, deploymentu ani przydziału pracy.
+
+### Mapa: pełne porównanie źródła w obszarze Newhaven
+
+Pobrano `data-global/world/world.otbm` z dokładnej rewizji importera `00ce02a57ca5a12e48f32a3476e37471167e4c3f`; URL: https://raw.githubusercontent.com/zimbadev/crystalserver/00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world.otbm . Plik ma 53134513 bajtów, jest skompresowany gzip; SHA-256 `dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7` zgadza się z importerem. Nie publikowano oryginalnego pliku w repo.
+
+Parser repozytorium przeszedł wszystkie **19325129 kratek mapy źródłowej**. Porównano pełny prostokąt x=32506..32634, y=32405..32522, z=0..15 ze wszystkimi odpowiadającymi regionami B3.
+
+| Metryka | Wynik |
+| --- | --- |
+| Kratki źródłowe w prostokącie | 91439 |
+| Kratki B3 w prostokącie | 91757 |
+| Źródłowe kratki zgodne po normalizacji | 91439 |
+| Źródłowe kratki brakujące w B3 | 0 |
+| Źródłowe kratki z różnicą po normalizacji | 0 |
+| Dodatkowe kratki B3 | 318: z9=70, z11=37, z13=211 |
+| Nieobsługiwane atrybuty źródła w tym prostokącie | 0 |
+
+Porównanie obejmowało pozycję, flagi, house ID, strefy, każdy ID przedmiotu, kolejność, głębokość zawartości kontenerów i przenoszone atrybuty (`action`, `unique`, `text`, `description`, `teleport`, `depot`, `door`, `count`, `charges`). Zastosowano dwie jawne reguły istniejącego importera: nadpisanie zerowego celu portalu i37001 w (32538,32514,7) zgodnym celem skryptowym (dokładnie jedno wystąpienie), oraz pominięcie siedmiu zerowych atrybutów teleportu bez rekordu Transition. Te reguły nie są ukrytymi różnicami ani dowodem działania ich obiektów w grze.
+
+Wykluczone zerowe atrybuty teleportu: (32532,32409,7) i1761; (32533,32409,7) i1762; (32534,32409,7) i1763; (32512,32426,7) i1757; (32548,32489,7) i1757; (32551,32495,7) i1761; (32552,32495,7) i1763. Każdy miał cel (0,0,0); przedmioty zachowano.
+
+**Ważne: B3 to dane authoring.** W prostokącie występuje 329 prowizorycznych kluczy, 8624 wpisy przedmiotów na 7762 kratkach, bez dalszych nieprowizorycznych potomków takich kontenerów. `tools/world-bundle-compiler/src/compile.rs:866–875` pomija prowizoryczne wpisy w buildzie nieprodukcyjnym, a w produkcyjnym odrzuca kompilację. Zgodność OTBM→B3 nie oznacza, że wszystkie te obiekty trafią do obsługiwanego świata. To dodatkowy brak kwalifikacji runtime, a nie utrata kratek w samym imporcie.
+
+### Grafiki: zależności, sumy i dekodowanie
+
+Sprawdzono wszystkie 6249 wpisów `imports/official/client-assets/15.30/manifest.json`: 6248 plików obecnych ma zgodny rozmiar i SHA-256. Brakuje pliku `minimap-32-0996-0984-02-dce27ae4b4d345201c9cc7f9d4f7576fc9144583779e8716b29032d6c1731073.bmp.zip`. Nie jest to jeden z arkuszy sprite użytych poniżej; nie sklasyfikowano go jako blokady grafiki Newhaven.
+
+W regionalnych stosach jest 122371 wpisów, 1877 różnych ID obiektów. **Wszystkie 1877 mają wpis w przypiętym appearances.dat**, bez brakujących ID, bez brakujących zakresów sprite i bez rozbieżności liczby klatek względem geometrii. Wpisy odwołują się do 3837 różnych niezerowych sprite ID w 277 arkuszach.
+
+Sprawdzono także 13 wiązań wyglądu aktorów: sześć potworów i siedmiu przestrzennych NPC (z Quill). Wszystkie lookType występują w appearances.dat; odwołania do sprite i geometria frame groups są spójne. Łącznie mapa i ci aktorzy używają **350 arkuszy**. Każdy z nich zdekompresowano po 32-bajtowym nagłówku CIP i sprawdzono zgodnie z formatem czytanym przez klienta: BMP 384×384, 32 bpp, obsługiwana kompresja i maski kanałów, kompletna zawartość pikseli. **350/350 PASS**.
+
+To potwierdza dostępność i strukturalną czytelność tych zasobów. Nie potwierdza obrazu w działającej grze, poprawności shaderów/kolorów, prędkości animacji, wszystkich efektów/audio, interfejsu tutoriala ani identyczności wersji 15.30 z filmem z 2025 r.
+
+### Spawny: porównanie z dokładnym XML i wstrzymana grupa
+
+Pobrano źródłowy `world-monster.xml` z rewizji mapy 00ce02a5: 10241363 bajty, SHA-256 `a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570`, zgodne z pinem. Uruchomiono `python tools/world-bundle-compiler/convert_spawns.py --xml /tmp/newhaven-source-world-monster.xml --check`: **PASS**. To kontrola całego zapisowanego katalogu względem źródła i jawnych wykluczeń.
+
+W prostokącie są 397 źródłowe punkty: 389 dopuszczonych i 8 wstrzymanych. Wszystkie osiem należą do grupy ordinal 12958, `oteryn:spawn.x32619_y32450_z7`, w `imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json`. Powody: `POINT_FIELDS_NOT_REPRESENTED_BY_ACCEPTED_CORE`, `SAME_CELL_SELECTION_REQUIRES_OWNING_CONTRACT` — dwa punkty dzielą kratkę z wagami 25. Nie należy przywracać ich jako niezależnych spawnów bez rozstrzygnięcia modelu wyboru.
+
+| Wstrzymany typ | Pozycja | Dodatkowe pola |
+| --- | --- | --- |
+| Muglex Clan Assassin | (32625, 32450, 7) | — |
+| Corrupted Ghost | (32610, 32451, 7) | — |
+| Corrupted Skeleton | (32625, 32454, 7) | — |
+| Corrupted Skeleton | (32611, 32456, 7) | — |
+| Muglex Clan Assassin | (32620, 32457, 7) | weight=25 |
+| Corrupted Skeleton | (32620, 32457, 7) | weight=25 |
+| Muglex Clan Footman | (32621, 32457, 7) | — |
+| Muglex Clan Footman | (32620, 32458, 7) | — |
+
+Muglex Clan Chief nie ma dopuszczonego spawnu ani punktu w tej wstrzymanej grupie. W przeszukanych Lua/XML odnaleziono nazwę bossa w jego definicji i nazwach zwłok, bez znalezionego mechanizmu jego tworzenia. Jest to luka źródłowego powiązania, nie automatyczne polecenie dodania dowolnego spawnu.
+
+### Przestrzenny przegląd NPC i różnice rewizji
+
+Pobrano `world-npc.xml` z tej samej rewizji mapy: 143659 bajtów, SHA-256 `23ecce2bb4c11fdeed4c9b06933dd616d3ceb111b440d19f4a7a7336eeed88f9`. Pełny skan przestrzenny obejmujący podziemia znalazł siedem wpisów:
+
+| NPC źródłowy | Kotwica XML 00ce02a5 | Radius grupy XML |
+| --- | --- | --- |
+| Gustavo, The Guard | (32560, 32488, 7) | 7 |
+| Flavius | (32566, 32489, 7) | 7 |
+| Anna | (32552, 32497, 7) | 7 |
+| Avriel | (32554, 32505, 7) | 1 |
+| Viola | (32571, 32507, 7) | 1 |
+| A Seagull | (32535, 32511, 7) | 1 |
+| Quill | (32541, 32519, 8) | 1 |
+
+Radius grupy XML nie jest tym samym polem co `npcConfig.walkRadius` w Lua. Dla mewy XML rewizji mapy wskazuje (32535,32511,7), a wcześniejsza kotwica dawcy w raporcie (32535,32512,7) pochodzi z innej rewizji. Nie utożsamiać ich z nieruchomą pozycją w filmie.
+
+**Dodatkowy NPC Quill:** występuje pod wysepką, ma definicję `content/npcs/definitions/npcs-00500-00999.json#/records/449`, lecz nie ma rozmieszczenia w obecnym katalogu 25 NPC Oteryn. Jego skrypt `data-global/npc/quill.lua`, Git blob `991e573f17c561c22b6fefe51f362b09440cc9ad`, zawiera ogólne odpowiedzi help/job i przedstawia się jako „Anaztassja Moroia”. To konflikt/placeholder źródłowy. Położenie w prostokącie nie dowodzi, że jest obowiązkowym NPC oficjalnego tutoriala; nie dodawać go do obowiązkowej ścieżki bez dalszego dowodu. Sześć głównych NPC nadal nie ma rozmieszczeń.
+
+### Dodatkowe konflikty ID i nazw przedmiotów
+
+Wyszukanie pełnych nazw w zachowanym korpusie oraz odczyt `items.xml` ujawniły, że samo istnienie liczbowego ID nie zapewnia zgodności z opisem skryptu. Poniższe nazwy XML dotyczą przypiętego dawcy 9f5a72c6, nie są proponowanym remapem:
+
+| ID użyte w skrypcie | Opis/komentarz skryptu | Faktyczna nazwa tego ID w XML |
+| --- | --- | --- |
+| 7618 | Health Potion | earth |
+| 7620 | Mana Potion | earth |
+| 10319 | Ranger’s Cloak | wool |
+| 10321 | Ranger’s Cloak | mammoth tusk |
+| 8871 | Magician’s Robe | crystal column |
+| 8820 | Magician’s Robe | Morik’s helmet |
+| 2643 | cape | purple tapestry |
+| 3178 | light stone shower rune | chameleon rune |
+| 3576 | mage hat | post officer’s hat |
+| 7884 | ranger legs | rope |
+
+Część tych numerów jest już w zwykłych tabelach lootu Oteryn: corrupted ghost (2643,3178,7618,7620,10319), corrupted skeleton (7618,8820,10319), Chief (3576,7618,7620,7884), Corruptor (7618,7620,8820). To potwierdzony konflikt tożsamości/opisu źródła. Właściwy łup wymaga zaakceptowanego źródła produktowego i mapowania; nie naprawiać masowo po komentarzach Lua.
+
+**Book of Wisdom:** XML ma poprawnie nazwaną książkę jako **51977**, podczas gdy skrypt Violi szuka 44774. Definicja `oteryn:item.tibia.i51977` istnieje w `content/items/definitions/items-28000-28499.json#/records/363`, ma nazwę książki, ale `materializable=false` i brak natywnego profilu Item. Nie znaleziono i51977 w stosach regionalnych B3 ani jawnego producenta nagrody w przeszukanych Lua/XML. Odnalezienie nazwy książki zamyka jej tożsamość w tym XML, ale nie zamyka sposobu zdobycia i wykonania zadania.
+
+### Pozostałe blokady pełnego potwierdzenia
+
+- Lista urządzeń Desktop Commander w czasie kontroli pokazała **Molehill-PC Offline**, ostatnio widziany około 9 godzin wcześniej. Nie odczytano zapisanych klatek ani zainstalowanego klienta i nie wykonano nowego oglądu filmu. Nie oznaczać 101 tekstów jako gwarantowanej pełnej listy każdej klatki.
+- Nadal nie ustalono dokładnego timera/warunków dwóch bannerów ani dokładnej kratki lądowania Thais Peninsula. Źródłowa Anna i nowszy snapshot prowadzą do Targuny, co nie potwierdza historycznej ścieżki filmu.
+- Obecny main nie ma kompletnego wykonania tutoriala Newhaven; quest czeka na lowering, a potrzebni NPC nie są rozmieszczeni. Nie można zaliczyć przejścia E2E niezaimplementowanej ścieżki. Ten audyt nie przydziela jej implementacji.
+- Brak testu gry obejmującego inne profesje, zadania poboczne, śmierć, reconnect i restart. Obecność ogólnych testów teleportu i poprawnych plików nie jest takim testem.
+
+Zamknięte: porównanie źródłowej geometrii i stosów w całym prostokącie, źródłowy katalog spawnów z wykluczeniami, przestrzenny katalog NPC, zależności graficzne/arkusze i szczegółowe konflikty ID. Otwarte: dowody filmu, dokładne zachowanie klienta i pełne wykonanie w grze. Koordynator zachowuje decyzję o przydziale napraw.
