@@ -1325,8 +1325,10 @@ async fn prepare_native_movement_path(
         return prepared;
     }
     prepared.searched = true;
+    // Cache target facts for sight checks; a distance chase never enters the target cell.
+    let target_walkable = map.read_tile(runtime, target_position).await;
     if map.read_tile(runtime, from.position()).await != Some(true)
-        || map.read_tile(runtime, target_position).await != Some(true)
+        || (distance.is_none() && target_walkable != Some(true))
     {
         prepared.goal = G::Stand;
         return prepared;
@@ -1744,7 +1746,10 @@ async fn run_native_movement_steps(
             continue;
         }
         if failed_search || !route_current || chosen.is_none() {
-            ai.idle_native_movement(actor, matches!(goal, G::WalkBack { .. }));
+            ai.idle_native_movement(
+                actor,
+                matches!(goal, G::WalkBack { .. }) && (failed_search || !route_current),
+            );
             continue;
         }
         let Some(direction) = chosen.flatten() else {
@@ -4436,23 +4441,34 @@ mod tests {
     #[test]
     fn a_chasing_creature_replans_when_its_target_moves_before_the_first_step()
     -> crate::bestiary_postgres_harness::TestResult {
-        chasing_position_change(true)
+        chasing_position_change(true, false)
     }
 
     #[test]
     fn a_chasing_creature_still_idles_when_the_actor_is_displaced_externally()
     -> crate::bestiary_postgres_harness::TestResult {
-        chasing_position_change(false)
+        chasing_position_change(false, false)
     }
 
-    fn chasing_position_change(move_target: bool) -> crate::bestiary_postgres_harness::TestResult {
+    #[test]
+    fn current_owner_chases_distant_target_on_projectile_clear_movement_blocked_tile()
+    -> crate::bestiary_postgres_harness::TestResult {
+        chasing_position_change(false, true)
+    }
+
+    fn chasing_position_change(
+        move_target: bool,
+        blocked_target: bool,
+    ) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
         use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
         let Some(admin) = configured_admin() else {
             return Ok(());
         };
         let executor = crate::bestiary_postgres_harness::runtime()?;
-        let label = if move_target {
+        let label = if blocked_target {
+            "native_blocked_target_chase"
+        } else if move_target {
             "chase_target_position_change"
         } else {
             "chase_actor_position_change"
@@ -4486,7 +4502,16 @@ mod tests {
                 let cell = |x, y| MovementLocalPosition { x, y, floor: -7 };
                 // These actual Thalom cells are outside protection zones and carry qualified
                 // source ground. The room's original entry is a different, protected cell.
-                let start = cell(2, 12);
+                let start = if blocked_target {
+                    cell(-14, -10)
+                } else {
+                    cell(2, 12)
+                };
+                let target_position = if blocked_target {
+                    cell(-14, -7)
+                } else {
+                    cell(4, 12)
+                };
                 let channel_pin = ChannelContentPin::from_activation(
                     world,
                     pin.activation_sequence(),
@@ -4519,7 +4544,7 @@ mod tests {
                     .admit_source_pinned_lab_creature(start, &definition.key, health)
                     .map_err(debug)?;
                 let target = runtime
-                    .admit_source_pinned_lab_creature(cell(4, 12), &definition.key, health)
+                    .admit_source_pinned_lab_creature(target_position, &definition.key, health)
                     .map_err(debug)?;
                 runtime
                     .install_creature_policy(parent, &definition.key)
@@ -4569,7 +4594,7 @@ mod tests {
                 admit_native_creature_ai(&runtime, &mut ai, content, parent, 0).map_err(debug)?;
                 let candidates = [TargetCandidate {
                     actor: target,
-                    position: cell(4, 12),
+                    position: target_position,
                     eligible: true,
                     invisible: false,
                     health: 20,
@@ -4617,6 +4642,70 @@ mod tests {
                     goal,
                     crate::ai_think::NativeCreatureGoal::Chase { .. }
                 ));
+                if blocked_target {
+                    assert_eq!(
+                        goal,
+                        crate::ai_think::NativeCreatureGoal::Chase {
+                            target,
+                            distance: 1
+                        }
+                    );
+                    assert_eq!(
+                        movement
+                            .path
+                            .as_ref()
+                            .ok_or("adjacent route")?
+                            .steps()
+                            .count(),
+                        2
+                    );
+                    let stamp = runtime.issue_owner_work().map_err(debug)?;
+                    {
+                        let mut map = NativeSummonMap {
+                            tx: &mut tx,
+                            authority: &authority,
+                            room,
+                            objects: &objects,
+                            stamp,
+                            tiles: BTreeMap::new(),
+                            path: None,
+                        };
+                        let tile = map
+                            .read_tile_facts(&runtime, target_position)
+                            .await
+                            .ok_or("source target tile")?;
+                        assert!(!tile.walkable);
+                        assert!(tile.projectile_clear);
+                    }
+                    run_current_native_monster_thinks(
+                        &mut runtime,
+                        &mut ai,
+                        &mut states.native_summons,
+                        content,
+                        50_000,
+                        &|| 50_000,
+                        &root,
+                        &revisions,
+                        &candidates,
+                        room,
+                        &objects,
+                        &mut tx,
+                        &authority,
+                        &mut budget,
+                        false,
+                    )
+                    .await
+                    .map_err(debug)?;
+                    assert_eq!(
+                        runtime
+                            .read_actor_position(parent)
+                            .map_err(debug)?
+                            .position(),
+                        cell(-14, -9)
+                    );
+                    tx.rollback().await?;
+                    return Ok(());
+                }
                 let displaced = if move_target { target } else { parent };
                 let before = runtime.read_actor_position(displaced).map_err(debug)?;
                 let destination = if move_target {
@@ -4771,6 +4860,18 @@ mod tests {
     #[test]
     fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell()
     -> crate::bestiary_postgres_harness::TestResult {
+        current_owner_spawn_home_walkback(false)
+    }
+
+    #[test]
+    fn current_owner_walkback_retries_after_route_cell_is_vacated()
+    -> crate::bestiary_postgres_harness::TestResult {
+        current_owner_spawn_home_walkback(true)
+    }
+
+    fn current_owner_spawn_home_walkback(
+        block_route: bool,
+    ) -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
         use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
@@ -4778,7 +4879,12 @@ mod tests {
             return Ok(());
         };
         let executor = crate::bestiary_postgres_harness::runtime()?;
-        let harness = executor.block_on(Harness::create(admin, "native_source_home", false))?;
+        let label = if block_route {
+            "native_home_blocker_retry"
+        } else {
+            "native_source_home"
+        };
+        let harness = executor.block_on(Harness::create(admin, label, false))?;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             executor.block_on(async {
                 let world =
@@ -4990,6 +5096,112 @@ mod tests {
                         .position(),
                     cell(2, 12)
                 );
+                if block_route {
+                    // Occupy the next cell only after the real think has adopted its route.
+                    let blocker = runtime
+                        .admit_source_pinned_lab_creature(cell(3, 12), key, maximum_health)
+                        .map_err(debug)?;
+                    let think_due = states
+                        .monster_melee
+                        .creature_ai
+                        .due(actor)
+                        .ok_or("walk-back think deadline")?;
+                    let now = 50_000;
+                    run_current_native_monster_thinks(
+                        &mut runtime,
+                        &mut states.monster_melee.creature_ai,
+                        &mut states.native_summons,
+                        content,
+                        now,
+                        &|| now,
+                        &root,
+                        &revisions,
+                        &[],
+                        room,
+                        &objects,
+                        &mut tx,
+                        &authority,
+                        &mut budget,
+                        false,
+                    )
+                    .await
+                    .map_err(debug)?;
+                    assert_eq!(
+                        runtime.read_actor_position(actor).map_err(debug)?.position(),
+                        start
+                    );
+                    assert_eq!(states.monster_melee.creature_ai.due(actor), Some(think_due));
+                    assert_eq!(
+                        states.monster_melee.creature_ai.earliest_native_step_due(),
+                        None
+                    );
+                    // Vacate the route through the position owner without waking AI.
+                    let before = runtime.read_actor_position(blocker).map_err(debug)?;
+                    runtime
+                        .borrow_movement_position()
+                        .commit_cardinal(before, cell(3, 11))
+                        .map_err(debug)?;
+                    let now = think_due;
+                    run_current_native_monster_thinks(
+                        &mut runtime,
+                        &mut states.monster_melee.creature_ai,
+                        &mut states.native_summons,
+                        content,
+                        now,
+                        &|| now,
+                        &root,
+                        &revisions,
+                        &[],
+                        room,
+                        &objects,
+                        &mut tx,
+                        &authority,
+                        &mut budget,
+                        false,
+                    )
+                    .await
+                    .map_err(debug)?;
+                    let movement = states
+                        .monster_melee
+                        .creature_ai
+                        .native_movement(actor)
+                        .ok_or("re-armed walk-back")?;
+                    assert_eq!(
+                        movement.goal,
+                        crate::ai_think::NativeCreatureGoal::WalkBack { home }
+                    );
+                    assert!(movement.path.is_some());
+                    let now = states
+                        .monster_melee
+                        .creature_ai
+                        .earliest_native_step_due()
+                        .ok_or("re-armed walk-back step")?;
+                    run_current_native_monster_thinks(
+                        &mut runtime,
+                        &mut states.monster_melee.creature_ai,
+                        &mut states.native_summons,
+                        content,
+                        now,
+                        &|| now,
+                        &root,
+                        &revisions,
+                        &[],
+                        room,
+                        &objects,
+                        &mut tx,
+                        &authority,
+                        &mut budget,
+                        false,
+                    )
+                    .await
+                    .map_err(debug)?;
+                    assert_eq!(
+                        runtime.read_actor_position(actor).map_err(debug)?.position(),
+                        cell(3, 12)
+                    );
+                    tx.rollback().await?;
+                    return Ok(());
+                }
                 let full = budget.remaining(50_000);
                 let (stepped, _) = run_current_native_monster_thinks(
                     &mut runtime,
