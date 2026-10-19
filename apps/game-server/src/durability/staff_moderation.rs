@@ -218,14 +218,16 @@ async fn replay_effect(
 ) -> Result<Effect, StaffError> {
     let character = match action {
         Action::Mute { character_id, .. } => Some(character_id.clone()),
-        Action::Unmute { sanction_id } => sqlx::query_scalar::<_, String>(
-            "SELECT character_id::text FROM game_character_sanctions \
+        Action::Unmute { sanction_id } => {
+            sqlx::query_scalar::<_, String>(
+                "SELECT character_id::text FROM game_character_sanctions \
              WHERE sanction_id=$1::uuid AND environment=$2",
-        )
-        .bind(sanction_id)
-        .bind(trust.environment())
-        .fetch_optional(&mut *connection)
-        .await?,
+            )
+            .bind(sanction_id)
+            .bind(trust.environment())
+            .fetch_optional(&mut *connection)
+            .await?
+        }
         Action::Kick { target } if fresh => {
             return Ok(
                 kick_session(desk, trust.environment(), target)?.map_or(Effect::None, Effect::Kick)
@@ -945,17 +947,20 @@ impl DurabilityRoot {
                         let retry = request.request().clone();
                         match begin_at(&mut tx, &trust, &history, request, now).await? {
                             Begin::Replay(stored) => {
-                                let effect = if stored.outcome.disposition == Disposition::Committed {
+                                let effect = if stored.outcome.disposition == Disposition::Committed
+                                {
                                     let fresh = if matches!(action, Action::Kick { .. }) {
                                         #[cfg(test)]
-                                        let clock = now.map_or_else(signature::synchronized_now_ms, Ok);
+                                        let clock =
+                                            now.map_or_else(signature::synchronized_now_ms, Ok);
                                         #[cfg(not(test))]
                                         let clock = signature::synchronized_now_ms();
                                         signature::check_freshness(&retry, clock).is_ok()
                                     } else {
                                         false
                                     };
-                                    replay_effect(&mut tx, &trust, &worker_desk, &action, fresh).await?
+                                    replay_effect(&mut tx, &trust, &worker_desk, &action, fresh)
+                                        .await?
                                 } else {
                                     Effect::None
                                 };

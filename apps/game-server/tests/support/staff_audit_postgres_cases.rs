@@ -3170,13 +3170,15 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 request.action = action;
                 request.issued_at = Decimal(time);
                 let operation = request.operation_id.clone();
-                let signed = e
-                    .f
-                    .signer
-                    .sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
+                let signed =
+                    e.f.signer
+                        .sign(request.canonical_bytes().map_err(debug)?, REQUEST_NAMESPACE);
                 let digest = signature::sha256(&signed.bytes);
                 let answer = retry(e, signed, time).await?;
-                let stored = answer.split(|byte| *byte == b'\n').next().ok_or("outcome")?;
+                let stored = answer
+                    .split(|byte| *byte == b'\n')
+                    .next()
+                    .ok_or("outcome")?;
                 let outcome: Outcome = serde_json::from_slice(stored)?;
                 assert_eq!((outcome.disposition, outcome.result), COMMITTED);
                 e.sequence += 1;
@@ -3227,8 +3229,14 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     .as_deref(),
                 Some("42501")
             );
-            assert_eq!(e.root.expire_staff_action_audit(64).await.map_err(debug)?, 2);
-            assert_eq!(e.root.expire_staff_action_audit(64).await.map_err(debug)?, 0);
+            assert_eq!(
+                e.root.expire_staff_action_audit(64).await.map_err(debug)?,
+                2
+            );
+            assert_eq!(
+                e.root.expire_staff_action_audit(64).await.map_err(debug)?,
+                0
+            );
             for (index, operation) in operations.iter().enumerate() {
                 let exists: bool = sqlx::query_scalar(
                     "SELECT EXISTS(SELECT 1 FROM game_staff_action_outbox WHERE operation_id=$1::uuid)",
@@ -4572,7 +4580,10 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
     #[test]
     fn staff_pg_restore_refuses_a_retained_tail_past_a_gap_without_outcomes() -> TestResult {
         exec_case("restoretail", Some("GM"), async |e| {
-            assert_eq!(of(&e.send(inspect(TARGET)).await.map_err(debug)?), COMMITTED);
+            assert_eq!(
+                of(&e.send(inspect(TARGET)).await.map_err(debug)?),
+                COMMITTED
+            );
             let (base, base_head) = (e.sequence, e.head.clone());
             assert_eq!(
                 of(&e.send(mute(TARGET, 60_000)).await.map_err(debug)?),

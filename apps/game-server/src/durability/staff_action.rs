@@ -604,10 +604,11 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let deleted: i64 = sqlx::query_scalar("SELECT game_staff_expire_action_audit($1)")
-                        .bind(batch)
-                        .fetch_one(&mut *tx)
-                        .await?;
+                    let deleted: i64 =
+                        sqlx::query_scalar("SELECT game_staff_expire_action_audit($1)")
+                            .bind(batch)
+                            .fetch_one(&mut *tx)
+                            .await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(
                         u64::try_from(deleted).map_err(|_| DurabilityError::InvalidStoredState)?
@@ -846,7 +847,8 @@ mod tests {
     use super::signature;
 
     #[test]
-    fn staff_audit_expiry_grace_matches_signature_window() -> Result<(), Box<dyn std::error::Error>> {
+    fn staff_audit_expiry_grace_matches_signature_window() -> Result<(), Box<dyn std::error::Error>>
+    {
         let migration = include_str!("../../migrations/0133_staff_audit.sql");
         let grace: u64 = migration
             .split("a.expires_at + ")
