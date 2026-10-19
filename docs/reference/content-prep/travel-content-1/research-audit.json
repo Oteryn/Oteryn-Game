@@ -1,18 +1,18 @@
 {
   "task": "TRAVEL-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_RECONCILED_REFERENCE_WITH_EXPLICIT_DONOR_AND_NATIVE_MAPPING_LIMITS",
+  "research_status": "EXISTING195ROUTES_SOURCE_RECONCILED_RUNTIME_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical. The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.",
+  "coverage": "All56existing services and195routes are covered by exact NPC-script/keyword anchors. Five placement-specific fares, Premium rules, quest text and source qualifications are corrected. Seven donor inventory/custom guards are retained separately. The universal level8 default is removed. Every reference arrival tile still requires native world/channel mapping. Current Global continuity is not established by donor observations.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json": 195,
     "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/services/evidence-00000-00055.json": 56
   },
   "evidence_field_counts": {
-    "PROVEN": 670,
-    "DERIVED": 1221
+    "PROVEN": 589,
+    "DERIVED": 1309
   },
   "unresolved_fields": [],
   "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
@@ -74,6 +74,19 @@
       "DERIVED": 1253
     },
     "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION",
-    "universal_level8_removed": true
+    "universal_level8_removed": true,
+    "active_route_and_service_counts": {
+      "PROVEN": 589,
+      "DERIVED": 1309
+    }
+  },
+  "prior_materialization_audit_summary": {
+    "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+    "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+    "coverage": "All 56 native travel services and 195 routes remain covered. Supplemental current sources establish Premium-city access prerequisites, Gray Island fares, the 24-hour honeymoon window, local-ferry transport, placement-specific Junkar fares/world-change conditions and Hawkhurst/Tonar/Gnomprona access unlocks. Source-described NPC standing tiles are never used as arrival tiles. Four Junkar table/NPC fare disagreements remain explicit CONFLICT. Quest-start level 250 for Ingol is retained separately from an unproven post-unlock ferry level check. Historical Kendra anniversary travel is marked historical. The final gap sweep also checks secondary NPC professions and resolves 18 ferry transport fields and 10 source-named origin areas. Exact floors/arrival tiles remain independently held.",
+    "evidence_field_counts": {
+      "PROVEN": 670,
+      "DERIVED": 1221
+    }
   }
 }
