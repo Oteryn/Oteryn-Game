@@ -4150,6 +4150,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 .lock()
                 .await
                 .clear_target(actor, admitted.game_session_id);
+            // VIP0 §8.2: nobody reads the session's presence watcher while it waits in grace;
+            // a resume's replacement snapshot starts a new one.
+            self.chat.vip.detach(admitted.game_session_id);
         }
         if result == ControlLossResult::Recorded
             && let Ok(mut lost) = self.lost.lock()

@@ -5,12 +5,14 @@
 //!
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 
-use super::fixture::{Harness, debug, id, run};
+use super::fixture::{Harness, debug, fence, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset, revision, track};
 use crate::durability::fresh_admission::{ExpiredLossReleaseV1, FreshAdmissionStore};
 use crate::foundation::{AuthenticatedTransportRefV1, GameSessionState};
 use crate::gameplay_transport::ComposedFreshAdmission;
-use crate::gameplay_transport::connection::{ControlLossResult, GraceExpiryResult, LogoutReply};
+use crate::gameplay_transport::connection::{
+    ControlLossResult, FreshAdmissionAuthority as _, GraceExpiryResult, LogoutReply,
+};
 use oteryn_protocol_oteryn::logout::LogoutResult;
 
 async fn session_state(
@@ -199,6 +201,73 @@ fn an_accepted_logout_sends_the_offline_presence_hint() -> TestResult {
             LogoutReply::Result(LogoutResult::Busy)
         );
         assert_eq!(relay.queued_presence(), vec![(character, false)]);
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// VIP-2 (VIP0 §8.2): a recorded control loss releases the session's presence watcher, so a
+/// session that waits in grace holds none of the owner's capacity; a resume's replacement
+/// snapshot starts a new one.
+#[test]
+fn a_recorded_control_loss_releases_the_vip_presence_watcher() -> TestResult {
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_vip_watcher", true, false).await?;
+        prepare_current_session(&harness).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        let presence = std::sync::Arc::new(
+            crate::durability::vip_presence::PresenceOwner::new(
+                harness.root.clone(),
+                owner.world_id,
+                1,
+            )
+            .map_err(debug)?,
+        );
+        presence.listener_reconnected().map_err(debug)?;
+        assert!(
+            owner
+                .chat
+                .vip
+                .install_presence(std::sync::Arc::clone(&presence))
+        );
+        let session = dependencies.admitted.game_session_id;
+        let gameplay = fence(1)?;
+        presence
+            .reserve_for_test(
+                crate::durability::item_transfer::CurrentCharacterItemFence {
+                    character_id: gameplay.character_id,
+                    game_session_id: session,
+                    connection_generation: gameplay.connection_generation,
+                    character_lease_generation: gameplay.character_lease_generation,
+                    runtime_scope: gameplay.runtime_scope,
+                    scope_ownership_generation: gameplay.scope_ownership_generation,
+                },
+            )
+            .map_err(debug)?;
+        assert!(presence.watches(session).map_err(debug)?);
+        assert_eq!(
+            owner
+                .lose_control(dependencies.admitted, std::time::Duration::ZERO)
+                .await,
+            ControlLossResult::Recorded
+        );
+        assert!(!presence.watches(session).map_err(debug)?);
+        assert_eq!(
+            session_state(&harness, &dependencies).await?,
+            GameSessionState::Reconnectable
+        );
         drop(owner);
         drop(authority);
         drop(seal);

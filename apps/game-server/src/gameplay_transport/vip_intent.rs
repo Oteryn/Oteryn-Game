@@ -57,6 +57,9 @@ enum HandleKind {
     Watcher,
 }
 
+/// Retired handle bindings a session keeps for the receipt check of a resent ending command.
+const RETIRED_HANDLES: usize = 64;
+
 struct VipSession {
     character: CharacterId,
     fence: CurrentCharacterItemFence,
@@ -66,6 +69,9 @@ struct VipSession {
     /// invitation_id to handle, and handle to binding.
     handle_of: BTreeMap<u64, u64>,
     bindings: BTreeMap<u64, (VipInvitationBinding, HandleKind)>,
+    /// Bindings of handles no longer shown, the newest RETIRED_HANDLES, including those of the
+    /// session's earlier connections. Only the receipt replay of a resent command reads them.
+    retired: BTreeMap<u64, VipInvitationBinding>,
     next_handle: u64,
     /// Highest presence revision delivered to the client.
     presence_seen: u64,
@@ -95,6 +101,18 @@ fn earliest(
     }
 }
 
+/// Keeps the newest RETIRED_HANDLES retired bindings. Handles only grow within a session, so the
+/// smallest handle is the oldest.
+fn retire(
+    retired: &mut BTreeMap<u64, VipInvitationBinding>,
+    gone: impl IntoIterator<Item = (u64, VipInvitationBinding)>,
+) {
+    retired.extend(gone);
+    while retired.len() > RETIRED_HANDLES {
+        retired.pop_first();
+    }
+}
+
 impl VipSession {
     fn handle(&mut self, binding: VipInvitationBinding, kind: HandleKind) -> u64 {
         let handle = match self.handle_of.get(&binding.invitation_id) {
@@ -110,6 +128,15 @@ impl VipSession {
         handle
     }
 
+    /// The binding `handle` named, shown or retired, whatever its kind now. Only the receipt
+    /// replay reads it: a new ending command acts on a shown handle of its own kind only.
+    fn named(&self, handle: u64) -> Option<VipInvitationBinding> {
+        self.bindings
+            .get(&handle)
+            .map(|(binding, _)| *binding)
+            .or_else(|| self.retired.get(&handle).copied())
+    }
+
     /// The consent view of `view`, with this session's handles (made for new invitations).
     fn consent(&mut self, view: &VipView) -> VipConsentView {
         let live = view
@@ -123,6 +150,13 @@ impl VipSession {
             )
             .collect::<std::collections::BTreeSet<_>>();
         self.handle_of.retain(|id, _| live.contains(id));
+        let gone = self
+            .bindings
+            .iter()
+            .filter(|(_, (binding, _))| !live.contains(&binding.invitation_id))
+            .map(|(handle, (binding, _))| (*handle, *binding))
+            .collect::<Vec<_>>();
+        retire(&mut self.retired, gone);
         self.bindings
             .retain(|_, (binding, _)| live.contains(&binding.invitation_id));
         let mut invitations = view
@@ -275,6 +309,16 @@ impl VipRuntime {
         }
     }
 
+    /// The session's connection is lost and it waits in grace: the presence owner forgets its
+    /// watcher, so a session nobody reads holds none of the owner's capacity. A resume sends a
+    /// replacement snapshot, which starts a new watcher; the session state stays for its handle
+    /// floor and retired handles.
+    pub(crate) fn detach(&self, session: GameSessionId) {
+        if let Some(presence) = self.presence() {
+            let _ = presence.forget(session);
+        }
+    }
+
     /// Marks every local session the change of `list` or of these characters' consent concerns.
     fn touch(&self, list: VipListKey, characters: &[CharacterId]) {
         let touched = {
@@ -410,7 +454,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .admit_vip(self.character, self.holder, fence)
             .await
             .ok()?;
-        let previous = self.chat.vip.lock().get(&session).map(|s| s.next_handle);
+        // A replacement keeps the old state's handle floor and the bindings of its handles,
+        // which a resent ending command is checked against.
+        let (previous, retired) =
+            self.chat
+                .vip
+                .lock()
+                .get(&session)
+                .map_or((None, BTreeMap::new()), |old| {
+                    let mut retired = old.retired.clone();
+                    retire(
+                        &mut retired,
+                        old.bindings
+                            .iter()
+                            .map(|(handle, (binding, _))| (*handle, *binding)),
+                    );
+                    (Some(old.next_handle), retired)
+                });
         let mut state = VipSession {
             character: fence.character_id,
             fence,
@@ -418,6 +478,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             shown: BTreeMap::new(),
             handle_of: BTreeMap::new(),
             bindings: BTreeMap::new(),
+            retired,
             next_handle: handle_floor(fence.connection_generation.get(), previous),
             presence_seen: 0,
             inflight: None,
@@ -491,10 +552,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
         }
-        let kind = match &intent {
-            VipIntent::Accept { .. } => Some(VipEndKind::Accept),
-            VipIntent::Reject { .. } => Some(VipEndKind::Reject),
-            VipIntent::Revoke { .. } => Some(VipEndKind::Revoke),
+        let end = match &intent {
+            VipIntent::Accept { invitation } => Some((VipEndKind::Accept, *invitation)),
+            VipIntent::Reject { invitation } => Some((VipEndKind::Reject, *invitation)),
+            VipIntent::Revoke { watcher } => Some((VipEndKind::Revoke, *watcher)),
             // Their writers resolve no per-session handle; their receipts replay inside them.
             VipIntent::Add { .. }
             | VipIntent::Remove { .. }
@@ -505,14 +566,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             | VipIntent::Withdraw { .. }
             | VipIntent::SetStatus(_) => None,
         };
-        if let Some(kind) = kind {
+        if let Some((kind, handle)) = end {
+            // VIP0 §6: a handle this session still knows, shown or retired, names the request
+            // whose digest the receipt must match.
             let binding = self
                 .chat
                 .vip
                 .lock()
                 .get(&command.game_session_id)
-                .map(|session| (session.view.list, session.fence));
-            let Some((list, fence)) = binding else {
+                .map(|session| (session.view.list, session.fence, session.named(handle)));
+            let Some((list, fence, named)) = binding else {
                 return (
                     VipCommandOutcome::answer(VipResultCode::VipUnavailable),
                     Vec::new(),
@@ -520,7 +583,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             match self
                 .root
-                .replay_vip_end(self.character, fence, list, command_ref, kind)
+                .replay_vip_end(self.character, fence, list, command_ref, kind, named)
                 .await
             {
                 Ok(None) => {}
@@ -878,7 +941,11 @@ impl VipPremiumGate for ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
-    use super::{bounded_read, earliest, handle_floor};
+    use super::{
+        CharacterId, RETIRED_HANDLES, VipInvitationBinding, bounded_read, earliest, handle_floor,
+        retire,
+    };
+    use std::collections::BTreeMap;
     use std::future::Future;
     use std::time::Duration;
 
@@ -902,6 +969,36 @@ mod tests {
     fn vip_handle_floor_uses_only_the_low_32_generation_bits() {
         let generation = u64::from(u32::MAX) + 3;
         assert_eq!(handle_floor(generation, None), handle_floor(2, None));
+    }
+
+    #[test]
+    fn vip_retired_handles_keep_only_the_newest() -> Result<(), String> {
+        let bytes = [
+            0x01, 0x90, 0x0a, 0x5d, 0xac, 0x96, 0x7a, 0xb2, 0x80, 0xe7, 0x01, 0x23, 0x45, 0x67,
+            0x89, 0xab,
+        ];
+        let binding = |invitation_id| -> Result<VipInvitationBinding, String> {
+            Ok(VipInvitationBinding {
+                watcher_account: crate::domain::AccountId::from_bytes(bytes)
+                    .map_err(|e| format!("{e:?}"))?,
+                inviter: CharacterId::from_bytes(bytes).map_err(|e| format!("{e:?}"))?,
+                invitation_id,
+            })
+        };
+        let mut retired = BTreeMap::new();
+        let count = u64::try_from(RETIRED_HANDLES).map_err(|e| e.to_string())? + 3;
+        for handle in 1..=count {
+            retire(&mut retired, [(handle, binding(handle)?)]);
+        }
+        assert_eq!(retired.len(), RETIRED_HANDLES);
+        assert_eq!(retired.keys().next(), Some(&4));
+        assert_eq!(retired.keys().next_back(), Some(&count));
+        assert!(
+            retired
+                .iter()
+                .all(|(handle, binding)| binding.invitation_id == *handle)
+        );
+        Ok(())
     }
 
     #[test]

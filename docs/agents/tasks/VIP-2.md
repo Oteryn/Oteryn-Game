@@ -812,3 +812,30 @@ E2e coverage:
   `vip/presence_tests.rs`.
 - The lib PostgreSQL cases (`durability/vip_tests.rs`) skip without `OTERYN_TEST_POSTGRES_ADMIN_URL`.
   They passed locally on PostgreSQL 17.6 and include the listener-down dispatch replay case.
+
+## Gate round — 2026-10-19 (Stage C)
+
+The prepush Stage C review of `7b8a05d1` made three findings:
+- F1, fixed (VIP0 §6): a resent Accept, Reject or Revoke whose handle this session still knows
+  now has its request digest compared with the receipt. A different invitation answers
+  `CONFLICTING_COMMAND`. The handle can be shown, or among the newest 64 retired bindings, which a
+  replacement snapshot carries across a resume. A handle the node no longer knows replays by
+  character and kind only.
+- F3, fixed (VIP0 §8.2): a recorded control loss now detaches the session's presence watcher
+  (`VipRuntime::detach` in `lose_control`), so a session waiting in grace holds no capacity. A
+  resume's replacement snapshot starts a new watcher. Watchers stay inert until item 13 adds the
+  refresh scheduler.
+- F2, deferred: when admission refuses the VIP snapshot, the session fails closed (no VIP state).
+  A mid-session snapshot retry would need a new client-visible step (a wire and CP decision). The
+  client recovers by reconnecting.
+
+Tests:
+- `vip_retired_handles_keep_only_the_newest`.
+- The named and conflicting receipt replays in `vip_end_replay_returns_the_committed_receipt_without_a_handle`.
+- `logout_e2e::a_recorded_control_loss_releases_the_vip_presence_watcher`, which goes through the
+  real composed `lose_control`.
+
+These passed locally on PostgreSQL 17.6:
+- lib `vip`: 88 passed;
+- lib `logout_e2e`: 8 passed;
+- `durability_postgres vip`: 32 passed.

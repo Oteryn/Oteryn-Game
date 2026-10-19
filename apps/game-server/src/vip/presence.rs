@@ -1311,6 +1311,28 @@ impl PresenceOwner {
         s.replace_watcher(session, None);
         Ok(())
     }
+    /// Test support: a watcher reservation for `fence`, as a read makes it.
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "only the lib's control-loss case reserves a bare watcher"
+    )]
+    pub(crate) fn reserve_for_test(&self, fence: CurrentCharacterItemFence) -> Result<()> {
+        let now = clock()?;
+        let mut s = self.state.lock().map_err(|_| corrupt())?;
+        s.reserve(fence, 0, now).map(|_| ())
+    }
+    /// Test support: whether the owner holds a watcher of `session`.
+    #[cfg(test)]
+    #[allow(dead_code, reason = "only the lib's control-loss case reads it")]
+    pub(crate) fn watches(&self, session: GameSessionId) -> Result<bool> {
+        Ok(self
+            .state
+            .lock()
+            .map_err(|_| corrupt())?
+            .sessions
+            .contains_key(&session))
+    }
     pub(crate) fn due_sessions(&self, budget: usize) -> Result<Vec<GameSessionId>> {
         self.state
             .lock()

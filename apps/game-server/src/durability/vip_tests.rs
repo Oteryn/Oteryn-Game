@@ -3715,7 +3715,14 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
         let fence = harness::item_fence()?;
         let replay = h
             .root
-            .replay_vip_end(&authority, fence, req.list, req.command, VipEndKind::Accept)
+            .replay_vip_end(
+                &authority,
+                fence,
+                req.list,
+                req.command,
+                VipEndKind::Accept,
+                None,
+            )
             .await
             .map_err(debug)?
             .ok_or("missing receipt")?;
@@ -3725,9 +3732,49 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
             (committed.result, committed.revision)
         );
         assert_eq!(footprint(h).await?, before);
+        // VIP0 §6: a handle that still names the committed binding replays; one that names
+        // another invitation is a different request.
+        let named = h
+            .root
+            .replay_vip_end(
+                &authority,
+                fence,
+                req.list,
+                req.command,
+                VipEndKind::Accept,
+                Some(req.invitation),
+            )
+            .await
+            .map_err(debug)?
+            .ok_or("missing named receipt")?;
+        assert_eq!(
+            (named.result, named.revision),
+            (committed.result, committed.revision)
+        );
         assert!(matches!(
             h.root
-                .replay_vip_end(&authority, fence, req.list, req.command, VipEndKind::Reject,)
+                .replay_vip_end(
+                    &authority,
+                    fence,
+                    req.list,
+                    req.command,
+                    VipEndKind::Accept,
+                    Some(invitation(60, 70, number + 1))
+                )
+                .await,
+            Err(VipError::ConflictingCommand)
+        ));
+        assert_eq!(footprint(h).await?, before);
+        assert!(matches!(
+            h.root
+                .replay_vip_end(
+                    &authority,
+                    fence,
+                    req.list,
+                    req.command,
+                    VipEndKind::Reject,
+                    None
+                )
                 .await,
             Err(VipError::ConflictingCommand)
         ));
@@ -3735,7 +3782,14 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
         let unknown = CommandRef::new(req.command.game_session_id(), CommandId::new(2)?);
         assert_eq!(
             h.root
-                .replay_vip_end(&authority, fence, req.list, unknown, VipEndKind::Accept,)
+                .replay_vip_end(
+                    &authority,
+                    fence,
+                    req.list,
+                    unknown,
+                    VipEndKind::Accept,
+                    None
+                )
                 .await
                 .map_err(debug)?,
             None
@@ -3744,7 +3798,14 @@ fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult
         let foreign = CommandRef::new(GameSessionId::decode(&id(51))?, req.command.command_id());
         assert!(matches!(
             h.root
-                .replay_vip_end(&authority, fence, req.list, foreign, VipEndKind::Accept,)
+                .replay_vip_end(
+                    &authority,
+                    fence,
+                    req.list,
+                    foreign,
+                    VipEndKind::Accept,
+                    None
+                )
                 .await,
             Err(VipError::AuthorityRejected)
         ));

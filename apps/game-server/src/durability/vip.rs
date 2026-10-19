@@ -178,10 +178,13 @@ fn digest(actor: CharacterId, request: VipEndRequest) -> [u8; 32] {
 }
 
 impl DurabilityRoot {
-    /// Replay an ending receipt before resolving a per-session handle after resume. The
-    /// original binding digest is not compared because the handle that produced it is gone.
-    /// This read-only transaction never changes stored state or reacquires write authority.
-    /// Like every writer's receipt-first replay it precedes the node and session fences.
+    /// Replay an ending receipt before resolving a per-session handle after resume. `named` is
+    /// the binding the resent handle still names on this node (shown or retired): its request
+    /// digest must match the receipt, or the command is `ConflictingCommand` (VIP0 §6). A handle
+    /// the node no longer knows replays by character and kind only, because the binding that
+    /// produced the digest is gone. This read-only transaction never changes stored state or
+    /// reacquires write authority. Like every writer's receipt-first replay it precedes the
+    /// node and session fences.
     pub(crate) async fn replay_vip_end(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -189,6 +192,7 @@ impl DurabilityRoot {
         list: VipListKey,
         command: CommandRef,
         kind: VipEndKind,
+        named: Option<VipInvitationBinding>,
     ) -> Result<Option<VipReceipt>> {
         let recovery = authority
             .record_for(self)
@@ -210,6 +214,23 @@ impl DurabilityRoot {
                             || row.try_get::<i16, _>("kind")? != kind.code()
                         {
                             return Err(VipError::ConflictingCommand);
+                        }
+                        if let Some(binding) = named {
+                            let operation = match kind {
+                                VipEndKind::Accept => VipEndOperation::Accept(binding),
+                                VipEndKind::Reject => VipEndOperation::Reject(binding),
+                                VipEndKind::Revoke => VipEndOperation::Revoke(binding),
+                            };
+                            let request = VipEndRequest {
+                                list,
+                                command,
+                                operation,
+                            };
+                            if row.try_get::<Vec<u8>, _>("binding")?
+                                != digest(fence.character_id, request)
+                            {
+                                return Err(VipError::ConflictingCommand);
+                            }
                         }
                         Ok(Some(stored_receipt(&row)?))
                     }
