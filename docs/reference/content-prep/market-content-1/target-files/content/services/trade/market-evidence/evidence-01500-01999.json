@@ -13121,22 +13121,48 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/74/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5046/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5046 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5046/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5046 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:15125:1020305",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/74/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -13224,6 +13250,58 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 5046,
+            "xml_item_name": "monkey statue",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "description",
+                "value": "The words 'See no evil' are engraved on it."
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5046/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5046 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5046/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5046 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -13234,22 +13312,48 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/75/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5055/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5055 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5055/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5055 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:15129:1020303",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/75/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -13337,6 +13441,58 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 5055,
+            "xml_item_name": "monkey statue",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "description",
+                "value": "The words 'Hear no evil' are engraved on it."
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5055/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5055 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5055/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5055 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -13347,22 +13503,48 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/76/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5056/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5056 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5056/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5056 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:15127:1020304",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/76/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -13450,6 +13632,58 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 5056,
+            "xml_item_name": "monkey statue",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "description",
+                "value": "The words 'Speak no evil' are engraved on it."
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5056/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5056 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5056/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5056 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -26064,67 +26298,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
+            },
             {
               "source": "owner:oteryn-data-completion:2026-10-19",
               "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/146/facts/trade.marketable"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/146/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 5526,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/146/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/146/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 5526,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/146/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/146/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -26179,6 +26486,78 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 5526,
+            "xml_item_name": "demon dust",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": false
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "creature products"
+              },
+              {
+                "key": "fluidsource",
+                "value": "blood"
+              },
+              {
+                "key": "duration",
+                "value": "300"
+              },
+              {
+                "key": "decayTo",
+                "value": "5527"
+              },
+              {
+                "key": "containersize",
+                "value": "24"
+              },
+              {
+                "key": "weight",
+                "value": "100"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5526/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5526 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -26532,79 +26911,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/149/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:32158:1011167",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/149/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 5669,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/149/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:32158:1011167",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/149/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 5669,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/149/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:32158:1011167",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/149/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -26659,6 +27099,74 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 5669,
+            "xml_item_name": "enigmatic voodoo skull",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": true,
+              "immovable_flag": false,
+              "wrap_flag": false
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "magical items"
+              },
+              {
+                "key": "description",
+                "value": "It is not time yet"
+              },
+              {
+                "key": "duration",
+                "value": "86400"
+              },
+              {
+                "key": "decayTo",
+                "value": "5668"
+              },
+              {
+                "key": "weight",
+                "value": "1400"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=5669/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=5669 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -40013,79 +40521,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/225/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:8984:1020604",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/225/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6109,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/225/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:8984:1020604",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/225/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6109,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/225/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:8984:1020604",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/225/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -40140,6 +40709,70 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 6109,
+            "xml_item_name": "weapon rack",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "furniture"
+              },
+              {
+                "key": "containersize",
+                "value": "20"
+              },
+              {
+                "key": "wrapableto",
+                "value": "6115"
+              },
+              {
+                "key": "rotateto",
+                "value": "6110"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6109/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6109 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -40150,79 +40783,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/226/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:8983:1019525",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/226/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6111,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/226/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:8983:1019525",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/226/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6111,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/226/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:8983:1019525",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/226/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -40277,6 +40971,70 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 6111,
+            "xml_item_name": "armor rack",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "furniture"
+              },
+              {
+                "key": "containersize",
+                "value": "20"
+              },
+              {
+                "key": "wrapableto",
+                "value": "6114"
+              },
+              {
+                "key": "rotateto",
+                "value": "6112"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6111/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6111 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -41324,79 +42082,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/233/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:95730:1020343",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/233/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6355,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/233/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:95730:1020343",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/233/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6355,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/233/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:95730:1020343",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/233/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -41451,6 +42270,66 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 6355,
+            "xml_item_name": "oven",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "furniture"
+              },
+              {
+                "key": "wrapableto",
+                "value": "6371"
+              },
+              {
+                "key": "rotateto",
+                "value": "6357"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6355/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6355 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -41461,79 +42340,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/234/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:13435:1049401",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/234/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6370,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/234/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:13435:1049401",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/234/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6370,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/234/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:13435:1049401",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/234/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -41588,6 +42528,70 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 6370,
+            "xml_item_name": "bookcase",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "furniture"
+              },
+              {
+                "key": "containersize",
+                "value": "6"
+              },
+              {
+                "key": "wrapableto",
+                "value": "6372"
+              },
+              {
+                "key": "rotateto",
+                "value": "6369"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6370/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6370 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -41598,79 +42602,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/235/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:42988:1012161",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/235/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6386,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/235/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:42988:1012161",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/235/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 6386,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/235/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:42988:1012161",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/235/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -41729,6 +42794,70 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 6386,
+            "xml_item_name": "greeting card",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": true,
+              "immovable_flag": false,
+              "wrap_flag": false
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "documents and papers"
+              },
+              {
+                "key": "writeable",
+                "value": "1"
+              },
+              {
+                "key": "maxtextlen",
+                "value": "1023"
+              },
+              {
+                "key": "weight",
+                "value": "100"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=6386/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=6386 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -60197,79 +61326,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/353/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:74105:1019273",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/353/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 7860,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/353/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:74105:1019273",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/353/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 7860,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/353/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:74105:1019273",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/353/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -60324,6 +61514,62 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 7860,
+            "xml_item_name": "chimney",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "furniture"
+              },
+              {
+                "key": "rotateto",
+                "value": "7862"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=7860/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=7860 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -79373,25 +80619,55 @@
       "key": "oteryn:item.tibia.i9034",
       "facts": {
         "trade.marketable": {
-          "value": false,
+          "value": {
+            "status": "SOURCE_MARKET_IDENTITY_RESOLVED_NATIVE_VARIANT_CHECK_PENDING",
+            "appearance_object_id": 9034,
+            "source_trade_as_object_id": 9035,
+            "source_show_as_object_id": 9035,
+            "source_category_number": 9,
+            "native_market_binding_assigned": false,
+            "requires_instance_eligibility_check": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_BLANKET_EXCLUSION_WITHDRAWN",
+          "evidence_scope": "SOURCE_TYPE_IDENTITY_NOT_SERVER_LISTING_PERMISSION",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/463/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=9034/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=9034 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=9034/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=9034 or covering fromid/toid range"
             },
             {
               "source": "wiki:85866:1115889",
               "selector": "Infobox Object / itemid, marketable, primarytype"
+            },
+            {
+              "source": "official-client:15.33.9d148f:501594e8",
+              "selector": "object/id=9034/flags/market"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Withdraws the unsupported unconditional exclusion. Exact source Market IDs are resolved and corroborated by retained official client15.30and installed15.33metadata. Instance/variant and native binding qualification remain required; no listing permission is inferred from category metadata.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/463/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -79567,6 +80843,78 @@
             ],
             "note": "Applies to the documented taxonomy projection, not an assertion about unpublished current client filters."
           }
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 9034,
+            "xml_item_name": "dracoyle statue",
+            "metadata": {
+              "market_metadata_present": true,
+              "category_number": 9,
+              "trade_as_object_id": 9035,
+              "show_as_object_id": 9035,
+              "pickupable_flag": true,
+              "immovable_flag": false,
+              "wrap_flag": false
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "decoration"
+              },
+              {
+                "key": "description",
+                "value": "This rare treasure is said to protect its owner from misery and curses"
+              },
+              {
+                "key": "duration",
+                "value": "604800"
+              },
+              {
+                "key": "decayTo",
+                "value": "9035"
+              },
+              {
+                "key": "rotateto",
+                "value": "9039"
+              },
+              {
+                "key": "weight",
+                "value": "1500"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=9034/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=9034 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=9034/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=9034 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },
@@ -81261,79 +82609,140 @@
           "value": false,
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PINNED_DIRECT_TYPE_WAREID_ZERO_NOT_ARBITRARY_EXCLUSION",
+          "evidence_scope": "PINNED_DONOR_DIRECT_TYPE_ADMISSION_NOT_GLOBAL_PROOF",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/473/facts/trade.marketable"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp",
+              "selector": "wareId=has_market?trade_as_object_id:0 L228"
+            },
+            {
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "Instance exclusions remain separate, including nonportable items"
             },
             {
               "source": "wiki:31687:1024310",
               "selector": "Infobox Object / itemid, marketable, primarytype"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Exclude this unresolved type from the initial Market allowlist; NPC trade remains separate. This does not assert that Global prohibits it."
-          ],
+          "note": "Both pinned donors contain no Market submessage for this exact appearance ID; their loader assigns wareId0. This false value is scoped to that direct donor type, not all named item variants or current Global. Wrapped/used/quest/state IDs require their own source identity and native qualification.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/473/facts/trade.marketable",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_category": {
-          "value": "Others",
+          "value": {
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 9062,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
+          },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/473/facts/trade.market_category"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:31687:1024310",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Fallback display grouping only; never grants Market admission."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/473/facts/trade.market_category",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "trade.market_subcategory": {
           "value": {
-            "status": "NOT_APPLICABLE",
-            "category": "Others"
+            "status": "NOT_APPLICABLE_TO_PINNED_DONOR_DIRECT_ENTRY",
+            "appearance_object_id": 9062,
+            "pinned_donor_state": "NO_MARKET_SUBMESSAGE",
+            "display_fallback_withdrawn": true
           },
           "classification": "DERIVED",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "UNSUPPORTED_OTHERS_DISPLAY_FALLBACK_WITHDRAWN",
+          "evidence_scope": "DONOR_METADATA_STATE_NOT_OBSERVED_GLOBAL_CATEGORY",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/473/facts/trade.market_subcategory"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
             },
             {
-              "source": "wiki:31687:1024310",
-              "selector": "Infobox Object / itemid, marketable, primarytype"
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
             },
             {
               "source": "wiki:56357:1017956",
               "selector": "Making a Buy or Sell Offer / category and weapons sub-category list"
             }
           ],
-          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "No source Market category exists on this exact donor object; do not turn missing metadata into an invented Others group. Other inventory/wrapped/state variants are separate identities. Poison Salt Crystal additionally conflicts with retained wiki admission.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json/records/473/facts/trade.market_subcategory",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
@@ -81388,6 +82797,62 @@
           "assumptions": [
             "Use the shared Oteryn instance policy and an empty additional exception list; type eligibility remains a separate check."
           ]
+        },
+        "trade.pinned_donor_type_observation": {
+          "value": {
+            "appearance_object_id": 9062,
+            "xml_item_name": "crystal table",
+            "metadata": {
+              "market_metadata_present": false,
+              "category_number": null,
+              "trade_as_object_id": null,
+              "show_as_object_id": null,
+              "pickupable_flag": false,
+              "immovable_flag": false,
+              "wrap_flag": true
+            },
+            "xml_overrides": [
+              {
+                "key": "primarytype",
+                "value": "furniture"
+              },
+              {
+                "key": "weight",
+                "value": "2500"
+              }
+            ]
+          },
+          "classification": "PROVEN",
+          "target_cut": "2026-10-19",
+          "continuity": "EXACT_PINNED_SOURCE_BYTES_NOT_CURRENT_GLOBAL_TELEMETRY",
+          "evidence_scope": "OBSERVED_DONOR_ITEM_METADATA_ONLY",
+          "sources": [
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat",
+              "selector": "object/id=9062/flags: market, take, unmove, wrap"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto",
+              "selector": "AppearanceFlags field18take,36market,37wrap; AppearanceFlagMarket1category/2trade_as/3show_as"
+            },
+            {
+              "source": "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml",
+              "selector": "item id=9062 or covering fromid/toid range"
+            }
+          ],
+          "note": "Raw metadata/attributes agree in both pinned donor snapshots. This is not proof that a Global server accepts an offer. Original proprietary assets are not redistributed."
         }
       }
     },

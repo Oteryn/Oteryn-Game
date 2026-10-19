@@ -8,22 +8,22 @@
     {
       "target_path": "content/services/trade/market-evidence/evidence-00000-00499.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00000-00499.json",
-      "sha256": "e7d105a8c8f7d65fcd31ca6cbb27de9ba44e1b2d74e0e62dcffab86aba1742ce"
+      "sha256": "48398dd51ff9eaf87a6ae79f7d1f4c0ea812253e83c4aa79eeef3ffe2d5081c7"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-00500-00999.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-00500-00999.json",
-      "sha256": "1eeaeea9a5803da068fa6e48d76981054960929f9993e0e59019f337fd240ca3"
+      "sha256": "1c5076bd9dc73e553d06fdc7e6847472c802988a4f8d2d6e928edd90b4ce8d93"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-01000-01499.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01000-01499.json",
-      "sha256": "d1cc6d8458b7111ce2278f3cb9d0acd59286e8c6b4b621ffc78151393768b8f2"
+      "sha256": "00cb88b8631d79261054aacf67bce5255d6204c2ab281d9a1c31710874f8f359"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-01500-01999.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/evidence-01500-01999.json",
-      "sha256": "cfaadaf79e13731ba8321c65ab685a6071936d1bf17c0c662be2d3ed72b87379"
+      "sha256": "b2f7131f1840c4148b05bfe5fe49db54637832a496392eecdcef65af0e60a642"
     },
     {
       "target_path": "content/services/trade/market-evidence/evidence-02000-02075.json",
@@ -33,7 +33,7 @@
     {
       "target_path": "content/services/trade/market-evidence/index.json",
       "staged_path": "docs/reference/content-prep/market-content-1/target-files/content/services/trade/market-evidence/index.json",
-      "sha256": "26eee29f1c333ede9cfc67615387a9de3ed6ed939a1190adf15069327642422b"
+      "sha256": "606d1495134fc4686f50512694d5c222c7b45affe14705eb35043174e5fe28b0"
     },
     {
       "target_path": "content/services/trade/market-evidence/services/evidence-00000-00323.json",
@@ -56,5 +56,6 @@
     "World Bundle pins and deterministic bundle",
     "required exact-head validators"
   ],
-  "data_completeness": "ALL_OTERYN_PARAMETER_VALUES_POPULATED"
+  "data_completeness": "SOURCE_RECONCILED_WITH_EXPLICIT_VARIANT_AND_TAXONOMY_GAPS",
+  "market_source_check": "docs/reference/content-prep/market-content-1/market-source-reconciliation.json"
 }

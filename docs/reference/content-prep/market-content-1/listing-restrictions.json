@@ -57,32 +57,22 @@
             "minimum_gold": 20,
             "maximum_gold": 2500000
           },
-          "classification": "DERIVED",
+          "classification": "PROVEN",
           "target_cut": "2026-10-19",
-          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
-          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "continuity": "PRIMARY_OFFICIAL_FEE_SOURCE_PRECEDENCE",
+          "evidence_scope": "CIPSOFT_OFFICIAL_DOCUMENTED_MARKET_FEE",
           "sources": [
             {
-              "source": "owner:oteryn-data-completion:2026-10-19",
-              "selector": "docs/reference/content-prep/market-content-1/oteryn-parameters.json / field docs/reference/content-prep/market-content-1/listing-restrictions.json/records/0/facts/fee_cap_disagreement"
+              "source": "official:manual:controls_trading:2026-10-19:recheck",
+              "selector": "4.3.3:2.5%fee,min20,max2500000"
             },
             {
-              "source": "wiki:56357:1017956",
-              "selector": "Conflicting statements identified in note"
-            },
-            {
-              "source": "official:manual:controls_trading:2026-10-18",
-              "selector": "Conflicting statements identified in note"
-            },
-            {
-              "source": "official:manual:controls_trading:2026-10-18",
-              "selector": "4.3.3 / fee maximum"
+              "source": "official:news:8990:market-fee:20261001",
+              "selector": "Announced adjustment effective2026-10-06"
             }
           ],
-          "note": "Prefer retained current official manual over community and donor fee values.",
-          "assumptions": [
-            "Select this documented value for Oteryn; not a claim of current official server behavior."
-          ],
+          "note": "Current official manual and dated official announcement establish this fee. It is not an invented Oteryn price or a donor default.",
+          "assumptions": [],
           "global_evidence_archive": "docs/reference/content-prep/market-content-1/tibia-source-archive.json#docs/reference/content-prep/market-content-1/listing-restrictions.json/records/0/facts/fee_cap_disagreement",
           "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },

@@ -28248,6 +28248,133 @@
         "after_attribute_loop": "not hasImbuements() and not isStoreItem() and not hasOwner()"
       },
       "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/appearances.dat": {
+      "title": "Pinned Market source data/items/appearances.dat",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/items/appearances.dat",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/items/appearances.dat",
+      "git_blob": "2cc2f4910af4f002f99f39e486d1a91b1b56a728",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:data/items/items.xml": {
+      "title": "Pinned Market source data/items/items.xml",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/items/items.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/items/items.xml",
+      "git_blob": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/protobuf/appearances.proto": {
+      "title": "Pinned Market source src/protobuf/appearances.proto",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/protobuf/appearances.proto",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/protobuf/appearances.proto",
+      "git_blob": "f39de45976e372b2306f6ff9c4a40412f4debe4e",
+      "sha256": "f03674197041967fc095e48462edaa1ab27c481385aad3d85d27a7d25af325c4",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/items/items.cpp": {
+      "title": "Pinned Market source src/items/items.cpp",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/items/items.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/items/items.cpp",
+      "git_blob": "eecbf060ef9e85b452bb897277ff3d3d013a0cf9",
+      "sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:opentibiabr/canary:52550d5e3c0ffe565f4bd1014f4e5575abf1059b:src/items/item.cpp": {
+      "title": "Pinned Market source src/items/item.cpp",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/items/item.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/items/item.cpp",
+      "git_blob": "9d6c48c95b6150d6be17ddcb92a3cd92ae547adb",
+      "sha256": "b9f34cfa7786dc967b73a78296a8e064217bda23a9ce37adf80205f897e6b94f",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/appearances.dat": {
+      "title": "Pinned Market source data/items/appearances.dat",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/items/appearances.dat",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/items/appearances.dat",
+      "git_blob": "37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:data/items/items.xml": {
+      "title": "Pinned Market source data/items/items.xml",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/items/items.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/items/items.xml",
+      "git_blob": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+      "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/protobuf/appearances.proto": {
+      "title": "Pinned Market source src/protobuf/appearances.proto",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/protobuf/appearances.proto",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/protobuf/appearances.proto",
+      "git_blob": "7069b5ead685929c0a79cb6e8b0664bbe8f19a3a",
+      "sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/items.cpp": {
+      "title": "Pinned Market source src/items/items.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/items/items.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/items/items.cpp",
+      "git_blob": "bdb7b4b48aadfeb9e031311ca107aadb4ee6e30b",
+      "sha256": "f39d8fc6c1c81b8ec6f749e1f152dd945472ffd5a36b9cf3cd9a3a64b2f19b1d",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:market-recheck:zimbadev/crystalserver:ddb493002b87b814e13453873e7db9a795933ac1:src/items/item.cpp": {
+      "title": "Pinned Market source src/items/item.cpp",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/items/item.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/items/item.cpp",
+      "git_blob": "9fb1debc3f14e0ed8a04d9940b8e4bf3110a6f25",
+      "sha256": "3484af408e0b25a7204a03725318b6e0c55811cef4922bbfd54af33f4b6661f5",
+      "fetched_at": "2026-10-19"
+    },
+    "official:manual:controls_trading:2026-10-19:recheck": {
+      "title": "Current official Market manual4.3.3",
+      "url": "https://www.tibia.com/gameguides/?section=controls_trading&subtopic=manual",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Current indexed official manual text",
+      "scope": "2.5%fee,min20,max2500000; explicit instance exclusions. Not a per-item server listing test."
+    },
+    "official:news:8990:market-fee:20261001": {
+      "title": "Adjustment of Market Fee and Exercise Weapons",
+      "url": "https://www.tibia.com/news/?id=8990&subtopic=newsarchive",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "published_at": "2026-10-01",
+      "effective_date": "2026-10-06",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed official news text; current manual corroborates fee parameters"
     }
   }
 }
