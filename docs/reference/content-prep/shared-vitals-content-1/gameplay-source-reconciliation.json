@@ -2324,7 +2324,7 @@
   "extracted_donor_functions": [],
   "active_evidence_counts": {
     "DERIVED": 149,
-    "PROVEN": 31,
+    "PROVEN": 32,
     "UNKNOWN": 22
   },
   "remaining": [
@@ -2421,5 +2421,6 @@
     "Pinned donor files verified against exact Git blobs; donor code is OTS_HYPOTHESIS_ONLY.",
     "Fresh web checks used indexed primary/community text where direct pages were blocked. Retained Fandom revision hashes remain explicit.",
     "No current Global gameplay measurement or native runtime admission is claimed."
-  ]
+  ],
+  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts."
 }

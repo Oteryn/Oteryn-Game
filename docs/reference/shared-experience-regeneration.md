@@ -14,4 +14,4 @@ deferred_test: Owner postponed Global regeneration measurement; no game launch o
 
 The inspectable source candidates and unresolved fields are in [gameplay-source-reconciliation.json](content-prep/shared-vitals-content-1/gameplay-source-reconciliation.json); all source URLs, revisions and digests are in [sources.json](content-prep/shared-vitals-content-1/sources.json). Historical project selections are retained only as superseded entries in the proposal audit. They are not current runtime defaults.
 
-Active classifications: 149 DERIVED, 31 PROVEN, 22 UNKNOWN. No Rust, Cargo, migration, generated pins, runtime activation or merge.
+Active classifications: 149 DERIVED, 32 PROVEN, 22 UNKNOWN. No Rust, Cargo, migration, generated pins, runtime activation or merge.

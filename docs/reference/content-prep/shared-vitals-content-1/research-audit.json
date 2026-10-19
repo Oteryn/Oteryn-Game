@@ -15,7 +15,7 @@
   },
   "evidence_field_counts": {
     "DERIVED": 149,
-    "PROVEN": 31,
+    "PROVEN": 32,
     "UNKNOWN": 22
   },
   "unresolved_fields": [
@@ -181,5 +181,6 @@
     "remaining_unresolved_source_fields": 22,
     "selected_for_native_runtime": false,
     "summary": "Official regeneration intervals, party bonuses and soul policy are sourced.20current point amounts, exact party activity timeout and initial stamina debit remain explicitly unqualified. Invented fractional accumulators are withdrawn. Food facts and owner-authorized event-food choices are preserved."
-  }
+  },
+  "counting_correction": "Includes the unchanged top-level non_regenerative_food_reference observation in addition to record facts."
 }
