@@ -425,6 +425,93 @@
         }
       },
       "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/game/game.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/game/game.cpp",
+      "blob_sha": "40a667ac7c28cff9a04324cca18575cebc92f13f",
+      "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/game/game.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/combat/combat.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/combat/combat.cpp",
+      "blob_sha": "ec7a7ceebea67280ab8b2c77ab9a527e3a9f9aea",
+      "sha256": "c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/combat/combat.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:src/creatures/players/vocations/vocation.cpp": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "blob_sha": "70411c647329194528b11985e9be5674804cc5bc",
+      "sha256": "a3930265d68ccf188a0aeddebfd4bd19fcc257bfb3865e5ee8e429f043be83b3",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/vocations/vocation.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:canary:52550d5:data/XML/vocations.xml": {
+      "repository": "opentibiabr/canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "57c014e720bbe8d7f83501970c2b89976598cc3d",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/game/game.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/game/game.cpp",
+      "blob_sha": "5f421b1b2361280abeb8b392bca0e0344fc04648",
+      "sha256": "5f7ba67a158af607bacb9d75451ca490817f189ca7d3dcf9e774d55dc1ccaab6",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/game/game.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/combat/combat.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/combat/combat.cpp",
+      "blob_sha": "499a6aec29f7fd85da4953aea599ab1cba181fe3",
+      "sha256": "2ce001eb6820b43b3ea0a094f5e67bedd5cb5cafbb31038d14e49786be109bad",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/combat/combat.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:src/creatures/players/vocations/vocation.cpp": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/vocations/vocation.cpp",
+      "blob_sha": "3bf13d00a5d177b9ac010404687b6b719544555d",
+      "sha256": "20f555f13d6320c50ef824cc3cd9e9e73eb9c716f7f7b0a63143a120a478be9d",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/vocations/vocation.cpp",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:gameplay-recheck:crystalserver-summer:ddb4930:data/XML/vocations.xml": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/XML/vocations.xml",
+      "blob_sha": "eed5290955fd7a988acab73672dc5356ed0e0ba8",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/XML/vocations.xml",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "fetched_at": "2026-10-19"
+    },
+    "wiki-br:skill-calculator:indexed:20261019": {
+      "url": "https://www.tibiawiki.com.br/wiki/Tibia_Wiki%3ASkills_Calculator/Codigo",
+      "source_class": "COMMUNITY_CALCULATOR_SOURCE",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed code observation; no fresh revision ID claimed",
+      "selector": "Monk magic1.25andshielding1.15"
     }
   }
 }
