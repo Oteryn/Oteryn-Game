@@ -39,6 +39,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         crate::monster_owner_cycle::MonotonicRespawnWake::from_origin(self.clock_origin)
     }
 
+    /// Session-free AI deadlines share the session pass's owner clock and coalescing gate.
+    pub(in crate::gameplay_transport) async fn run_monster_ai_wake(
+        &self,
+        shutdown: &oteryn_foundation::CancellationToken,
+    ) -> crate::monster_owner_cycle::RespawnDriveEnd {
+        use crate::monster_owner_cycle::{RespawnDriveEnd, RespawnWake as _};
+        use std::future::{Future as _, poll_fn};
+        use std::task::Poll;
+
+        let wake = self.respawn_wake();
+        loop {
+            if shutdown.is_cancelled() {
+                return RespawnDriveEnd::Shutdown;
+            }
+            if self.runtime.lock().await.owner_fence().is_err() {
+                return RespawnDriveEnd::StaleOwner;
+            }
+            // Cancellation drops a pending Map/Item read instead of holding the seam open.
+            let mut stopping = std::pin::pin!(shutdown.cancelled());
+            let mut pass = std::pin::pin!(async {
+                if self.ensure_source_map_initialized().await {
+                    self.drain_monster_melee().await;
+                }
+            });
+            let stopped = poll_fn(|context| {
+                if stopping.as_mut().poll(context).is_ready() {
+                    return Poll::Ready(true);
+                }
+                pass.as_mut().poll(context).map(|()| false)
+            })
+            .await;
+            if stopped {
+                return RespawnDriveEnd::Shutdown;
+            }
+            if self.runtime.lock().await.owner_fence().is_err() {
+                return RespawnDriveEnd::StaleOwner;
+            }
+            let now = self.owner_now().get();
+            let delay = {
+                let states = self.spell_states.lock().await;
+                monster_ai_wake_delay(
+                    now,
+                    states.next_monster_ai_pass_us,
+                    states.monster_melee.creature_ai.earliest_native_step_due(),
+                )
+            };
+            let Some(next) = now.checked_add(delay) else {
+                return RespawnDriveEnd::ClockExhausted;
+            };
+            let mut sleeping =
+                std::pin::pin!(wake.sleep_until(SemanticTimeMicros::from_micros(next)));
+            let stopped = poll_fn(|context| {
+                if stopping.as_mut().poll(context).is_ready() {
+                    return Poll::Ready(true);
+                }
+                sleeping.as_mut().poll(context).map(|()| false)
+            })
+            .await;
+            if stopped {
+                return RespawnDriveEnd::Shutdown;
+            }
+        }
+    }
+
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
@@ -340,10 +404,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             // CREATURE-AI-1 §2.1: the swing goes only at the target the think decided.
             let perceived = think_target_only(
-                melee_owner
-                    .creature_ai
-                    .state(*actor)
-                    .and_then(|state| state.target()),
+                current_native_ai_target(&runtime, &melee_owner.creature_ai, *actor),
                 indices.iter().map(|index| {
                     (
                         targets[*index].0,
@@ -548,6 +609,17 @@ fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
     )
 }
 
+/// A swing can run between the master's think and its child's next think. Resolve the
+/// registry link here too so that retained child state cannot attack the old target.
+fn current_native_ai_target(
+    runtime: &ChannelRuntimeV1,
+    ai: &CreatureAiTable,
+    actor: ExactActorRef,
+) -> Option<ExactActorRef> {
+    ai.state(runtime.native_summon_master(actor).unwrap_or(actor))
+        .and_then(|state| state.target())
+}
+
 fn admit_native_creature_census(
     runtime: &ChannelRuntimeV1,
     ai: &mut CreatureAiTable,
@@ -739,20 +811,21 @@ impl NativeSummonMap<'_, '_, '_> {
             && !bundle_cells(cells)
             && self.objects.collision_cells().contains(&cell);
         let observed = async {
-            // Known absent/blocked cells refuse without an Item read. Unknown source cells
-            // still go through the actual initialization/Item owner below.
+            let refused = CurrentNativeTile {
+                walkable: false,
+                projectile_clear: false,
+                ground_speed: 0,
+            };
+            // Doors and absent cells refuse without a source read. Movement-blocked cells
+            // still need qualified source projectile flags, but never become unknown.
             if entry_door
-                || cells.index().lookup(cells.scope(), cell)
-                    == Ok(crate::content::CollisionClass::Blocked)
                 || cells.spell_tiles().lookup(cells.scope(), cell).err()
                     == Some(crate::content::SpellTileLookupError::Absent)
             {
-                return Some(CurrentNativeTile {
-                    walkable: false,
-                    projectile_clear: false,
-                    ground_speed: 0,
-                });
+                return Some(refused);
             }
+            let blocked = cells.index().lookup(cells.scope(), cell)
+                == Ok(crate::content::CollisionClass::Blocked);
             let terrain =
                 crate::spell::world_execution::qualified_creature_source_tile_in_transaction(
                     self.tx,
@@ -763,9 +836,18 @@ impl NativeSummonMap<'_, '_, '_> {
                     position,
                 )
                 .await
-                .ok()?;
-            if !terrain.matches_runtime(runtime) || terrain.position() != position {
-                return None;
+                .ok()
+                .filter(|terrain| {
+                    terrain.matches_runtime(runtime) && terrain.position() == position
+                });
+            let Some(terrain) = terrain else {
+                return blocked.then_some(refused);
+            };
+            if blocked {
+                return Some(CurrentNativeTile {
+                    projectile_clear: !terrain.block_projectile(),
+                    ..refused
+                });
             }
             let mut tile = CurrentNativeTile {
                 walkable: terrain.ground_present()
@@ -777,7 +859,14 @@ impl NativeSummonMap<'_, '_, '_> {
                 projectile_clear: !terrain.block_projectile(),
                 ground_speed: crate::movement::speed::qualified_ground_speed(
                     terrain.ground_present(),
-                    terrain.qualified_tile().ground_speed(),
+                    // As in accepted player movement, a known ground tile without a
+                    // speed override uses the default. Absent/unknown ground still refuses.
+                    Some(
+                        terrain
+                            .qualified_tile()
+                            .ground_speed()
+                            .unwrap_or(crate::movement::speed::DEFAULT_GROUND_SPEED),
+                    ),
                 ),
             };
             let address =
@@ -1396,8 +1485,10 @@ async fn choose_native_goal_step(
                 return None;
             }
             if distance == 1 && crate::movement::path_search::chebyshev(at, target_at) == 1 {
-                if native_step_draw(root, occurrence, "AI_DANCE", 0)? % 1_000_000
-                    < u64::from(static_attack_chance_ppm)
+                // Following holds beside the actual master; only combat pursuit dances.
+                if runtime.native_summon_master(actor) == Some(target)
+                    || native_step_draw(root, occurrence, "AI_DANCE", 0)? % 1_000_000
+                        < u64::from(static_attack_chance_ppm)
                 {
                     return Some(None);
                 }
@@ -1438,6 +1529,27 @@ async fn choose_native_goal_step(
         return None;
     }
     Some(Some(step))
+}
+
+/// How long the session-free wake sleeps before its next pass. A pass that declined to advance
+/// the gate (an empty Channel, or content not yet current) leaves `pass_due` overdue; that must
+/// back off to the think interval instead of retrying every millisecond. Only a pending
+/// native step shortens the sleep, down to the 1 ms floor and up to one think window.
+fn monster_ai_wake_delay(now: u64, pass_due: u64, step_due: Option<u64>) -> u64 {
+    const FLOOR_MICROS: u64 = 1_000;
+    let interval = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
+    let pass_wait = if pass_due > now {
+        pass_due - now
+    } else {
+        interval
+    };
+    match step_due {
+        Some(step) => step.saturating_sub(now).min(pass_wait).clamp(
+            FLOOR_MICROS,
+            crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS,
+        ),
+        None => pass_wait.clamp(FLOOR_MICROS, interval),
+    }
 }
 
 /// Pending owner timer inputs run before fresh thinks, so older carried search requests are
@@ -1483,21 +1595,41 @@ async fn run_native_movement_steps(
             ai.idle_native_movement(actor, false);
             continue;
         };
+        let master = runtime
+            .native_summon_role(actor)?
+            .map(|master| (master, ai.state(master).and_then(|state| state.target())));
+        let following_master = master.is_some_and(|(master, target)| {
+            target.is_none()
+                && goal
+                    == G::Chase {
+                        target: master,
+                        distance: 1,
+                    }
+        });
+        if let Some((_, target)) = master
+            && !following_master
+            && !matches!(goal, G::Chase { target: goal_target, .. } if Some(goal_target) == target)
+        {
+            ai.idle_native_movement(actor, false);
+            continue;
+        }
         if let Some(target) = goal.target() {
-            if !candidates.iter().any(|candidate| {
-                candidate.actor == target
-                    && runtime.read_actor_position(target).is_ok_and(|position| {
-                        let actual = TargetCandidate {
-                            position: position.position(),
-                            ..*candidate
-                        };
-                        crate::ai_think::targeting::is_eligible(
-                            &behavior.targeting,
-                            before.position(),
-                            &actual,
-                        )
-                    })
-            }) {
+            if !following_master
+                && !candidates.iter().any(|candidate| {
+                    candidate.actor == target
+                        && runtime.read_actor_position(target).is_ok_and(|position| {
+                            let actual = TargetCandidate {
+                                position: position.position(),
+                                ..*candidate
+                            };
+                            crate::ai_think::targeting::is_eligible(
+                                &behavior.targeting,
+                                before.position(),
+                                &actual,
+                            )
+                        })
+                })
+            {
                 ai.idle_native_movement(actor, false);
                 continue;
             }
@@ -1572,6 +1704,26 @@ async fn run_native_movement_steps(
             if let Some(prepared) = searched {
                 install_native_movement_goal(runtime, ai, stamp, actor, prepared, now_us);
             }
+            continue;
+        }
+        // Keep pursuit when only the target moved. The next owner input must acquire its
+        // replacement route through the same bounded search path as any fresh request.
+        if !route_current
+            && path.as_ref().is_some_and(|path| {
+                path.target_moved_only(runtime, actor, goal, goal_sequence, revisions)
+            })
+        {
+            let Some(request_sequence) = request_sequence.checked_add(1) else {
+                ai.idle_native_movement(actor, false);
+                continue;
+            };
+            if let Some(movement) = ai.native_movement_mut(actor) {
+                movement.path = None;
+                movement.search_pending = true;
+                movement.request_sequence = request_sequence;
+                movement.near = near;
+            }
+            let _ = ai.arm_native_step(runtime, stamp, actor, next_search_window(now_us));
             continue;
         }
         if failed_search || !route_current || chosen.is_none() {
@@ -1683,7 +1835,9 @@ async fn run_current_native_monster_thinks(
         stamp,
     )
     .await?;
-    let (taken, _) = ai.take_due_bounded(now_us);
+    let (mut taken, _) = ai.take_due_bounded(now_us);
+    // Masters select first even when a child's placement sorts ahead of its master.
+    taken.sort_by_key(|actor| runtime.native_summon_master(*actor).is_some());
     let homes = runtime
         .spawn_point_creatures()
         .into_iter()
@@ -1698,7 +1852,10 @@ async fn run_current_native_monster_thinks(
             ai.remove(actor);
             continue;
         };
-        let is_summon = runtime.native_summon_role(actor)?.is_some();
+        let master = runtime
+            .native_summon_role(actor)?
+            .map(|master| (master, ai.state(master).and_then(|state| state.target())));
+        let is_summon = master.is_some();
         let home = homes
             .get(&actor.placement_identity())
             .filter(|(exact, _)| *exact == actor && !is_summon)
@@ -1788,6 +1945,7 @@ async fn run_current_native_monster_thinks(
             ai.think_with_current_goal_facts(
                 actor,
                 &facts,
+                master,
                 &mut context,
                 move |context, input, report| {
                     Box::pin(async move {
@@ -1811,6 +1969,15 @@ async fn run_current_native_monster_thinks(
                         let reselect_target = &mut **reselect_target;
                         let goal = if !can_move || !input.behavior.movement.can_walk {
                             G::Stand
+                        } else if let Some((master, _)) = master {
+                            G::Chase {
+                                target: report.target.unwrap_or(master),
+                                distance: if report.target.is_some() {
+                                    target_distance
+                                } else {
+                                    1
+                                },
+                            }
                         } else if let Some(target) = report.target {
                             if report.fleeing {
                                 G::Flee { target }
@@ -1868,7 +2035,8 @@ async fn run_current_native_monster_thinks(
                         if matches!(goal, G::WalkBack { .. }) {
                             report.idle = movement.goal == G::Stand;
                         }
-                        *reselect_target = movement.searched
+                        *reselect_target = !is_summon
+                            && movement.searched
                             && movement.goal == G::Stand
                             && goal.target().is_some();
                         // Intrinsic children have no wild home. Their native role and removal-aware
@@ -2348,6 +2516,31 @@ mod tests {
     use crate::foundation::RuntimeWorkStamp;
     fn position(x: i32, floor: i16) -> MovementLocalPosition {
         MovementLocalPosition { x, y: 0, floor }
+    }
+
+    #[test]
+    fn the_monster_ai_wake_backs_off_when_a_pass_leaves_its_gate_overdue() {
+        use super::monster_ai_wake_delay;
+        let interval = crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000;
+        let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+        // Empty Channel: the gate stayed overdue and nothing is armed, so no 1 ms spin.
+        assert_eq!(monster_ai_wake_delay(5_000_000, 1_000_000, None), interval);
+        assert_eq!(monster_ai_wake_delay(5_000_000, 5_000_000, None), interval);
+        // A future gate with nothing armed sleeps exactly until it.
+        assert_eq!(monster_ai_wake_delay(5_000_000, 5_400_000, None), 400_000);
+        // An armed native step wakes early, bounded by one think window and the 1 ms floor.
+        assert_eq!(
+            monster_ai_wake_delay(5_000_000, 5_900_000, Some(5_020_000)),
+            20_000
+        );
+        assert_eq!(
+            monster_ai_wake_delay(5_000_000, 5_900_000, Some(5_800_000)),
+            window
+        );
+        assert_eq!(
+            monster_ai_wake_delay(5_000_000, 1_000_000, Some(4_000_000)),
+            1_000
+        );
     }
 
     struct CurrentOwnerSummonFixture {
@@ -3329,6 +3522,865 @@ mod tests {
         }
     }
 
+    #[test]
+    fn registered_summon_inherits_master_target_and_follows_without_selecting_adjacent_player()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness = executor.block_on(Harness::create(admin, "summon_master_target", false))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world =
+                    WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL))
+                    .map_err(debug)?;
+                let (controller, pin, definition) =
+                    crate::content::native_gameplay::tests::activated_summon_fixture(
+                        world,
+                        NATIVE_MOVEMENT_SOURCE_WORLD,
+                    );
+                let content = controller
+                    .active()
+                    .ok_or("active summon generation")?
+                    .native_gameplay()
+                    .ok_or("decoded summon content")?;
+                let room = pin.qualified_room();
+                assert!(room.source_world().is_some());
+                let cell = |x, y| MovementLocalPosition { x, y, floor: -7 };
+                // These actual Thalom cells are outside protection zones and carry qualified
+                // source ground. The room's original entry is a different, protected cell.
+                let start = cell(2, 12);
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    pin.activation_sequence(),
+                    pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
+                )
+                .map_err(debug)?;
+                content
+                    .install_companion_policies(&mut runtime)
+                    .map_err(debug)?;
+                let health = runtime
+                    .companion_policy(&definition.key)
+                    .map_err(debug)?
+                    .maximum_health;
+                let parent = runtime
+                    .admit_source_pinned_lab_creature(start, &definition.key, health)
+                    .map_err(debug)?;
+                runtime
+                    .install_creature_policy(parent, &definition.key)
+                    .map_err(debug)?;
+                let session_a = GameSessionId::decode(&id(40)).map_err(debug)?;
+                let reservation = runtime.reserve_fresh_session(session_a).map_err(debug)?;
+                let player_a = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(player_a, cell(4, 12))
+                    .map_err(debug)?;
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let mut ai = CreatureAiTable::default();
+                admit_native_creature_ai(&runtime, &mut ai, content, parent, 0).map_err(debug)?;
+                let candidate = |actor, position| TargetCandidate {
+                    actor,
+                    position,
+                    eligible: true,
+                    invisible: false,
+                    health: 20,
+                    damage: 0,
+                };
+                let mut candidates = vec![candidate(player_a, cell(4, 12))];
+                let revisions = crate::ability::RevisionSet::new(
+                    "rules-r1",
+                    "content-r1",
+                    "world-r1",
+                    "formula-r1",
+                    "sim-r1",
+                )
+                .map_err(debug)?;
+                let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+                let mut summons = NativeSummonOwner::default();
+                let mut budget = crate::combat_attack::ChaseSearchBudget::default();
+                let (reports, _) = run_current_native_monster_thinks(
+                    &mut runtime,
+                    &mut ai,
+                    &mut summons,
+                    content,
+                    0,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                assert_eq!(reports.len(), 1);
+                assert_eq!(reports[0].1.target, Some(player_a));
+                assert_eq!(reports[0].1.summon_proposals.len(), 1);
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                let child = {
+                    let mut map = NativeSummonMap {
+                        tx: &mut tx,
+                        authority: &authority,
+                        room,
+                        objects: &objects,
+                        stamp,
+                        tiles: BTreeMap::new(),
+                        path: None,
+                    };
+                    let receipt = summons
+                        .execute_current_owner(
+                            &mut runtime,
+                            stamp,
+                            content
+                                .summon_catalog(&definition)
+                                .ok_or("summon catalog")?,
+                            &reports[0].1.summon_proposals[0],
+                            &mut map,
+                            |_, _| Err(CarrierError::ProfileInvalid),
+                        )
+                        .map_err(debug)?;
+                    assert!(
+                        !receipt.newly_created,
+                        "child was already registered by the production pass"
+                    );
+                    receipt.child
+                };
+                assert_eq!(runtime.native_summon_role(child), Ok(Some(parent)));
+                // Stage the child at an actual open Thalom tile before its first AI turn.
+                // The native registry link and installed physical policy remain unchanged.
+                for _ in 0..4 {
+                    let before = runtime.read_actor_position(child).map_err(debug)?;
+                    let at = before.position();
+                    if at == cell(2, 11) {
+                        break;
+                    }
+                    let next = if at.y != 11 {
+                        cell(at.x, at.y - 1)
+                    } else {
+                        cell(at.x + (2 - at.x).signum(), at.y)
+                    };
+                    runtime
+                        .borrow_movement_position()
+                        .commit_cardinal(before, next)
+                        .map_err(debug)?;
+                }
+                assert_eq!(
+                    runtime
+                        .read_actor_position(child)
+                        .map_err(debug)?
+                        .position(),
+                    cell(2, 11)
+                );
+                let session_b = GameSessionId::decode(&id(41)).map_err(debug)?;
+                let reservation = runtime.reserve_fresh_session(session_b).map_err(debug)?;
+                let player_b = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(player_b, cell(3, 11))
+                    .map_err(debug)?;
+                candidates.push(candidate(player_b, cell(3, 11)));
+                assert_eq!(
+                    crate::movement::path_search::chebyshev(cell(2, 11), candidates[1].position),
+                    1
+                );
+                assert_eq!(
+                    crate::movement::path_search::chebyshev(cell(2, 11), candidates[0].position),
+                    2
+                );
+                // Even an existing independent override cannot redirect a registered summon.
+                assert!(ai.set_override(
+                    child,
+                    crate::ai_think::CreatureAiOverride::ForcedTarget {
+                        actor: player_b,
+                        until_us: 10_000_000,
+                    }
+                ));
+                let (reports, _) = run_current_native_monster_thinks(
+                    &mut runtime,
+                    &mut ai,
+                    &mut summons,
+                    content,
+                    50_000,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                let report = &reports
+                    .iter()
+                    .find(|(actor, _)| *actor == child)
+                    .ok_or("child think")?
+                    .1;
+                assert_eq!(
+                    report.target,
+                    Some(player_a),
+                    "child inherits A despite adjacent B"
+                );
+                assert!(!report.fleeing);
+                assert_eq!(ai.state(child).ok_or("child AI")?.target(), Some(player_a));
+                assert!(
+                    matches!(ai.native_movement(child).ok_or("child movement")?.goal,
+                    crate::ai_think::NativeCreatureGoal::Chase { target, .. } if target == player_a)
+                );
+
+                // With no master target, B remains eligible but the child follows its master.
+                let before = runtime.read_actor_position(child).map_err(debug)?;
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(before, cell(1, 11))
+                    .map_err(debug)?;
+                ai.idle_native_movement(parent, true);
+                assert_eq!(
+                    ai.state(child).ok_or("retained child target")?.target(),
+                    Some(player_a)
+                );
+                assert_eq!(
+                    current_native_ai_target(&runtime, &ai, child),
+                    None,
+                    "the swing path already follows the master before the child's next think"
+                );
+                let (reports, _) = run_current_native_monster_thinks(
+                    &mut runtime,
+                    &mut ai,
+                    &mut summons,
+                    content,
+                    1_050_000,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                let report = &reports
+                    .iter()
+                    .find(|(actor, _)| *actor == child)
+                    .ok_or("following child think")?
+                    .1;
+                assert_eq!(report.target, None);
+                assert!(!report.fleeing);
+                assert!(
+                    !report.idle,
+                    "following child keeps thinking without a target"
+                );
+                assert_eq!(ai.state(child).ok_or("following AI")?.target(), None);
+                assert_eq!(
+                    ai.native_movement(child).ok_or("follow goal")?.goal,
+                    crate::ai_think::NativeCreatureGoal::Chase {
+                        target: parent,
+                        distance: 1
+                    }
+                );
+                let before = runtime.read_actor_position(child).map_err(debug)?;
+                let master_position = runtime
+                    .read_actor_position(parent)
+                    .map_err(debug)?
+                    .position();
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                run_native_movement_steps(
+                    &mut runtime,
+                    &mut ai,
+                    content,
+                    1_100_000,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                    stamp,
+                )
+                .await
+                .map_err(debug)?;
+                let after = runtime.read_actor_position(child).map_err(debug)?;
+                assert!(
+                    crate::movement::path_search::chebyshev(after.position(), master_position)
+                        < crate::movement::path_search::chebyshev(
+                            before.position(),
+                            master_position
+                        )
+                );
+                assert_eq!(
+                    ai.state(child).ok_or("following AI after step")?.target(),
+                    None
+                );
+                tx.rollback().await?;
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("summon master fixture cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
+    #[test]
+    fn movement_blocked_tile_facts_preserve_source_projectile_flags()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness = executor.block_on(Harness::create(admin, "blocked_tile_facts", false))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world =
+                    WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL))
+                    .map_err(debug)?;
+                let entry = crate::content::qualify_native_entry_room(world).map_err(debug)?;
+                let bundle = crate::map::spell_tiles::tests::world();
+                let start = MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                };
+                let bundle_room = entry
+                    .bundle_view(
+                        bundle
+                            .movement_cells(entry.movement_cells())
+                            .map_err(debug)?,
+                        bundle.frame_binding_digest(world),
+                        bundle.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: start.x,
+                            y: start.y,
+                            floor: start.floor,
+                        },
+                    )
+                    .ok_or("qualified bundle room")?;
+                let room = &bundle_room;
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    1,
+                    room.compiled().server_digest(),
+                    room.compiled().client_digest(),
+                    room.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
+                )
+                .map_err(debug)?;
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                {
+                    let mut map = NativeSummonMap {
+                        tx: &mut tx,
+                        authority: &authority,
+                        room,
+                        objects: &objects,
+                        stamp,
+                        tiles: BTreeMap::new(),
+                        path: None,
+                    };
+                    // Existing bundle fixture: water i598 and opaque wall i1100.
+                    for (x, block_projectile) in [(3, false), (4, true)] {
+                        let position = MovementLocalPosition { x, y: 0, floor: 7 };
+                        let cells = room.movement_cells();
+                        let cell = logical_cell(position);
+                        assert_eq!(
+                            cells.index().lookup(cells.scope(), cell),
+                            Ok(crate::content::CollisionClass::Blocked)
+                        );
+                        let flags = cells
+                            .spell_tiles()
+                            .lookup(cells.scope(), cell)
+                            .map_err(debug)?
+                            .flags();
+                        assert!(flags.block_solid);
+                        assert_eq!(flags.block_projectile, block_projectile);
+                        let tile = map
+                            .read_tile_facts(&runtime, position)
+                            .await
+                            .ok_or("known movement-blocked tile")?;
+                        assert!(!tile.walkable);
+                        assert_eq!(tile.projectile_clear, !block_projectile);
+                        let cached = map
+                            .read_tile_facts(&runtime, position)
+                            .await
+                            .ok_or("memoized movement-blocked tile")?;
+                        assert!(!cached.walkable);
+                        assert_eq!(cached.projectile_clear, tile.projectile_clear);
+                    }
+                    assert_eq!(map.tiles.len(), 2);
+                }
+                tx.rollback().await?;
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("blocked tile-fact fixture cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
+    const NATIVE_MOVEMENT_SOURCE_WORLD: &[u8] =
+        include_bytes!("../../../../tools/content-schema/native-gameplay/canary-thalom-world.json");
+
+    #[test]
+    fn a_chasing_creature_replans_when_its_target_moves_before_the_first_step()
+    -> crate::bestiary_postgres_harness::TestResult {
+        chasing_position_change(true)
+    }
+
+    #[test]
+    fn a_chasing_creature_still_idles_when_the_actor_is_displaced_externally()
+    -> crate::bestiary_postgres_harness::TestResult {
+        chasing_position_change(false)
+    }
+
+    fn chasing_position_change(move_target: bool) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness = executor.block_on(Harness::create(admin, "chase_position_change", false))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world =
+                    WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL))
+                    .map_err(debug)?;
+                let (controller, pin) =
+                    crate::content::native_gameplay::tests::activated_with_loot_tables(
+                        world,
+                        Some(NATIVE_MOVEMENT_SOURCE_WORLD),
+                    );
+                let content = controller
+                    .active()
+                    .ok_or("active fixture generation")?
+                    .native_gameplay()
+                    .ok_or("decoded fixture content")?;
+                let definition = content
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .find(|record| record.profile.target.key == "oteryn:creature.rat")
+                    .map(|record| &record.profile.target)
+                    .ok_or("source rat definition")?;
+                let room = pin.qualified_room();
+                assert!(room.source_world().is_some());
+                let cell = |x, y| MovementLocalPosition { x, y, floor: -7 };
+                // These actual Thalom cells are outside protection zones and carry qualified
+                // source ground. The room's original entry is a different, protected cell.
+                let start = cell(2, 12);
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    pin.activation_sequence(),
+                    pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
+                )
+                .map_err(debug)?;
+                content
+                    .install_companion_policies(&mut runtime)
+                    .map_err(debug)?;
+                let health = runtime
+                    .companion_policy(&definition.key)
+                    .map_err(debug)?
+                    .maximum_health;
+                let parent = runtime
+                    .admit_source_pinned_lab_creature(start, &definition.key, health)
+                    .map_err(debug)?;
+                let target = runtime
+                    .admit_source_pinned_lab_creature(cell(4, 12), &definition.key, health)
+                    .map_err(debug)?;
+                runtime
+                    .install_creature_policy(parent, &definition.key)
+                    .map_err(debug)?;
+                runtime
+                    .install_creature_policy(target, &definition.key)
+                    .map_err(debug)?;
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let mut ai = CreatureAiTable::default();
+                admit_native_creature_ai(&runtime, &mut ai, content, parent, 0).map_err(debug)?;
+                let candidates = [TargetCandidate {
+                    actor: target,
+                    position: cell(4, 12),
+                    eligible: true,
+                    invisible: false,
+                    health: 20,
+                    damage: 0,
+                }];
+                let revisions = crate::ability::RevisionSet::new(
+                    "rules-r1",
+                    "content-r1",
+                    "world-r1",
+                    "formula-r1",
+                    "sim-r1",
+                )
+                .map_err(debug)?;
+                let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+                let mut budget = crate::combat_attack::ChaseSearchBudget::default();
+                // A real think selects and retains the target before the first physical step.
+                let mut states = ChannelSpellStates::default();
+                let (reports, _) = run_current_native_monster_thinks(
+                    &mut runtime,
+                    &mut ai,
+                    &mut states.native_summons,
+                    content,
+                    0,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                assert_eq!(reports[0].1.target, Some(target));
+                let movement = ai.native_movement(parent).ok_or("selected chase")?;
+                let goal = movement.goal;
+                let goal_sequence = movement.goal_sequence;
+                let request_sequence = movement.request_sequence;
+                assert!(movement.path.is_some());
+                assert!(!movement.search_pending);
+                assert!(matches!(
+                    goal,
+                    crate::ai_think::NativeCreatureGoal::Chase { .. }
+                ));
+                let displaced = if move_target { target } else { parent };
+                let before = runtime.read_actor_position(displaced).map_err(debug)?;
+                let destination = if move_target {
+                    cell(4, 11)
+                } else {
+                    cell(2, 11)
+                };
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(before, destination)
+                    .map_err(debug)?;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                run_native_movement_steps(
+                    &mut runtime,
+                    &mut ai,
+                    content,
+                    50_000,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                    stamp,
+                )
+                .await
+                .map_err(debug)?;
+                let movement = ai
+                    .native_movement(parent)
+                    .ok_or("retained movement owner")?;
+                if move_target {
+                    assert_eq!(
+                        ai.state(parent).ok_or("retained AI")?.target(),
+                        Some(target)
+                    );
+                    assert_eq!(movement.goal, goal);
+                    assert_eq!(movement.goal_sequence, goal_sequence);
+                    assert_eq!(movement.request_sequence, request_sequence + 1);
+                    assert!(movement.path.is_none());
+                    assert!(movement.search_pending);
+                    assert_eq!(ai.earliest_native_step_due(), Some(100_000));
+                    // Budget deferral preserves the same request and target on the real path.
+                    while budget.charge_creature(
+                        100_000,
+                        crate::combat_attack::UNITS_PER_SEARCH,
+                        false,
+                    ) {}
+                    let stamp = runtime.issue_owner_work().map_err(debug)?;
+                    run_native_movement_steps(
+                        &mut runtime,
+                        &mut ai,
+                        content,
+                        100_000,
+                        &root,
+                        &revisions,
+                        &candidates,
+                        room,
+                        &objects,
+                        &mut tx,
+                        &authority,
+                        &mut budget,
+                        false,
+                        stamp,
+                    )
+                    .await
+                    .map_err(debug)?;
+                    assert!(
+                        ai.native_movement(parent)
+                            .ok_or("deferred request")?
+                            .search_pending
+                    );
+                    assert_eq!(
+                        ai.state(parent).ok_or("deferred AI")?.target(),
+                        Some(target)
+                    );
+                    let stamp = runtime.issue_owner_work().map_err(debug)?;
+                    run_native_movement_steps(
+                        &mut runtime,
+                        &mut ai,
+                        content,
+                        150_000,
+                        &root,
+                        &revisions,
+                        &candidates,
+                        room,
+                        &objects,
+                        &mut tx,
+                        &authority,
+                        &mut budget,
+                        false,
+                        stamp,
+                    )
+                    .await
+                    .map_err(debug)?;
+                    let movement = ai.native_movement(parent).ok_or("replanned chase")?;
+                    assert_eq!(movement.goal, goal);
+                    assert!(!movement.search_pending);
+                    assert!(movement.path.is_some());
+                    assert_eq!(
+                        ai.state(parent).ok_or("pursuing AI")?.target(),
+                        Some(target)
+                    );
+                    assert_ne!(
+                        runtime
+                            .read_actor_position(parent)
+                            .map_err(debug)?
+                            .position(),
+                        start
+                    );
+                } else {
+                    assert_eq!(movement.goal, crate::ai_think::NativeCreatureGoal::Stand);
+                    assert!(movement.path.is_none());
+                    assert!(!movement.search_pending);
+                    assert_eq!(ai.state(parent).ok_or("idle AI")?.target(), None);
+                    assert_eq!(ai.earliest_native_step_due(), None);
+                    assert_eq!(
+                        runtime
+                            .read_actor_position(parent)
+                            .map_err(debug)?
+                            .position(),
+                        destination
+                    );
+                }
+                tx.rollback().await?;
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("chase position-change cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
     /// The existing bundle spawn adapter qualifies this explicit test-authored Table against
     /// the installed production rat. Thalom remains the independently current Map/Item reader;
     /// the bundle fixture supplies only source spawn data, never Map authority.
@@ -3793,6 +4845,386 @@ mod tests {
             .build()
             .expect("test runtime")
             .block_on(future)
+    }
+
+    /// E2E for the entry point installed by serve_gameplay, without a session or vitals tick.
+    /// Requires OTERYN_TEST_POSTGRES_ADMIN_URL; skipped where it is unset.
+    #[test]
+    fn the_installed_monster_ai_wake_steps_a_creature_without_a_session_tick()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
+        use crate::content::charm_source::CanonicalCharmCatalogue;
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        use crate::gameplay_transport::world_required_capabilities::{
+            BoundRequiredCapabilities, offered_for_scope,
+        };
+        use crate::native_admission_source::descriptor::ProducerDescriptor;
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+        use std::future::Future as _;
+        use std::time::Duration;
+        use tokio::sync::Mutex;
+
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness = executor.block_on(Harness::create(admin, "monster_ai_wake", false))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world =
+                    WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL))
+                    .map_err(debug)?;
+                let (controller, pin) =
+                    crate::content::native_gameplay::tests::activated_with_loot_tables(
+                        world,
+                        Some(NATIVE_MOVEMENT_SOURCE_WORLD),
+                    );
+                let active = controller.active().ok_or("active native generation")?;
+                let content = active.native_gameplay().ok_or("decoded native content")?;
+                let room = pin.qualified_room();
+                assert!(room.source_world().is_some());
+                let cell = |x, y| MovementLocalPosition { x, y, floor: -7 };
+                let start = cell(2, 12);
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    pin.activation_sequence(),
+                    pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
+                )
+                .map_err(debug)?;
+                content
+                    .install_companion_policies(&mut runtime)
+                    .map_err(debug)?;
+                let key = "oteryn:creature.rat";
+                let table = Table {
+                    creatures: vec![Creature {
+                        key: key.into(),
+                        period: Period::All,
+                    }],
+                    sources: vec![Source {
+                        key: "oteryn:spawn/current-home-fixture".into(),
+                        floor: 7,
+                        x: 4,
+                        y: 12,
+                        points: vec![Point {
+                            creature: 0,
+                            x: 4,
+                            y: 12,
+                            direction: Direction::South,
+                            respawn_ms: 30_000,
+                        }],
+                    }],
+                };
+                let bundle = crate::map::boot::tests::door_world()
+                    .map_err(debug)?
+                    .with_spawns_for_test(table);
+                assert_eq!(
+                    crate::node::serve::realize_bundle_spawns(
+                        &mut runtime,
+                        &bundle,
+                        &oteryn_foundation::CancellationToken::new(),
+                    )
+                    .await
+                    .map_err(debug)?,
+                    Some((1, 1))
+                );
+                let (_, home, live) = runtime.spawn_point_creatures()[0];
+                let actor = live.ok_or("realized exact creature")?;
+                assert_eq!(home, cell(4, 12));
+                assert!(runtime.companion_snapshot(actor).is_ok());
+                // Stage an away position through the existing physical position owner before
+                // AI admission. Its admission anchor is deliberately different from source home.
+                for destination in [cell(3, 12), cell(2, 12)] {
+                    let before = runtime.read_actor_position(actor).map_err(debug)?;
+                    runtime
+                        .borrow_movement_position()
+                        .commit_cardinal(before, destination)
+                        .map_err(debug)?;
+                }
+                let mut states = ChannelSpellStates::default();
+                admit_native_creature_ai(
+                    &runtime,
+                    &mut states.monster_melee.creature_ai,
+                    content,
+                    actor,
+                    0,
+                )
+                .map_err(debug)?;
+                assert_eq!(
+                    states
+                        .monster_melee
+                        .creature_ai
+                        .state(actor)
+                        .ok_or("AI state")?
+                        .movement_anchor(),
+                    cell(2, 12)
+                );
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+                let digest = content
+                    .source_digest()
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                let revisions = crate::ability::RevisionSet::new(
+                    "ruleset:ai-v1",
+                    &format!("content:{digest}"),
+                    "world:ai-v1",
+                    "formula:source-melee-baseline",
+                    "simulation:v1",
+                )
+                .map_err(debug)?;
+                let mut budget = crate::combat_attack::ChaseSearchBudget::default();
+                let (reports, _) = run_current_native_monster_thinks(
+                    &mut runtime,
+                    &mut states.monster_melee.creature_ai,
+                    &mut states.native_summons,
+                    content,
+                    0,
+                    &root,
+                    &revisions,
+                    &[],
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                assert_eq!(reports.len(), 1);
+                assert!(!reports[0].1.idle);
+                assert_eq!(
+                    states.monster_melee.creature_ai.earliest_native_step_due(),
+                    Some(0)
+                );
+                assert_eq!(
+                    runtime
+                        .read_actor_position(actor)
+                        .map_err(debug)?
+                        .position(),
+                    start
+                );
+                tx.rollback().await?;
+                drop(permit);
+                let descriptor = ProducerDescriptor::new(
+                    "platform-test".into(),
+                    ("127.0.0.1".into(), 1),
+                    "source.test".into(),
+                    "source.test".into(),
+                    vec![CertificateDer::from(
+                        include_bytes!("../../tests/support/spell-save-tls-fixture/ca.der")
+                            .to_vec(),
+                    )],
+                    vec![CertificateDer::from(
+                        include_bytes!("../../tests/support/spell-save-tls-fixture/client.der")
+                            .to_vec(),
+                    )],
+                    PrivateKeyDer::try_from(
+                        include_bytes!("../../tests/support/spell-save-tls-fixture/client-key.der")
+                            .to_vec(),
+                    )?,
+                )
+                .map_err(debug)?;
+                let evidence =
+                    crate::gameplay_transport::fresh_evidence::FreshEvidenceSource::new(descriptor);
+                let spells = crate::spell::cast::v1_spell_book().map_err(debug)?;
+                let achievements = crate::achievement_catalogue::AchievementCatalogue::embedded()
+                    .map_err(debug)?;
+                let charms = CanonicalCharmCatalogue::embedded().map_err(debug)?;
+                let required_capabilities = BoundRequiredCapabilities::for_channel_boot(
+                    &[],
+                    scope,
+                    1,
+                    "policy-1",
+                    offered_for_scope(false, None),
+                )
+                .map_err(debug)?;
+                let runtime = Mutex::new(runtime);
+                let door = Mutex::new(objects);
+                let owner = ComposedFreshAdmission {
+                    root: &harness.root,
+                    character: &recovery,
+                    holder: &harness.node,
+                    evidence: &evidence,
+                    world_id: world,
+                    channel_id: channel,
+                    required_capabilities,
+                    runtime: &runtime,
+                    movement_cells: room.movement_cells(),
+                    door: &door,
+                    chest: room.door(),
+                    spells: &spells,
+                    active_generation: Some(active),
+                    premium_coordinator: None,
+                    rooms: crate::gameplay_transport::SeamRooms::new(Some(room), Some(room)),
+                    achievements: &achievements,
+                    imported_charms: &charms,
+                    spell_states: Mutex::new(states),
+                    world_gate: std::sync::Mutex::default(),
+                    attack: Mutex::default(),
+                    clock_origin: std::time::Instant::now(),
+                    lost: std::sync::Mutex::default(),
+                    revision_sequencer: Default::default(),
+                    quest_catalogue: None,
+                    quest_sessions: std::sync::Mutex::default(),
+                    chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
+                    npc_conversations: Default::default(),
+                    wheel_ruleset: None,
+                    wheel_sessions: std::sync::Mutex::default(),
+                    progression_sessions: std::sync::Mutex::default(),
+                    last_positions: Default::default(),
+                    input_gate: Default::default(),
+                    premium: crate::premium::refresh::PremiumRefresher::new(
+                        Default::default(),
+                        harness.root.clone(),
+                        None,
+                    ),
+                    premium_sessions: std::sync::Mutex::default(),
+                    fence_holders: Default::default(),
+                    spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
+                        world, channel,
+                    ),
+                    loop_ground: Default::default(),
+                };
+                let shutdown = oteryn_foundation::CancellationToken::new();
+                let mut driver = std::pin::pin!(owner.run_monster_ai_wake(&shutdown));
+                let mut observer = std::pin::pin!(async {
+                    loop {
+                        tokio::time::sleep(Duration::from_millis(1)).await;
+                        let runtime = owner.runtime.lock().await;
+                        let position = runtime.read_actor_position(actor).map_err(debug)?;
+                        if position.position() != start {
+                            let states = owner.spell_states.lock().await;
+                            let movement = states
+                                .monster_melee
+                                .creature_ai
+                                .native_movement(actor)
+                                .ok_or("paced creature after wake")?;
+                            let due = movement
+                                .cadence
+                                .next_due()
+                                .ok_or("advanced step deadline")?
+                                .get();
+                            assert!(due > 0);
+                            assert_eq!(
+                                states.monster_melee.creature_ai.earliest_native_step_due(),
+                                Some(due)
+                            );
+                            shutdown.cancel();
+                            return Ok::<_, Box<dyn std::error::Error>>(());
+                        }
+                    }
+                });
+                let (mut end, mut observed) = (None, false);
+                tokio::time::timeout(
+                    Duration::from_secs(5),
+                    std::future::poll_fn(|cx| {
+                        if end.is_none()
+                            && let std::task::Poll::Ready(result) = driver.as_mut().poll(cx)
+                        {
+                            end = Some(result);
+                        }
+                        if !observed
+                            && let std::task::Poll::Ready(result) = observer.as_mut().poll(cx)
+                        {
+                            result?;
+                            observed = true;
+                        }
+                        if observed && end.is_some() {
+                            std::task::Poll::Ready(Ok::<_, Box<dyn std::error::Error>>(()))
+                        } else {
+                            std::task::Poll::Pending
+                        }
+                    }),
+                )
+                .await??;
+                assert_eq!(
+                    end,
+                    Some(crate::monster_owner_cycle::RespawnDriveEnd::Shutdown)
+                );
+                // The very same installed entry point also ends without a shutdown request
+                // when its Channel owner is retired.
+                owner.runtime.lock().await.retire_owner_cycle();
+                let running = oteryn_foundation::CancellationToken::new();
+                assert_eq!(
+                    tokio::time::timeout(
+                        Duration::from_secs(1),
+                        owner.run_monster_ai_wake(&running),
+                    )
+                    .await?,
+                    crate::monster_owner_cycle::RespawnDriveEnd::StaleOwner,
+                );
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("monster AI wake cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
+        }
     }
 
     /// LOOP-MONSTER-1: the job `serve_gameplay` installs reads the wake built from the owner's
@@ -4340,138 +5772,307 @@ mod tests {
         }
     }
 
-    /// CREATURE-MOVE-1 (Codex 4242014304): in the accepted entry room the spawned rats, thinking
-    /// with the room's own rat behaviour, commit a real chase step through `run_due_thinks`: the
-    /// den rat steps west onto the east cell; the den-north rat's chase step is the door cell and
-    /// is refused, so it stays.
+    /// The accepted entry room's null-speed tiles support real paced native movement. The
+    /// den rat steps west while the north rat cannot enter the closed doorway or occupied den.
+    /// Current terrain and Item reads stay held through the production think and step paths.
     #[test]
-    #[allow(clippy::expect_used)]
-    fn a_spawned_rat_commits_a_chase_step_in_the_accepted_entry_room() {
+    fn a_spawned_rat_commits_a_chase_step_in_the_accepted_entry_room()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
         use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
-        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
-            .expect("world");
-        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
-            .expect("channel");
-        let node =
-            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
-        let (room, door) = entry_room_and_door(world, channel);
-        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-            world,
-            channel,
-            node,
-            1,
-            1,
-            1,
-            "runtime-scope-assignment:1",
-            8,
-            ChannelContentPin::test(world),
-        )
-        .expect("runtime");
-        let source = room.spawn_source().expect("D116 spawn source");
-        assert_eq!(
-            runtime.realize_activation_spawns(vec![source.activation_facts()]),
-            Ok(2)
-        );
-        let rat_at = |runtime: &ChannelRuntimeV1, at: MovementLocalPosition| {
-            runtime
-                .spawn_point_creatures()
-                .into_iter()
-                .find_map(|(_, _, live)| {
-                    live.filter(|rat| {
-                        runtime
-                            .read_actor_position(*rat)
-                            .is_ok_and(|p| p.position() == at)
-                    })
-                })
-                .expect("a spawned rat on the cell")
+        let Some(admin) = configured_admin() else {
+            return Ok(());
         };
-        let den = rat_at(&runtime, cell(2, 0));
-        let den_north = rat_at(&runtime, cell(2, -1));
-        let session =
-            GameSessionId::decode(&[1, 0, 0, 0, 0, 4, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4])
-                .expect("session");
-        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
-        let player = runtime.commit_fresh_session(reservation).expect("player");
-        runtime
-            .initialize_pinned_test_position(player, cell(0, 0))
-            .expect("player on the entry start");
-
-        // The room's own hostile rat behaviour, its swing cleared as the AI pass clears it.
-        let room_source: serde_json::Value =
-            serde_json::from_slice(crate::content::NATIVE_ENTRY_ROOM_SOURCE).expect("room source");
-        let profile = room_source["authoring_profiles"]
-            .as_array()
-            .expect("authoring profiles")
-            .iter()
-            .find(|profile| profile["target"]["key"] == "oteryn:behavior/rat-hostile")
-            .expect("rat behaviour");
-        let mut behavior: ProjectV2BehaviorAuthoring =
-            serde_json::from_value(profile["data"]["profile"].clone()).expect("behaviour");
-        behavior.attacks.clear();
-        behavior.defenses.clear();
-        let mut table = crate::ai_think::CreatureAiTable::default();
-        for rat in [den, den_north] {
-            table
-                .admit_creature(
-                    &runtime,
-                    rat,
-                    Some(&behavior),
-                    &std::collections::BTreeMap::new(),
-                    0,
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness = executor.block_on(Harness::create(admin, "entry_null_speed", false))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world =
+                    WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL))
+                    .map_err(debug)?;
+                let (controller, pin) =
+                    crate::content::native_gameplay::tests::activated_with_loot_tables(world, None);
+                let content = controller
+                    .active()
+                    .ok_or("active fixture generation")?
+                    .native_gameplay()
+                    .ok_or("decoded fixture content")?;
+                let definition = content
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .find(|record| record.profile.target.key == "oteryn:creature.rat")
+                    .map(|record| &record.profile.target)
+                    .ok_or("source rat definition")?;
+                let room = pin.qualified_room();
+                assert!(room.source_world().is_none());
+                let cell = |x, y| MovementLocalPosition { x, y, floor: 0 };
+                let start = cell(0, 0);
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    pin.activation_sequence(),
+                    pin.identity().server_artifact_digest(),
+                    pin.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
                 )
-                .expect("admitted");
+                .map_err(debug)?;
+                content
+                    .install_companion_policies(&mut runtime)
+                    .map_err(debug)?;
+                // The accepted room supplies the actual spawn positions and timing. Bind
+                // those positions to the activated native rat (the old helper used the entry
+                // reference rat); health, behavior and speed all come from the selected content.
+                let mut spawn = room
+                    .spawn_source()
+                    .ok_or("accepted spawn source")?
+                    .activation_facts();
+                spawn.3.clone_from(&definition.key);
+                spawn.4 = u64::try_from(
+                    runtime
+                        .companion_policy(&definition.key)
+                        .map_err(debug)?
+                        .maximum_health,
+                )?;
+                assert_eq!(runtime.realize_activation_spawns(vec![spawn]), Ok(2));
+                let rat_at = |at| {
+                    runtime
+                        .spawn_point_creatures()
+                        .into_iter()
+                        .find_map(|(_, home, live)| (home == at).then_some(live).flatten())
+                };
+                let den = rat_at(cell(2, 0)).ok_or("spawned den rat")?;
+                let den_north = rat_at(cell(2, -1)).ok_or("spawned den-north rat")?;
+                let session = GameSessionId::decode(&id(40)).map_err(debug)?;
+                let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+                let player = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .initialize_pinned_test_position(player, start)
+                    .map_err(debug)?;
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                {
+                    let cells = room.movement_cells();
+                    let qualified = cells
+                        .spell_tiles()
+                        .lookup(cells.scope(), logical_cell(cell(1, 0)))
+                        .map_err(debug)?;
+                    assert!(qualified.ground_present());
+                    assert_eq!(
+                        qualified.ground_speed(),
+                        None,
+                        "retained source has null ground_speed"
+                    );
+                    let mut map = NativeSummonMap {
+                        tx: &mut tx,
+                        authority: &authority,
+                        room,
+                        objects: &objects,
+                        stamp,
+                        tiles: BTreeMap::new(),
+                        path: None,
+                    };
+                    let tile = map
+                        .read_tile_facts(&runtime, cell(1, 0))
+                        .await
+                        .ok_or("current entry tile facts")?;
+                    assert!(tile.walkable);
+                    assert_eq!(
+                        tile.ground_speed,
+                        crate::movement::speed::DEFAULT_GROUND_SPEED
+                    );
+                    assert_eq!(
+                        map.read_tile(&runtime, cell(1, -1)).await,
+                        Some(false),
+                        "closed door refuses"
+                    );
+                }
+                let mut ai = CreatureAiTable::default();
+                for rat in [den, den_north] {
+                    admit_native_creature_ai(&runtime, &mut ai, content, rat, 0).map_err(debug)?;
+                }
+                let candidates = [TargetCandidate {
+                    actor: player,
+                    position: start,
+                    eligible: true,
+                    invisible: false,
+                    health: 20,
+                    damage: 0,
+                }];
+                let revisions = crate::ability::RevisionSet::new(
+                    "rules-r1",
+                    "content-r1",
+                    "world-r1",
+                    "formula-r1",
+                    "sim-r1",
+                )
+                .map_err(debug)?;
+                let root = GameplayDecisionRoot::from_bytes(content.source_digest());
+                let mut summons = NativeSummonOwner::default();
+                let mut budget = crate::combat_attack::ChaseSearchBudget::default();
+                let (reports, _) = run_current_native_monster_thinks(
+                    &mut runtime,
+                    &mut ai,
+                    &mut summons,
+                    content,
+                    0,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                )
+                .await
+                .map_err(debug)?;
+                assert_eq!(
+                    reports.len(),
+                    2,
+                    "both rats thought through production dispatch"
+                );
+                assert!(
+                    reports
+                        .iter()
+                        .all(|(_, report)| report.target == Some(player) && report.step.is_none())
+                );
+                // Run the north rat's input first. Its doorway is closed and its alternative
+                // via the den is still occupied, so no legal step can be committed.
+                ai.cancel_native_step(den);
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                run_native_movement_steps(
+                    &mut runtime,
+                    &mut ai,
+                    content,
+                    50_000,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                    stamp,
+                )
+                .await
+                .map_err(debug)?;
+                assert_eq!(
+                    runtime
+                        .read_actor_position(den_north)
+                        .map_err(debug)?
+                        .position(),
+                    cell(2, -1)
+                );
+                ai.arm_native_step(&runtime, stamp, den, 50_000)
+                    .map_err(debug)?;
+                run_native_movement_steps(
+                    &mut runtime,
+                    &mut ai,
+                    content,
+                    50_000,
+                    &root,
+                    &revisions,
+                    &candidates,
+                    room,
+                    &objects,
+                    &mut tx,
+                    &authority,
+                    &mut budget,
+                    false,
+                    stamp,
+                )
+                .await
+                .map_err(debug)?;
+                assert_eq!(
+                    runtime.read_actor_position(den).map_err(debug)?.position(),
+                    cell(1, 0),
+                    "chase step west was committed on null-speed ground"
+                );
+                assert_eq!(
+                    runtime
+                        .read_actor_position(den_north)
+                        .map_err(debug)?
+                        .position(),
+                    cell(2, -1)
+                );
+                assert!(
+                    ai.native_movement(den)
+                        .ok_or("paced rat")?
+                        .cadence
+                        .next_due()
+                        .is_some()
+                );
+                tx.rollback().await?;
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("native monster regression cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
         }
-        let candidates = [TargetCandidate {
-            actor: player,
-            position: cell(0, 0),
-            eligible: true,
-            invisible: false,
-            health: 0,
-            damage: 0,
-        }];
-        let revisions = crate::ability::RevisionSet::new(
-            "ruleset:ai-v1",
-            "content:test",
-            "world:ai-v1",
-            "formula:source-melee-baseline",
-            "simulation:v1",
-        )
-        .expect("revisions");
-        let doors = door.collision_cells().clone();
-        let cells = room.movement_cells();
-        let reports = table.run_due_thinks(
-            &mut runtime,
-            0,
-            &GameplayDecisionRoot::from_bytes([9; 32]),
-            &revisions,
-            &candidates,
-            |destination| creature_cell_admissible(cells, &doors, destination),
-        );
-        assert_eq!(reports.len(), 2, "both rats thought");
-        let step = |rat| {
-            reports
-                .iter()
-                .find(|(actor, _)| *actor == rat)
-                .and_then(|(_, report)| report.step)
-                .map(|step| step.destination)
-        };
-        assert_eq!(step(den), Some(cell(1, 0)), "chase step west");
-        assert_eq!(step(den_north), None, "the chase step is the door cell");
-        assert_eq!(
-            runtime
-                .read_actor_position(den)
-                .expect("den rat")
-                .position(),
-            cell(1, 0),
-            "the step was committed"
-        );
-        assert_eq!(
-            runtime
-                .read_actor_position(den_north)
-                .expect("den-north rat")
-                .position(),
-            cell(2, -1)
-        );
     }
 
     #[test]

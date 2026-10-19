@@ -649,6 +649,7 @@ pub async fn serve_gameplay(
         &respawn_wake,
         shutdown
     ));
+    let mut ai_wake = pin!(authority.run_monster_ai_wake(shutdown));
     // CHAT-2B: the relay listener; it parks once shutdown is requested.
     let mut relay = pin!(async {
         match authority.chat.relay() {
@@ -660,6 +661,7 @@ pub async fn serve_gameplay(
     let mut cycles_done = false;
     let mut flush_done = false;
     let mut respawns_done = false;
+    let mut ai_wake_done = false;
     poll_fn(|context| {
         if !flush_done && flush.as_mut().poll(context).is_ready() {
             flush_done = true;
@@ -677,7 +679,10 @@ pub async fn serve_gameplay(
         if !respawns_done && respawns.as_mut().poll(context).is_ready() {
             respawns_done = true;
         }
-        if serving_done && cycles_done && respawns_done {
+        if !ai_wake_done && ai_wake.as_mut().poll(context).is_ready() {
+            ai_wake_done = true;
+        }
+        if serving_done && cycles_done && respawns_done && ai_wake_done {
             Poll::Ready(())
         } else {
             Poll::Pending

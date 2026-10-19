@@ -290,7 +290,7 @@ impl CreatureAiState {
         ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
     ) -> Result<ThinkReport, ThinkError> {
         let (report, continuation) =
-            self.prepare_think(sequence, facts, admits, ThinkStepMode::Legacy)?;
+            self.prepare_think(sequence, facts, admits, ThinkStepMode::Legacy, None)?;
         let Some(continuation) = continuation else {
             return Ok(report);
         };
@@ -323,7 +323,7 @@ impl CreatureAiState {
         ) -> Result<Option<MonsterSummonFacts>, ScheduleError>,
     ) -> Result<ThinkReport, ThinkError> {
         let (mut report, continuation) =
-            self.prepare_think(sequence, facts, admits, ThinkStepMode::CurrentStep)?;
+            self.prepare_think(sequence, facts, admits, ThinkStepMode::CurrentStep, None)?;
         let Some(continuation) = continuation else {
             return Ok(report);
         };
@@ -348,10 +348,13 @@ impl CreatureAiState {
     /// The returned report never commits a greedy step. The callback may keep a walk-back
     /// think awake while preparing current facts; cancellation leaves this state untouched.
     /// Borrowed owner context and the one Send future remain scoped to this current read.
+    /// `master` is the registry's exact parent and its current AI target. Registered summons
+    /// inherit that target without independent search, timed changes, overrides or fleeing.
     pub(crate) async fn think_with_current_goal_facts<C, F>(
         &mut self,
         sequence: u64,
         facts: &CreatureThinkFacts<'_>,
+        master: Option<(ExactActorRef, Option<ExactActorRef>)>,
         context: &mut C,
         current: F,
     ) -> Result<ThinkReport, ThinkError>
@@ -365,7 +368,7 @@ impl CreatureAiState {
             + Send,
     {
         let (mut report, continuation) =
-            self.prepare_think(sequence, facts, |_| true, ThinkStepMode::Goals)?;
+            self.prepare_think(sequence, facts, |_| true, ThinkStepMode::Goals, master)?;
         let Some(continuation) = continuation else {
             return Ok(report);
         };
@@ -393,6 +396,7 @@ impl CreatureAiState {
         facts: &CreatureThinkFacts<'_>,
         admits: impl Fn(MovementLocalPosition) -> bool,
         step_mode: ThinkStepMode,
+        master: Option<(ExactActorRef, Option<ExactActorRef>)>,
     ) -> Result<(ThinkReport, Option<ThinkContinuation>), ThinkError> {
         if let Some(last) = &self.last {
             if sequence < last.sequence {
@@ -405,9 +409,19 @@ impl CreatureAiState {
         let position = facts.position;
         let targeting = self.profile.targeting();
         let perceived = targeting::perceive(position, facts.players);
-        let eligible = perceived
+        // A registered summon may only consider its master's current target, including
+        // outside its own perception window. It never searches the other player candidates.
+        let considered = if master.is_some() {
+            facts.players
+        } else {
+            &perceived
+        };
+        let eligible = considered
             .iter()
-            .filter(|candidate| targeting::is_eligible(targeting, position, candidate))
+            .filter(|candidate| {
+                master.is_none_or(|(_, target)| target == Some(candidate.actor))
+                    && targeting::is_eligible(targeting, position, candidate)
+            })
             .copied()
             .collect::<Vec<_>>();
         let units = 1
@@ -464,11 +478,14 @@ impl CreatureAiState {
         };
 
         // Overrides expire at their deadline; a forced target holds only while eligible.
-        let forced_target = self
-            .forced_target
-            .filter(|(actor, until)| facts.now_us < *until && find(*actor).is_some());
-        let forced_distance = self.forced_distance.filter(|until| facts.now_us < *until);
-        let override_holds = forced_target.is_some() || forced_distance.is_some();
+        let forced_target = self.forced_target.filter(|(actor, until)| {
+            master.is_none() && facts.now_us < *until && find(*actor).is_some()
+        });
+        let forced_distance = self
+            .forced_distance
+            .filter(|until| master.is_none() && facts.now_us < *until);
+        let override_holds =
+            master.is_some() || forced_target.is_some() || forced_distance.is_some();
         let attack_distance = if forced_distance.is_some() {
             1
         } else {
@@ -481,10 +498,11 @@ impl CreatureAiState {
         };
 
         // Maintenance: an ineligible target is dropped.
-        let mut target = forced_target
-            .map(|(actor, _)| actor)
-            .or(self.target)
-            .filter(|actor| find(*actor).is_some());
+        let mut target = match master {
+            Some((_, target)) => target,
+            None => forced_target.map(|(actor, _)| actor).or(self.target),
+        }
+        .filter(|actor| find(*actor).is_some());
         // CREATURE-AI-0 §4.3: the ordinary search takes the nearest eligible candidate when
         // there is no target or it cannot be attacked from here, and never while an override
         // holds.
@@ -624,7 +642,10 @@ impl CreatureAiState {
             summon_proposals: Vec::new(),
             refusal: None,
             fleeing,
-            idle: perceived.is_empty() && target.is_none() && !facts.has_active_condition,
+            idle: master.is_none()
+                && perceived.is_empty()
+                && target.is_none()
+                && !facts.has_active_condition,
             over_budget: false,
             units,
         };
@@ -826,6 +847,38 @@ impl NativeCreaturePath {
         goal_sequence: u64,
         revisions: &RevisionSet,
     ) -> bool {
+        self.current_binding(runtime, actor, goal, goal_sequence, revisions)
+            && goal
+                .target()
+                .map(|target| runtime.read_actor_position(target).ok())
+                == self.target.map(Some)
+    }
+
+    /// Only the live target snapshot changed; the actor, goal and route provenance still match.
+    pub(crate) fn target_moved_only(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: ExactActorRef,
+        goal: NativeCreatureGoal,
+        goal_sequence: u64,
+        revisions: &RevisionSet,
+    ) -> bool {
+        self.current_binding(runtime, actor, goal, goal_sequence, revisions)
+            && goal
+                .target()
+                .and_then(|target| runtime.read_actor_position(target).ok())
+                .zip(self.target)
+                .is_some_and(|(current, previous)| current != previous)
+    }
+
+    fn current_binding(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: ExactActorRef,
+        goal: NativeCreatureGoal,
+        goal_sequence: u64,
+        revisions: &RevisionSet,
+    ) -> bool {
         let pin = runtime.content_pin();
         self.goal == goal
             && self.goal_sequence == goal_sequence
@@ -835,10 +888,6 @@ impl NativeCreaturePath {
             && self.map == pin.map_revision_digest()
             && self.frame == pin.frame_binding_digest()
             && runtime.read_actor_position(actor).ok() == Some(self.from)
-            && goal
-                .target()
-                .map(|target| runtime.read_actor_position(target).ok())
-                == self.target.map(Some)
             && self
                 .proposal
                 .revalidate(native_path_provenance(
@@ -1100,6 +1149,7 @@ impl CreatureAiTable {
         &mut self,
         actor: ExactActorRef,
         facts: &CreatureThinkFacts<'_>,
+        master: Option<(ExactActorRef, Option<ExactActorRef>)>,
         context: &mut C,
         current: F,
     ) -> Option<Result<ThinkReport, ThinkError>>
@@ -1116,7 +1166,7 @@ impl CreatureAiTable {
         let sequence = entry.sequence.checked_add(1)?;
         let report = entry
             .state
-            .think_with_current_goal_facts(sequence, facts, context, current)
+            .think_with_current_goal_facts(sequence, facts, master, context, current)
             .await;
         entry.due_us = Some(
             facts
