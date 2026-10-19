@@ -781,6 +781,8 @@ jobs:
             cat "$RUNNER_TEMP/nextest-summary.txt"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          echo "== nextest shard ${SHARD} per-package summary =="
+          cat "$RUNNER_TEMP/nextest-summary.txt"
 
   rust_supply_chain:
     name: Merge gate / Rust supply chain
