@@ -8,12 +8,12 @@
     {
       "target_path": "content/services/travel/admission-evidence/evidence-00000-00194.json",
       "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/evidence-00000-00194.json",
-      "sha256": "25f507b5b433f279d00f226e192ecbcd8b4ccc4bbaf50a7f491deab1916e6259"
+      "sha256": "2dd5c91a20ea54f576e62529a7cdde1eb80b7a81680805a4e81abddb6dc948b5"
     },
     {
       "target_path": "content/services/travel/admission-evidence/index.json",
       "staged_path": "docs/reference/content-prep/travel-content-1/target-files/content/services/travel/admission-evidence/index.json",
-      "sha256": "97a4b629491f0d4762c6797472ed508c5cc33bcb6b63f08c12d2b46b5c771cb2"
+      "sha256": "08be7a5c497e8c7e9d77f17876938073e78a03a8911aeaa551441199d7981eb7"
     },
     {
       "target_path": "content/services/travel/admission-evidence/services/evidence-00000-00055.json",
@@ -35,5 +35,6 @@
     "generated catalogue equivalence",
     "World Bundle pins and deterministic bundle",
     "required exact-head validators"
-  ]
+  ],
+  "data_completeness": "ALL_OTERYN_PARAMETER_VALUES_POPULATED"
 }

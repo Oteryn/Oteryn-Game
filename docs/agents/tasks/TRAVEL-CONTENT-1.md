@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # TRAVEL-CONTENT-1
 
 ```yaml
@@ -83,3 +85,7 @@ The final gap sweep also checks secondary NPC professions and resolves 18 ferry 
 oteryn:service.travel.captain_max_calassa/liberty_bay/origin; oteryn:service.travel.captain_seahorse/krailos/fare_gold; oteryn:service.travel.captain_waverider_island/liberty_bay/origin; oteryn:service.travel.gewen/marapur/fare_gold; oteryn:service.travel.gewen/marapur/quest_requirements; oteryn:service.travel.iyad/marapur/fare_gold; oteryn:service.travel.iyad/marapur/quest_requirements; oteryn:service.travel.melian/marapur/fare_gold; oteryn:service.travel.melian/marapur/quest_requirements; oteryn:service.travel.pino/marapur/fare_gold; oteryn:service.travel.pino/marapur/quest_requirements; oteryn:service.travel.tanyt/marapur/fare_gold; oteryn:service.travel.tanyt/marapur/quest_requirements; oteryn:service.travel.urks_the_mute/cormaya/fare_gold; oteryn:service.travel.ziyad/darama/fare_gold; oteryn:service.travel.ziyad/darashia/fare_gold; oteryn:service.travel.ziyad/edron/fare_gold; oteryn:service.travel.ziyad/femor_hills/fare_gold; oteryn:service.travel.ziyad/hills/fare_gold; oteryn:service.travel.ziyad/issavi/fare_gold; oteryn:service.travel.ziyad/kazor/fare_gold; oteryn:service.travel.ziyad/kazordoon/fare_gold; oteryn:service.travel.ziyad/svargrond/fare_gold.
 
 Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+
+## Working-data completion —2026-10-19
+
+Populated639 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/travel-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

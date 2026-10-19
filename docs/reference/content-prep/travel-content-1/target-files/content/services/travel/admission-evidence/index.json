@@ -9,6 +9,6 @@
   "population_state": "POPULATED",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "service_evidence_index": "content/services/travel/admission-evidence/services/index.json"
 }
