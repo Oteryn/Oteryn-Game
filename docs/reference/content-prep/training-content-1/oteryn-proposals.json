@@ -3,8 +3,8 @@
   "task": "TRAINING-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -92,7 +92,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/melee_hits_per_charge",
@@ -116,7 +116,7 @@
       "assumptions": [
         "Replace7.2 community candidate with donor base7; dummy and downstream training rates apply separately."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/mana_per_charge",
@@ -140,7 +140,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/bow_rate",
@@ -168,7 +168,7 @@
       "assumptions": [
         "Use2s base interval, then configured speed and dummy multipliers."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/training-content-1/facts.json/records/5/facts/stamina_use",
@@ -188,7 +188,13 @@
       "assumptions": [
         "Training itself neither consumes nor restores stamina; independent rest systems remain separate."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/training-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/training-content-1/tibia-source-archive.json",
+    "filled_field_count": 5,
+    "not_runtime_activation": true
+  }
 }

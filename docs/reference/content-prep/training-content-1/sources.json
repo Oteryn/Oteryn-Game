@@ -443,6 +443,47 @@
       "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
       "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
       "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/training-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:training.offline": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/scripts/creaturescripts/player/offline_training.lua",
+      "line": 61,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/scripts/creaturescripts/player/offline_training.lua#L61",
+      "file_sha256": "a74150ce8171afb5d55ff009d4a0b0421b97f5f3cc065539421f368e8c62b27f",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "melee_tries": "training_seconds / (promoted_base_attack_ms/1000) / 2",
+        "distance_tries": "training_seconds / (promoted_base_attack_ms/1000) / 4",
+        "magic_mana": "training_seconds * current_vocation_mana_amount / max(promoted_mana_ticks_ms/1000,1)",
+        "rate": "multiply by RATE_OFFLINE_TRAINING_SPEED before addOfflineTrainingTries"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:training.exercise": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data/scripts/actions/items/exercise_training_weapons.lua",
+      "line": 111,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/scripts/actions/items/exercise_training_weapons.lua#L111",
+      "file_sha256": "4909bc21656ea08df858c58d691eec3dcff34bf7e910d321a85a18f471e5de24",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "base_skill_tries_per_charge": 7,
+        "base_mana_spent_per_charge": 600,
+        "dummy_multiplier": "dummies[dummyId]/100",
+        "charge_cost_per_event": 1,
+        "next_event_delay_ms": "vocation base attack speed / RATE_EXERCISE_TRAINING_SPEED; fast-exercise event multiplies delay by 0.5"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
     }
   }
 }
