@@ -1,0 +1,21 @@
+{
+  "task": "BLESSINGS-CONTENT-1",
+  "review_date": "2026-10-19",
+  "scope": "PRIMARY_SOURCE_RECONCILED_BLESSING_REFERENCE",
+  "research_status": "SOURCE_RECONCILED_RUNTIME_UNQUALIFIED",
+  "runtime_admission": "BLOCKED",
+  "coverage": "Regular blessing prices are resolved by the primary2023announcement, corroborating both wikis and donor source. The published base formula is level/type-dependent; promotion loss reduction is separate. RetroHardcore6.31is resolved by primary evidence. Existing NPC locations, restrictions, quest discounts and staged services are preserved; no Global measurement or runtime admission is claimed.",
+  "source_registry": "sources.json",
+  "record_counts": {
+    "rulesets/character/blessings/reference-evidence.json": 10,
+    "docs/reference/content-prep/blessings-content-1/target-files/content/services/blessings/evidence-00000-00009.json": 10
+  },
+  "evidence_field_counts": {
+    "PROVEN": 68,
+    "DERIVED": 25
+  },
+  "unresolved_fields": [],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "remaining_unresolved_source_fields": 0,
+  "source_check": "docs/reference/content-prep/blessings-content-1/blessing-source-reconciliation.json"
+}

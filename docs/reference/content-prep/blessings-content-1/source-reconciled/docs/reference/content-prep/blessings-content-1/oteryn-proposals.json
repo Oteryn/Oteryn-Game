@@ -1,0 +1,294 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RESOLVED_REFERENCE",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "cda38ade1eeae39bd9bc7b3e8a6ec42cc714945d",
+  "original_field_list_sha256": "571a98765c650db89aeb38781f13c900f3b1c901bb3f69016bc25547a2047ed7",
+  "coverage": {
+    "held_fields": 4,
+    "proposals": 4,
+    "uncovered": 0,
+    "original_classifications": {
+      "CONFLICT": 3,
+      "UNKNOWN": 1
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [
+    {
+      "source_id": "crystalserver-summer",
+      "key": "blessings.price",
+      "value": {
+        "level_le_30": 2000,
+        "regular_31_119": "200*(L-20)",
+        "regular_ge_120": "20000+75*(L-120)",
+        "enhanced_31_119": "260*(L-20)",
+        "enhanced_ge_120": "26000+100*(L-120)"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "data/libs/systems/blessing.lua",
+        "line": 147,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data/libs/systems/blessing.lua#L147",
+        "file_sha256": "e4cc6975aab546c73e2fa8ba59ee42427e030ce39dad0b913800bc1b54569b4a"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Function parameters enhanced/byCommand change cost; NPC discounts or quest conditions are separate."
+    },
+    {
+      "source_id": "crystalserver-summer",
+      "key": "death.loss",
+      "value": {
+        "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+        "tmpLevel": "level+levelPercent/100",
+        "below_24_base_percent": 10,
+        "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+        "promotion_reduction_percentage_points": 30,
+        "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/creatures/players/player.cpp",
+        "line": 7281,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L7281",
+        "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Record actual donor code, not an endorsement. Death consumers, units and loss modifiers must also be checked; current official equivalence is unproven."
+    }
+  ],
+  "proposals": [
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
+      "subject": "blessings.prices",
+      "original_classification": "CONFLICT",
+      "proposed_value": [
+        {
+          "level_max": 30,
+          "gold": "2000"
+        },
+        {
+          "level_min_exclusive": 30,
+          "level_max_exclusive": 120,
+          "gold": "200*(L-20)"
+        },
+        {
+          "level_min": 120,
+          "gold": "20000+75*(L-120)"
+        }
+      ],
+      "basis": {
+        "kind": "PRIMARY_SOURCE_PRECEDENCE_OR_PUBLISHED_FORMULA_DERIVATION",
+        "source_refs": [
+          {
+            "source": "official:news:944:20261019",
+            "selector": "Up to30cost2000;31..119cost2000+200*(L-30)"
+          },
+          {
+            "source": "official:news:7260:20261019",
+            "selector": "Regular20,000+75*(L-120); enhanced26,000+100*(L-120); no adjustment below120"
+          }
+        ],
+        "rationale": "Specific official2023price announcement resolves the apparent wiki/manual conflict. Standard base price only; existing quest/NPC discounts remain separate."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_RESOLVED_REFERENCE_NOT_RUNTIME_ADMITTED",
+      "superseded_working_proposal": {
+        "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
+        "subject": "blessings.prices",
+        "original_classification": "CONFLICT",
+        "proposed_value": {
+          "level_le_30": 2000,
+          "regular_31_119": "200*(L-20)",
+          "regular_ge_120": "20000+75*(L-120)",
+          "enhanced_31_119": "260*(L-20)",
+          "enhanced_ge_120": "26000+100*(L-120)"
+        },
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1113782",
+            "https://tibia.fandom.com/w/index.php?oldid=1113782",
+            "https://tibia.fandom.com/w/index.php?oldid=1140641",
+            "https://www.tibia.com/gameguides/?subtopic=manual&section=characters"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "blessings.price"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
+      "subject": "blessings.prices",
+      "original_classification": "CONFLICT",
+      "proposed_value": {
+        "level_min": 120,
+        "gold": "20000+75*(L-120)"
+      },
+      "basis": {
+        "kind": "PRIMARY_SOURCE_PRECEDENCE_OR_PUBLISHED_FORMULA_DERIVATION",
+        "source_refs": [
+          {
+            "source": "official:news:7260:20261019",
+            "selector": "Regular blessing price from level120"
+          }
+        ],
+        "rationale": "Primary official price-change announcement explicitly establishes this branch; stale flat20,000manual prose is superseded."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_RESOLVED_REFERENCE_NOT_RUNTIME_ADMITTED",
+      "superseded_working_proposal": {
+        "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
+        "subject": "blessings.prices",
+        "original_classification": "CONFLICT",
+        "proposed_value": {
+          "level_le_30": 2000,
+          "regular_31_119": "200*(L-20)",
+          "regular_ge_120": "20000+75*(L-120)",
+          "enhanced_31_119": "260*(L-20)",
+          "enhanced_ge_120": "26000+100*(L-120)"
+        },
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1113782",
+            "https://tibia.fandom.com/w/index.php?oldid=1140641",
+            "https://www.tibia.com/gameguides/?subtopic=manual&section=characters"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "blessings.price"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
+      "subject": "blessings.prices",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "published_base_formula_inputs": [
+          "level",
+          "regular_or_enhanced_blessing"
+        ],
+        "promotion_multiplier_in_published_base_formula": 1,
+        "scope": "PUBLISHED_STANDARD_BASE_PRICE_ONLY",
+        "separate_npc_or_quest_discounts": "preserved separately; no blanket absence claim"
+      },
+      "basis": {
+        "kind": "PRIMARY_SOURCE_PRECEDENCE_OR_PUBLISHED_FORMULA_DERIVATION",
+        "source_refs": [
+          {
+            "source": "official:news:944:20261019",
+            "selector": "Up to30cost2000;31..119cost2000+200*(L-30)"
+          },
+          {
+            "source": "official:news:7260:20261019",
+            "selector": "Regular20,000+75*(L-120); enhanced26,000+100*(L-120); no adjustment below120"
+          }
+        ],
+        "rationale": "The official published base formula has no promotion argument. This establishes base-formula independence, not a claim that no special NPC/quest discount can exist. Promotion death-loss effects remain separate."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_RESOLVED_REFERENCE_NOT_RUNTIME_ADMITTED",
+      "superseded_working_proposal": {
+        "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
+        "subject": "blessings.prices",
+        "original_classification": "UNKNOWN",
+        "proposed_value": {
+          "multiplier": 1.0,
+          "discount_percent": 0
+        },
+        "basis": {
+          "kind": "DESIGN_CHOICE",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [],
+          "observation_refs": [],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Promotion reduces death loss but does not independently discount blessing purchases."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
+      "subject": "blessings.pvp",
+      "original_classification": "CONFLICT",
+      "proposed_value": 6.31,
+      "basis": {
+        "kind": "PRIMARY_SOURCE_PRECEDENCE_OR_PUBLISHED_FORMULA_DERIVATION",
+        "source_refs": [
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "5.1.11deathreduction6.31%perblessing"
+          }
+        ],
+        "rationale": "Primary official6.31takes precedence over retained community6.4wording. Resolved reference value; historical disagreement remains in source reconciliation."
+      },
+      "assumptions": [],
+      "acceptance_status": "SOURCE_RESOLVED_REFERENCE_NOT_RUNTIME_ADMITTED",
+      "superseded_working_proposal": {
+        "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
+        "subject": "blessings.pvp",
+        "original_classification": "CONFLICT",
+        "proposed_value": 6.31,
+        "basis": {
+          "kind": "UPSTREAM_ADAPTATION",
+          "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "original_source_urls": [
+            "https://tibia.fandom.com/w/index.php?oldid=1113782",
+            "https://tibia.fandom.com/w/index.php?oldid=1140641",
+            "https://www.tibia.com/gameguides/?subtopic=manual&section=characters"
+          ],
+          "observation_refs": [
+            {
+              "source_id": "crystalserver-summer",
+              "observation_key": "death.loss"
+            }
+          ],
+          "donor_selection": null
+        },
+        "assumptions": [
+          "Treat6.31% per blessing as a proposed retro PvP reduction, not proof of current Retro Hardcore behavior."
+        ],
+        "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
+      }
+    }
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/blessings-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/blessings-content-1/tibia-source-archive.json",
+    "filled_field_count": 4,
+    "not_runtime_activation": true
+  },
+  "source_check": "docs/reference/content-prep/blessings-content-1/blessing-source-reconciliation.json"
+}

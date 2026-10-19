@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_WORKING_REFERENCE_PARAMETERS/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "SOURCE_RESOLVED_REFERENCE",
+  "owner_instruction_source": "owner:oteryn-data-completion:2026-10-19",
+  "filled_fields": 4,
+  "normalized_companion_fields": 0,
+  "remaining_unfilled_fields": 0,
+  "originating_proposals": "docs/reference/content-prep/blessings-content-1/oteryn-proposals.json",
+  "source_archive": "docs/reference/content-prep/blessings-content-1/tibia-source-archive.json",
+  "shared_policies": {},
+  "selection_policy": "Source-backed observations where available; explicit Oteryn working choices otherwise. Native activation and accepted architecture remain outside this data task.",
+  "source_registry": "docs/reference/content-prep/blessings-content-1/completed-data/docs/reference/content-prep/blessings-content-1/sources.json",
+  "populated_field_locations": [
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/0/facts/regular"
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120"
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect"
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate"
+    }
+  ],
+  "remaining_unresolved_source_fields": 0,
+  "source_check": "docs/reference/content-prep/blessings-content-1/blessing-source-reconciliation.json"
+}

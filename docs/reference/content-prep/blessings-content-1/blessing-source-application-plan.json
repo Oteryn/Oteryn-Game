@@ -1,0 +1,55 @@
+{
+  "task": "BLESSINGS-CONTENT-1",
+  "status": "SOURCE_RESOLVED_PENDING_EXISTING_OWNER_APPLICATION",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "held_by_prs": [
+    2194
+  ],
+  "target_owner_application_required": true,
+  "source_unresolved_fields": 0,
+  "active_target_annotations_held": 4,
+  "target_files": [
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/README.md",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/README.md",
+      "sha256": "6a90396910f6e7563d3f1b40ba1e7da0cd25fc81ecdaf1f5ee4320cfadd7657d"
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/blessing-source-reconciliation.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/blessing-source-reconciliation.json",
+      "sha256": "1b3ab2187bc15f6373c5eeeabd103dd6d6b9c4ebe8b6a1f1180f10dc1e99edfd"
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/coordinator-index-updates.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/coordinator-index-updates.json",
+      "sha256": "a60455c3ce8538486e39164ffe135db9bf2a1885ec2b3727d57905432603b146"
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/oteryn-parameters.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/oteryn-parameters.json",
+      "sha256": "d720fad60c5d63f1d663e134d37fe760ac2c8eae859366e3e8a16b090de8c55f"
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/oteryn-proposals.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/oteryn-proposals.json",
+      "sha256": "07e0dc07c44d619b865955d8227e191df344ba4154ee037b29c01d1cbccbeafc"
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/research-audit.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/research-audit.json",
+      "sha256": "8fb567d7046f4ebf790c438e085fe0e244da40f9a00f3f894283041c648d62f6"
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/sources.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/docs/reference/content-prep/blessings-content-1/sources.json",
+      "sha256": "9c2beaa8b76abf6033b568fd31c69881f54a2e6680e919534ab0de7a486121b0"
+    },
+    {
+      "target_path": "rulesets/character/blessings/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/source-reconciled/rulesets/character/blessings/reference-evidence.json",
+      "sha256": "8aa57bba66f45003f033f64edc80abf85a943012207eb45eb18ab8a0be27ffc1"
+    }
+  ],
+  "qualification": "Apply qualified evidence with existing path owner; keep native/runtime and generated World Bundle admission separate. No main/skeleton mutation or owner notification sent."
+}
