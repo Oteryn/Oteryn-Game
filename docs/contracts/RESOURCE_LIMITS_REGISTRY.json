@@ -8810,6 +8810,100 @@
       "notes": "ANALYSERS-0 \u00a76 (the pending-facts row, unnumbered in the decision). Registered by OTV2-20261003-analyser-wire1."
     },
     {
+      "id": "HIGHSCORES0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+      "resource": "Interval between periodic World highscore snapshots",
+      "unit": "minutes",
+      "hard_maximum": 30,
+      "configurable_range": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One job per World publishes all 11 categories in one repeatable-read cut when the oldest current snapshot is 30 minutes old (database time, durable across restart) or on a planned reset; between passes the job sleeps until the earliest durable expiry. No client command can start a pass.",
+      "client_visible": false,
+      "boundary_tests": [
+        "a cut younger than 30 minutes is skipped and the next check is scheduled at its durable expiry",
+        "a planned reset publishes a complete cut regardless of age"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/highscore_snapshot.rs SNAPSHOT_INTERVAL_MS",
+        "apps/game-server/src/highscores/job.rs HighscoreWorldJob::run"
+      ],
+      "notes": "HIGHSCORES-0 \u00a77 (PARITY_PENDING). Registered by RANK-1 (HS-1)."
+    },
+    {
+      "id": "HIGHSCORES0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+      "resource": "Rows of one (World, category, vocation filter) highscore list",
+      "unit": "rows per list",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Each of the six filter lists is capped after filtering the complete eligible cut, so a snapshot holds at most 6,000 rows (SQL CHECK row_count <= 6000 and position <= 1000); global ranks may exceed the cap.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1000: a filtered list keeps its 1,000th member",
+        "max+1=1001: the 1,001st member is not stored and has no own row"
+      ],
+      "consumers": [
+        "apps/game-server/src/highscores/ranking.rs RANKING_ROWS_MAX",
+        "apps/game-server/migrations/0129_world_highscores.sql",
+        "crates/protocol-oteryn/src/highscores.rs MAX_HIGHSCORES_LIST_ROWS"
+      ],
+      "notes": "HIGHSCORES-0 \u00a75 and \u00a77. Registered by RANK-1 (HS-1)."
+    },
+    {
+      "id": "HIGHSCORES0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+      "resource": "Rows of one HIGHSCORES_QUERY_V1 result page",
+      "unit": "rows per page",
+      "hard_maximum": 50,
+      "configurable_range": {
+        "minimum": 50,
+        "maximum": 50
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The reader selects at most 50 rows by stored position (LIMIT 50) plus one own row; the result is at most 9,878 bytes and the codec refuses a 51st row before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=50: a full page with has_more round-trips",
+        "max+1=51: a 51-row result is refused in both directions"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/highscore_snapshot.rs PAGE_ROWS",
+        "crates/protocol-oteryn/src/highscores.rs MAX_HIGHSCORES_PAGE_ROWS"
+      ],
+      "notes": "HIGHSCORES-0 \u00a76 and \u00a77. Registered by RANK-1 (HS-WIRE-1)."
+    },
+    {
+      "id": "HIGHSCORES0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_HIGHSCORES0_WORLD_HIGHSCORES_DECISION_2026-10-03.md",
+      "resource": "Eligible Characters, and separately ranked accounts, of one World highscore cut",
+      "unit": "rows per source of one World cut",
+      "hard_maximum": 50000,
+      "configurable_range": {
+        "minimum": 50000,
+        "maximum": 50000
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The job reads every source in keyset pages of at most 1,000 rows (CharacterId or account order) inside its one repeatable-read cut and holds at most 50,001 rows of one source; one row above the bound refuses the whole cut (SnapshotError::CapacityExceeded), publishes nothing and keeps the previous snapshots. One sort per category serves all six filter lists. The cut never truncates a source, which would falsify global ranks.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max: a cut of exactly its bound of eligible Characters, or of ranked accounts, read in pages smaller than the cut publishes the same lists as the registered cut",
+        "max+1: one eligible Character or one ranked account above the bound refuses the cut and keeps the current snapshots and rows"
+      ],
+      "consumers": [
+        "apps/game-server/src/durability/highscore_snapshot.rs CUT_CHARACTERS_MAX",
+        "apps/game-server/src/durability/highscore_snapshot.rs CUT_SOURCE_PAGE_ROWS",
+        "apps/game-server/src/highscores/ranking.rs ranked_lists"
+      ],
+      "notes": "HIGHSCORES-0 \u00a74 and \u00a75. The brief names no World size; the bound keeps a full cut inside the 2-second Root pass deadline (PARITY_PENDING). Registered by RANK-1 (HS-1)."
+    },
+    {
       "id": "PROF1-RL-01",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_PROFICIENCY1B_PERK_MODIFICATION_VALUE_SHAPES_DECISION_2026-10-03.md",
       "resource": "Perk modification slots per Weapon Proficiency track",

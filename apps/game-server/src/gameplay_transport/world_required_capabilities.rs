@@ -107,16 +107,49 @@ pub(crate) fn validate_declared(ids: &[u32]) -> Result<(), BootCapabilityError> 
 }
 
 /// Shared by boot and the session offer; neither reads the registry's descriptive
-/// `offered` flag as a substitute for the real bundle/Item offer gate.
+/// `offered` flag as a substitute for the real bundle/Item offer gate. WEATHER-1: capability 26
+/// is part of the offer only while the shipped weather data is bound (fail closed).
 pub(crate) fn offered_for_scope(
     bundle: bool,
     active: Option<&crate::content::ActiveGeneration>,
 ) -> &'static [OfferedCapability] {
-    if bundle {
+    offered_for_scope_with(bundle, active, crate::world_weather::shipped().is_some())
+}
+
+/// [`offered_for_scope`] with the weather binding given: without a bound source the set has no
+/// capability 26, so a boot that requires 26 fails closed (`Unoffered(26)`) instead of
+/// publishing readiness for sessions that can never receive it.
+pub(crate) fn offered_for_scope_with(
+    bundle: bool,
+    active: Option<&crate::content::ActiveGeneration>,
+    weather_bound: bool,
+) -> &'static [OfferedCapability] {
+    let base = if bundle {
         super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
     } else {
         super::item_ref_admission::offered_capabilities(active)
+    };
+    if weather_bound {
+        base
+    } else {
+        without_weather(base)
     }
+}
+
+/// `base` without capability 26 as a `'static` slice, built once per distinct base set.
+fn without_weather(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
+    type Cached = (&'static [OfferedCapability], &'static [OfferedCapability]);
+    static CACHE: std::sync::Mutex<Vec<Cached>> = std::sync::Mutex::new(Vec::new());
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) {
+        return set;
+    }
+    let set: &'static [OfferedCapability] =
+        Box::leak(super::capabilities::with_weather_offer(base, false).into_boxed_slice());
+    cache.push((base, set));
+    set
 }
 
 /// ADMIT0 §3.2 mandatory floor, by registry name. D1083: 18 WORLD_MAP_VIEW_V1 is the accepted

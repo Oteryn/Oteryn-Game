@@ -1,0 +1,56 @@
+name: claude-review
+
+# Advisory only: this job must not be a required check.
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    # Same-repo PRs only (no secrets for forks), agent branches only, no bot authors.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.type != 'Bot'
+      && (startsWith(github.event.pull_request.head.ref, 'skeleton/')
+      || startsWith(github.event.pull_request.head.ref, 'ci/')
+      || startsWith(github.event.pull_request.head.ref, 'claude/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Check out PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Claude review
+        uses: anthropics/claude-code-action@f27be6b65a4652f08a2ba3cff79114829b588967 # v1.0.252
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: false
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request's diff against docs/agents/review/CODEX-CHECKLIST.md.
+            Report only real defects of the classes in that checklist, plus any other correctness bug you find in the diff.
+            - Post each finding as an inline review comment on the exact line, starting with "P1:" (blocking) or "P2:" (should fix) and including file:line.
+            - Then post exactly one summary comment ending with the single word "CLEAN" when there are no findings, or "N findings" with N the count.
+            - No praise, no style nits, no restating the diff.
+            - Do not edit files, commit or push. This review is advisory.
+          claude_args: >-
+            --model claude-sonnet-5-5
+            --max-turns 25
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"

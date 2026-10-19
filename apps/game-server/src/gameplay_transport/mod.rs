@@ -19,6 +19,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
+mod highscores;
 mod input_gate;
 #[allow(
     dead_code,
@@ -3316,6 +3317,13 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    fn world_weather(&self) -> Option<&crate::world_weather::WorldWeatherSource> {
+        // WEATHER-1 (D1027 signed off, D1448): the shipped Oteryn-designed data, `None` (never
+        // offered) when it is missing or invalid. The data is public and stateless: its binding
+        // token is the content revision, so no per-World secret is read.
+        crate::world_weather::shipped()
+    }
+
     async fn chat_admit(
         &self,
         _actor: ExactActorRef,
@@ -3978,6 +3986,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => AccountAchievementsReply::Rejected,
         }
+    }
+
+    async fn highscores(
+        &self,
+        world: WorldId,
+        session: GameSessionId,
+        query: oteryn_protocol_oteryn::highscores::HighscoresQuery,
+    ) -> highscores::HighscoresReply {
+        highscores::answer_session_highscores(self.root, self.world_id, world, session, query).await
     }
 
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the
