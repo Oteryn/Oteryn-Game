@@ -25,6 +25,7 @@ use oteryn_protocol_oteryn::actor_spell::{
     self, ActorVitals, SpellCastDisposition, SpellCastIntent, SpellTarget, SpellTargetPosition,
 };
 use oteryn_protocol_oteryn::item_view;
+use oteryn_protocol_oteryn::vip;
 use oteryn_protocol_oteryn::world_object::{
     self, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition,
     WorldObjectOverlayEntry, WorldObjectTarget, encode_world_object_overlay_snapshot,
@@ -82,6 +83,7 @@ fn model(actor: (i32, i32), door: DoorState, revision: u64) -> RenderModel {
         own_identity: None,
         selected: None,
         chat: None,
+        vip: None,
         items: None,
         notice: Notice::Joined,
     }
@@ -1734,7 +1736,7 @@ fn a_stale_move_result_changes_only_the_notice() {
     assert_eq!(committed, opened.with_notice(Notice::CorpseOpened));
 }
 
-/// Admits one client with capabilities 4 and 6 selected: the corpse at (1, 0) carries handle 40,
+/// Admits one client with capabilities 4, 6 and 31 selected: the corpse at (1, 0) carries handle 40,
 /// the backpack holds a main backpack and one entry, and no corpse is open. Then scripts: a USE
 /// of the corpse -> Committed and a domain 11 delta (two entries); `loot 1` -> Moved with the
 /// domain 11 and 9 deltas; `loot 1` again (on the same view) -> Stale with no delta.
@@ -1755,7 +1757,7 @@ async fn item_server(
             current_server_sequence: JOIN_SEQUENCE,
             next_command_id: FIRST_COMMAND_ID,
             schema_revision: 1,
-            selected_capabilities: &[4, 6],
+            selected_capabilities: &[4, 6, vip::CAPABILITY_VIP_V1],
         })?,
     )
     .await?;
@@ -1777,6 +1779,8 @@ async fn item_server(
         .map_err(|error| format!("inventory: {error:?}"))?;
     let container = item_view::encode_open_container(&OpenContainer::default())
         .map_err(|error| format!("container: {error:?}"))?;
+    let vip_snapshot = vip::encode_vip_snapshot(&vip::VipSnapshot::default())
+        .map_err(|error| format!("VIP snapshot: {error:?}"))?;
     send(
         &mut stream,
         &encode_single_chunk_snapshot(
@@ -1807,6 +1811,12 @@ async fn item_server(
                     revision: 4,
                     snapshot_type: item_view::SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
                     payload: &container,
+                },
+                DomainSnapshot {
+                    domain_id: vip::STATE_DOMAIN_VIP,
+                    revision: 1,
+                    snapshot_type: vip::SNAPSHOT_TYPE_VIP_V1,
+                    payload: &vip_snapshot,
                 },
             ],
         )?,
@@ -1840,6 +1850,16 @@ async fn item_server(
                 &item_view::encode_open_container(&open_corpse())
                     .map_err(|error| format!("container delta: {error:?}"))?,
             )?,
+            encode_state_delta(
+                GENERATION,
+                43,
+                vip::STATE_DOMAIN_VIP,
+                1,
+                2,
+                vip::DELTA_TYPE_VIP_ENTRY_V1,
+                &vip::encode_vip_delta(&vip::VipDelta::Entry(vip_pane_entry()))
+                    .map_err(|error| format!("VIP delta: {error:?}"))?,
+            )?,
         ],
     )
     .await?;
@@ -1870,7 +1890,7 @@ async fn item_server(
         &[
             encode_command_result(
                 GENERATION,
-                43,
+                44,
                 id,
                 CommandStatus::Accepted,
                 &item_view::encode_item_move_result(ItemMoveOutcome::Moved)
@@ -1878,7 +1898,7 @@ async fn item_server(
             )?,
             encode_state_delta(
                 GENERATION,
-                44,
+                45,
                 item_view::STATE_DOMAIN_OPEN_CONTAINER,
                 5,
                 6,
@@ -1888,7 +1908,7 @@ async fn item_server(
             )?,
             encode_state_delta(
                 GENERATION,
-                45,
+                46,
                 item_view::STATE_DOMAIN_CHARACTER_INVENTORY,
                 3,
                 4,
@@ -1913,7 +1933,7 @@ async fn item_server(
         &mut stream,
         &[encode_command_result(
             GENERATION,
-            46,
+            47,
             id,
             CommandStatus::Accepted,
             &item_view::encode_item_move_result(ItemMoveOutcome::Stale)
@@ -1964,6 +1984,7 @@ fn live_controller_opens_a_corpse_and_loots_one_entry_through_both_deltas() -> R
             // join: the panes exist (capability 4), the chat pane does not (capability 7)
             let joined = controller.model().clone();
             assert_eq!(joined.chat, None);
+            assert_eq!(joined.vip, Some(vip::VipSnapshot::default()));
             assert_eq!(
                 joined.items,
                 Some(ItemPanes {
@@ -1998,6 +2019,11 @@ fn live_controller_opens_a_corpse_and_loots_one_entry_through_both_deltas() -> R
                     corpse: open_corpse(),
                 })
             );
+            assert_eq!(
+                opened.vip.as_ref().map(|store| &store.entries),
+                Some(&vec![vip_pane_entry()])
+            );
+            assert!(render_text(view(), &opened).contains("vip [1/100]\n  Ana Lis: UNCONFIRMED\n"));
             assert!(render_text(view(), &opened).contains("corpse [open]\n  1: item 3031 x2"));
 
             // loot 1 -> Moved; the domain 11 and domain 9 deltas follow the result
@@ -2031,4 +2057,76 @@ fn live_controller_opens_a_corpse_and_loots_one_entry_through_both_deltas() -> R
             server.await??;
             Ok::<(), BoxError>(())
         })
+}
+
+fn vip_pane_entry() -> vip::VipEntry {
+    vip::VipEntry {
+        entry_no: 1,
+        name: "Ana Lis".to_owned(),
+        description: String::new(),
+        icon: 0,
+        notify: false,
+        groups: vip::VipGroupSet::default(),
+        status: vip::VipStatus::Unconfirmed,
+    }
+}
+
+#[test]
+fn a_selected_but_empty_vip_pane_renders_and_an_unselected_one_does_not() {
+    use oteryn_protocol_oteryn::vip::VipSnapshot;
+    let plain = model((0, 0), DoorState::Closed, 2);
+    let selected = plain.clone().with_vip(&VipSnapshot::default());
+    assert_eq!(selected.vip, Some(VipSnapshot::default()));
+    assert_eq!(
+        render_text(view(), &selected),
+        format!("{}vip [0/100]\n", render_text(view(), &plain))
+    );
+    assert!(!render_text(view(), &plain).contains("vip"));
+}
+
+#[test]
+fn the_vip_pane_follows_entry_status_and_removal_deltas() {
+    use oteryn_protocol_oteryn::vip::{VipDelta, VipSnapshot, VipStatus, VipStatusUpdate};
+    let plain = model((0, 0), DoorState::Closed, 2);
+    let base = render_text(view(), &plain);
+    let event = |value| {
+        SessionEvent::Vip(AppliedDelta {
+            server_sequence: 51,
+            base_revision: 3,
+            new_revision: 4,
+            value,
+        })
+    };
+    let entry = event(VipDelta::Entry(vip_pane_entry()));
+    assert_eq!(plain.apply_events(std::slice::from_ref(&entry)), plain);
+    let added = plain
+        .with_vip(&VipSnapshot::default())
+        .apply_events(&[entry]);
+    assert_eq!(
+        render_text(view(), &added),
+        format!("{base}vip [1/100]\n  Ana Lis: UNCONFIRMED\n")
+    );
+    let online = added.apply_events(&[event(VipDelta::Status(VipStatusUpdate {
+        entry_no: 1,
+        status: VipStatus::Online,
+        announce: false,
+    }))]);
+    assert_eq!(
+        render_text(view(), &online),
+        format!("{base}vip [1/100]\n  Ana Lis: ONLINE\n")
+    );
+    let offline = online.apply_events(&[event(VipDelta::Status(VipStatusUpdate {
+        entry_no: 1,
+        status: VipStatus::Offline,
+        announce: false,
+    }))]);
+    assert_eq!(
+        render_text(view(), &offline),
+        format!("{base}vip [1/100]\n  Ana Lis: OFFLINE\n")
+    );
+    let removed = offline.apply_events(&[event(VipDelta::EntryRemoved { entry_no: 1 })]);
+    assert_eq!(
+        render_text(view(), &removed),
+        format!("{base}vip [0/100]\n")
+    );
 }

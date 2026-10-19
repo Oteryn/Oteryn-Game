@@ -707,3 +707,71 @@ fn the_registries_bind_the_vip_constants() {
     );
     assert_eq!(MAX_VIP_GROUP_NAME_BYTES, 4 * MAX_VIP_GROUP_NAME_CHARS);
 }
+
+#[test]
+fn vip_snapshot_apply_replaces_pushes_and_refuses_overflow_atomically() {
+    let mut snapshot = VipSnapshot::default();
+    let first = worst_entry(1);
+    snapshot
+        .apply(&VipDelta::Entry(first.clone()))
+        .expect("push");
+    assert_eq!(snapshot.entries, vec![first.clone()]);
+    let mut replacement = first;
+    replacement.status = VipStatus::Online;
+    snapshot
+        .apply(&VipDelta::Entry(replacement.clone()))
+        .expect("replace");
+    assert_eq!(snapshot.entries, vec![replacement]);
+    for entry_no in 2..=MAX_VIP_ENTRIES as u64 {
+        snapshot
+            .apply(&VipDelta::Entry(worst_entry(entry_no)))
+            .expect("within bound");
+    }
+    let before = snapshot.clone();
+    assert_eq!(
+        snapshot.apply(&VipDelta::Entry(worst_entry(MAX_VIP_ENTRIES as u64 + 1))),
+        Err(VipWireError::LimitExceeded)
+    );
+    assert_eq!(snapshot, before);
+    snapshot
+        .apply(&VipDelta::Entry(worst_entry(1)))
+        .expect("replace at capacity");
+    assert_eq!(snapshot.entries.len(), MAX_VIP_ENTRIES);
+    assert_eq!(snapshot.entries[0], worst_entry(1));
+}
+
+#[test]
+fn vip_snapshot_apply_removes_updates_status_and_replaces_groups_and_consent() {
+    let mut snapshot = VipSnapshot::default();
+    let missing = VipDelta::Status(VipStatusUpdate {
+        entry_no: 1,
+        status: VipStatus::Online,
+        announce: true,
+    });
+    snapshot.apply(&missing).expect("missing status");
+    assert_eq!(snapshot, VipSnapshot::default());
+    snapshot
+        .apply(&VipDelta::Entry(worst_entry(1)))
+        .expect("entry");
+    snapshot.apply(&missing).expect("status");
+    assert_eq!(snapshot.entries[0].status, VipStatus::Online);
+    snapshot
+        .apply(&VipDelta::EntryRemoved { entry_no: 1 })
+        .expect("remove");
+    assert!(snapshot.entries.is_empty());
+    snapshot
+        .apply(&VipDelta::Groups(worst_groups()))
+        .expect("groups");
+    snapshot
+        .apply(&VipDelta::Consent(worst_consent()))
+        .expect("consent");
+    assert_eq!(snapshot.groups, worst_groups());
+    assert_eq!(snapshot.consent, worst_consent());
+    snapshot
+        .apply(&VipDelta::Groups(Vec::new()))
+        .expect("replace groups");
+    snapshot
+        .apply(&VipDelta::Consent(VipConsentView::default()))
+        .expect("replace consent");
+    assert_eq!(snapshot, VipSnapshot::default());
+}

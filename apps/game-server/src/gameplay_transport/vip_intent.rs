@@ -30,8 +30,8 @@ use crate::domain::CharacterId;
 use crate::durability::DurabilityError;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::vip::{
-    VipAcceptRequest, VipAddRequest, VipAddResult, VipEndOperation, VipEndRequest, VipError,
-    VipGateOperation, VipInvitationBinding, VipListKey, VipListOperation, VipListRequest,
+    VipAcceptRequest, VipAddRequest, VipAddResult, VipEndKind, VipEndOperation, VipEndRequest,
+    VipError, VipGateOperation, VipInvitationBinding, VipListKey, VipListOperation, VipListRequest,
     VipListResult, VipPremiumGate, VipRemoveRequest, VipResult, VipView,
 };
 use crate::durability::vip_presence::{PresenceOwner, Status, StatusUpdate};
@@ -421,10 +421,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Vec::new(),
             );
         };
-        let (list, fence, write) = match self.vip_resolve(command.game_session_id, intent) {
-            Ok(resolved) => resolved,
-            Err(code) => return (VipCommandOutcome::answer(code), Vec::new()),
-        };
         // VIP-0 §8.2: a node that cannot confirm presence changes nothing.
         if !self
             .chat
@@ -444,6 +440,65 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         };
         let command_ref = CommandRef::new(command.game_session_id, command_id);
+        let kind = match &intent {
+            VipIntent::Accept { .. } => Some(VipEndKind::Accept),
+            VipIntent::Reject { .. } => Some(VipEndKind::Reject),
+            VipIntent::Revoke { .. } => Some(VipEndKind::Revoke),
+            // Their writers resolve no per-session handle; their receipts replay inside them.
+            VipIntent::Add { .. }
+            | VipIntent::Remove { .. }
+            | VipIntent::Edit { .. }
+            | VipIntent::GroupAdd { .. }
+            | VipIntent::GroupRename { .. }
+            | VipIntent::GroupRemove { .. }
+            | VipIntent::Withdraw { .. }
+            | VipIntent::SetStatus(_) => None,
+        };
+        if let Some(kind) = kind {
+            let binding = self
+                .chat
+                .vip
+                .lock()
+                .get(&command.game_session_id)
+                .map(|session| (session.view.list, session.fence));
+            let Some((list, fence)) = binding else {
+                return (
+                    VipCommandOutcome::answer(VipResultCode::VipUnavailable),
+                    Vec::new(),
+                );
+            };
+            match self
+                .root
+                .replay_vip_end(self.character, fence, list, command_ref, kind)
+                .await
+            {
+                Ok(None) => {}
+                Ok(Some(receipt)) => {
+                    return self
+                        .vip_finish(
+                            command.game_session_id,
+                            list,
+                            &[fence.character_id],
+                            Ok(end_code(receipt.result)),
+                        )
+                        .await;
+                }
+                Err(error) => {
+                    return self
+                        .vip_finish(
+                            command.game_session_id,
+                            list,
+                            &[fence.character_id],
+                            Err(error),
+                        )
+                        .await;
+                }
+            }
+        }
+        let (list, fence, write) = match self.vip_resolve(command.game_session_id, intent) {
+            Ok(resolved) => resolved,
+            Err(code) => return (VipCommandOutcome::answer(code), Vec::new()),
+        };
         let (result, touched) = match write {
             Write::Add(name) => {
                 let request = VipAddRequest::new(list, command_ref, &name);
@@ -518,6 +573,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (receipt.map(|r| end_code(r.result)), touched)
             }
         };
+        self.vip_finish(command.game_session_id, list, &touched, result)
+            .await
+    }
+
+    async fn vip_finish(
+        &self,
+        session: GameSessionId,
+        list: VipListKey,
+        touched: &[CharacterId],
+        result: Result<VipIntentResult, VipError>,
+    ) -> (VipCommandOutcome, Vec<VipDelta>) {
         let outcome = match result {
             Ok(result) => VipCommandOutcome {
                 result,
@@ -534,8 +600,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if outcome.unknown || outcome.result.code != VipResultCode::Ok {
             return (outcome, Vec::new());
         }
-        self.chat.vip.touch(list, &touched);
-        let deltas = self.vip_reread(command.game_session_id).await;
+        self.chat.vip.touch(list, touched);
+        let deltas = self.vip_reread(session).await;
         (outcome, deltas)
     }
 
@@ -687,15 +753,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let presence = self.chat.vip.presence()?;
         let update = if presence.is_due(session).unwrap_or(false) {
-            match presence
-                .next_current_update(self.character, self.holder, fence, seen)
-                .await
-            {
-                Ok(update) => Ok(update),
+            let read = presence.next_current_update(self.character, self.holder, fence, seen);
+            let update = match presence.confirmation_left(session) {
+                Ok(left) => bounded_read(left, read).await,
+                Err(_) => None,
+            };
+            match update {
+                Some(Ok(update)) => Ok(update),
                 // VIP0 §8.2: without a current read (the store is unavailable) a shown ONLINE
                 // is withdrawn to UNCONFIRMED. This path never yields ONLINE or OFFLINE, and the
                 // fence check below binds the update to this exact session.
-                Err(_) => presence.next_withdrawal_candidate(session, seen),
+                // Dropped read reservations are reclaimed by expire's retry_at path.
+                Some(Err(_)) | None => presence.next_withdrawal_candidate(session, seen),
             }
         } else {
             presence.next_queued(session)
@@ -714,6 +783,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         });
         s.inflight = Some(update);
         Some(delta)
+    }
+}
+
+async fn bounded_read<T>(
+    left: Option<std::time::Duration>,
+    read: impl Future<Output = T>,
+) -> Option<T> {
+    match left {
+        Some(left) if left.is_zero() => None,
+        Some(left) => tokio::time::timeout(left, read).await.ok(),
+        None => Some(read.await),
     }
 }
 
@@ -742,6 +822,58 @@ impl VipPremiumGate for ComposedFreshAdmission<'_, '_, '_> {
         F: VipGateOperation<T>,
     {
         self.with_premium_gate(account, operation)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bounded_read;
+    use std::future::Future;
+    use std::time::Duration;
+
+    // Neither tokio macros nor test-util is enabled; use the existing runtime pattern and a
+    // tiny real timer instead of adding features solely for this test.
+    fn run(future: impl Future<Output = ()>) -> std::io::Result<()> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(future);
+        Ok(())
+    }
+
+    #[test]
+    fn vip_intent_bounded_read_withdraws_after_the_bound() -> std::io::Result<()> {
+        run(async {
+            let left = Duration::from_millis(20);
+            let started = tokio::time::Instant::now();
+            let result = bounded_read(Some(left), std::future::pending::<()>()).await;
+            assert_eq!(result, None);
+            assert!(started.elapsed() >= left);
+        })
+    }
+
+    #[test]
+    fn vip_intent_bounded_read_returns_ready_and_unbounded_values() -> std::io::Result<()> {
+        run(async {
+            assert_eq!(
+                bounded_read(Some(Duration::from_millis(20)), async { 7 }).await,
+                Some(7)
+            );
+            assert_eq!(bounded_read(None, async { 8 }).await, Some(8));
+        })
+    }
+
+    #[test]
+    fn vip_intent_bounded_read_at_zero_never_polls() -> std::io::Result<()> {
+        run(async {
+            let polled = std::cell::Cell::new(false);
+            let read = std::future::poll_fn(|_| {
+                polled.set(true);
+                std::task::Poll::Ready(())
+            });
+            assert_eq!(bounded_read(Some(Duration::ZERO), read).await, None);
+            assert!(!polled.get());
+        })
     }
 }
 

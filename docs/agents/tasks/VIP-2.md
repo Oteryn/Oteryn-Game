@@ -42,6 +42,9 @@ owned_paths:
   - "docs/contracts/protocol-oteryn/v1/vip_v1.proto (new)"
   - "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json (capability 31, command 31, domain 21)"
   - "docs/contracts/RESOURCE_LIMITS_REGISTRY.json (VIP0-RL rows, VIP0-RL-11 included)"
+  # Widened by CP decision (a) (2026-10-19): the harness builds and shows the VIP store.
+  - "tools/synthetic-client-harness/src/live/model.rs + controller.rs + tests.rs (SessionEvent::Vip pane)"
+  - "tools/dev-client/src/lib.rs (vip() accessor only)"
 slot_only_paths:
   - "apps/game-server/src/chat/ relay wiring"
   - "apps/game-server/src/gameplay_transport/connection.rs (presence push)"

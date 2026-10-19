@@ -10,6 +10,7 @@ use oteryn_dev_client::{
 };
 use oteryn_foundation::ProcessGeneration;
 use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
+use oteryn_protocol_oteryn::vip::{MAX_VIP_ENTRIES, VipSnapshot, VipStatus};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
 use oteryn_renderer::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceState};
@@ -171,6 +172,8 @@ pub struct RenderModel {
     /// The chat pane: `Some` exactly when the server selected capability 7, even while it has no
     /// room and no line.
     pub chat: Option<ChatPane>,
+    /// The VIP store: `Some` exactly when the session exposes capability 31.
+    pub vip: Option<VipSnapshot>,
     /// The backpack and corpse panes: `Some` exactly when the server selected capability 4.
     pub items: Option<ItemPanes>,
     pub notice: Notice,
@@ -337,6 +340,7 @@ impl RenderModel {
             own_identity: None,
             selected: None,
             chat: None,
+            vip: None,
             items: None,
             notice: Notice::Joined,
         }
@@ -485,6 +489,13 @@ impl RenderModel {
         next
     }
 
+    /// The session's VIP store (capability 31 selected).
+    #[must_use]
+    pub fn with_vip(mut self, vip: &VipSnapshot) -> Self {
+        self.vip = Some(vip.clone());
+        self
+    }
+
     /// The corpse a click on `tile` opens: the tile's top entity when it is a corpse with an item
     /// handle and capability 4 is selected.
     #[must_use]
@@ -629,6 +640,11 @@ impl RenderModel {
                 SessionEvent::ChatRooms(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.rooms = delta.value;
+                    }
+                }
+                SessionEvent::Vip(delta) => {
+                    if let Some(vip) = next.vip.as_mut() {
+                        let _ = vip.apply(&delta.value);
                     }
                 }
                 SessionEvent::Inventory(delta) => {
@@ -860,5 +876,27 @@ pub fn render_text(view: Viewport, model: &RenderModel) -> String {
             out.push_str(&format!("  {number}: {}\n", render_entry(entry)));
         }
     }
+    if let Some(vip) = &model.vip {
+        out.push_str(&format!(
+            "vip [{}/{}]\n",
+            vip.entries.len(),
+            MAX_VIP_ENTRIES
+        ));
+        for entry in &vip.entries {
+            out.push_str(&format!(
+                "  {}: {}\n",
+                entry.name,
+                vip_status_name(entry.status)
+            ));
+        }
+    }
     out
+}
+
+fn vip_status_name(status: VipStatus) -> &'static str {
+    match status {
+        VipStatus::Online => "ONLINE",
+        VipStatus::Offline => "OFFLINE",
+        VipStatus::Unconfirmed => "UNCONFIRMED",
+    }
 }

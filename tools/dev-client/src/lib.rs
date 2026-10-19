@@ -578,6 +578,12 @@ impl DevClientSession {
         self.session.chat_log()
     }
 
+    /// The VIP store after every delta applied so far; `Some` exactly when the server selected
+    /// capability 31 `VIP_V1`.
+    pub fn vip(&self) -> Option<&oteryn_protocol_oteryn::vip::VipSnapshot> {
+        self.session.vip()
+    }
+
     /// The inventory after every delta applied so far; `Some` exactly when the server selected
     /// capability 4 `ITEM_VIEW_MOVE_V1`.
     pub fn inventory(&self) -> Option<&CharacterInventory> {

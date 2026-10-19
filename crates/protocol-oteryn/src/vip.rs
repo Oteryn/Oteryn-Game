@@ -320,6 +320,42 @@ pub struct VipSnapshot {
     pub consent: VipConsentView,
 }
 
+impl VipSnapshot {
+    /// One store-application rule shared by the client session and tools.
+    pub fn apply(&mut self, delta: &VipDelta) -> Result<(), VipWireError> {
+        match delta {
+            VipDelta::Entry(entry) => {
+                if let Some(i) = self
+                    .entries
+                    .iter()
+                    .position(|e| e.entry_no == entry.entry_no)
+                {
+                    self.entries[i] = entry.clone();
+                } else if self.entries.len() < MAX_VIP_ENTRIES {
+                    self.entries.push(entry.clone());
+                } else {
+                    return Err(VipWireError::LimitExceeded);
+                }
+            }
+            VipDelta::EntryRemoved { entry_no } => {
+                self.entries.retain(|e| e.entry_no != *entry_no);
+            }
+            VipDelta::Groups(groups) => self.groups.clone_from(groups),
+            VipDelta::Status(update) => {
+                if let Some(entry) = self
+                    .entries
+                    .iter_mut()
+                    .find(|e| e.entry_no == update.entry_no)
+                {
+                    entry.status = update.status;
+                }
+            }
+            VipDelta::Consent(consent) => self.consent.clone_from(consent),
+        }
+        Ok(())
+    }
+}
+
 /// One domain 21 delta.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VipDelta {

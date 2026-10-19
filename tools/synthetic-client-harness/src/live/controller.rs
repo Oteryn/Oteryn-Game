@@ -28,6 +28,9 @@ impl LiveController {
         if let Some(log) = session.chat_log() {
             model = model.with_chat(log);
         }
+        if let Some(vip) = session.vip() {
+            model = model.with_vip(vip);
+        }
         if let (Some(backpack), Some(corpse)) = (session.inventory(), session.open_container()) {
             model = model.with_items(backpack, corpse);
         }

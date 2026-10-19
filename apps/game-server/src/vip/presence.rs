@@ -31,6 +31,9 @@ use std::sync::Mutex;
 
 const LIST_MAX: usize = 100; // Accepted VIP0-RL-08; no registry mutation here.
 const CONFIRM_MS: u64 = 10_000;
+/// The per-session follow path re-reads a shown ONLINE at half its confirmation age, so a
+/// healthy re-read finishes inside the bound and a stalled one leaves time to withdraw.
+const CONFIRM_LEAD_MS: u64 = CONFIRM_MS / 2;
 const RECONCILE_MS: u64 = 60_000;
 
 #[derive(Debug)]
@@ -1041,6 +1044,33 @@ impl State {
         }
         self.next(session, now)
     }
+    fn confirmation_left(&self, session: GameSessionId, now: u64) -> Option<u64> {
+        self.sessions
+            .get(&session)?
+            .entries
+            .values()
+            .filter(|entry| entry.last_sent == Some(Status::Online))
+            .map(|entry| {
+                entry
+                    .confirmed_from
+                    .saturating_add(CONFIRM_MS)
+                    .saturating_sub(now)
+            })
+            .min()
+    }
+
+    fn confirmation_due(&self, session: GameSessionId, now: u64) -> bool {
+        self.listener
+            && self.sessions.get(&session).is_some_and(|watcher| {
+                !watcher.reading
+                    && now >= watcher.retry_at
+                    && watcher.entries.values().any(|entry| {
+                        entry.last_sent == Some(Status::Online)
+                            && now.saturating_sub(entry.confirmed_from) >= CONFIRM_LEAD_MS
+                    })
+            })
+    }
+
     fn due(&mut self, now: u64, budget: usize) -> Result<Vec<GameSessionId>> {
         self.expire(now)?;
         if !self.listener {
@@ -1296,7 +1326,20 @@ impl PresenceOwner {
             return Ok(true);
         }
         let capacity = s.capacity;
-        Ok(s.due(now, capacity)?.contains(&session))
+        Ok(s.due(now, capacity)?.contains(&session) || s.confirmation_due(session, now))
+    }
+    /// Time left before the earliest confirmation deadline of an ONLINE shown to `session`.
+    pub(crate) fn confirmation_left(
+        &self,
+        session: GameSessionId,
+    ) -> Result<Option<std::time::Duration>> {
+        let now = clock()?;
+        Ok(self
+            .state
+            .lock()
+            .map_err(|_| corrupt())?
+            .confirmation_left(session, now)
+            .map(std::time::Duration::from_millis))
     }
     /// The next queued update of `session` without a new read. Each queued ONLINE still carries
     /// the confirmation deadline of the read that made it, and an expired one is refused.

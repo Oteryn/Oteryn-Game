@@ -24,6 +24,7 @@ use crate::domain::vip::{
 use crate::domain::{AccountId, CharacterId, WorldId};
 use crate::foundation::{CommandRef, RuntimeScopeRefV1};
 use sha2::{Digest, Sha256};
+use sqlx::postgres::PgRow;
 use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeSet;
 
@@ -92,10 +93,27 @@ impl VipEndOperation {
     fn code(self) -> i16 {
         match self {
             Self::Withdraw { .. } => 1,
-            Self::Reject(_) => 2,
-            Self::Revoke(_) => 3,
-            Self::Accept(_) => 4,
+            Self::Reject(_) => VipEndKind::Reject.code(),
+            Self::Revoke(_) => VipEndKind::Revoke.code(),
+            Self::Accept(_) => VipEndKind::Accept.code(),
             Self::Remove { .. } => 6,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum VipEndKind {
+    Accept,
+    Reject,
+    Revoke,
+}
+
+impl VipEndKind {
+    fn code(self) -> i16 {
+        match self {
+            Self::Accept => 4,
+            Self::Reject => 2,
+            Self::Revoke => 3,
         }
     }
 }
@@ -160,6 +178,55 @@ fn digest(actor: CharacterId, request: VipEndRequest) -> [u8; 32] {
 }
 
 impl DurabilityRoot {
+    /// Replay an ending receipt before resolving a per-session handle after resume. The
+    /// original binding digest is not compared because the handle that produced it is gone.
+    /// This read-only transaction never changes stored state or reacquires write authority.
+    /// Like every writer's receipt-first replay it precedes the node and session fences.
+    pub(crate) async fn replay_vip_end(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        list: VipListKey,
+        command: CommandRef,
+        kind: VipEndKind,
+    ) -> Result<Option<VipReceipt>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| VipError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = async {
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        if command.game_session_id() != fence.game_session_id {
+                            return Err(VipError::AuthorityRejected);
+                        }
+                        let Some(row) = receipt_row(&mut tx, list, command).await? else {
+                            return Ok(None);
+                        };
+                        if uuid_text(row.try_get("character_id")?)?
+                            != *fence.character_id.as_bytes()
+                            || row.try_get::<i16, _>("kind")? != kind.code()
+                        {
+                            return Err(VipError::ConflictingCommand);
+                        }
+                        Ok(Some(stored_receipt(&row)?))
+                    }
+                    .await;
+                    match result {
+                        Ok(receipt) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(receipt))
+                        }
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
     /// Remove one Account+World entry under the same native authority/receipt transaction
     /// as consent mutations. Removal requires no Premium benefit or target settings producer.
     pub(crate) async fn remove_vip_entry(
@@ -239,6 +306,18 @@ impl DurabilityRoot {
     }
 }
 
+async fn receipt_row(
+    tx: &mut Transaction<'_, Postgres>,
+    list: VipListKey,
+    command: CommandRef,
+) -> Result<Option<PgRow>> {
+    let row = sqlx::query("SELECT character_id::text,kind,binding,result,seconds,revision::text,entry_no::text FROM game_vip_command_receipts WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND command_id=$4::text::numeric")
+        .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice())
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+        .fetch_optional(&mut **tx).await?;
+    Ok(row)
+}
+
 // One receipt binding validator for Add and the existing consent operations.
 async fn bound_receipt(
     tx: &mut Transaction<'_, Postgres>,
@@ -248,10 +327,7 @@ async fn bound_receipt(
     kind: i16,
     binding: [u8; 32],
 ) -> Result<Option<sqlx::postgres::PgRow>> {
-    let row = sqlx::query("SELECT character_id::text,kind,binding,result,seconds,revision::text,entry_no::text FROM game_vip_command_receipts WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid AND command_id=$4::text::numeric")
-        .bind(list.account_id.as_bytes().as_slice()).bind(list.world_id.as_bytes().as_slice())
-        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
-        .fetch_optional(&mut **tx).await?;
+    let row = receipt_row(tx, list, command).await?;
     let Some(row) = row else {
         return Ok(None);
     };
@@ -281,6 +357,10 @@ async fn receipt(
     else {
         return Ok(None);
     };
+    Ok(Some(stored_receipt(&row)?))
+}
+
+fn stored_receipt(row: &PgRow) -> Result<VipReceipt> {
     let seconds: Option<i16> = row.try_get("seconds")?;
     let result = match (row.try_get::<i16, _>("result")?, seconds) {
         (1, None) => VipResult::Ok,
@@ -298,11 +378,11 @@ async fn receipt(
     if revision == 0 {
         return Err(corrupt());
     }
-    Ok(Some(VipReceipt {
+    Ok(VipReceipt {
         result,
         revision,
         replayed: true,
-    }))
+    })
 }
 
 #[derive(Clone, Copy)]
@@ -1025,10 +1105,10 @@ async fn add_target(
     cap: u64,
     now: i64,
 ) -> Result<(VipAddResult, Option<u64>)> {
-    // PARTY's other required settings have no defaults. VIP cannot invent their provenance
-    // for an offline target. Its genuine admission initializer remains a CP dependency.
+    // PARTYPVP0 §3 creates absent-row defaults atomically; existing settings are preserved.
+    ensure_social_baseline(tx, target.as_slice()).await?;
     let settings = sqlx::query("SELECT vip_consent_revision::text,vip_status,party_invites,channel_visibility,source_policy FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
-        .bind(target.as_slice()).fetch_optional(&mut **tx).await?.ok_or_else(corrupt)?;
+        .bind(target.as_slice()).fetch_one(&mut **tx).await?;
     if settings.try_get::<String, _>("source_policy")? != "PARTYPVP0-PARTIES-AND-PVP-V1"
         || ![1, 2].contains(&settings.try_get::<i16, _>("party_invites")?)
         || ![1, 2].contains(&settings.try_get::<i16, _>("channel_visibility")?)
@@ -1643,6 +1723,16 @@ fn millis_u64(value: i64) -> Result<u64> {
     u64::try_from(value).map_err(|_| corrupt())
 }
 
+/// PARTYPVP0 §3 absent-row defaults; an existing row is never changed.
+async fn ensure_social_baseline(
+    tx: &mut Transaction<'_, Postgres>,
+    character: &[u8],
+) -> Result<()> {
+    sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT (character_id) DO NOTHING")
+        .bind(character).execute(&mut **tx).await?;
+    Ok(())
+}
+
 async fn admit_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     recovery: &CharacterRecoveryFenceV1,
@@ -1668,8 +1758,7 @@ async fn admit_in_transaction(
     {
         return Err(VipError::AuthorityRejected);
     }
-    sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT (character_id) DO NOTHING")
-        .bind(me).execute(&mut **tx).await?;
+    ensure_social_baseline(tx, me).await?;
     let settings = sqlx::query("SELECT vip_status,source_policy FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
         .bind(me).fetch_one(&mut **tx).await?;
     if settings.try_get::<String, _>("source_policy")? != "PARTYPVP0-PARTIES-AND-PVP-V1" {

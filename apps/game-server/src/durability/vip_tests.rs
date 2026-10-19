@@ -1534,22 +1534,12 @@ fn vip_add_native_callback_rollback_missing_baseline_and_replay_before_new_fence
             .map_err(debug)?;
         let request = add_request(1, &fixture_name(60));
         let before = footprint(h).await?;
-        assert!(
-            h.root
-                .add_vip(
-                    &authority,
-                    &h.node,
-                    harness::item_fence()?,
-                    &gate,
-                    request.clone()
-                )
-                .await
-                .is_err()
-        );
-        assert_eq!(footprint(h).await?, before);
-        assert_eq!(h.count("game_vip_lists").await?, 0);
-        sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1')")
-            .bind(id(60).as_slice()).execute(&h.pool).await?;
+        // The missing baseline is now created atomically with the add (PARTYPVP0 §3).
+        let baseline_count = || async {
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(60).as_slice()).fetch_one(&h.pool).await
+        };
+        assert_eq!(baseline_count().await?, 0);
         h.pool.execute("CREATE FUNCTION vip_add_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected after entry' USING ERRCODE='23514';END;$$;CREATE TRIGGER vip_add_fault AFTER INSERT ON game_vip_consents FOR EACH ROW EXECUTE FUNCTION vip_add_fault()").await?;
         assert!(
             h.root
@@ -1565,7 +1555,11 @@ fn vip_add_native_callback_rollback_missing_baseline_and_replay_before_new_fence
         );
         assert_eq!(footprint(h).await?, before);
         assert_eq!(h.count("game_vip_lists").await?, 0);
-        assert_eq!(target_revision(h, 60).await?, 0);
+        // An absent baseline has revision zero; inspecting it must not create the row.
+        let target_revision: String = sqlx::query_scalar("SELECT COALESCE((SELECT vip_consent_revision::text FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid),'0')")
+            .bind(id(60).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(target_revision, "0");
+        assert_eq!(baseline_count().await?, 0);
         h.pool
             .execute(
                 "DROP TRIGGER vip_add_fault ON game_vip_consents;DROP FUNCTION vip_add_fault()",
@@ -1582,6 +1576,9 @@ fn vip_add_native_callback_rollback_missing_baseline_and_replay_before_new_fence
             )
             .await
             .map_err(debug)?;
+        let baseline: (i16, i16, String) = sqlx::query_as("SELECT party_invites,channel_visibility,source_policy FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(60).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(baseline, (1, 1, "PARTYPVP0-PARTIES-AND-PVP-V1".to_owned()));
         let after = footprint(h).await?;
         sqlx::query("UPDATE game_durability_admission_runtime_guards SET ready=FALSE")
             .execute(&h.pool)
@@ -3378,6 +3375,62 @@ fn vip_list_native_delivered_and_bypass_require_live_session_and_current_assignm
             ));
             assert_eq!(list_snapshot(h).await?, before);
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn vip_end_replay_returns_the_committed_receipt_without_a_handle() -> TestResult {
+    run("vipendreplay", async |h| {
+        fixture_character(h, 60, 70).await?;
+        let number = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
+        let req = accept_request(1, invitation(60, 70, number));
+        let committed = accept(h, req).await?;
+        assert_eq!(committed.result, VipResult::Ok);
+        let before = footprint(h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let fence = harness::item_fence()?;
+        let replay = h
+            .root
+            .replay_vip_end(&authority, fence, req.list, req.command, VipEndKind::Accept)
+            .await
+            .map_err(debug)?
+            .ok_or("missing receipt")?;
+        assert!(replay.replayed);
+        assert_eq!(
+            (replay.result, replay.revision),
+            (committed.result, committed.revision)
+        );
+        assert_eq!(footprint(h).await?, before);
+        assert!(matches!(
+            h.root
+                .replay_vip_end(&authority, fence, req.list, req.command, VipEndKind::Reject,)
+                .await,
+            Err(VipError::ConflictingCommand)
+        ));
+        assert_eq!(footprint(h).await?, before);
+        let unknown = CommandRef::new(req.command.game_session_id(), CommandId::new(2)?);
+        assert_eq!(
+            h.root
+                .replay_vip_end(&authority, fence, req.list, unknown, VipEndKind::Accept,)
+                .await
+                .map_err(debug)?,
+            None
+        );
+        assert_eq!(footprint(h).await?, before);
+        let foreign = CommandRef::new(GameSessionId::decode(&id(51))?, req.command.command_id());
+        assert!(matches!(
+            h.root
+                .replay_vip_end(&authority, fence, req.list, foreign, VipEndKind::Accept,)
+                .await,
+            Err(VipError::AuthorityRejected)
+        ));
+        assert_eq!(footprint(h).await?, before);
         Ok(())
     })
 }

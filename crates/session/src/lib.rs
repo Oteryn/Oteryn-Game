@@ -1521,35 +1521,7 @@ impl<S: SessionStream> Session<S> {
     fn apply_vip(&mut self, delta_type: u32, payload: &[u8]) -> Result<VipDelta, SessionError> {
         let delta = decode_vip_delta(delta_type, payload).map_err(vip_refused)?;
         if let Some(store) = self.vip.as_mut() {
-            match &delta {
-                VipDelta::Entry(entry) => {
-                    if let Some(i) = store
-                        .entries
-                        .iter()
-                        .position(|e| e.entry_no == entry.entry_no)
-                    {
-                        store.entries[i] = entry.clone();
-                    } else if store.entries.len() < MAX_VIP_ENTRIES {
-                        store.entries.push(entry.clone());
-                    } else {
-                        return Err(vip_refused(VipWireError::LimitExceeded));
-                    }
-                }
-                VipDelta::EntryRemoved { entry_no } => {
-                    store.entries.retain(|e| e.entry_no != *entry_no);
-                }
-                VipDelta::Groups(groups) => store.groups.clone_from(groups),
-                VipDelta::Status(update) => {
-                    if let Some(entry) = store
-                        .entries
-                        .iter_mut()
-                        .find(|e| e.entry_no == update.entry_no)
-                    {
-                        entry.status = update.status;
-                    }
-                }
-                VipDelta::Consent(consent) => store.consent.clone_from(consent),
-            }
+            store.apply(&delta).map_err(vip_refused)?;
         }
         Ok(delta)
     }

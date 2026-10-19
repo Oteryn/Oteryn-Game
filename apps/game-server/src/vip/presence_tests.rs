@@ -2125,3 +2125,67 @@ fn native_vip_add_accept_and_presence_reach_the_watcher_client_end_to_end() -> T
         Ok(())
     })
 }
+
+#[test]
+fn confirmation_left_tracks_only_shown_online_and_saturates() {
+    let mut s = state();
+    let session = item_fence().expect("fence").game_session_id;
+    assert_eq!(s.confirmation_left(session, 100), None);
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    assert_eq!(s.confirmation_left(session, 100), None);
+    acknowledge(&mut s, 100);
+    assert_eq!(s.confirmation_left(session, 350), Some(CONFIRM_MS - 250));
+    let mut older = s.sessions[&session].entries[&1].clone();
+    older.confirmed_from = 50;
+    s.sessions
+        .get_mut(&session)
+        .expect("watcher")
+        .entries
+        .insert(2, older);
+    assert_eq!(s.confirmation_left(session, 350), Some(CONFIRM_MS - 300));
+    s.sessions
+        .get_mut(&session)
+        .expect("watcher")
+        .entries
+        .remove(&2);
+    assert_eq!(s.confirmation_left(session, 100 + CONFIRM_MS), Some(0));
+    assert_eq!(s.confirmation_left(session, 101 + CONFIRM_MS), Some(0));
+    install(
+        &mut s,
+        read(data(Visibility::Shown, false)),
+        400,
+        Refresh::Delivery,
+    );
+    acknowledge(&mut s, 400);
+    assert_eq!(s.confirmation_left(session, 400), None);
+}
+
+#[test]
+fn confirmation_lead_is_due_at_half_age_only_when_ready_to_read() {
+    let mut s = state();
+    let session = item_fence().expect("fence").game_session_id;
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    acknowledge(&mut s, 100);
+    let at = 100 + CONFIRM_LEAD_MS;
+    assert!(!s.confirmation_due(session, at - 1));
+    assert!(s.confirmation_due(session, at));
+    s.sessions.get_mut(&session).expect("watcher").reading = true;
+    assert!(!s.confirmation_due(session, at));
+    let watcher = s.sessions.get_mut(&session).expect("watcher");
+    watcher.reading = false;
+    watcher.retry_at = at + 1;
+    assert!(!s.confirmation_due(session, at));
+    assert!(s.confirmation_due(session, at + 1));
+    s.listener = false;
+    assert!(!s.confirmation_due(session, at + 1));
+}

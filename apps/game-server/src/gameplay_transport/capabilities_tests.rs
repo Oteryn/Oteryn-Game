@@ -2481,3 +2481,431 @@ mod logout_wire {
         })
     }
 }
+
+// VIP-2: capability 31, command 31 and domain 21 through the real admitted connection.
+mod vip_wire {
+    use super::super::super::connection::UseCommand;
+    use super::super::super::vip_intent::VipCommandOutcome;
+    use super::*;
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::vip::{
+        CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, SNAPSHOT_TYPE_VIP_V1, STATE_DOMAIN_VIP,
+        VipDelta, VipEntry, VipGroupSet, VipIntent, VipIntentResult, VipResultCode, VipSnapshot,
+        VipStatus, VipStatusUpdate, decode_vip_delta, decode_vip_intent, decode_vip_intent_result,
+        decode_vip_snapshot, encode_vip_intent,
+    };
+    use oteryn_protocol_oteryn::{
+        decode_command_result, decode_snapshot_chunk, decode_state_delta,
+    };
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    #[derive(Default)]
+    struct Calls {
+        admitted: Vec<(GameSessionId, Option<CurrentCharacterItemFence>)>,
+        intents: Vec<(GameSessionId, u64, VipIntent)>,
+        delivery: Vec<(&'static str, GameSessionId)>,
+        next: Option<VipDelta>,
+    }
+
+    struct VipAuthority {
+        calls: Arc<Mutex<Calls>>,
+        snapshot: VipSnapshot,
+        result: VipIntentResult,
+        deltas: Vec<VipDelta>,
+        unknown: bool,
+    }
+
+    impl VipAuthority {
+        fn new() -> Self {
+            Self {
+                calls: Arc::new(Mutex::new(Calls::default())),
+                snapshot: VipSnapshot {
+                    entries: vec![entry(1, "Aela")],
+                    ..VipSnapshot::default()
+                },
+                result: VipIntentResult::of(VipResultCode::Ok),
+                deltas: Vec::new(),
+                unknown: false,
+            }
+        }
+    }
+
+    impl FreshAdmissionAuthority for VipAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn resume(
+            &self,
+            _attempt: ResumeAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(WorldSpatialObservation {
+                content_generation: [0x5c; 32],
+                actor_position: ActorPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 0,
+                },
+            })
+        }
+
+        async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+            StepOutcome {
+                disposition: StepDisposition::Blocked,
+                moved_to: None,
+            }
+        }
+
+        async fn vip_admit(
+            &self,
+            session: GameSessionId,
+            fence: Option<CurrentCharacterItemFence>,
+        ) -> Option<VipSnapshot> {
+            self.calls
+                .lock()
+                .expect("calls")
+                .admitted
+                .push((session, fence));
+            Some(self.snapshot.clone())
+        }
+
+        async fn vip_intent(
+            &self,
+            command: UseCommand,
+            payload: &[u8],
+        ) -> (VipCommandOutcome, Vec<VipDelta>) {
+            let intent = decode_vip_intent(payload).expect("real VIP intent");
+            self.calls.lock().expect("calls").intents.push((
+                command.game_session_id,
+                command.command_id,
+                intent,
+            ));
+            (
+                VipCommandOutcome {
+                    result: self.result,
+                    unknown: self.unknown,
+                },
+                self.deltas.clone(),
+            )
+        }
+
+        async fn vip_next(&self, session: GameSessionId) -> Option<VipDelta> {
+            let mut calls = self.calls.lock().expect("calls");
+            calls.delivery.push(("next", session));
+            calls.next.take()
+        }
+
+        async fn vip_write_bound(&self, session: GameSessionId) -> Option<Duration> {
+            self.calls
+                .lock()
+                .expect("calls")
+                .delivery
+                .push(("bound", session));
+            Some(Duration::from_secs(1))
+        }
+
+        async fn vip_delivered(&self, session: GameSessionId) {
+            self.calls
+                .lock()
+                .expect("calls")
+                .delivery
+                .push(("delivered", session));
+        }
+    }
+
+    fn entry(entry_no: u64, name: &str) -> VipEntry {
+        VipEntry {
+            entry_no,
+            name: name.to_owned(),
+            description: String::new(),
+            icon: 0,
+            notify: false,
+            groups: VipGroupSet::default(),
+            status: VipStatus::Unconfirmed,
+        }
+    }
+
+    fn admitted(selected: &[u32]) -> Result<AdmittedSession, Box<dyn Error>> {
+        super::session(SessionContinuity {
+            selected_capabilities: super::selection(selected),
+            ..SessionContinuity::FRESH
+        })
+    }
+
+    /// Serves `admitted`; the client writes `frames`, stays open for `linger`, then closes.
+    async fn serve_open(
+        authority: &VipAuthority,
+        admitted: AdmittedSession,
+        frames: &[Vec<u8>],
+        linger: Duration,
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
+        let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+        for frame in frames {
+            let mut framed = (frame.len() as u32).to_be_bytes().to_vec();
+            framed.extend_from_slice(frame);
+            client.write_all(&framed).await?;
+        }
+        let closing = async {
+            tokio::time::sleep(linger).await;
+            client.shutdown().await?;
+            let mut output = Vec::new();
+            client.read_to_end(&mut output).await?;
+            Ok::<_, std::io::Error>(output)
+        };
+        let serving = async move {
+            let end = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let (mut serving, mut closing) = (std::pin::pin!(serving), std::pin::pin!(closing));
+        let (mut end, mut output) = (None, None);
+        std::future::poll_fn(|context| {
+            if end.is_none()
+                && let std::task::Poll::Ready(value) = serving.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if output.is_none()
+                && let std::task::Poll::Ready(value) = closing.as_mut().poll(context)
+            {
+                output = Some(value);
+            }
+            if end.is_some() && output.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        Ok((end.ok_or("end")?, split(&output.ok_or("output")??)?))
+    }
+
+    /// One written command result: (command id, status, payload).
+    type Written = (u64, CommandStatus, Vec<u8>);
+
+    /// The command results written.
+    fn results(frames: &[Vec<u8>]) -> Result<Vec<Written>, Box<dyn Error>> {
+        let mut results = Vec::new();
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload())?;
+                results.push((result.command_id, result.status, result.payload.to_vec()));
+            }
+        }
+        Ok(results)
+    }
+
+    fn snapshots(frames: &[Vec<u8>]) -> Result<Vec<VipSnapshot>, Box<dyn Error>> {
+        let mut snapshots = Vec::new();
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            if envelope.message_type() == MessageType::SnapshotChunk {
+                let (_, domains) = decode_snapshot_chunk(envelope.payload())?;
+                for domain in domains {
+                    if domain.domain_id == STATE_DOMAIN_VIP {
+                        assert_eq!(domain.snapshot_type, SNAPSHOT_TYPE_VIP_V1);
+                        assert_eq!(domain.revision, 1);
+                        snapshots.push(
+                            decode_vip_snapshot(domain.payload).map_err(|e| format!("{e:?}"))?,
+                        );
+                    }
+                }
+            }
+        }
+        Ok(snapshots)
+    }
+
+    fn deltas(frames: &[Vec<u8>]) -> Result<Vec<(usize, VipDelta)>, Box<dyn Error>> {
+        let mut deltas = Vec::new();
+        for (index, frame) in frames.iter().enumerate() {
+            let envelope = decode_wire_envelope(frame)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = decode_state_delta(envelope.payload())?;
+                if delta.domain_id == STATE_DOMAIN_VIP {
+                    assert_eq!(delta.new_revision, delta.base_revision + 1);
+                    deltas.push((
+                        index,
+                        decode_vip_delta(delta.delta_type, delta.payload)
+                            .map_err(|e| format!("{e:?}"))?,
+                    ));
+                }
+            }
+        }
+        Ok(deltas)
+    }
+
+    #[test]
+    fn admission_and_command_31_write_the_vip_snapshot_result_and_deltas_in_order()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = VipAuthority::new();
+            authority.deltas = vec![
+                VipDelta::Entry(entry(2, "Bryn")),
+                VipDelta::Status(VipStatusUpdate {
+                    entry_no: 2,
+                    status: VipStatus::Online,
+                    announce: false,
+                }),
+            ];
+            let session = admitted(&[CAPABILITY_VIP_V1])?;
+            let session_id = session.game_session_id;
+            let fence = session.item_fence;
+            let intent = VipIntent::Add {
+                name: "Bryn".to_owned(),
+            };
+            let payload = encode_vip_intent(&intent).map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_open(
+                &authority,
+                session,
+                &[command(1, COMMAND_TYPE_VIP_INTENT, &payload)],
+                Duration::ZERO,
+            )
+            .await?;
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err("expected disconnect".into());
+            };
+            assert_eq!(snapshots(&frames)?, vec![authority.snapshot.clone()]);
+            let written = results(&frames)?;
+            assert_eq!(written.len(), 1);
+            assert_eq!((written[0].0, written[0].1), (1, CommandStatus::Accepted));
+            assert_eq!(
+                decode_vip_intent_result(&written[0].2).map_err(|e| format!("{e:?}"))?,
+                authority.result
+            );
+            let result_index = frames
+                .iter()
+                .position(|frame| {
+                    let envelope = decode_wire_envelope(frame).expect("envelope");
+                    envelope.message_type() == MessageType::CommandResult
+                })
+                .ok_or("result frame")?;
+            let changes = deltas(&frames)?;
+            assert_eq!(
+                changes
+                    .iter()
+                    .map(|(_, value)| value.clone())
+                    .collect::<Vec<_>>(),
+                authority.deltas
+            );
+            assert_eq!(changes[0].0, result_index + 1);
+            assert_eq!(changes[1].0, result_index + 2);
+            assert_eq!(ended.continuity.vip_revision, 3);
+            let calls = authority.calls.lock().expect("calls");
+            assert_eq!(calls.admitted, vec![(session_id, fence)]);
+            assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
+            assert!(!calls.delivery.iter().any(|(call, _)| *call == "delivered"));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn vip_next_writes_a_status_delta_then_acknowledges_it_once() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = VipAuthority::new();
+            let status = VipDelta::Status(VipStatusUpdate {
+                entry_no: 1,
+                status: VipStatus::Online,
+                announce: false,
+            });
+            authority.calls.lock().expect("calls").next = Some(status.clone());
+            let session = admitted(&[CAPABILITY_VIP_V1])?;
+            let session_id = session.game_session_id;
+            let (end, frames) =
+                serve_open(&authority, session, &[], Duration::from_millis(300)).await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            let changes = deltas(&frames)?;
+            assert_eq!(changes.len(), 1);
+            assert_eq!(changes[0].1, status);
+            assert!(results(&frames)?.is_empty());
+            let calls = authority.calls.lock().expect("calls");
+            assert!(calls.delivery.starts_with(&[
+                ("next", session_id),
+                ("bound", session_id),
+                ("delivered", session_id),
+            ]));
+            assert_eq!(
+                calls
+                    .delivery
+                    .iter()
+                    .filter(|(call, _)| *call == "delivered")
+                    .count(),
+                1
+            );
+            assert!(
+                calls
+                    .delivery
+                    .iter()
+                    .all(|(_, session)| *session == session_id)
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn an_unknown_vip_outcome_disconnects_without_a_result() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = VipAuthority::new();
+            authority.unknown = true;
+            let intent = VipIntent::Add {
+                name: "Bryn".to_owned(),
+            };
+            let payload = encode_vip_intent(&intent).map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_open(
+                &authority,
+                admitted(&[CAPABILITY_VIP_V1])?,
+                &[command(1, COMMAND_TYPE_VIP_INTENT, &payload)],
+                Duration::ZERO,
+            )
+            .await?;
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err("expected disconnect".into());
+            };
+            assert_eq!(ended.continuity.next_command_id, 1);
+            assert!(results(&frames)?.is_empty());
+            assert!(deltas(&frames)?.is_empty());
+            assert_eq!(authority.calls.lock().expect("calls").intents.len(), 1);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn without_capability_31_a_vip_command_is_refused_before_the_authority()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = VipAuthority::new();
+            let payload = encode_vip_intent(&VipIntent::Add {
+                name: "Bryn".to_owned(),
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_open(
+                &authority,
+                admitted(&[])?,
+                &[command(1, COMMAND_TYPE_VIP_INTENT, &payload)],
+                Duration::ZERO,
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            assert_eq!(
+                results(&frames)?,
+                [(1, CommandStatus::Rejected, Vec::new())]
+            );
+            assert!(snapshots(&frames)?.is_empty());
+            assert!(deltas(&frames)?.is_empty());
+            let calls = authority.calls.lock().expect("calls");
+            assert!(calls.intents.is_empty());
+            assert!(calls.admitted.is_empty());
+            assert!(calls.delivery.is_empty());
+            Ok(())
+        })
+    }
+}
