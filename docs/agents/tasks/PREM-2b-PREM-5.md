@@ -652,3 +652,20 @@ catalogue: `promotion_talk_through_dispatch_burns_fee_and_promotes` and
 of the Mountain at level 50 for 7800 gold, band 31..119, replay, reconcile,
 death held set, refusal, Heart and Wisdom not offered). Boundary tests at
 30/31, 119/120 and 269/270 are in `premium::blessing_catalogue::tests`.
+
+Bank-paid blessing: a Character with no equipped backpack gets change facts
+that name no definition, so the fee writer reads no coin input and only the
+bank part pays (BANK-FEE-0 A3, DEATH_COMPLETE0 A4.7). A backpack equipped
+before the fee transaction is refused, because the empty definition never
+matches it. The e2e `blessing_without_backpack_is_paid_from_the_bank` covers
+the bank debit, the zero burn, the balance, the held blessing and idempotent
+reconcile.
+
+Deferred review findings (tracked, outside this allocation):
+- #2256: the durable promotion has no gameplay reader yet (death D76,
+  login/ADMIT A4.2, Wheel, Bestiary). Those are the later children named
+  above. No player can pay for it before then: production offers no
+  promotion until the slot-only content step declares the Service.
+- #2257: CI runs no lib-registered PostgreSQL e2e (including this PR's
+  `promotion_npc_postgres_tests`). The fix is in `.github/workflows`. Locally,
+  all 3 `promotion_npc` e2e tests pass against PostgreSQL 17.6.

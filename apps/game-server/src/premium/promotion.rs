@@ -87,9 +87,10 @@ pub(crate) fn check_promotion_eligibility(
 /// The promoted name/title projection chosen at login (§4.2 D73/D76). It is not a gameplay
 /// permission: benefits re-read the native rule at each use, and a lapse never clears durable
 /// promotion. Vocation/title selection and login composition stay with their existing owners.
+/// The login/ADMIT caller is a later child outside this allocation, tracked in #2256.
 #[allow(
     dead_code,
-    reason = "Pending CP login projection caller retains this API."
+    reason = "Pending CP login projection caller (#2256) retains this API."
 )]
 #[must_use]
 pub(crate) const fn effective_promotion_at_login(
@@ -386,6 +387,10 @@ async fn apply_promotion_purchase(
     if inserted.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState.into());
     }
+    // The durable promotion row. Its gameplay readers (death D76, login/ADMIT A4.2, Wheel and
+    // Bestiary facts) are later children outside this allocation, tracked in #2256. Here it
+    // only refuses a repeat purchase. Production offers no promotion before the slot-only
+    // content step declares the Service, so no Character pays before those readers exist.
     sqlx::query("INSERT INTO game_character_promotions(character_id,promoted,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,true,encode($2,'hex')::uuid)")
         .bind(fence.character_id.as_bytes().as_slice()).bind(request.occurrence.as_slice()).execute(&mut ***tx).await?;
     let updated = sqlx::query(
