@@ -15,6 +15,7 @@
 
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::future::Future;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use oteryn_protocol_oteryn::vip::{
@@ -64,7 +65,22 @@ const RETIRED_HANDLES: usize = 2
     * (oteryn_protocol_oteryn::vip::MAX_VIP_INVITATIONS
         + oteryn_protocol_oteryn::vip::MAX_VIP_WATCHERS);
 
+/// Bindings of the newest ending commands (Accept, Reject, Revoke) a session sent. A resent
+/// command whose outcome the client never saw replays against its own binding however many
+/// replacement snapshots retired its handle meanwhile. Ending writes share the list's rate
+/// bucket (VIP0-RL-07), so the client resends a lost one long before this many newer ones.
+const COMMANDED_HANDLES: usize = RETIRED_HANDLES;
+
+/// VIP0-RL-16: the part of an ONLINE status's confirmation time its write may take. The frame
+/// carries only the rest, so the client's deadline, which runs from receipt, never passes the
+/// read's confirmation deadline by more than the network's own delay; a slower write ends the
+/// connection.
+const VIP_ONLINE_WRITE: std::time::Duration = std::time::Duration::from_secs(2);
+
 struct VipSession {
+    /// Which install of the session's state this is: an asynchronous read that started under
+    /// another install (a replacement snapshot came in meanwhile) changes nothing.
+    install: u64,
     character: CharacterId,
     fence: CurrentCharacterItemFence,
     view: VipView,
@@ -76,12 +92,20 @@ struct VipSession {
     /// Bindings of handles no longer shown, the newest RETIRED_HANDLES, including those of the
     /// session's earlier connections (at least one full view). Only the receipt replay of a resent command reads them.
     retired: BTreeMap<u64, VipInvitationBinding>,
+    /// Handle and binding of each of the newest COMMANDED_HANDLES ending commands, oldest
+    /// first, kept across replacement snapshots. Only the receipt replay reads them.
+    commanded: VecDeque<(u64, VipInvitationBinding)>,
     next_handle: u64,
     /// Highest presence revision delivered to the client.
     presence_seen: u64,
     inflight: Option<StatusUpdate>,
+    /// When the write of the in-flight ONLINE status must have ended (VIP_ONLINE_WRITE).
+    write_by: Option<std::time::Instant>,
     pending: VecDeque<VipOutgoing>,
     reread: bool,
+    /// Local changes that concerned this session; a re-read keeps `reread` set when one came in
+    /// while it was awaiting, since its snapshot may predate that change.
+    touches: u64,
     read_at: std::time::Instant,
 }
 
@@ -117,6 +141,20 @@ fn retire(
     }
 }
 
+/// Keeps the newest COMMANDED_HANDLES ending commands, oldest first; a resent handle moves to
+/// the back. Unlike `retire`, a replacement snapshot or a new connection never evicts them.
+fn remember_command(
+    commanded: &mut VecDeque<(u64, VipInvitationBinding)>,
+    handle: u64,
+    binding: VipInvitationBinding,
+) {
+    commanded.retain(|(named, _)| *named != handle);
+    commanded.push_back((handle, binding));
+    while commanded.len() > COMMANDED_HANDLES {
+        commanded.pop_front();
+    }
+}
+
 impl VipSession {
     fn handle(&mut self, binding: VipInvitationBinding, kind: HandleKind) -> u64 {
         let handle = match self.handle_of.get(&binding.invitation_id) {
@@ -132,13 +170,25 @@ impl VipSession {
         handle
     }
 
-    /// The binding `handle` named, shown or retired, whatever its kind now. Only the receipt
-    /// replay reads it: a new ending command acts on a shown handle of its own kind only.
+    /// The binding `handle` named, shown, commanded or retired, whatever its kind now. Only the
+    /// receipt replay reads it: a new ending command acts on a shown handle of its own kind only.
     fn named(&self, handle: u64) -> Option<VipInvitationBinding> {
         self.bindings
             .get(&handle)
             .map(|(binding, _)| *binding)
+            .or_else(|| {
+                self.commanded
+                    .iter()
+                    .rev()
+                    .find(|(commanded, _)| *commanded == handle)
+                    .map(|(_, binding)| *binding)
+            })
             .or_else(|| self.retired.get(&handle).copied())
+    }
+
+    /// An ending command named `handle`: its binding stays matchable for the command's resend.
+    fn command(&mut self, handle: u64, binding: VipInvitationBinding) {
+        remember_command(&mut self.commanded, handle, binding);
     }
 
     /// The consent view of `view`, with this session's handles (made for new invitations).
@@ -214,8 +264,9 @@ impl VipSession {
         }
     }
 
-    /// Replace the view with `next`, queueing one delta per change.
-    fn replace(&mut self, next: VipView) {
+    /// Replace the view with `next`, read after the session's `touches` were `touches`,
+    /// queueing one delta per change.
+    fn replace(&mut self, next: VipView, touches: u64) {
         let old = std::mem::replace(&mut self.view, next.clone());
         if old.groups != next.groups {
             self.pending.push_back(VipOutgoing {
@@ -255,7 +306,8 @@ impl VipSession {
                 presence: false,
             });
         }
-        self.reread = false;
+        // A change committed while the read was awaiting may postdate its snapshot.
+        self.reread = self.touches != touches;
         self.read_at = std::time::Instant::now();
     }
 
@@ -287,6 +339,11 @@ const fn wire_status(status: Status) -> VipStatus {
 pub(crate) struct VipRuntime {
     sessions: Mutex<HashMap<GameSessionId, VipSession>>,
     presence: OnceLock<Arc<PresenceOwner>>,
+    /// The last [`VipSession::install`] given out.
+    installs: AtomicU64,
+    /// Local changes of any list or consent on this node, for an admission read that has no
+    /// session state yet to mark.
+    touches: AtomicU64,
 }
 
 impl VipRuntime {
@@ -327,11 +384,13 @@ impl VipRuntime {
     fn touch(&self, list: VipListKey, characters: &[CharacterId]) {
         let touched = {
             let mut sessions = self.lock();
+            self.touches.fetch_add(1, Ordering::SeqCst);
             sessions
                 .iter_mut()
                 .filter(|(_, s)| s.concerns(list, characters))
                 .map(|(id, s)| {
                     s.reread = true;
+                    s.touches = s.touches.wrapping_add(1);
                     *id
                 })
                 .collect::<Vec<_>>()
@@ -347,14 +406,20 @@ impl VipRuntime {
     /// delta while an entry is shown ONLINE (an Entry delta re-states that status), must reach
     /// the client before the confirmation deadline (VIP0 §8.2). None means unbounded.
     pub(crate) fn write_bound(&self, session: GameSessionId) -> Option<std::time::Duration> {
-        let update = self.lock().get(&session)?.inflight.clone();
+        let (update, write_by) = self
+            .lock()
+            .get(&session)
+            .map(|s| (s.inflight.clone(), s.write_by))?;
         let Some(presence) = self.presence() else {
             return update.map(|_| std::time::Duration::ZERO);
         };
         earliest(
-            update
-                .as_ref()
-                .and_then(|update| presence.write_bound(update)),
+            earliest(
+                update
+                    .as_ref()
+                    .and_then(|update| presence.write_bound(update)),
+                write_by.map(|by| by.saturating_duration_since(std::time::Instant::now())),
+            ),
             presence
                 .confirmation_left(session)
                 .unwrap_or(Some(std::time::Duration::ZERO)),
@@ -371,6 +436,7 @@ impl VipRuntime {
             let Some(update) = s.inflight.take() else {
                 return;
             };
+            s.write_by = None;
             s.shown.insert(update.entry(), wire_status(update.status()));
             s.presence_seen = s.presence_seen.max(update.revision());
             update
@@ -453,29 +519,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: Option<CurrentCharacterItemFence>,
     ) -> Option<VipSnapshot> {
         let fence = fence.filter(|fence| fence.game_session_id == session)?;
+        let touches = self.chat.vip.touches.load(Ordering::SeqCst);
         let view = self
             .root
             .admit_vip(self.character, self.holder, fence)
             .await
             .ok()?;
+        let mut sessions = self.chat.vip.lock();
+        let old = sessions.get(&session);
+        // A connection the session moved past while this read was awaiting installs nothing:
+        // the newer connection's state stays.
+        if old.is_some_and(|old| {
+            old.fence.connection_generation.get() > fence.connection_generation.get()
+        }) {
+            return None;
+        }
         // A replacement keeps the old state's handle floor and the bindings of its handles,
         // which a resent ending command is checked against.
-        let (previous, retired) =
-            self.chat
-                .vip
-                .lock()
-                .get(&session)
-                .map_or((None, BTreeMap::new()), |old| {
-                    let mut retired = old.retired.clone();
-                    retire(
-                        &mut retired,
-                        old.bindings
-                            .iter()
-                            .map(|(handle, (binding, _))| (*handle, *binding)),
-                    );
-                    (Some(old.next_handle), retired)
-                });
+        let (previous, retired, commanded) =
+            old.map_or((None, BTreeMap::new(), VecDeque::new()), |old| {
+                let mut retired = old.retired.clone();
+                retire(
+                    &mut retired,
+                    old.bindings
+                        .iter()
+                        .map(|(handle, (binding, _))| (*handle, *binding)),
+                );
+                (Some(old.next_handle), retired, old.commanded.clone())
+            });
         let mut state = VipSession {
+            install: self.chat.vip.installs.fetch_add(1, Ordering::SeqCst) + 1,
             character: fence.character_id,
             fence,
             view: view.clone(),
@@ -483,11 +556,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             handle_of: BTreeMap::new(),
             bindings: BTreeMap::new(),
             retired,
+            commanded,
             next_handle: handle_floor(fence.connection_generation.get(), previous),
             presence_seen: 0,
             inflight: None,
+            write_by: None,
             pending: VecDeque::new(),
-            reread: false,
+            // A change committed on this node while the read was awaiting may postdate it.
+            reread: self.chat.vip.touches.load(Ordering::SeqCst) != touches,
+            touches: 0,
             read_at: std::time::Instant::now(),
         };
         let consent = state.consent(&view);
@@ -496,11 +573,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             entries: view.entries.iter().map(|e| state.entry(e)).collect(),
             consent,
         };
+        sessions.insert(session, state);
+        drop(sessions);
         if let Some(presence) = self.chat.vip.presence() {
             // A replacement snapshot starts the watcher over: nothing earlier was shown.
             let _ = presence.forget(session);
         }
-        self.chat.vip.lock().insert(session, state);
         Some(snapshot)
     }
 
@@ -737,7 +815,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (outcome, Vec::new());
         }
         self.chat.vip.touch(list, touched);
-        let deltas = self.vip_reread(session).await;
+        let deltas = self.vip_reread_all(session).await;
         (outcome, deltas)
     }
 
@@ -747,10 +825,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         intent: VipIntent,
     ) -> Result<(VipListKey, CurrentCharacterItemFence, Write), VipResultCode> {
-        let sessions = self.chat.vip.lock();
+        let mut sessions = self.chat.vip.lock();
         let s = sessions
-            .get(&session)
+            .get_mut(&session)
             .ok_or(VipResultCode::VipUnavailable)?;
+        // The handle and binding an ending command names, kept for its resend.
+        let mut commanded = None;
         let target_of = |entry_no: u64| {
             s.view
                 .entries
@@ -777,16 +857,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // An unknown handle is a stale view: no such invitation (one answer, VIP-0 §5).
                 let binding =
                     binding(invitation, HandleKind::Invitation).ok_or(VipResultCode::NotFound)?;
+                commanded = Some((invitation, binding));
                 Write::End(VipEndOperation::Accept(binding), vec![binding.inviter])
             }
             VipIntent::Reject { invitation } => {
                 let binding =
                     binding(invitation, HandleKind::Invitation).ok_or(VipResultCode::NotFound)?;
+                commanded = Some((invitation, binding));
                 Write::End(VipEndOperation::Reject(binding), vec![binding.inviter])
             }
             VipIntent::Revoke { watcher } => {
                 let binding =
                     binding(watcher, HandleKind::Watcher).ok_or(VipResultCode::NotFound)?;
+                commanded = Some((watcher, binding));
                 Write::End(VipEndOperation::Revoke(binding), vec![binding.inviter])
             }
             VipIntent::Edit {
@@ -826,33 +909,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect(),
             ),
         };
+        if let Some((handle, binding)) = commanded {
+            s.command(handle, binding);
+        }
         Ok((s.view.list, s.fence, write))
     }
 
-    /// Re-reads `session`'s view and returns the deltas of what changed.
-    async fn vip_reread(&self, session: GameSessionId) -> Vec<VipDelta> {
-        let Some(fence) = self.chat.vip.lock().get(&session).map(|s| s.fence) else {
-            return Vec::new();
-        };
-        let Ok(view) = self
+    /// Re-reads `session`'s view, queues the deltas of what changed and hands the state to
+    /// `take` under the same lock. `None` when the read failed, or the session ended or was
+    /// installed anew (a replacement snapshot) while the read was awaiting: that state is left
+    /// untouched, since this read may predate it.
+    async fn vip_reread<T>(
+        &self,
+        session: GameSessionId,
+        take: impl FnOnce(&mut VipSession) -> T,
+    ) -> Option<T> {
+        let (fence, install, touches) = self
+            .chat
+            .vip
+            .lock()
+            .get(&session)
+            .map(|s| (s.fence, s.install, s.touches))?;
+        let view = self
             .root
             .admit_vip(self.character, self.holder, fence)
             .await
-        else {
-            return Vec::new();
-        };
+            .ok()?;
         let mut sessions = self.chat.vip.lock();
-        let Some(s) = sessions.get_mut(&session) else {
-            return Vec::new();
-        };
-        s.replace(view);
-        s.pending.drain(..).map(|outgoing| outgoing.delta).collect()
+        let s = sessions
+            .get_mut(&session)
+            .filter(|s| s.install == install && s.fence == fence)?;
+        s.replace(view, touches);
+        Some(take(s))
+    }
+
+    /// Re-reads `session`'s view and returns the deltas of what changed.
+    async fn vip_reread_all(&self, session: GameSessionId) -> Vec<VipDelta> {
+        self.vip_reread(session, |s| {
+            s.pending.drain(..).map(|outgoing| outgoing.delta).collect()
+        })
+        .await
+        .unwrap_or_default()
     }
 
     /// The next delta of `session`: a queued view change first, then a re-read view when one
     /// is due, then one confirmed presence update. `None` when there is nothing to send.
     pub(crate) async fn vip_follow(&self, session: GameSessionId) -> Option<VipDelta> {
-        let (fence, reread, seen, busy) = {
+        let (fence, install, reread, seen, busy) = {
             let mut sessions = self.chat.vip.lock();
             let s = sessions.get_mut(&session)?;
             if let Some(outgoing) = s.pending.pop_front() {
@@ -861,27 +964,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             (
                 s.fence,
+                s.install,
                 s.reread || s.read_at.elapsed() >= VIP_RECONCILE,
                 s.presence_seen,
                 s.inflight.is_some(),
             )
         };
         if reread {
-            let mut deltas = self.vip_reread(session).await.into_iter();
-            let first = deltas.next();
-            if let Some(first) = first {
-                if let Some(s) = self.chat.vip.lock().get_mut(&session) {
-                    for (index, delta) in deltas.enumerate() {
-                        s.pending.insert(
-                            index,
-                            VipOutgoing {
-                                delta,
-                                presence: false,
-                            },
-                        );
-                    }
-                }
-                return Some(first);
+            // The first change goes now; the rest stay queued for the next ticks.
+            if let Some(Some(first)) = self.vip_reread(session, |s| s.pending.pop_front()).await {
+                debug_assert!(!first.presence);
+                return Some(first.delta);
             }
         }
         if busy {
@@ -909,19 +1002,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .flatten()?;
         let mut sessions = self.chat.vip.lock();
         let s = sessions.get_mut(&session)?;
-        if s.fence != fence {
+        if s.fence != fence || s.install != install {
             return None;
         }
-        let confirmed_for_ms = if update.status() == Status::Online {
-            let left = presence.write_bound(&update)?;
-            if left.is_zero() {
-                return None;
-            }
-            u32::try_from(left.as_millis())
-                .unwrap_or(u32::MAX)
-                .clamp(1, MAX_VIP_CONFIRM_MS)
+        let (write_by, confirmed_for_ms) = if update.status() == Status::Online {
+            let (write, confirmed_for_ms) = online_split(presence.write_bound(&update)?)?;
+            (
+                Some(std::time::Instant::now().checked_add(write)?),
+                confirmed_for_ms,
+            )
         } else {
-            0
+            (None, 0)
         };
         let delta = VipDelta::Status(VipStatusUpdate {
             entry_no: update.entry(),
@@ -930,8 +1021,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             confirmed_for_ms,
         });
         s.inflight = Some(update);
+        s.write_by = write_by;
         Some(delta)
     }
+}
+
+/// How the confirmation time `left` of an ONLINE status splits into the time its write may
+/// take and the `confirmed_for_ms` its frame carries (VIP0 §8.2, VIP0-RL-16). The client's
+/// deadline runs from receipt, so the two together stay within `left`. `None` when nothing is
+/// left to carry.
+fn online_split(left: std::time::Duration) -> Option<(std::time::Duration, u32)> {
+    let write = (left / 2).min(VIP_ONLINE_WRITE);
+    let carried = u32::try_from(left.saturating_sub(write).as_millis())
+        .unwrap_or(u32::MAX)
+        .min(MAX_VIP_CONFIRM_MS);
+    (carried > 0).then_some((write, carried))
 }
 
 async fn bounded_read<T>(
@@ -976,10 +1080,11 @@ impl VipPremiumGate for ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 mod tests {
     use super::{
-        CharacterId, RETIRED_HANDLES, VipInvitationBinding, bounded_read, earliest, handle_floor,
+        COMMANDED_HANDLES, CharacterId, MAX_VIP_CONFIRM_MS, RETIRED_HANDLES, VIP_ONLINE_WRITE,
+        VipInvitationBinding, bounded_read, earliest, handle_floor, online_split, remember_command,
         retire,
     };
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, VecDeque};
     use std::future::Future;
     use std::time::Duration;
 
@@ -1032,6 +1137,95 @@ mod tests {
                 .iter()
                 .all(|(handle, binding)| binding.invitation_id == *handle)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn vip_commanded_handles_outlive_retired_eviction() -> Result<(), String> {
+        let bytes = [
+            0x01, 0x90, 0x0a, 0x5d, 0xac, 0x96, 0x7a, 0xb2, 0x80, 0xe7, 0x01, 0x23, 0x45, 0x67,
+            0x89, 0xab,
+        ];
+        let binding = |invitation_id| -> Result<VipInvitationBinding, String> {
+            Ok(VipInvitationBinding {
+                watcher_account: crate::domain::AccountId::from_bytes(bytes)
+                    .map_err(|e| format!("{e:?}"))?,
+                inviter: CharacterId::from_bytes(bytes).map_err(|e| format!("{e:?}"))?,
+                invitation_id,
+            })
+        };
+        // An ending command on handle 1, then far more retirements than RETIRED_HANDLES holds:
+        // the retired map loses handle 1, the commanded record keeps it.
+        let mut commanded = VecDeque::new();
+        let mut retired = BTreeMap::new();
+        remember_command(&mut commanded, 1, binding(1)?);
+        retire(&mut retired, [(1, binding(1)?)]);
+        let count = u64::try_from(RETIRED_HANDLES).map_err(|e| e.to_string())? * 3;
+        for handle in 2..=count {
+            retire(&mut retired, [(handle, binding(handle)?)]);
+        }
+        assert!(!retired.contains_key(&1));
+        assert_eq!(
+            commanded
+                .iter()
+                .find(|(handle, _)| *handle == 1)
+                .map(|(_, binding)| binding.invitation_id),
+            Some(1)
+        );
+        // A resend moves the handle to the back instead of duplicating it.
+        remember_command(&mut commanded, 2, binding(2)?);
+        remember_command(&mut commanded, 1, binding(1)?);
+        assert_eq!(
+            commanded
+                .iter()
+                .map(|(handle, _)| *handle)
+                .collect::<Vec<_>>(),
+            vec![2, 1]
+        );
+        // Only the newest COMMANDED_HANDLES stay.
+        let commands = u64::try_from(COMMANDED_HANDLES).map_err(|e| e.to_string())? + 5;
+        for handle in 10..10 + commands {
+            remember_command(&mut commanded, handle, binding(handle)?);
+        }
+        assert_eq!(commanded.len(), COMMANDED_HANDLES);
+        assert_eq!(
+            commanded.back().map(|(handle, _)| *handle),
+            Some(9 + commands)
+        );
+        assert!(
+            commanded
+                .iter()
+                .all(|(handle, b)| b.invitation_id == *handle)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn vip_online_split_keeps_receipt_deadline_within_the_read_deadline() -> Result<(), String> {
+        let max = Duration::from_millis(u64::from(MAX_VIP_CONFIRM_MS));
+        for left_ms in [
+            2, 3, 10, 999, 1_000, 4_000, 5_000, 9_999, 10_000, 12_000, 60_000,
+        ] {
+            let left = Duration::from_millis(left_ms);
+            let (write, carried) =
+                online_split(left).ok_or(format!("{left_ms} ms left must still be sendable"))?;
+            let carried = Duration::from_millis(u64::from(carried));
+            assert!(carried > Duration::ZERO);
+            assert!(carried <= max);
+            assert!(write <= VIP_ONLINE_WRITE);
+            assert!(write <= left / 2);
+            assert!(
+                write + carried <= left,
+                "{left_ms}: {write:?} + {carried:?}"
+            );
+        }
+        // Most of a fresh 10 s confirmation still reaches the client.
+        assert!(
+            online_split(Duration::from_secs(10))
+                .is_some_and(|(_, carried)| carried >= MAX_VIP_CONFIRM_MS - 2_000)
+        );
+        assert_eq!(online_split(Duration::ZERO), None);
+        assert_eq!(online_split(Duration::from_micros(900)), None);
         Ok(())
     }
 
