@@ -393,13 +393,15 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // (PRESENT-WIRE-1, not offered before SPELL-PRESENT-1 or COMBAT-PRESENT-1). Registered is not
 // offered. 13 PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY. 21
 // LOGOUT_V1 (LOGOUT-WIRE-1) is offered with its command handler.
+// 26 WORLD_WEATHER_V1 (WEATHER-1, D1137) is offered (D1027 signed off) on a connection whose
+// authority exposes the shipped weather source; it requires 6.
 // 28 ITEM_LOOK_V1 (CP D1240/D1240a) is registered, not offered; no additional
 // capability requirement was assigned. CP D1442 registers 29 MAP_STATE_V1 (never offered: D1083
 // serves the map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field
 // payloads are composed); both require 6. Next unallocated capability is 31.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 28, 29, 30,
+    1, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 30,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -733,6 +735,10 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         presentation::CAPABILITY_PRESENTATION_V1,
         &presentation::CAPABILITY_PRESENTATION_V1_REQUIRES,
+    ),
+    (
+        world_weather::CAPABILITY_WORLD_WEATHER_V1,
+        &world_weather::CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
     ),
     // CP D1240/D1240a assigns no additional requirements for ITEM_LOOK_V1.
     (28, &[]),
@@ -2599,6 +2605,7 @@ pub mod world_map;
 pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
+pub mod world_weather;
 
 #[cfg(test)]
 mod tests {

@@ -430,6 +430,69 @@ fn real_scope_offer_enforces_the_registered_d1083_floor() {
 }
 
 #[test]
+fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_refuses_boot() {
+    use super::super::capabilities::{
+        BUNDLE_WORLD_OFFERED_CAPABILITIES, PRODUCTION_OFFERED_CAPABILITIES,
+    };
+    const WEATHER: u32 = oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1;
+    // Invalid documents: the loader fails, so no source is bound.
+    let index = include_str!("../../../../content/weather/index.json");
+    let areas = include_str!("../../../../content/weather/areas.json");
+    assert!(crate::world_weather::WorldWeatherSource::from_json(index, "{}", areas).is_err());
+    let scope = channel_scope(1, 2);
+    for bundle in [false, true] {
+        let bound = offered_for_scope_with(bundle, None, true);
+        let unbound = offered_for_scope_with(bundle, None, false);
+        assert!(bound.iter().any(|node| node.id == WEATHER));
+        assert!(unbound.iter().all(|node| node.id != WEATHER));
+        assert_eq!(unbound.len() + 1, bound.len());
+        // The unbound set is built once and shared.
+        assert!(std::ptr::eq(
+            unbound,
+            offered_for_scope_with(bundle, None, false)
+        ));
+        let floor: &[u32] = if bundle { &[18] } else { &[] };
+        let declared: Vec<u32> = floor.iter().copied().chain([WEATHER]).collect();
+        // A required 26 with no source refuses boot; with a bound source it binds 26 and 6.
+        assert_eq!(
+            BoundRequiredCapabilities::for_channel_boot(&declared, scope, 7, "policy-7", unbound)
+                .unwrap_err(),
+            BootCapabilityError::Unoffered(WEATHER)
+        );
+        let required =
+            BoundRequiredCapabilities::for_channel_boot(&declared, scope, 7, "policy-7", bound)
+                .unwrap();
+        assert!(required.effective().contains(&WEATHER));
+        assert!(required.effective().contains(&6));
+        // Without the requirement an unbound World still boots, and a session never gets 26.
+        let plain =
+            BoundRequiredCapabilities::for_channel_boot(floor, scope, 7, "policy-7", unbound)
+                .unwrap();
+        let supported: &[u32] = if bundle {
+            &[4, 6, 18, WEATHER]
+        } else {
+            &[6, WEATHER]
+        };
+        let session = plain.authenticate_support(supported).unwrap();
+        assert!(!session.selected().contains(WEATHER));
+        assert!(session.selected().contains(6));
+    }
+    // The default sets are the bound sets: the shipped data loads in this build.
+    assert_eq!(
+        offered_for_scope_with(true, None, true),
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+    );
+    assert_eq!(
+        offered_for_scope(true, None),
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+    );
+    assert_eq!(
+        offered_for_scope_with(false, None, true),
+        PRODUCTION_OFFERED_CAPABILITIES
+    );
+}
+
+#[test]
 fn real_required_members_are_forced_and_each_missing_member_refuses() {
     let required = BoundRequiredCapabilities::for_channel_boot(
         &[18],
