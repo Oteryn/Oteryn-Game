@@ -1,0 +1,509 @@
+{
+  "schema": "OTERYN_WEATHER_AREAS/v1",
+  "design_status": "OTERYN_DESIGN",
+  "notes": "Each Weather area is one top-level World region or one city (content/world/areas). `climate` is an Oteryn design assignment by area name (WEATHER-CONTENT-1 #2246 proposes no climate taxonomy, so any area it does not name is temperate). `anchor` is the area position (region position, or the city hometown temple) used to place a player in the nearest area until area geometry exists; areas without an anchor are never selected by position. `real_world` is the extension point for a future live-weather binding (WeatherSource); it is null and unused today.",
+  "areas": [
+    {
+      "key": "oteryn:content.area.city.ab_dendriel",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32732,
+        "y": 31634,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.ankrahmun",
+      "kind": "city",
+      "climate": "desert",
+      "anchor": {
+        "x": 33141,
+        "y": 32829,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.candia",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.carlin",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32360,
+        "y": 31782,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.darashia",
+      "kind": "city",
+      "climate": "desert",
+      "anchor": {
+        "x": 33240,
+        "y": 32436,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.dawnport",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32063,
+        "y": 31893,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.edron",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33217,
+        "y": 31814,
+        "z": 8
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.farmine",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33023,
+        "y": 31521,
+        "z": 11
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.gray_beach",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33458,
+        "y": 31322,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.issavi",
+      "kind": "city",
+      "climate": "desert",
+      "anchor": {
+        "x": 33921,
+        "y": 31477,
+        "z": 5
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.kazordoon",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32649,
+        "y": 31925,
+        "z": 11
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.liberty_bay",
+      "kind": "city",
+      "climate": "jungle_swamp",
+      "anchor": {
+        "x": 32300,
+        "y": 32812,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.moonfall",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.port_hope",
+      "kind": "city",
+      "climate": "jungle_swamp",
+      "anchor": {
+        "x": 32621,
+        "y": 32761,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.rathleton",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33628,
+        "y": 31923,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.rookgaard",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32066,
+        "y": 32167,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.roshamuul",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33513,
+        "y": 32363,
+        "z": 6
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.silvertides",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.svargrond",
+      "kind": "city",
+      "climate": "cold",
+      "anchor": {
+        "x": 32257,
+        "y": 31159,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.thais",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32369,
+        "y": 32241,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.venore",
+      "kind": "city",
+      "climate": "jungle_swamp",
+      "anchor": {
+        "x": 32957,
+        "y": 32076,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.city.yalahar",
+      "kind": "city",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32787,
+        "y": 31276,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.ab_dendriel",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32623,
+        "y": 31712,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.boss_lairs",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.carlin",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32364,
+        "y": 31706,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.dawnport",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.edron",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33223,
+        "y": 31784,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.feyrist",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33512,
+        "y": 32233,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.gnome_deep_hub",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.hrodmir",
+      "kind": "region",
+      "climate": "cold",
+      "anchor": {
+        "x": 32126,
+        "y": 31162,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.kazordoon",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32627,
+        "y": 31887,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.kilmaresh",
+      "kind": "region",
+      "climate": "desert",
+      "anchor": {
+        "x": 33855,
+        "y": 31580,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.krailos",
+      "kind": "region",
+      "climate": "desert",
+      "anchor": {
+        "x": 33639,
+        "y": 31653,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.marapur",
+      "kind": "region",
+      "climate": "jungle_swamp",
+      "anchor": {
+        "x": 33791,
+        "y": 32753,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.northern_darama",
+      "kind": "region",
+      "climate": "desert",
+      "anchor": {
+        "x": 33172,
+        "y": 32414,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.nostalgia",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.oramond",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33615,
+        "y": 31929,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.quirefang",
+      "kind": "region",
+      "climate": "cold",
+      "anchor": {
+        "x": 33528,
+        "y": 31247,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.roshamuul",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33629,
+        "y": 32423,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.secluded_island",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.secret_area",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.southern_darama",
+      "kind": "region",
+      "climate": "desert",
+      "anchor": {
+        "x": 33175,
+        "y": 32707,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.thais",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32369,
+        "y": 32241,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.the_void",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.tiquanda",
+      "kind": "region",
+      "climate": "jungle_swamp",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.vandura",
+      "kind": "region",
+      "climate": "jungle_swamp",
+      "anchor": {
+        "x": 32274,
+        "y": 32776,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.venore",
+      "kind": "region",
+      "climate": "jungle_swamp",
+      "anchor": {
+        "x": 32939,
+        "y": 32097,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.water",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": null,
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.yalahar",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 32802,
+        "y": 31208,
+        "z": 7
+      },
+      "real_world": null
+    },
+    {
+      "key": "oteryn:content.area.region.zao",
+      "kind": "region",
+      "climate": "temperate",
+      "anchor": {
+        "x": 33222,
+        "y": 31342,
+        "z": 7
+      },
+      "real_world": null
+    }
+  ]
+}
