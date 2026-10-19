@@ -1,0 +1,173 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "DEATH-LOSS-EVIDENCE-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "6d5ac1fc036b21dfb5d047fc6c87af278d23acde",
+  "original_field_list_sha256": "4db23b9e3ccc52a37837b9f58c958e1bf4136a0eb9bc527a281fd240315a2a40",
+  "coverage": {
+    "held_fields": 5,
+    "proposals": 5,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 4,
+      "CONFLICT": 1
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [
+    {
+      "source_id": "crystalserver-summer",
+      "key": "death.loss",
+      "value": {
+        "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+        "tmpLevel": "level+levelPercent/100",
+        "below_24_base_percent": 10,
+        "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+        "promotion_reduction_percentage_points": 30,
+        "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+      },
+      "source": {
+        "repository": "zimbadev/crystalserver",
+        "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+        "path": "src/creatures/players/player.cpp",
+        "line": 7281,
+        "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L7281",
+        "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0"
+      },
+      "evidence_scope": "UPSTREAM_IMPLEMENTATION_ONLY",
+      "limitation": "Record actual donor code, not an endorsement. Death consumers, units and loss modifiers must also be checked; current official equivalence is unproven."
+    }
+  ],
+  "proposals": [
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/levels_24_plus",
+      "subject": "death.experience",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+        "tmpLevel": "level+levelPercent/100",
+        "below_24_base_percent": 10,
+        "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+        "promotion_reduction_percentage_points": 30,
+        "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+      },
+      "basis": {
+        "kind": "UPSTREAM_ADAPTATION",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1140641"
+        ],
+        "observation_refs": [
+          {
+            "source_id": "crystalserver-summer",
+            "observation_key": "death.loss"
+          }
+        ],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/rounding",
+      "subject": "death.experience",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "policy": "floor_nonnegative_final_loss_once",
+        "intermediate_precision": "rational",
+        "minimum_loss": 0
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Project deterministic arithmetic choice; donor floating-point behavior is not claimed exactly reproduced."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/magic_and_skill_loss",
+      "subject": "death.skills",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "expression": "floor(total_accumulated_points*effective_death_loss_fraction)",
+        "included": "completed_level_costs+current_level_progress",
+        "apply_reduction_once": true
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1140641"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Use the same effective fraction for XP, skill tries and mana-spent; avoid an additional divide-by100 on an already fractional loss."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/retro_hardcore_blessing",
+      "subject": "death.skills",
+      "original_classification": "CONFLICT",
+      "proposed_value": {
+        "per_blessing_reduction_percent": 6.31,
+        "promotion_reduction_percent": 30,
+        "maximum_total_reduction_percent": 100
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1140641",
+          "https://www.tibia.com/gameguides/?subtopic=manual&section=characters"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Select this documented value for Oteryn; not a claim of current official server behavior."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    },
+    {
+      "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/2/facts/unfair_fight",
+      "subject": "death.pvp",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "pvp_threshold_damage_fraction": 0.05,
+        "lookback_seconds": 300,
+        "retained_loss_percent": "max(20,floor(100*victim_level/sum_distinct_attacker_levels+0.5))",
+        "apply_when": "qualifying_pvp_death and sum_attacker_levels>victim_level"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1140641"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Explicitly choose300s lookback and distinct player attackers; cap reduction at80%."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
