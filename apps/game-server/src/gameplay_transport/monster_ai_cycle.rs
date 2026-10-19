@@ -176,6 +176,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|(_, _, session)| session.is_none())
             .collect::<Vec<_>>();
         if swing_pass && monsters.is_empty() {
+            states.monster_melee.creature_ai.forget_dead(&runtime);
             return;
         }
         // Codex 4304357864: the cadence and sequence stay reserved only while the pass can still
@@ -311,6 +312,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         summons,
                         content,
                         now.get(),
+                        &|| owner.owner_now().get(),
                         &GameplayDecisionRoot::from_bytes(content.source_digest()),
                         revisions,
                         candidates,
@@ -1561,6 +1563,7 @@ async fn run_native_movement_steps(
     ai: &mut CreatureAiTable,
     content: &crate::content::native_gameplay::NativeGameplayState,
     now_us: u64,
+    owner_now: &(impl Fn() -> u64 + Sync),
     root: &GameplayDecisionRoot,
     revisions: &crate::ability::RevisionSet,
     candidates: &[TargetCandidate],
@@ -1744,12 +1747,14 @@ async fn run_native_movement_steps(
         movement.near = near;
         movement.path = path;
         movement.search_pending = false;
+        // Map/Item reads may have suspended longer than a step. Pace from the commit time.
+        let committed_now_us = owner_now();
         let outcome = movement.cadence.step_from_current_owner(
             runtime,
             stamp,
             &movement.source,
             &map,
-            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now_us),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(committed_now_us),
             room.movement_cells().scope(),
             direction,
             &movement.near,
@@ -1772,9 +1777,14 @@ async fn run_native_movement_steps(
                 if matches!(goal, G::WalkBack { home } if after.position() == home) {
                     ai.idle_native_movement(actor, true);
                 } else if let Some(movement) = ai.native_movement(actor) {
-                    let mut due = movement.cadence.next_due().map_or(now_us, |due| due.get());
+                    let mut due = movement
+                        .cadence
+                        .next_due()
+                        .map_or(committed_now_us, |due| due.get());
                     if let G::Wander { interval_ms, .. } = goal {
-                        due = due.max(now_us.saturating_add(interval_ms.saturating_mul(1_000)));
+                        due = due.max(
+                            committed_now_us.saturating_add(interval_ms.saturating_mul(1_000)),
+                        );
                     }
                     let _ = ai.arm_native_step(runtime, stamp, actor, due);
                 }
@@ -1803,6 +1813,7 @@ async fn run_current_native_monster_thinks(
     summons: &mut NativeSummonOwner,
     content: &crate::content::native_gameplay::NativeGameplayState,
     now_us: u64,
+    owner_now: &(impl Fn() -> u64 + Sync),
     root: &GameplayDecisionRoot,
     revisions: &crate::ability::RevisionSet,
     candidates: &[TargetCandidate],
@@ -1823,6 +1834,7 @@ async fn run_current_native_monster_thinks(
         ai,
         content,
         now_us,
+        owner_now,
         root,
         revisions,
         candidates,
@@ -3331,7 +3343,7 @@ mod tests {
                 let parent_before = runtime.read_actor_position(parent).map_err(debug)?;
                 let (deferred, deferred_next) = run_current_native_monster_thinks(
                     &mut runtime, &mut states.monster_melee.creature_ai, &mut states.native_summons,
-                    content, 0, &decision_root, &revisions, &candidates, room, &objects,
+                    content, 0, &|| 0, &decision_root, &revisions, &candidates, room, &objects,
                     &mut tx, &authority, &mut budget, false,
                 ).await.map_err(debug)?;
                 assert_eq!(deferred.len(), 1);
@@ -3354,7 +3366,7 @@ mod tests {
                 {
                     use std::future::Future;
                     let mut work = std::pin::pin!(run_native_movement_steps(
-                        &mut runtime, &mut states.monster_melee.creature_ai, content, 50_000,
+                        &mut runtime, &mut states.monster_melee.creature_ai, content, 50_000, &|| 50_000,
                         &decision_root, &revisions, &candidates, room, &objects, &mut tx,
                         &authority, &mut budget, false, step_stamp,
                     ));
@@ -3366,11 +3378,21 @@ mod tests {
                 assert_eq!(states.monster_melee.creature_ai.due(parent), Some(1_000_000));
                 assert!(states.monster_melee.creature_ai.native_movement(parent)
                     .ok_or("retained movement")?.cadence.next_due().is_none());
-                let (step_only, _) = run_current_native_monster_thinks(
-                    &mut runtime, &mut states.monster_melee.creature_ai, &mut states.native_summons,
-                    content, 50_000, &decision_root, &revisions, &candidates, room, &objects,
-                    &mut tx, &authority, &mut budget, false,
-                ).await.map_err(debug)?;
+                let (step_only, _) = {
+                    use std::future::Future;
+                    let clock = std::sync::atomic::AtomicU64::new(50_000);
+                    let owner_now = || clock.load(std::sync::atomic::Ordering::Relaxed);
+                    let mut work = std::pin::pin!(run_current_native_monster_thinks(
+                        &mut runtime, &mut states.monster_melee.creature_ai, &mut states.native_summons,
+                        content, 50_000, &owner_now, &decision_root, &revisions, &candidates, room, &objects,
+                        &mut tx, &authority, &mut budget, false,
+                    ));
+                    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+                    assert!(work.as_mut().poll(&mut cx).is_pending());
+                    // The owner clock advances while the actual Map/Item SQL read is pending.
+                    clock.store(75_000, std::sync::atomic::Ordering::Relaxed);
+                    work.await.map_err(debug)?
+                };
                 assert!(step_only.is_empty(), "step input does not run a second think or profile schedule");
                 let moved = runtime.read_actor_position(parent).map_err(debug)?;
                 assert_eq!(moved.position(), cell(3, 12));
@@ -3392,11 +3414,11 @@ mod tests {
                         oteryn_simulation_determinism::SemanticTimeMicros::from_micros(50_000),
                     ).ok_or("same actual source speed and destination ground")?
                 };
-                assert_eq!(step_due, 50_000 + u64::try_from(expected_duration.as_micros())?);
+                assert_eq!(step_due, 75_000 + u64::try_from(expected_duration.as_micros())?);
                 let charged = budget.remaining(50_000);
                 let repeated_stamp = runtime.issue_owner_work().map_err(debug)?;
                 run_native_movement_steps(
-                    &mut runtime, &mut states.monster_melee.creature_ai, content, 50_000,
+                    &mut runtime, &mut states.monster_melee.creature_ai, content, 50_000, &|| 50_000,
                     &decision_root, &revisions, &candidates, room, &objects, &mut tx,
                     &authority, &mut budget, false, repeated_stamp,
                 ).await.map_err(debug)?;
@@ -3406,7 +3428,7 @@ mod tests {
 
                 let (reports, next) = run_current_native_monster_thinks(
                     &mut runtime, &mut states.monster_melee.creature_ai, &mut states.native_summons,
-                    content, 1_000_000, &decision_root, &revisions, &candidates, room, &objects,
+                    content, 1_000_000, &|| 1_000_000, &decision_root, &revisions, &candidates, room, &objects,
                     &mut tx, &authority, &mut budget, false,
                 ).await.map_err(debug)?;
                 assert_eq!(reports.len(), 1, "new child does not run a second think pass");
@@ -3493,7 +3515,7 @@ mod tests {
                 }
                 let (after_item, _) = run_current_native_monster_thinks(
                     &mut runtime, &mut states.monster_melee.creature_ai, &mut states.native_summons,
-                    content, 2_000_000, &decision_root, &revisions,
+                    content, 2_000_000, &|| 2_000_000, &decision_root, &revisions,
                     &candidates, room, &objects, &mut current_tx, &current_authority, &mut budget, false,
                 ).await.map_err(debug)?;
                 let refused = after_item.iter().find(|(actor, _)| *actor == parent)
@@ -3660,6 +3682,7 @@ mod tests {
                     &mut summons,
                     content,
                     0,
+                    &|| 0,
                     &root,
                     &revisions,
                     &candidates,
@@ -3759,6 +3782,7 @@ mod tests {
                     &mut summons,
                     content,
                     50_000,
+                    &|| 50_000,
                     &root,
                     &revisions,
                     &candidates,
@@ -3810,6 +3834,7 @@ mod tests {
                     &mut summons,
                     content,
                     1_050_000,
+                    &|| 1_050_000,
                     &root,
                     &revisions,
                     &candidates,
@@ -3852,6 +3877,7 @@ mod tests {
                     &mut ai,
                     content,
                     1_100_000,
+                    &|| 1_100_000,
                     &root,
                     &revisions,
                     &candidates,
@@ -4213,6 +4239,7 @@ mod tests {
                     &mut states.native_summons,
                     content,
                     0,
+                    &|| 0,
                     &root,
                     &revisions,
                     &candidates,
@@ -4253,6 +4280,7 @@ mod tests {
                     &mut ai,
                     content,
                     50_000,
+                    &|| 50_000,
                     &root,
                     &revisions,
                     &candidates,
@@ -4292,6 +4320,7 @@ mod tests {
                         &mut ai,
                         content,
                         100_000,
+                        &|| 100_000,
                         &root,
                         &revisions,
                         &candidates,
@@ -4320,6 +4349,7 @@ mod tests {
                         &mut ai,
                         content,
                         150_000,
+                        &|| 150_000,
                         &root,
                         &revisions,
                         &candidates,
@@ -4560,6 +4590,7 @@ mod tests {
                     &mut states.native_summons,
                     content,
                     0,
+                    &|| 0,
                     &root,
                     &revisions,
                     &[],
@@ -4612,6 +4643,7 @@ mod tests {
                     &mut states.native_summons,
                     content,
                     50_000,
+                    &|| 50_000,
                     &root,
                     &revisions,
                     &[],
@@ -4658,6 +4690,7 @@ mod tests {
                     &mut states.native_summons,
                     content,
                     due,
+                    &|| due,
                     &root,
                     &revisions,
                     &[],
@@ -4715,6 +4748,7 @@ mod tests {
                         &mut states.native_summons,
                         content,
                         now,
+                        &|| now,
                         &root,
                         &revisions,
                         &[],
@@ -5034,6 +5068,7 @@ mod tests {
                     &mut states.native_summons,
                     content,
                     0,
+                    &|| 0,
                     &root,
                     &revisions,
                     &[],
@@ -5197,6 +5232,42 @@ mod tests {
                     end,
                     Some(crate::monster_owner_cycle::RespawnDriveEnd::Shutdown)
                 );
+                // The last creature dies with an overdue native input still retained. The
+                // empty swing pass must forget it before computing the wake's next sleep.
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let mut states = owner.spell_states.lock().await;
+                    let ai = &mut states.monster_melee.creature_ai;
+                    ai.cancel_native_step(actor);
+                    let stamp = runtime.issue_owner_work().map_err(debug)?;
+                    ai.arm_native_step(&runtime, stamp, actor, 0)
+                        .map_err(debug)?;
+                    assert!(runtime.kill_creature_for_test(actor));
+                    assert_eq!(ai.earliest_native_step_due(), Some(0));
+                    assert_eq!(
+                        monster_ai_wake_delay(owner.owner_now().get(), 0, Some(0)),
+                        1_000
+                    );
+                    states.next_monster_ai_pass_us = 0;
+                    states.monster_melee.next_swing_pass_us = 0;
+                }
+                owner.drain_monster_melee().await;
+                {
+                    let states = owner.spell_states.lock().await;
+                    assert!(states.monster_melee.creature_ai.is_empty());
+                    assert_eq!(
+                        states.monster_melee.creature_ai.earliest_native_step_due(),
+                        None
+                    );
+                    assert_eq!(
+                        monster_ai_wake_delay(
+                            owner.owner_now().get(),
+                            states.next_monster_ai_pass_us,
+                            states.monster_melee.creature_ai.earliest_native_step_due(),
+                        ),
+                        crate::ai_think::CREATURE_THINK_INTERVAL_MILLIS * 1_000,
+                    );
+                }
                 // The very same installed entry point also ends without a shutdown request
                 // when its Channel owner is retired.
                 owner.runtime.lock().await.retire_owner_cycle();
@@ -5966,6 +6037,7 @@ mod tests {
                     &mut summons,
                     content,
                     0,
+                    &|| 0,
                     &root,
                     &revisions,
                     &candidates,
@@ -5997,6 +6069,7 @@ mod tests {
                     &mut ai,
                     content,
                     50_000,
+                    &|| 50_000,
                     &root,
                     &revisions,
                     &candidates,
@@ -6024,6 +6097,7 @@ mod tests {
                     &mut ai,
                     content,
                     50_000,
+                    &|| 50_000,
                     &root,
                     &revisions,
                     &candidates,
