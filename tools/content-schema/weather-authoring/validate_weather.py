@@ -13,10 +13,34 @@ from pathlib import Path
 KINDS = {"clear", "cloudy", "rain", "storm", "fog", "snow", "blizzard", "heat_haze", "sandstorm"}
 ROOT = Path(__file__).resolve().parents[3]
 
+# Exact key sets of the serde structs in world_weather.rs (all deny_unknown_fields).
+# (required, optional): an Option<T> field may be absent, every other field is required.
+INDEX_KEYS = ({"schema", "family", "kind", "owner", "population_state", "design_status",
+               "revision", "slot_ms", "files", "notes"}, set())
+CLIMATES_KEYS = ({"schema", "design_status", "notes", "duration_slots", "intensity", "climates"}, set())
+AREAS_KEYS = ({"schema", "design_status", "notes", "areas"}, set())
+RANGE_KEYS = ({"min", "max"}, set())
+AREA_KEYS = ({"key", "kind", "climate"}, {"anchor", "real_world"})
+ANCHOR_KEYS = ({"x", "y", "z"}, set())
+REAL_WORLD_KEYS = ({"latitude", "longitude"}, set())
+
 
 def load(path):
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def check_keys(value, spec, where, errors):
+    """Reject unknown and missing keys like serde deny_unknown_fields; False if not an object."""
+    if not isinstance(value, dict):
+        errors.append(f"{where}: must be an object")
+        return False
+    required, optional = spec
+    for key in sorted(set(value) - required - optional):
+        errors.append(f"{where}: unknown key {key}")
+    for key in sorted(required - set(value)):
+        errors.append(f"{where}: missing key {key}")
+    return True
 
 
 def validate(directory):
@@ -29,6 +53,23 @@ def validate(directory):
     index = load(directory / "index.json")
     climates = load(directory / "climates.json")
     areas = load(directory / "areas.json")
+    for name, doc, spec in (("index", index, INDEX_KEYS), ("climates", climates, CLIMATES_KEYS),
+                            ("areas", areas, AREAS_KEYS)):
+        if not check_keys(doc, spec, name, errors):
+            return errors
+    for name in ("duration_slots", "intensity"):
+        if not check_keys(climates.get(name), RANGE_KEYS, f"climates.{name}", errors):
+            return errors
+    if not isinstance(areas.get("areas"), list) or not all(
+            check_keys(a, AREA_KEYS, f"areas[{i}]", errors) for i, a in enumerate(areas["areas"])):
+        return errors or ["areas must be a list"]
+    for a in areas["areas"]:
+        key = a.get("key")
+        if a.get("anchor") is not None and not check_keys(a["anchor"], ANCHOR_KEYS, f"{key}.anchor", errors):
+            return errors
+        if a.get("real_world") is not None and not check_keys(
+                a["real_world"], REAL_WORLD_KEYS, f"{key}.real_world", errors):
+            return errors
     need(index.get("schema") == "OTERYN_WEATHER_INDEX/v1", "index schema")
     need(climates.get("schema") == "OTERYN_WEATHER_CLIMATES/v1", "climates schema")
     need(areas.get("schema") == "OTERYN_WEATHER_AREAS/v1", "areas schema")
@@ -76,7 +117,43 @@ def validate(directory):
     return errors
 
 
+def self_test():
+    """Negative cases: an unknown key and a missing required key must be rejected."""
+    import copy
+    import tempfile
+
+    src = ROOT / "content/weather"
+    docs = {n: load(src / f"{n}.json") for n in ("index", "climates", "areas")}
+    cases = {
+        "unknown top-level key": lambda d: d["index"].update(extra=1),
+        "missing top-level key": lambda d: d["climates"].pop("notes"),
+        "unknown nested range key": lambda d: d["climates"]["intensity"].update(step=1),
+        "missing nested range key": lambda d: d["climates"]["duration_slots"].pop("max"),
+        "unknown area key": lambda d: d["areas"]["areas"][0].update(extra=1),
+        "missing area key": lambda d: d["areas"]["areas"][0].pop("climate"),
+        "unknown anchor key": lambda d: next(
+            a for a in d["areas"]["areas"] if a.get("anchor"))["anchor"].update(w=0),
+    }
+    failures = []
+    for label, mutate in cases.items():
+        doc = copy.deepcopy(docs)
+        mutate(doc)
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, value in doc.items():
+                Path(tmp, f"{name}.json").write_text(json.dumps(value), encoding="utf-8")
+            if not validate(Path(tmp)):
+                failures.append(label)
+    for label in failures:
+        print(f"weather self-test: not rejected: {label}", file=sys.stderr)
+    if failures:
+        return 1
+    print(f"weather self-test: ok ({len(cases)} negative cases)")
+    return 0
+
+
 def main(argv):
+    if len(argv) > 1 and argv[1] == "--self-test":
+        return self_test()
     directory = Path(argv[1]) if len(argv) > 1 else ROOT / "content/weather"
     errors = validate(directory)
     for error in errors:
