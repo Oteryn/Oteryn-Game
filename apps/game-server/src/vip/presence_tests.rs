@@ -2165,6 +2165,41 @@ fn confirmation_left_tracks_only_shown_online_and_saturates() {
     assert_eq!(s.confirmation_left(session, 400), None);
 }
 
+/// VIP0 §8.2: a negative read never renews the shown ONLINE's deadline, so the downgrade write
+/// stays bounded by the original confirmation until it is delivered.
+#[test]
+fn a_negative_read_keeps_the_shown_online_deadline_until_the_downgrade_lands() {
+    let mut s = state();
+    let session = item_fence().expect("fence").game_session_id;
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        100,
+        Refresh::Reconcile,
+    );
+    acknowledge(&mut s, 100);
+    install(
+        &mut s,
+        read(data(Visibility::Shown, false)),
+        400,
+        Refresh::Reconcile,
+    );
+    assert_eq!(s.confirmation_left(session, 400), Some(CONFIRM_MS - 300));
+    assert_eq!(s.sessions[&session].entries[&1].confirmed_from, 100);
+    acknowledge(&mut s, 400);
+    assert_eq!(s.confirmation_left(session, 400), None);
+    // A later ONLINE read renews from its own start.
+    install(
+        &mut s,
+        read(data(Visibility::Shown, true)),
+        500,
+        Refresh::Reconcile,
+    );
+    assert_eq!(s.sessions[&session].entries[&1].confirmed_from, 500);
+    acknowledge(&mut s, 500);
+    assert_eq!(s.confirmation_left(session, 600), Some(CONFIRM_MS - 100));
+}
+
 #[test]
 fn confirmation_lead_is_due_at_half_age_only_when_ready_to_read() {
     let mut s = state();

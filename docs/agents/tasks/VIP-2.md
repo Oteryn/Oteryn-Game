@@ -825,6 +825,9 @@ The prepush Stage C review of `7b8a05d1` made three findings:
   (`VipRuntime::detach` in `lose_control`), so a session waiting in grace holds no capacity. A
   resume's replacement snapshot starts a new watcher. Watchers stay inert until item 13 adds the
   refresh scheduler.
+- Round 2 finding, fixed (VIP0 §8.2): only an ONLINE read renews an entry's confirmation. While
+  the client still shows ONLINE, a HIDDEN, offline or revoked read keeps the shown ONLINE's
+  deadline, so the downgrade write is bounded by the original 10 s and is not extended.
 - F2, deferred: when admission refuses the VIP snapshot, the session fails closed (no VIP state).
   A mid-session snapshot retry would need a new client-visible step (a wire and CP decision). The
   client recovers by reconnecting.
@@ -834,6 +837,7 @@ Tests:
 - The named and conflicting receipt replays in `vip_end_replay_returns_the_committed_receipt_without_a_handle`.
 - `logout_e2e::a_recorded_control_loss_releases_the_vip_presence_watcher`, which goes through the
   real composed `lose_control`.
+- `a_negative_read_keeps_the_shown_online_deadline_until_the_downgrade_lands`.
 
 These passed locally on PostgreSQL 17.6:
 - lib `vip`: 88 passed;

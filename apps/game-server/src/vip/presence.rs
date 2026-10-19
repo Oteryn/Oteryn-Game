@@ -742,13 +742,20 @@ impl State {
             let unchanged_pending = w.pending.get(&entry).is_some_and(|p| {
                 p.status == status && p.fence == w.fence && p.deadline_ms > now && !changed_binding
             });
+            // VIP0 §8.2: only an ONLINE read renews the confirmation. While the client still
+            // shows ONLINE, any other read keeps the shown ONLINE's deadline, so the downgrade
+            // must reach the client before it expires.
+            let confirmed_from = before
+                .as_ref()
+                .filter(|_| status != Status::Online && old_sent == Some(Status::Online))
+                .map_or(started, |old| old.confirmed_from);
             w.entries.insert(
                 entry,
                 EntryState {
                     read: e,
                     desired: status,
                     last_sent: old_sent,
-                    confirmed_from: started,
+                    confirmed_from,
                 },
             );
             let represented_inflight = w.inflight.as_ref().is_some_and(|p| {
