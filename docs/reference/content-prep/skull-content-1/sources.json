@@ -42,6 +42,67 @@
       "parameter_document": "docs/reference/content-prep/skull-content-1/oteryn-parameters.json",
       "selection_actor": "assistant completing owner-authorized reference/data task",
       "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "official:manual:combat:indexed:20261019": {
+      "title": "Official Tibia Manual: logout blocks and skulls",
+      "url": "https://www.tibia.com/gameguides/?section=combat&subtopic=manual",
+      "source_class": "CIPSOFT_OFFICIAL",
+      "evidence_role": "PRIMARY_OFFICIAL",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Fresh indexed official page text. Direct request returned403; existing prior direct response digest retained separately.",
+      "retained_scope": "Paraphrased numeric/policy observations, not a full-page archive"
+    },
+    "ots:skull:canary:player:52550d5": {
+      "source": "canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/src/creatures/players/player.cpp",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:skull:canary:config:52550d5": {
+      "source": "canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "opentibiabr/canary",
+      "url": "https://github.com/opentibiabr/canary/blob/52550d5e3c0ffe565f4bd1014f4e5575abf1059b/config.lua.dist",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:skull:crystalserver-summer:player:ddb4930": {
+      "source": "crystalserver-summer",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "cd4dd674a64c5839ca6cec565e0772da4b4efacc",
+      "sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp",
+      "fetched_at": "2026-10-19"
+    },
+    "ots:skull:crystalserver-summer:config:ddb4930": {
+      "source": "crystalserver-summer",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "repository": "zimbadev/crystalserver",
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/config.lua.dist",
+      "fetched_at": "2026-10-19"
+    },
+    "wiki-br:skull:indexed:20261019": {
+      "title": "Skull System",
+      "url": "https://www.tibiawiki.com.br/Skull_System",
+      "source_class": "COMMUNITY_WIKI",
+      "fetched_at": "2026-10-19",
+      "retrieval": "Indexed page observation; direct HTML403; no fresh revision ID claimed",
+      "observation": "Wiki gives3/5/10and6/10/20kill counts; primary official source qualifies counts as guidance dependent on unjustified-point contributions."
     }
   }
 }

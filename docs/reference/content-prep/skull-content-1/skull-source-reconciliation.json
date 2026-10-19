@@ -1,0 +1,324 @@
+{
+  "task": "SKULL-CONTENT-1",
+  "checked_at": "2026-10-19T10:40:14.382665+00:00",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "source_files": [
+    {
+      "source": "canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "d1b12e93fdf34598af61c7f69adceac9d977e819",
+      "sha256": "7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c"
+    },
+    {
+      "source": "canary",
+      "commit": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+      "path": "config.lua.dist",
+      "blob_sha": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3"
+    },
+    {
+      "source": "crystalserver-summer",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "blob_sha": "cd4dd674a64c5839ca6cec565e0772da4b4efacc",
+      "sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0"
+    },
+    {
+      "source": "crystalserver-summer",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "config.lua.dist",
+      "blob_sha": "f215fa6e4612bd8f500e859c504935ef649e3e00",
+      "sha256": "93f50fc744c9e5f1bc39165ea2ea037f5f56131a3768f1b127ebb23be4b6a544"
+    }
+  ],
+  "changes": [
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
+      "before": {
+        "value": {
+          "ordinary_attack": 60,
+          "after_player_kill_minimum": 900,
+          "further_combat_refresh_seconds": 60,
+          "expiry": "after_minimum_and_combat_logout_block_end"
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skull-content-1/oteryn-parameters.json / field rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds"
+          }
+        ],
+        "note": "Use existing qualified white-skull timing supplement; keep runtime index overlap untouched.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "ordinary_attack": 60,
+          "after_player_kill_minimum": 900,
+          "further_combat_refresh_seconds": 60,
+          "expiry": "linked_logout_block_expires",
+          "qualification": "Conditional policy for an attacker marked white; not every assist receives the killer minimum."
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+        "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+        "sources": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3 logout/PZ blocks and5.3.12.b White Skulls"
+          }
+        ],
+        "note": "Combines explicit official logout-block timings with the official rule that white skull follows the linked block. Combat during the final minute extends the block; it does not restart a new15-minute minimum for every ordinary offense. No fixed duration for every participant is implied.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+      "before": {
+        "value": {
+          "rolling_24h": 3,
+          "rolling_7d": 5,
+          "rolling_30d": 10
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skull-content-1/oteryn-parameters.json / field rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Choose24h daily window; deliberately reject donor dayKills4h behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "EXACT_POINT_ALLOCATION_UNRESOLVED",
+          "official_trigger": "unjustified_points_bar_filled",
+          "official_kill_count_guidance": {
+            "hours24": [
+              3,
+              5
+            ],
+            "days7": [
+              5,
+              9
+            ],
+            "days30": [
+              10,
+              19
+            ]
+          },
+          "kill_count_is_deterministic_threshold": false,
+          "point_shares_depend_on_participation": true,
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+        "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+        "sources": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3.12.a-b Unjustified Points and skull marks"
+          },
+          {
+            "source": "wiki:2850:1013215",
+            "selector": "Red/Black Skull community tables"
+          },
+          {
+            "source": "wiki-br:skull:indexed:20261019",
+            "selector": "Red/Black Skull community tables"
+          }
+        ],
+        "note": "The primary source supplies qualified kill-count guidance and a point-bar trigger. Community3/5/10or6/10/20tables do not establish exact point allocation for all combat situations. Withdraw the fixed-kill project default; no replacement allocation algorithm is selected.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+      "before": {
+        "value": {
+          "rolling_24h": 6,
+          "rolling_7d": 10,
+          "rolling_30d": 20
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skull-content-1/oteryn-parameters.json / field rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Choose24h daily window; deliberately reject donor dayKills4h behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "EXACT_POINT_ALLOCATION_UNRESOLVED",
+          "official_trigger": "unjustified_points_bar_filled",
+          "official_kill_count_guidance": {
+            "hours24_minimum": 6,
+            "days7_minimum": 10,
+            "days30_minimum": 20
+          },
+          "kill_count_is_deterministic_threshold": false,
+          "point_shares_depend_on_participation": true,
+          "selected_for_native_runtime": false
+        },
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+        "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+        "sources": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3.12.a-b Unjustified Points and skull marks"
+          },
+          {
+            "source": "wiki:2850:1013215",
+            "selector": "Red/Black Skull community tables"
+          },
+          {
+            "source": "wiki-br:skull:indexed:20261019",
+            "selector": "Red/Black Skull community tables"
+          }
+        ],
+        "note": "The primary source supplies qualified kill-count guidance and a point-bar trigger. Community3/5/10or6/10/20tables do not establish exact point allocation for all combat situations. Withdraw the fixed-kill project default; no replacement allocation algorithm is selected.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    },
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+      "before": {
+        "value": {
+          "windows_seconds": [
+            86400,
+            604800,
+            2592000
+          ],
+          "clock": "server_utc_monotonic_elapsed",
+          "inclusive_boundary": true,
+          "calendar_reset": false
+        },
+        "classification": "DERIVED",
+        "target_cut": "2026-10-19",
+        "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+        "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+        "sources": [
+          {
+            "source": "owner:oteryn-data-completion:2026-10-19",
+            "selector": "docs/reference/content-prep/skull-content-1/oteryn-parameters.json / field rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries"
+          }
+        ],
+        "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "assumptions": [
+          "Select this documented value for Oteryn; not a claim of current official server behavior."
+        ],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      },
+      "after": {
+        "value": {
+          "status": "GLOBAL_CLOCK_BOUNDARY_UNRESOLVED",
+          "official_windows_seconds": [
+            86400,
+            604800,
+            2592000
+          ],
+          "donor_skull_decision_windows_seconds": [
+            14400,
+            604800,
+            2592000
+          ],
+          "donor_widget_windows_seconds": [
+            86400,
+            604800,
+            2592000
+          ],
+          "donor_comparison": "elapsed_seconds <= window",
+          "donor_clock": "time(nullptr) wall-clock epoch seconds",
+          "global_inclusive_endpoint": "NOT_ESTABLISHED",
+          "global_calendar_or_rolling_implementation": "NOT_ESTABLISHED_BY_INSPECTED_PRIMARY_TEXT",
+          "selected_for_native_runtime": false
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-19",
+        "continuity": "SOURCE_RECONCILIATION_DEFAULT_WITHDRAWN",
+        "evidence_scope": "PRIMARY_OFFICIAL_POLICY_WITH_EXPLICIT_SOURCE_QUALIFICATION",
+        "sources": [
+          {
+            "source": "official:manual:combat:indexed:20261019",
+            "selector": "5.3.12.b 24hours/7days/30days"
+          },
+          {
+            "source": "ots:skull:canary:player:52550d5",
+            "selector": "addUnjustifiedDead and sendUnjustifiedPoints"
+          },
+          {
+            "source": "ots:skull:crystalserver-summer:player:ddb4930",
+            "selector": "addUnjustifiedDead and sendUnjustifiedPoints"
+          }
+        ],
+        "note": "Both pinned donors use4hours for the skull-decision day counter but24hours for the client widget. Their inclusive wall-clock test is known; it does not prove Global endpoint or clock semantics. Withdraw the invented UTC-monotonic/inclusive project clock. No code change is made.",
+        "assumptions": [],
+        "global_evidence_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json#rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+        "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
+      }
+    }
+  ],
+  "source_findings": {
+    "white_timing": "Official conditional60seconds, killer minimum900seconds and ordinary60secondrefresh; pinned Fandom says every offense restarts15minutes, which is superseded by primary policy.",
+    "thresholds": "Primary source treats kill counts as guidance and uses unjustified points; no exact contribution table established.",
+    "donor_decision_window_seconds": 14400,
+    "donor_widget_window_seconds": 86400,
+    "donor_config_red_black_days": [
+      1,
+      3
+    ],
+    "official_red_black_days": [
+      30,
+      45
+    ],
+    "donor_config_durations_not_adopted": true
+  },
+  "remaining": [
+    "Exact point allocation for each qualifying role/action and world mode.",
+    "Global clock resolution, endpoint and expiry implementation."
+  ],
+  "retrieval_limits": [
+    "Current official and wiki observations use indexed page text; direct requests403.",
+    "Fandom retained revision1013215hash verified; fresh API unavailable.",
+    "Donor files match pinned Git blobs; they are hypotheses, not Global runtime proof."
+  ],
+  "native_activation": false
+}

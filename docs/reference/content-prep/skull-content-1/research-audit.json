@@ -1,10 +1,10 @@
 {
   "task": "SKULL-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_RECONCILED_SKULL_POLICY_WITH_EXPLICIT_POINT_AND_CLOCK_GAPS",
+  "research_status": "SOURCE_REPAIRED_RUNTIME_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "White/red/black/orange behavior, official day/week/month windows, durations, revenge and black-skull respawn penalties are captured. Official 3–5/5–9/10–19 red and 6+/10+/20+ black kill counts are labeled rule-of-thumb guidance, not deterministic thresholds. Exact unjustified-point allocation, white duration and clock boundaries are not invented.",
+  "coverage": "Official skull behavior, durations, revenge and respawn penalties retained. White timing is source-backed and conditional. Exact point allocation and clock boundary remain explicitly unresolved; donor4hourdecision/24hourwidget mismatch is preserved.",
   "source_registry": "sources.json",
   "record_counts": {
     "rulesets/pvp/skulls/reference-evidence.json": 5,
@@ -12,9 +12,24 @@
   },
   "evidence_field_counts": {
     "PROVEN": 13,
-    "DERIVED": 5
+    "DERIVED": 2,
+    "UNKNOWN": 2,
+    "CONFLICT": 1
   },
-  "unresolved_fields": [],
+  "unresolved_fields": [
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
+      "classification": "CONFLICT"
+    }
+  ],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
   "complete_source_sweep": {
     "review_date": "2026-10-18",
@@ -32,7 +47,7 @@
       "overlap_pr": 2203
     }
   },
-  "filled_parameter_fields": 4,
+  "filled_parameter_fields": 1,
   "remaining_unfilled_parameter_fields": 0,
   "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json",
@@ -57,16 +72,26 @@
         "notes": "Skull/frag policy.",
         "runtime_admission": "BLOCKED",
         "runtime_switch_authorized": false,
-        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+        "evidence_completeness": "SOURCE_RECONCILED_WITH_EXPLICIT_POINT_AND_CLOCK_GAPS",
         "source_snapshot_target": "current-at-fetch-2026-10-18",
         "payloads": [
           {
             "path": "rulesets/pvp/skulls/reference-evidence.json",
-            "sha256": "a0ace10c37c643e9e102865b0d44edd8c90ada819e4b9ce10e76d79a1e43349d"
+            "sha256": "9a657f56d6cc53cf378a3146edaf88e43d270435582ed6a24b5bf84b89860fe6"
           }
         ]
       },
       "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
     }
-  ]
+  ],
+  "remaining_unresolved_source_fields": 3,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/skull-content-1/skull-source-reconciliation.json",
+    "withdrawn_fixed_kill_thresholds": 2,
+    "conditional_white_timing": "SOURCE_BACKED",
+    "exact_unjustified_point_allocation": "UNRESOLVED",
+    "clock_boundary": "CONFLICT_DONOR_VS_OFFICIAL_WINDOW",
+    "remaining_unresolved_source_fields": 3,
+    "selected_for_native_runtime": false
+  }
 }

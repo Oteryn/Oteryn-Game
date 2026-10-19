@@ -1,13 +1,9 @@
-# SKULL-CONTENT-1: populated reference data
+# Skull and frag source reconciliation
 
-All 4 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
+White-skull timing follows the official logout-block policy: ordinary60seconds, killer minimum900seconds, and further ordinary combat60secondrefresh. This conditional reference does not assign a15minute penalty to every assister.
 
-The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
+Fixed red/black kill-count defaults are withdrawn. Official thresholds are unjustified-point bars; published kill counts are qualified guidance. Exact point allocation is unresolved. Both pinned donors use a4hour day window for skull decisions but24hours for the widget. Their clock comparison does not establish Global boundary behavior.
 
-Active evidence counts: {"DERIVED": 5, "PROVEN": 13}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
+The existing official durations, revenge rules and black-skull respawn penalties are preserved. Donor1/3day red/black duration defaults are not adopted. See [source reconciliation](skull-source-reconciliation.json) for hashes, selectors and superseded choices. Active classifications:13PROVEN,2DERIVED,2UNKNOWN,1CONFLICT.
 
-The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
-
-Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
-
-Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
+Reference data only; no runtime formula, clock or point algorithm is selected. The overlapping ruleset index is unchanged; pending coordinator metadata is refreshed only in the audit document.
