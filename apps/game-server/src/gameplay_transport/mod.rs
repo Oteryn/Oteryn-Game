@@ -19,6 +19,7 @@ mod connection;
 mod container_view;
 mod equipment_move;
 pub(crate) mod fresh_evidence;
+mod highscores;
 mod input_gate;
 #[allow(
     dead_code,
@@ -3945,6 +3946,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => AccountAchievementsReply::Rejected,
         }
+    }
+
+    async fn highscores(
+        &self,
+        world: WorldId,
+        session: GameSessionId,
+        query: oteryn_protocol_oteryn::highscores::HighscoresQuery,
+    ) -> highscores::HighscoresReply {
+        highscores::answer_session_highscores(self.root, self.world_id, world, session, query).await
     }
 
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the

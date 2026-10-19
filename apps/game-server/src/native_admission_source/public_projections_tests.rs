@@ -299,6 +299,40 @@ fn worst_case_bodies_fit_their_bounds() {
 }
 
 #[test]
+fn vocation_filters_preserve_world_competition_ranks() {
+    let snapshot = |filter, ranks: &[u64]| HighscoresSnapshot {
+        filter,
+        ..highscores(
+            ranks
+                .iter()
+                .enumerate()
+                .map(|(index, rank)| row(index, *rank, "Aldric"))
+                .collect(),
+        )
+    };
+    for ranks in [&[2, 5, 5, 9][..], &[1, 1, 3][..]] {
+        let body = encode_highscores(AUTHORITY, &snapshot(4, ranks)).unwrap();
+        let decoded: serde_json::Value = serde_json::from_str(&body).unwrap();
+        let encoded_ranks: Vec<_> = decoded["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["rank"].as_str().unwrap())
+            .collect();
+        assert_eq!(
+            encoded_ranks,
+            ranks.iter().map(u64::to_string).collect::<Vec<_>>()
+        );
+    }
+    for ranks in [&[3, 2][..], &[0][..], &[2, 2, 3][..], &[4, 4, 4, 5][..]] {
+        assert!(encode_highscores(AUTHORITY, &snapshot(4, ranks)).is_err());
+    }
+    for ranks in [&[2][..], &[1, 3][..]] {
+        assert!(encode_highscores(AUTHORITY, &snapshot(0, ranks)).is_err());
+    }
+}
+
+#[test]
 fn highscores_outside_the_contract_are_refused() {
     let refused =
         |rows: Vec<HighscoreRow>| encode_highscores(AUTHORITY, &highscores(rows)).is_err();
@@ -958,6 +992,41 @@ fn batch() -> HighscoresBatch {
         computed_at: 1_790_000_000,
         lists: [list.clone(), vec![], vec![], vec![], list, vec![]],
     }
+}
+
+#[test]
+fn world_ranked_vocation_lists_are_published_together() {
+    let store = Shared::default();
+    let mut knight = row(1, 1, "Aldric");
+    knight.vocation = Some(2);
+    let mut sorcerer = row(2, 2, "Bera");
+    sorcerer.vocation = Some(5);
+    sorcerer.value -= 1;
+    let mut snapshot = batch();
+    snapshot.lists = [
+        vec![knight.clone(), sorcerer.clone()],
+        vec![],
+        vec![knight],
+        vec![],
+        vec![],
+        vec![sorcerer],
+    ];
+    store.lock().unwrap().batches.push(snapshot);
+    let p = publisher(&store, vec![OK; FILTERS]);
+    let mut state = quiet();
+    state.highscores_source = true;
+    state.turn = 1;
+    assert!(block_on(p.outbox_step(&mut state)));
+    let published: Vec<serde_json::Value> = p
+        .sink
+        .sent()
+        .iter()
+        .map(|(_, body)| serde_json::from_str(body).unwrap())
+        .collect();
+    assert_eq!(published.len(), FILTERS);
+    assert_eq!(published[2]["rows"][0]["rank"], "1");
+    assert_eq!(published[5]["rows"][0]["rank"], "2");
+    assert_eq!(store.lock().unwrap().cleared, [format!("{WORLD}:1")]);
 }
 
 #[test]
