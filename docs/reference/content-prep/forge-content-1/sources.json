@@ -38,6 +38,121 @@
       "retrieval_method": "SEARCH_INDEX_OF_PRIMARY_OFFICIAL_PUBLICATION",
       "direct_fetch": "HTTP403_FROM_WEB_FETCH_AND_OWNER_PC_URL_READER",
       "qualification": "Primary official publication indexed at fetch; direct HTTP retrieval was blocked. Claim scope is the cited announcement, corroborated against release evidence where stated; no controlled server measurement is claimed."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.dust_upgrade": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "line": 11016,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L11016",
+      "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "cost": "L>100 ? 25+floor((L-100)/20) : 25",
+        "increment": 20,
+        "maximum_from_config": "225",
+        "cap_guard": "reject if current L>=configured maximum; no post-increment clamp in this path"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/utils/tools.cpp",
+      "line": 1879,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/utils/tools.cpp#L1879",
+      "file_sha256": "61f1649fce6cae87905f9619cc1b6cd8b76c3066ce349ae2f4bc92072caed070",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "draw_inclusive": [
+          0,
+          10000
+        ],
+        "outcomes": [
+          {
+            "bonus_id": 0,
+            "inclusive_range": [
+              0,
+              7399
+            ],
+            "probability_numerator": 7400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 1,
+            "inclusive_range": [
+              7400,
+              8999
+            ],
+            "probability_numerator": 1600,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 2,
+            "inclusive_range": [
+              9000,
+              9499
+            ],
+            "probability_numerator": 500,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 3,
+            "inclusive_range": [
+              9500,
+              9524
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 4,
+            "inclusive_range": [
+              9525,
+              9549
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 5,
+            "inclusive_range": [
+              9550,
+              9949
+            ],
+            "probability_numerator": 400,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 6,
+            "inclusive_range": [
+              9950,
+              9974
+            ],
+            "probability_numerator": 25,
+            "probability_denominator": 10001
+          },
+          {
+            "bonus_id": 7,
+            "inclusive_range": [
+              9975,
+              10000
+            ],
+            "probability_numerator": 26,
+            "probability_denominator": 10001
+          }
+        ],
+        "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
     }
   }
 }

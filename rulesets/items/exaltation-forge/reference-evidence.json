@@ -4723,11 +4723,16 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "maximum_dust_limit": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "HISTORICAL_WIKI_MAXIMUM_SUPERSEDED_BY_OFFICIAL_2026_CHANGE",
+          "value": 4600,
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit"
+            },
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
@@ -4737,19 +4742,12 @@
               "selector": "maximum amount raised considerably"
             }
           ],
-          "note": "Official2026 announcement raises the maximum substantially but the retained paragraph gives no exact maximum. Historical325 is not current. A reported character limit is not proof of the global maximum.",
-          "observations": [
-            {
-              "value": 325,
-              "status": "HISTORICAL_PRE_2026_CAP",
-              "sources": [
-                {
-                  "source": "wiki:95592:1205481",
-                  "selector": "Dust, Slivers, and Exalted Cores"
-                }
-              ]
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Project cap4600 is a new design choice on the100+20k grid; the observed character limit is not evidence of the Global maximum. Reject upgrades when L+20>4600."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "dust_limit_increment": {
           "value": 20,
@@ -4765,11 +4763,24 @@
           "note": "Official announcement explicitly changes each increase from1 to20 and applies it retroactively. Earlier Wiki increments are historical."
         },
         "dust_limit_increment_cost": {
-          "value": "current_limit - 75",
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "HISTORICAL_FORMULA_REQUIRES_2026_REPARAMETERIZATION",
+          "value": {
+            "expression": "L<=100 ? 25 : 25+floor((L-100)/20)",
+            "increment": 20,
+            "domain": "L=100+20k; k integer>=0; L+20<=4600"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost"
+            },
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.dust_upgrade",
+              "selector": "forge.dust_upgrade"
+            },
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
@@ -4779,20 +4790,33 @@
               "selector": "unlocking cost remains unchanged; increments now20"
             }
           ],
-          "note": "Historical formula is retained as an observation. The meaning of current_limit changed under20-point increments; a current parameterization and rounding/domain need explicit qualification. Do not execute the historical formula against the new limit.",
-          "observations": [
-            {
-              "value": "current_limit - 75",
-              "status": "HISTORICAL_ONE_POINT_INCREMENT_MODEL"
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Select this documented value for Oteryn; not a claim of current official server behavior."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "total_upgrade_cost": {
-          "value": "(n-100)*(n-51)/2",
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "HISTORICAL_FORMULA_REQUIRES_2026_REPARAMETERIZATION",
+          "value": {
+            "expression": "k*(k+49)/2",
+            "k": "(target_limit-100)/20",
+            "domain": "target_limit=100+20k; 0<=k<=225",
+            "unit": "dust"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost"
+            },
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.dust_upgrade",
+              "selector": "forge.dust_upgrade"
+            },
             {
               "source": "wiki:95592:1205481",
               "selector": "Dust, Slivers, and Exalted Cores"
@@ -4802,13 +4826,12 @@
               "selector": "unlocking cost remains unchanged; increments now20"
             }
           ],
-          "note": "Historical formula is retained as an observation. The meaning of current_limit changed under20-point increments; a current parameterization and rounding/domain need explicit qualification. Do not execute the historical formula against the new limit.",
-          "observations": [
-            {
-              "value": "(n-100)*(n-51)/2",
-              "status": "HISTORICAL_ONE_POINT_INCREMENT_MODEL"
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Start100; sum integer upgrade costs25..24+k; no discounts."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "dust_per_conversion": {
           "value": 60,
@@ -4889,14 +4912,110 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "bonus_distribution": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No controlled probability for the lucky bonus effects; the source calls eight effects known but lists nine."
+          "value": {
+            "draw_inclusive": [
+              0,
+              10000
+            ],
+            "outcomes": [
+              {
+                "bonus_id": 0,
+                "inclusive_range": [
+                  0,
+                  7399
+                ],
+                "probability_numerator": 7400,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 1,
+                "inclusive_range": [
+                  7400,
+                  8999
+                ],
+                "probability_numerator": 1600,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 2,
+                "inclusive_range": [
+                  9000,
+                  9499
+                ],
+                "probability_numerator": 500,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 3,
+                "inclusive_range": [
+                  9500,
+                  9524
+                ],
+                "probability_numerator": 25,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 4,
+                "inclusive_range": [
+                  9525,
+                  9549
+                ],
+                "probability_numerator": 25,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 5,
+                "inclusive_range": [
+                  9550,
+                  9949
+                ],
+                "probability_numerator": 400,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 6,
+                "inclusive_range": [
+                  9950,
+                  9974
+                ],
+                "probability_numerator": 25,
+                "probability_denominator": 10001
+              },
+              {
+                "bonus_id": 7,
+                "inclusive_range": [
+                  9975,
+                  10000
+                ],
+                "probability_numerator": 26,
+                "probability_denominator": 10001
+              }
+            ],
+            "application": "regular fusion; convergence forces bonus 0; success/failure path further constrains effects"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/forge-content-1/oteryn-parameters.json / field rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution"
+            },
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:forge.bonus_distribution",
+              "selector": "forge.bonus_distribution"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Preserve inclusive10001-outcome distribution and caller-dependent success/failure restrictions; convergence yields no lucky bonus."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/forge-content-1/tibia-source-archive.json#rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     }
-  ]
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }

@@ -1,0 +1,106 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "FORGE-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "f230ac519c6e08085e83fea89840b06df2021dc1",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/maximum_dust_limit",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "HISTORICAL_WIKI_MAXIMUM_SUPERSEDED_BY_OFFICIAL_2026_CHANGE",
+        "sources": [
+          {
+            "source": "wiki:95592:1205481",
+            "selector": "Dust, Slivers, and Exalted Cores"
+          },
+          {
+            "source": "official:news:8850:20261018",
+            "selector": "maximum amount raised considerably"
+          }
+        ],
+        "note": "Official2026 announcement raises the maximum substantially but the retained paragraph gives no exact maximum. Historical325 is not current. A reported character limit is not proof of the global maximum.",
+        "observations": [
+          {
+            "value": 325,
+            "status": "HISTORICAL_PRE_2026_CAP",
+            "sources": [
+              {
+                "source": "wiki:95592:1205481",
+                "selector": "Dust, Slivers, and Exalted Cores"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/dust_limit_increment_cost",
+      "original_global_fact": {
+        "value": "current_limit - 75",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "HISTORICAL_FORMULA_REQUIRES_2026_REPARAMETERIZATION",
+        "sources": [
+          {
+            "source": "wiki:95592:1205481",
+            "selector": "Dust, Slivers, and Exalted Cores"
+          },
+          {
+            "source": "official:news:8850:20261018",
+            "selector": "unlocking cost remains unchanged; increments now20"
+          }
+        ],
+        "note": "Historical formula is retained as an observation. The meaning of current_limit changed under20-point increments; a current parameterization and rounding/domain need explicit qualification. Do not execute the historical formula against the new limit.",
+        "observations": [
+          {
+            "value": "current_limit - 75",
+            "status": "HISTORICAL_ONE_POINT_INCREMENT_MODEL"
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/total_upgrade_cost",
+      "original_global_fact": {
+        "value": "(n-100)*(n-51)/2",
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "HISTORICAL_FORMULA_REQUIRES_2026_REPARAMETERIZATION",
+        "sources": [
+          {
+            "source": "wiki:95592:1205481",
+            "selector": "Dust, Slivers, and Exalted Cores"
+          },
+          {
+            "source": "official:news:8850:20261018",
+            "selector": "unlocking cost remains unchanged; increments now20"
+          }
+        ],
+        "note": "Historical formula is retained as an observation. The meaning of current_limit changed under20-point increments; a current parameterization and rounding/domain need explicit qualification. Do not execute the historical formula against the new limit.",
+        "observations": [
+          {
+            "value": "(n-100)*(n-51)/2",
+            "status": "HISTORICAL_ONE_POINT_INCREMENT_MODEL"
+          }
+        ]
+      }
+    },
+    {
+      "original_field_path": "rulesets/items/exaltation-forge/reference-evidence.json/records/52/facts/bonus_distribution",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No controlled probability for the lucky bonus effects; the source calls eight effects known but lists nine."
+      }
+    }
+  ]
+}

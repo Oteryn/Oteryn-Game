@@ -9,12 +9,12 @@
   "notes": "Forge classes, tier rules, fusion/transfer costs/chances; current tier on ItemInstance.",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "source_snapshot_target": "current-at-fetch-2026-10-18",
   "payloads": [
     {
       "path": "rulesets/items/exaltation-forge/reference-evidence.json",
-      "sha256": "4879f28b92c2832b86d626f6fdf8ea350ef49f7f009defe1f2e44b069a263a88"
+      "sha256": "77d029e13b3edd7945fb81dba0ae6ae2e4620376bc859d31b6d186562f40324f"
     }
   ]
 }
