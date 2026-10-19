@@ -1,13 +1,13 @@
-# DEATH-LOSS-EVIDENCE-1: Death loss formula evidence and conflicts
+# DEATH-LOSS-EVIDENCE-1: populated reference data
 
-Evidence distinguishes stated official behaviour from community closed formulas, rounding gaps and Retro Hardcore contradictions. This verifies source support; it is not a claim that PR #2193 was audited or that its implementation is correct.
+All 5 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
 
-Source registry: [sources.json](sources.json). Facts link to exact revision IDs or immutable repository blobs. `PROVEN` means the cited source states the fact; `DERIVED` means the stated transformation is reproducible; `UNKNOWN` and `CONFLICT` must remain held. Community evidence is not controlled Global telemetry. Where cited, the official characters/combat/trading manual was re-read live on 2026-10-18; exact response digests and current URLs are in the source registry.
+The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
 
-These files prepare Reference data for CP. They add no runtime admission, Rust change, generated content regeneration, or interaction/world-pin mutation. `POPULATED` describes the evidence packet, not complete gameplay readiness. The packet schema is an evidence envelope, not a newly accepted runtime schema.
+Active evidence counts: {"DERIVED": 5, "PROVEN": 7}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
 
-## Research completion and coverage
+The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
 
-The requested XP, skill/magic, promotion/blessing and PvP evidence is enumerated. The live official manual supports stated behavior and worked examples, but not a closed level-24+ loss formula, exact rounding or the unfair-fight ratio/cap. Community candidates are retained as UNKNOWN; disagreement is not resolved by consensus.
+Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
 
-The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.

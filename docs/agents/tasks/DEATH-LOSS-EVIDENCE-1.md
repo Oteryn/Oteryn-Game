@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # DEATH-LOSS-EVIDENCE-1
 
 ```yaml
@@ -60,3 +62,7 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 The requested XP, skill/magic, promotion/blessing and PvP evidence is enumerated. The live official manual supports stated behavior and worked examples, but not a closed level-24+ loss formula, exact rounding or the unfair-fight ratio/cap. Community candidates are retained as UNKNOWN; disagreement is not resolved by consensus.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Working-data completion —2026-10-19
+
+Populated5 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/death-loss-evidence-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

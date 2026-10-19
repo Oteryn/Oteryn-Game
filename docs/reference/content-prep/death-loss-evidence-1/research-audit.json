@@ -1,8 +1,8 @@
 {
   "task": "DEATH-LOSS-EVIDENCE-1",
-  "review_date": "2026-10-18",
-  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "review_date": "2026-10-19",
+  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
   "runtime_admission": "BLOCKED",
   "coverage": "The requested XP, skill/magic, promotion/blessing and PvP evidence is enumerated. The live official manual supports stated behavior and worked examples, but not a closed level-24+ loss formula, exact rounding or the unfair-fight ratio/cap. Community candidates are retained as UNKNOWN; disagreement is not resolved by consensus.",
   "source_registry": "sources.json",
@@ -11,69 +11,18 @@
   },
   "evidence_field_counts": {
     "PROVEN": 7,
+    "DERIVED": 5
+  },
+  "unresolved_fields": [],
+  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
+  "filled_parameter_fields": 5,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
     "UNKNOWN": 4,
     "CONFLICT": 1
   },
-  "unresolved_fields": [
-    {
-      "field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/levels_24_plus",
-      "candidate": "((L+50)/100)*50*(L*L-5*L+8)",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:1628:1140641",
-          "selector": "Skill and Experience Loss"
-        }
-      ],
-      "limitation": "Community formula candidate only. Official manual gives examples, not a closed form or rounding rule; no controlled evidence."
-    },
-    {
-      "field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/rounding",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "No official integer rounding, fractional XP or low-level edge algorithm."
-    },
-    {
-      "field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/magic_and_skill_loss",
-      "candidate": "Loss of spent mana and skill tries; low levels 10%, later percentage based on XP loss / total XP.",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:1628:1140641",
-          "selector": "Skill and Experience Loss"
-        }
-      ],
-      "limitation": "No official separate closed-form magic/skill percentage or rounding rule. Wiki formula prose omits /100 present in its own worked table."
-    },
-    {
-      "field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/retro_hardcore_blessing",
-      "candidate": null,
-      "status": "CONFLICT",
-      "sources": [
-        {
-          "source": "wiki:1628:1140641",
-          "selector": "Conflicting statements identified in note"
-        },
-        {
-          "source": "official:manual:characters:2026-10-18",
-          "selector": "Conflicting statements identified in note"
-        }
-      ],
-      "limitation": "Death Wiki says 6.4%; official manual says 6.31%; do not round one into the other without evidence."
-    },
-    {
-      "field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/2/facts/unfair_fight",
-      "candidate": "victim_level / sum_attacker_levels; reduction capped at 80%",
-      "status": "UNKNOWN",
-      "sources": [
-        {
-          "source": "wiki:1628:1140641",
-          "selector": "Unfair Fight"
-        }
-      ],
-      "limitation": "Official manual confirms reduced loss in an unfair fight but not this numeric formula/cap."
-    }
-  ],
-  "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete."
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": []
 }

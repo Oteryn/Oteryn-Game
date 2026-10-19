@@ -34,6 +34,32 @@
       "capture_method": "Public URL read through owner-authorized connected computer",
       "retained_scope": "RESPONSE_DIGEST_AND_PARAPHRASED_FACTS",
       "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/death-loss-evidence-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:death.loss": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/creatures/players/player.cpp",
+      "line": 7281,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/creatures/players/player.cpp#L7281",
+      "file_sha256": "61e9da9c6d14d8b243ec5230f149cbc88b9aed14b5547b96664bc6ce730cc5a0",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "level_at_least_24_base_percent": "(tmpLevel+50)*50*(tmpLevel*tmpLevel-5*tmpLevel+8)/experience",
+        "tmpLevel": "level+levelPercent/100",
+        "below_24_base_percent": 10,
+        "blessing_reduction_per_bless_percent": "6.31 retro PvP, 8 otherwise",
+        "promotion_reduction_percentage_points": 30,
+        "override": "DEATH_LOSE_PERCENT != -1 selects a different formula"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
     }
   }
 }

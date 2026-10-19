@@ -3,8 +3,8 @@
   "task": "DEATH-LOSS-EVIDENCE-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -75,7 +75,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/rounding",
@@ -96,7 +96,7 @@
       "assumptions": [
         "Project deterministic arithmetic choice; donor floating-point behavior is not claimed exactly reproduced."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/magic_and_skill_loss",
@@ -119,7 +119,7 @@
       "assumptions": [
         "Use the same effective fraction for XP, skill tries and mana-spent; avoid an additional divide-by100 on an already fractional loss."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/retro_hardcore_blessing",
@@ -143,7 +143,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/2/facts/unfair_fight",
@@ -167,7 +167,13 @@
       "assumptions": [
         "Explicitly choose300s lookback and distinct player attackers; cap reduction at80%."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/death-loss-evidence-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json",
+    "filled_field_count": 5,
+    "not_runtime_activation": true
+  }
 }
