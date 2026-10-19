@@ -480,17 +480,28 @@ async fn read_extra_sources(
             .collect::<std::result::Result<Vec<_>, _>>()?;
         // All facts of this page's accounts, not only achievements earned in this World or by
         // the representative. The page's accounts are exactly those with a ranked root here.
-        let rows = sqlx::query("SELECT f.account_id::text AS account_id,f.achievement_key,g.earned_at FROM game_account_achievements f JOIN game_account_achievement_grant_requests g USING(account_id,achievement_key,source_kind,source_event_id) WHERE f.account_id=ANY($1::text[]::uuid[]) ORDER BY f.account_id,f.achievement_key")
-            .bind(&accounts).fetch_all(&mut **tx).await?;
+        // Keyset pages on the (account, key) primary key bound every fetch to `page_rows`.
         let mut facts: BTreeMap<String, Vec<EarnedAchievement>> = BTreeMap::new();
-        for row in rows {
-            facts
-                .entry(row.try_get("account_id")?)
-                .or_default()
-                .push(EarnedAchievement {
-                    achievement_key: row.try_get("achievement_key")?,
+        let fact_page = i64::try_from(limits.page_rows).map_err(|_| corrupt())?;
+        let mut fact_after: Option<(String, String)> = None;
+        loop {
+            let (after_account, after_key) = fact_after.clone().unzip();
+            let rows = sqlx::query("SELECT f.account_id::text AS account_id,f.achievement_key,g.earned_at FROM game_account_achievements f JOIN game_account_achievement_grant_requests g USING(account_id,achievement_key,source_kind,source_event_id) WHERE f.account_id=ANY($1::text[]::uuid[]) AND ($2::text IS NULL OR (f.account_id,f.achievement_key)>($2::text::uuid,$3::text)) ORDER BY f.account_id,f.achievement_key LIMIT $4")
+                .bind(&accounts).bind(after_account).bind(after_key).bind(fact_page)
+                .fetch_all(&mut **tx).await?;
+            let fetched = rows.len();
+            for row in rows {
+                let account: String = row.try_get("account_id")?;
+                let achievement_key: String = row.try_get("achievement_key")?;
+                fact_after = Some((account.clone(), achievement_key.clone()));
+                facts.entry(account).or_default().push(EarnedAchievement {
+                    achievement_key,
                     earned_at_unix_ms: row.try_get("earned_at")?,
                 });
+            }
+            if i64::try_from(fetched).map_err(|_| corrupt())? < fact_page {
+                break;
+            }
         }
         for (row, account) in representatives.iter().zip(&accounts) {
             let earned = facts.remove(account).unwrap_or_default();

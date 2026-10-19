@@ -603,15 +603,18 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
     })
 }
 
-/// The achievement point owner of the fixture: one known key worth two points; any other key is
-/// unknown to it, as a retired catalogue's missing entry is to the real one.
+/// The achievement point owner of the fixture: two known keys worth two and three points; any
+/// other key is unknown to it, as a retired catalogue's missing entry is to the real one.
 struct FixtureAchievementPoints;
 impl AchievementPoints for FixtureAchievementPoints {
     fn total_points(&self, earned: &[EarnedAchievement]) -> Option<u32> {
         earned.iter().try_fold(0_u32, |sum, fact| {
-            (fact.achievement_key == "oteryn:achievement/a_friend_in_need")
-                .then_some(2)
-                .and_then(|points| sum.checked_add(points))
+            match fact.achievement_key.as_str() {
+                "oteryn:achievement/a_friend_in_need" => Some(2),
+                "oteryn:achievement/highscore_second" => Some(3),
+                _ => None,
+            }
+            .and_then(|points| sum.checked_add(points))
         })
     }
 }
@@ -1733,11 +1736,40 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
         // Five more eligible Characters (six in all) cross several page boundaries of every
         // source; the paged cut at its exact bound equals the registered cut.
         dataset(h, 100, 5, "paladin", 1000, world()).await?;
+        // Two achievement facts of the template account: a cut with one-row pages reads them
+        // over two fact pages and still totals five points.
+        let mut tx = h.pool.begin().await?;
+        for (event, key) in [
+            (1_u8, "oteryn:achievement/a_friend_in_need"),
+            (2, "oteryn:achievement/highscore_second"),
+        ] {
+            sqlx::query("INSERT INTO game_account_achievement_grant_requests(source_kind,source_event_id,achievement_key,achievement_revision,account_id,character_id,earned_at) SELECT 'highscore-fixture',$1,$3,'1',account_id,character_id,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+                .bind(vec![event]).bind(id(CHARACTER).as_slice()).bind(key).execute(&mut *tx).await?;
+        }
+        sqlx::query("INSERT INTO game_account_achievements(account_id,achievement_key,source_kind,source_event_id) SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests")
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        h.root
+            .refresh_highscore_world_within(world(), complete_catalogues()?, limits(6, 1)?)
+            .await
+            .map_err(debug)?;
+        let single = every_list(h).await?;
+        assert!(
+            page(h, 10, None, 1, 0)
+                .await?
+                .rows
+                .iter()
+                .any(|row| row.value == (5, 0))
+        );
         h.root
             .refresh_highscore_world_within(world(), complete_catalogues()?, limits(6, 4)?)
             .await
             .map_err(debug)?;
         let paged = every_list(h).await?;
+        assert_eq!(
+            single.iter().map(|(_, rows)| rows).collect::<Vec<_>>(),
+            paged.iter().map(|(_, rows)| rows).collect::<Vec<_>>()
+        );
         h.root
             .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
