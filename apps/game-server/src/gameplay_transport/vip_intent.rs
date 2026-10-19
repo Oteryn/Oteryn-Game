@@ -75,6 +75,26 @@ struct VipSession {
     read_at: std::time::Instant,
 }
 
+/// Each connection of a session numbers handles above every earlier connection's, with one
+/// 2^32 range per connection_generation. A replacement snapshot on the same connection
+/// continues past the old state's next_handle, so a handle is never reused within a session
+/// and a resent stale handle answers NOT_FOUND.
+fn handle_floor(generation: u64, previous: Option<u64>) -> u64 {
+    ((generation & u64::from(u32::MAX)) << 32).max(previous.unwrap_or(0))
+}
+
+/// The earliest bound, with None meaning unbounded.
+fn earliest(
+    a: Option<std::time::Duration>,
+    b: Option<std::time::Duration>,
+) -> Option<std::time::Duration> {
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (a, None) => a,
+        (None, b) => b,
+    }
+}
+
 impl VipSession {
     fn handle(&mut self, binding: VipInvitationBinding, kind: HandleKind) -> u64 {
         let handle = match self.handle_of.get(&binding.invitation_id) {
@@ -275,12 +295,22 @@ impl VipRuntime {
         }
     }
 
-    /// How long the connection may take to write the presence update it holds: `None` when it
-    /// holds none or one that is not `ONLINE`.
+    /// How long the next domain 21 write may take. An ONLINE presence update, and any VIP
+    /// delta while an entry is shown ONLINE (an Entry delta re-states that status), must reach
+    /// the client before the confirmation deadline (VIP0 §8.2). None means unbounded.
     pub(crate) fn write_bound(&self, session: GameSessionId) -> Option<std::time::Duration> {
-        let update = self.lock().get(&session)?.inflight.clone()?;
-        self.presence()
-            .map_or(Some(std::time::Duration::ZERO), |p| p.write_bound(&update))
+        let update = self.lock().get(&session)?.inflight.clone();
+        let Some(presence) = self.presence() else {
+            return update.map(|_| std::time::Duration::ZERO);
+        };
+        earliest(
+            update
+                .as_ref()
+                .and_then(|update| presence.write_bound(update)),
+            presence
+                .confirmation_left(session)
+                .unwrap_or(Some(std::time::Duration::ZERO)),
+        )
     }
 
     /// The presence update the connection just wrote was delivered.
@@ -380,6 +410,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .admit_vip(self.character, self.holder, fence)
             .await
             .ok()?;
+        let previous = self.chat.vip.lock().get(&session).map(|s| s.next_handle);
         let mut state = VipSession {
             character: fence.character_id,
             fence,
@@ -387,7 +418,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             shown: BTreeMap::new(),
             handle_of: BTreeMap::new(),
             bindings: BTreeMap::new(),
-            next_handle: 0,
+            next_handle: handle_floor(fence.connection_generation.get(), previous),
             presence_seen: 0,
             inflight: None,
             pending: VecDeque::new(),
@@ -421,18 +452,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Vec::new(),
             );
         };
-        // VIP-0 §8.2: a node that cannot confirm presence changes nothing.
-        if !self
-            .chat
-            .vip
-            .presence()
-            .is_some_and(PresenceOwner::listening)
-        {
-            return (
-                VipCommandOutcome::answer(VipResultCode::VipUnavailable),
-                Vec::new(),
-            );
-        }
         let Ok(command_id) = CommandId::new(command.command_id) else {
             return (
                 VipCommandOutcome::answer(VipResultCode::Rejected),
@@ -440,6 +459,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         };
         let command_ref = CommandRef::new(command.game_session_id, command_id);
+        // VIP0 §8.2: a node that cannot confirm presence changes nothing. A recorded command
+        // may continue: its writer checks the kind and binding and replays without a mutation.
+        if !self
+            .chat
+            .vip
+            .presence()
+            .is_some_and(PresenceOwner::listening)
+        {
+            let binding = self
+                .chat
+                .vip
+                .lock()
+                .get(&command.game_session_id)
+                .map(|session| (session.view.list, session.fence));
+            let Some((list, fence)) = binding else {
+                return (
+                    VipCommandOutcome::answer(VipResultCode::VipUnavailable),
+                    Vec::new(),
+                );
+            };
+            if !matches!(
+                self.root
+                    .vip_receipt_recorded(self.character, fence, list, command_ref)
+                    .await,
+                Ok(true)
+            ) {
+                return (
+                    VipCommandOutcome::answer(VipResultCode::VipUnavailable),
+                    Vec::new(),
+                );
+            }
+        }
         let kind = match &intent {
             VipIntent::Accept { .. } => Some(VipEndKind::Accept),
             VipIntent::Reject { .. } => Some(VipEndKind::Reject),
@@ -827,9 +878,45 @@ impl VipPremiumGate for ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
-    use super::bounded_read;
+    use super::{bounded_read, earliest, handle_floor};
     use std::future::Future;
     use std::time::Duration;
+
+    #[test]
+    fn vip_handle_floor_separates_connection_generations() {
+        for generation in 1..=3 {
+            let floor = handle_floor(generation, None);
+            assert_eq!(floor, generation << 32);
+            assert!(floor > handle_floor(generation - 1, None) + u64::from(u32::MAX));
+        }
+    }
+
+    #[test]
+    fn vip_handle_floor_continues_after_a_replacement_snapshot() {
+        let floor = handle_floor(2, None);
+        assert_eq!(handle_floor(2, Some(floor + 7)), floor + 7);
+        assert_eq!(handle_floor(2, Some(floor - 1)), floor);
+    }
+
+    #[test]
+    fn vip_handle_floor_uses_only_the_low_32_generation_bits() {
+        let generation = u64::from(u32::MAX) + 3;
+        assert_eq!(handle_floor(generation, None), handle_floor(2, None));
+    }
+
+    #[test]
+    fn vip_write_bound_uses_the_earliest_deadline() {
+        let short = Some(Duration::from_secs(1));
+        let long = Some(Duration::from_secs(2));
+        let zero = Some(Duration::ZERO);
+        assert_eq!(earliest(None, None), None);
+        assert_eq!(earliest(short, None), short);
+        assert_eq!(earliest(None, short), short);
+        assert_eq!(earliest(short, long), short);
+        assert_eq!(earliest(long, short), short);
+        assert_eq!(earliest(zero, long), zero);
+        assert_eq!(earliest(long, zero), zero);
+    }
 
     // Neither tokio macros nor test-util is enabled; use the existing runtime pattern and a
     // tiny real timer instead of adding features solely for this test.

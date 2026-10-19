@@ -755,8 +755,9 @@ pub(crate) trait FreshAdmissionAuthority {
         async { None }
     }
 
-    /// VIP-2: how long the write of the delta last returned by `vip_next` may take; `None` for
-    /// no bound. An `ONLINE` presence update is bounded by its confirmation deadline.
+    /// VIP-2: how long the next domain 21 write may take; `None` for no bound. An ONLINE
+    /// presence update, and any VIP delta while an entry is shown ONLINE (an Entry delta
+    /// re-states that status), must reach the client before the confirmation deadline (VIP0 §8.2).
     fn vip_write_bound(
         &self,
         _session: GameSessionId,
@@ -2338,20 +2339,7 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.vip_revision = revision;
-                    // An ONLINE status must reach the client before its confirmation deadline
-                    // (VIP0 §8.2): past it, or once the listener is down, the connection closes
-                    // rather than finish a stale frame.
-                    let written = match authority.vip_write_bound(admitted.game_session_id).await {
-                        None => write_frame(stream, &frame).await.is_ok(),
-                        Some(left) if left.is_zero() => false,
-                        Some(left) => {
-                            matches!(
-                                tokio::time::timeout(left, write_frame(stream, &frame)).await,
-                                Ok(Ok(()))
-                            )
-                        }
-                    };
-                    if !written {
+                    if !write_vip_frame(stream, authority, admitted.game_session_id, &frame).await {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     authority.vip_delivered(admitted.game_session_id).await;
@@ -3766,7 +3754,7 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.vip_revision = revision;
-                    if write_frame(stream, &frame).await.is_err() {
+                    if !write_vip_frame(stream, authority, admitted.game_session_id, &frame).await {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -4084,6 +4072,29 @@ where
         }
     }
     Some(())
+}
+
+/// Every domain 21 delta must reach the client within the session's confirmation bound.
+async fn write_vip_frame<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: GameSessionId,
+    frame: &[u8],
+) -> bool
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    match authority.vip_write_bound(session).await {
+        None => write_frame(stream, frame).await.is_ok(),
+        Some(left) if left.is_zero() => false,
+        Some(left) => {
+            matches!(
+                tokio::time::timeout(left, write_frame(stream, frame)).await,
+                Ok(Ok(()))
+            )
+        }
+    }
 }
 
 /// MAP-WIRE-2: the domain 17 delta frame at the sequence after `sequence`, `Some(None)` when no

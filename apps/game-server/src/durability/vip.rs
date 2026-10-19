@@ -227,6 +227,43 @@ impl DurabilityRoot {
             .await?
     }
 
+    /// A read-only receipt probe. It reads no kind or binding; the writer that replays it
+    /// checks those before returning the recorded outcome.
+    pub(crate) async fn vip_receipt_recorded(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        list: VipListKey,
+        command: CommandRef,
+    ) -> Result<bool> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| VipError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result = async {
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        if command.game_session_id() != fence.game_session_id {
+                            return Err(VipError::AuthorityRejected);
+                        }
+                        Ok(receipt_row(&mut tx, list, command).await?.is_some())
+                    }
+                    .await;
+                    match result {
+                        Ok(recorded) => {
+                            commit_semantic_transaction(tx, deadline).await?;
+                            Ok(Ok(recorded))
+                        }
+                        Err(VipError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
     /// Remove one Account+World entry under the same native authority/receipt transaction
     /// as consent mutations. Removal requires no Premium benefit or target settings producer.
     pub(crate) async fn remove_vip_entry(

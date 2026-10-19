@@ -775,3 +775,40 @@ Announce (core VIP, required by the CP): production now produces login and logou
   this branch has no capability 26 offer yet, so 31 is the highest offered ID here. After #2202 is
   on main this branch merges main again and keeps #2202's versions.
 - Closeout stays deferred until the review round on this head is clean.
+
+## Review round — 2026-10-19
+
+CP decision (a) widened the owned paths to the harness and the dev-client accessor. The round fixes:
+- P1, harness: `SessionEvent::Vip` has its own VIP pane. `VipSnapshot::apply` is now the one
+  store rule shared by `crates/session` and the harness. The live controller case drives an Entry
+  delta through it.
+- P1, `vip_intent.rs`: the presence re-read is bounded by the earliest ONLINE confirmation
+  deadline. The confirmation lead (half of `CONFIRM_MS`) starts the re-read early, so a healthy
+  session never withdraws at expiry.
+- P2, `vip_intent.rs`: Accept, Reject and Revoke replay their committed receipt before they
+  resolve a handle (`replay_vip_end`). The replay checks the character and the kind, not the
+  binding digest.
+- P2, `durability/vip.rs`: the target's social baseline is written in the same transaction as
+  the add, and rolls back with it.
+- Prepush Codex review, P1: handles were reused across a resume. Each connection now numbers its
+  handles from `connection_generation << 32`, and a replacement snapshot continues past the old
+  `next_handle`. A resent stale handle answers `NOT_FOUND`.
+- Prepush Codex review, P1: every domain 21 write (the command deltas and the queued view deltas)
+  is bounded by the session's earliest ONLINE confirmation deadline, because an Entry delta
+  re-states the shown status.
+- Prepush Codex review, P2: while the listener is down, a command whose receipt is recorded
+  (`vip_receipt_recorded`) still replays through its writer. Any other command answers
+  `VIP_UNAVAILABLE` as before.
+- Prepush Codex review, P2, not fixed: committed list and consent changes send no relay hint, so a
+  remote node sees them at the 60 s reconcile, as D1444 accepted. A list or consent hint needs a new
+  relay kind byte (a relay wire change), which is a CP and owner decision.
+- Item 13 (the node scheduler for `refresh_batch_current`/`due_sessions` in `node/serve.rs`) stays
+  a follow-up packet.
+
+E2e coverage:
+- Merge Queue / Rust Linux workspace: `capabilities_tests::vip_wire`, which uses the real
+  `serve_admitted` dispatch.
+- Merge Queue / Durability PostgreSQL harness: the native watcher client case in
+  `vip/presence_tests.rs`.
+- The lib PostgreSQL cases (`durability/vip_tests.rs`) skip without `OTERYN_TEST_POSTGRES_ADMIN_URL`.
+  They passed locally on PostgreSQL 17.6 and include the listener-down dispatch replay case.

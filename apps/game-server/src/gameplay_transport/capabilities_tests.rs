@@ -2515,6 +2515,7 @@ mod vip_wire {
         result: VipIntentResult,
         deltas: Vec<VipDelta>,
         unknown: bool,
+        write_bound: Option<Duration>,
     }
 
     impl VipAuthority {
@@ -2528,6 +2529,7 @@ mod vip_wire {
                 result: VipIntentResult::of(VipResultCode::Ok),
                 deltas: Vec::new(),
                 unknown: false,
+                write_bound: Some(Duration::from_secs(1)),
             }
         }
     }
@@ -2610,7 +2612,7 @@ mod vip_wire {
                 .expect("calls")
                 .delivery
                 .push(("bound", session));
-            Some(Duration::from_secs(1))
+            self.write_bound
         }
 
         async fn vip_delivered(&self, session: GameSessionId) {
@@ -2804,6 +2806,45 @@ mod vip_wire {
             assert_eq!(calls.admitted, vec![(session_id, fence)]);
             assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
             assert!(!calls.delivery.iter().any(|(call, _)| *call == "delivered"));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn command_31_writes_its_result_but_no_entry_delta_after_the_confirmation_deadline()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = VipAuthority::new();
+            authority.write_bound = Some(Duration::ZERO);
+            authority.deltas = vec![VipDelta::Entry(entry(2, "Bryn"))];
+            let session = admitted(&[CAPABILITY_VIP_V1])?;
+            let session_id = session.game_session_id;
+            let intent = VipIntent::Add {
+                name: "Bryn".to_owned(),
+            };
+            let payload = encode_vip_intent(&intent).map_err(|e| format!("{e:?}"))?;
+            let (end, frames) = serve_open(
+                &authority,
+                session,
+                &[command(1, COMMAND_TYPE_VIP_INTENT, &payload)],
+                Duration::ZERO,
+            )
+            .await?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            assert_eq!(snapshots(&frames)?, vec![authority.snapshot.clone()]);
+            let written = results(&frames)?;
+            assert_eq!(written.len(), 1);
+            assert_eq!((written[0].0, written[0].1), (1, CommandStatus::Accepted));
+            assert_eq!(
+                decode_vip_intent_result(&written[0].2).map_err(|e| format!("{e:?}"))?,
+                authority.result
+            );
+            let last = decode_wire_envelope(frames.last().ok_or("result frame")?)?;
+            assert_eq!(last.message_type(), MessageType::CommandResult);
+            assert!(deltas(&frames)?.is_empty());
+            let calls = authority.calls.lock().expect("calls");
+            assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
+            assert_eq!(calls.delivery, vec![("bound", session_id)]);
             Ok(())
         })
     }
