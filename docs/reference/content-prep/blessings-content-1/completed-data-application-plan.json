@@ -1,0 +1,66 @@
+{
+  "schema": "OTERYN_POPULATED_DATA_APPLICATION/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "reason": "Original targets claimed by another open PR; values are fully populated in staged data, not merely proposed.",
+  "runtime_switch_authorized": false,
+  "files": [
+    {
+      "target_path": "rulesets/character/blessings/reference-evidence.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json",
+      "sha256": "614a9e7bb219f3d2bb77b14322e39cbf7cc82b97d55f87202a99d8cbe2264b91",
+      "held_by_prs": [
+        2194
+      ]
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/sources.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/completed-data/docs/reference/content-prep/blessings-content-1/sources.json",
+      "sha256": "8756530adac424674eae7daf03cf943277a10b11a643d73e74bd2548f412e9bc",
+      "held_by_prs": [
+        2194
+      ]
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/service-apply-plan.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/completed-data/docs/reference/content-prep/blessings-content-1/service-apply-plan.json",
+      "sha256": "bce95c3b735d9e6143055cbf4f0b80209e85b2acb7cb6f9216bd81d2b21c15ab",
+      "held_by_prs": [
+        2194
+      ]
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/research-audit.json",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/completed-data/docs/reference/content-prep/blessings-content-1/research-audit.json",
+      "sha256": "52865e0e7e77095033fe1148271cdafc5bfec507e4dbf6bc2bc1c19654d62bbf",
+      "held_by_prs": [
+        2194
+      ]
+    },
+    {
+      "target_path": "docs/reference/content-prep/blessings-content-1/README.md",
+      "staged_path": "docs/reference/content-prep/blessings-content-1/completed-data/docs/reference/content-prep/blessings-content-1/README.md",
+      "sha256": "eac22ed955a72c9df9330c3a0dce4a1f10cdff5d75d3faa20bd1cdcf3f842fe7",
+      "held_by_prs": [
+        2194
+      ]
+    }
+  ],
+  "field_locations": [
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/0/facts/regular"
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120"
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect"
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
+      "populated_field_path": "docs/reference/content-prep/blessings-content-1/completed-data/rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate"
+    }
+  ]
+}

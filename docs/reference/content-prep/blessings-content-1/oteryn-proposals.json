@@ -3,8 +3,8 @@
   "task": "BLESSINGS-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -98,7 +98,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
@@ -130,7 +130,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
@@ -150,7 +150,7 @@
       "assumptions": [
         "Promotion reduces death loss but does not independently discount blessing purchases."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
@@ -176,7 +176,13 @@
       "assumptions": [
         "Treat6.31% per blessing as a proposed retro PvP reduction, not proof of current Retro Hardcore behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/blessings-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/blessings-content-1/tibia-source-archive.json",
+    "filled_field_count": 4,
+    "not_runtime_activation": true
+  }
 }

@@ -1,0 +1,112 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "BLESSINGS-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "c4ce8b9e6c2d7274cba4910a354ee82511613e2b",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular",
+      "original_global_fact": {
+        "value": [
+          {
+            "level_max": 30,
+            "gold": "2000"
+          },
+          {
+            "level_min_exclusive": 30,
+            "level_max_exclusive": 120,
+            "gold": "200*(L-20)"
+          },
+          {
+            "level_min": 120,
+            "gold": "20000+75*(L-120)"
+          }
+        ],
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Price / R(L)"
+          },
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Current Wiki piecewise formula is preserved, but its above-120 segment conflicts with live official manual wording that regular prices stop rising while PvP blessing prices continue. Do not admit the aggregate regular formula without resolving this segment."
+      }
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/regular_above_120",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Wiki current Blessings price formula grows 75 gp/level above 120; official manual 2026-09-28 describes a flat regular price past 120. Keep both observations; no runtime formula selected."
+      }
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/0/facts/promotion_price_effect",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "NOT_ESTABLISHED",
+        "sources": [],
+        "note": "No explicit promotion-specific purchase discount in the cited current source."
+      }
+    },
+    {
+      "original_field_path": "rulesets/character/blessings/reference-evidence.json/records/9/facts/retro_hardcore_rate",
+      "original_global_fact": {
+        "value": null,
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:1630:1113782",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "wiki:1628:1140641",
+            "selector": "Conflicting statements identified in note"
+          },
+          {
+            "source": "official:manual:characters:2026-10-18",
+            "selector": "Conflicting statements identified in note"
+          }
+        ],
+        "note": "Official manual: 6.31% per blessing; current Death Wiki: 6.4%. Neither silently selected."
+      }
+    }
+  ]
+}
