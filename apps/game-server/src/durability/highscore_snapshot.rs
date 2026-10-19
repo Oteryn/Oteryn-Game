@@ -47,6 +47,12 @@ const SNAPSHOT_INTERVAL_MS: i64 = 30 * 60 * 1000;
 pub(crate) const CUT_CHARACTERS_MAX: usize = 50_000;
 /// HIGHSCORES0-RL-04: rows of one keyset-paged source read inside the cut.
 pub(crate) const CUT_SOURCE_PAGE_ROWS: usize = 1_000;
+/// One keyset page of the cut's eligible Characters in CharacterId order. Its World range and
+/// order are an index range scan of `game_character_roots_highscore_world_character` (0129).
+pub(crate) const CHARACTER_SOURCE_PAGE_SQL: &str = "SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3";
+/// One keyset page of the cut's account representatives in AccountId order. Its World range and
+/// order are an index range scan of `game_character_roots_highscore_world_account` (0129).
+pub(crate) const ACCOUNT_REPRESENTATIVE_PAGE_SQL: &str = "SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3";
 
 /// The bounds of one World cut. Production uses [`CutLimits::REGISTERED`]; a fixture may only
 /// tighten them, never pass the registered hard maximums.
@@ -398,9 +404,12 @@ pub(crate) async fn read_source_within(
         let wanted = limits.next_page(sources.len())?;
         // No row means native vocation `none`, excluded. Do not silently drop an eligible
         // non-none build whose required XP row is missing: fail and retain the prior generation.
-        let rows = sqlx::query("SELECT uuid_send(r.character_id) AS character_id,r.name,p.level,p.total_experience,b.vocation,b.magic_level,b.mana_spent,b.fist_level,b.fist_tries,b.club_level,b.club_tries,b.sword_level,b.sword_tries,b.axe_level,b.axe_tries,b.distance_level,b.distance_tries,b.shielding_level,b.shielding_tries,b.fishing_level,b.fishing_tries FROM game_character_roots r JOIN game_character_build_state b USING(character_id) LEFT JOIN game_character_progression_state p USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND b.vocation<>'none' AND ($2::text IS NULL OR r.character_id>$2::text::uuid) ORDER BY r.character_id LIMIT $3")
-            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted)
-            .fetch_all(&mut **tx).await?;
+        let rows = sqlx::query(CHARACTER_SOURCE_PAGE_SQL)
+            .bind(world.as_bytes().as_slice())
+            .bind(after.as_deref())
+            .bind(wanted)
+            .fetch_all(&mut **tx)
+            .await?;
         let fetched = rows.len();
         for row in rows {
             sources.push(source_row(&row)?);
@@ -470,9 +479,12 @@ async fn read_extra_sources(
         // Migration 0009 keeps a bootstrap-only Character (revision one, no progression row)
         // valid: it has no level to rank, so it never represents its account and never fails
         // the cut.
-        let representatives = sqlx::query("SELECT DISTINCT ON(r.account_id) r.account_id::text AS account_id,uuid_send(r.character_id) AS character_id,r.name,p.level,COALESCE(b.vocation,'none') AS vocation FROM game_character_roots r JOIN game_character_progression_state p USING(character_id) LEFT JOIN game_character_build_state b USING(character_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.lifecycle=1 AND ($2::text IS NULL OR r.account_id>$2::text::uuid) ORDER BY r.account_id,p.level DESC,r.character_id LIMIT $3")
-            .bind(world.as_bytes().as_slice()).bind(after.as_deref()).bind(wanted)
-            .fetch_all(&mut **tx).await?;
+        let representatives = sqlx::query(ACCOUNT_REPRESENTATIVE_PAGE_SQL)
+            .bind(world.as_bytes().as_slice())
+            .bind(after.as_deref())
+            .bind(wanted)
+            .fetch_all(&mut **tx)
+            .await?;
         let fetched = representatives.len();
         let accounts = representatives
             .iter()

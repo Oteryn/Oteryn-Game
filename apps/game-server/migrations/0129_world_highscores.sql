@@ -9,6 +9,8 @@
 --     4 paladin, 5 sorcerer), at most 1000 positions each, immutable once written;
 --   * `game_world_highscore_heads`: the current and previous snapshot of each (World, category).
 --     A reader pages the current snapshot or, by its token, the previous one;
+--   * two partial indexes of `game_character_roots` for the cut's keyset scans, (World,
+--     CharacterId) and (World, AccountId) over live roots;
 --   * the guards: a header and a row never change; a published snapshot never acquires rows;
 --     a row leaves only with its header; no table can be truncated;
 --   * the public projection attachment (0091 §11): each snapshot insert advances the public
@@ -24,7 +26,7 @@
 --     (`SET LOCAL ROLE`). The runtime and control roles SELECT the snapshot tables only.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration that drops the
--- trigger, the three tables and the two guard functions, and revokes the job role's grants (the
+-- trigger, the three tables, the two guard functions and the two root indexes, and revokes the job role's grants (the
 -- cluster-global role itself may be shared with another Game database). The public projection then reads no
 -- highscores source again (`to_regclass` in 0091).
 
@@ -161,6 +163,15 @@ CREATE TABLE game_world_highscore_heads (
     FOREIGN KEY (world_id, category, previous_snapshot_id)
         REFERENCES game_world_highscore_snapshots (world_id, category, snapshot_id)
 );
+
+-- The World cut's two keyset scans of `game_character_roots` (HIGHSCORES0-RL-04): the eligible
+-- Characters in (World, CharacterId) order and the account representatives in (World,
+-- AccountId) order. Each page is an index range scan of its own World from the keyset bound,
+-- never a scan of every World's roots; the predicate is the scans' own live-root filter.
+CREATE INDEX IF NOT EXISTS game_character_roots_highscore_world_character
+    ON game_character_roots (world_id, character_id) WHERE lifecycle = 1;
+CREATE INDEX IF NOT EXISTS game_character_roots_highscore_world_account
+    ON game_character_roots (world_id, account_id) WHERE lifecycle = 1;
 
 CREATE FUNCTION game_highscore_immutable() RETURNS trigger
 LANGUAGE plpgsql AS $$

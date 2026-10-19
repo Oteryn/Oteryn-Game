@@ -19,9 +19,10 @@ use crate::durability::highscore_snapshot::reply::{
     HighscoresReply, answer_highscores, answer_session_highscores,
 };
 use crate::durability::highscore_snapshot::{
-    AchievementPoints, CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS, CutLimits, FILTERS,
-    SnapshotCatalogues, SnapshotError, SnapshotPage, SnapshotRow, activated_charm_points,
-    begin_projection, job, publish_in_transaction, read_source_within, served_categories,
+    ACCOUNT_REPRESENTATIVE_PAGE_SQL, AchievementPoints, CHARACTER_SOURCE_PAGE_SQL,
+    CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS, CutLimits, FILTERS, SnapshotCatalogues,
+    SnapshotError, SnapshotPage, SnapshotRow, activated_charm_points, begin_projection, job,
+    publish_in_transaction, read_source_within, served_categories,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CharacterId, FoundationProtocolError, GameSessionId, WorldId};
@@ -1805,6 +1806,64 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
         assert_eq!(every_list(h).await?, registered);
         assert_eq!(h.count("game_world_highscore_snapshots").await?, snapshots);
         assert_eq!(h.count("game_world_highscore_rows").await?, stored);
+        Ok(())
+    })
+}
+
+/// Both keyset scans of the World cut read each page as an index range scan of their own 0129
+/// World index: the World and, after the first page, the keyset bound are index conditions, never
+/// a filter over every World's roots. Sequential scans are disabled so a missing or unusable
+/// index fails the plan check instead of hiding behind a small fixture's cheaper sequential scan.
+#[test]
+fn world_cut_keyset_scans_are_index_range_scans_of_their_world() -> TestResult {
+    run("hscutindex", async |h| {
+        dataset(h, 100, 5, "paladin", 1000, world()).await?;
+        let keyset = hex(&generated(102));
+        for (sql, index, bound) in [
+            (
+                CHARACTER_SOURCE_PAGE_SQL,
+                "game_character_roots_highscore_world_character",
+                "character_id >",
+            ),
+            (
+                ACCOUNT_REPRESENTATIVE_PAGE_SQL,
+                "game_character_roots_highscore_world_account",
+                "account_id >",
+            ),
+        ] {
+            for after in [None, Some(keyset.as_str())] {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL enable_seqscan = off")
+                    .execute(&mut *tx)
+                    .await?;
+                let plan: Vec<String> =
+                    sqlx::query_scalar(sqlx::AssertSqlSafe(format!("EXPLAIN (COSTS OFF) {sql}")))
+                        .bind(world().as_bytes().as_slice())
+                        .bind(after)
+                        .bind(i64::try_from(CUT_SOURCE_PAGE_ROWS)?)
+                        .fetch_all(&mut *tx)
+                        .await?;
+                tx.rollback().await?;
+                let text = plan.join("\n");
+                eprintln!("HIGHSCORES-CUT-PLAN {index} after={after:?}\n{text}");
+                assert!(!text.contains("Seq Scan on game_character_roots"), "{text}");
+                let scan = plan
+                    .iter()
+                    .position(|line| {
+                        line.contains(&format!("Index Scan using {index} on game_character_roots"))
+                            || line.contains(&format!(
+                                "Index Only Scan using {index} on game_character_roots"
+                            ))
+                    })
+                    .ok_or_else(|| format!("no index scan of {index}:\n{text}"))?;
+                let condition = plan
+                    .get(scan + 1)
+                    .filter(|line| line.trim_start().starts_with("Index Cond: "))
+                    .ok_or_else(|| format!("no index condition on {index}:\n{text}"))?;
+                assert!(condition.contains("world_id = "), "{text}");
+                assert_eq!(condition.contains(bound), after.is_some(), "{text}");
+            }
+        }
         Ok(())
     })
 }
