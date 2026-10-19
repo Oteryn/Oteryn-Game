@@ -2184,6 +2184,12 @@ where
                 }
             });
             std::future::poll_fn(|context| {
+                // VIP-2 (VIP0 §8.2): the ONLINE confirmation deadline is polled first. A shown
+                // status must be cleared or refreshed by its deadline, so no other due tick may
+                // keep it waiting.
+                if vip_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Vip);
+                }
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
                 }
@@ -2195,9 +2201,6 @@ where
                 }
                 if chat_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Chat);
-                }
-                if vip_tick.as_mut().poll(context).is_ready() {
-                    return std::task::Poll::Ready(Next::Vip);
                 }
                 if visibility_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Visibility);
@@ -4193,6 +4196,9 @@ where
     })
 }
 
+/// A command's outcome and deltas, or `None` when the command was cut at its deadline.
+type VipIntentRan = Option<(VipCommandOutcome, Vec<VipDelta>)>;
+
 /// VIP0 §8.2: while an entry is shown ONLINE, command 31 may not outlive its confirmation
 /// deadline, because the session's presence timer does not run meanwhile. `None`: the command was
 /// cut at the deadline, so its outcome is unknown. The connection then ends, the client stops
@@ -4201,7 +4207,7 @@ fn bounded_vip_intent<'a, A>(
     authority: &'a A,
     command: UseCommand,
     payload: &'a [u8],
-) -> std::pin::Pin<Box<impl Future<Output = Option<(VipCommandOutcome, Vec<VipDelta>)>> + 'a>>
+) -> std::pin::Pin<Box<impl Future<Output = VipIntentRan> + 'a>>
 where
     A: FreshAdmissionAuthority,
 {

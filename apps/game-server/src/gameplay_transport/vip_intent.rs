@@ -1085,4 +1085,4 @@ mod tests {
 
 #[cfg(test)]
 #[path = "../durability/vip_tests.rs"]
-mod durability_vip_tests;
+pub(super) mod durability_vip_tests;

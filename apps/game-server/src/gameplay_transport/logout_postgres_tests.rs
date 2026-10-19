@@ -576,3 +576,229 @@ fn a_transport_other_than_the_current_one_never_releases() -> TestResult {
         harness.cleanup().await
     })
 }
+
+/// The debug-build `serve_admitted` future is deeper than the default 2 MiB test stack, so the
+/// VIP dispatch scenario runs on a dedicated thread with an explicit stack (as the kill reward
+/// e2e).
+const VIP_DISPATCH_STACK_BYTES: usize = 64 << 20;
+
+/// VIP-2 (VIP0 §8.2) through the real composed owner and `serve_admitted` on PostgreSQL: an
+/// accept commits and its acknowledgement is lost; the presence listener goes down and the
+/// replacement snapshot no longer names the accepted handle. The resend of the receipted command
+/// replays from its receipt, a new command is refused, nothing is written, and a receipt lookup
+/// that cannot finish leaves the outcome unknown.
+#[test]
+fn vip_listener_down_replays_a_committed_accept_through_dispatch() -> TestResult {
+    std::thread::Builder::new()
+        .name("vip-dispatch-replay".into())
+        .stack_size(VIP_DISPATCH_STACK_BYTES)
+        .spawn(|| vip_listener_down_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "VIP dispatch replay thread panicked")?
+        .map_err(Into::into)
+}
+
+async fn vip_footprint(harness: &Harness) -> TestResult<(i64, i64, i64, u64)> {
+    let (entries, consents, receipts): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_vip_entries),(SELECT count(*) FROM game_vip_consents),\
+         (SELECT count(*) FROM game_vip_command_receipts)",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    Ok((entries, consents, receipts, revision(harness).await?))
+}
+
+fn vip_listener_down_scenario() -> TestResult {
+    use crate::durability::item_transfer::CurrentCharacterItemFence;
+    use crate::foundation::{CommandStatus, MessageType};
+    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
+    use crate::gameplay_transport::connection::{
+        AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, SessionContinuity,
+        UseCommand, serve_admitted,
+    };
+    use crate::gameplay_transport::vip_intent::durability_vip_tests::{
+        insert_vip_character, insert_vip_invitation,
+    };
+    use oteryn_protocol_oteryn::vip::{
+        CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, VipIntent, VipResultCode,
+        decode_vip_intent_result, encode_vip_intent,
+    };
+    use oteryn_protocol_oteryn::{
+        ClientCommandValue, decode_command_result, decode_wire_envelope, encode_client_command,
+    };
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+
+    run(async |admin| {
+        reset();
+        let harness =
+            Harness::create_with_admission_seed(admin, "logout_vip_replay", true, false).await?;
+        prepare_current_session(&harness).await?;
+        // The session's character 41 (account 40) in World 42 holds a pending invitation from
+        // character 60 of account 70.
+        insert_vip_character(&harness.pool, id(41), [id(60), id(70), id(42)], 60).await?;
+        insert_vip_invitation(&harness.pool, [id(70), id(42), id(60), id(41)], 1).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let dependencies = Dependencies::new()?;
+        let owner = dependencies.owner(&harness, &authority);
+        enter(&owner, &dependencies).await?;
+        let presence = std::sync::Arc::new(
+            crate::durability::vip_presence::PresenceOwner::new(
+                harness.root.clone(),
+                owner.world_id,
+                1,
+            )
+            .map_err(debug)?,
+        );
+        presence.listener_reconnected().map_err(debug)?;
+        assert!(
+            owner
+                .chat
+                .vip
+                .install_presence(std::sync::Arc::clone(&presence))
+        );
+        let session = dependencies.admitted.game_session_id;
+        let gameplay = fence(1)?;
+        // VIP's store checks the item fence against the durable session, whose fresh admission
+        // holds the character lease it committed.
+        let lease: String = sqlx::query_scalar(
+            "SELECT character_lease_generation::text FROM game_durability_reconnect_sessions \
+             WHERE game_session_id=encode($1,'hex')::uuid",
+        )
+        .bind(session.as_bytes().as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        let lease = lease.parse()?;
+        let item = CurrentCharacterItemFence {
+            character_id: gameplay.character_id,
+            game_session_id: session,
+            connection_generation: gameplay.connection_generation,
+            character_lease_generation: lease,
+            runtime_scope: gameplay.runtime_scope,
+            scope_ownership_generation: gameplay.scope_ownership_generation,
+        };
+        let command = |command_id| UseCommand {
+            game_session_id: session,
+            command_id,
+            item_fence: Some(item),
+        };
+        let snapshot = owner
+            .vip_open(session, Some(item))
+            .await
+            .ok_or("VIP snapshot")?;
+        let handle = snapshot
+            .consent
+            .invitations
+            .first()
+            .ok_or("invitation handle")?
+            .handle;
+        let payload =
+            encode_vip_intent(&VipIntent::Accept { invitation: handle }).map_err(debug)?;
+        // The accept commits; its acknowledgement is lost with the connection.
+        let (committed, _) = owner.vip_command(command(1), &payload).await;
+        assert!(!committed.unknown);
+        assert_eq!(committed.result.code, VipResultCode::Ok);
+        // The listener goes down; the replacement snapshot has lost the accepted handle.
+        presence.listener_down().map_err(debug)?;
+        assert!(!presence.listening());
+        let snapshot = owner
+            .vip_open(session, Some(item))
+            .await
+            .ok_or("VIP snapshot")?;
+        assert!(snapshot.consent.invitations.is_empty());
+        assert!(
+            snapshot
+                .consent
+                .watchers
+                .first()
+                .ok_or("watcher handle")?
+                .handle
+                > handle
+        );
+        let before = vip_footprint(&harness).await?;
+        let admitted = AdmittedSession {
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity: SessionContinuity {
+                selected_capabilities: SelectedCapabilities::select(
+                    &[OfferedCapability {
+                        id: CAPABILITY_VIP_V1,
+                        requires: &[],
+                    }],
+                    &[CAPABILITY_VIP_V1],
+                )
+                .ok_or("VIP capability selection")?,
+                ..SessionContinuity::FRESH
+            },
+            item_fence: Some(item),
+            ..dependencies.admitted
+        };
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        // The receipted command replays even without its old handle; a new command is refused.
+        for command_id in 1..=2 {
+            let frame = encode_client_command(
+                1,
+                &ClientCommandValue {
+                    command_id,
+                    command_type: COMMAND_TYPE_VIP_INTENT,
+                    payload: &payload,
+                },
+            )?;
+            client
+                .write_all(&(frame.len() as u32).to_be_bytes())
+                .await?;
+            client.write_all(&frame).await?;
+        }
+        client.shutdown().await?;
+        let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+        drop(server);
+        let mut output = Vec::new();
+        client.read_to_end(&mut output).await?;
+        let mut results = Vec::new();
+        let mut cursor = 0;
+        while cursor < output.len() {
+            let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
+            let envelope = decode_wire_envelope(&output[cursor + 4..cursor + 4 + length])?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let result = decode_command_result(envelope.payload())?;
+                results.push((
+                    result.command_id,
+                    result.status,
+                    decode_vip_intent_result(result.payload)
+                        .map_err(debug)?
+                        .code,
+                ));
+            }
+            cursor += 4 + length;
+        }
+        assert_eq!(
+            results,
+            vec![
+                (1, CommandStatus::Accepted, VipResultCode::Ok),
+                (2, CommandStatus::Rejected, VipResultCode::VipUnavailable),
+            ]
+        );
+        assert_eq!(vip_footprint(&harness).await?, before);
+        // A receipt lookup that cannot finish leaves the outcome unknown: the CommandId stays
+        // unsequenced, so a later resend can still replay the committed accept.
+        let mut lock = harness.pool.begin().await?;
+        sqlx::query("LOCK TABLE game_vip_command_receipts IN ACCESS EXCLUSIVE MODE")
+            .execute(&mut *lock)
+            .await?;
+        let (outcome, deltas) = owner.vip_command(command(1), &payload).await;
+        lock.rollback().await?;
+        assert!(outcome.unknown);
+        assert_eq!(outcome.result.code, VipResultCode::VipUnavailable);
+        assert!(deltas.is_empty());
+        assert_eq!(vip_footprint(&harness).await?, before);
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}

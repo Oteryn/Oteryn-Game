@@ -847,11 +847,14 @@ The prepush Stage C review of `7b8a05d1` made three findings:
 - Round 4 finding, fixed: a session keeps two full consent views of retired handle bindings
   (`2 * (MAX_VIP_INVITATIONS + MAX_VIP_WATCHERS)`), so a reconnect from a full view keeps every
   binding a resend can name.
-- Cross-domain finding (REPORT_ONLY): the listener-down dispatch scenario in
-  `durability/vip_tests.rs` builds `ComposedFreshAdmission` with `SeamRooms::new(None, None)`.
-  The BUNDLE-GATES-1 inventory test (`bundle_gates_tests::a_bundle_world_seam_has_no_qualified_room`)
-  needs the entry `("durability/vip_tests.rs", 1)` in `CONSTRUCTIONS`. That file is outside
-  owned_paths, so the entry is left to CP.
+- Round 6 finding, fixed (VIP0 §8.2): the connection loop polls the ONLINE confirmation deadline
+  before every other tick, so a due Probe, Serene or other tick can no longer keep a shown status
+  past its deadline.
+- Round 6 finding, fixed: the listener-down dispatch scenario moved from `durability/vip_tests.rs`
+  to `logout_postgres_tests.rs`. It now runs on the gameplay fixture's composed owner
+  (`Dependencies::owner`), so no new `SeamRooms` construction appears and the BUNDLE-GATES-1
+  inventory is unchanged. The accept commits through the real `vip_command`. The VIP rows come
+  from the shared `insert_vip_character` and `insert_vip_invitation` fixtures in `vip_tests.rs`.
 - F2, deferred: when admission refuses the VIP snapshot, the session fails closed (no VIP state).
   A mid-session snapshot retry would need a new client-visible step (a wire and CP decision). The
   client recovers by reconnecting.
@@ -864,14 +867,16 @@ Tests:
 - `a_negative_read_keeps_the_shown_online_deadline_until_the_downgrade_lands`.
 - `vip_end_replay_matches_the_receipt_binding_of_a_retired_handle`, which replaced the
   handle-less replay case.
-- The listener-down dispatch scenario, which now also covers the locked receipt lookup that
-  answers unknown.
+- `logout_e2e::vip_listener_down_replays_a_committed_accept_through_dispatch`, through the real
+  composed owner and `serve_admitted`. It also covers the locked receipt lookup that answers
+  unknown.
 - `vip_wire::a_stalled_command_result_ends_the_connection_at_the_confirmation_deadline` and
   `vip_wire::a_command_outliving_the_confirmation_deadline_ends_the_connection`, through the real
   `serve_admitted` dispatch.
 
 These passed locally on PostgreSQL 17.6:
-- lib `vip`: 90 passed;
-- lib `logout_e2e`: 8 passed;
-- lib `capabilities`: 64 passed;
+- lib `vip`: 91 passed;
+- lib `logout_e2e`: 9 passed;
+- lib `capabilities`: 65 passed;
+- the whole lib, without PostgreSQL: 3639 passed;
 - `durability_postgres vip`: 33 passed.

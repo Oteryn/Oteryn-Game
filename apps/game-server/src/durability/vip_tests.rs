@@ -69,14 +69,31 @@ async fn fixture_character(h: &Harness, seed: u8, owner: u8) -> TestResult {
     fixture_character_world(h, seed, owner, WORLD).await
 }
 async fn fixture_character_world(h: &Harness, seed: u8, owner: u8, world: u8) -> TestResult {
-    sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING").bind(id(owner).as_slice()).execute(&h.pool).await?;
+    insert_vip_character(
+        &h.pool,
+        id(CHARACTER),
+        [id(seed), id(owner), id(world)],
+        seed,
+    )
+    .await
+}
+/// A character of `account` in `world` (`[character, account, world]`), copied from the
+/// `template` character with its complete historical creation rows; `seed` names it. Shared
+/// with the gameplay dispatch scenario in `logout_postgres_tests.rs`.
+pub(crate) async fn insert_vip_character(
+    pool: &sqlx::PgPool,
+    template: [u8; 16],
+    [character, owner, world]: [[u8; 16]; 3],
+    seed: u8,
+) -> TestResult {
+    sqlx::query("INSERT INTO game_character_account_guards VALUES(encode($1,'hex')::uuid) ON CONFLICT DO NOTHING").bind(owner.as_slice()).execute(pool).await?;
     sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($5,'hex')::uuid,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,$3 FROM game_character_roots WHERE character_id=encode($4,'hex')::uuid")
-        .bind(id(seed).as_slice()).bind(id(owner).as_slice()).bind(format!("Vip Fixture {}{}",char::from(b'A'+seed/26),char::from(b'A'+seed%26))).bind(id(CHARACTER).as_slice()).bind(id(world).as_slice()).execute(&h.pool).await?;
+        .bind(character.as_slice()).bind(owner.as_slice()).bind(format!("Vip Fixture {}{}",char::from(b'A'+seed/26),char::from(b'A'+seed%26))).bind(template.as_slice()).bind(world.as_slice()).execute(pool).await?;
     // Complete historical creation fixture through the existing native decoder/binder.
     // This is not an actor authority constructor: the real sealed recovery and full
     // integrity checks below must still succeed after these historical rows exist.
     let distinct = |tag| {
-        let mut value = id(seed);
+        let mut value = character;
         value[15] ^= tag;
         value
     };
@@ -97,7 +114,7 @@ async fn fixture_character_world(h: &Harness, seed: u8, owner: u8, world: u8) ->
         "contract_version":2,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":uuid(decision),
         "source_revision":seed.to_string(),"operation_id":uuid(operation),"operation":"INITIAL_CHARACTER_BOOTSTRAP",
-        "account_id":uuid(id(owner)),"target_world_id":uuid(id(world)),
+        "account_id":uuid(owner),"target_world_id":uuid(world),
         "requested_name":format!("Vip Fixture {}{}",char::from(b'A'+seed/26),char::from(b'A'+seed%26)),
         "interpretation_context":{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"content-1","starter_template_revision":"starter-1"},
         "issued_at_source":"1","expires_at_source":"120","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"
@@ -105,15 +122,18 @@ async fn fixture_character_world(h: &Harness, seed: u8, owner: u8, world: u8) ->
     let intent = crate::character_bootstrap_intent::decode_producer_response(&raw, operation)
         .map_err(debug)?;
     sqlx::query("INSERT INTO game_character_operation_receipts(operation_id,command_binding,account_id,character_id,world_id,character_revision,event_id,occurred_at,server_build_id,transaction_id,issuer_decision_id,intent_source_revision,issued_at_source,expires_at_source) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,encode($6,'hex')::uuid,1,'test/1',encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,1,120)")
-        .bind(operation.as_slice()).bind(intent.binding()).bind(id(owner).as_slice()).bind(id(seed).as_slice()).bind(id(world).as_slice())
-        .bind(distinct(0x82).as_slice()).bind(distinct(0x83).as_slice()).bind(decision.as_slice()).bind(i64::from(seed)).execute(&h.pool).await?;
+        .bind(operation.as_slice()).bind(intent.binding()).bind(owner.as_slice()).bind(character.as_slice()).bind(world.as_slice())
+        .bind(distinct(0x82).as_slice()).bind(distinct(0x83).as_slice()).bind(decision.as_slice()).bind(i64::from(seed)).execute(pool).await?;
     sqlx::query("INSERT INTO game_character_bootstrap_intent_floors(issuer_scope,source_revision,issuer_decision_id,intent_binding) SELECT 1,intent_source_revision,issuer_decision_id,command_binding FROM game_character_operation_receipts ORDER BY intent_source_revision DESC LIMIT 1 ON CONFLICT(issuer_scope) DO UPDATE SET source_revision=EXCLUDED.source_revision,issuer_decision_id=EXCLUDED.issuer_decision_id,intent_binding=EXCLUDED.intent_binding")
-        .execute(&h.pool).await?;
+        .execute(pool).await?;
     Ok(())
 }
 async fn fixture_list(h: &Harness, owner: u8) -> TestResult {
+    insert_vip_list(&h.pool, id(owner), id(WORLD)).await
+}
+async fn insert_vip_list(pool: &sqlx::PgPool, owner: [u8; 16], world: [u8; 16]) -> TestResult {
     sqlx::query("INSERT INTO game_vip_lists VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,2,20,floor(extract(epoch FROM clock_timestamp())*1000000)::bigint) ON CONFLICT DO NOTHING")
-        .bind(id(owner).as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+        .bind(owner.as_slice()).bind(world.as_slice()).execute(pool).await?;
     Ok(())
 }
 // SQL-only relationship fixture. It never supplies the session/recovery/node proof checked by writer.
@@ -124,15 +144,30 @@ async fn fixture_consent(
     target: u8,
     state: i16,
 ) -> TestResult<u64> {
-    fixture_list(h, owner).await?;
+    insert_vip_invitation(
+        &h.pool,
+        [id(owner), id(WORLD), id(inviter), id(target)],
+        state,
+    )
+    .await
+}
+/// `owner`'s VIP list in `world` naming `target`, and `inviter`'s invitation of `target` in
+/// `state` (`[owner, world, inviter, target]`); returns the invitation id. Shared with the gameplay
+/// dispatch scenario in `logout_postgres_tests.rs`.
+pub(crate) async fn insert_vip_invitation(
+    pool: &sqlx::PgPool,
+    [owner, world, inviter, target]: [[u8; 16]; 4],
+    state: i16,
+) -> TestResult<u64> {
+    insert_vip_list(pool, owner, world).await?;
     sqlx::query("INSERT INTO game_vip_entries(account_id,world_id,character_id,entry_no) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1) ON CONFLICT DO NOTHING")
-        .bind(id(owner).as_slice()).bind(id(WORLD).as_slice()).bind(id(target).as_slice()).execute(&h.pool).await?;
+        .bind(owner.as_slice()).bind(world.as_slice()).bind(target.as_slice()).execute(pool).await?;
     sqlx::query("INSERT INTO game_character_social_settings(character_id,party_invites,channel_visibility,source_policy) VALUES(encode($1,'hex')::uuid,1,1,'PARTYPVP0-PARTIES-AND-PVP-V1') ON CONFLICT DO NOTHING")
-        .bind(id(target).as_slice()).execute(&h.pool).await?;
+        .bind(target.as_slice()).execute(pool).await?;
     let number:String=sqlx::query_scalar("INSERT INTO game_vip_consents(account_id,world_id,inviter_character_id,character_id,consent,invite_expires_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,clock_timestamp()+interval '7days') RETURNING invitation_id::text")
-        .bind(id(owner).as_slice()).bind(id(WORLD).as_slice()).bind(id(inviter).as_slice()).bind(id(target).as_slice()).bind(state).fetch_one(&h.pool).await?;
+        .bind(owner.as_slice()).bind(world.as_slice()).bind(inviter.as_slice()).bind(target.as_slice()).bind(state).fetch_one(pool).await?;
     sqlx::query("UPDATE game_character_social_settings SET vip_consent_revision=vip_consent_revision+1 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(target).as_slice()).execute(&h.pool).await?;
+        .bind(target.as_slice()).execute(pool).await?;
     Ok(number.parse()?)
 }
 async fn apply(
@@ -3417,304 +3452,6 @@ fn vip_receipt_probe_finds_only_this_sessions_committed_command() -> TestResult 
                 .await,
             Err(VipError::AuthorityRejected)
         ));
-        assert_eq!(footprint(h).await?, before);
-        Ok(())
-    })
-}
-
-/// The debug-build `serve_admitted` future is deeper than the default 2 MiB test stack, so the
-/// dispatch scenario runs on a dedicated thread with an explicit stack (as the kill reward e2e).
-const DISPATCH_STACK_BYTES: usize = 64 << 20;
-
-#[test]
-fn vip_listener_down_replays_a_committed_accept_through_dispatch() -> TestResult {
-    std::thread::Builder::new()
-        .name("vip-dispatch-replay".into())
-        .stack_size(DISPATCH_STACK_BYTES)
-        .spawn(|| listener_down_dispatch_scenario().map_err(|error| error.to_string()))?
-        .join()
-        .map_err(|_| "VIP dispatch replay thread panicked")?
-        .map_err(Into::into)
-}
-
-fn listener_down_dispatch_scenario() -> TestResult {
-    use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MessageType, NodeId};
-    use crate::gameplay_transport::ComposedFreshAdmission;
-    use crate::gameplay_transport::capabilities::{OfferedCapability, SelectedCapabilities};
-    use crate::gameplay_transport::connection::{
-        AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, SessionContinuity,
-        serve_admitted,
-    };
-    use crate::gameplay_transport::fresh_evidence::FreshEvidenceSource;
-    use oteryn_protocol_oteryn::vip::{
-        CAPABILITY_VIP_V1, COMMAND_TYPE_VIP_INTENT, VipIntent, VipResultCode,
-        decode_vip_intent_result, encode_vip_intent,
-    };
-    use oteryn_protocol_oteryn::{
-        ClientCommandValue, decode_command_result, decode_wire_envelope, encode_client_command,
-    };
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::sync::Mutex;
-
-    run("vipdispatchreplay", async |h| {
-        fixture_character(h, 60, 70).await?;
-        let number = fixture_consent(h, 70, 60, CHARACTER, 1).await?;
-        let req = accept_request(1, invitation(60, 70, number));
-        let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h
-            .root
-            .open_character_authority(&seal)
-            .await
-            .map_err(debug)?;
-        let fence = harness::item_fence()?;
-        let world = fence.runtime_scope.world_id();
-        let channel = crate::foundation::ChannelId::decode(&id(harness::CHANNEL))?;
-        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-            world,
-            channel,
-            NodeId::decode(&id(1))?,
-            1,
-            1,
-            1,
-            "runtime-scope-assignment:1",
-            2,
-            ChannelContentPin::test(world),
-        )
-        .map_err(debug)?;
-        let reservation = runtime
-            .reserve_fresh_session(fence.game_session_id)
-            .map_err(debug)?;
-        let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime
-            .initialize_first_entry_position(actor)
-            .map_err(debug)?;
-        let room = crate::content::qualify_native_entry_room(world).map_err(debug)?;
-        let content = crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
-            .map_err(debug)?;
-        let door_fence = crate::world_runtime::ScopeContentGenerationFence::for_test(
-            fence.runtime_scope,
-            fence.scope_ownership_generation,
-            content,
-        );
-        let door = crate::world_runtime::bind_native_entry_door(
-            room.door(),
-            &door_fence,
-            fence.runtime_scope,
-            fence.scope_ownership_generation,
-        )
-        .map_err(debug)?;
-        let descriptor = crate::native_admission_source::descriptor::ProducerDescriptor::new(
-            "platform-test".into(),
-            ("127.0.0.1".into(), 1),
-            "source.test".into(),
-            "source.test".into(),
-            vec![rustls::pki_types::CertificateDer::from(
-                include_bytes!("../../tests/support/spell-save-tls-fixture/ca.der").to_vec(),
-            )],
-            vec![rustls::pki_types::CertificateDer::from(
-                include_bytes!("../../tests/support/spell-save-tls-fixture/client.der").to_vec(),
-            )],
-            rustls::pki_types::PrivateKeyDer::try_from(
-                include_bytes!("../../tests/support/spell-save-tls-fixture/client-key.der")
-                    .to_vec(),
-            )?,
-        )
-        .map_err(debug)?;
-        let evidence = FreshEvidenceSource::new(descriptor);
-        let spells = crate::spell::cast::v1_spell_book().map_err(debug)?;
-        let achievements =
-            crate::achievement_catalogue::AchievementCatalogue::embedded().map_err(debug)?;
-        let charms =
-            crate::content::charm_source::CanonicalCharmCatalogue::embedded().map_err(debug)?;
-        let runtime = Mutex::new(runtime);
-        let door = Mutex::new(door);
-        let owner = ComposedFreshAdmission {
-            root: &h.root,
-            character: &authority,
-            holder: &h.node,
-            evidence: &evidence,
-            world_id: world,
-            channel_id: channel,
-            required_capabilities: crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-                &[],
-                fence.runtime_scope,
-                1,
-                "policy-1",
-                crate::gameplay_transport::world_required_capabilities::offered_for_scope(false, None),
-            )
-            .map_err(debug)?,
-            runtime: &runtime,
-            movement_cells: room.movement_cells(),
-            door: &door,
-            chest: room.door(),
-            spells: &spells,
-            active_generation: None,
-            premium_coordinator: None,
-            rooms: crate::gameplay_transport::SeamRooms::new(None, None),
-            achievements: &achievements,
-            imported_charms: &charms,
-            spell_states: Mutex::default(),
-            world_gate: std::sync::Mutex::default(),
-            attack: Mutex::default(),
-            clock_origin: std::time::Instant::now(),
-            lost: std::sync::Mutex::default(),
-            revision_sequencer:
-                crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
-            quest_catalogue: None,
-            quest_sessions: std::sync::Mutex::default(),
-            chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
-            npc_conversations: Default::default(),
-            wheel_ruleset: None,
-            wheel_sessions: std::sync::Mutex::default(),
-            progression_sessions: std::sync::Mutex::default(),
-            last_positions: crate::gameplay_transport::last_position::LastPositions::default(),
-            input_gate: Default::default(),
-            premium: crate::premium::refresh::PremiumRefresher::new(
-                Default::default(),
-                h.root.clone(),
-                None,
-            ),
-            premium_sessions: std::sync::Mutex::default(),
-            fence_holders: Default::default(),
-            spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
-            loop_ground: Default::default(),
-        };
-        let presence = Arc::new(
-            crate::durability::vip_presence::PresenceOwner::new(h.root.clone(), world, 1)
-                .map_err(debug)?,
-        );
-        presence.listener_reconnected().map_err(debug)?;
-        assert!(owner.chat.vip.install_presence(presence.clone()));
-        let snapshot = owner
-            .vip_open(fence.game_session_id, Some(fence))
-            .await
-            .ok_or("VIP snapshot")?;
-        let handle = snapshot
-            .consent
-            .invitations
-            .first()
-            .ok_or("invitation handle")?
-            .handle;
-        let committed = accept(h, req).await?;
-        assert_eq!(committed.result, VipResult::Ok);
-        // The listener goes down after the commit whose acknowledgement was lost.
-        presence.listener_down().map_err(debug)?;
-        assert!(!presence.listening());
-        // The replacement snapshot has lost the accepted handle.
-        let snapshot = owner
-            .vip_open(fence.game_session_id, Some(fence))
-            .await
-            .ok_or("VIP snapshot")?;
-        assert!(snapshot.consent.invitations.is_empty());
-        assert!(
-            snapshot
-                .consent
-                .watchers
-                .first()
-                .ok_or("watcher handle")?
-                .handle
-                > handle
-        );
-        let before = footprint(h).await?;
-        let admitted = AdmittedSession {
-            game_session_id: fence.game_session_id,
-            world_id: world,
-            channel_id: channel,
-            runtime_actor: Some(actor),
-            first_entry: FirstEntryOutcome::Positioned,
-            controller: None,
-            continuity: SessionContinuity {
-                selected_capabilities: SelectedCapabilities::select(
-                    &[OfferedCapability {
-                        id: CAPABILITY_VIP_V1,
-                        requires: &[],
-                    }],
-                    &[CAPABILITY_VIP_V1],
-                )
-                .ok_or("VIP capability selection")?,
-                ..SessionContinuity::FRESH
-            },
-            item_fence: Some(fence),
-        };
-        let (mut server, mut client) = tokio::io::duplex(1 << 20);
-        // The receipted command replays even without its old handle; a new command is refused.
-        for command_id in 1..=2 {
-            let payload =
-                encode_vip_intent(&VipIntent::Accept { invitation: handle }).map_err(debug)?;
-            let frame = encode_client_command(
-                1,
-                &ClientCommandValue {
-                    command_id,
-                    command_type: COMMAND_TYPE_VIP_INTENT,
-                    payload: &payload,
-                },
-            )?;
-            client
-                .write_all(&(frame.len() as u32).to_be_bytes())
-                .await?;
-            client.write_all(&frame).await?;
-        }
-        client.shutdown().await?;
-        let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
-        assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
-        drop(server);
-        let mut output = Vec::new();
-        client.read_to_end(&mut output).await?;
-        let mut results = Vec::new();
-        let mut cursor = 0;
-        while cursor < output.len() {
-            let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
-            let envelope = decode_wire_envelope(&output[cursor + 4..cursor + 4 + length])?;
-            if envelope.message_type() == MessageType::CommandResult {
-                let result = decode_command_result(envelope.payload())?;
-                results.push((
-                    result.command_id,
-                    result.status,
-                    decode_vip_intent_result(result.payload)
-                        .map_err(debug)?
-                        .code,
-                ));
-            }
-            cursor += 4 + length;
-        }
-        assert_eq!(
-            results,
-            vec![
-                (
-                    1,
-                    crate::foundation::CommandStatus::Accepted,
-                    VipResultCode::Ok
-                ),
-                (
-                    2,
-                    crate::foundation::CommandStatus::Rejected,
-                    VipResultCode::VipUnavailable,
-                ),
-            ]
-        );
-        assert_eq!(footprint(h).await?, before);
-        // A receipt lookup that cannot finish leaves the outcome unknown: the CommandId stays
-        // unsequenced, so a later resend can still replay the committed accept.
-        let mut lock = h.pool.begin().await?;
-        sqlx::query("LOCK TABLE game_vip_command_receipts IN ACCESS EXCLUSIVE MODE")
-            .execute(&mut *lock)
-            .await?;
-        let payload =
-            encode_vip_intent(&VipIntent::Accept { invitation: handle }).map_err(debug)?;
-        let (outcome, deltas) = owner
-            .vip_command(
-                crate::gameplay_transport::connection::UseCommand {
-                    game_session_id: fence.game_session_id,
-                    command_id: 1,
-                    item_fence: Some(fence),
-                },
-                &payload,
-            )
-            .await;
-        lock.rollback().await?;
-        assert!(outcome.unknown);
-        assert_eq!(outcome.result.code, VipResultCode::VipUnavailable);
-        assert!(deltas.is_empty());
         assert_eq!(footprint(h).await?, before);
         Ok(())
     })
