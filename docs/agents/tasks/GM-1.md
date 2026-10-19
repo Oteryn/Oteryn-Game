@@ -155,6 +155,25 @@ Fourth pre-push review round (receipt signer, disconnected mutes):
   now drops desk_b's connection before the refresh and the unmute.
 - The PostgreSQL tests run in the `durability_postgres` job.
 
+Fifth pre-push review round (unmute clock skew, sanction verification):
+
+- An unmute no longer fails when the unmuting node's clock is behind the
+  node that wrote the mute. The lift time stays the unmute's own signed
+  execution time, which the bound trigger requires, so migration 0134 now
+  checks `lifted_at>0` instead of `lifted_at>=starts_at`. Before, the CHECK
+  rolled back a valid signed unmute and left the Character muted. Test:
+  `staff_pg_executor_unmute_on_a_node_clock_behind_the_mute_start_still_lifts`.
+- `oteryn-game-ops staff audit-verify` and the restore preflight now
+  compare every sanction row with its retained signed operations, the same
+  binding the `game_character_sanction_bound` trigger checks at write time
+  (without the same-transaction and roster parts, which do not hold for
+  history). A row that a database owner rewrote with the triggers off, for
+  example a longer `ends_at`, now fails verification. Test:
+  `staff_pg_sanction_check_detects_rows_rewritten_past_their_signed_operation`;
+  `staff_pg_staff_audit_envelopes_expire_after_retention_and_verification_still_passes`
+  also asserts that a genuine history passes the check.
+- The PostgreSQL tests run in the `durability_postgres` job.
+
 Wiring is unchanged. Production staff requests reach the executor through
 `control_loop`, then `ControlInput::Staff`, then `serve_staff_control`. The
 e2e case is `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,

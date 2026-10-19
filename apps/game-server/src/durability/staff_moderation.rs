@@ -881,7 +881,61 @@ async fn open_report(
     .await?)
 }
 
+/// Compare every sanction with its retained signed operations. Historical
+/// bindings survive roster rotation and do not require the original transaction.
+pub(crate) async fn unbound_sanctions_in_transaction(
+    connection: &mut PgConnection,
+    environment: &str,
+) -> Result<bool, StaffError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_sanctions s WHERE s.environment=$1 AND (\
+         NOT EXISTS(SELECT 1 FROM game_staff_operations op \
+          CROSS JOIN LATERAL (SELECT convert_from(op.request_bytes,'UTF8')::jsonb AS r,\
+           convert_from(op.outcome_bytes,'UTF8')::jsonb AS o) signed \
+          WHERE op.action_id=s.mute_action_id AND op.environment=s.environment AND NOT (\
+           r->>'environment' IS DISTINCT FROM s.environment \
+           OR o->>'disposition' IS DISTINCT FROM 'COMMITTED' \
+           OR o->>'result' IS DISTINCT FROM 'OK' \
+           OR r->'action'->>'kind' IS DISTINCT FROM 'MUTE' \
+           OR lower(r->'action'->>'character_id') IS DISTINCT FROM s.character_id::text \
+           OR r->'action'->>'duration_ms' IS DISTINCT FROM (s.ends_at-s.starts_at)::text \
+           OR o->>'occurred_at' IS DISTINCT FROM s.starts_at::text \
+           OR op.principal IS DISTINCT FROM s.actor_principal)) \
+         OR (s.status='LIFTED' AND NOT EXISTS(SELECT 1 FROM game_staff_operations op \
+          CROSS JOIN LATERAL (SELECT convert_from(op.request_bytes,'UTF8')::jsonb AS r,\
+           convert_from(op.outcome_bytes,'UTF8')::jsonb AS o) signed \
+          WHERE op.action_id=s.lift_action_id AND op.environment=s.environment AND NOT (\
+           r->>'environment' IS DISTINCT FROM s.environment \
+           OR o->>'disposition' IS DISTINCT FROM 'COMMITTED' \
+           OR o->>'result' IS DISTINCT FROM 'OK' \
+           OR r->'action'->>'kind' IS DISTINCT FROM 'UNMUTE' \
+           OR lower(r->'action'->>'sanction_id') IS DISTINCT FROM s.sanction_id::text \
+           OR o->>'occurred_at' IS DISTINCT FROM s.lifted_at::text)))))",
+    )
+    .bind(environment)
+    .fetch_one(connection)
+    .await?)
+}
+
 impl DurabilityRoot {
+    /// Detect sanctions whose enforced state differs from their signed history.
+    pub async fn staff_sanctions_have_unbound_rows(
+        &self,
+        environment: String,
+    ) -> Result<bool, StaffError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    sqlx::query("SET TRANSACTION READ ONLY")
+                        .execute(&mut *tx)
+                        .await?;
+                    Ok(unbound_sanctions_in_transaction(&mut tx, &environment).await)
+                })
+            })
+            .await?
+    }
+
     /// GM-1: serve one staff control message and return the exact answer.
     /// The signature and the node scope are checked before any connection.
     pub async fn serve_staff_control(
@@ -1501,6 +1555,12 @@ impl DurabilityRoot {
         cursor.finish(head.sequence, &head.digest)?;
         if self
             .staff_evidence_has_orphans(environment.clone(), head.sequence)
+            .await?
+        {
+            return Err(Error::Chain.into());
+        }
+        if self
+            .staff_sanctions_have_unbound_rows(environment.clone())
             .await?
         {
             return Err(Error::Chain.into());

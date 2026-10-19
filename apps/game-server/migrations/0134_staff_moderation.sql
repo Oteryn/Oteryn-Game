@@ -105,8 +105,10 @@ CREATE TABLE game_character_sanctions (
  lift_action_id uuid UNIQUE
   REFERENCES game_staff_operations(action_id) DEFERRABLE INITIALLY DEFERRED,
  CHECK(ends_at>starts_at AND ends_at-starts_at<=31536000000),
+ -- The lift is the unmute's signed execution time on its node's clock, which
+ -- may precede the start on another node's clock (as report close does for ended_at).
  CHECK((status='ACTIVE' AND revision=1 AND lifted_at IS NULL AND lift_action_id IS NULL)
-  OR (status='LIFTED' AND revision=2 AND lifted_at>=starts_at AND lift_action_id IS NOT NULL)));
+  OR (status='LIFTED' AND revision=2 AND lifted_at>0 AND lift_action_id IS NOT NULL)));
 CREATE INDEX game_character_sanctions_active ON game_character_sanctions(character_id,ends_at)
  WHERE status='ACTIVE';
 CREATE FUNCTION game_character_sanction_lift_only() RETURNS trigger LANGUAGE plpgsql AS $$

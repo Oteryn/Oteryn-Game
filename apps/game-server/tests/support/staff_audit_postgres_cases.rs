@@ -2725,6 +2725,17 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             self.send_to(action, here()).await
         }
         async fn send_to(&mut self, action: Action, node: StaffNode) -> Result<Answer, StaffError> {
+            self.send_to_at(action, node, NOW).await
+        }
+        async fn send_at(&mut self, action: Action, now: u64) -> Result<Answer, StaffError> {
+            self.send_to_at(action, here(), now).await
+        }
+        async fn send_to_at(
+            &mut self,
+            action: Action,
+            node: StaffNode,
+            now: u64,
+        ) -> Result<Answer, StaffError> {
             self.operation += 1;
             let mut request = self
                 .f
@@ -2747,7 +2758,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                     Arc::clone(&self.desk),
                     node,
                     signed,
-                    NOW,
+                    now,
                 )
                 .await?;
             self.sequence += 1;
@@ -2941,6 +2952,145 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
         (answer.outcome.disposition, answer.outcome.result)
     }
     const COMMITTED: (Disposition, ResultCode) = (Disposition::Committed, ResultCode::Ok);
+
+    #[test]
+    fn staff_pg_executor_unmute_on_a_node_clock_behind_the_mute_start_still_lifts() -> TestResult {
+        exec_case("unmuteclock", Some("GM"), async |e| {
+            let target = id(TARGET);
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let sanction = muted.data.ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let lifted = e
+                .send_at(
+                    Action::Unmute {
+                        sanction_id: sanction.clone(),
+                    },
+                    NOW - 1_000,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            let row: (String, i16, i64, String) = sqlx::query_as(
+                "SELECT status,revision,lifted_at,lift_action_id::text \
+                 FROM game_character_sanctions WHERE sanction_id=$1::uuid",
+            )
+            .bind(&sanction)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_eq!(
+                row,
+                (
+                    "LIFTED".into(),
+                    2,
+                    i64::try_from(NOW - 1_000)?,
+                    lifted.outcome.action_id
+                )
+            );
+            assert_eq!(e.desk.mute_seconds(&target, NOW), None);
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(e.f.trust.environment(), target, NOW)
+                    .await
+                    .map_err(debug)?,
+                None
+            );
+            assert!(
+                !e.root
+                    .staff_evidence_has_orphans(e.f.trust.environment().into(), e.sequence)
+                    .await
+                    .map_err(debug)?
+            );
+            assert!(
+                !e.root
+                    .staff_sanctions_have_unbound_rows(e.f.trust.environment().into())
+                    .await
+                    .map_err(debug)?
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_sanction_check_detects_rows_rewritten_past_their_signed_operation() -> TestResult {
+        exec_case("sanctionbinding", Some("GM"), async |e| {
+            let active = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&active), COMMITTED);
+            let lifted = e.send(mute(REPORTER, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            let sanction = lifted.data.ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let unmute = e
+                .send(Action::Unmute {
+                    sanction_id: sanction,
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&unmute), COMMITTED);
+            let environment = e.f.trust.environment().to_owned();
+            assert!(
+                !e.root
+                    .staff_sanctions_have_unbound_rows(environment.clone())
+                    .await
+                    .map_err(debug)?
+            );
+            for (statement, character, expected) in [
+                (
+                    "UPDATE game_character_sanctions SET ends_at=ends_at+60000 WHERE character_id=$1::uuid",
+                    TARGET,
+                    true,
+                ),
+                (
+                    "UPDATE game_character_sanctions SET ends_at=ends_at-60000 WHERE character_id=$1::uuid",
+                    TARGET,
+                    false,
+                ),
+                (
+                    "UPDATE game_character_sanctions SET lifted_at=lifted_at+1 WHERE character_id=$1::uuid",
+                    REPORTER,
+                    true,
+                ),
+                (
+                    "UPDATE game_character_sanctions SET lifted_at=lifted_at-1 WHERE character_id=$1::uuid",
+                    REPORTER,
+                    false,
+                ),
+                (
+                    "UPDATE game_character_sanctions SET actor_principal='other' WHERE character_id=$1::uuid",
+                    TARGET,
+                    true,
+                ),
+                (
+                    "UPDATE game_character_sanctions SET actor_principal='operator' WHERE character_id=$1::uuid",
+                    TARGET,
+                    false,
+                ),
+            ] {
+                let mut tx = e.f.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                let changed = sqlx::query(statement)
+                    .bind(character)
+                    .execute(&mut *tx)
+                    .await?;
+                assert_eq!(changed.rows_affected(), 1);
+                tx.commit().await?;
+                assert_eq!(
+                    e.root
+                        .staff_sanctions_have_unbound_rows(environment.clone())
+                        .await
+                        .map_err(debug)?,
+                    expected
+                );
+            }
+            Ok(())
+        })
+    }
 
     #[test]
     fn staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit() -> TestResult {
@@ -3321,6 +3471,12 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 }
             }
             cursor.finish(e.sequence, &e.head).map_err(debug)?;
+            assert!(
+                !e.root
+                    .staff_sanctions_have_unbound_rows(e.f.trust.environment().into())
+                    .await
+                    .map_err(debug)?
+            );
             assert!(
                 !e.root
                     .staff_evidence_has_orphans(e.f.trust.environment().into(), e.sequence)
