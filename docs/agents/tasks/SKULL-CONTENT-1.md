@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # SKULL-CONTENT-1
 
 ```yaml
@@ -70,3 +72,7 @@ Only explicit sourced values are selected. Wiki omissions and unsupported exact 
 ## Index overlap preserved
 
 PR#2203 currently claims `rulesets/pvp/skulls/index.json`. The source successor therefore preserves both ruleset/index bytes from its frozen predecessor. The new[white-skull timing supplement](white-skull-timing.json) qualifies the conditional60/900-second rule for coordinator application. The old ruleset placeholder remains counted as held until integration; it is no longer an external-source research gap. No unqualified category or timer is invented.
+
+## Working-data completion —2026-10-19
+
+Populated4 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/skull-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

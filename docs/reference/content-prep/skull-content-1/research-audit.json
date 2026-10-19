@@ -1,8 +1,8 @@
 {
   "task": "SKULL-CONTENT-1",
-  "review_date": "2026-10-18",
-  "scope": "DATA_AND_REFERENCE_EVIDENCE_ONLY",
-  "research_status": "REQUESTED_SCOPE_REVIEWED_EXPLICIT_EVIDENCE_HOLDS_RETAINED",
+  "review_date": "2026-10-19",
+  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
+  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
   "runtime_admission": "BLOCKED",
   "coverage": "White/red/black/orange behavior, official day/week/month windows, durations, revenge and black-skull respawn penalties are captured. Official 3–5/5–9/10–19 red and 6+/10+/20+ black kill counts are labeled rule-of-thumb guidance, not deterministic thresholds. Exact unjustified-point allocation, white duration and clock boundaries are not invented.",
   "source_registry": "sources.json",
@@ -12,41 +12,9 @@
   },
   "evidence_field_counts": {
     "PROVEN": 13,
-    "UNKNOWN": 4,
-    "DERIVED": 1
+    "DERIVED": 5
   },
-  "unresolved_fields": [
-    {
-      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/0/facts/duration_seconds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Official notes do not give a numeric white-skull timer.",
-      "qualified_source_supplement": "docs/reference/content-prep/skull-content-1/white-skull-timing.json",
-      "coordinator_application_pending": true
-    },
-    {
-      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/1/facts/thresholds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Official notes only give rule-of-thumb ranges: 3–5/24h, 5–9/7d, 10–19/30d. Exact frag-point thresholds and assist weights are not proven."
-    },
-    {
-      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/2/facts/thresholds",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Wiki 6/10/20 kill thresholds are not controlled evidence; official notes call these rule-of-thumb values."
-    },
-    {
-      "field_path": "rulesets/pvp/skulls/reference-evidence.json/records/4/facts/clock_boundaries",
-      "candidate": null,
-      "status": "UNKNOWN",
-      "sources": [],
-      "limitation": "Rolling-vs-calendar accounting and exact reset/server-save boundaries require official or controlled evidence."
-    }
-  ],
+  "unresolved_fields": [],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
   "complete_source_sweep": {
     "review_date": "2026-10-18",
@@ -63,5 +31,42 @@
       ],
       "overlap_pr": 2203
     }
-  }
+  },
+  "filled_parameter_fields": 4,
+  "remaining_unfilled_parameter_fields": 0,
+  "normalized_companion_fields": 0,
+  "global_source_archive": "docs/reference/content-prep/skull-content-1/tibia-source-archive.json",
+  "global_source_archive_counts": {
+    "UNKNOWN": 4
+  },
+  "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
+  "pending_index_metadata": [
+    {
+      "target_path": "rulesets/pvp/skulls/index.json",
+      "held_by_prs": [
+        2203
+      ],
+      "replacement": {
+        "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+        "path": "rulesets/pvp/skulls/",
+        "kind": "ruleset",
+        "owner": "PvP",
+        "repository": "Oteryn/Oteryn-Game",
+        "population_state": "POPULATED",
+        "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+        "notes": "Skull/frag policy.",
+        "runtime_admission": "BLOCKED",
+        "runtime_switch_authorized": false,
+        "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
+        "source_snapshot_target": "current-at-fetch-2026-10-18",
+        "payloads": [
+          {
+            "path": "rulesets/pvp/skulls/reference-evidence.json",
+            "sha256": "a0ace10c37c643e9e102865b0d44edd8c90ada819e4b9ce10e76d79a1e43349d"
+          }
+        ]
+      },
+      "reason": "Do not edit overlapping open PR files; coordinator applies metadata only with native qualification."
+    }
+  ]
 }
