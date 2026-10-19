@@ -881,9 +881,10 @@ async fn open_report(
     .await?)
 }
 
-/// Compare every sanction with its retained signed operations. Historical
+/// Compare sanctions and report transitions with their retained signed operations
+/// in both directions, allowing only proven unapplied restore effects. Historical
 /// bindings survive roster rotation and do not require the original transaction.
-pub(crate) async fn unbound_sanctions_in_transaction(
+pub(crate) async fn unbound_moderation_in_transaction(
     connection: &mut PgConnection,
     environment: &str,
 ) -> Result<bool, StaffError> {
@@ -910,7 +911,52 @@ pub(crate) async fn unbound_sanctions_in_transaction(
            OR o->>'result' IS DISTINCT FROM 'OK' \
            OR r->'action'->>'kind' IS DISTINCT FROM 'UNMUTE' \
            OR lower(r->'action'->>'sanction_id') IS DISTINCT FROM s.sanction_id::text \
-           OR o->>'occurred_at' IS DISTINCT FROM s.lifted_at::text)))))",
+           OR o->>'occurred_at' IS DISTINCT FROM s.lifted_at::text))))) \
+         OR EXISTS(SELECT 1 FROM game_item_text_reports t \
+          CROSS JOIN LATERAL (VALUES ('REPORT_CLOSE',t.closed_action_id),\
+           ('REPORT_CLEAR_TEXT',t.cleared_action_id)) effect(kind,action_id) \
+          LEFT JOIN game_staff_operations op ON op.action_id=effect.action_id \
+          CROSS JOIN LATERAL (SELECT convert_from(op.request_bytes,'UTF8')::jsonb AS r,\
+           convert_from(op.outcome_bytes,'UTF8')::jsonb AS o) signed \
+          WHERE effect.action_id IS NOT NULL AND (op.action_id IS NULL OR (op.environment=$1 AND (\
+           r->>'environment' IS DISTINCT FROM op.environment \
+           OR o->>'disposition' IS DISTINCT FROM 'COMMITTED' \
+           OR o->>'result' IS DISTINCT FROM 'OK' \
+           OR r->'action'->>'kind' IS DISTINCT FROM effect.kind \
+           OR lower(r->'action'->>'report_id') IS DISTINCT FROM t.report_id::text \
+           OR lower(r->'scope'->>'world_id') IS DISTINCT FROM t.world_id::text \
+           OR (effect.kind='REPORT_CLOSE' AND (t.state IS DISTINCT FROM 'CLOSED' \
+            OR t.ended_at IS DISTINCT FROM GREATEST((o->>'occurred_at')::bigint,t.created_at))) \
+           OR (effect.kind='REPORT_CLEAR_TEXT' \
+            AND r->'action'->>'text_revision' IS DISTINCT FROM t.text_revision::text))))) \
+         OR EXISTS(SELECT 1 FROM game_staff_operations op \
+          CROSS JOIN LATERAL (SELECT convert_from(op.request_bytes,'UTF8')::jsonb AS r,\
+           convert_from(op.outcome_bytes,'UTF8')::jsonb AS o) signed \
+          CROSS JOIN LATERAL (SELECT r->'action'->>'kind' AS kind) mutation \
+          WHERE op.environment=$1 AND o->>'disposition'='COMMITTED' AND o->>'result'='OK' \
+           AND mutation.kind IN ('MUTE','UNMUTE','REPORT_CLOSE','REPORT_CLEAR_TEXT') AND (\
+            CASE mutation.kind \
+             WHEN 'MUTE' THEN EXISTS(SELECT 1 FROM game_character_sanctions \
+              WHERE mute_action_id=op.action_id) \
+             WHEN 'UNMUTE' THEN EXISTS(SELECT 1 FROM game_character_sanctions \
+              WHERE lift_action_id=op.action_id) \
+             WHEN 'REPORT_CLOSE' THEN EXISTS(SELECT 1 FROM game_item_text_reports \
+              WHERE closed_action_id=op.action_id) \
+             WHEN 'REPORT_CLEAR_TEXT' THEN EXISTS(SELECT 1 FROM game_item_text_reports \
+              WHERE cleared_action_id=op.action_id) END \
+            = EXISTS(SELECT 1 FROM game_staff_restore_unapplied p \
+             WHERE p.action_id=op.action_id AND p.environment=op.environment \
+              AND p.created_xact_id=op.created_xact_id \
+              AND p.reason=CASE WHEN mutation.kind='MUTE' THEN 'REFUSED_NOW' ELSE 'NOT_REAPPLIED' END))) \
+         OR EXISTS(SELECT 1 FROM game_staff_restore_unapplied p WHERE p.environment=$1 \
+          AND NOT EXISTS(SELECT 1 FROM game_staff_operations op \
+           CROSS JOIN LATERAL (SELECT convert_from(op.request_bytes,'UTF8')::jsonb AS r,\
+            convert_from(op.outcome_bytes,'UTF8')::jsonb AS o) signed \
+           WHERE op.action_id=p.action_id AND op.environment=p.environment \
+            AND op.created_xact_id=p.created_xact_id AND r->>'environment'=op.environment \
+            AND o->>'disposition'='COMMITTED' AND o->>'result'='OK' \
+            AND r->'action'->>'kind' IN ('MUTE','UNMUTE','REPORT_CLOSE','REPORT_CLEAR_TEXT') \
+            AND p.reason=CASE WHEN r->'action'->>'kind'='MUTE' THEN 'REFUSED_NOW' ELSE 'NOT_REAPPLIED' END))",
     )
     .bind(environment)
     .fetch_one(connection)
@@ -918,8 +964,9 @@ pub(crate) async fn unbound_sanctions_in_transaction(
 }
 
 impl DurabilityRoot {
-    /// Detect sanctions whose enforced state differs from their signed history.
-    pub async fn staff_sanctions_have_unbound_rows(
+    /// Compare sanctions and report transitions with signed history and restore
+    /// provenance, detecting missing effects as well as misbound moderation rows.
+    pub async fn staff_moderation_has_unbound_rows(
         &self,
         environment: String,
     ) -> Result<bool, StaffError> {
@@ -930,7 +977,7 @@ impl DurabilityRoot {
                     sqlx::query("SET TRANSACTION READ ONLY")
                         .execute(&mut *tx)
                         .await?;
-                    Ok(unbound_sanctions_in_transaction(&mut tx, &environment).await)
+                    Ok(unbound_moderation_in_transaction(&mut tx, &environment).await)
                 })
             })
             .await?
@@ -1298,13 +1345,14 @@ pub enum RestoreKind {
     /// A COMMITTED mute, re-applied through the request's own checks.
     Replayed,
     /// A COMMITTED mute the current state refuses: no effect is applied, and
-    /// the receipted outcome is kept as chain history.
+    /// the receipted outcome and unapplied effect are recorded as chain history.
     RefusedNow(ResultCode),
     /// A REFUSED mutation with its REFUSED receipt: never run, refusal stored.
     RefusalStored,
     /// A read: its outcome is stored, nothing is disclosed.
     Recorded,
     /// A COMMITTED unmute, kick or report transition: recorded, never re-run.
+    /// Unapplied database effects are recorded with restore provenance.
     NotReapplied,
     /// An operator receipt, stored on its chain link.
     Receipt,
@@ -1560,7 +1608,7 @@ impl DurabilityRoot {
             return Err(Error::Chain.into());
         }
         if self
-            .staff_sanctions_have_unbound_rows(environment.clone())
+            .staff_moderation_has_unbound_rows(environment.clone())
             .await?
         {
             return Err(Error::Chain.into());
@@ -1787,6 +1835,16 @@ async fn restore_in_transaction(
                 if kind == RestoreKind::Replayed {
                     kind = replay_mute(connection, trust, &request, &outcome, occurred_at).await?;
                 }
+                let unapplied_reason = match (kind, &request.request().action) {
+                    (RestoreKind::RefusedNow(_), _) => Some("REFUSED_NOW"),
+                    (
+                        RestoreKind::NotReapplied,
+                        Action::Unmute { .. }
+                        | Action::ReportClose { .. }
+                        | Action::ReportClearText { .. },
+                    ) => Some("NOT_REAPPLIED"),
+                    _ => None,
+                };
                 let pending =
                     super::staff_action::restored_pending(connection, request, occurred_at).await?;
                 let stored = finish_in_transaction(
@@ -1799,6 +1857,17 @@ async fn restore_in_transaction(
                 .await?;
                 if stored.bytes != bytes {
                     return Err(Error::Binding.into());
+                }
+                if let Some(reason) = unapplied_reason {
+                    sqlx::query(
+                        "INSERT INTO game_staff_restore_unapplied(action_id,environment,reason) \
+                         VALUES($1::uuid,$2,$3)",
+                    )
+                    .bind(&stored.outcome.action_id)
+                    .bind(environment)
+                    .bind(reason)
+                    .execute(&mut *connection)
+                    .await?;
                 }
                 steps.push(RestoreStep {
                     sequence,

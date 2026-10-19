@@ -2847,6 +2847,27 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 .execute(&mut *tx)
                 .await?;
             for statement in [
+                // A close above the head is undone with its counters, a clear
+                // loses its binding and a lift is undone, as a PITR to the head does.
+                "UPDATE game_item_text_report_accounts a SET open_reports=a.open_reports+(SELECT \
+                 count(*) FROM game_item_text_reports t WHERE t.reporter_account_id=a.account_id \
+                 AND t.closed_action_id IN (SELECT action_id FROM game_staff_operations \
+                 WHERE environment=$1 AND control_seq>$2::text::numeric))",
+                "UPDATE game_item_text_report_worlds w SET open_snapshots=w.open_snapshots+(SELECT \
+                 count(*) FROM game_item_text_reports t WHERE t.world_id=w.world_id \
+                 AND t.closed_action_id IN (SELECT action_id FROM game_staff_operations \
+                 WHERE environment=$1 AND control_seq>$2::text::numeric))",
+                "UPDATE game_item_text_reports SET state='OPEN',revision=1,ended_at=NULL,\
+                 closed_action_id=NULL WHERE closed_action_id IN (SELECT action_id \
+                 FROM game_staff_operations WHERE environment=$1 AND control_seq>$2::text::numeric)",
+                "UPDATE game_item_text_reports SET cleared_action_id=NULL WHERE cleared_action_id \
+                 IN (SELECT action_id FROM game_staff_operations WHERE environment=$1 \
+                 AND control_seq>$2::text::numeric)",
+                "UPDATE game_character_sanctions SET status='ACTIVE',revision=1,lifted_at=NULL,\
+                 lift_action_id=NULL WHERE lift_action_id IN (SELECT action_id \
+                 FROM game_staff_operations WHERE environment=$1 AND control_seq>$2::text::numeric)",
+                "DELETE FROM game_staff_restore_unapplied WHERE action_id IN (SELECT action_id \
+                 FROM game_staff_operations WHERE environment=$1 AND control_seq>$2::text::numeric)",
                 "DELETE FROM game_character_sanctions WHERE mute_action_id IN (SELECT action_id \
                  FROM game_staff_operations WHERE environment=$1 AND control_seq>$2::text::numeric)",
                 "DELETE FROM game_staff_action_receipts WHERE environment=$1 \
@@ -3005,7 +3026,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             );
             assert!(
                 !e.root
-                    .staff_sanctions_have_unbound_rows(e.f.trust.environment().into())
+                    .staff_moderation_has_unbound_rows(e.f.trust.environment().into())
                     .await
                     .map_err(debug)?
             );
@@ -3034,7 +3055,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             let environment = e.f.trust.environment().to_owned();
             assert!(
                 !e.root
-                    .staff_sanctions_have_unbound_rows(environment.clone())
+                    .staff_moderation_has_unbound_rows(environment.clone())
                     .await
                     .map_err(debug)?
             );
@@ -3082,11 +3103,186 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
                 tx.commit().await?;
                 assert_eq!(
                     e.root
-                        .staff_sanctions_have_unbound_rows(environment.clone())
+                        .staff_moderation_has_unbound_rows(environment.clone())
                         .await
                         .map_err(debug)?,
                     expected
                 );
+            }
+            Ok(())
+        })
+    }
+
+    /// One owner statement run with the triggers off, as a database owner
+    /// rewriting history would; returns the rows it changed.
+    async fn rewrite(e: &Exec, statement: &'static str, binds: &[&str]) -> TestResult<u64> {
+        let mut tx = e.f.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        let mut query = sqlx::query(statement);
+        for bind in binds {
+            query = query.bind(*bind);
+        }
+        let changed = query.execute(&mut *tx).await?.rows_affected();
+        tx.commit().await?;
+        Ok(changed)
+    }
+    async fn unbound(e: &Exec) -> TestResult<bool> {
+        e.root
+            .staff_moderation_has_unbound_rows(e.f.trust.environment().into())
+            .await
+            .map_err(debug)
+    }
+    async fn unapplied(e: &Exec) -> TestResult<Vec<(String, String)>> {
+        Ok(sqlx::query_as(
+            "SELECT action_id::text,reason FROM game_staff_restore_unapplied ORDER BY action_id",
+        )
+        .fetch_all(&e.f.pool)
+        .await?)
+    }
+
+    /// GM-1 (Codex P1 4316613808, P2 4316613817): `staff audit-verify` and the
+    /// restore preflight compare both directions. A COMMITTED mutation whose
+    /// effect row is gone or undone (a deleted mute, an unmute, close or clear
+    /// reverted) is found, as is a report row whose close or clear no longer
+    /// matches its signed REPORT_CLOSE or REPORT_CLEAR_TEXT; each repair
+    /// verifies again.
+    #[test]
+    fn staff_pg_moderation_check_detects_missing_effects_and_rewritten_reports() -> TestResult {
+        exec_case("moderationbinding", Some("ADMIN"), async |e| {
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let lifted = e.send(mute(REPORTER, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            let sanction = lifted.data.ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let unmute = e
+                .send(Action::Unmute {
+                    sanction_id: sanction.clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&unmute), COMMITTED);
+            let mut reports = Vec::new();
+            for n in 0..2 {
+                reports.push(admitted(
+                    e.root
+                        .create_item_text_report(reported(n), REPORTED, OPEN_SNAPSHOTS_PER_WORLD)
+                        .await
+                        .map_err(debug)?,
+                )?);
+            }
+            let closed = e
+                .send(Action::ReportClose {
+                    report_id: reports[0].clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&closed), COMMITTED);
+            let cleared = e
+                .send(Action::ReportClearText {
+                    report_id: reports[1].clone(),
+                    text_revision: Decimal(1),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&cleared), COMMITTED);
+            assert!(!unbound(e).await?);
+            let (closed_report, cleared_report) = (reports[0].as_str(), reports[1].as_str());
+            let (lift, close, clear) = (
+                unmute.outcome.action_id.as_str(),
+                closed.outcome.action_id.as_str(),
+                cleared.outcome.action_id.as_str(),
+            );
+            for (case, statement, binds, expected) in [
+                (
+                    "unmute undone",
+                    "UPDATE game_character_sanctions SET status='ACTIVE',revision=1,\
+                     lifted_at=NULL,lift_action_id=NULL WHERE sanction_id=$1::uuid",
+                    vec![sanction.as_str()],
+                    true,
+                ),
+                (
+                    "unmute repaired",
+                    "UPDATE game_character_sanctions s SET status='LIFTED',revision=2,\
+                     lift_action_id=op.action_id,lifted_at=(convert_from(op.outcome_bytes,\
+                     'UTF8')::jsonb->>'occurred_at')::bigint FROM game_staff_operations op \
+                     WHERE s.sanction_id=$1::uuid AND op.action_id=$2::uuid",
+                    vec![sanction.as_str(), lift],
+                    false,
+                ),
+                (
+                    "close undone",
+                    "UPDATE game_item_text_reports SET state='OPEN',revision=1,ended_at=NULL,\
+                     closed_action_id=NULL WHERE report_id=$1::uuid",
+                    vec![closed_report],
+                    true,
+                ),
+                (
+                    "close repaired",
+                    "UPDATE game_item_text_reports SET state='CLOSED',revision=2,\
+                     ended_at=created_at,closed_action_id=$2::uuid WHERE report_id=$1::uuid",
+                    vec![closed_report, close],
+                    false,
+                ),
+                (
+                    "close ended later",
+                    "UPDATE game_item_text_reports SET ended_at=ended_at+1 WHERE report_id=$1::uuid",
+                    vec![closed_report],
+                    true,
+                ),
+                (
+                    "close end restored",
+                    "UPDATE game_item_text_reports SET ended_at=ended_at-1 WHERE report_id=$1::uuid",
+                    vec![closed_report],
+                    false,
+                ),
+                (
+                    "closed report moved to another World",
+                    "UPDATE game_item_text_reports SET world_id='00000000-0000-7000-8000-000000000020' \
+                     WHERE report_id=$1::uuid",
+                    vec![closed_report],
+                    true,
+                ),
+                (
+                    "closed report moved back",
+                    "UPDATE game_item_text_reports SET world_id='00000000-0000-7000-8000-000000000010' \
+                     WHERE report_id=$1::uuid",
+                    vec![closed_report],
+                    false,
+                ),
+                (
+                    "clear undone",
+                    "UPDATE game_item_text_reports SET cleared_action_id=NULL WHERE report_id=$1::uuid",
+                    vec![cleared_report],
+                    true,
+                ),
+                (
+                    "clear bound to the close",
+                    "UPDATE game_item_text_reports SET cleared_action_id=$2::uuid \
+                     WHERE report_id=$1::uuid",
+                    vec![cleared_report, close],
+                    true,
+                ),
+                (
+                    "clear repaired",
+                    "UPDATE game_item_text_reports SET cleared_action_id=$2::uuid \
+                     WHERE report_id=$1::uuid",
+                    vec![cleared_report, clear],
+                    false,
+                ),
+                (
+                    "mute deleted",
+                    "DELETE FROM game_character_sanctions WHERE character_id=$1::uuid",
+                    vec![TARGET],
+                    true,
+                ),
+            ] {
+                assert_eq!(rewrite(e, statement, &binds).await?, 1, "{case}");
+                assert_eq!(unbound(e).await?, expected, "{case}");
             }
             Ok(())
         })
@@ -3473,7 +3669,7 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             cursor.finish(e.sequence, &e.head).map_err(debug)?;
             assert!(
                 !e.root
-                    .staff_sanctions_have_unbound_rows(e.f.trust.environment().into())
+                    .staff_moderation_has_unbound_rows(e.f.trust.environment().into())
                     .await
                     .map_err(debug)?
             );
@@ -5149,6 +5345,266 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             );
             assert_eq!(head_of(e).await?, top);
             assert_eq!(sanctions(e, REPORTER).await?, 0);
+            Ok(())
+        })
+    }
+
+    /// GM-1 (Codex P1 4316613808): a restore that leaves a COMMITTED effect
+    /// unapplied records it with the operation it stores, in the same
+    /// transaction: an unmute, a close and a clear are not re-run, and a mute
+    /// the current state refuses applies nothing. The restored database then
+    /// verifies, a second run records nothing more, no member LOGIN can change,
+    /// remove or add a record, and a record removed by an owner leaves its
+    /// operation unbound, which stops the next restore.
+    #[test]
+    fn staff_pg_restore_records_each_unapplied_effect_and_stays_verifiable() -> TestResult {
+        exec_case("restoreunapplied", Some("ADMIN"), async |e| {
+            let lifted = e.send(mute(REPORTER, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&lifted), COMMITTED);
+            let sanction = lifted.data.as_ref().ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let mut reports = Vec::new();
+            for n in 0..2 {
+                reports.push(admitted(
+                    e.root
+                        .create_item_text_report(reported(n), REPORTED, OPEN_SNAPSHOTS_PER_WORLD)
+                        .await
+                        .map_err(debug)?,
+                )?);
+            }
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let unmute = e
+                .send(Action::Unmute {
+                    sanction_id: sanction.clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&unmute), COMMITTED);
+            let closed = e
+                .send(Action::ReportClose {
+                    report_id: reports[0].clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&closed), COMMITTED);
+            let cleared = e
+                .send(Action::ReportClearText {
+                    report_id: reports[1].clone(),
+                    text_revision: Decimal(1),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&cleared), COMMITTED);
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let top = (e.sequence, e.head.clone());
+            let retained = e.retained.clone();
+            e.restore_to(base, &base_head).await?;
+            assert!(!unbound(e).await?);
+            assert!(unapplied(e).await?.is_empty());
+            // The mute's target has left the World since, so it is refused now.
+            assert_eq!(
+                rewrite(
+                    e,
+                    "UPDATE game_character_roots SET world_id='00000000-0000-7000-8000-000000000020' \
+                     WHERE character_id=$1::uuid",
+                    &[TARGET],
+                )
+                .await?,
+                1
+            );
+            let steps = e.replay(retained.clone()).await.map_err(debug)?;
+            assert_eq!(
+                kinds(&steps),
+                [
+                    RestoreKind::NotReapplied,
+                    RestoreKind::Receipt,
+                    RestoreKind::NotReapplied,
+                    RestoreKind::Receipt,
+                    RestoreKind::NotReapplied,
+                    RestoreKind::Receipt,
+                    RestoreKind::RefusedNow(ResultCode::TargetNotFound),
+                    RestoreKind::Receipt,
+                ]
+            );
+            assert_eq!(head_of(e).await?, top);
+            let mut expected = vec![
+                (unmute.outcome.action_id.clone(), "NOT_REAPPLIED".to_owned()),
+                (closed.outcome.action_id.clone(), "NOT_REAPPLIED".to_owned()),
+                (
+                    cleared.outcome.action_id.clone(),
+                    "NOT_REAPPLIED".to_owned(),
+                ),
+                (muted.outcome.action_id.clone(), "REFUSED_NOW".to_owned()),
+            ];
+            expected.sort();
+            assert_eq!(unapplied(e).await?, expected);
+            // Nothing was applied: the earlier mute holds, the report is open
+            // and uncleared, and the refused mute wrote no sanction.
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(e.f.trust.environment(), id(REPORTER), NOW)
+                    .await
+                    .map_err(debug)?,
+                Some(NOW + 60_000)
+            );
+            let rows: Vec<(String, Option<String>, Option<String>)> = sqlx::query_as(
+                "SELECT state,closed_action_id::text,cleared_action_id::text \
+                 FROM game_item_text_reports ORDER BY report_id",
+            )
+            .fetch_all(&e.f.pool)
+            .await?;
+            assert_eq!(
+                rows,
+                [
+                    ("OPEN".to_owned(), None, None),
+                    ("OPEN".to_owned(), None, None)
+                ]
+            );
+            assert_eq!(sanctions(e, TARGET).await?, 0);
+            assert!(!unbound(e).await?);
+            assert!(
+                !e.root
+                    .staff_evidence_has_orphans(e.f.trust.environment().into(), top.0)
+                    .await
+                    .map_err(debug)?
+            );
+            assert!(e.replay(retained.clone()).await.map_err(debug)?.is_empty());
+            assert_eq!(unapplied(e).await?, expected);
+
+            // No member LOGIN changes or removes a record, or adds one for an
+            // operation it did not write in the same transaction.
+            let mut connection = e.member("unapplied", "oteryn_game_runtime").await?;
+            for statement in [
+                "UPDATE game_staff_restore_unapplied SET reason='REFUSED_NOW'",
+                "DELETE FROM game_staff_restore_unapplied",
+            ] {
+                let mut tx = connection.begin().await?;
+                let changed = sqlx::query(statement).execute(&mut *tx).await;
+                assert!(changed.is_err(), "{statement}");
+                tx.rollback().await?;
+            }
+            let mut tx = connection.begin().await?;
+            let inserted = sqlx::query(
+                "INSERT INTO game_staff_restore_unapplied(environment,action_id,reason) \
+                 VALUES($1,$2::uuid,'NOT_REAPPLIED')",
+            )
+            .bind(e.f.trust.environment())
+            .bind(&lifted.outcome.action_id)
+            .execute(&mut *tx)
+            .await;
+            let refusal = match inserted {
+                Ok(_) => tx.commit().await.err(),
+                Err(error) => Some(error),
+            };
+            assert!(refusal.is_some(), "a later record for an older operation");
+            assert_eq!(unapplied(e).await?, expected);
+
+            // An owner who removes a record leaves its operation unbound.
+            assert_eq!(
+                rewrite(
+                    e,
+                    "DELETE FROM game_staff_restore_unapplied WHERE action_id=$1::uuid",
+                    &[closed.outcome.action_id.as_str()],
+                )
+                .await?,
+                1
+            );
+            assert!(unbound(e).await?);
+            (e.sequence, e.head) = top;
+            assert!(chain_stop(&e.replay(retained).await));
+            Ok(())
+        })
+    }
+
+    /// GM-1 (Codex P1 4316613798, verified and kept by ALPHA-OPS ruling 8):
+    /// "No unmute, lift or hold release is replayed; one committed after T is
+    /// lost and is signed again." A receipted mute and its receipted unmute
+    /// after T restore as the mute only, with the unmute recorded as not
+    /// re-applied. The restored mute has a new sanction id: the old one names
+    /// nothing, and a fresh unmute signed for the restored sanction lifts it.
+    #[test]
+    fn staff_pg_restore_keeps_a_replayed_mute_until_a_fresh_signed_unmute() -> TestResult {
+        exec_case("restoreunmute", Some("GM"), async |e| {
+            let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
+            assert_eq!(of(&seen), COMMITTED);
+            let (base, base_head) = (e.sequence, e.head.clone());
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let sanction = muted.data.as_ref().ok_or("mute data")?["sanction_id"]
+                .as_str()
+                .ok_or("sanction id")?
+                .to_owned();
+            let unmute = e
+                .send(Action::Unmute {
+                    sanction_id: sanction.clone(),
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&unmute), COMMITTED);
+            let top = (e.sequence, e.head.clone());
+            let retained = e.retained.clone();
+            e.restore_to(base, &base_head).await?;
+            assert_eq!(sanctions(e, TARGET).await?, 0);
+            let steps = e.replay(retained).await.map_err(debug)?;
+            assert_eq!(
+                kinds(&steps),
+                [
+                    RestoreKind::Replayed,
+                    RestoreKind::Receipt,
+                    RestoreKind::NotReapplied,
+                    RestoreKind::Receipt
+                ]
+            );
+            assert_eq!(head_of(e).await?, top);
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(e.f.trust.environment(), id(TARGET), NOW)
+                    .await
+                    .map_err(debug)?,
+                Some(NOW + 60_000)
+            );
+            assert_eq!(
+                unapplied(e).await?,
+                [(unmute.outcome.action_id.clone(), "NOT_REAPPLIED".to_owned())]
+            );
+            assert!(!unbound(e).await?);
+            let restored: String = sqlx::query_scalar(
+                "SELECT sanction_id::text FROM game_character_sanctions \
+                 WHERE character_id=$1::uuid AND status='ACTIVE'",
+            )
+            .bind(TARGET)
+            .fetch_one(&e.f.pool)
+            .await?;
+            assert_ne!(restored, sanction);
+            (e.sequence, e.head) = top;
+            let stale = e
+                .send(Action::Unmute {
+                    sanction_id: sanction,
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(
+                of(&stale),
+                (Disposition::Refused, ResultCode::TargetNotFound)
+            );
+            let fresh = e
+                .send(Action::Unmute {
+                    sanction_id: restored,
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&fresh), COMMITTED);
+            assert_eq!(
+                e.root
+                    .staff_active_mute_until(e.f.trust.environment(), id(TARGET), NOW)
+                    .await
+                    .map_err(debug)?,
+                None
+            );
+            assert!(!unbound(e).await?);
             Ok(())
         })
     }

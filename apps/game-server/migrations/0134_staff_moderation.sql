@@ -287,6 +287,46 @@ CREATE CONSTRAINT TRIGGER game_item_text_report_bound AFTER INSERT OR UPDATE ON 
 CREATE TRIGGER game_item_text_report_no_truncate BEFORE TRUNCATE ON game_item_text_reports
  FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();
 
+-- GM-1 (Codex P1): restore provenance. A restore replay (ALPHA-OPS ruling 8) stores some
+-- COMMITTED mutations without their effect: an unmute, a report close or a clear is never
+-- re-run (NOT_REAPPLIED), and a mute the current state refuses applies nothing (REFUSED_NOW).
+-- Each gets one row here, written in the transaction that stores the operation, so the
+-- moderation check tells a deliberately unapplied effect from a missing one. Never changed
+-- or removed.
+CREATE TABLE game_staff_restore_unapplied (
+ action_id uuid PRIMARY KEY REFERENCES game_staff_operations(action_id) DEFERRABLE INITIALLY DEFERRED,
+ environment text NOT NULL CHECK(length(environment) BETWEEN 1 AND 128),
+ reason text NOT NULL CHECK(reason IN ('NOT_REAPPLIED','REFUSED_NOW')),
+ created_xact_id bigint NOT NULL DEFAULT txid_current() CHECK(created_xact_id=txid_current()));
+CREATE FUNCTION game_staff_restore_unapplied_bound() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+ r jsonb;
+ o jsonb;
+BEGIN
+ SELECT convert_from(op.request_bytes,'UTF8')::jsonb,
+  convert_from(op.outcome_bytes,'UTF8')::jsonb INTO r,o FROM game_staff_operations op
+  WHERE op.action_id=NEW.action_id AND op.environment=NEW.environment
+   AND op.created_xact_id=txid_current() AND op.created_xact_id=NEW.created_xact_id;
+ IF NOT FOUND OR r->>'environment' IS DISTINCT FROM NEW.environment
+  OR o->>'disposition' IS DISTINCT FROM 'COMMITTED' OR o->>'result' IS DISTINCT FROM 'OK'
+  OR r->'action'->>'kind' IS NULL
+  OR r->'action'->>'kind' NOT IN ('MUTE','UNMUTE','REPORT_CLOSE','REPORT_CLEAR_TEXT')
+  OR (NEW.reason='REFUSED_NOW') IS DISTINCT FROM (r->'action'->>'kind'='MUTE')
+  OR EXISTS(SELECT 1 FROM game_character_sanctions
+   WHERE mute_action_id=NEW.action_id OR lift_action_id=NEW.action_id)
+  OR EXISTS(SELECT 1 FROM game_item_text_reports
+   WHERE closed_action_id=NEW.action_id OR cleared_action_id=NEW.action_id) THEN
+  RAISE EXCEPTION 'restore record is not an unapplied signed staff action' USING ERRCODE='23514';
+ END IF;
+ RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER game_staff_restore_unapplied_bound AFTER INSERT ON game_staff_restore_unapplied
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_staff_restore_unapplied_bound();
+CREATE TRIGGER game_staff_restore_unapplied_immutable BEFORE UPDATE OR DELETE ON game_staff_restore_unapplied
+ FOR EACH ROW EXECUTE FUNCTION game_staff_immutable();
+CREATE TRIGGER game_staff_restore_unapplied_no_truncate BEFORE TRUNCATE ON game_staff_restore_unapplied
+ FOR EACH STATEMENT EXECUTE FUNCTION game_staff_immutable();
+
 -- WRITE0-RL-04..06 counters, upserted at zero then locked in this order.
 CREATE TABLE game_item_text_report_hourly (
  reporter_character_id uuid NOT NULL REFERENCES game_character_roots(character_id) ON DELETE RESTRICT,
@@ -300,23 +340,30 @@ CREATE TABLE game_item_text_report_worlds (
  world_id uuid PRIMARY KEY,
  open_snapshots integer NOT NULL CHECK(open_snapshots BETWEEN 0 AND 100000));
 
-REVOKE ALL ON game_staff_rosters,game_character_sanctions,game_item_text_reports,
+REVOKE ALL ON game_staff_rosters,game_character_sanctions,game_item_text_reports,game_staff_restore_unapplied,
  game_item_text_report_hourly,game_item_text_report_accounts,game_item_text_report_worlds FROM PUBLIC;
 -- The bindings read the roster as the writer; nothing but the owner inserts one.
 GRANT SELECT ON game_staff_rosters TO oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT,INSERT ON game_staff_restore_unapplied TO oteryn_game_runtime;
+GRANT SELECT ON game_staff_restore_unapplied TO oteryn_game_control;
 -- Only the node's staff executor (the runtime role) writes sanctions.
 GRANT SELECT ON game_character_sanctions TO oteryn_game_runtime,oteryn_game_control;
 GRANT INSERT,UPDATE(status,revision,lifted_at,lift_action_id) ON game_character_sanctions
  TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(snapshot_text,state,revision,ended_at,closed_action_id,cleared_action_id)
  ON game_item_text_reports TO oteryn_game_runtime;
+-- audit-verify compares report effects with signed operations on the control login;
+-- only binding columns are visible, never snapshot_text in the restricted store.
+GRANT SELECT(report_id,world_id,text_revision,created_at,state,ended_at,closed_action_id,cleared_action_id)
+ ON game_item_text_reports TO oteryn_game_control;
 GRANT USAGE ON SEQUENCE game_item_text_report_entry_seq TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(reports),DELETE ON game_item_text_report_hourly TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(open_reports) ON game_item_text_report_accounts TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE(open_snapshots) ON game_item_text_report_worlds TO oteryn_game_runtime;
 REVOKE ALL ON SEQUENCE game_item_text_report_entry_seq FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_character_sanction_lift_only(),game_character_sanction_bound(),
- game_item_text_report_entry(),game_item_text_report_transition(),game_item_text_report_bound()
+ game_item_text_report_entry(),game_item_text_report_transition(),game_item_text_report_bound(),
+ game_staff_restore_unapplied_bound()
  FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_staff_roster_owner_only(),game_staff_role_allows(text,text),
  game_staff_signer_allows(text,text,text,text) FROM PUBLIC;

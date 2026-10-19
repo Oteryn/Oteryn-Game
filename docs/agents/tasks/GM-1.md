@@ -14,7 +14,7 @@ issue: 1622
 wave: 5
 plan: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md"
 created_at: 2026-10-15
-updated_at: 2026-10-18
+updated_at: 2026-10-19
 owner: "chat I / root lead; admission_2187, gmaudit_2181 and sec_2188 collaborators"
 plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-10-13.md §4 Epic 6 row GM-1 (row 136); App. 7 GM-1; §5 Wave 5"
 class: "hard (child graph)"
@@ -174,6 +174,41 @@ Fifth pre-push review round (unmute clock skew, sanction verification):
   also asserts that a genuine history passes the check.
 - The PostgreSQL tests run in the `durability_postgres` job.
 
+Sixth review round (Codex threads on `a4af837c`):
+
+- P1 `staff_moderation.rs` restore, a tail MUTE then UNMUTE: verified and
+  kept by contract. ALPHA-OPS ruling 8 (*Replay after restore*, *Order and
+  scope*) says no unmute, lift or hold release is replayed; one committed
+  after T is lost and is signed again. The replayed mute gets a new
+  sanction id, so the lost unmute's `UNMUTE{sanction_id}` refuses
+  `TargetNotFound`, and a fresh signed unmute of the restored id lifts it.
+  The restore now records the skipped unmute (below), so the gap is
+  visible to the operator. Test:
+  `staff_pg_restore_keeps_a_replayed_mute_until_a_fresh_signed_unmute`.
+  Open owner question below.
+- P1 `staff_moderation.rs` and `oteryn-game-ops.rs`: a COMMITTED MUTE with
+  no sanction row went undetected, because the check ran only from
+  sanction rows to operations. Migration 0134 adds the immutable
+  provenance table `game_staff_restore_unapplied` (operation id,
+  environment, `NOT_REAPPLIED` or `REFUSED_NOW`), written only by restore in
+  the operation's own transaction and bound to it by a deferred trigger.
+  The check, now `staff_moderation_has_unbound_rows`, also runs the
+  reverse way: every COMMITTED, OK MUTE, UNMUTE, REPORT_CLOSE and
+  REPORT_CLEAR_TEXT in the environment must have exactly one of its effect
+  or a valid provenance row, and an orphan or invalid provenance row fails.
+- P2 `oteryn-game-ops.rs` audit-verify and the restore preflight: report
+  rows are now compared with their signed REPORT_CLOSE and
+  REPORT_CLEAR_TEXT operations, the binding `game_item_text_report_bound`
+  checks at write time: kind, report id, world scope, CLOSED state with
+  `ended_at`, and the cleared text revision. The control role gets a
+  column SELECT on `game_item_text_reports` without `snapshot_text`.
+- Tests: `staff_pg_moderation_check_detects_missing_effects_and_rewritten_reports`
+  and `staff_pg_restore_records_each_unapplied_effect_and_stays_verifiable`.
+  The test `restore_to` helper now also reverts report closes, text clears
+  and lifts made above the restored head, as a point-in-time restore would.
+- The PostgreSQL tests run in the `durability_postgres` job. There is no
+  protocol or wire change.
+
 Wiring is unchanged. Production staff requests reach the executor through
 `control_loop`, then `ControlInput::Staff`, then `serve_staff_control`. The
 e2e case is `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,
@@ -191,7 +226,7 @@ CP decisions (2026-10-19):
 - Kick: alpha keeps the D1437 fenced-logout kick, which answers IN_FIGHT
   for an in-fight session. This PR has no protocol change.
 
-Open owner question:
+Open owner questions:
 
 - Kick of an in-fight session. An immediate StaffKick that ignores the
   combat lock needs TerminalRelease::StaffKick and wire code 1201 (A7), a
@@ -199,6 +234,13 @@ Open owner question:
   kick with the IN_FIGHT answer for alpha; (b) allocate a follow-up packet
   with protocol review. Recommendation: (a) now, (b) before external
   players.
+- Restore of a tail MUTE then UNMUTE. ALPHA-OPS ruling 8 never replays an
+  unmute, so the restored mute stays active until a fresh signed unmute of
+  its new sanction id; the restore records the skipped unmute as
+  `NOT_REAPPLIED`. Options: (a) keep ruling 8; (b) amend ruling 8 to
+  replay a tail unmute of a mute replayed in the same restore. Option (b)
+  needs the replayed sanction id carried into the unmute, which is a
+  contract change. Recommendation: (a).
 
 ## Previous checkpoint — merge-up, Codex review of `4b23100d`, renumbering to 0133/0134 (2026-10-18)
 

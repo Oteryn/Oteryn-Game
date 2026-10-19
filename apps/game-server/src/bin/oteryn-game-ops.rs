@@ -1964,12 +1964,12 @@ async fn staff_audit(operator: &Operator, mut arguments: Arguments) -> Outcome {
             }
             if operator
                 .root
-                .staff_sanctions_have_unbound_rows(trust.environment().into())
+                .staff_moderation_has_unbound_rows(trust.environment().into())
                 .await
                 .map_err(staff_failure)?
             {
                 return Err(staff_failure(
-                    "staff sanction not bound to its signed operation",
+                    "staff moderation row not bound to its signed operation",
                 ));
             }
             event("staff_audit=verified_complete_retained_prefix");
