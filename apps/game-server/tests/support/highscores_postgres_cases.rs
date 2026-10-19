@@ -15,14 +15,16 @@ use crate::durability::character_progression::{
     ExperienceAwardRequest, ExperienceCommitOutcome, ExperienceRewardOccurrence,
 };
 use crate::durability::charm_state::{BestiaryCharmEntry, BestiaryCharmFacts};
-use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_highscores};
+use crate::durability::highscore_snapshot::reply::{
+    HighscoresReply, answer_highscores, answer_session_highscores,
+};
 use crate::durability::highscore_snapshot::{
     AchievementPoints, CUT_CHARACTERS_MAX, CUT_SOURCE_PAGE_ROWS, CutLimits, FILTERS,
     SnapshotCatalogues, SnapshotError, SnapshotPage, SnapshotRow, activated_charm_points,
     begin_projection, job, publish_in_transaction, read_source_within, served_categories,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
-use crate::foundation::{CharacterId, FoundationProtocolError, WorldId};
+use crate::foundation::{CharacterId, FoundationProtocolError, GameSessionId, WorldId};
 use harness::{CHARACTER, Harness, TestResult, WORLD, debug, id};
 use oteryn_protocol_oteryn::highscores::{
     HighscoresQuery, HighscoresResult, decode_highscores_query, decode_highscores_result,
@@ -161,7 +163,7 @@ async fn page(
 }
 
 #[test]
-fn committed_native_sources_cover_nine_categories_without_source_writes() -> TestResult {
+fn committed_native_sources_cover_every_category_without_source_writes() -> TestResult {
     run("hssource", async |h| {
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -198,10 +200,15 @@ fn committed_native_sources_cover_nine_categories_without_source_writes() -> Tes
         let revision = h.root_revision().await?;
         let ids = h
             .root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(ids.len(), 9);
+        assert_eq!(ids.len(), 11);
+        assert_eq!(
+            ids.iter().map(|s| s.category).collect::<Vec<_>>(),
+            (1..=11).collect::<Vec<_>>()
+        );
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
         for category in 1..=9 {
             let p = page(h, category, None, 1, 0).await?;
@@ -232,8 +239,9 @@ fn pinned_pages_retain_exact_previous_then_expire_after_three_generations() -> T
         dataset(h, 100, 60, "knight", 1000, world()).await?;
         let first = h
             .root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?[0]
             .snapshot_id;
         let a = page(h, 1, None, 1, first).await?;
@@ -252,16 +260,18 @@ fn pinned_pages_retain_exact_previous_then_expire_after_three_generations() -> T
         dataset(h, 200, 1, "paladin", 2000, world()).await?;
         let second = h
             .root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?[0]
             .snapshot_id;
         assert_eq!(page(h, 1, None, 1, first).await?, a);
         assert_eq!(page(h, 1, None, 2, first).await?, b);
         assert_eq!(page(h, 1, None, 1, 0).await?.snapshot.snapshot_id, second);
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert!(matches!(
             h.root
@@ -273,7 +283,7 @@ fn pinned_pages_retain_exact_previous_then_expire_after_three_generations() -> T
             page(h, 1, None, 1, second).await?.snapshot.snapshot_id,
             second
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 18);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
         assert!(page(h, 1, None, u32::MAX, second).await?.rows.is_empty());
         Ok(())
     })
@@ -286,11 +296,12 @@ fn filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap()
         dataset(h, 2000, 1, "royal_paladin", 1, world()).await?;
         let started = Instant::now();
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         eprintln!(
-            "HS-PUBLISH:1002eligible,ninecategories,sixlists,{:?}",
+            "HS-PUBLISH:1002eligible,elevencategories,sixlists,{:?}",
             started.elapsed()
         );
         let target = CharacterId::decode(&generated(2000)).map_err(debug)?;
@@ -323,8 +334,9 @@ fn filtered_list_is_capped_after_filtering_and_keeps_global_rank_below_all_cap()
 fn failed_mid_generation_publication_preserves_previous_headers_rows_and_source() -> TestResult {
     run("hsrollback", async |h| {
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         let before = page(h, 1, None, 1, 0).await?;
         let count = h.count("game_world_highscore_rows").await?;
@@ -353,17 +365,24 @@ fn failed_mid_generation_publication_preserves_previous_headers_rows_and_source(
             assert_eq!(page(h, 1, None, 1, 0).await?, before);
         }
         h.pool.execute("CREATE FUNCTION hs_fixture_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF EXISTS(SELECT 1 FROM game_world_highscore_snapshots WHERE snapshot_id=NEW.snapshot_id AND category=5) THEN RAISE EXCEPTION 'injected snapshot failure'; END IF;RETURN NEW;END;$$;CREATE TRIGGER hs_fixture_fail BEFORE INSERT ON game_world_highscore_rows FOR EACH ROW EXECUTE FUNCTION hs_fixture_fail();").await?;
-        assert!(h.root.publish_highscore_world(world()).await.is_err());
+        assert!(
+            h.root
+                .refresh_highscore_schedule(world(), complete_catalogues()?, true)
+                .await
+                .map(|r| r.snapshots)
+                .is_err()
+        );
         assert_eq!(page(h, 1, None, 1, 0).await?, before);
         assert_eq!(h.count("game_world_highscore_rows").await?, count);
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 9);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 11);
         assert_eq!(h.root_revision().await?, "2");
         h.pool.execute("DROP TRIGGER hs_fixture_fail ON game_world_highscore_rows;DROP FUNCTION hs_fixture_fail();").await?;
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 18);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
         Ok(())
     })
 }
@@ -372,8 +391,9 @@ fn failed_mid_generation_publication_preserves_previous_headers_rows_and_source(
 fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres() -> TestResult {
     run("hscut", async |h| {
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         let mut conn = h.pool.acquire().await?;
         let mut tx = begin_projection(
@@ -398,8 +418,9 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
         );
         tx.rollback().await?;
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert_eq!(page(h, 1, None, 1, 0).await?.rows.len(), 2);
         let mut stale = begin_projection(
@@ -409,11 +430,12 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
         .await?;
         let winner = h
             .root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert!(matches!(
-            publish_in_transaction(&mut stale, world()).await,
+            publish_in_transaction(&mut stale, world(), &complete_catalogues()?).await,
             Err(SnapshotError::RetryableConflict)
         ));
         stale.rollback().await?;
@@ -421,7 +443,7 @@ fn repeatable_read_source_cut_and_stale_publication_conflict_are_real_postgres()
             page(h, 1, None, 1, 0).await?.snapshot.snapshot_id,
             winner[0].snapshot_id
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 18);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
         Ok(())
     })
 }
@@ -431,14 +453,16 @@ fn world_category_token_isolation_empty_world_and_query_boundaries() -> TestResu
     run("hsquery", async |h| {
         let token = h
             .root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?[0]
             .snapshot_id;
         let foreign = WorldId::decode(&id(90)).map_err(debug)?;
         h.root
-            .publish_highscore_world(foreign)
+            .refresh_highscore_schedule(foreign, complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         let empty = h
             .root
@@ -496,13 +520,26 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
 -> TestResult {
     run("hsconcurrent", async |h| {
         h.root
-            .publish_highscore_world(world())
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
-        let mut first = std::pin::pin!(h.root.publish_highscore_world(world()));
-        let mut second = std::pin::pin!(other.publish_highscore_world(world()));
+        let first_catalogues = complete_catalogues()?;
+        let second_catalogues = complete_catalogues()?;
+        let mut first = std::pin::pin!(async {
+            h.root
+                .refresh_highscore_schedule(world(), first_catalogues, true)
+                .await
+                .map(|r| r.snapshots)
+        });
+        let mut second = std::pin::pin!(async {
+            other
+                .refresh_highscore_schedule(world(), second_catalogues, true)
+                .await
+                .map(|r| r.snapshots)
+        });
         let mut a = None;
         let mut b = None;
         std::future::poll_fn(|cx| {
@@ -544,7 +581,7 @@ fn two_real_roots_publish_one_coherent_generation_or_typed_retry_without_lost_re
                     .map(|s| s.snapshot_id)
                     .eq(current.iter().map(|id| id.unsigned_abs())))
         );
-        assert_eq!(h.count("game_world_highscore_snapshots").await?, 18);
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, 22);
         assert_eq!(h.root_revision().await?, "2");
         Ok(())
     })
@@ -682,8 +719,9 @@ fn account_representatives_and_earned_charm_points_use_native_sources() -> TestR
         tx.commit().await?;
         let ids = h
             .root
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert_eq!(ids.len(), 11);
         assert!(ids.iter().all(|s| s.source_cut == ids[0].source_cut));
@@ -719,21 +757,24 @@ fn periodic_due_state_survives_restart_and_reset_forces_publication() -> TestRes
     run("hsdue", async |h| {
         let first = h
             .root
-            .refresh_highscore_world(world(), complete_catalogues()?, false)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, false)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert_eq!(first.len(), 11);
         // A separately connected genuine Root supplies no process-local schedule cache.
         let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
         let next = other
-            .refresh_highscore_world(world(), complete_catalogues()?, false)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, false)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert!(next.is_empty());
         let reset = other
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert_eq!(reset.len(), 11);
         assert!(
@@ -758,15 +799,17 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
     // Migration 0129 attaches 0091's snapshot trigger; no fixture SQL installs it.
     run("hsoutbox", async |h| {
         h.root
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert_eq!(h.count("game_public_highscore_outbox").await?, 11);
         h.pool.execute("CREATE FUNCTION highscore_test_fail_category() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.category=2 THEN RAISE EXCEPTION 'fixture publication failure'; END IF; RETURN NEW; END;$$; CREATE TRIGGER highscore_test_fail_category BEFORE INSERT ON game_world_highscore_snapshots FOR EACH ROW EXECUTE FUNCTION highscore_test_fail_category();").await?;
         assert!(
             h.root
-                .refresh_highscore_world(world(), complete_catalogues()?, true)
+                .refresh_highscore_schedule(world(), complete_catalogues()?, true)
                 .await
+                .map(|r| r.snapshots)
                 .is_err()
         );
         assert_eq!(h.count("game_public_highscore_outbox").await?, 11);
@@ -779,18 +822,26 @@ fn public_outbox_attachment_commits_and_rolls_back_with_all_categories() -> Test
 fn eleven_category_publishers_keep_one_complete_generation_and_retention() -> TestResult {
     run("hsconcurrentfull", async |h| {
         h.root
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         let other = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(other.maintain_ready_once().await?);
-        let mut first = std::pin::pin!(h.root.refresh_highscore_world(
-            world(),
-            complete_catalogues()?,
-            true
-        ));
-        let mut second =
-            std::pin::pin!(other.refresh_highscore_world(world(), complete_catalogues()?, true));
+        let first_catalogues = complete_catalogues()?;
+        let second_catalogues = complete_catalogues()?;
+        let mut first = std::pin::pin!(async {
+            h.root
+                .refresh_highscore_schedule(world(), first_catalogues, true)
+                .await
+                .map(|r| r.snapshots)
+        });
+        let mut second = std::pin::pin!(async {
+            other
+                .refresh_highscore_schedule(world(), second_catalogues, true)
+                .await
+                .map(|r| r.snapshots)
+        });
         let mut a = None;
         let mut b = None;
         std::future::poll_fn(|cx| {
@@ -873,8 +924,9 @@ fn account_representatives_include_vocation_none_and_choose_level_before_identit
         tx.commit().await?;
         let published = h
             .root
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         assert_eq!(published.len(), 11);
         let accounts = page(h, 10, None, 1, 0).await?;
@@ -1024,8 +1076,9 @@ fn missing_achievement_catalogue_key_keeps_complete_previous_cut() -> TestResult
     run("hssourcefailure", async |h| {
         let before = h
             .root
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         // Administrative stored-data corruption fixture: native append-only SQL guards still
         // apply, but this account fact's key is absent from the active owning catalogue.
@@ -1037,8 +1090,9 @@ fn missing_achievement_catalogue_key_keeps_complete_previous_cut() -> TestResult
         tx.commit().await?;
         assert!(matches!(
             h.root
-                .refresh_highscore_world(world(), complete_catalogues()?, true)
-                .await,
+                .refresh_highscore_schedule(world(), complete_catalogues()?, true)
+                .await
+                .map(|r| r.snapshots),
             Err(SnapshotError::Unavailable(
                 DurabilityError::InvalidStoredState
             ))
@@ -1108,6 +1162,56 @@ async fn client_reply(
     .map_err(debug)?;
     let query = decode_highscores_query(&payload).map_err(debug)?;
     Ok(answer_highscores(&h.root, world(), asking(), query).await)
+}
+
+/// The dispatched handler rejects sessions without durable admission even when the requested
+/// snapshot page exists and answers the same Character query successfully.
+#[test]
+fn session_resolution_rejects_another_world_an_unknown_session_and_an_unadmitted_session()
+-> TestResult {
+    run("hssession", async |h| {
+        h.root
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
+            .await
+            .map_err(debug)?;
+        let snapshots = h.count("game_world_highscore_snapshots").await?;
+        assert_eq!(snapshots, 11);
+        let payload = encode_highscores_query(HighscoresQuery {
+            category: 1,
+            vocation: 0,
+            page: 1,
+            snapshot_id: 0,
+        })
+        .map_err(debug)?;
+        let seeded = GameSessionId::decode(&id(harness::SESSION)).map_err(debug)?;
+        let unknown = GameSessionId::decode(&id(98)).map_err(debug)?;
+        let foreign = WorldId::decode(&id(99)).map_err(debug)?;
+        // The seeded reconnect row has no committed fresh admission receipt.
+        let unadmitted: bool = sqlx::query_scalar(
+            "SELECT fresh_replay_key IS NULL FROM game_durability_reconnect_sessions \
+             WHERE game_session_id=encode($1,'hex')::uuid",
+        )
+        .bind(seeded.as_bytes().as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(unadmitted);
+        for (requested_world, session) in [(foreign, seeded), (world(), unknown), (world(), seeded)]
+        {
+            let query = decode_highscores_query(&payload).map_err(debug)?;
+            assert_eq!(
+                answer_session_highscores(&h.root, world(), requested_world, session, query).await,
+                HighscoresReply::Rejected
+            );
+            assert_eq!(h.count("game_world_highscore_snapshots").await?, snapshots);
+        }
+        let query = decode_highscores_query(&payload).map_err(debug)?;
+        assert!(matches!(
+            answer_highscores(&h.root, world(), asking(), query).await,
+            HighscoresReply::Result(_)
+        ));
+        assert_eq!(h.count("game_world_highscore_snapshots").await?, snapshots);
+        Ok(())
+    })
 }
 
 async fn client_query(
@@ -1619,8 +1723,9 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
             .map_err(debug)?;
         let paged = every_list(h).await?;
         h.root
-            .refresh_highscore_world(world(), complete_catalogues()?, true)
+            .refresh_highscore_schedule(world(), complete_catalogues()?, true)
             .await
+            .map(|r| r.snapshots)
             .map_err(debug)?;
         let registered = every_list(h).await?;
         assert_eq!(

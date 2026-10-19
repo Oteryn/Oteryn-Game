@@ -56,11 +56,8 @@ impl CutLimits {
         characters_max: CUT_CHARACTERS_MAX,
         page_rows: CUT_SOURCE_PAGE_ROWS,
     };
-    /// Tighter bounds, or `None` above a registered hard maximum or for an empty page.
-    #[allow(
-        dead_code,
-        reason = "the PostgreSQL highscore suites page and bound a small cut with it"
-    )]
+    /// Fixture-only tighter bounds, or `None` above a registered maximum or for an empty page.
+    #[cfg(test)]
     pub(crate) fn tighter(characters_max: usize, page_rows: usize) -> Option<Self> {
         (characters_max <= CUT_CHARACTERS_MAX && (1..=CUT_SOURCE_PAGE_ROWS).contains(&page_rows))
             .then_some(Self {
@@ -257,67 +254,28 @@ pub(crate) async fn begin_projection<'a>(
 }
 
 impl DurabilityRoot {
-    /// Legacy nine-source projection, retained for the isolated native fixtures.
-    /// Production scheduling uses `refresh_highscore_schedule` with both owning catalogues.
-    /// Deployment must bind this to the dedicated projection role. No raw admin pool is used.
-    #[allow(
-        dead_code,
-        reason = "the PostgreSQL highscore suites call it; the serve job uses refresh_highscore_schedule"
-    )]
-    pub(crate) async fn publish_highscore_world(
-        &self,
-        world: WorldId,
-    ) -> Result<Vec<SnapshotInfo>> {
-        self.publish_highscore_cut(world, None, false, CutLimits::REGISTERED)
-            .await
-            .map(|refresh| refresh.snapshots)
-    }
-
     /// Periodic publication is due after 30 minutes; a planned reset forces one complete cut.
     /// The composition root supplies the actual reset notification, not client command DATA.
-    #[allow(
-        dead_code,
-        reason = "the PostgreSQL highscore suites call it; the serve job uses refresh_highscore_schedule"
-    )]
-    pub(crate) async fn refresh_highscore_world(
-        &self,
-        world: WorldId,
-        catalogues: SnapshotCatalogues,
-        planned_reset: bool,
-    ) -> Result<Vec<SnapshotInfo>> {
-        self.refresh_highscore_schedule(world, catalogues, planned_reset)
-            .await
-            .map(|refresh| refresh.snapshots)
-    }
-
     pub(crate) async fn refresh_highscore_schedule(
         &self,
         world: WorldId,
         catalogues: SnapshotCatalogues,
         planned_reset: bool,
     ) -> Result<SnapshotRefresh> {
-        self.publish_highscore_cut(
-            world,
-            Some(catalogues),
-            !planned_reset,
-            CutLimits::REGISTERED,
-        )
-        .await
+        self.publish_highscore_cut(world, catalogues, !planned_reset, CutLimits::REGISTERED)
+            .await
     }
 
-    /// A planned-reset cut under tighter `limits`, so a fixture can cross page boundaries and
+    /// Fixture-only planned-reset cut under tighter `limits`, crossing page boundaries and
     /// the World bound with a handful of Characters.
-    #[allow(
-        dead_code,
-        reason = "the PostgreSQL highscore suites page and bound a small cut with it"
-    )]
+    #[cfg(test)]
     pub(crate) async fn refresh_highscore_world_within(
         &self,
         world: WorldId,
         catalogues: SnapshotCatalogues,
         limits: CutLimits,
     ) -> Result<Vec<SnapshotInfo>> {
-        self.publish_highscore_cut(world, Some(catalogues), false, limits)
+        self.publish_highscore_cut(world, catalogues, false, limits)
             .await
             .map(|refresh| refresh.snapshots)
     }
@@ -325,7 +283,7 @@ impl DurabilityRoot {
     async fn publish_highscore_cut(
         &self,
         world: WorldId,
-        catalogues: Option<SnapshotCatalogues>,
+        catalogues: SnapshotCatalogues,
         only_if_due: bool,
         limits: CutLimits,
     ) -> Result<SnapshotRefresh> {
@@ -333,9 +291,7 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_projection(holder, deadline).await?;
-                    match publish_cut(&mut tx, world, catalogues.as_ref(), only_if_due, limits)
-                        .await
-                    {
+                    match publish_cut(&mut tx, world, &catalogues, only_if_due, limits).await {
                         Ok(value) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(value))
@@ -641,15 +597,15 @@ fn materialize(source: &[Source], category: usize) -> Result<Vec<StoredRow>> {
     Ok(result)
 }
 
-#[allow(
-    dead_code,
-    reason = "the PostgreSQL stale-publication case calls it inside its own transaction"
-)]
+/// Fixture-only publication with owning catalogues inside the caller's transaction, so the
+/// PostgreSQL suite can exercise a stale cut's publication conflict.
+#[cfg(test)]
 pub(crate) async fn publish_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
+    catalogues: &SnapshotCatalogues,
 ) -> Result<Vec<SnapshotInfo>> {
-    publish_cut(tx, world, None, false, CutLimits::REGISTERED)
+    publish_cut(tx, world, catalogues, false, CutLimits::REGISTERED)
         .await
         .map(|refresh| refresh.snapshots)
 }
@@ -657,7 +613,7 @@ pub(crate) async fn publish_in_transaction(
 async fn publish_cut(
     tx: &mut Transaction<'_, Postgres>,
     world: WorldId,
-    catalogues: Option<&SnapshotCatalogues>,
+    catalogues: &SnapshotCatalogues,
     only_if_due: bool,
     limits: CutLimits,
 ) -> Result<SnapshotRefresh> {
@@ -666,7 +622,7 @@ async fn publish_cut(
     sqlx::query("SET LOCAL ROLE oteryn_game_highscore_job")
         .execute(&mut **tx)
         .await?;
-    let categories: i32 = catalogues.map_or(9, SnapshotCatalogues::published_categories);
+    let categories: i32 = catalogues.published_categories();
     // A real locked publication row, not an advisory lock acquired after a stale MVCC cut.
     // Concurrent RR publishers either see this generation or lose with 40001. Initial
     // concurrent head insertion also conflicts; an invisible head never becomes an empty cut.
@@ -701,10 +657,7 @@ async fn publish_cut(
         }
     }
     let source = read_source_within(tx, world, limits).await?;
-    let extra = match catalogues {
-        Some(catalogues) => Some(read_extra_sources(tx, world, &source, catalogues, limits).await?),
-        None => None,
-    };
+    let extra = read_extra_sources(tx, world, &source, catalogues, limits).await?;
     let mut published = Vec::new();
     for (index, head) in heads.into_iter().enumerate() {
         let category = u8::try_from(head.try_get::<i32, _>("category")?).map_err(|_| corrupt())?;
@@ -714,7 +667,7 @@ async fn publish_cut(
         let old: Option<i64> = head.try_get("current_snapshot_id")?;
         let rows = match index {
             0..=8 => materialize(&source, index)?,
-            9 | 10 => materialize(&extra.as_ref().ok_or_else(corrupt)?[index - 9], 0)?,
+            9 | 10 => materialize(&extra[index - 9], 0)?,
             _ => return Err(corrupt()),
         };
         let count = i32::try_from(rows.len()).map_err(|_| corrupt())?;

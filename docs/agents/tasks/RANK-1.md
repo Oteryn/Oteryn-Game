@@ -725,3 +725,12 @@ Remaining dependencies (REPORT_ONLY):
   `activated_charm_points` returns that source.
 
 Status stays `NOT_FULLY_QUALIFIED` until ANALYSER-EMIT-1 lands; CP owns ready and merge.
+
+2026-10-19 wiring cleanup: the legacy nine-category path and test-only wrappers are gone;
+fixture entry points are `#[cfg(test)]`. Session resolution lives in
+`highscore_snapshot::reply::answer_session_highscores`, with the transport delegating to it.
+The new PostgreSQL case is
+`session_resolution_rejects_another_world_an_unknown_session_and_an_unadmitted_session`.
+The committed-session positive path through `answer_session_highscores` needs a real fresh
+admission fixture (`postgres::fresh::Source`), which exists only in the `durability_postgres`
+target, outside owned paths. Status remains `NOT_FULLY_QUALIFIED`.

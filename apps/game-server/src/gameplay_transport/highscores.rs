@@ -2,7 +2,9 @@
 //! [`crate::durability::highscore_snapshot::reply`]; this module binds the category 10 point
 //! owner to the activated Achievement catalogue.
 
-pub(crate) use crate::durability::highscore_snapshot::reply::{HighscoresReply, answer_highscores};
+pub(crate) use crate::durability::highscore_snapshot::reply::{
+    HighscoresReply, answer_session_highscores,
+};
 
 /// HIGHSCORES0 §3 category 10: the activated Achievement catalogue owns the point values; a
 /// retired entry counts 0 and an unknown key or an overflow is `None` (the account is refused,

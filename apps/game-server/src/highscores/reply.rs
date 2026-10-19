@@ -9,10 +9,13 @@
 //! `PAYLOAD_LIMIT_EXCEEDED`. Nothing is truncated.
 //!
 //! It lives beside the snapshot store so the PostgreSQL suites drive the same handler the
-//! gameplay transport dispatches.
+//! gameplay transport dispatches, including durable resolution of the current session.
 
+use super::super::fresh_admission::FreshAdmissionStore;
 use super::{DurabilityRoot, FILTERS, SnapshotError, SnapshotPage, SnapshotRow, served_categories};
-use crate::foundation::{CharacterId, FoundationProtocolError, WorldId};
+use crate::foundation::{
+    CharacterId, FoundationProtocolError, GameSessionId, GameSessionState, WorldId,
+};
 use oteryn_protocol_oteryn::highscores::{
     HighscoreRow, HighscoresQuery, HighscoresResult, HighscoresWireError, encode_highscores_result,
 };
@@ -26,6 +29,29 @@ pub(crate) enum HighscoresReply {
     Terminal(FoundationProtocolError),
     /// `REJECTED` with no payload and no code.
     Rejected,
+}
+
+/// HIGHSCORES0 §6: the asking Character is the one the current, non-terminal session of
+/// `served_world` controls, read from durable state. A query for another World, an unknown
+/// session, a session without its committed admission, or a terminal session is REJECTED.
+pub(crate) async fn answer_session_highscores(
+    root: &DurabilityRoot,
+    served_world: WorldId,
+    world: WorldId,
+    session: GameSessionId,
+    query: HighscoresQuery,
+) -> HighscoresReply {
+    if world != served_world {
+        return HighscoresReply::Rejected;
+    }
+    let store = FreshAdmissionStore::from_root(root.clone());
+    let Ok((current, _)) = store.current_session_at(session).await else {
+        return HighscoresReply::Rejected;
+    };
+    if current.session_state() == GameSessionState::Terminal {
+        return HighscoresReply::Rejected;
+    }
+    answer_highscores(root, world, current.commit().character_id(), query).await
 }
 
 /// Answer `query` for `character` of `world` from the persisted snapshots.
