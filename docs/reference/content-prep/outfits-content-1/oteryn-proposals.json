@@ -1,0 +1,57 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "OUTFITS-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "0b06f64047ba88d15d840dc65cad0ab35a36232e",
+  "original_field_list_sha256": "0ab131309cf5f06522b14a42aeb9f9e32ba3ada2c74cf4647c59f3f15a888d89",
+  "coverage": {
+    "held_fields": 1,
+    "proposals": 1,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 1
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [],
+  "proposals": [
+    {
+      "original_field_path": "content/cosmetics/outfits/evidence-00000-00135.json/records/77/facts/addon_specific_requirements",
+      "subject": "oteryn:content.outfit.monk_outfits",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "addon_1": {
+          "gold": 100000,
+          "items": []
+        },
+        "addon_2": {
+          "gold": 200000,
+          "items": []
+        },
+        "premium_required": true,
+        "requires_base_outfit": true,
+        "unlock_scope": "character_permanent"
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [
+          "https://tibia.fandom.com/w/index.php?oldid=1102608"
+        ],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "New Oteryn gold-sink purchase alternative because actual Monk addon item requirements are unproven; no claimed Global quest recipe."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
