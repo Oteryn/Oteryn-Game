@@ -428,8 +428,8 @@ fn negotiated_capability28_is_registered_without_inferred_requirements_and_29_is
     assert_eq!(entry["command_types"], serde_json::json!([30]));
     assert_eq!(entry["state_domains"], serde_json::json!([]));
     assert_eq!(
-        registry["allocation_ranges"]["capability_id"]["next_unallocated"],
-        31
+        registry["allocation_ranges"]["capability_id"]["next_unallocated"], 32,
+        "TUTORIAL-1 took 31 after ITEM_LOOK_V1"
     );
     // CP D1268/D1292: command 30 is registered once, gated by 28, with the codec's byte bounds.
     let commands: Vec<_> = registry["command_types"]

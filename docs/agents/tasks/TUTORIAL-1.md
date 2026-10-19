@@ -18,7 +18,7 @@ class: "impl"
 needs_migration: yes
 migration: "apps/game-server/migrations/0130_character_tutorial_progress.sql (number assigned by CP)"
 decision: "CP D1426 (#2186 comment 6241833560): Newhaven start island only; inert on StartThais. Owner D1463 (2026-10-19) supersedes the D1410 no-spawn-change reading: new Characters start on the Newhaven islet (32534,32513,7); Anna sails to Thais Peninsula at level 8"
-needs_registry: no
+needs_registry: yes  # capability 31 TUTORIAL_NOTICES_V1, state domain 23 (owner Q3 2026-10-19)
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
 owned_paths:
@@ -29,6 +29,19 @@ owned_paths:
   - "apps/game-server/migrations/0130_character_tutorial_progress.sql (new, CP D1426)"
   - "apps/game-server/tests/support/tutorial_progress_postgres_cases.rs (new, CP D1426)"
   - "docs/agents/tasks/TUTORIAL-1.md"
+  # Owner Q3 and CP Q1/Q2 (2026-10-19): the wiring, the frame and the spawn switch.
+  - "crates/protocol-oteryn/src/tutorial_notices.rs (new), tutorial_notices_tests.rs (new), lib.rs, item_look_tests.rs"
+  - "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto (new), docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
+  - "apps/game-server/src/gameplay_transport/{capabilities.rs,capabilities_tests.rs,connection.rs,mod.rs} (additive wiring)"
+  - "apps/game-server/src/gameplay_transport/tutorial_session.rs (new), tutorial_session_tests.rs (new)"
+  - "apps/game-server/src/gameplay_transport/{kill_reward_postgres_e2e_tests.rs,monk_save_postgres_tests.rs} (the new authority field)"
+  - "tools/content-schema/native-gameplay/{build_source_item_profiles.py,movement-item-profiles.json (new),coin-item-profiles.json,door-item-profiles.json}"
+  - "tools/content-migration/register_spell_families.py and its outputs (content/items/definitions/spell-native-profiles.json, content/spells.manifest.json, content/manifest.json, content/content.lock.json, content/items/index.json)"
+  - "apps/game-server/src/content/native_gameplay.rs (record count)"
+  - "tools/world-bundle-compiler/src/main.rs, tools/world-bundle-compiler/tests/pin_check.rs"
+  - "content/world/pins/oteryn.json, content/world/pins/README.md"
+  - "deploy/synology-game/preprod-topology.toml, deploy/synology-game/README.md"
+  - "apps/client/src/world.rs (START)"
 registration_lines:
   - "apps/game-server/src/domain/mod.rs: pub mod tutorial;"
   - "apps/game-server/src/durability/mod.rs: pub mod character_tutorial;"
@@ -86,8 +99,12 @@ Replaced by the CP D1426 scenario brief below (its assertions A1-A6). The start 
 - [x] A2-A4: a Newhaven-start Character goes through the reference steps (`tests/tutorial_newhaven.rs`).
 - [x] A5: concurrent writers are serialized by a row lock and a compare-and-set version; the loser gets a typed `Conflict` and writes nothing, also when its progress equals the stored one (a retry or a stale equal-state writer; no occurrence identity), see `tutorial_progress_postgres_cases.rs`.
 - [x] A6: after a reconnect (new connection generation) and a node restart the tutorial resumes from the stored step; a stale connection, lease or session reads and writes nothing (`tutorial_progress_postgres_cases.rs`).
-- [ ] Runtime wiring (login, step-in, death, loot, NPC) stays a slot-only follow-up; nothing calls the writer yet.
-  It is blocked on the D1463 follow-ups listed in *Owner D1463 amendment* below.
+- [x] Runtime wiring of login and step-in (steps 1-4) through `gameplay_transport` with capability 31
+  frames for hints 2/3 and the hole text, see *Delivery 2026-10-19* below.
+- [x] Spawn switch to the islet with native movement profiles and a compiler check that the start has
+  a steppable neighbour.
+- [ ] Death (step 6), the Corruptor loot (step 5) and Anna/Seagull departure (step 7) at runtime:
+  owner questions in *Delivery 2026-10-19*.
 
 ## Validation commands
 
@@ -95,12 +112,17 @@ Replaced by the CP D1426 scenario brief below (its assertions A1-A6). The start 
 cargo fmt --all -- --check
 cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings
 cargo test --locked -p oteryn-game-server --test tutorial_newhaven
+cargo test --locked -p oteryn-game-server --lib tutorial
+cargo test --locked -p oteryn-protocol-oteryn --quiet
+cargo test --locked --release -p oteryn-world-bundle-compiler --quiet   # pin_check runs in release
+cargo test --locked -p oteryn-client --lib --quiet
+python3 tools/content-migration/register_spell_families.py --check
 # PostgreSQL 17.6 (OTERYN_TEST_POSTGRES_ADMIN_URL set):
 cargo test --locked -p oteryn-game-server --test character_authority_postgres tutorial_progress -- --test-threads=1
 cargo test --locked -p oteryn-game-server --test character_authority_postgres every_postgres_target_runs
 ```
 
-No content changes, so no regeneration or pins.
+Content changes: the movement overlay regenerates the native Item profiles (`register_spell_families.py`) and the World pin (`world-bundle-compiler pin-check`).
 
 ## Reference evidence pointers
 
@@ -237,3 +259,68 @@ Remaining work, each outside this record's owned paths or needing an owner decis
 - Anna's transport to Thais Peninsula: the landing cell at the Thais port near Hector is
   OTERYN_DESIGN; the Anna and Seagull NPC placements do not exist yet.
 - The Corruptor vocation-loot item IDs are unresolved (the reference script is disabled).
+
+## Delivery 2026-10-19 (owner Q3, CP Q1, Q2, Q4)
+
+### Q3: the tutorial notice frame (owner (a))
+
+Capability 31 `TUTORIAL_NOTICES_V1`, state domain 23 (`docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`,
+`docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto`, `crates/protocol-oteryn/src/tutorial_notices.rs`
+with golden vectors). Snapshot type 1 is the empty `[0x08, 0x01]` state; delta type 1 carries one notice:
+`hint_id` (1..=255) or `status_text` (1..=255 UTF-8 bytes), at most 260 bytes. A client without capability
+31 gets no frame; the server behaviour is the same.
+
+Hint ids are the client's own tutorial table, so the server never invents a hint number:
+`opentibiabr/otclient` `53d3a8ac`, `modules/game_tutorial/const/vocations.lua` names
+3 `combatBasicKnight`, 4 `combatBasicPaladin`, 5 `combatBasicSorcerer`, 6 `combatBasicDruid`, 11
+`combatBasicMonk`. Crystal `movement_select_vocation.lua` (`8366ff4e`) sends 2, which is kept as is;
+`movement_update_tutorial_hunting.lua`
+(`4c3cb41f`) sends 3 to every vocation, which in that table is the Knight's, so a Paladin would see the
+Knight's window. The tiles therefore send the hint of the Character's base vocation, and a vocationless
+Character gets none and keeps the track armed. 4 stays the Paladin's, as in OTClient.
+
+### Q1: runtime wiring
+
+`gameplay_transport/tutorial_session.rs` (production `TutorialSessions` in `mod.rs`) reads the stored
+progress at a playable admission, places a first-login vocationless Character on the islet temple, refuses
+the islet hole before the map check with its status text, and writes the forcefield and hunting-tile
+transitions after a committed step (no lock held during the write; a compare-and-set conflict reapplies on
+the stored row). `connection.rs` sends the queued notices as domain 23 deltas after the step's frame.
+End to end through the real dispatch:
+`tutorial_notices_follow_the_hole_and_the_forcefield_steps_through_dispatch` in the `connection.rs`
+tests (game-server lib tests, the Rust Linux lane).
+
+### Q2: movement profiles and the spawn
+
+`build_source_item_profiles.py` adds the movement overlay `movement-item-profiles.json`
+(`OTERYN_NATIVE_MOVEMENT_ITEM_PROFILES/v1`): the 17 plain Items on the islet path from the temple to the
+forcefield and on the arrival cell, 3892, 3893, 6216, 6217, 6373-6382, 6385, 19394 and 37001. Each is
+refused unless the Canary item pin states it walkable (`blocks_movement`, `blocks_projectile`, `has_height`
+all false, not movable, not pickupable, Ground-only non-stackable admission); the islet hole 51921 keeps
+blocking. `register_spell_families.py` admits the overlay with the same checks
+(`MOVEMENT_ITEM_PROFILES_RECORD_SET`, `MOVEMENT_ITEM_PROFILES_NOT_WALKABLE`), 430 records.
+
+The pin `entry_start` is the islet temple (32534, 32513, -7). `world-bundle-compiler pin-check` now also
+refuses a start whose plain Items the served definitions do not state walkable, and a start with no
+steppable orthogonal neighbour, so a new Character can always move; `tests/pin_check.rs` proves the temple
+and its southern neighbour. The node boot refuses a solid start. `preprod-topology.toml` and the client
+`START` follow the pin.
+
+### Q4: designed values (not yet used at runtime)
+
+| Value | Choice | Source |
+|---|---|---|
+| Anna | (32552, 32497, 7), direction 2, level 8 to travel | Crystal `data-global/world/world-npc.xml` (blob `ed65ac56`): centre (32559, 32490) offset (-7, +7); `data-global/npc/anna.lua` `MIN_LEVEL_TO_TRAVEL = 8` |
+| A Seagull | (32535, 32512, 7) | same `world-npc.xml`, centre (32535, 32512) radius 1 |
+| Anna's landing (Thais Peninsula, D1463) | (32472, 32288, 7) | OTERYN_DESIGN: Hector The Mentor stands at (32473, 32288, 7) (`world-npc.xml`); the cell west of him holds only ground 4515, the nearest free ground cell beside him. `anna.lua` targets Targuna (31938, 31928, 7), which D1463 replaces |
+| Corruptor vocation loot | Knight 3359, 3285, 3375; Paladin 10321, 48843; Druid 3066, 8871; Sorcerer 3074, 8871; Monk 48847, 48845 | `#ondroploot_the_corruptor.lua` (`a6984946`) |
+
+48843 (refined bow), 48845 (simple jo staff) and 48847 (harmony amulet) have no Item definition in
+`content/items/definitions/`. Conservative choice: the loot grants only defined Items, and a vocation whose
+Items are missing gets nothing (no substitute) until those definitions exist.
+
+### Open (owner questions in the PR)
+
+- Death (step 6) needs the respawn rule: the islet or the hometown.
+- The Corruptor loot (step 5) and the Anna/Seagull departure (step 7) at runtime are follow-ups.
+- Walking the whole island: 282 more plain Item ids there are walkable per Canary and are not profiled.

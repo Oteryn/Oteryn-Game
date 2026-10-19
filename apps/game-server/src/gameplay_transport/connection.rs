@@ -119,6 +119,11 @@ use oteryn_protocol_oteryn::quest_log::{
     COMMAND_TYPE_QUEST_LOG_QUERY, DELTA_TYPE_QUEST_LOG_V1, SNAPSHOT_TYPE_QUEST_LOG_V1,
     STATE_DOMAIN_QUEST_LOG, decode_quest_log_query,
 };
+use oteryn_protocol_oteryn::tutorial_notices::{
+    CAPABILITY_TUTORIAL_NOTICES_V1, DELTA_TYPE_TUTORIAL_NOTICE_V1,
+    SNAPSHOT_TYPE_TUTORIAL_NOTICES_V1, STATE_DOMAIN_TUTORIAL_NOTICES, TutorialNotice,
+    encode_tutorial_notice, encode_tutorial_notices_snapshot,
+};
 use oteryn_protocol_oteryn::world_clock::{
     CAPABILITY_WORLD_LIGHT_V1, DELTA_TYPE_WORLD_CLOCK_V1, SNAPSHOT_TYPE_WORLD_CLOCK_V1,
     STATE_DOMAIN_WORLD_CLOCK, WorldClock, encode_world_clock,
@@ -243,6 +248,10 @@ pub(crate) struct SessionContinuity {
     /// cumulative per GameSession, so a resume or channel transfer carries it and the next
     /// snapshot follows it.
     pub(crate) world_weather_revision: u64,
+    /// TUTORIAL-1: the last domain 23 revision sent. Used only with capability 31; it is
+    /// cumulative per GameSession, so a resume or channel transfer carries it and the next
+    /// snapshot follows it.
+    pub(crate) tutorial_notice_revision: u64,
 }
 
 impl SessionContinuity {
@@ -276,6 +285,7 @@ impl SessionContinuity {
         },
         world_clock_revision: 0,
         world_weather_revision: 0,
+        tutorial_notice_revision: 0,
     };
 }
 
@@ -533,6 +543,16 @@ pub(crate) trait FreshAdmissionAuthority {
     /// authority).
     fn world_weather(&self) -> Option<&WorldWeatherSource> {
         None
+    }
+
+    /// TUTORIAL-1: the tutorial notices queued for `session` since the last call, oldest first.
+    /// The connection sends them only under capability 31 and drops them otherwise. Fixtures
+    /// without a tutorial keep this default.
+    fn take_tutorial_notices(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Vec<TutorialNotice>> {
+        async { Vec::new() }
     }
 
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
@@ -1507,6 +1527,29 @@ fn observe_weather<A: FreshAdmissionAuthority>(
     }
 }
 
+/// TUTORIAL-1: the domain 23 delta of one notice after `revision`, with its sequence and new
+/// revision. `None` for a notice outside the wire bounds (a server fault) or an exhausted counter.
+fn tutorial_notice_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    notice: &TutorialNotice,
+) -> Option<(u64, Vec<u8>, u64)> {
+    let (delta_sequence, new_revision) = (sequence.checked_add(1)?, revision.checked_add(1)?);
+    let payload = encode_tutorial_notice(notice).ok()?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_TUTORIAL_NOTICES,
+        revision,
+        new_revision,
+        DELTA_TYPE_TUTORIAL_NOTICE_V1,
+        &payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame, new_revision))
+}
+
 /// WEATHER-1: the domain 22 delta after `revision`, with its sequence and new revision.
 fn world_weather_delta(
     generation: u64,
@@ -1982,6 +2025,23 @@ where
             revision: admitted.continuity.world_weather_revision,
             snapshot_type: SNAPSHOT_TYPE_WORLD_WEATHER_V1,
             payload: &weather_snapshot,
+        });
+    }
+    // TUTORIAL-1: with capability 31, domain 23 at the session's current revision. A notice
+    // queued before this snapshot (on a lost connection) is dropped, never replayed.
+    let tutorial_notices = selected_capabilities.contains(CAPABILITY_TUTORIAL_NOTICES_V1);
+    drop(
+        authority
+            .take_tutorial_notices(admitted.game_session_id)
+            .await,
+    );
+    let tutorial_snapshot = encode_tutorial_notices_snapshot();
+    if tutorial_notices {
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_TUTORIAL_NOTICES,
+            revision: admitted.continuity.tutorial_notice_revision,
+            snapshot_type: SNAPSHOT_TYPE_TUTORIAL_NOTICES_V1,
+            payload: &tutorial_snapshot,
         });
     }
     let snapshot =
@@ -3461,6 +3521,30 @@ where
                     .is_none()
                 {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                // TUTORIAL-1: the notices of the step's committed tutorial transition (the hole
+                // text of a refused step too), after its result and its moved frames.
+                for notice in authority
+                    .take_tutorial_notices(admitted.game_session_id)
+                    .await
+                {
+                    if !tutorial_notices {
+                        continue;
+                    }
+                    let Some((delta_sequence, frame, to)) = tutorial_notice_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.tutorial_notice_revision,
+                        &notice,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.tutorial_notice_revision = to;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
             }
             Dispatch::Use(outcome) => {
@@ -5381,6 +5465,7 @@ mod tests {
                     npc: NpcContinuity::default(),
                     world_clock_revision: 0,
                     world_weather_revision: 0,
+                    tutorial_notice_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
@@ -5646,6 +5731,251 @@ mod tests {
             let steps = authority.steps.borrow();
             assert_eq!(steps.len(), 3);
             assert!(steps[2].1.duration_since(steps[0].1) < PACE);
+            Ok(())
+        })
+    }
+
+    /// TUTORIAL-1: the production tutorial sessions over the in-memory compare-and-set store, on
+    /// a fixture islet. The actor stands on `cell`; a step onto the forcefield lands on the
+    /// island arrival, as the bundle teleport does, and every other step moves one cell. The
+    /// hole refusal and the post-step transition are the calls `ComposedFreshAdmission` makes.
+    struct TutorialAuthority {
+        tutorial: super::super::tutorial_session::TutorialSessions,
+        store: super::super::tutorial_session::tests::MemoryTutorialStore,
+        cell: Cell<crate::domain::tutorial::TutorialCell>,
+    }
+
+    impl TutorialAuthority {
+        /// A vocationless first login on the islet temple, the actor standing on `cell`.
+        async fn admitted_on(
+            cell: crate::domain::tutorial::TutorialCell,
+            session: GameSessionId,
+        ) -> Self {
+            use super::super::tutorial_session::{TutorialAdmission, tests::MemoryTutorialStore};
+            let authority = Self {
+                tutorial: super::super::tutorial_session::TutorialSessions::default(),
+                store: MemoryTutorialStore::new(
+                    crate::domain::tutorial::TutorialVocation::None,
+                    None,
+                ),
+                cell: Cell::new(cell),
+            };
+            authority
+                .tutorial
+                .admit(
+                    &authority.store,
+                    session,
+                    TutorialAdmission::FirstLogin,
+                    crate::domain::tutorial::ISLET_TEMPLE,
+                )
+                .await;
+            authority
+        }
+    }
+
+    impl FreshAdmissionAuthority for TutorialAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn paced_step(
+            &self,
+            _actor: ExactActorRef,
+            session: GameSessionId,
+            direction: StepDirection,
+        ) -> (StepOutcome, Option<std::time::Duration>) {
+            use crate::domain::tutorial::{ISLAND_ARRIVAL, ISLET_FORCEFIELD};
+            let from = self.cell.get();
+            let Some(to) = super::super::tutorial_session::stepped_onto(from, direction) else {
+                return (StepOutcome::rejected(), None);
+            };
+            if self.tutorial.refuses_step(session, from, to) {
+                let blocked = StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                };
+                return (blocked, None);
+            }
+            let landed = if to == ISLET_FORCEFIELD {
+                ISLAND_ARRIVAL
+            } else {
+                to
+            };
+            self.cell.set(landed);
+            self.tutorial
+                .after_step(&self.store, session, from, to, landed)
+                .await;
+            let moved = StepOutcome {
+                disposition: StepDisposition::Moved,
+                moved_to: Some(at(1)),
+            };
+            (moved, None)
+        }
+
+        async fn take_tutorial_notices(&self, session: GameSessionId) -> Vec<TutorialNotice> {
+            self.tutorial.take_notices(session)
+        }
+    }
+
+    /// The baseline snapshot with domain 23 at revision 0.
+    fn tutorial_baseline() -> Vec<Vec<u8>> {
+        let notices = encode_tutorial_notices_snapshot();
+        encode_single_chunk_snapshot(
+            ADMITTED_GENERATION,
+            1,
+            0,
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 1,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &encode_world_spatial(&at(0)),
+                },
+                empty_overlay_snapshot(),
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_TUTORIAL_NOTICES,
+                    revision: 0,
+                    snapshot_type: SNAPSHOT_TYPE_TUTORIAL_NOTICES_V1,
+                    payload: &notices,
+                },
+            ],
+        )
+        .expect("snapshot")
+        .into()
+    }
+
+    /// TUTORIAL-1 through the real dispatch: with capability 31 the islet hole is a BLOCKED
+    /// step followed by its status text on domain 23, a plain step shows nothing, and the
+    /// forcefield is a MOVED step followed by the island hint, its progress stored. A notice
+    /// queued before the snapshot is never replayed, and a session without capability 31 gets
+    /// none.
+    #[test]
+    fn tutorial_notices_follow_the_hole_and_the_forcefield_steps_through_dispatch()
+    -> Result<(), Box<dyn Error>> {
+        use crate::domain::tutorial::{
+            ISLAND_HINT, ISLET_HOLE, ISLET_HOLE_MESSAGE, ISLET_TEMPLE, TutorialCell, TutorialStep,
+        };
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let moved = encode_step_result(StepDisposition::Moved);
+            let blocked = encode_step_result(StepDisposition::Blocked);
+            let spatial = |sequence: u64| {
+                encode_state_delta(
+                    1,
+                    sequence,
+                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    1,
+                    2,
+                    DELTA_TYPE_WORLD_SPATIAL_V1,
+                    &encode_world_spatial(&at(1)),
+                )
+            };
+            let notice = |sequence: u64, notice: TutorialNotice| {
+                encode_state_delta(
+                    1,
+                    sequence,
+                    STATE_DOMAIN_TUTORIAL_NOTICES,
+                    0,
+                    1,
+                    DELTA_TYPE_TUTORIAL_NOTICE_V1,
+                    &encode_tutorial_notice(&notice).map_err(|error| format!("{error:?}"))?,
+                )
+                .map_err(Box::<dyn Error>::from)
+            };
+
+            // The hole, then one plain step east.
+            let admitted = paced_session(&[CAPABILITY_TUTORIAL_NOTICES_V1])?;
+            let session = admitted.game_session_id;
+            let authority = TutorialAuthority::admitted_on(ISLET_TEMPLE, session).await;
+            let (end, frames) = drive_open(
+                &authority,
+                admitted,
+                &[
+                    command(1, 1, step, StepDirection::West),
+                    command(1, 2, step, StepDirection::East),
+                ],
+                4,
+            )
+            .await?;
+            let mut expected = tutorial_baseline();
+            expected.extend([
+                encode_command_result(1, 1, 1, CommandStatus::Accepted, &blocked)?,
+                notice(2, TutorialNotice::StatusText(ISLET_HOLE_MESSAGE.to_owned()))?,
+                encode_command_result(1, 3, 2, CommandStatus::Accepted, &moved)?,
+                spatial(4)?,
+            ]);
+            assert_eq!(frames, expected);
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.tutorial_notice_revision, 1);
+            assert_eq!(ended.continuity.server_sequence, 4);
+            assert_eq!(authority.cell.get(), TutorialCell::new(32535, 32513, 7));
+            assert_eq!(
+                authority.store.progress().map(|stored| stored.step),
+                Some(TutorialStep::Islet)
+            );
+
+            // The forcefield, with a hole text queued before the snapshot that is dropped.
+            let admitted = paced_session(&[CAPABILITY_TUTORIAL_NOTICES_V1])?;
+            let authority =
+                TutorialAuthority::admitted_on(TutorialCell::new(32537, 32514, 7), session).await;
+            assert!(
+                authority
+                    .tutorial
+                    .refuses_step(session, ISLET_TEMPLE, ISLET_HOLE)
+            );
+            let (_, frames) = drive_open(
+                &authority,
+                admitted,
+                &[command(1, 1, step, StepDirection::East)],
+                3,
+            )
+            .await?;
+            let mut expected = tutorial_baseline();
+            expected.extend([
+                encode_command_result(1, 1, 1, CommandStatus::Accepted, &moved)?,
+                spatial(2)?,
+                notice(3, TutorialNotice::Hint(ISLAND_HINT))?,
+            ]);
+            assert_eq!(frames, expected);
+            assert_eq!(
+                authority.store.progress().map(|stored| stored.step),
+                Some(TutorialStep::Island)
+            );
+
+            // Without capability 31: no domain 23 and no notice; the refusal still holds.
+            let admitted = paced_session(&[])?;
+            let authority = TutorialAuthority::admitted_on(ISLET_TEMPLE, session).await;
+            let (end, frames) = drive_open(
+                &authority,
+                admitted,
+                &[
+                    command(1, 1, step, StepDirection::West),
+                    command(1, 2, step, StepDirection::West),
+                ],
+                2,
+            )
+            .await?;
+            let mut expected = baseline();
+            expected.extend([
+                encode_command_result(1, 1, 1, CommandStatus::Accepted, &blocked)?,
+                encode_command_result(1, 2, 2, CommandStatus::Accepted, &blocked)?,
+            ]);
+            assert_eq!(frames, expected);
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.tutorial_notice_revision, 0);
+            assert!(authority.tutorial.take_notices(session).is_empty());
+            assert_eq!(authority.cell.get(), ISLET_TEMPLE);
             Ok(())
         })
     }

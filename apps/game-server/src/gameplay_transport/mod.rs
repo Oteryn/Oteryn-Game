@@ -67,6 +67,7 @@ pub(crate) mod spell_premium_coordinator;
 mod spell_presentation_publisher;
 pub(crate) use spell_presentations::PreparedPresentation as PreparedSpellPresentation;
 mod tcp_tls;
+mod tutorial_session;
 mod world_map;
 pub(crate) mod world_object;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
@@ -590,6 +591,7 @@ pub async fn serve_gameplay(
             owners.channel_id,
         ),
         loop_ground: loop_move::LoopGroundCache::default(),
+        tutorial: tutorial_session::TutorialSessions::default(),
     };
     if let Some(book) = owners.npc_talk {
         authority.chat.install_npc_talk(book);
@@ -829,6 +831,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// ITEM-LOOP-1: the Channel's loop Ground items as a map overlay, rebuilt after each drop or
     /// pickup. A leaf lock, never held across an await.
     pub(crate) loop_ground: loop_move::LoopGroundCache,
+    /// TUTORIAL-1: the sessions on the Newhaven tutorial track, with their stored progress and
+    /// queued notices. A leaf lock, never held across an await.
+    pub(crate) tutorial: tutorial_session::TutorialSessions,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -2493,6 +2498,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.forget_quest_session(session);
                 self.forget_progression_session(session);
                 self.last_positions.forget(session);
+                self.tutorial.forget(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -3212,6 +3218,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         crate::world_weather::shipped()
     }
 
+    async fn take_tutorial_notices(
+        &self,
+        session: GameSessionId,
+    ) -> Vec<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice> {
+        self.tutorial.take_notices(session)
+    }
+
     async fn chat_admit(
         &self,
         _actor: ExactActorRef,
@@ -3547,6 +3560,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }
+        // TUTORIAL-1: the cells of a tracked session's step; the islet hole refuses it here,
+        // before Movement runs.
+        let tutorial_step = if self.tutorial.tracks(session) {
+            Self::tutorial_cell_of(&mut runtime, actor)
+                .and_then(|from| Some((from, tutorial_session::stepped_onto(from, direction)?)))
+        } else {
+            None
+        };
+        if let Some((from, to)) = tutorial_step
+            && self.tutorial.refuses_step(session, from, to)
+        {
+            return (
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                },
+                None,
+            );
+        }
         // The closed bundle doors are read live per candidate cell, not collected per step: a
         // teleport landing never relocates a player onto one (WORLD-INTERACTION-0 §6.6).
         let (none, bundle_doors, legacy);
@@ -3600,13 +3632,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             Ok((snapshot, duration)) => {
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.chat.close_out_of_range(&runtime, session);
-                (
-                    StepOutcome {
-                        disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
-                    },
-                    Some(duration),
-                )
+                let moved = StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                };
+                // TUTORIAL-1: the step's tutorial transition, written with no lock held.
+                if let Some((from, to)) = tutorial_step {
+                    drop((states, runtime, permit));
+                    let landed = tutorial_session::tutorial_cell(snapshot.position());
+                    self.tutorial
+                        .after_step(self, session, from, to, landed)
+                        .await;
+                }
+                (moved, Some(duration))
             }
             Err(
                 MovementError::Blocked
@@ -4446,6 +4484,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_quest_session(&admitted).await;
+        }
+        // TUTORIAL-1: the Newhaven tutorial of a playable admission.
+        if matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            self.admit_tutorial(
+                admitted.game_session_id,
+                actor,
+                tutorial_session::admission_of(decided.as_ref()),
+            )
+            .await;
         }
         Ok(admitted)
     }

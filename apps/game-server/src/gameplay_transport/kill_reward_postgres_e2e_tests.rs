@@ -271,6 +271,7 @@ fn scenario() -> TestResult {
             fence_holders: Default::default(),
             spell_lane: crate::durability::spell_owner_commit::SpellLane::new(world, channel),
             loop_ground: Default::default(),
+            tutorial: Default::default(),
         };
         {
             let runtime = owner.runtime.lock().await;

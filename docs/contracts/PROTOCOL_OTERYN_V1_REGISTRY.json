@@ -298,6 +298,17 @@
       "state_domains": [],
       "offered": false,
       "offer_gate": "FIELD-WIRE-1: the server does not offer this capability before the field payloads and their domain are registered and composed. It requires 6 WORLD_SPATIAL_ENTITIES (RUNE-USE-0 \u00a711.4). While unoffered it is not in the ADMIT0 mandatory floor (registered AND offered), and a World declaring it fails boot closed."
+    },
+    {
+      "id": 31,
+      "name": "TUTORIAL_NOTICES_V1",
+      "owner_decision": "Owner Q3 (a) on #2186 TUTORIAL-1 (2026-10-19): a server frame for the Newhaven tutorial hints and status text, allocated as the next free capability 31 and the next free state domain 23 under the protocol-oteryn conventions (registry, golden vectors, schema, capability)",
+      "owner": "TUTORIAL-1 Newhaven tutorial runtime (apps/game-server domain/tutorial.rs and its session component)",
+      "requires": [],
+      "command_types": [],
+      "state_domains": [23],
+      "offered": true,
+      "offer_gate": "TUTORIAL-1: offered in every offered set (production, Item view and bundle World). With it selected, the session gets the domain 23 snapshot at admission and one delta for each committed Newhaven tutorial transition that shows a hint or a status line; a Character outside the Newhaven tutorial gets the snapshot and never a delta. Without it selected, the tutorial still runs and no notice is sent."
     }
   ],
   "command_types": [
@@ -958,6 +969,16 @@
       "revision": "per GameSessionId, monotonic and never reused: 0 at the initial snapshot, plus 1 for each delta sent; never reset at a reconnect or channel transfer; a resync, reconnect or channel transfer sends only a snapshot and never replays a delta",
       "delta_types": [{"id": 1, "name": "WORLD_WEATHER_DELTA_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}],
       "snapshot_types": [{"id": 1, "name": "WORLD_WEATHER_SNAPSHOT_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/world_weather_v1.proto#WorldWeatherV1", "max_payload_bytes": 64}]
+    },
+    {
+      "id": 23,
+      "name": "TUTORIAL_NOTICES",
+      "owner_decision": "Owner Q3 (a) on #2186 TUTORIAL-1 (2026-10-19): next free state domain 23 for capability 31",
+      "owner": "TUTORIAL-1 Newhaven tutorial runtime",
+      "capability": 31,
+      "revision": "one cumulative, monotonic counter per GameSession: 0 at the initial snapshot, plus 1 for each delta sent; never reset, reused or wound back at a resync snapshot or a reconnect within the same GameSession; a resync or reconnect sends only the snapshot and never replays a notice",
+      "delta_types": [{"id": 1, "name": "TUTORIAL_NOTICE_DELTA_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticeV1", "max_payload_bytes": 260}],
+      "snapshot_types": [{"id": 1, "name": "TUTORIAL_NOTICES_SNAPSHOT_V1", "payload_schema": "docs/contracts/protocol-oteryn/v1/tutorial_notices_v1.proto#TutorialNoticesSnapshotV1", "max_payload_bytes": 8}]
     }
   ],
   "error_codes": [
@@ -1005,7 +1026,7 @@
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},
-    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 31},
+    "capability_id": {"invalid": 0, "assignable": [1, 2147483647], "next_unallocated": 32},
     "command_type": {"invalid": 0, "assignable": [1, 2147483647]},
     "state_domain_id": {"invalid": 0, "assignable": [1, 2147483647]},
     "delta_type": {"invalid": 0, "scope": "state_domain", "assignable": [1, 2147483647]},

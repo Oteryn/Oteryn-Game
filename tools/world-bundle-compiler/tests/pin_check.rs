@@ -3,6 +3,7 @@
 
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -144,6 +145,26 @@ fn reviewed_revision() -> String {
         .to_owned()
 }
 
+/// The Item keys the scratch tree's served Item provider states walkable (`blocks_movement` false).
+fn walkable_items(dir: &Scratch) -> BTreeSet<String> {
+    dir.json("content/items/definitions/spell-native-profiles.json")["records"]
+        .as_array()
+        .expect("records")
+        .iter()
+        .filter(|record| record["attributes"]["blocks_movement"] == json!(false))
+        .map(|record| {
+            record["production_definition"]["production_key"]
+                .as_str()
+                .expect("key")
+                .to_owned()
+        })
+        .collect()
+}
+
+/// The islet temple of TUTORIAL-1 (`ISLET_TEMPLE`, legacy floor 7): the World start since CP Q2
+/// on #2186.
+const ISLET_TEMPLE: (u16, u16, i8) = (32534, 32513, -7);
+
 fn pin(inputs: &str, digest: &str) -> Value {
     json!({
         "schema": "OTERYN_WORLD_PIN/v1",
@@ -152,7 +173,7 @@ fn pin(inputs: &str, digest: &str) -> Value {
         "world_schema_version": "reference-schema-v1",
         "content_revision": reviewed_revision(),
         "production": false,
-        "entry_start": {"x": 32369, "y": 32238, "floor": -7},
+        "entry_start": {"x": ISLET_TEMPLE.0, "y": ISLET_TEMPLE.1, "floor": ISLET_TEMPLE.2},
         "inputs_digest": inputs,
     })
 }
@@ -307,11 +328,13 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         assert!(!dir.check().status.success(), "{bad}");
     }
 
-    // entry_start outside the World bounds fails; so does a cell without walkable ground,
-    // one without a tile and one whose walkable ground holds a plain Item (no Terrain record),
-    // all read from the bundle that was just built. (10228, 10032, 0), the former start, holds
-    // the plain Item i1788: the node refuses it (E2012) because a plain Item without a served
-    // `blocks_movement` blocks.
+    // entry_start outside the World bounds fails; so does a cell without walkable ground, one
+    // without a tile, one whose walkable ground holds a blocking plain Item (no Terrain record and
+    // no served profile stating `blocks_movement` false) and a steppable cell none of whose four
+    // neighbours a Character can step onto, all read from the bundle that was just built.
+    // (10228, 10032, 0), the former start, holds the plain Item i1788: the node refuses it (E2012)
+    // because a plain Item without a served `blocks_movement` blocks.
+    let walkable = walkable_items(&dir);
     let mut cells = vec![
         (5, 5, 0),
         (10228, 10032, 99),
@@ -319,53 +342,82 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
         (10228, 10032, 0),
     ];
     let (mut blocked, mut open, mut item) = (None, None, None);
+    let (mut steppable, mut profiled) = (BTreeMap::new(), BTreeSet::new());
     let visited = bundle::visit(&written, |manifest: &Manifest, sector| {
         for tile in &sector.tiles {
-            let terrains: Vec<_> = tile
+            let top: Vec<_> = tile
                 .items
                 .iter()
                 .filter(|item| item.depth == 0)
-                .map(|item| manifest.palette[item.palette as usize].terrain)
+                .map(|item| &manifest.palette[item.palette as usize])
                 .collect();
-            let ground = terrains
+            let ground = top
                 .iter()
-                .flatten()
+                .filter_map(|entry| entry.terrain)
                 .find(|t| t.kind == TerrainKind::Ground);
+            let wall = top
+                .iter()
+                .filter_map(|entry| entry.terrain)
+                .any(|t| t.kind == TerrainKind::Wall);
+            let plain: Vec<&String> = top
+                .iter()
+                .filter(|entry| entry.family == Family::Item && entry.terrain.is_none())
+                .map(|entry| &entry.key)
+                .collect();
+            let blocking_item = plain.iter().any(|key| !walkable.contains(*key));
+            let walkable_ground = ground.is_some_and(|t| t.walkable == Some(true));
             let cell = (tile.x, tile.y, sector.floor);
-            if blocked.is_none()
-                && (terrains
-                    .iter()
-                    .flatten()
-                    .any(|t| t.kind == TerrainKind::Wall)
-                    || ground.is_some_and(|t| t.walkable == Some(false)))
-            {
+            if blocked.is_none() && (wall || ground.is_some_and(|t| t.walkable == Some(false))) {
                 blocked = Some(cell);
             }
             if open.is_none() && tile.items.is_empty() {
                 open = Some(cell);
             }
-            if item.is_none()
-                && ground.is_some_and(|t| t.walkable == Some(true))
-                && tile.items.iter().any(|entry| {
-                    entry.depth == 0
-                        && manifest.palette[entry.palette as usize].family == Family::Item
-                        && manifest.palette[entry.palette as usize].terrain.is_none()
-                })
-            {
+            if item.is_none() && walkable_ground && blocking_item {
                 item = Some(cell);
             }
+            if !plain.is_empty() && !blocking_item {
+                profiled.insert(cell);
+            }
+            steppable.insert(cell, walkable_ground && !wall && !blocking_item);
         }
         Ok(())
     })
     .expect("bundle");
     let extent = visited.manifest.world;
+    let step = |x: u16, y: u16, floor: i8| steppable.get(&(x, y, floor)) == Some(&true);
+    let enclosed = steppable
+        .iter()
+        .filter(|&(_, &ok)| ok)
+        .map(|(&cell, _)| cell)
+        .find(|&(x, y, floor)| {
+            x > 0
+                && y > 0
+                && !step(x, y - 1, floor)
+                && !step(x, y + 1, floor)
+                && !step(x + 1, y, floor)
+                && !step(x - 1, y, floor)
+        });
+    // The reviewed start holds plain Items the provider states walkable (TUTORIAL-1 movement
+    // profiles), and a new Character can step off it.
+    assert!(step(ISLET_TEMPLE.0, ISLET_TEMPLE.1, ISLET_TEMPLE.2));
+    assert!(
+        profiled.contains(&ISLET_TEMPLE),
+        "the islet temple holds a walkable plain Item"
+    );
+    assert!(step(ISLET_TEMPLE.0, ISLET_TEMPLE.1 + 1, ISLET_TEMPLE.2));
     cells.extend(blocked);
     cells.extend(open);
     cells.extend(item);
+    cells.extend(enclosed);
     assert!(blocked.is_some(), "the World holds a blocked cell");
     assert!(
         item.is_some(),
-        "the World holds a plain Item on walkable ground"
+        "the World holds a blocking plain Item on walkable ground"
+    );
+    assert!(
+        enclosed.is_some(),
+        "the World holds an enclosed steppable cell"
     );
     for (x, y, floor) in cells {
         let mut bad = good.clone();

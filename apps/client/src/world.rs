@@ -36,8 +36,9 @@ const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json"
 const PLACEMENT_INDEX_SHA256: &str =
     "b32bc5e1088ba594b1b72238686a34e31373e5ecddc10f8428d4418db98ae081";
 const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
-/// The Thais temple, where the offline view starts and the play view is anchored.
-pub const START: (i32, i32) = (32369, 32241);
+/// The new-Character start on the Newhaven tutorial islet (`content/world/pins/oteryn.json`
+/// `entry_start`, TUTORIAL-1), where the offline view starts and the play view is anchored.
+pub const START: (i32, i32) = (32534, 32513);
 pub const START_FLOOR: u8 = 7;
 /// Tiles decoded on each side of [`START`].
 pub const RADIUS: i32 = 64;

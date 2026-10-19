@@ -4,7 +4,8 @@ use crate::bestiary_postgres_harness::{
     Harness, SESSION, TestResult, configured_admin, debug, fence, id, runtime,
 };
 use crate::domain::tutorial::{
-    ISLET_TEMPLE, TutorialActor, TutorialEvent, TutorialGate, TutorialProgress, TutorialStep, apply,
+    ISLET_TEMPLE, TutorialActor, TutorialEvent, TutorialGate, TutorialProgress, TutorialStep,
+    TutorialVocation, apply,
 };
 use crate::durability::DurabilityRoot;
 use crate::durability::character_progression::{
@@ -14,7 +15,7 @@ use crate::durability::character_tutorial::{StoredTutorialProgress, TutorialProg
 use crate::foundation::{ConnectionGeneration, GameSessionId};
 
 const NEW_PLAYER: TutorialActor = TutorialActor {
-    vocationless: true,
+    vocation: TutorialVocation::None,
     has_access: false,
 };
 

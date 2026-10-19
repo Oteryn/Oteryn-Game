@@ -46,6 +46,10 @@ use oteryn_protocol_oteryn::presentation::{
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
+use oteryn_protocol_oteryn::tutorial_notices::{
+    CAPABILITY_TUTORIAL_NOTICES_V1, CAPABILITY_TUTORIAL_NOTICES_V1_REQUIRES,
+    STATE_DOMAIN_TUTORIAL_NOTICES,
+};
 use oteryn_protocol_oteryn::world_clock::{CAPABILITY_WORLD_LIGHT_V1, STATE_DOMAIN_WORLD_CLOCK};
 use oteryn_protocol_oteryn::world_interaction::{
     CAPABILITY_WORLD_INTERACTION_V1, COMMAND_TYPE_PUSH_INTENT,
@@ -104,8 +108,16 @@ pub(crate) fn with_weather_offer(
     offered
 }
 
+/// TUTORIAL-1 (owner Q3 on #2186): capability 31 `TUTORIAL_NOTICES_V1` (domain 23), which
+/// requires nothing. It is the highest offered ID, so every offered set ends with it. A Character
+/// outside the Newhaven tutorial gets only the domain 23 snapshot.
+pub(crate) const TUTORIAL_NOTICES: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_TUTORIAL_NOTICES_V1,
+    requires: &CAPABILITY_TUTORIAL_NOTICES_V1_REQUIRES,
+};
+
 /// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Only
-/// capability 26 is higher, so every offered set ends with 21 then 26.
+/// capabilities 26 and 31 are higher, so every offered set ends with 21, 26 and 31.
 const LOGOUT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_LOGOUT_V1,
     requires: &[],
@@ -145,6 +157,7 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    TUTORIAL_NOTICES,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
@@ -202,6 +215,7 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    TUTORIAL_NOTICES,
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
@@ -233,6 +247,7 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     WORLD_LIGHT,
     LOGOUT,
     WORLD_WEATHER,
+    TUTORIAL_NOTICES,
 ];
 
 /// `ITEM_LOOK_V1`, registry capability 28.
@@ -358,6 +373,12 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
     // and neither is offered, so no session selects them.
     (CAPABILITY_MAP_STATE_V1, &[], &[]),
     (CAPABILITY_WORLD_SPATIAL_FIELDS, &[], &[]),
+    // TUTORIAL-1: capability 31 owns domain 23 and no command type.
+    (
+        CAPABILITY_TUTORIAL_NOTICES_V1,
+        &[],
+        &[STATE_DOMAIN_TUTORIAL_NOTICES],
+    ),
 ];
 
 /// Core domains a selected capability replaces, as (capability, domains). MAP-WIRE-1 contract §3

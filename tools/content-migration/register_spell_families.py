@@ -40,6 +40,8 @@ DOOR_ADMISSION = {
     "stack_class": "NonStackable",
     "legal_destinations": ["Ground"],
 }
+# The Newhaven islet plain Items (TUTORIAL-1): walkable, unmovable, ground-only decoration profiles.
+MOVEMENT_PROFILES = "tools/content-schema/native-gameplay/movement-item-profiles.json"
 COIN_ADMISSION = {
     "materializable": True,
     "stack_class": "StackCapable",
@@ -97,12 +99,41 @@ def check_door_profiles(doors: dict, present: set[str]) -> list[dict]:
     return doors["records"]
 
 
+def check_movement_profiles(movement: dict, present: set[str]) -> list[dict]:
+    """The movement overlay: one walkable, unmovable, ground-only profile per listed islet Item, never twice."""
+    ids = movement["movement_ids"]
+    keys = [r["production_definition"]["production_key"] for r in movement["records"]]
+    expected = [f"oteryn:item.tibia.i{i}" for i in ids]
+    if (
+        movement["schema"] != "OTERYN_NATIVE_MOVEMENT_ITEM_PROFILES/v1"
+        or len(set(ids)) != len(ids) or keys != expected or set(keys) & present
+    ):
+        raise ValueError("MOVEMENT_ITEM_PROFILES_RECORD_SET")
+    fixed = {"state": "KNOWN", "value": False}
+    for record in movement["records"]:
+        attributes = record["attributes"]
+        physical = record["semantics"]["physical"]
+        if (
+            record["admission"] != DOOR_ADMISSION
+            or attributes["blocks_movement"] is not False
+            or attributes["blocks_projectile"] is not False
+            or attributes["has_height"] is not False
+            or physical.get("state") != "KNOWN"
+            or physical["value"]["movable"] != fixed
+            or physical["value"]["pickupable"] != fixed
+        ):
+            raise ValueError("MOVEMENT_ITEM_PROFILES_NOT_WALKABLE")
+    return movement["records"]
+
+
 def admit_overlay_profiles(root: Path, generated: dict[str, bytes]) -> None:
-    """Merge the coin (D175/D176) and door (MAP-DOOR-CONTENT-1) overlays into the pinned Item provider."""
+    """Merge the coin (D175/D176), door (MAP-DOOR-CONTENT-1) and movement (TUTORIAL-1) overlays into the
+    pinned Item provider."""
     path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
     document = json.loads(generated[path])
     coins = json.loads((root / COIN_PROFILES).read_bytes())
     doors = json.loads((root / DOOR_PROFILES).read_bytes())
+    movement = json.loads((root / MOVEMENT_PROFILES).read_bytes())
     present = {r["production_definition"]["production_key"] for r in document["records"]}
     keys = [r["production_definition"]["production_key"] for r in coins["records"]]
     stack = {"state": "KNOWN", "value": {
@@ -116,11 +147,11 @@ def admit_overlay_profiles(root: Path, generated: dict[str, bytes]) -> None:
                for r in coins["records"])
     ):
         raise ValueError("COIN_ITEM_PROFILES_DISAGREE_WITH_D176")
-    added = coins["records"] + check_door_profiles(doors, present)
+    added = coins["records"] + check_door_profiles(doors, present) + check_movement_profiles(movement, present)
     document["records"] = sorted(document["records"] + added, key=provider_order)
     data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
     digest = hashlib.sha256(data).hexdigest()
-    if digest != coins["item_profiles_sha256"] or digest != doors["item_profiles_sha256"]:
+    if any(digest != overlay["item_profiles_sha256"] for overlay in (coins, doors, movement)):
         raise ValueError("ITEM_PROFILES_PROVIDER_DRIFT")
     generated[path] = data
     manifest = json.loads(generated[NATIVE_MANIFEST])

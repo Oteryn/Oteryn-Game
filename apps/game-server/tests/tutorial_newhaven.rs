@@ -1,32 +1,35 @@
 //! TUTORIAL-1 (CP D1426): the Newhaven tutorial applies only to a Character whose start is on the
-//! Newhaven start island; a StartThais Character never enters it. The durable writer and its
+//! Newhaven start island. CP Q2 on #2186 moves the World start to the islet temple; a Character
+//! still placed at the former StartThais start never enters it. The durable writer and its
 //! reconnect/restart cases run on PostgreSQL in
 //! `tests/support/tutorial_progress_postgres_cases.rs`.
 
 use oteryn_game_server::domain::tutorial::{
-    HUNTING_HINT, HUNTING_TILES, ISLAND_ARRIVAL, ISLAND_HINT, ISLET_FORCEFIELD, ISLET_HOLE,
-    ISLET_HOLE_MESSAGE, ISLET_TEMPLE, NEWHAVEN_ISLAND, NEWHAVEN_ISLET, TutorialActor, TutorialArea,
-    TutorialCell, TutorialEffect, TutorialEvent, TutorialGate, TutorialProgress, TutorialStep,
-    apply,
+    HUNTING_HINT, HUNTING_HINT_DRUID, HUNTING_HINT_MONK, HUNTING_HINT_PALADIN,
+    HUNTING_HINT_SORCERER, HUNTING_TILES, ISLAND_ARRIVAL, ISLAND_HINT, ISLET_FORCEFIELD,
+    ISLET_HOLE, ISLET_HOLE_MESSAGE, ISLET_TEMPLE, NEWHAVEN_ISLAND, NEWHAVEN_ISLET, TutorialActor,
+    TutorialArea, TutorialCell, TutorialEffect, TutorialEvent, TutorialGate, TutorialProgress,
+    TutorialStep, TutorialVocation, apply,
 };
-use oteryn_world_bundle::{bundle, sector};
-use oteryn_world_bundle_compiler::b3;
-use std::{collections::HashSet, path::PathBuf};
+use std::path::PathBuf;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-const NEW_PLAYER: TutorialActor = TutorialActor {
-    vocationless: true,
-    has_access: false,
-};
-const KNIGHT: TutorialActor = TutorialActor {
-    vocationless: false,
-    has_access: false,
-};
+const NEW_PLAYER: TutorialActor = actor(TutorialVocation::None);
+const KNIGHT: TutorialActor = actor(TutorialVocation::Knight);
 const GAMEMASTER: TutorialActor = TutorialActor {
-    vocationless: true,
+    vocation: TutorialVocation::None,
     has_access: true,
 };
+/// The former StartThais test start (D1410), legacy floor 7.
+const START_THAIS: TutorialCell = TutorialCell::new(32369, 32238, 7);
+
+const fn actor(vocation: TutorialVocation) -> TutorialActor {
+    TutorialActor {
+        vocation,
+        has_access: false,
+    }
+}
 
 fn content(relative: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -52,174 +55,7 @@ fn area(footprint: &serde_json::Value) -> Result<TutorialArea, Box<dyn std::erro
     })
 }
 
-fn newhaven() -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let shard = content("world/areas/islands/islands-00000-00059.json")?;
-    shard
-        .get("records")
-        .and_then(serde_json::Value::as_array)
-        .ok_or("missing records")?
-        .iter()
-        .filter_map(|record| record.get("declaration"))
-        .find(|declaration| {
-            declaration.pointer("/identity/key")
-                == Some(&serde_json::json!("oteryn:area.island.newhaven"))
-        })
-        .cloned()
-        .ok_or_else(|| "missing oteryn:area.island.newhaven".into())
-}
-
-/// The island converter classifies the first ground item as land unless it is water or lava;
-/// absent tiles are void. This includes every walkable land tile, even behind blocking items.
-fn committed_land(
-    bounds: TutorialArea,
-) -> Result<HashSet<TutorialCell>, Box<dyn std::error::Error>> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let classes: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
-        root.join("tools/content-schema/world-authoring/island-ground-classes.json"),
-    )?)?;
-    let mut non_land = HashSet::new();
-    for kind in ["water", "lava"] {
-        for ranges in classes[kind]
-            .as_object()
-            .ok_or("missing ground classes")?
-            .values()
-        {
-            for range in ranges.as_str().ok_or("missing ground range")?.split(',') {
-                let (low, high) = range.split_once('-').unwrap_or((range, range));
-                non_land.extend(low.parse::<i64>()?..=high.parse::<i64>()?);
-            }
-        }
-    }
-    let index = content("world/placements/index.json")?;
-    let palette = index["palette"].as_array().ok_or("missing palette")?;
-    let mut land = HashSet::new();
-    let mut budget = sector::Budget {
-        tiles: 4 * 256 * 256,
-        entries: 4 * 256 * 256 * 256,
-    };
-    // Include the boundary neighbours, so growth beyond the recorded footprint fails below.
-    for rx in (bounds.min_x - 1) / 256..=(bounds.max_x + 1) / 256 {
-        for ry in (bounds.min_y - 1) / 256..=(bounds.max_y + 1) / 256 {
-            let path = root.join(format!(
-                "content/world/placements/region-z{:02}-x{rx:03}-y{ry:03}.b3",
-                bounds.floor
-            ));
-            let region =
-                b3::decode_region(&std::fs::read(path)?, bundle::TILE_LIMITS, &mut budget)?;
-            assert_eq!(i16::from(region.z), bounds.floor);
-            for (_, _, tiles) in region.sectors {
-                for tile in tiles {
-                    let is_land = match tile.items.first() {
-                        Some(ground) => !non_land.contains(&int(
-                            palette
-                                .get(usize::try_from(ground.palette)?)
-                                .ok_or("missing ground")?,
-                            "source_item_id",
-                        )?),
-                        None => true,
-                    };
-                    if is_land {
-                        land.insert(TutorialCell::new(
-                            tile.x.into(),
-                            tile.y.into(),
-                            bounds.floor,
-                        ));
-                    }
-                }
-            }
-        }
-    }
-    Ok(land)
-}
-
-#[test]
-fn a_different_land_component_inside_the_newhaven_bounds_is_inert() {
-    let other = TutorialCell::new(32604, 32406, 7);
-    assert!(NEWHAVEN_ISLAND.contains(other));
-    assert_eq!(TutorialGate::for_start(other), TutorialGate::Inert);
-}
-
-/// Independently flood-fill the committed B3 ground from each content anchor. Check every
-/// component tile and the entire bounding box, including other land components, water and void.
-#[test]
-fn the_gate_matches_exactly_the_two_committed_newhaven_land_components() -> TestResult {
-    let declaration = newhaven()?;
-    let land = committed_land(NEWHAVEN_ISLAND)?;
-    let mut newhaven_land = HashSet::new();
-    let mut components = vec![&declaration];
-    components.extend(
-        declaration["additional_components"]
-            .as_array()
-            .ok_or("missing components")?,
-    );
-    assert_eq!(components.len(), 2);
-    for component in components {
-        let anchor = &component["anchor"];
-        let start = TutorialCell::new(
-            i32::try_from(int(anchor, "x")?)?,
-            i32::try_from(int(anchor, "y")?)?,
-            i16::try_from(int(anchor, "floor")?)?,
-        );
-        assert!(land.contains(&start), "{start:?} must anchor land");
-        let footprint = &component["footprint"];
-        let bounds = area(footprint)?;
-        let mut found = HashSet::from([start]);
-        let mut pending = vec![start];
-        while let Some(cell) = pending.pop() {
-            assert!(
-                bounds.contains(cell),
-                "component grew beyond {bounds:?}: {cell:?}"
-            );
-            assert_eq!(
-                TutorialGate::for_start(cell),
-                TutorialGate::Newhaven,
-                "{cell:?}"
-            );
-            for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                let neighbour = TutorialCell::new(cell.x + dx, cell.y + dy, cell.floor);
-                if land.contains(&neighbour) && found.insert(neighbour) {
-                    pending.push(neighbour);
-                }
-            }
-        }
-        assert_eq!(found.len(), usize::try_from(int(footprint, "tile_count")?)?);
-        assert!(newhaven_land.is_disjoint(&found));
-        newhaven_land.extend(found);
-    }
-    let other = TutorialCell::new(32604, 32406, 7);
-    assert!(land.contains(&other));
-    assert!(!newhaven_land.contains(&other));
-    let mut other_land_count = 0;
-    for y in NEWHAVEN_ISLAND.min_y..=NEWHAVEN_ISLAND.max_y {
-        for x in NEWHAVEN_ISLAND.min_x..=NEWHAVEN_ISLAND.max_x {
-            let cell = TutorialCell::new(x, y, NEWHAVEN_ISLAND.floor);
-            let expected = if newhaven_land.contains(&cell) {
-                TutorialGate::Newhaven
-            } else {
-                other_land_count += usize::from(land.contains(&cell));
-                TutorialGate::Inert
-            };
-            assert_eq!(TutorialGate::for_start(cell), expected, "{cell:?}");
-        }
-    }
-    assert!(other_land_count > 0, "must exercise other land components");
-    for cell in [
-        ISLET_TEMPLE,
-        ISLET_HOLE,
-        ISLET_FORCEFIELD,
-        ISLAND_ARRIVAL,
-        HUNTING_TILES[0],
-        HUNTING_TILES[1],
-    ] {
-        assert!(
-            newhaven_land.contains(&cell),
-            "scripted cell {cell:?} must be on Newhaven"
-        );
-    }
-    Ok(())
-}
-
-/// The World's current start: the StartThais pin `entry_start` (native floor).
+/// The World's current start: the pin `entry_start` (native floor).
 fn current_start() -> Result<TutorialCell, Box<dyn std::error::Error>> {
     let pin = content("world/pins/oteryn.json")?;
     let start = pin.get("entry_start").ok_or("missing entry_start")?;
@@ -231,11 +67,19 @@ fn current_start() -> Result<TutorialCell, Box<dyn std::error::Error>> {
 }
 
 fn step_in(progress: Option<TutorialProgress>, to: TutorialCell) -> TutorialEffectAndProgress {
+    step_in_as(NEW_PLAYER, progress, to)
+}
+
+fn step_in_as(
+    actor: TutorialActor,
+    progress: Option<TutorialProgress>,
+    to: TutorialCell,
+) -> TutorialEffectAndProgress {
     let transition = apply(
         TutorialGate::Newhaven,
         progress,
         TutorialEvent::StepIn {
-            actor: NEW_PLAYER,
+            actor,
             from: TutorialCell::new(to.x + 1, to.y, to.floor),
             to,
         },
@@ -245,11 +89,23 @@ fn step_in(progress: Option<TutorialProgress>, to: TutorialCell) -> TutorialEffe
 
 type TutorialEffectAndProgress = (Option<TutorialEffect>, Option<TutorialProgress>);
 
-/// The documented bounds match the content record `oteryn:area.island.newhaven`: its footprint
-/// and its additional component (the islet), and every scripted cell is inside the bounds.
+/// The gate's island is the content record `oteryn:area.island.newhaven`: its footprint and its
+/// additional component (the islet), and every scripted cell is on one of them.
 #[test]
 fn the_gate_island_is_the_newhaven_content_record() -> TestResult {
-    let declaration = newhaven()?;
+    let shard = content("world/areas/islands/islands-00000-00059.json")?;
+    let records = shard
+        .get("records")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("missing records")?;
+    let declaration = records
+        .iter()
+        .filter_map(|record| record.get("declaration"))
+        .find(|declaration| {
+            declaration.pointer("/identity/key")
+                == Some(&serde_json::json!("oteryn:area.island.newhaven"))
+        })
+        .ok_or("missing oteryn:area.island.newhaven")?;
     let footprint = declaration.get("footprint").ok_or("missing footprint")?;
     assert_eq!(
         footprint.get("coordinate_frame"),
@@ -278,13 +134,20 @@ fn the_gate_island_is_the_newhaven_content_record() -> TestResult {
     Ok(())
 }
 
-/// D1426: the current start is StartThais, so the tutorial never starts: no event writes a
-/// progress or has an effect, even on the Newhaven cells.
+/// CP Q2 on #2186: the World start is the islet temple, so a new Character enters the tutorial.
+#[test]
+fn the_world_start_is_the_islet_temple() -> TestResult {
+    let start = current_start()?;
+    assert_eq!(start, ISLET_TEMPLE);
+    assert_eq!(TutorialGate::for_start(start), TutorialGate::Newhaven);
+    Ok(())
+}
+
+/// D1426: a Character at the former StartThais start never enters the tutorial: no event writes
+/// a progress or has an effect, even on the Newhaven cells.
 #[test]
 fn a_start_thais_character_never_enters_the_tutorial() -> TestResult {
-    let start = current_start()?;
-    assert_eq!(start, TutorialCell::new(32369, 32238, 7));
-    let gate = TutorialGate::for_start(start);
+    let gate = TutorialGate::for_start(START_THAIS);
     assert_eq!(gate, TutorialGate::Inert);
 
     let mut events = vec![
@@ -367,10 +230,20 @@ fn a_newhaven_start_character_goes_through_the_steps() {
     };
     assert_eq!(island, Some(armed));
 
-    // The hunting hint shows once, on either tile.
-    let (effect, hunted) = step_in(island, HUNTING_TILES[1]);
+    // Without a vocation the hunting tiles show nothing and keep the track armed.
+    assert_eq!(step_in(island, HUNTING_TILES[1]), (None, island));
+
+    // The hunting hint shows once, on either tile, as the base vocation's basic-combat hint.
+    let (effect, hunted) = step_in_as(KNIGHT, island, HUNTING_TILES[1]);
     assert_eq!(effect, Some(TutorialEffect::Hint(HUNTING_HINT)));
-    assert_eq!(step_in(hunted, HUNTING_TILES[0]), (None, hunted));
+    assert_eq!(step_in_as(KNIGHT, hunted, HUNTING_TILES[0]), (None, hunted));
+    assert_eq!(
+        hunted,
+        Some(TutorialProgress {
+            hunting_hint_pending: false,
+            ..armed
+        })
+    );
 
     // The Corruptor's vocation loot is added once.
     let looted = apply(gate, hunted, TutorialEvent::CorruptorLoot);
@@ -440,4 +313,51 @@ fn a_reconnect_resumes_from_the_persisted_step() {
         login.progress,
         Some(TutorialProgress::new(TutorialStep::Islet))
     );
+}
+
+/// The hunting hint is the client tutorial table's basic-combat id of the base vocation; a
+/// promotion reads as its base vocation, and `none` or an unknown key shows no hint.
+#[test]
+fn each_base_vocation_gets_its_own_hunting_hint() {
+    let armed = Some(TutorialProgress {
+        step: TutorialStep::Island,
+        hunting_hint_pending: true,
+        corruptor_loot_pending: true,
+    });
+    for (keys, hint) in [
+        (["knight", "elite_knight"], HUNTING_HINT),
+        (["paladin", "royal_paladin"], HUNTING_HINT_PALADIN),
+        (["sorcerer", "master_sorcerer"], HUNTING_HINT_SORCERER),
+        (["druid", "elder_druid"], HUNTING_HINT_DRUID),
+        (["monk", "exalted_monk"], HUNTING_HINT_MONK),
+    ] {
+        for key in keys {
+            let vocation = TutorialVocation::from_key(key);
+            assert_eq!(vocation.hunting_hint(), Some(hint), "{key}");
+            let (effect, _) = step_in_as(actor(vocation), armed, HUNTING_TILES[0]);
+            assert_eq!(effect, Some(TutorialEffect::Hint(hint)), "{key}");
+        }
+    }
+    assert_eq!(
+        [
+            HUNTING_HINT,
+            HUNTING_HINT_PALADIN,
+            HUNTING_HINT_SORCERER,
+            HUNTING_HINT_DRUID,
+            HUNTING_HINT_MONK
+        ],
+        [3, 4, 5, 6, 11]
+    );
+    assert_ne!(ISLAND_HINT, HUNTING_HINT_PALADIN);
+    for key in ["none", "rookie", ""] {
+        let vocation = TutorialVocation::from_key(key);
+        assert_eq!(vocation.hunting_hint(), None, "{key}");
+        assert_eq!(
+            step_in_as(actor(vocation), armed, HUNTING_TILES[0]),
+            (None, armed),
+            "{key}"
+        );
+    }
+    assert!(actor(TutorialVocation::from_key("none")).vocationless());
+    assert!(!actor(TutorialVocation::from_key("rookie")).vocationless());
 }

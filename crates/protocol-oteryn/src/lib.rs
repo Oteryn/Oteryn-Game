@@ -408,10 +408,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // capability requirement was assigned. 9 HIGHSCORES_V1 (HS-WIRE-1, RANK-1) is offered with its
 // command type 14 handler. CP D1442 registers 29 MAP_STATE_V1 (never offered: D1083 serves the
 // map as 18) and 30 WORLD_SPATIAL_FIELDS (FIELD-WIRE-1, not offered before the field payloads are
-// composed); both require 6. Next unallocated capability is 31.
+// composed); both require 6. TUTORIAL-1 (owner Q3 on #2186) registers and offers 31
+// TUTORIAL_NOTICES_V1 with state domain 23; it requires nothing. Next unallocated capability is 32.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
 const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[
-    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 30,
+    1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 26, 28, 29, 30, 31,
 ];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
@@ -755,6 +756,10 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     // CP D1442: MAP_STATE_V1 and WORLD_SPATIAL_FIELDS each require 6 WORLD_SPATIAL_ENTITIES.
     (29, &[6]),
     (30, &[6]),
+    (
+        tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
+        &tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1_REQUIRES,
+    ),
 ];
 
 fn validate_capability_closure(selected: &[u32]) -> Result<(), FoundationProtocolError> {
@@ -2610,6 +2615,7 @@ pub mod npc_service;
 pub mod presentation;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
+pub mod tutorial_notices;
 pub mod world_clock;
 pub mod world_interaction;
 pub mod world_map;

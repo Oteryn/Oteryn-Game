@@ -1,0 +1,30 @@
+// TUTORIAL-1 (owner Q3 on #2186, 2026-10-19): typed payloads of capability 31
+// TUTORIAL_NOTICES_V1 and state domain 23 TUTORIAL_NOTICES (snapshot type 1, delta type 1). The
+// capability has no command type and requires no other capability. FND-02 envelopes own server
+// sequence, domain ID and revisions; these payloads never duplicate them. The domain holds no
+// durable state: a notice is presentation only, and the Newhaven tutorial progress stays server
+// state. The revision is cumulative per GameSession and never reset; a resync or reconnect sends
+// only the snapshot, and a notice is never replayed. Unknown fields, repeated fields, both or
+// neither of the notice fields, a hint outside 1..=255, an empty status text, invalid UTF-8, a
+// control character and a value over its declared bound all fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.tutorial_notices;
+
+// StateDomainSnapshot.payload of snapshot type 1. At most 8 bytes; always status 1 LIVE.
+message TutorialNoticesSnapshotV1 {
+  uint32 status = 1;
+}
+
+// StateDelta.payload of delta type 1: one notice of a committed tutorial transition. At most 260
+// bytes; the encoder emits at most 258.
+message TutorialNoticeV1 {
+  oneof notice {
+    // A tutorial hint number, 1..=255, that the client maps to its own hint window. The server
+    // sends 2 (the island) and the vocation's hunting hint (3 Knight, 4 Paladin, 5 Sorcerer,
+    // 6 Druid, 11 Monk), the numbering of the client tutorial hint table.
+    uint32 hint_id = 1;
+    // One line of status text, 1..=255 UTF-8 bytes without control characters.
+    string status_text = 2;
+  }
+}

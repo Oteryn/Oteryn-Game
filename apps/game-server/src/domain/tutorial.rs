@@ -1,9 +1,12 @@
 //! TUTORIAL-1: the authoritative Newhaven tutorial state, gated on the start island (CP D1426).
 //!
 //! The tutorial applies only to a Character whose start cell is on the Newhaven start island, as
-//! in the global reference. The current start is the temporary test start StartThais (D1410), so
-//! every Character of the current World gets [`TutorialGate::Inert`] and never enters the
-//! tutorial: every [`TutorialEvent`] then leaves the progress unchanged and has no effect.
+//! in the global reference. CP Q2 on #2186 moves the World start (`entry_start` of
+//! `content/world/pins/oteryn.json`) from the StartThais test start (D1410, D1463) to the islet
+//! temple, so a Character created on this World gets [`TutorialGate::Newhaven`]. A Character
+//! placed before that switch keeps its stored position outside Newhaven and gets
+//! [`TutorialGate::Inert`]: every [`TutorialEvent`] then leaves the progress unchanged and has no
+//! effect.
 //!
 //! The island is the content record `oteryn:area.island.newhaven` (TibiaWiki page 109339, rev
 //! 1197143), in its coordinate frame `global-target-2026-09-27`: the island footprint and its
@@ -17,7 +20,9 @@
 //! - `movement_select_vocation.lua` (`8366ff4e`): the islet forcefield moves the Character to the
 //!   island and arms the hunting hint and The Corruptor's vocation loot;
 //! - `movement_update_tutorial_hunting.lua` (`4c3cb41f`): the hunting tiles show the hunting hint
-//!   once;
+//!   once (the reference sends client tutorial 3 to every vocation; this module sends each base
+//!   vocation its own basic-combat tutorial of the client tutorial table, see
+//!   [`TutorialVocation::hunting_hint`]);
 //! - `#ondroploot_the_corruptor.lua` (`a6984946`): The Corruptor's vocation loot is added once;
 //! - `on_death_newhaven.lua` (`680ec85a`, registered at login for a citizen): a vocationless
 //!   Character without access goes back to the islet temple;
@@ -75,7 +80,7 @@ impl TutorialArea {
     }
 }
 
-/// Bounding box of the main `oteryn:area.island.newhaven` land component, not its exact mask.
+/// `oteryn:area.island.newhaven` footprint.
 pub const NEWHAVEN_ISLAND: TutorialArea = TutorialArea {
     min_x: 32506,
     max_x: 32634,
@@ -84,7 +89,7 @@ pub const NEWHAVEN_ISLAND: TutorialArea = TutorialArea {
     floor: 7,
 };
 
-/// Bounding box of the additional Newhaven component: the tutorial islet with the temple.
+/// `oteryn:area.island.newhaven` additional component: the tutorial islet with the temple.
 pub const NEWHAVEN_ISLET: TutorialArea = TutorialArea {
     min_x: 32532,
     max_x: 32539,
@@ -92,161 +97,6 @@ pub const NEWHAVEN_ISLET: TutorialArea = TutorialArea {
     max_y: 32518,
     floor: 7,
 };
-
-// Exact floor-7 land components of `oteryn:area.island.newhaven`, sorted by (y, x).
-// Inclusive (y, min_x, max_x) row spans, derived from the committed WorldPlacement.Base B3
-// map with convert_islands.py's land_component rule (4 neighbours, non-water/lava ground).
-// Anchors: island (32560, 32488), 9,189 tiles; islet (32536, 32514), 50 tiles.
-// tests/tutorial_newhaven.rs flood-fills both content-record anchors and checks this mask
-// against the map, including other land components and water inside the bounding boxes.
-const NEWHAVEN_LAND_SPANS: [(i32, i32, i32); 146] = [
-    (32405, 32547, 32554),
-    (32406, 32546, 32555),
-    (32406, 32574, 32575),
-    (32406, 32578, 32581),
-    (32407, 32544, 32560),
-    (32407, 32571, 32585),
-    (32407, 32587, 32592),
-    (32408, 32539, 32563),
-    (32408, 32570, 32596),
-    (32409, 32538, 32565),
-    (32409, 32568, 32598),
-    (32410, 32536, 32599),
-    (32411, 32531, 32600),
-    (32412, 32528, 32601),
-    (32413, 32525, 32602),
-    (32414, 32523, 32603),
-    (32414, 32608, 32614),
-    (32415, 32522, 32618),
-    (32416, 32521, 32620),
-    (32417, 32520, 32620),
-    (32418, 32518, 32621),
-    (32419, 32518, 32621),
-    (32420, 32516, 32622),
-    (32421, 32515, 32622),
-    (32422, 32515, 32622),
-    (32423, 32514, 32623),
-    (32424, 32514, 32623),
-    (32425, 32514, 32624),
-    (32426, 32513, 32625),
-    (32427, 32513, 32627),
-    (32428, 32512, 32628),
-    (32429, 32509, 32628),
-    (32430, 32506, 32628),
-    (32431, 32506, 32628),
-    (32432, 32507, 32628),
-    (32433, 32508, 32628),
-    (32434, 32509, 32628),
-    (32435, 32509, 32628),
-    (32436, 32509, 32628),
-    (32437, 32509, 32628),
-    (32438, 32509, 32628),
-    (32439, 32509, 32628),
-    (32440, 32509, 32628),
-    (32441, 32509, 32628),
-    (32442, 32510, 32627),
-    (32443, 32510, 32628),
-    (32444, 32511, 32629),
-    (32445, 32511, 32630),
-    (32446, 32512, 32631),
-    (32447, 32513, 32632),
-    (32448, 32514, 32517),
-    (32448, 32519, 32633),
-    (32449, 32520, 32634),
-    (32450, 32520, 32634),
-    (32451, 32520, 32634),
-    (32452, 32521, 32634),
-    (32453, 32522, 32633),
-    (32454, 32522, 32632),
-    (32455, 32523, 32632),
-    (32456, 32523, 32632),
-    (32457, 32523, 32632),
-    (32458, 32524, 32631),
-    (32459, 32525, 32628),
-    (32460, 32525, 32627),
-    (32461, 32525, 32626),
-    (32462, 32525, 32625),
-    (32463, 32525, 32622),
-    (32464, 32526, 32621),
-    (32464, 32624, 32628),
-    (32465, 32527, 32620),
-    (32465, 32623, 32628),
-    (32466, 32527, 32619),
-    (32466, 32622, 32628),
-    (32467, 32527, 32619),
-    (32467, 32622, 32623),
-    (32467, 32625, 32628),
-    (32468, 32527, 32623),
-    (32468, 32625, 32628),
-    (32469, 32527, 32622),
-    (32469, 32625, 32627),
-    (32470, 32527, 32623),
-    (32471, 32528, 32623),
-    (32472, 32529, 32623),
-    (32473, 32529, 32622),
-    (32474, 32530, 32621),
-    (32475, 32531, 32611),
-    (32475, 32615, 32620),
-    (32476, 32531, 32606),
-    (32477, 32536, 32602),
-    (32478, 32540, 32600),
-    (32479, 32541, 32600),
-    (32480, 32542, 32599),
-    (32481, 32543, 32596),
-    (32482, 32544, 32594),
-    (32483, 32545, 32593),
-    (32484, 32545, 32592),
-    (32485, 32545, 32591),
-    (32486, 32545, 32590),
-    (32487, 32546, 32588),
-    (32488, 32546, 32588),
-    (32489, 32547, 32587),
-    (32490, 32547, 32586),
-    (32491, 32547, 32586),
-    (32492, 32547, 32585),
-    (32493, 32548, 32585),
-    (32494, 32548, 32549),
-    (32494, 32555, 32584),
-    (32495, 32555, 32583),
-    (32496, 32555, 32583),
-    (32497, 32548, 32584),
-    (32498, 32546, 32584),
-    (32499, 32544, 32585),
-    (32500, 32543, 32586),
-    (32501, 32543, 32587),
-    (32502, 32544, 32587),
-    (32503, 32544, 32588),
-    (32504, 32544, 32588),
-    (32505, 32544, 32588),
-    (32506, 32543, 32588),
-    (32507, 32540, 32588),
-    (32508, 32540, 32588),
-    (32509, 32540, 32587),
-    (32510, 32540, 32586),
-    (32511, 32533, 32536),
-    (32511, 32540, 32585),
-    (32512, 32532, 32539),
-    (32512, 32541, 32582),
-    (32513, 32532, 32539),
-    (32513, 32542, 32580),
-    (32514, 32532, 32539),
-    (32514, 32542, 32576),
-    (32515, 32532, 32539),
-    (32515, 32542, 32572),
-    (32516, 32533, 32539),
-    (32516, 32542, 32570),
-    (32517, 32534, 32538),
-    (32517, 32541, 32569),
-    (32518, 32535, 32536),
-    (32518, 32541, 32561),
-    (32518, 32564, 32567),
-    (32519, 32542, 32560),
-    (32520, 32542, 32559),
-    (32521, 32543, 32545),
-    (32521, 32548, 32555),
-    (32522, 32543, 32544),
-    (32522, 32552, 32553),
-];
 
 /// The islet temple: the login and death placement of `on_login_newhaven.lua` and
 /// `on_death_newhaven.lua`.
@@ -264,10 +114,21 @@ pub const HUNTING_TILES: [TutorialCell; 2] = [
     TutorialCell::new(32561, 32485, 7),
     TutorialCell::new(32562, 32485, 7),
 ];
-/// The client tutorial id `select_vocation.lua` sends to a vocationless Character.
+/// The client tutorial id `select_vocation.lua` sends to a vocationless Character
+/// (`chooseVocation` of the client tutorial table).
 pub const ISLAND_HINT: u8 = 2;
-/// The client tutorial id `update_tutorial_hunting.lua` sends.
+/// The client tutorial id `update_tutorial_hunting.lua` sends to every vocation. The client
+/// tutorial table (`opentibiabr/otclient` `53d3a8ac`, `modules/game_tutorial/const/vocations.lua`)
+/// names 3 `combatBasicKnight`, 4 `combatBasicPaladin`, 5 `combatBasicSorcerer`, 6
+/// `combatBasicDruid` and 11 `combatBasicMonk`, so 3 is the Knight's; the tiles send the hint of
+/// the Character's base vocation instead ([`TutorialVocation::hunting_hint`]).
 pub const HUNTING_HINT: u8 = 3;
+/// The basic-combat tutorial ids of the client tutorial table, per base vocation.
+pub const HUNTING_HINT_KNIGHT: u8 = HUNTING_HINT;
+pub const HUNTING_HINT_PALADIN: u8 = 4;
+pub const HUNTING_HINT_SORCERER: u8 = 5;
+pub const HUNTING_HINT_DRUID: u8 = 6;
+pub const HUNTING_HINT_MONK: u8 = 11;
 
 /// Whether the tutorial applies to a Character, decided once from its start cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -281,20 +142,11 @@ pub enum TutorialGate {
 impl TutorialGate {
     #[must_use]
     pub const fn for_start(start: TutorialCell) -> Self {
-        // The islet's bounds are wholly inside the island's bounding box. The box alone also
-        // includes water, void and unrelated land components; only the exact spans admit starts.
-        if !NEWHAVEN_ISLAND.contains(start) {
-            return Self::Inert;
+        if NEWHAVEN_ISLAND.contains(start) || NEWHAVEN_ISLET.contains(start) {
+            Self::Newhaven
+        } else {
+            Self::Inert
         }
-        let mut index = 0;
-        while index < NEWHAVEN_LAND_SPANS.len() {
-            let (y, min_x, max_x) = NEWHAVEN_LAND_SPANS[index];
-            if start.y == y && start.x >= min_x && start.x <= max_x {
-                return Self::Newhaven;
-            }
-            index += 1;
-        }
-        Self::Inert
     }
 }
 
@@ -360,13 +212,64 @@ impl TutorialProgress {
     }
 }
 
+/// The Character's base vocation as the tutorial reads it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TutorialVocation {
+    /// No vocation yet (the build vocation `none`).
+    None,
+    Knight,
+    Paladin,
+    Sorcerer,
+    Druid,
+    Monk,
+    /// A vocation key the tutorial does not know: it is not vocationless and gets no hint.
+    Other,
+}
+
+impl TutorialVocation {
+    /// The vocation of a build vocation key: `none`, a base vocation or its promotion.
+    #[must_use]
+    pub fn from_key(key: &str) -> Self {
+        match key {
+            "none" => Self::None,
+            "knight" | "elite_knight" => Self::Knight,
+            "paladin" | "royal_paladin" => Self::Paladin,
+            "sorcerer" | "master_sorcerer" => Self::Sorcerer,
+            "druid" | "elder_druid" => Self::Druid,
+            "monk" | "exalted_monk" => Self::Monk,
+            _ => Self::Other,
+        }
+    }
+
+    /// The basic-combat tutorial the hunting tiles show; `None` without a base vocation, which
+    /// leaves the hunting track armed until the Character has one.
+    #[must_use]
+    pub const fn hunting_hint(self) -> Option<u8> {
+        match self {
+            Self::Knight => Some(HUNTING_HINT_KNIGHT),
+            Self::Paladin => Some(HUNTING_HINT_PALADIN),
+            Self::Sorcerer => Some(HUNTING_HINT_SORCERER),
+            Self::Druid => Some(HUNTING_HINT_DRUID),
+            Self::Monk => Some(HUNTING_HINT_MONK),
+            Self::None | Self::Other => None,
+        }
+    }
+}
+
 /// What the reference scripts read of the Character.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TutorialActor {
-    /// The Character has no vocation yet.
-    pub vocationless: bool,
+    pub vocation: TutorialVocation,
     /// The account has access (a gamemaster); the login and death scripts skip it.
     pub has_access: bool,
+}
+
+impl TutorialActor {
+    /// The Character has no vocation yet.
+    #[must_use]
+    pub const fn vocationless(self) -> bool {
+        matches!(self.vocation, TutorialVocation::None)
+    }
 }
 
 /// One authoritative input of the tutorial.
@@ -440,7 +343,7 @@ pub fn apply(
     match event {
         // on_login_newhaven.lua: `newhavenCitizen <= 0` for a vocationless Character without
         // access places it on the islet temple and sets the citizen track; a citizen resumes.
-        TutorialEvent::Login(actor) if !citizen && actor.vocationless && !actor.has_access => {
+        TutorialEvent::Login(actor) if !citizen && actor.vocationless() && !actor.has_access => {
             TutorialTransition {
                 progress: Some(TutorialProgress {
                     step: TutorialStep::Islet,
@@ -463,7 +366,7 @@ pub fn apply(
                 hunting_hint_pending: true,
                 corruptor_loot_pending: true,
             }),
-            effect: Some(if actor.vocationless {
+            effect: Some(if actor.vocationless() {
                 TutorialEffect::PlaceWithHint {
                     cell: ISLAND_ARRIVAL,
                     hint: ISLAND_HINT,
@@ -472,17 +375,20 @@ pub fn apply(
                 TutorialEffect::Place(ISLAND_ARRIVAL)
             }),
         },
-        // update_tutorial_hunting.lua: an armed hunting track shows the hint once.
-        TutorialEvent::StepIn { to, .. } if HUNTING_TILES.contains(&to) => match progress {
-            Some(stored) if stored.hunting_hint_pending => TutorialTransition {
-                progress: Some(TutorialProgress {
-                    hunting_hint_pending: false,
-                    ..stored
-                }),
-                effect: Some(TutorialEffect::Hint(HUNTING_HINT)),
-            },
-            _ => unchanged,
-        },
+        // update_tutorial_hunting.lua: an armed hunting track shows the hint once, here the
+        // basic-combat hint of the Character's base vocation.
+        TutorialEvent::StepIn { actor, to, .. } if HUNTING_TILES.contains(&to) => {
+            match (progress, actor.vocation.hunting_hint()) {
+                (Some(stored), Some(hint)) if stored.hunting_hint_pending => TutorialTransition {
+                    progress: Some(TutorialProgress {
+                        hunting_hint_pending: false,
+                        ..stored
+                    }),
+                    effect: Some(TutorialEffect::Hint(hint)),
+                },
+                _ => unchanged,
+            }
+        }
         TutorialEvent::StepIn { .. } => unchanged,
         // ondroploot_the_corruptor.lua: an armed track adds the vocation loot once.
         TutorialEvent::CorruptorLoot => match progress {
@@ -505,7 +411,7 @@ pub fn apply(
         },
         // on_death_newhaven.lua (registered for a citizen at login): a vocationless Character
         // without access goes back to the islet temple, still a citizen.
-        TutorialEvent::Death(actor) if citizen && actor.vocationless && !actor.has_access => {
+        TutorialEvent::Death(actor) if citizen && actor.vocationless() && !actor.has_access => {
             TutorialTransition {
                 progress: progress.map(|stored| TutorialProgress {
                     step: TutorialStep::Islet,

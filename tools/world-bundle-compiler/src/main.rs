@@ -531,21 +531,61 @@ fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
     Ok(first.bytes)
 }
 
-/// `entry_start` must be a walkable, non-blocking base cell inside the World bounds: the first
-/// ground of its top-level entries is a walkable Terrain ground, none of them is a wall and none
-/// is a plain Item (an Item entry without a Terrain record). The node decides a plain Item's
-/// solidity from the served Item definitions, where one without a stated `blocks_movement`
-/// blocks (`map::facts`), so the compiler cannot prove a plain Item there walkable and refuses
-/// it; an Item key routed to a `ground` or `border` Terrain record does not block.
-fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
+/// The served Item provider: the node takes a plain Item's solidity from its profile here
+/// (`boot_bundle_items` in `node/serve.rs`, `map::facts`). It is under `content/items/definitions/`,
+/// a compiler input, so a provider change moves `inputs_digest`.
+const ITEM_PROVIDER: &str = "content/items/definitions/spell-native-profiles.json";
+
+/// The Item keys whose served profile states `blocks_movement` false: the only plain Items the
+/// node serves as walkable.
+fn walkable_items(root: &Path) -> Result<BTreeSet<String>, Error> {
+    let provider = json(&read(&root.join(ITEM_PROVIDER))?, ITEM_PROVIDER)?;
+    let records = provider["records"]
+        .as_array()
+        .ok_or_else(|| Error::Format(format!("{ITEM_PROVIDER}: no records")))?;
+    Ok(records
+        .iter()
+        .filter(|record| record["attributes"]["blocks_movement"] == Value::Bool(false))
+        .filter_map(|record| record["production_definition"]["production_key"].as_str())
+        .map(str::to_owned)
+        .collect())
+}
+
+/// `entry_start` must be a walkable, non-blocking base cell inside the World bounds, and a new
+/// Character must be able to step off it: the cell and at least one of its four neighbours each
+/// have a walkable Terrain ground as the first ground of their top-level entries, no wall, and no
+/// blocking plain Item (an Item entry without a Terrain record whose served profile does not state
+/// `blocks_movement` false, see [`walkable_items`]). The node blocks such an Item (`map::facts`),
+/// so the compiler refuses it; an Item key routed to a `ground` or `border` Terrain record does
+/// not block.
+fn check_entry_start(
+    bytes: &[u8],
+    at: EntryStart,
+    walkable: &BTreeSet<String>,
+) -> Result<(), Error> {
     let bad = |what: &str| Error::Format(format!("entry_start: {what}"));
-    let mut found = None;
+    let size = oteryn_world_bundle_compiler::sector::SECTOR_SIZE;
+    let neighbours = [
+        at.y.checked_sub(1).map(|y| (at.x, y)),
+        at.y.checked_add(1).map(|y| (at.x, y)),
+        at.x.checked_add(1).map(|x| (x, at.y)),
+        at.x.checked_sub(1).map(|x| (x, at.y)),
+    ];
+    let cells: Vec<(u16, u16)> = std::iter::once((at.x, at.y))
+        .chain(neighbours.into_iter().flatten())
+        .collect();
+    let mut found = vec![None; cells.len()];
     let visited = bundle::visit(bytes, |manifest: &Manifest, sector| {
-        if sector.floor == at.floor
-            && sector.sx == at.x / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
-            && sector.sy == at.y / oteryn_world_bundle_compiler::sector::SECTOR_SIZE
-            && let Some(tile) = sector.tiles.iter().find(|t| (t.x, t.y) == (at.x, at.y))
-        {
+        if sector.floor != at.floor {
+            return Ok(());
+        }
+        for (slot, &(x, y)) in found.iter_mut().zip(&cells) {
+            if (sector.sx, sector.sy) != (x / size, y / size) {
+                continue;
+            }
+            let Some(tile) = sector.tiles.iter().find(|t| (t.x, t.y) == (x, y)) else {
+                continue;
+            };
             let (mut ground, mut wall, mut item_entry) = (None, false, false);
             for item in tile.items.iter().filter(|item| item.depth == 0) {
                 let entry = &manifest.palette[item.palette as usize];
@@ -556,20 +596,25 @@ fn check_entry_start(bytes: &[u8], at: EntryStart) -> Result<(), Error> {
                     ground = t.walkable;
                 }
                 wall |= terrain.is_some_and(|t| t.kind == TerrainKind::Wall);
-                item_entry |= entry.family == Family::Item && terrain.is_none();
+                item_entry |= entry.family == Family::Item
+                    && terrain.is_none()
+                    && !walkable.contains(&entry.key);
             }
-            found = Some((ground == Some(true), wall, item_entry));
+            *slot = Some((ground == Some(true), wall, item_entry));
         }
         Ok(())
     })?;
     if !visited.manifest.world.contains(at.x, at.y, at.floor) {
         return Err(bad("outside the World bounds"));
     }
-    match found {
+    match found[0] {
         None => Err(bad("the bundle has no tile there")),
         Some((false, ..)) => Err(bad("the cell has no walkable ground")),
         Some((true, true, _)) => Err(bad("the cell holds a blocking wall")),
-        Some((true, false, true)) => Err(bad("the cell holds a plain Item")),
+        Some((true, false, true)) => Err(bad("the cell holds a blocking plain Item")),
+        Some((true, false, false)) if !found[1..].contains(&Some((true, false, false))) => {
+            Err(bad("no neighbouring cell a Character can step onto"))
+        }
         Some((true, false, false)) => Ok(()),
     }
 }
@@ -595,6 +640,7 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
         ));
     }
     let tree = inputs_digest(root)?;
+    let walkable = walkable_items(root)?;
     fs::create_dir_all(out).map_err(io)?;
     let (mut reports, mut names) = (Vec::new(), Vec::new());
     for slug in slugs {
@@ -648,7 +694,7 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
                 pin.digest
             )));
         }
-        check_entry_start(&bytes, pin.entry_start)?;
+        check_entry_start(&bytes, pin.entry_start, &walkable)?;
         fs::write(out.join(format!("{slug}-{digest}.otwb")), &bytes).map_err(io)?;
         names.push(digest.clone());
         reports.push(json!({"world": slug, "digest": digest, "bytes": bytes.len()}));
