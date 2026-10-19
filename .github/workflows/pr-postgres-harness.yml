@@ -227,3 +227,11 @@ jobs:
           run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
+
+      - name: Run game-server library PostgreSQL scenarios
+        # The VIP durability and logout dispatch scenarios live in the
+        # game-server lib target; without this step they skip in CI.
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.95.0 test --locked -p oteryn-game-server --lib -- vip logout_e2e
