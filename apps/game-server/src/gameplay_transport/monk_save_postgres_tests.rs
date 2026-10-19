@@ -453,10 +453,19 @@ fn boundary_unknown_monk_save_keeps_lease_until_store_recovers() -> TestResult {
             "the real release loop must retry the monk save boundary"
         );
         assert_eq!(revision(&harness).await?, 1);
-        let (session, _) = FreshAdmissionStore::from_root(harness.root.clone())
-            .current_session_at(dependencies.admitted.game_session_id)
-            .await
-            .map_err(debug)?;
+        // A loaded run can leave the root with no idle connection after the retrying
+        // release loop. The read then misses readiness once (`RootUnavailable`, which
+        // arms ready demand). Production re-readies through its maintenance loop, so
+        // the fixture runs one maintenance pass and reads again.
+        let store = FreshAdmissionStore::from_root(harness.root.clone());
+        let session_id = dependencies.admitted.game_session_id;
+        let (session, _) = match store.current_session_at(session_id).await {
+            Err(crate::durability::DurabilityError::RootUnavailable) => {
+                assert!(harness.root.maintain_ready_once().await.map_err(debug)?);
+                store.current_session_at(session_id).await.map_err(debug)?
+            }
+            read => read.map_err(debug)?,
+        };
         assert_eq!(
             session.session_state(),
             crate::foundation::GameSessionState::Reconnectable

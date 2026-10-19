@@ -29,6 +29,9 @@ pub(crate) fn postgres_required() -> bool {
 /// # Panics
 ///
 /// Panics when `OTERYN_REQUIRE_PG=1` and the admin URL is missing.
+// The callers' contract is `Option` (run or skip); a required job must fail hard, so this
+// test-only gate panics instead of widening every caller to `Result`.
+#[allow(clippy::panic)]
 pub(crate) fn configured_admin() -> Option<String> {
     let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL").ok();
     match admin_url_decision(postgres_required(), admin_url) {
