@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # ARENA-RULES-CONTENT-1
 
 ```yaml
@@ -62,3 +64,7 @@ No external paid review triggered. Data-only draft Reference packets do not auth
 Current Tibiadrome admission, scoring, rotations, rewards and combat behavior are captured without duplicating the occupied arena catalog. Removed Duelling Arena behavior is labeled historical; whether Oteryn reintroduces it is an architecture decision outside this task.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Working-data completion —2026-10-19
+
+Populated1 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/arena-rules-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

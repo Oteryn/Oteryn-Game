@@ -9,7 +9,7 @@
   "notes": "Tibiadrome selection/scoring/reward rules.",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "source_snapshot_target": "current-at-fetch-2026-10-18",
   "payloads": [
     {

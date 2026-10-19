@@ -9,12 +9,12 @@
   "notes": "Arena PvP rules separate from arena content.",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "source_snapshot_target": "current-at-fetch-2026-10-18",
   "payloads": [
     {
       "path": "rulesets/pvp/arena/reference-evidence.json",
-      "sha256": "14fca27897a35bd77fb386509601d249c89600debf79db2a88431909ff18f959"
+      "sha256": "78810b8c01efc2b68fff6fbedd1e0d029997e7987902c60226a07f04dba8de5f"
     }
   ]
 }

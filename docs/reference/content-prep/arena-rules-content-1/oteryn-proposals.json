@@ -3,8 +3,8 @@
   "task": "ARENA-RULES-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -46,7 +46,13 @@
       "assumptions": [
         "Historical PvP Arena is not reintroduced at launch. Optional future two-player duel is a project proposal; native instance/authority contracts required before implementation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/arena-rules-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/arena-rules-content-1/tibia-source-archive.json",
+    "filled_field_count": 1,
+    "not_runtime_activation": true
+  }
 }
