@@ -1,15 +1,13 @@
-# PREY-CONTENT-1: Prey grades, rerolls and current task board
+# PREY-CONTENT-1: populated reference data
 
-Forty prey bonus-grade values are derived from explicit ranges. Current Hunting Tasks redirects to Task Board; legacy HTP/Falconer reward tables must not be treated as the current system. The occupied prey README is untouched. Exact prey eligibility and task XP formulas remain held.
+All 17 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
 
-Source registry: [sources.json](sources.json). Facts link to exact revision IDs or immutable repository blobs. `PROVEN` means the cited source states the fact; `DERIVED` means the stated transformation is reproducible; `UNKNOWN` and `CONFLICT` must remain held. Community evidence is not controlled Global telemetry. Where cited, the official characters/combat/trading manual was re-read live on 2026-10-18; exact response digests and current URLs are in the source registry.
+The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
 
-These files prepare Reference data for CP. They add no runtime admission, Rust change, generated content regeneration, or interaction/world-pin mutation. `POPULATED` describes the evidence packet, not complete gameplay readiness. The packet schema is an evidence envelope, not a newly accepted runtime schema.
+Active evidence counts: {"DERIVED": 1425, "PROVEN": 683}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
 
-Service data placement: **STAGED_FOR_COORDINATOR**. The World Bundle fingerprint includes every tracked `content/services/` file. Updating pins/regenerating content is forbidden in this task. Therefore the proposed files are under `target-files/`, with their intended canonical paths and SHA-256 in [service-apply-plan.json](service-apply-plan.json). CP/coordinator applies them together with qualified regeneration; no current generated Service declaration is changed. This is a concrete data handoff, not a claim that the canonical Service family is populated.
+The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
 
-## Research completion and coverage
+Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
 
-All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.
-
-The requested data/evidence preparation is delivered with explicit evidence holds, as required by the owner instruction “If a value cannot be proven, write it with classification UNKNOWN and a note.” A held fact is not runtime-ready. [research-audit.json](research-audit.json) enumerates every UNKNOWN/CONFLICT field path, observed candidate, source and limitation so CP can distinguish unavailable evidence from a missing packet. No runtime admission or integration is authorized.
+Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.

@@ -1848,11 +1848,23 @@
           "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "reroll_upgrade": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "value": {
+            "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+            "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/reference-evidence.json/records/40/facts/reroll_upgrade"
+            },
+            {
+              "source": "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey.reroll_upgrade",
+              "selector": "prey.reroll_upgrade"
+            },
             {
               "source": "wiki:79924:1168706",
               "selector": "Conflicting statements identified in note"
@@ -1862,9 +1874,15 @@
               "selector": "Conflicting statements identified in note"
             }
           ],
-          "note": "Current Wiki says wildcard always improves grade except max; official manual says value is at least current. Strict improvement and nondecrease are not equivalent."
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Select this documented value for Oteryn; not a claim of current official server behavior."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/reference-evidence.json/records/40/facts/reroll_upgrade",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     }
-  ]
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }

@@ -9,16 +9,16 @@
   "notes": "Slots, roll/bonus/reroll rules and costs; current rolls durable.",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "source_snapshot_target": "current-at-fetch-2026-10-18",
   "payloads": [
     {
       "path": "rulesets/progression/prey/reference-evidence.json",
-      "sha256": "87b6bfb99ed2e862d071f565dfa4be6a06b2d8b2ed931cc85b6425d6be2ce048"
+      "sha256": "bc1d595a7747780894789ad78a56e17ba5eb367dd36d79affd1773c076352699"
     },
     {
       "path": "rulesets/progression/prey/creature-eligibility.json",
-      "sha256": "9dfa32646f17c94f6af45106840aee319b7661d3661ccefddca6fb7a31eb92f4"
+      "sha256": "967fa4cbbff281e9e0f2191beefde76aaa1dbb664bff3a68f15ded3a79ec75bc"
     }
   ]
 }

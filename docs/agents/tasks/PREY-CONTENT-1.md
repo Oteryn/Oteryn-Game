@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # PREY-CONTENT-1
 
 ```yaml
@@ -68,3 +70,7 @@ Service evidence is staged under docs/reference with an explicit apply plan. Wor
 All ten grades for every bonus, reroll/wildcard costs, 649 source-listed prey creatures and the current Task Board are covered. Native bindings resolve 643 creatures; six have no supported identity among all 1863 existing native definitions. Complete rendered eligibility tables contain Beginner 153, Adept 450, Expert 498 and Master 280 rows. Current weekly limits, points, multipliers and Soulseals are included. Five source pool contradictions remain visible. Bounty XP and unqualified weekly XP formulas remain held.
 
 Task status `ready` refers only to the data/docs handoff. The PR remains draft; runtime admission and protected integration remain blocked. Complete candidate validation and exact remote-blob verification are recorded in the canonical draft PR.
+
+## Working-data completion —2026-10-19
+
+Populated17 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/prey-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

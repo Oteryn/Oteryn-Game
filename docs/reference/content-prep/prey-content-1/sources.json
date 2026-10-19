@@ -112,6 +112,28 @@
       ],
       "response_sha256": "aaabc5b3785798511f4602faff3a84f831842a4c5823af14874260be6e598bcd",
       "qualification": "Secondary static creature-attribute cross-check, not proof of prey eligibility, raid membership or spawn counts."
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:crystalserver-summer:ddb493002b87b814e13453873e7db9a795933ac1:prey.reroll_upgrade": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "src/io/ioprey.cpp",
+      "line": 49,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/src/io/ioprey.cpp#L49",
+      "file_sha256": "33189a28e0e354773b183fe885dfbeb0c38a6f69e65bb7d9556522b2a9fe372d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "observation": {
+        "star_update": "rarity>=9 -> 10; otherwise uniform integer in [rarity+1,10]",
+        "max_rarity_bonus_type_reroll": "repeat uniform bonus-type roll until type differs from previous"
+      },
+      "qualification": "Reference implementation adapted as a working Oteryn design choice, not current official Tibia proof."
     }
   }
 }

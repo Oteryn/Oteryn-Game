@@ -3,8 +3,8 @@
   "task": "PREY-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -68,7 +68,7 @@
       "assumptions": [
         "Select this documented value for Oteryn; not a claim of current official server behavior."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
@@ -87,7 +87,7 @@
       "assumptions": [
         "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
@@ -106,7 +106,7 @@
       "assumptions": [
         "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
@@ -125,7 +125,7 @@
       "assumptions": [
         "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
@@ -144,7 +144,7 @@
       "assumptions": [
         "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
@@ -163,7 +163,7 @@
       "assumptions": [
         "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",
@@ -184,7 +184,7 @@
       "assumptions": [
         "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
@@ -205,7 +205,7 @@
       "assumptions": [
         "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
@@ -226,7 +226,7 @@
       "assumptions": [
         "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
@@ -247,7 +247,7 @@
       "assumptions": [
         "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
@@ -268,7 +268,7 @@
       "assumptions": [
         "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
@@ -289,7 +289,7 @@
       "assumptions": [
         "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward",
@@ -310,7 +310,7 @@
       "assumptions": [
         "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward",
@@ -331,7 +331,7 @@
       "assumptions": [
         "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward",
@@ -352,7 +352,7 @@
       "assumptions": [
         "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward",
@@ -373,7 +373,7 @@
       "assumptions": [
         "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
@@ -414,7 +414,13 @@
       "assumptions": [
         "Adopt retained community weekly-delivery model as a project choice; use floor(x+0.5) for positive ROUND and do not conflate delivery XP with creature bounty rewards."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json",
+    "filled_field_count": 17,
+    "not_runtime_activation": true
+  }
 }

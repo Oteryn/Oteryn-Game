@@ -65,12 +65,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "experience_reward": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exact per-creature current XP reward formula qualified."
+          "value": {
+            "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+            "rate_multiplier": 1,
+            "award_on": "completed_task_claim_once"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/0/facts/experience_reward",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "eligible_creatures": {
           "value": [
@@ -912,12 +927,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "experience_reward": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exact per-creature current XP reward formula qualified."
+          "value": {
+            "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+            "rate_multiplier": 1,
+            "award_on": "completed_task_claim_once"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/1/facts/experience_reward",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "eligible_creatures": {
           "value": [
@@ -3244,12 +3274,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "experience_reward": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exact per-creature current XP reward formula qualified."
+          "value": {
+            "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+            "rate_multiplier": 1,
+            "award_on": "completed_task_claim_once"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/2/facts/experience_reward",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "eligible_creatures": {
           "value": [
@@ -5816,12 +5861,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "experience_reward": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "No exact per-creature current XP reward formula qualified."
+          "value": {
+            "expression": "floor(assigned_kill_count*creature_base_xp*0.10)",
+            "rate_multiplier": 1,
+            "award_on": "completed_task_claim_once"
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Bonus10% of assigned baseline kill XP; unmodified baseXP; zero-XP creatures yield0. This is a bounty-task proposal, not Hunting Task Points or a Global XP formula."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/3/facts/experience_reward",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "eligible_creatures": {
           "value": [
@@ -7406,19 +7466,32 @@
               "beginner": 200000,
               "adept": 800000,
               "expert": 3000000,
-              "master": null
+              "master": {
+                "policy": "NO_ADDITIONAL_CAP"
+              }
             }
           },
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate"
+            },
             {
               "source": "wiki:109860:1187430",
               "selector": "Weekly Task Rewards / Experience"
             }
           ],
-          "note": "Community XP reward formula is fully retained; exact rounding and gameplay formula require official or controlled qualification. Bounty task XP is a different reward and is not equated to this weekly formula."
+          "note": "Explicit Oteryn choice: no additional master-tier cap beyond the selected reward formula.",
+          "assumptions": [
+            "Adopt retained community weekly-delivery model as a project choice; use floor(x+0.5) for positive ROUND and do not conflate delivery XP with creature bounty rewards.",
+            "Explicit Oteryn choice: no additional master-tier cap beyond the selected reward formula."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json/records/4/facts/weekly_experience_candidate",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     }
@@ -7429,5 +7502,6 @@
     "start": 0,
     "end": 4,
     "count": 5
-  }
+  },
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }

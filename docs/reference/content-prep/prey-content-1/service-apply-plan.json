@@ -8,12 +8,12 @@
     {
       "target_path": "content/services/tasks/evidence-00000-00004.json",
       "staged_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/evidence-00000-00004.json",
-      "sha256": "ac0a9846781922ac72ac21c2aa2bd556188b01da4029825df6a0a04cf7134206"
+      "sha256": "687546b30626c6d272caec66a5791f2cd2487a969b83713cad747b196d41d387"
     },
     {
       "target_path": "content/services/tasks/index.json",
       "staged_path": "docs/reference/content-prep/prey-content-1/target-files/content/services/tasks/index.json",
-      "sha256": "0b3de8777e566eb3b1a11160324b612ef7b455c9494338a782f032150f88d7a1"
+      "sha256": "17d94050630a48275b58624826730cc356bc68dac0e56685f0d614f1bb58ec99"
     }
   ],
   "generated_service_declarations_changed": false,
@@ -25,5 +25,6 @@
     "generated catalogue equivalence",
     "World Bundle pins and deterministic bundle",
     "required exact-head validators"
-  ]
+  ],
+  "data_completeness": "ALL_OTERYN_PARAMETER_VALUES_POPULATED"
 }

@@ -23,37 +23,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": "free_or_gold",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool"
+            },
             {
               "source": "wiki:86349:1090711",
               "selector": "Creatures that can be rolled for free/gold"
             }
           ],
-          "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
-          "observations": [
-            {
-              "value": "free_or_gold",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that can be rolled for free/gold"
-                }
-              ]
-            },
-            {
-              "value": "wildcard_only",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that are 5-Wildcard Exclusive"
-                }
-              ]
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/0/facts/selection_pool",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "native_creature_binding": {
           "value": "oteryn:creature.acid_blob",
@@ -4003,37 +3993,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": "free_or_gold",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool"
+            },
             {
               "source": "wiki:86349:1090711",
               "selector": "Creatures that can be rolled for free/gold"
             }
           ],
-          "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
-          "observations": [
-            {
-              "value": "free_or_gold",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that can be rolled for free/gold"
-                }
-              ]
-            },
-            {
-              "value": "wildcard_only",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that are 5-Wildcard Exclusive"
-                }
-              ]
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/90/facts/selection_pool",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "native_creature_binding": {
           "value": "oteryn:creature.damaged_worker_golem",
@@ -6971,37 +6951,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": "free_or_gold",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool"
+            },
             {
               "source": "wiki:86349:1090711",
               "selector": "Creatures that can be rolled for free/gold"
             }
           ],
-          "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
-          "observations": [
-            {
-              "value": "free_or_gold",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that can be rolled for free/gold"
-                }
-              ]
-            },
-            {
-              "value": "wildcard_only",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that are 5-Wildcard Exclusive"
-                }
-              ]
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/157/facts/selection_pool",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "native_creature_binding": {
           "value": "oteryn:creature.flamingo",
@@ -7695,37 +7665,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": "free_or_gold",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool"
+            },
             {
               "source": "wiki:86349:1090711",
               "selector": "Creatures that can be rolled for free/gold"
             }
           ],
-          "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
-          "observations": [
-            {
-              "value": "free_or_gold",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that can be rolled for free/gold"
-                }
-              ]
-            },
-            {
-              "value": "wildcard_only",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that are 5-Wildcard Exclusive"
-                }
-              ]
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/173/facts/selection_pool",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "native_creature_binding": {
           "value": "oteryn:creature.gazer",
@@ -16576,37 +16536,27 @@
           "note": "Reference evidence; runtime admission is separate."
         },
         "selection_pool": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+          "value": "free_or_gold",
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool"
+            },
             {
               "source": "wiki:86349:1090711",
               "selector": "Creatures that can be rolled for free/gold"
             }
           ],
-          "note": "The same creature appears in both the free/gold and five-wildcard-exclusive source sections. Do not select either pool until independently resolved.",
-          "observations": [
-            {
-              "value": "free_or_gold",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that can be rolled for free/gold"
-                }
-              ]
-            },
-            {
-              "value": "wildcard_only",
-              "sources": [
-                {
-                  "source": "wiki:86349:1090711",
-                  "selector": "Creatures that are 5-Wildcard Exclusive"
-                }
-              ]
-            }
-          ]
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Resolve conflicting source sections toward normal pool; no5-wildcard exclusive surcharge for these five types."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/374/facts/selection_pool",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         },
         "native_creature_binding": {
           "value": "oteryn:creature.silver_rabbit",
@@ -21273,12 +21223,27 @@
           "note": "Partition is the explicit source section, not a substring of unrelated page links."
         },
         "native_creature_binding": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Full existing 1863-record native creature index checked; no unique supported binding for Berrypest. Source eligibility is retained; no native identity invented."
+          "value": {
+            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "source_creature_name": "Berrypest",
+            "create_native_identity": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/480/facts/native_creature_binding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     },
@@ -21620,12 +21585,27 @@
           "note": "Partition is the explicit source section, not a substring of unrelated page links."
         },
         "native_creature_binding": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Full existing 1863-record native creature index checked; no unique supported binding for Cake Golem. Source eligibility is retained; no native identity invented."
+          "value": {
+            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "source_creature_name": "Cake Golem",
+            "create_native_identity": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/488/facts/native_creature_binding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     },
@@ -23023,12 +23003,27 @@
           "note": "Partition is the explicit source section, not a substring of unrelated page links."
         },
         "native_creature_binding": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Full existing 1863-record native creature index checked; no unique supported binding for Elder Forest Fury. Source eligibility is retained; no native identity invented."
+          "value": {
+            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "source_creature_name": "Elder Forest Fury",
+            "create_native_identity": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/520/facts/native_creature_binding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     },
@@ -23634,12 +23629,27 @@
           "note": "Partition is the explicit source section, not a substring of unrelated page links."
         },
         "native_creature_binding": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Full existing 1863-record native creature index checked; no unique supported binding for Furious Fire Elemental. Source eligibility is retained; no native identity invented."
+          "value": {
+            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "source_creature_name": "Furious Fire Elemental",
+            "create_native_identity": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/534/facts/native_creature_binding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     },
@@ -25873,12 +25883,27 @@
           "note": "Partition is the explicit source section, not a substring of unrelated page links."
         },
         "native_creature_binding": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Full existing 1863-record native creature index checked; no unique supported binding for Nightslayer. Source eligibility is retained; no native identity invented."
+          "value": {
+            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "source_creature_name": "Nightslayer",
+            "create_native_identity": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/585/facts/native_creature_binding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     },
@@ -28068,12 +28093,27 @@
           "note": "Partition is the explicit source section, not a substring of unrelated page links."
         },
         "native_creature_binding": {
-          "value": null,
-          "classification": "UNKNOWN",
-          "target_cut": "2026-10-18",
-          "continuity": "NOT_ESTABLISHED",
-          "sources": [],
-          "note": "Full existing 1863-record native creature index checked; no unique supported binding for Undead Jester. Source eligibility is retained; no native identity invented."
+          "value": {
+            "policy": "EXCLUDE_FROM_INITIAL_NATIVE_PREY_POOL",
+            "source_creature_name": "Undead Jester",
+            "create_native_identity": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
+          "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/prey-content-1/oteryn-parameters.json / field rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding"
+            }
+          ],
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Missing native binding is resolved by an explicit launch exclusion, not an invented ID. Future creature admission is separate work."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/prey-content-1/tibia-source-archive.json#rulesets/progression/prey/creature-eligibility.json/records/635/facts/native_creature_binding",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     },
@@ -28649,5 +28689,6 @@
         }
       }
     }
-  ]
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }
