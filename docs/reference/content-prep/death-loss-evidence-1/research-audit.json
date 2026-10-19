@@ -1,21 +1,38 @@
 {
   "task": "DEATH-LOSS-EVIDENCE-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_RECONCILED_WITH_EXPLICIT_GAMEPLAY_QUALIFICATION_GAPS",
+  "research_status": "SOURCE_REPAIRED_RUNTIME_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "The requested XP, skill/magic, promotion/blessing and PvP evidence is enumerated. The live official manual supports stated behavior and worked examples, but not a closed level-24+ loss formula, exact rounding or the unfair-fight ratio/cap. Community candidates are retained as UNKNOWN; disagreement is not resolved by consensus.",
+  "coverage": "Source formulas and their consumers are recorded, including percentage/fraction units, XPceil versus skill/magic truncation, and configuration branches. Official6.31RetroHardcore blessing value is resolved; four closed-form/rounding/participant fields remain unqualified for Global.",
   "source_registry": "sources.json",
   "record_counts": {
     "docs/reference/content-prep/death-loss-evidence-1/facts.json": 3
   },
   "evidence_field_counts": {
-    "PROVEN": 7,
-    "DERIVED": 5
+    "PROVEN": 8,
+    "UNKNOWN": 4
   },
-  "unresolved_fields": [],
+  "unresolved_fields": [
+    {
+      "path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/levels_24_plus",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/0/facts/rounding",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/1/facts/magic_and_skill_loss",
+      "classification": "UNKNOWN"
+    },
+    {
+      "path": "docs/reference/content-prep/death-loss-evidence-1/facts.json/records/2/facts/unfair_fight",
+      "classification": "UNKNOWN"
+    }
+  ],
   "limitations_policy": "UNKNOWN/CONFLICT is the owner-required outcome for unproven values; candidates, selectors and reasons remain inspectable. No unsupported number was supplied to make the packet appear complete.",
-  "filled_parameter_fields": 5,
+  "filled_parameter_fields": 1,
   "remaining_unfilled_parameter_fields": 0,
   "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/death-loss-evidence-1/tibia-source-archive.json",
@@ -24,5 +41,12 @@
     "CONFLICT": 1
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "remaining_unresolved_source_fields": 4,
+  "source_repair": {
+    "source_check": "docs/reference/content-prep/death-loss-evidence-1/gameplay-source-reconciliation.json",
+    "remaining_unresolved_source_fields": 4,
+    "selected_for_native_runtime": false,
+    "summary": "Source formulas and their consumers are recorded, including percentage/fraction units, XPceil versus skill/magic truncation, and configuration branches. Official6.31RetroHardcore blessing value is resolved; four closed-form/rounding/participant fields remain unqualified for Global."
+  }
 }
