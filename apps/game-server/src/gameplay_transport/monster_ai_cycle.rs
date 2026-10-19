@@ -843,7 +843,15 @@ impl NativeSummonMap<'_, '_, '_> {
                     terrain.matches_runtime(runtime) && terrain.position() == position
                 });
             let Some(terrain) = terrain else {
-                return blocked.then_some(refused);
+                return blocked.then(|| CurrentNativeTile {
+                    // The qualified spell index retains the source world's projectile flag
+                    // even when the combat tile reader rejects its movement obstacle.
+                    projectile_clear: cells
+                        .spell_tiles()
+                        .lookup(cells.scope(), cell)
+                        .is_ok_and(|tile| !tile.flags().block_projectile),
+                    ..refused
+                });
             };
             if blocked {
                 return Some(CurrentNativeTile {
@@ -4081,6 +4089,160 @@ mod tests {
         }
     }
 
+    #[test]
+    fn movement_blocked_thalom_tile_facts_preserve_source_projectile_flags()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness =
+            executor.block_on(Harness::create(admin, "thalom_blocked_tile_facts", false))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world =
+                    WorldId::decode(&id(crate::bestiary_postgres_harness::WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(crate::bestiary_postgres_harness::CHANNEL))
+                    .map_err(debug)?;
+                let (_controller, pin) =
+                    crate::content::native_gameplay::tests::activated_with_loot_tables(
+                        world,
+                        Some(NATIVE_MOVEMENT_SOURCE_WORLD),
+                    );
+                let room = pin.qualified_room();
+                assert!(room.source_world().is_some());
+                let start = MovementLocalPosition {
+                    x: -14,
+                    y: -8,
+                    floor: -7,
+                };
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    1,
+                    room.compiled().server_digest(),
+                    room.compiled().client_digest(),
+                    room.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
+                )
+                .map_err(debug)?;
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                {
+                    let mut map = NativeSummonMap {
+                        tx: &mut tx,
+                        authority: &authority,
+                        room,
+                        objects: &objects,
+                        stamp,
+                        tiles: BTreeMap::new(),
+                        path: None,
+                    };
+                    // Actual Thalom source obstacles: a transparent barrier and an opaque wall.
+                    for (y, block_projectile) in [(-7, false), (-4, true)] {
+                        let position = MovementLocalPosition {
+                            x: -14,
+                            y,
+                            floor: -7,
+                        };
+                        let cells = room.movement_cells();
+                        let cell = logical_cell(position);
+                        assert_eq!(
+                            cells.index().lookup(cells.scope(), cell),
+                            Ok(crate::content::CollisionClass::Blocked)
+                        );
+                        let flags = cells
+                            .spell_tiles()
+                            .lookup(cells.scope(), cell)
+                            .map_err(debug)?
+                            .flags();
+                        assert!(flags.block_solid);
+                        assert_eq!(flags.block_projectile, block_projectile);
+                        let tile = map
+                            .read_tile_facts(&runtime, position)
+                            .await
+                            .ok_or("known movement-blocked tile")?;
+                        assert!(!tile.walkable);
+                        assert_eq!(tile.projectile_clear, !block_projectile);
+                        let cached = map
+                            .read_tile_facts(&runtime, position)
+                            .await
+                            .ok_or("memoized movement-blocked tile")?;
+                        assert!(!cached.walkable);
+                        assert_eq!(cached.projectile_clear, tile.projectile_clear);
+                    }
+                    assert_eq!(map.tiles.len(), 2);
+                }
+                tx.rollback().await?;
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("Thalom blocked tile-fact fixture cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
     const NATIVE_MOVEMENT_SOURCE_WORLD: &[u8] =
         include_bytes!("../../../../tools/content-schema/native-gameplay/canary-thalom-world.json");
 
@@ -4103,7 +4265,12 @@ mod tests {
             return Ok(());
         };
         let executor = crate::bestiary_postgres_harness::runtime()?;
-        let harness = executor.block_on(Harness::create(admin, "chase_position_change", false))?;
+        let label = if move_target {
+            "chase_target_position_change"
+        } else {
+            "chase_actor_position_change"
+        };
+        let harness = executor.block_on(Harness::create(admin, label, false))?;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             executor.block_on(async {
                 let world =
