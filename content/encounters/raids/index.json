@@ -9,5 +9,5 @@
   "population_state": "POPULATED",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED"
+  "evidence_completeness": "SOURCE_RECONCILED_EXPLICIT_RAID_IDENTITY_WAVE_AND_SCHEDULE_GAPS"
 }

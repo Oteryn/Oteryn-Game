@@ -1,19 +1,972 @@
 {
   "task": "RAID-CONTENT-1",
   "review_date": "2026-10-19",
-  "scope": "POPULATED_OTERYN_REFERENCE_DATA_WITH_ARCHIVED_GLOBAL_SOURCE_LIMITATIONS",
-  "research_status": "ALL_TARGET_PARAMETER_FIELDS_POPULATED",
+  "scope": "SOURCE_RECONCILED_RAID_REFERENCE_WITH_EXPLICIT_UNRESOLVED_FIELDS",
+  "research_status": "SOURCE_REPAIR_RUNTIME_UNQUALIFIED",
   "runtime_admission": "BLOCKED",
-  "coverage": "All 122 actual raid descriptions remain covered. Supplemental structured evidence gives the explicit Necromancer waves (1, then 5, then 4 Liches), Draconia spatial group composition, five Ghostlands waves with two unannounced, and source-qualified Terramite counts. Spatial groups are not inferred to be temporal waves. Approximate counts remain approximate; undocumented exact spawn configurations and intervals remain held. Linked Nimmersatt quest sources now establish Dragon Bride as the sole creature type and a source-stated six-month recurrence (exact dates unproven). Explicit isboss=no flags resolve the Monks and Warlocks source-listed creature set.",
+  "coverage": "122raid reference records retained.120wave defaults and114project cooldowns are replaced by bounded source candidates or explicit unresolved records.40generated announcements removed. All250raid definitions from both current donor trees and datapacks were read with verified blobs. No native raid admitted.",
   "source_registry": "sources.json",
   "record_counts": {
     "content/encounters/raids/evidence-00000-00121.json": 122
   },
   "evidence_field_counts": {
     "PROVEN": 288,
-    "DERIVED": 725
+    "DERIVED": 535,
+    "CONFLICT": 57,
+    "UNKNOWN": 133
   },
-  "unresolved_fields": [],
+  "unresolved_fields": [
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/0/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/0/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/1/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/2/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/8/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/8/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/10/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/13/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/13/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/14/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/14/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/15/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/15/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/16/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/16/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/17/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/17/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/18/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/19/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/19/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/20/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/20/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/21/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/26/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/27/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/28/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/29/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/29/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/30/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/30/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/31/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/31/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/32/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/34/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/34/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/35/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/36/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/40/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/41/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/42/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/42/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/44/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/44/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/46/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/46/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/47/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/47/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/49/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/49/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/50/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/52/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/52/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/53/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/54/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/55/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/62/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/65/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/65/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/66/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/67/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/68/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/69/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/69/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/70/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/71/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/71/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/72/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/72/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/73/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/74/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/74/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/75/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/76/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/76/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/79/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/79/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/80/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/80/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/81/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/85/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/85/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/86/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/86/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/88/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/90/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/90/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/91/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/92/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/94/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/94/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/95/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/97/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/97/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/100/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/101/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/101/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/102/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/108/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/109/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/109/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/110/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/110/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/111/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/111/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/112/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/112/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/113/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/113/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/114/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/114/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/116/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/116/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/117/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/117/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/118/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/118/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/119/facts/waves",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/119/facts/schedule",
+      "classification": "CONFLICT",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/waves",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    },
+    {
+      "path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/schedule",
+      "classification": "UNKNOWN",
+      "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json"
+    }
+  ],
   "limitations_policy": "Unknown values and conflicting source statements remain visible. Positive source observations, inferred projections and server-controlled facts remain distinct; no count is relabeled merely to claim completion.",
   "complete_source_sweep": {
     "review_date": "2026-10-18",
@@ -23,14 +976,31 @@
     ],
     "qualification": "Reference only. No unsupported absence→false conversion, invented random distribution, arrival coordinate or architecture decision. Exact source fetches and failed direct primary fetches remain auditable."
   },
-  "filled_parameter_fields": 236,
-  "remaining_unfilled_parameter_fields": 0,
-  "normalized_companion_fields": 41,
+  "filled_parameter_fields": 2,
+  "remaining_unfilled_parameter_fields": 133,
+  "normalized_companion_fields": 0,
   "global_source_archive": "docs/reference/content-prep/raid-content-1/tibia-source-archive.json",
   "global_source_archive_counts": {
     "UNKNOWN": 235,
     "CONFLICT": 1
   },
   "counting_scope": "Active fields only; archived original Global evidence is excluded from active-field counts.",
-  "pending_index_metadata": []
+  "pending_index_metadata": [],
+  "source_reconciled_candidate_fields": 234,
+  "remaining_unresolved_source_fields": 190,
+  "raid_source_repair": {
+    "source_check": "docs/reference/content-prep/raid-content-1/raid-source-reconciliation.json",
+    "records": 122,
+    "full_broadcast_set_records": 36,
+    "full_unique_broadcast_records": 33,
+    "full_multiple_variant_records": 3,
+    "partial_only_records": 9,
+    "prior_weak_selection_records": 11,
+    "no_source_identity_records": 66,
+    "wave_defaults_reconciled": 120,
+    "generic_schedules_withdrawn": 114,
+    "generated_announcements_withdrawn": 40,
+    "unresolved_active_source_fields": 190,
+    "native_admission": false
+  }
 }

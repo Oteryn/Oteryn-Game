@@ -1,3 +1,13 @@
+# Raid source reconciliation
+
+All250raid XML definitions in the current Canary and CrystalServer summer-update trees were examined across both datapacks of each repository; every blob was verified against its commit tree. Full known wiki broadcast sets identify33single event variants and3multiple-variant cases. Partial anchors and earlier region/creature-only selections remain explicitly weaker evidence; no first filename is adopted.
+
+The120previously filled wave fields now retain source candidates or explicit unresolved identity/count data. The114generic project schedules of1–3or7–14days, initial30minute wait and channel policy are withdrawn. Source registry attributes are retained as donor inputs, not guaranteed Global cooldowns.40generated announcements are withdrawn and the original source timelines restored.
+
+Raw donor coordinates remain reference evidence with no native area binding. Requested spawn amounts/ranges do not guarantee successful placements. XML delays are milliseconds and may be staggered by the donor scheduler. The source check preserves source identity, event signatures and registry entries without inventing a probability model. [Full source reconciliation](raid-source-reconciliation.json).
+
+Existing source-backed wave and calendar/season observations remain; two separately authorized boss proposals are unchanged. Unknown/conflicting fields are now explicit again. No native/runtime activation, generated pin change or regeneration is performed. Earlier completion wording below is retained as superseded history.
+
 # RAID-CONTENT-1: populated reference data
 
 All 236 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
