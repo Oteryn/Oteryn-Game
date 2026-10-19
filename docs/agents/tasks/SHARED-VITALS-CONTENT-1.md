@@ -1,3 +1,5 @@
+<!-- Current completion: actual target fields have been populated with DERIVED Oteryn working values. Original Global UNKNOWN/CONFLICT observations are archived, not reclassified as official proof. Earlier source-only sections below are historical context. -->
+
 # SHARED-VITALS-CONTENT-1
 
 ```yaml
@@ -83,3 +85,7 @@ The owner explicitly set both movable event-cake records to240seconds and reques
 New official unified intervals; twenty obsolete community timer candidates explicitly held as historical.
 
 Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+
+## Working-data completion —2026-10-19
+
+Populated25 previously held fields directly in target records;0 active unfilled fields. See [parameter register](../../reference/content-prep/shared-vitals-content-1/oteryn-parameters.json). Runtime admission and protected integration remain blocked.

@@ -117,11 +117,20 @@
           "note": "Official manual re-read from the live public page on 2026-10-18; runtime qualification remains separate."
         },
         "cap_source_disagreement": {
-          "value": null,
-          "classification": "CONFLICT",
-          "target_cut": "2026-10-18",
-          "continuity": "LIVE_OFFICIAL_SOURCE_RETRIEVED_AT_FETCH",
+          "value": {
+            "normal": 100,
+            "promoted": 200,
+            "premium_affects_cap": false
+          },
+          "classification": "DERIVED",
+          "target_cut": "2026-10-19",
+          "continuity": "OWNER_AUTHORIZED_OTERYN_WORKING_DEFAULT",
+          "evidence_scope": "OTERYN_REFERENCE_PARAMETER",
           "sources": [
+            {
+              "source": "owner:oteryn-data-completion:2026-10-19",
+              "selector": "docs/reference/content-prep/shared-vitals-content-1/oteryn-parameters.json / field rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement"
+            },
             {
               "source": "wiki:4560:1204055",
               "selector": "Introduction"
@@ -131,9 +140,15 @@
               "selector": "5.1.4"
             }
           ],
-          "note": "Official manual distinguishes normal/promoted caps (100/200); current Soul Point Wiki distinguishes Free/Premium accounts instead. These conditions are not equivalent."
+          "note": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+          "assumptions": [
+            "Select this documented value for Oteryn; not a claim of current official server behavior."
+          ],
+          "global_evidence_archive": "docs/reference/content-prep/shared-vitals-content-1/tibia-source-archive.json#rulesets/character/soul/reference-evidence.json/records/0/facts/cap_source_disagreement",
+          "runtime_admission": "BLOCKED_PENDING_NATIVE_QUALIFICATION"
         }
       }
     }
-  ]
+  ],
+  "evidence_scope": "SOURCE_OBSERVATIONS_WITH_EXPLICIT_OTERYN_WORKING_DEFAULTS"
 }

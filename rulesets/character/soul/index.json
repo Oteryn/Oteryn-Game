@@ -9,12 +9,12 @@
   "notes": "Soul rules; current value durable.",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "source_snapshot_target": "current-at-fetch-2026-10-18",
   "payloads": [
     {
       "path": "rulesets/character/soul/reference-evidence.json",
-      "sha256": "f7a932518d8837c1e4f72c1011915d9e09836fe38b6ae6326efd54cf752d627e"
+      "sha256": "dc34b04a790cce91a41a98112acbe020bd75e445ad6293aa280b805ad3d37349"
     }
   ]
 }

@@ -9,12 +9,12 @@
   "notes": "Static stamina/rested rules; current pool/state durable.",
   "runtime_admission": "BLOCKED",
   "runtime_switch_authorized": false,
-  "evidence_completeness": "PARTIAL_EXPLICIT_UNKNOWNS",
+  "evidence_completeness": "COMPLETE_OTERYN_WORKING_PARAMETERS_GLOBAL_SOURCE_ARCHIVED",
   "source_snapshot_target": "current-at-fetch-2026-10-18",
   "payloads": [
     {
       "path": "rulesets/character/stamina/reference-evidence.json",
-      "sha256": "447fbfa623898a6b6605cefac1e6c82983a019b366828875dec73df4ee67d553"
+      "sha256": "b2d51ce451a4bee24d9922b8d0345ecc525f7adb3fe0ff92dbab9f28f82d7a2e"
     }
   ]
 }
