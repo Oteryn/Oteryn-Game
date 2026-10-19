@@ -708,15 +708,24 @@ struct NativeCurrentPathQuery<'query, 'read, 'connection, 'owner> {
     map: &'query mut NativeSummonMap<'read, 'connection, 'owner>,
     runtime: &'query ChannelRuntimeV1,
     sight_target: Option<MovementLocalPosition>,
+    read_failed: bool,
 }
 
 impl crate::movement::path_search::CurrentPathQuery for NativeCurrentPathQuery<'_, '_, '_, '_> {
     async fn query(&mut self, position: MovementLocalPosition, goal: bool) -> Option<(u32, bool)> {
-        if self.map.read_tile(self.runtime, position).await != Some(true) {
+        let Some(walkable) = self.map.read_tile(self.runtime, position).await else {
+            self.read_failed = true;
+            return None;
+        };
+        if !walkable {
             return None;
         }
         let goal_admits = if goal && let Some(target) = self.sight_target {
-            self.map.sight_clear(self.runtime, position, target).await == Some(true)
+            let Some(clear) = self.map.sight_clear(self.runtime, position, target).await else {
+                self.read_failed = true;
+                return None;
+            };
+            clear
         } else {
             true
         };
@@ -946,6 +955,7 @@ impl NativeSummonMap<'_, '_, '_> {
                         map: &mut *self,
                         runtime,
                         sight_target: None,
+                        read_failed: false,
                     };
                     crate::movement::path_search::route_next_to_current(
                         parent_position.position(),
@@ -1341,8 +1351,9 @@ async fn prepare_native_movement_path(
             map: &mut *map,
             runtime,
             sight_target: distance.map(|_| target_position),
+            read_failed: false,
         };
-        match distance {
+        let steps = match distance {
             Some(distance) => {
                 crate::movement::path_search::route_at_distance_current(
                     from.position(),
@@ -1360,7 +1371,12 @@ async fn prepare_native_movement_path(
                 )
                 .await
             }
+        };
+        if steps.is_none() && query.read_failed {
+            prepared.search_pending = true;
+            return prepared;
         }
+        steps
     };
     if let Some(steps) = steps {
         prepared.path = crate::ai_think::NativeCreaturePath::from_search(
