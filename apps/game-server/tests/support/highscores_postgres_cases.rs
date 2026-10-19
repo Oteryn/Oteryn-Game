@@ -1748,8 +1748,16 @@ fn world_cut_pages_its_sources_and_fails_closed_above_its_character_bound() -> T
             paged.iter().map(|(_, rows)| rows).collect::<Vec<_>>(),
             registered.iter().map(|(_, rows)| rows).collect::<Vec<_>>()
         );
-        assert_eq!(registered[0].1.len(), 6);
-        assert_eq!(registered[2].1.len(), 5);
+        // Category 1 lists in FILTERS order: all six, the five paladins, the template knight.
+        let experience = |filter: Option<&str>| {
+            FILTERS
+                .iter()
+                .position(|stored| *stored == filter)
+                .map(|index| registered[index].1.len())
+        };
+        assert_eq!(experience(None), Some(6));
+        assert_eq!(experience(Some("paladin")), Some(5));
+        assert_eq!(experience(Some("knight")), Some(1));
         // One Character above the bound refuses the whole cut; the current snapshots and the
         // retained rows stay exactly as they were.
         let snapshots = h.count("game_world_highscore_snapshots").await?;

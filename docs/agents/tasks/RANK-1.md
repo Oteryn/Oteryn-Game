@@ -74,6 +74,14 @@ Widened by CP D1441 (integration slot, 2026-10-18):
 - `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`,
   `docs/contracts/protocol-oteryn/v1/highscores_v1.proto`
 
+Widened by CP (owner decisions, 2026-10-19):
+
+- `apps/game-server/src/native_admission_source/public_projections.rs`,
+  `public_projections_tests.rs` (base-vocation lists keep their World ranks)
+- `docs/contracts/OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md` (§4.1 rank text only)
+- `apps/game-server/tests/durability_postgres.rs` (support mod registration),
+  `apps/game-server/tests/support/highscores_session_postgres_cases.rs` (committed-session e2e)
+
 To compile on the branch the builder may add only the module registration lines in shared `mod.rs`/`lib.rs` files; they are re-applied in the slot commit after merging main, together with every other slot-only change.
 
 ## slot_only_paths (ONLY in the final commit at the merge-queue turn, after merging main)
@@ -738,7 +746,16 @@ target, outside owned paths. Status remains `NOT_FULLY_QUALIFIED`.
 2026-10-19 public projection alignment: the stored `filter` now uses the public §4.0 ids
 (`OTERYN_GAME_PUBLIC_PROJECTIONS_V1` §11: 1 druid, 2 knight, 3 monk, 4 paladin, 5 sorcerer);
 the HS-WIRE-1 query keeps its own numbering (`reply::QUERY_VOCATIONS`), so no wire change.
-Open: HIGHSCORES-0 §5 keeps the global rank in every filtered list, while the public producer's
-`encode_highscores` accepts only list-relative competition ranks, so filters 1..5 refuse to
-publish. The fix belongs to the producer or the contract text, outside owned paths (owner
-question).
+HIGHSCORES-0 §5 keeps the World rank in every filtered list, while the public producer's
+`encode_highscores` accepted only list-relative competition ranks, so filters 1..5 refused to
+publish.
+
+2026-10-19 owner decisions (CP): (a) `encode_highscores` keeps the exact list rule for filter 0
+and accepts World competition ranks under filters 1..5 (non-decreasing, starting at 1 or above;
+after a tie run of n rows at rank r the next rank is at least r + n); §4.1 says so. Tests:
+`vocation_filters_preserve_world_competition_ranks`,
+`world_ranked_vocation_lists_are_published_together` and the extended PostgreSQL
+`bootstrap_reads` case (knight rank 1, sorcerer rank 2, all six filters encode). (b) The positive
+committed-session e2e is
+`highscores_session_postgres_cases::committed_fresh_session_reads_its_world_highscores_through_the_session_handler`
+in the `durability_postgres` target (CI job `durability_postgres`).

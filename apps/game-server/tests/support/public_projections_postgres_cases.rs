@@ -1226,21 +1226,25 @@ pub(crate) async fn bootstrap_reads(
     sqlx::query(
         "INSERT INTO game_world_highscore_snapshots \
            (snapshot_id, world_id, category, computed_at_ms, source_cut, row_count) \
-         OVERRIDING SYSTEM VALUE VALUES (1, $1::uuid, 1, 1700000000123, '', 2)",
+         OVERRIDING SYSTEM VALUE VALUES (1, $1::uuid, 1, 1700000000123, '', 4)",
     )
     .bind(world_id)
     .execute(&mut *tx)
     .await?;
-    // The overall list and its vocation's list: a promoted key and a wire id. A published
-    // snapshot never acquires rows, so the rows precede its head.
+    // The experience list has a knight first and a sorcerer second. Both vocation lists
+    // retain their World ranks. A published snapshot never acquires rows, so rows precede
+    // its head. The knight also exercises a promoted key and a wire id.
     sqlx::query(
         "INSERT INTO game_world_highscore_rows (snapshot_id, filter, position, rank, \
            character_id, name, vocation, level, value_primary, value_progress) VALUES \
            (1, 0, 1, 1, $1::uuid, $2, 'elite_knight', 50, 1000, 0), \
-           (1, 2, 1, 1, $1::uuid, $2, '2', 50, 1000, 0)",
+           (1, 2, 1, 1, $1::uuid, $2, '2', 50, 1000, 0), \
+           (1, 0, 2, 2, $3::uuid, 'Bera', 'sorcerer', 40, 900, 0), \
+           (1, 5, 1, 2, $3::uuid, 'Bera', '5', 40, 900, 0)",
     )
     .bind(character_id)
     .bind(&entry.name)
+    .bind(bare(0x12))
     .execute(&mut *tx)
     .await?;
     sqlx::query(
@@ -1266,16 +1270,23 @@ pub(crate) async fn bootstrap_reads(
         ),
         (world_id, 1, 1, 1, 1_700_000_000)
     );
-    assert_eq!(batch.lists[0].len(), 1);
+    assert_eq!(batch.lists[0].len(), 2);
     assert_eq!(batch.lists[0][0].character_id, character_id);
     assert_eq!(
         (batch.lists[0][0].vocation, batch.lists[2][0].vocation),
         (Some(2), Some(2))
     );
+    let mut published = Vec::new();
     for filter in 0..FILTERS {
         let filter = u8::try_from(filter)?;
-        encode_highscores(SOURCE, &batch.snapshot(filter))?;
+        let body = encode_highscores(SOURCE, &batch.snapshot(filter))?;
+        published.push(serde_json::from_str::<serde_json::Value>(&body)?);
     }
+    assert_eq!(published.len(), 6);
+    assert_eq!(published[2]["filter"], 2);
+    assert_eq!(published[2]["rows"][0]["rank"], "1");
+    assert_eq!(published[5]["filter"], 5);
+    assert_eq!(published[5]["rows"][0]["rank"], "2");
     assert!(
         root.next_public_highscores(authority, &[batch.subject()])
             .await
