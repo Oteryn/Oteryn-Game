@@ -230,6 +230,13 @@ impl DurabilityRoot {
         drain: &(dyn WorldDrainWitness + Sync),
     ) -> Result<Option<WorldResetRun>, WorldResetError> {
         let started = Instant::now();
+        // Codex P1 (#2167), CP decision (a): a reconnect session a crashed or retired holder
+        // left open would hold the census closed for good. Release those first, fenced by this
+        // proven incarnation and the superseded scope generation; a loss still within its
+        // grace waits, and the census below refuses (NotCurrent) until it is released.
+        super::fresh_admission::FreshAdmissionStore::from_root(self.clone())
+            .release_retired_holder_sessions(node, world)
+            .await?;
         let Some(census) = self.census_world_reset(node, world).await? else {
             return Ok(None);
         };

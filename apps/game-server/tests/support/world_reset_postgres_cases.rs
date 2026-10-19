@@ -104,6 +104,18 @@ async fn replace_with(
     node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
     key: u8,
 ) -> TestResult {
+    replace_scope(h, node, key).await?;
+    // Actual native session fact, changed by the privileged fixture after all player writes.
+    // No current authority is manufactured; the writer separately checks its native recovery/node.
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid").bind(id(SESSION).as_slice()).execute(&h.pool).await?;
+    Ok(())
+}
+/// The operator's Replace of the Channel generation to `node`; every session stays as it is.
+async fn replace_scope(
+    h: &Harness,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    key: u8,
+) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2) ON CONFLICT DO NOTHING").bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     let predecessor = h
         .root
@@ -127,9 +139,6 @@ async fn replace_with(
         .await
         .map_err(debug)?;
     assert!(matches!(result, AssignmentOutcome::Committed(_)));
-    // Actual native session fact, changed by the privileged fixture after all player writes.
-    // No current authority is manufactured; the writer separately checks its native recovery/node.
-    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid").bind(id(SESSION).as_slice()).execute(&h.pool).await?;
     Ok(())
 }
 async fn pass(
@@ -2221,6 +2230,713 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
         assert!(again.is_err(), "{again:?}");
         assert_eq!(published().await?, (1, channels, Some(0)));
         assert_eq!(house_snapshot(&h, item).await?, house_before);
+        h.cleanup().await
+    })
+}
+
+// Codex P1 (#2167 Stage C), CP decision (a): a crash after RETIRING can leave reconnect
+// sessions open under the crashed holder's generation. The successor's boot run releases them
+// through the existing terminal release, fenced by its proven incarnation and the superseded
+// generation, and the reset completes; a live holder's session is never released.
+
+/// The successor incarnation `tag` of the Harness node (its restart): its bootstrap
+/// authorization supersedes the Harness node, which is no longer current once it registers.
+async fn register_successor(
+    h: &Harness,
+    tag: u8,
+) -> TestResult<crate::durability::runtime_scope_assignment::NodeIncarnationProof> {
+    use crate::durability::runtime_scope_assignment::{BootstrapSecret, LaunchBinding};
+    let secret = BootstrapSecret::from_bytes([tag; 32]);
+    let launch = LaunchBinding::new(&format!("world-reset-successor-{tag}")).map_err(debug)?;
+    h.root
+        .issue_node_bootstrap_authorization(&secret, &launch, Some(h.node.fact().node_id()))
+        .await
+        .map_err(debug)?;
+    let node = crate::foundation::NodeId::decode(&id(tag)).map_err(debug)?;
+    h.root
+        .register_node_incarnation(&secret, &launch, node)
+        .await
+        .map_err(|error| debug(error).into())
+}
+
+/// One boot run of `node`, as node boot runs it: the drain binding, then the reset run.
+async fn boot_run(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+) -> TestResult<Result<Option<crate::durability::world_reset_run::WorldResetRun>, WorldResetError>>
+{
+    let world = world()?;
+    Ok(match h.root.read_world_drain_binding(node, world).await {
+        Ok(binding) => {
+            h.root
+                .run_world_reset(
+                    authority,
+                    node,
+                    world,
+                    &ResetRunHouses,
+                    &ResetRunDrain(binding),
+                )
+                .await
+        }
+        Err(error) => Err(error),
+    })
+}
+
+/// The Harness session's state and the number of terminal-release lifecycle receipts.
+async fn session_release(h: &Harness) -> TestResult<(i16, i64)> {
+    let state: i16 = sqlx::query_scalar("SELECT session_state FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(id(SESSION).as_slice()).fetch_one(&h.pool).await?;
+    Ok((
+        state,
+        h.count("game_durability_admission_lifecycle_receipts")
+            .await?,
+    ))
+}
+
+/// The completed reset: no RETIRING job, epoch 1 active and ACTIVATED, admission open again.
+async fn assert_reopened(h: &Harness) -> TestResult {
+    assert_eq!(
+        h.root
+            .read_retiring_world_reset(world()?)
+            .await
+            .map_err(debug)?,
+        None
+    );
+    assert_eq!(
+        h.root.read_map_reset_epoch(world()?).await.map_err(debug)?,
+        1
+    );
+    let phase: String = sqlx::query_scalar("SELECT phase FROM game_world_reset_jobs WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
+        .bind(id(WORLD).as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(phase, "ACTIVATED");
+    assert_eq!(admission_codes(h).await?, admission("23502"));
+    Ok(())
+}
+
+fn retired_holder_store(h: &Harness) -> crate::durability::fresh_admission::FreshAdmissionStore {
+    crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+}
+
+/// The Harness Character's genuine session. The native seed's GameSession row and its two
+/// `'{}'` admission guards carry no publication history, so no terminal release can load
+/// them: they are replaced, before any reset is admitted, by a real Fresh admission of the
+/// same Session through `FreshAdmissionStore::commit` (ACTIVE, Character lease 2), over the
+/// Harness's actual runtime readiness publication.
+async fn admit_fresh_holder(h: &Harness) -> TestResult {
+    use crate::durability::admission_authority_guards::AdmissionGuardStore;
+    use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+    let mut tx = h.pool.begin().await?;
+    for statement in [
+        "DELETE FROM game_durability_admission_account_guards WHERE holder_game_session_id=encode($1,'hex')::uuid",
+        "DELETE FROM game_durability_admission_character_guards WHERE holder_game_session_id=encode($1,'hex')::uuid",
+        "DELETE FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid",
+    ] {
+        let deleted = sqlx::query(statement)
+            .bind(id(SESSION).as_slice())
+            .execute(&mut *tx)
+            .await?;
+        assert_eq!(deleted.rows_affected(), 1, "{statement}");
+    }
+    tx.commit().await?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    let mut source = fresh_holder::Source::new(
+        now,
+        id(crate::item_transfer_postgres_cases::CHARACTER),
+        40,
+        SESSION,
+    )?;
+    let guards = AdmissionGuardStore::from_root(h.root.clone());
+    // Keep the independently committed runtime readiness exactly as actually read.
+    let rows = guards
+        .load(&[source.rows[2].key.clone(), source.rows[3].key.clone()])
+        .await
+        .map_err(debug)?;
+    for (index, row) in rows.into_iter().enumerate() {
+        if let Some(row) = row {
+            source.rows[index + 2] = row;
+        }
+    }
+    let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
+    guards.publish(&publication).await.map_err(debug)?;
+    let request = source.request()?;
+    let outcome = retired_holder_store(h)
+        .commit(&request)
+        .await
+        .map_err(debug)?;
+    let FreshAdmissionDurableOutcomeV1::Committed(_) = outcome else {
+        return Err(format!("genuine Fresh admission not committed: {outcome:?}").into());
+    };
+    Ok(())
+}
+
+/// The holder's committed loss of the admitted Session, as `monk_save` records it: the
+/// transport is gone, epoch 1, whose original grace ends `grace` seconds from now.
+async fn lose_fresh_holder(h: &Harness, grace: i64) -> TestResult {
+    let lost = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1,current_transport_ref=NULL,control_loss_epoch=1,predecessor_generation=current_generation,original_grace_deadline=floor(extract(epoch FROM clock_timestamp()))::bigint+$2 WHERE game_session_id=encode($1,'hex')::uuid AND session_state=2")
+        .bind(id(SESSION).as_slice())
+        .bind(grace)
+        .execute(&h.pool)
+        .await?;
+    assert_eq!(lost.rows_affected(), 1);
+    Ok(())
+}
+
+// Independent signed fixture owner adapted from the `world_party_tests` Fresh admission
+// qualification (World 42, Channel 43). Receipts are created only by
+// `FreshAdmissionStore::commit`.
+mod fresh_holder {
+    use super::{CHANNEL, TestResult, WORLD, debug, id};
+    use crate::foundation::admission_authority_publication::*;
+    use crate::foundation::fnd04_verifier::*;
+    use crate::foundation::fresh_admission_durability::*;
+    use crate::foundation::*;
+    use crate::item_transfer_postgres_cases::uuid_text;
+    use base64::Engine;
+    use ed25519_dalek::{Signer, SigningKey};
+
+    fn checked<T, E: std::fmt::Debug>(r: Result<T, E>) -> TestResult<T> {
+        r.map_err(|e| debug(e).into())
+    }
+
+    pub(super) struct Source {
+        now: i64,
+        current: FreshCurrentEvidence,
+        pub(super) rows: Vec<AdmissionAuthorityPublicationChangeV1>,
+        key: SigningKey,
+        session_seed: u8,
+    }
+    impl fresh_source_sealed::Sealed for Source {}
+
+    fn provenance(purpose: FreshEvidencePurposeV1, now: i64) -> FreshEvidenceProvenanceV1 {
+        FreshEvidenceProvenanceV1 {
+            source_authority: "independent-platform-fixture".into(),
+            purpose,
+            scope: Fnd04EvidenceScope::FreshAdmission,
+            source_revision: 1,
+            accepted_source_revision: 1,
+            decision_identity: "platform-observation-1".into(),
+            accepted_decision_identity: "platform-observation-1".into(),
+            source_observed_at: now,
+            clock_uncertainty_seconds: 0,
+            publication_revision: 1,
+        }
+    }
+    impl FreshDurabilityEvidenceSourceV1 for Source {
+        fn signing_trust(
+            &self,
+            key_id: &str,
+            _now: i64,
+        ) -> Result<FreshSigningTrustObservationV1, Fnd04EvidenceError> {
+            if key_id != "fresh-1" {
+                return Err(Fnd04EvidenceError::ExplicitlyDenied);
+            }
+            Ok(FreshSigningTrustObservationV1 {
+                key_id: key_id.into(),
+                public_key: self.key.verifying_key().to_bytes(),
+                trusted: true,
+                provenance: provenance(FreshEvidencePurposeV1::SigningTrust, self.now),
+            })
+        }
+        fn account_security(
+            &self,
+            account_id: &str,
+            _now: i64,
+        ) -> Result<FreshAccountSecurityObservationV1, Fnd04EvidenceError> {
+            if account_id != self.current.account_id {
+                return Err(Fnd04EvidenceError::ExplicitlyDenied);
+            }
+            Ok(FreshAccountSecurityObservationV1 {
+                account_id: account_id.into(),
+                minimum_generation: 1,
+                allowed: true,
+                provenance: provenance(FreshEvidencePurposeV1::PlatformSecurity, self.now),
+            })
+        }
+    }
+    impl FreshDurabilityCurrentSourceV1 for Source {
+        fn current(
+            &self,
+            account_id: &str,
+            character_id: CharacterId,
+            _now: i64,
+        ) -> Result<FreshPublishedCurrentObservationV1, Fnd04ConsumerError> {
+            if account_id != self.current.account_id || character_id != self.current.character_id {
+                return Err(Fnd04ConsumerError::FreshAccountCharacterConflict);
+            }
+            Ok(FreshPublishedCurrentObservationV1 {
+                facts: self.current.clone(),
+                account_publication_revision: 1,
+                character_publication_revision: 1,
+                runtime_publication_revision: 1,
+                expected_lease_generation: 1,
+                proposed_lease_generation: 2,
+                account_presence_available: true,
+                character_eligible: true,
+                runtime_ready: true,
+            })
+        }
+    }
+    impl AdmissionAuthorityPublicationCurrentSourceV1 for Source {
+        fn current_publications(
+            &self,
+            keys: &[AdmissionAuthorityGuardKeyV1],
+        ) -> Result<
+            Vec<Option<AdmissionAuthorityPublicationChangeV1>>,
+            AdmissionAuthorityPublicationErrorV1,
+        > {
+            Ok(keys
+                .iter()
+                .map(|key| self.rows.iter().find(|row| &row.key == key).cloned())
+                .collect())
+        }
+    }
+    impl AdmissionAuthorityOwningPublisherV1 for Source {
+        fn resolve_publication(
+            &self,
+            _now: i64,
+        ) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1>
+        {
+            Ok(self.rows.clone())
+        }
+    }
+    impl AdmissionClaimOwningSourceV1 for Source {
+        fn prepare_fresh_claim(
+            &self,
+            binding: &FreshAdmissionAuditBindingV1,
+            now: i64,
+        ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1>
+        {
+            let predecessors = self.rows[..2].to_vec();
+            let mut successors = predecessors.clone();
+            for row in &mut successors {
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: row.publication_revision,
+                };
+                row.publication_revision = row
+                    .publication_revision
+                    .checked_add(1)
+                    .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+                row.source.source_revision = row
+                    .source
+                    .source_revision
+                    .checked_add(1)
+                    .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+                row.source.decision_identity = "game-acquire-2".into();
+                row.source.source_observed_at = now;
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                        security.provenance.publication_revision = row.publication_revision;
+                        *presence = Some((self.current.character_id, binding.candidate_session));
+                    }
+                    AdmissionAuthorityGuardStateV1::Character {
+                        lease_generation,
+                        holder,
+                        ..
+                    } => {
+                        *lease_generation = lease_generation
+                            .checked_add(1)
+                            .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+                        *holder = Some(binding.candidate_session);
+                    }
+                    _ => return Err(AdmissionAuthorityPublicationErrorV1::Invalid),
+                }
+            }
+            Ok(AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: now,
+            })
+        }
+    }
+    impl Source {
+        pub(super) fn new(
+            now: i64,
+            character: [u8; 16],
+            account_seed: u8,
+            session_seed: u8,
+        ) -> TestResult<Self> {
+            let mut source = Self {
+                now,
+                key: SigningKey::from_bytes(&[31; 32]),
+                session_seed,
+                rows: vec![],
+                current: FreshCurrentEvidence {
+                    account_id: uuid_text(id(account_seed)),
+                    character_id: checked(CharacterId::decode(&character))?,
+                    world_id: checked(WorldId::decode(&id(WORLD)))?,
+                    channel_id: checked(ChannelId::decode(&id(CHANNEL)))?,
+                    character_lease_generation: 1,
+                    scope_ownership_generation: 1,
+                    route_revision: "route-1".into(),
+                    runtime_observation_revision: "runtime-1".into(),
+                    ruleset_revision: "ruleset-1".into(),
+                    content_revision: "content-1".into(),
+                    map_revision: "map-1".into(),
+                    world_policy_revision: "world-policy-1".into(),
+                    offer_revision: "offer-1".into(),
+                },
+            };
+            let f = &source.current;
+            let security = checked(source.account_security(&f.account_id, now))?;
+            let entries = vec![
+                (
+                    AdmissionAuthorityGuardKeyV1::Account {
+                        account_id: f.account_id.clone(),
+                    },
+                    AdmissionPublicationPurposeV1::AccountSecurityAndPresence,
+                    AdmissionAuthorityGuardStateV1::Account {
+                        security,
+                        presence: None,
+                    },
+                ),
+                (
+                    AdmissionAuthorityGuardKeyV1::Character(f.character_id),
+                    AdmissionPublicationPurposeV1::CharacterOwnershipAndLease,
+                    AdmissionAuthorityGuardStateV1::Character {
+                        account_id: f.account_id.clone(),
+                        world_id: f.world_id,
+                        eligible: true,
+                        lease_generation: 1,
+                        holder: None,
+                    },
+                ),
+                (
+                    AdmissionAuthorityGuardKeyV1::Runtime(RuntimeScopeRefV1::channel(
+                        f.world_id,
+                        f.channel_id,
+                    )),
+                    AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
+                    AdmissionAuthorityGuardStateV1::Runtime {
+                        ownership_generation: 1,
+                        ready: true,
+                        route_revision: f.route_revision.clone(),
+                        runtime_observation_revision: f.runtime_observation_revision.clone(),
+                        protocol_major: 1,
+                        transport_profile: 1,
+                        ruleset_revision: f.ruleset_revision.clone(),
+                        content_revision: f.content_revision.clone(),
+                        map_revision: f.map_revision.clone(),
+                        world_policy_revision: f.world_policy_revision.clone(),
+                        offer_revision: f.offer_revision.clone(),
+                    },
+                ),
+                (
+                    AdmissionAuthorityGuardKeyV1::SigningTrust {
+                        key_id: "fresh-1".into(),
+                        profile: PRE_ADMISSION_PROFILE.into(),
+                    },
+                    AdmissionPublicationPurposeV1::FixedFreshSigningTrust,
+                    AdmissionAuthorityGuardStateV1::SigningTrust {
+                        public_key: source.key.verifying_key().to_bytes(),
+                        trusted: true,
+                    },
+                ),
+            ];
+            source.rows = entries
+                .into_iter()
+                .map(|(key, purpose, state)| {
+                    let platform = purpose == AdmissionPublicationPurposeV1::FixedFreshSigningTrust;
+                    AdmissionAuthorityPublicationChangeV1 {
+                        key,
+                        state,
+                        publication_revision: 1,
+                        precondition: AdmissionPublicationPreconditionV1::Bootstrap {
+                            restored_publication_high_water: Some(0),
+                        },
+                        source: AdmissionPublicationSourceV1 {
+                            authority: if platform {
+                                "independent-platform-fixture"
+                            } else {
+                                "independent-game-fixture"
+                            }
+                            .into(),
+                            purpose,
+                            source_revision: 1,
+                            decision_identity: if platform {
+                                "platform-observation-1"
+                            } else {
+                                "game-observation-1"
+                            }
+                            .into(),
+                            source_observed_at: now,
+                            clock_uncertainty_seconds: 0,
+                        },
+                    }
+                })
+                .collect();
+            Ok(source)
+        }
+        pub(super) fn request(&self) -> TestResult<FreshAdmissionCommitRequestV1> {
+            let header = r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#;
+            let mut payload: serde_json::Value = serde_json::from_str(&fresh_payload())?;
+            payload["iat"] = self.now.into();
+            payload["nbf"] = self.now.into();
+            payload["exp"] = (self.now + 10).into();
+            payload["jti"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
+                .encode([self.session_seed; 32])
+                .into();
+            payload["attempt_ref"] = uuid_text(id(self.session_seed)).into();
+            payload["account_id"] = self.current.account_id.clone().into();
+            payload["character_id"] = uuid_text(*self.current.character_id.as_bytes()).into();
+            payload["world_id"] = uuid_text(*self.current.world_id.as_bytes()).into();
+            payload["channel_id"] = uuid_text(*self.current.channel_id.as_bytes()).into();
+            payload["ruleset_revision"] = self.current.ruleset_revision.clone().into();
+            payload["world_policy_revision"] = self.current.world_policy_revision.clone().into();
+            let token = signed_token(&self.key, header, payload.to_string());
+            let facts = checked(verify_fresh_grant_durability_v1(
+                &token,
+                self.now,
+                &FreshDurabilityTrustContext::from_owning_source(self),
+                &FreshDurabilityCurrentAuthorityV1::from_owning_source(self),
+            ))?;
+            let authorization = checked(FreshAdmissionCommitAuthorizationV1::new(
+                &facts,
+                checked(GameSessionId::decode(&id(self.session_seed)))?,
+                checked(AuthenticatedTransportRefV1::decode(&id(self.session_seed)))?,
+                self,
+                self.now,
+            ))?;
+            let transition = checked(FreshAdmissionClaimTransitionV1::prepare(
+                self,
+                &authorization,
+                self.now,
+            ))?;
+            let mut flow = checked(FreshAdmissionDurabilityFlowV1::begin(
+                authorization,
+                transition,
+            ))?;
+            let mut capture = Capture(None);
+            checked(flow.submit(&mut capture))?;
+            capture
+                .0
+                .ok_or_else(|| "fresh fixture did not submit".into())
+        }
+    }
+    struct Capture(Option<FreshAdmissionCommitRequestV1>);
+    impl FreshAdmissionDurabilityPortV1 for Capture {
+        fn submit(
+            &mut self,
+            request: &FreshAdmissionCommitRequestV1,
+        ) -> FreshAdmissionSubmissionV1 {
+            if self.0.is_some() {
+                return FreshAdmissionSubmissionV1::Unavailable;
+            }
+            self.0 = Some(request.clone());
+            FreshAdmissionSubmissionV1::Accepted
+        }
+        fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
+            FreshAdmissionSubmissionV1::Unavailable
+        }
+    }
+    fn fresh_payload() -> String {
+        let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([7; 32]);
+        format!(
+            r#"{{"iss":"urn:oteryn:platform:game-admission","aud":"urn:oteryn:game:admission","iat":100,"nbf":100,"exp":110,"jti":"{nonce}","profile":"oteryn-pre-admission-v1","purpose":"fresh_entry","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"00000000-0000-4000-8000-000000000001","character_id":"00000000-0000-7000-8000-000000000002","world_id":"00000000-0000-7000-8000-000000000003","channel_id":"00000000-0000-7000-8000-000000000004","account_security_generation":"1","route_revision":"route-1","runtime_observation_revision":"runtime-1","scope_ownership_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1","offer_revision":"offer-1"}}"#
+        )
+    }
+    fn signed_token(signing_key: &SigningKey, header: &str, payload: String) -> String {
+        let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
+        let encoded_payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload);
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+        let signature = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(signing_key.sign(signing_input.as_bytes()).to_bytes());
+        format!("{signing_input}.{signature}")
+    }
+}
+
+/// State 1: the crashed holder's session is RECONNECTABLE, its loss still within grace. The
+/// successor's boot run releases nothing and waits (the census stays closed) until the
+/// original deadline passes on the durable clock; then the grace-expiry release frees it, the
+/// reset completes and the World reopens. A later sweep and boot change nothing.
+#[test]
+fn reset_run_releases_a_crash_left_reconnectable_session_once_its_grace_expires() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "resetretiredloss").await?;
+        install(&h).await?;
+        // The crashed holder's committed loss, whose original grace ends three seconds from now.
+        admit_fresh_holder(&h).await?;
+        lose_fresh_holder(&h, 3).await?;
+        admit_qualified(&h).await?;
+        let successor = register_successor(&h, 21).await?;
+        replace_scope(&h, &successor, 74).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let store = retired_holder_store(&h);
+        let waiting = store
+            .release_retired_holder_sessions(&successor, world()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!((waiting.released, waiting.waiting), (0, 1));
+        let early = boot_run(&h, &authority, &successor).await?;
+        assert!(
+            matches!(early, Err(WorldResetError::NotCurrent)),
+            "{early:?}"
+        );
+        assert_eq!(session_release(&h).await?, (1, 0));
+        assert_eq!(
+            h.root
+                .read_retiring_world_reset(world()?)
+                .await
+                .map_err(debug)?,
+            Some(0)
+        );
+        // Wait, on the durable clock, for the original deadline to pass.
+        let session = crate::foundation::GameSessionId::decode(&id(SESSION)).map_err(debug)?;
+        for _ in 0..40 {
+            let (current, now) = store.current_session_at(session).await.map_err(debug)?;
+            if current
+                .current_original_grace_deadline()
+                .is_some_and(|deadline| now >= deadline)
+            {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+        let run = boot_run(&h, &authority, &successor)
+            .await?
+            .map_err(debug)?
+            .ok_or("RETIRING reset")?;
+        assert_eq!(run.reset_epoch, 0);
+        assert_eq!(session_release(&h).await?, (3, 1));
+        assert_reopened(&h).await?;
+        // Idempotent: a second sweep finds nothing and the next boot finds no reset.
+        let again = store
+            .release_retired_holder_sessions(&successor, world()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!((again.released, again.waiting), (0, 0));
+        assert!(
+            boot_run(&h, &authority, &successor)
+                .await?
+                .map_err(debug)?
+                .is_none()
+        );
+        assert_eq!(session_release(&h).await?, (3, 1));
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
+/// State 2: the crashed holder's session is ACTIVE, connected and never lost. Its holder is
+/// retired, so its transport is dead: the successor's boot run releases it as an abandoned
+/// session (the player loses grace), the reset completes and the World reopens.
+#[test]
+fn reset_run_releases_a_crash_left_active_session_of_a_retired_holder() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "resetretiredactive").await?;
+        install(&h).await?;
+        admit_fresh_holder(&h).await?;
+        assert_eq!(session_release(&h).await?, (2, 0));
+        admit_qualified(&h).await?;
+        // Before the operator's Replace the crashed holder still holds the generation: the run
+        // waits and releases nothing.
+        let successor = register_successor(&h, 21).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let early = boot_run(&h, &authority, &successor).await?;
+        assert!(
+            matches!(early, Err(WorldResetError::NotCurrent)),
+            "{early:?}"
+        );
+        assert_eq!(session_release(&h).await?, (2, 0));
+        replace_scope(&h, &successor, 74).await?;
+        let run = boot_run(&h, &authority, &successor)
+            .await?
+            .map_err(debug)?
+            .ok_or("RETIRING reset")?;
+        assert_eq!(run.reset_epoch, 0);
+        assert_eq!(session_release(&h).await?, (3, 1));
+        assert_reopened(&h).await?;
+        let again = retired_holder_store(&h)
+            .release_retired_holder_sessions(&successor, world()?)
+            .await
+            .map_err(debug)?;
+        assert_eq!((again.released, again.waiting), (0, 0));
+        assert_eq!(session_release(&h).await?, (3, 1));
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
+/// Negative fencing: the session's holder is a live node. Another current node holding the
+/// Channel at a newer generation releases nothing, nor does the live holder (which no longer
+/// holds the scope); the census stays closed. Only once the control plane revokes the holder
+/// does the same boot run release the session and complete the reset.
+#[test]
+fn reset_run_never_releases_a_session_of_a_live_holder() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "resetliveholder").await?;
+        install(&h).await?;
+        // The holder's committed loss, its grace already over.
+        admit_fresh_holder(&h).await?;
+        lose_fresh_holder(&h, 0).await?;
+        admit_qualified(&h).await?;
+        let other = crate::item_transfer_postgres_cases::register(&h.root, 22).await?;
+        replace_scope(&h, &other, 75).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let store = retired_holder_store(&h);
+        for node in [&other, &h.node] {
+            let sweep = store
+                .release_retired_holder_sessions(node, world()?)
+                .await
+                .map_err(debug)?;
+            assert_eq!((sweep.released, sweep.waiting), (0, 0));
+        }
+        let refused = boot_run(&h, &authority, &other).await?;
+        assert!(
+            matches!(refused, Err(WorldResetError::NotCurrent)),
+            "{refused:?}"
+        );
+        assert_eq!(session_release(&h).await?, (1, 0));
+        assert_eq!(
+            h.root
+                .read_retiring_world_reset(world()?)
+                .await
+                .map_err(debug)?,
+            Some(0)
+        );
+        h.root
+            .revoke_node_registration(h.node.fact())
+            .await
+            .map_err(debug)?;
+        let run = boot_run(&h, &authority, &other)
+            .await?
+            .map_err(debug)?
+            .ok_or("RETIRING reset")?;
+        assert_eq!(run.reset_epoch, 0);
+        assert_eq!(session_release(&h).await?, (3, 1));
+        assert_reopened(&h).await?;
+        drop(authority);
+        drop(seal);
         h.cleanup().await
     })
 }

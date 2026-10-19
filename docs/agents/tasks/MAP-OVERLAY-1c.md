@@ -166,7 +166,20 @@ merge_authority: CP_ONLY (builder never marks ready)
   - The bundle-world House catalogue is Unknown, so a bundle World reset refuses
     (HOUSE-RUNTIME owner).
   - Only one Channel per node: a multi-Channel World waits as `NotCurrent`.
-  - A crash-left reconnect session in state 1 or 2 blocks the cohort until it is released.
+  - Resolved (Codex P1, CP decision a): a crash after RETIRING no longer leaves the cohort
+    blocked by a reconnect session in state 1 or 2. Each boot run first calls
+    `FreshAdmissionStore::release_retired_holder_sessions`. It releases, through the existing
+    terminal release, only sessions whose generation's holder registration is no longer current
+    while the proven current incarnation holds a newer generation. A state-1 loss is released
+    once its original grace expires (until then the run waits as `NotCurrent`). A state-2
+    session is released as abandoned. No migration and no wire change. PG cases:
+    `reset_run_releases_a_crash_left_reconnectable_session_once_its_grace_expires`,
+    `reset_run_releases_a_crash_left_active_session_of_a_retired_holder` and
+    `reset_run_never_releases_a_session_of_a_live_holder`; each seeds the holder's session
+    through a genuine `FreshAdmissionStore::commit` (the native seed's guards carry no
+    publication history). Residuals: kill-reward and actor
+    settlement do not run for such sessions (only the durable release), and a state-1 session
+    without a loss epoch waits.
   - The ops reset login must be granted `oteryn_game_world_reset_publisher` (EXECUTE on
     `game_world_reset_publish`; D1453 role split, same D1447 deploy batch), and the ops config needs its
     `[world_reset.database]` credential for `world-reset publish`.
@@ -372,6 +385,7 @@ Rows marked BLOCKING must merge (or be accepted/decided) before the builder's sl
 - `docs/agents/evidence/MAP-OVERLAY-1c-*.md`
 - `docs/agents/tasks/MAP-OVERLAY-1c.md` (this record: status and notes only)
 - `apps/game-server/src/durability/world_reset_run.rs` (reset run, boot reads, `MAP01_RESET_RETIRE_MS`)
+- `apps/game-server/src/durability/fresh_admission.rs` (CP decision a: only the boot-recovery release of retired-holder sessions)
 - `apps/game-server/src/durability/mod.rs` (world reset module registration)
 - `apps/game-server/src/node/serve.rs` (boot recovery, reset watch and drain exit)
 - `apps/game-server/src/gameplay_transport/mod.rs` (`GameplayDrain`, `serve_gameplay_draining`)

@@ -2,6 +2,7 @@
 //! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
 use super::DurabilityError;
 use super::admission_authority_guards::*;
+use super::runtime_scope_assignment::NodeIncarnationProof;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use oteryn_game_server::foundation::admission_authority_publication::*;
@@ -1880,6 +1881,16 @@ impl FreshAdmissionStore {
     /// A sealed owner transition is still revalidated against independently read
     /// SQL current state at the one decision time of the serialized transaction.
     pub async fn release(&self, transition: &TerminalReleaseClaimTransitionV1) -> Result<i64> {
+        self.release_fenced(transition, None).await
+    }
+
+    /// [`Self::release`], also fenced in its decision transaction, when `holder_fence` names
+    /// a node, by `retired_holder_fence`: the session is still one a retired holder left.
+    async fn release_fenced(
+        &self,
+        transition: &TerminalReleaseClaimTransitionV1,
+        holder_fence: Option<NodeIncarnationProof>,
+    ) -> Result<i64> {
         let encoded = encode_lifecycle(transition.evidence())?;
         let transition = transition.clone();
         let store = self.clone();
@@ -1895,6 +1906,9 @@ impl FreshAdmissionStore {
             }
             let session_id = evidence.operation.current_session().current_game_session_id();
             let current = store.current_session_locked(&mut tx, session_id).await?;
+            if let Some(node) = &holder_fence {
+                if !retired_holder_fence(&mut tx, node, session_id).await? { return Err(DurabilityError::Unavailable); }
+            }
             let mut rows = Vec::with_capacity(2);
             for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
             if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { return Err(DurabilityError::Unavailable); }
@@ -2117,6 +2131,19 @@ impl FreshAdmissionStore {
         now: i64,
         account_id: &str,
     ) -> Result<ExpiredLossReleaseV1> {
+        self.release_current_claims_fenced(current, now, account_id, None)
+            .await
+    }
+
+    /// [`Self::release_current_claims`], committed through [`Self::release_fenced`] with
+    /// `holder_fence`.
+    async fn release_current_claims_fenced(
+        &self,
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        now: i64,
+        account_id: &str,
+        holder_fence: Option<&NodeIncarnationProof>,
+    ) -> Result<ExpiredLossReleaseV1> {
         let keys = [
             AdmissionAuthorityGuardKeyV1::Account {
                 account_id: account_id.into(),
@@ -2185,13 +2212,187 @@ impl FreshAdmissionStore {
             }
             Err(_) => return Err(DurabilityError::Unavailable),
         };
-        match self.release(&transition).await {
+        match self
+            .release_fenced(&transition, holder_fence.cloned())
+            .await
+        {
             Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
             Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
                 Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
                 None => Err(error),
             },
         }
+    }
+}
+
+/// MAP-OVERLAY-1c boot recovery (Codex P1 on #2167, CP decision (a)): the reconnect sessions
+/// that block a RETIRING World reset census, left open by a holder incarnation that crashed or
+/// was retired. A session qualifies only when, read in one transaction:
+/// - its World has a RETIRING reset job;
+/// - its runtime scope is assigned to the current incarnation `$1`/`$2` (the caller proves it
+///   in the same transaction) at a newer ownership generation than the session's, so no
+///   runtime of this incarnation can serve it; and
+/// - every assignment receipt of the session's generation names a holder registration that is
+///   no longer current (superseded, revoked or ended): the node that owned it is retired.
+///
+/// The caller appends its own filter on `s` as `$3`.
+macro_rules! retired_holder_sessions {
+    () => {
+        " FROM game_durability_reconnect_sessions s \
+          JOIN game_runtime_scope_assignments a ON a.scope_key = CASE s.runtime_scope_kind \
+            WHEN 1 THEN '\\x01'::bytea || uuid_send(s.runtime_scope_world_id) \
+                        || uuid_send(s.runtime_scope_channel_id) \
+            WHEN 2 THEN game_house_scope_key(s.runtime_scope_world_id, s.runtime_scope_house_key) \
+            END \
+          WHERE s.session_state IN (1, 2) AND a.world_id = s.world_id AND a.state = 1 \
+            AND a.holder_node_id = encode($1, 'hex')::uuid \
+            AND a.holder_registration_revision = $2::text::numeric(20,0) \
+            AND a.ownership_generation > s.scope_ownership_generation \
+            AND EXISTS (SELECT 1 FROM game_world_reset_jobs j \
+                         WHERE j.world_id = s.world_id AND j.phase = 'RETIRING') \
+            AND EXISTS (SELECT 1 FROM game_runtime_scope_assignment_receipts r \
+                         WHERE r.scope_key = a.scope_key \
+                           AND r.ownership_generation = s.scope_ownership_generation AND r.state = 1) \
+            AND NOT EXISTS (SELECT 1 FROM game_runtime_scope_assignment_receipts r \
+                JOIN game_node_registrations g ON g.node_id = r.holder_node_id \
+                 AND g.registration_revision = r.holder_registration_revision \
+                WHERE r.scope_key = a.scope_key \
+                  AND r.ownership_generation = s.scope_ownership_generation \
+                  AND r.state = 1 AND g.state = 1)"
+    };
+}
+
+/// Whether `session` is, at this transaction's decision time, one a retired holder left for
+/// the proven current incarnation `node` (`retired_holder_sessions!`). An unproven `node`
+/// fences everything.
+async fn retired_holder_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    node: &NodeIncarnationProof,
+    session: GameSessionId,
+) -> Result<bool> {
+    if !super::runtime_scope_assignment::prove_current_incarnation(tx, node).await? {
+        return Ok(false);
+    }
+    let fact = node.fact();
+    Ok(sqlx::query_scalar(concat!(
+        "SELECT EXISTS (SELECT 1",
+        retired_holder_sessions!(),
+        " AND s.game_session_id = encode($3, 'hex')::uuid)"
+    ))
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .bind(session.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
+/// The most sessions one retired-holder sweep reads; the census waits for the next sweep.
+const RETIRED_HOLDER_SWEEP_MAX: i64 = 256;
+
+/// Outcome of one [`FreshAdmissionStore::release_retired_holder_sessions`] sweep.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct RetiredHolderSweepV1 {
+    /// Sessions whose terminal release is durable (possibly by an earlier attempt).
+    pub(crate) released: u32,
+    /// Sessions left open for a later sweep: a loss still within its original grace deadline,
+    /// or one whose current claims no longer name it.
+    pub(crate) waiting: u32,
+}
+
+impl FreshAdmissionStore {
+    /// MAP-OVERLAY-1c boot recovery (ADR-0021 §4.7, CP decision (a) on Codex P1 #2167): release
+    /// the reconnect sessions of `world` that a retired holder left open, so the RETIRING reset
+    /// census can complete. Only sessions `retired_holder_sessions!` names for the proven
+    /// current incarnation `node` qualify, and each terminal commit re-proves that fence in its
+    /// own decision transaction, besides the exact session and claim generations
+    /// [`Self::release`] already fences. No new durable value is written: each release is the
+    /// existing FND-04B terminal release, as idempotent as every other.
+    ///
+    /// - RECONNECTABLE (state 1): the grace expiry of [`Self::release_expired_loss`] on the same
+    ///   durable clock; a loss still within its original deadline waits.
+    /// - ACTIVE (state 2): its holder is retired, so its transport is dead: released as
+    ///   [`Self::release_abandoned_session`] releases a dead transport's session (the player
+    ///   loses grace, never the ability to enter again).
+    ///
+    /// An unproven `node` releases nothing.
+    pub(crate) async fn release_retired_holder_sessions(
+        &self,
+        node: &NodeIncarnationProof,
+        world: WorldId,
+    ) -> Result<RetiredHolderSweepV1> {
+        let fact = node.fact();
+        let proof = node.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        let candidates: Vec<(Vec<u8>, String)> = backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let rows = if super::runtime_scope_assignment::prove_current_incarnation(
+                        &mut tx, &proof,
+                    )
+                    .await?
+                    {
+                        sqlx::query_as(concat!(
+                            "SELECT uuid_send(s.game_session_id), s.account_id::text",
+                            retired_holder_sessions!(),
+                            " AND s.world_id = encode($3, 'hex')::uuid \
+                              ORDER BY s.game_session_id LIMIT $4"
+                        ))
+                        .bind(fact.node_id().as_bytes().as_slice())
+                        .bind(fact.registration_revision().to_string())
+                        .bind(world.as_bytes().as_slice())
+                        .bind(RETIRED_HOLDER_SWEEP_MAX)
+                        .fetch_all(&mut *tx)
+                        .await?
+                    } else {
+                        Vec::new()
+                    };
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(rows)
+                })
+            })
+            .await?;
+        let mut sweep = RetiredHolderSweepV1::default();
+        for (session, account_id) in candidates {
+            let session: [u8; 16] = session
+                .as_slice()
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let session =
+                GameSessionId::decode(&session).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let (current, now) = self.current_session_at(session).await?;
+            let outcome = match current.session_state() {
+                GameSessionState::Terminal => ExpiredLossReleaseV1::Terminal,
+                GameSessionState::Reconnectable => match (
+                    current.current_control_loss_epoch(),
+                    current.current_original_grace_deadline(),
+                ) {
+                    (Some(_), Some(deadline)) if now >= deadline => {
+                        self.release_current_claims_fenced(current, now, &account_id, Some(node))
+                            .await?
+                    }
+                    (Some(_), Some(deadline)) => ExpiredLossReleaseV1::NotExpired { deadline, now },
+                    _ => ExpiredLossReleaseV1::NotApplicable,
+                },
+                GameSessionState::Active => {
+                    self.release_current_claims_fenced(current, now, &account_id, Some(node))
+                        .await?
+                }
+            };
+            match outcome {
+                ExpiredLossReleaseV1::Released { .. } => {
+                    sweep.released = sweep.released.saturating_add(1);
+                }
+                ExpiredLossReleaseV1::Terminal => {}
+                ExpiredLossReleaseV1::NotExpired { .. } | ExpiredLossReleaseV1::NotApplicable => {
+                    sweep.waiting = sweep.waiting.saturating_add(1);
+                }
+            }
+        }
+        Ok(sweep)
     }
 }
 
