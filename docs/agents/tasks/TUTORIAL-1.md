@@ -17,7 +17,7 @@ plan_row: "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_PLAN_2026-
 class: "impl"
 needs_migration: yes
 migration: "apps/game-server/migrations/0130_character_tutorial_progress.sql (number assigned by CP)"
-decision: "CP D1426 (#2186 comment 6241833560): Newhaven start island only; inert on StartThais; no spawn change (D1410)"
+decision: "CP D1426 (#2186 comment 6241833560): Newhaven start island only; inert on StartThais. Owner D1463 (2026-10-19) supersedes the D1410 no-spawn-change reading: new Characters start on the Newhaven islet (32534,32513,7); Anna sails to Thais Peninsula at level 8"
 needs_registry: no
 needs_content_regeneration: true
 merge_authority: CP_ONLY (builder never marks ready)
@@ -87,6 +87,7 @@ Replaced by the CP D1426 scenario brief below (its assertions A1-A6). The start 
 - [x] A5: concurrent writers are serialized by a row lock and a compare-and-set version; the loser gets a typed `Conflict` and writes nothing, also when its progress equals the stored one (a retry or a stale equal-state writer; no occurrence identity), see `tutorial_progress_postgres_cases.rs`.
 - [x] A6: after a reconnect (new connection generation) and a node restart the tutorial resumes from the stored step; a stale connection, lease or session reads and writes nothing (`tutorial_progress_postgres_cases.rs`).
 - [ ] Runtime wiring (login, step-in, death, loot, NPC) stays a slot-only follow-up; nothing calls the writer yet.
+  It is blocked on the D1463 follow-ups listed in *Owner D1463 amendment* below.
 
 ## Validation commands
 
@@ -212,3 +213,27 @@ of the death script, the level-8 door (`on_use_newhaven.lua`), and the runtime w
 movement, death, loot and NPC events to the writer (slot-only paths). The forcefield teleport
 itself already exists (NEWHAVEN-TELEPORT-1). The death rule reads the current step, where the
 reference reads the citizen track at the last login.
+
+## Owner D1463 amendment — 2026-10-19
+
+Owner decision D1463 replaces the D1410 "no spawn change" reading: a new Character starts on the
+Newhaven islet (32534,32513,7), the islet forcefield (32538,32514,7) leads to (32544,32515,7), and
+Anna sails to Thais Peninsula (not Targuna) from level 8. Evidence: #2255 (audit report, head
+d008217e).
+
+The gate now matches exactly the two committed Newhaven land components (the islet and the island)
+from the B3 ground classes, so another land component inside the Newhaven bounding box stays inert
+(`tests/tutorial_newhaven.rs`).
+
+Remaining work, each outside this record's owned paths or needing an owner decision:
+
+- Spawn change to the islet: `content/world/pins/oteryn.json` `entry_start` and its regeneration
+  (slot-only). The start and portal-exit tiles must be passable for the native mover first.
+- Runtime wiring of login, step-in, death and loot events to the reducer and the writer:
+  `gameplay_transport/mod.rs` and `connection.rs` (slot-only), with an end-to-end test through the
+  real dispatch in a named CI job.
+- Hint delivery (hints 2 and 3) and the islet-hole text: no server frame carries a tutorial hint
+  or a status text today; that is a protocol change and needs the owner's sign-off.
+- Anna's transport to Thais Peninsula: the landing cell at the Thais port near Hector is
+  OTERYN_DESIGN; the Anna and Seagull NPC placements do not exist yet.
+- The Corruptor vocation-loot item IDs are unresolved (the reference script is disabled).
