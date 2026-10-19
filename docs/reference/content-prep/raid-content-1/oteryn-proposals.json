@@ -3,8 +3,8 @@
   "task": "RAID-CONTENT-1",
   "reference_only": true,
   "runtime_switch_authorized": false,
-  "status": "PROPOSED_NOT_ACCEPTED",
-  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "status": "MATERIALIZED_IN_TARGET_DATA",
+  "global_evidence_policy": "Original Global UNKNOWN/CONFLICT facts are retained in the source archive. Target fields now contain scoped DERIVED Oteryn working parameters.",
   "owner_authorization": {
     "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
     "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
@@ -94,7 +94,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/0/facts/schedule",
@@ -121,7 +121,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/1/facts/waves",
@@ -180,7 +180,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/1/facts/schedule",
@@ -207,7 +207,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/2/facts/waves",
@@ -248,7 +248,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/2/facts/schedule",
@@ -275,7 +275,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/waves",
@@ -329,7 +329,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/schedule",
@@ -356,7 +356,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/4/facts/waves",
@@ -468,7 +468,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/4/facts/schedule",
@@ -495,7 +495,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/5/facts/waves",
@@ -579,7 +579,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/5/facts/schedule",
@@ -606,7 +606,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/6/facts/waves",
@@ -651,7 +651,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/6/facts/schedule",
@@ -678,7 +678,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/7/facts/waves",
@@ -735,7 +735,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/7/facts/schedule",
@@ -762,7 +762,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/8/facts/waves",
@@ -807,7 +807,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/8/facts/schedule",
@@ -834,7 +834,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/9/facts/waves",
@@ -926,7 +926,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/9/facts/schedule",
@@ -953,7 +953,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/10/facts/waves",
@@ -986,7 +986,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/10/facts/boss",
@@ -1005,7 +1005,7 @@
       "assumptions": [
         "No designated boss for the proposed initial event until a specific boss identity is evidenced; this does not assert no Global boss exists."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/waves",
@@ -1062,7 +1062,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/schedule",
@@ -1089,7 +1089,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/waves",
@@ -1148,7 +1148,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/schedule",
@@ -1175,7 +1175,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/13/facts/waves",
@@ -1212,7 +1212,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/13/facts/schedule",
@@ -1239,7 +1239,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/14/facts/waves",
@@ -1272,7 +1272,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/14/facts/schedule",
@@ -1299,7 +1299,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/15/facts/waves",
@@ -1332,7 +1332,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/15/facts/schedule",
@@ -1359,7 +1359,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/16/facts/waves",
@@ -1392,7 +1392,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/16/facts/schedule",
@@ -1419,7 +1419,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/17/facts/waves",
@@ -1464,7 +1464,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/17/facts/schedule",
@@ -1491,7 +1491,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/18/facts/waves",
@@ -1528,7 +1528,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/18/facts/schedule",
@@ -1555,7 +1555,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/19/facts/waves",
@@ -1592,7 +1592,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/19/facts/schedule",
@@ -1619,7 +1619,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/20/facts/waves",
@@ -1652,7 +1652,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/20/facts/schedule",
@@ -1679,7 +1679,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/21/facts/waves",
@@ -1712,7 +1712,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/21/facts/schedule",
@@ -1739,7 +1739,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/waves",
@@ -1772,7 +1772,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/schedule",
@@ -1799,7 +1799,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/waves",
@@ -1832,7 +1832,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/schedule",
@@ -1859,7 +1859,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/waves",
@@ -1892,7 +1892,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/schedule",
@@ -1919,7 +1919,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/waves",
@@ -1952,7 +1952,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/schedule",
@@ -1979,7 +1979,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/26/facts/waves",
@@ -2028,7 +2028,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/26/facts/schedule",
@@ -2055,7 +2055,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/27/facts/waves",
@@ -2096,7 +2096,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/27/facts/schedule",
@@ -2123,7 +2123,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/28/facts/waves",
@@ -2197,7 +2197,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/28/facts/schedule",
@@ -2224,7 +2224,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/29/facts/waves",
@@ -2257,7 +2257,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/29/facts/schedule",
@@ -2284,7 +2284,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/30/facts/waves",
@@ -2317,7 +2317,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/30/facts/schedule",
@@ -2344,7 +2344,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/31/facts/waves",
@@ -2377,7 +2377,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/31/facts/schedule",
@@ -2404,7 +2404,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/32/facts/waves",
@@ -2445,7 +2445,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/32/facts/schedule",
@@ -2472,7 +2472,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/waves",
@@ -2509,7 +2509,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/schedule",
@@ -2536,7 +2536,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/34/facts/waves",
@@ -2569,7 +2569,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/34/facts/schedule",
@@ -2596,7 +2596,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/35/facts/waves",
@@ -2633,7 +2633,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/35/facts/schedule",
@@ -2660,7 +2660,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/36/facts/waves",
@@ -2693,7 +2693,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/waves",
@@ -2726,7 +2726,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/schedule",
@@ -2753,7 +2753,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/waves",
@@ -2790,7 +2790,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/schedule",
@@ -2817,7 +2817,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/39/facts/waves",
@@ -2901,7 +2901,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/39/facts/schedule",
@@ -2928,7 +2928,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/40/facts/schedule",
@@ -2955,7 +2955,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/41/facts/waves",
@@ -3019,7 +3019,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/41/facts/schedule",
@@ -3046,7 +3046,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/42/facts/waves",
@@ -3115,7 +3115,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/42/facts/schedule",
@@ -3142,7 +3142,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/waves",
@@ -3187,7 +3187,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/boss",
@@ -3206,7 +3206,7 @@
       "assumptions": [
         "No designated boss for the proposed initial event until a specific boss identity is evidenced; this does not assert no Global boss exists."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/schedule",
@@ -3233,7 +3233,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/44/facts/waves",
@@ -3274,7 +3274,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/44/facts/schedule",
@@ -3301,7 +3301,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/45/facts/waves",
@@ -3342,7 +3342,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/45/facts/schedule",
@@ -3369,7 +3369,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/46/facts/waves",
@@ -3402,7 +3402,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/46/facts/schedule",
@@ -3429,7 +3429,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/47/facts/waves",
@@ -3462,7 +3462,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/47/facts/schedule",
@@ -3489,7 +3489,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/waves",
@@ -3526,7 +3526,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/schedule",
@@ -3553,7 +3553,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/49/facts/waves",
@@ -3594,7 +3594,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/49/facts/schedule",
@@ -3621,7 +3621,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/50/facts/waves",
@@ -3654,7 +3654,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/waves",
@@ -3687,7 +3687,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/schedule",
@@ -3714,7 +3714,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/52/facts/waves",
@@ -3759,7 +3759,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/52/facts/schedule",
@@ -3786,7 +3786,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/53/facts/waves",
@@ -3819,7 +3819,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/54/facts/waves",
@@ -3852,7 +3852,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/55/facts/waves",
@@ -3885,7 +3885,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/waves",
@@ -3939,7 +3939,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/schedule",
@@ -3966,7 +3966,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/waves",
@@ -4020,7 +4020,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/schedule",
@@ -4047,7 +4047,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/waves",
@@ -4084,7 +4084,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/schedule",
@@ -4111,7 +4111,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/waves",
@@ -4165,7 +4165,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/schedule",
@@ -4192,7 +4192,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/waves",
@@ -4246,7 +4246,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/schedule",
@@ -4273,7 +4273,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/waves",
@@ -4327,7 +4327,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/schedule",
@@ -4354,7 +4354,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/62/facts/waves",
@@ -4391,7 +4391,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/waves",
@@ -4424,7 +4424,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/schedule",
@@ -4451,7 +4451,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/waves",
@@ -4488,7 +4488,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/schedule",
@@ -4515,7 +4515,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/65/facts/waves",
@@ -4560,7 +4560,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/65/facts/schedule",
@@ -4587,7 +4587,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/66/facts/waves",
@@ -4641,7 +4641,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/66/facts/schedule",
@@ -4668,7 +4668,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/67/facts/waves",
@@ -4732,7 +4732,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/67/facts/schedule",
@@ -4759,7 +4759,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/68/facts/waves",
@@ -4792,7 +4792,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/68/facts/schedule",
@@ -4819,7 +4819,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/69/facts/waves",
@@ -4852,7 +4852,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/69/facts/schedule",
@@ -4879,7 +4879,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/70/facts/waves",
@@ -4933,7 +4933,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/70/facts/schedule",
@@ -4960,7 +4960,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/71/facts/waves",
@@ -4993,7 +4993,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/71/facts/schedule",
@@ -5020,7 +5020,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/72/facts/waves",
@@ -5053,7 +5053,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/72/facts/schedule",
@@ -5080,7 +5080,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/73/facts/waves",
@@ -5134,7 +5134,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/73/facts/schedule",
@@ -5161,7 +5161,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/74/facts/waves",
@@ -5194,7 +5194,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/74/facts/schedule",
@@ -5221,7 +5221,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/75/facts/waves",
@@ -5275,7 +5275,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/75/facts/schedule",
@@ -5302,7 +5302,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/76/facts/waves",
@@ -5335,7 +5335,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/76/facts/schedule",
@@ -5362,7 +5362,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/waves",
@@ -5403,7 +5403,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/schedule",
@@ -5430,7 +5430,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/waves",
@@ -5489,7 +5489,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/schedule",
@@ -5516,7 +5516,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/79/facts/waves",
@@ -5553,7 +5553,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/79/facts/schedule",
@@ -5580,7 +5580,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/80/facts/waves",
@@ -5613,7 +5613,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/80/facts/schedule",
@@ -5640,7 +5640,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/81/facts/waves",
@@ -5705,7 +5705,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/81/facts/schedule",
@@ -5732,7 +5732,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/waves",
@@ -5796,7 +5796,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/schedule",
@@ -5823,7 +5823,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/waves",
@@ -5856,7 +5856,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/schedule",
@@ -5883,7 +5883,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/waves",
@@ -5932,7 +5932,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/schedule",
@@ -5959,7 +5959,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/85/facts/waves",
@@ -6000,7 +6000,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/85/facts/schedule",
@@ -6027,7 +6027,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/86/facts/waves",
@@ -6072,7 +6072,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/86/facts/schedule",
@@ -6099,7 +6099,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/87/facts/waves",
@@ -6132,7 +6132,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/87/facts/schedule",
@@ -6159,7 +6159,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/88/facts/waves",
@@ -6192,7 +6192,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/88/facts/schedule",
@@ -6219,7 +6219,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/waves",
@@ -6312,7 +6312,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/schedule",
@@ -6339,7 +6339,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/90/facts/waves",
@@ -6388,7 +6388,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/90/facts/schedule",
@@ -6415,7 +6415,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/91/facts/waves",
@@ -6469,7 +6469,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/91/facts/schedule",
@@ -6496,7 +6496,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/92/facts/waves",
@@ -6529,7 +6529,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/waves",
@@ -6566,7 +6566,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/schedule",
@@ -6593,7 +6593,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/94/facts/waves",
@@ -6630,7 +6630,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/94/facts/schedule",
@@ -6657,7 +6657,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/95/facts/waves",
@@ -6694,7 +6694,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/95/facts/schedule",
@@ -6721,7 +6721,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/96/facts/waves",
@@ -6893,7 +6893,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/96/facts/schedule",
@@ -6920,7 +6920,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/97/facts/waves",
@@ -6969,7 +6969,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/97/facts/schedule",
@@ -6996,7 +6996,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/waves",
@@ -7045,7 +7045,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/schedule",
@@ -7072,7 +7072,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/waves",
@@ -7146,7 +7146,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/schedule",
@@ -7173,7 +7173,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/100/facts/waves",
@@ -7247,7 +7247,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/100/facts/schedule",
@@ -7274,7 +7274,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/101/facts/waves",
@@ -7307,7 +7307,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/101/facts/schedule",
@@ -7334,7 +7334,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/102/facts/waves",
@@ -7367,7 +7367,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/102/facts/schedule",
@@ -7394,7 +7394,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/waves",
@@ -7431,7 +7431,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/schedule",
@@ -7458,7 +7458,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/waves",
@@ -7491,7 +7491,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/schedule",
@@ -7518,7 +7518,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/waves",
@@ -7551,7 +7551,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/schedule",
@@ -7578,7 +7578,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/waves",
@@ -7611,7 +7611,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/schedule",
@@ -7638,7 +7638,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/waves",
@@ -7675,7 +7675,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/schedule",
@@ -7702,7 +7702,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/108/facts/schedule",
@@ -7730,7 +7730,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/109/facts/waves",
@@ -7852,7 +7852,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/109/facts/schedule",
@@ -7879,7 +7879,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/110/facts/waves",
@@ -7912,7 +7912,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/110/facts/schedule",
@@ -7939,7 +7939,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/111/facts/waves",
@@ -7992,7 +7992,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/111/facts/schedule",
@@ -8019,7 +8019,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/112/facts/waves",
@@ -8052,7 +8052,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/112/facts/schedule",
@@ -8079,7 +8079,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/113/facts/waves",
@@ -8201,7 +8201,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/113/facts/schedule",
@@ -8228,7 +8228,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/114/facts/waves",
@@ -8261,7 +8261,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/114/facts/schedule",
@@ -8288,7 +8288,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/115/facts/waves",
@@ -8366,7 +8366,7 @@
       "assumptions": [
         "Match by same creature set and region only; explicitly select the first summer candidate by filename if ambiguous. This is a project reuse proposal, not proven identity with the Wiki raid. Native area mapping required. XML delay is scheduled offset; equal delays may be staggered by RAID_MINTICKS."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/115/facts/schedule",
@@ -8393,7 +8393,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/116/facts/waves",
@@ -8426,7 +8426,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/116/facts/schedule",
@@ -8453,7 +8453,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/117/facts/waves",
@@ -8526,7 +8526,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/117/facts/schedule",
@@ -8553,7 +8553,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/118/facts/waves",
@@ -8606,7 +8606,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/118/facts/schedule",
@@ -8633,7 +8633,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/119/facts/waves",
@@ -8666,7 +8666,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/119/facts/schedule",
@@ -8693,7 +8693,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/waves",
@@ -8730,7 +8730,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/schedule",
@@ -8757,7 +8757,7 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/121/facts/waves",
@@ -8798,7 +8798,7 @@
       "assumptions": [
         "Single starter wave;10 per listed ordinary creature and1 per already identified boss. Counts are balance proposals, not Global observations. Do not spawn outside a coordinator-bound area."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     },
     {
       "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/121/facts/schedule",
@@ -8825,7 +8825,13 @@
       "assumptions": [
         "Use explicit project cooldown rather than interpreting donor interval2 as a guaranteed timer. Historical/event-only entries remain opt-in; no automatic activation."
       ],
-      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+      "acceptance_status": "MATERIALIZED_AS_OTERYN_WORKING_DEFAULT_RUNTIME_UNQUALIFIED"
     }
-  ]
+  ],
+  "materialization": {
+    "parameter_document": "docs/reference/content-prep/raid-content-1/oteryn-parameters.json",
+    "source_archive": "docs/reference/content-prep/raid-content-1/tibia-source-archive.json",
+    "filled_field_count": 236,
+    "not_runtime_activation": true
+  }
 }

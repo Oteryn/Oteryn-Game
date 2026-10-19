@@ -1,0 +1,4764 @@
+{
+  "schema": "OTERYN_GLOBAL_SOURCE_ARCHIVE/v1",
+  "task": "RAID-CONTENT-1",
+  "scope": "ARCHIVED_GLOBAL_EVIDENCE_NOT_ACTIVE_OTERYN_PARAMETER_FIELDS",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "predecessor": "37f39cad1280874f242dd13b5eb58c31282df9e5",
+  "explanation": "Original Tibia evidence is retained verbatim here. Active target fields now contain explicitly scoped Oteryn working values; no Global fact has been proven by a design choice.",
+  "records": [
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/0/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Wasp and Bear Raid near Ab'Dendriel / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/0/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Wasp and Bear Raid near Ab'Dendriel / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/1/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "War Wolf Raid on Ab'Dendriel / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/1/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "War Wolf Raid on Ab'Dendriel / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/2/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Dragon raid on Draconia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/2/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Dragon raid on Draconia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Badger Raid in Ab'dendriel / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Badger Raid in Ab'dendriel / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/4/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Troll Raid North-West of Carlin / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/4/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Troll Raid North-West of Carlin / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/5/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Wasp Raid North of Carlin / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/5/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Wasp Raid North of Carlin / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/6/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Lesser Undead Raid on Ghostlands / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/6/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Lesser Undead Raid on Ghostlands / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/7/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Undead Raid on Ghostlands / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/7/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Undead Raid on Ghostlands / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/8/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Orc Raid in the Woods / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/8/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Orc Raid in the Woods / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/9/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Amazon Raid North of Carlin / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/9/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Amazon Raid North of Carlin / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/10/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Nimmersat's Lair raid North of Carlin / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/10/facts/boss",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Nimmersat's Lair raid North of Carlin / full section"
+          }
+        ],
+        "note": "No independently resolved boss identity; a heading or a strong creature is not sufficient for an exact boss binding."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Orc Raid on Femor Hills / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Orc Raid on Femor Hills / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Hunter and Wild Warrior Raid near Femor Hills / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Hunter and Wild Warrior Raid near Femor Hills / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/13/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Orshabaal Raid near Edron / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/13/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Orshabaal Raid near Edron / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/14/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Morshabaal Raid near Edron / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/14/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Morshabaal Raid near Edron / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/15/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Rotrender Raid in Azzilon / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/15/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Rotrender Raid in Azzilon / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/16/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Sir Leopold Raid in Book World / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/16/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Sir Leopold Raid in Book World / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/17/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Monks and Warlocks Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/17/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Monks and Warlocks Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/18/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Goblin Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/18/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Goblin Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/19/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Hunter Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/19/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Hunter Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/20/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Wyvern Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/20/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Wyvern Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/21/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Orc Berserker Raid in Edron Orc cave / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/21/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Orc Berserker Raid in Edron Orc cave / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Skunk Raid in Edron / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Skunk Raid in Edron / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Skunk Raid in Stonehome / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Skunk Raid in Stonehome / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Dwarf Soldier Raid in Cormaya / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Dwarf Soldier Raid in Cormaya / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Ghoul Raid in Stonehome / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Ghoul Raid in Stonehome / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/26/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Ghazbaran Raid in the Formorgar Mines / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/26/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Ghazbaran Raid in the Formorgar Mines / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/27/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Barbarian Raid near Bittermor / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/27/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Barbarian Raid near Bittermor / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/28/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Barbarian Raid in On Svargrond / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/28/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Barbarian Raid in On Svargrond / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/29/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Winter Wolf Raid near Krimhorn / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/29/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Winter Wolf Raid near Krimhorn / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/30/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Ice Golem Raid in the Formorgar Mines / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/30/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20162:1128615",
+            "selector": "Ice Golem Raid in the Formorgar Mines / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/31/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Bat Raid in Kazordoon / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/31/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Bat Raid in Kazordoon / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/32/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Goblin Raid from Femor Hills / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/32/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Goblin Raid from Femor Hills / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Minotaur Raid in Kazordoon Mines / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Minotaur Raid in Kazordoon Mines / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/34/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Wyvern Raid in Gnomebase Alpha / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/34/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Wyvern Raid in Gnomebase Alpha / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/35/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Hunters Raid north of Green Claw Swamp / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/35/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Hunters Raid north of Green Claw Swamp / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/36/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "The Halloween Hare / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Spider Raid in Kazordoon / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Spider Raid in Kazordoon / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:78933:887897",
+            "selector": "Crystal Crusher and Drillworm Raid in the Mines / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:78933:887897",
+            "selector": "Crystal Crusher and Drillworm Raid in the Mines / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/39/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Lions west of Darashia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/39/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Lions west of Darashia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/40/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Necromancers and Liches in Deeper Catacombs / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/41/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Pirates in Darashia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/41/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Pirates in Darashia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/42/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Undead Horde West of Darashia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/42/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Undead Horde West of Darashia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Djinn Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/boss",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Djinn Raid / full section"
+          }
+        ],
+        "note": "No independently resolved boss identity; a heading or a strong creature is not sufficient for an exact boss binding."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/43/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Djinn Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/44/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Minotaurs Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/44/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Minotaurs Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/45/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "The Pale Count / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/45/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "The Pale Count / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/46/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Liches in Drefia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/46/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Liches in Drefia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/47/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Priestess in Drefia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/47/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Priestess in Drefia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Zombies in Star Room / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Zombies in Star Room / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/49/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Undead Raid on Drefia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/49/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Undead Raid on Drefia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/50/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "The Mutated Pumpkin / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Wasps in Darashia / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Wasps in Darashia / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/52/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Demonic Creatures on Darashia (Deprecated) / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/52/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Demonic Creatures on Darashia (Deprecated) / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/53/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:6448:1168721",
+            "selector": "Grynch Clan Goblin Invasion / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/54/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:6448:1168721",
+            "selector": "Undead Jester Invasion / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/55/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:6448:1168721",
+            "selector": "Dryad Invasion / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rat Plague in Rookgaard / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rat Plague in Rookgaard / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Apprentice Sheng in Minotaur Hell / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Apprentice Sheng in Minotaur Hell / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Munster in Rookgaard Sewer / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Munster in Rookgaard Sewer / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rottie in the Katana Quest Room / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rottie in the Katana Quest Room / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rottie in Poison Spider Cave / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rottie in Poison Spider Cave / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Teleskor in Premium Account Area / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Teleskor in Premium Account Area / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/62/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Gaz'haragoth / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Silencers / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Silencers / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Terrorsleep / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Terrorsleep / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/65/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Skeleton Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/65/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Skeleton Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/66/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Terramite Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/66/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Terramite Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/67/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Scarab Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/67/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Scarab Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/68/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Nomad Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/68/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Nomad Raid near Ankrahmun / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/69/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Ancient Scarab Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/69/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Ancient Scarab Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/70/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Gargoyle Raid in Oasis Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/70/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Gargoyle Raid in Oasis Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/71/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Slime Raid in Shadow Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/71/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Slime Raid in Shadow Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/72/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Vampire Raid in Shadow Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/72/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Vampire Raid in Shadow Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/73/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Bonebeast Raid in Mountain Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/73/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Bonebeast Raid in Mountain Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/74/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Necromancer Raid in Peninsula Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/74/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Necromancer Raid in Peninsula Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/75/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Cobra Raid in Mountain Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/75/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Cobra Raid in Mountain Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/76/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Vampire Raid in Tarpit Tomb / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/76/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Vampire Raid in Tarpit Tomb / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Dragon Raid in Dragon Lair / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Dragon Raid in Dragon Lair / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Rat Plague in Thais / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Rat Plague in Thais / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/79/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Raid North of Thais / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/79/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Raid North of Thais / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/80/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Wasp Raid in Thais / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/80/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Wasp Raid in Thais / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/81/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Raid on Thais / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/81/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Raid on Thais / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Cyclops Raid east of Thais / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Cyclops Raid east of Thais / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Insectoid Scout on Greenshore Farms / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Insectoid Scout on Greenshore Farms / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Attack on Thais Lighthouse / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Attack on Thais Lighthouse / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/85/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Historic: Primitive Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/85/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Historic: Primitive Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/86/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Historic: Community Manager and Troll Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/86/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Historic: Community Manager and Troll Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/87/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Kongra Raid South of Banuta / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/87/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Kongra Raid South of Banuta / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/88/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Serpent Spawn Raid in Deeper Banuta / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/88/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Serpent Spawn Raid in Deeper Banuta / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Lizard Raid on Port Hope / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Lizard Raid on Port Hope / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/90/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Lizard Army Raid on Port Hope / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/90/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Lizard Army Raid on Port Hope / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/91/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Terror Bird Raid in Trapwood / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/91/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Terror Bird Raid in Trapwood / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/92/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Midnight Panther in Tiquanda / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Ape Raid on Port Hope / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Ape Raid on Port Hope / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/94/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Ferumbras Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/94/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Ferumbras Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/95/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Morgaroth Raid on Goroma / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/95/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Morgaroth Raid on Goroma / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/96/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Bosses Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/96/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Bosses Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/97/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Raid on Liberty Bay / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/97/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Raid on Liberty Bay / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Raid on the Plantations of Liberty Bay / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Raid on the Plantations of Liberty Bay / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Quara Scout Raid on Liberty Bay / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Quara Scout Raid on Liberty Bay / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/100/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Quara Scout Raid on Liberty Bay Plantations / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/100/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Quara Scout Raid on Liberty Bay Plantations / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/101/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Flamingo Raid on the Laguna Islands / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/101/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Flamingo Raid on the Laguna Islands / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/102/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Tiger Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/102/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Tiger Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Tortoise Raid / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Tortoise Raid / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Crustacea Gigantica in Calassa or Treasure Island / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Crustacea Gigantica in Calassa or Treasure Island / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Thul in Calassa / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Thul in Calassa / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Grandfather Tridian in the Cults Cave / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Grandfather Tridian in the Cults Cave / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Diblis on Nargor / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Diblis on Nargor / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/108/facts/schedule",
+      "original_global_fact": {
+        "value": {
+          "own_creature_page_days": [
+            2,
+            4
+          ],
+          "frequency_article_days": 3
+        },
+        "classification": "CONFLICT",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:50504:1192208",
+            "selector": "notes / interval"
+          },
+          {
+            "source": "wiki:90590:907687",
+            "selector": "Undead Cavebear analysis"
+          }
+        ],
+        "note": "Current creature page describes usually 2–4 days, including consecutive days; frequency article claims fixed every 3 days and fixed counts 1/2/3, with internally inconsistent 5-hour versus 8-hour timing. Do not select an exact runtime interval."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/109/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Elf Raid at Venore / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/109/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Elf Raid at Venore / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/110/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Witches Raid at Green Claw Swamp / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/110/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Witches Raid at Green Claw Swamp / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/111/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Undead Army in Plains of Havoc / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/111/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Undead Army in Plains of Havoc / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/112/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Giant Spider Raid on Plains of Havoc / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/112/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Giant Spider Raid on Plains of Havoc / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/113/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Elves on Ancient Road to Shadowthorn / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/113/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Elves on Ancient Road to Shadowthorn / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/114/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Passed: April Fools Raid in Plains of Havoc / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/114/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20167:1129377",
+            "selector": "Passed: April Fools Raid in Plains of Havoc / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/115/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:31650:1107852",
+            "selector": "Vampire Raid in Yalahar / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/115/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:31650:1107852",
+            "selector": "Vampire Raid in Yalahar / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/116/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Lancer Beetle Raid on the Steppes / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/116/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Lancer Beetle Raid on the Steppes / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/117/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Orcs raid on Zzaion / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/117/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Orcs raid on Zzaion / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/118/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Orcs raid on Zao Steppe / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/118/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Orcs raid on Zao Steppe / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/119/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Gnarlhounds raid on Zao Steppes / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/119/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Gnarlhounds raid on Zao Steppes / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Lancer Beetles raid on Muggy Plains / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Lancer Beetles raid on Muggy Plains / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/121/facts/waves",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Dragons raid on Muggy Plains / full section"
+          }
+        ],
+        "note": "Creature counts by wave are not proven by the summary CreatureList or message timings. Approximate prose counts must not become exact spawn counts."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/121/facts/schedule",
+      "original_global_fact": {
+        "value": null,
+        "classification": "UNKNOWN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Dragons raid on Muggy Plains / full section"
+          }
+        ],
+        "note": "Raid-specific interval/schedule must be proven independently; no global interval or OTS schedule inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/1/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Many aggressive beasts are roaming south of Ab'Dendriel! Take care!"
+          },
+          {
+            "offset": "00:01",
+            "message": ""
+          },
+          {
+            "offset": "00:02",
+            "message": ""
+          },
+          {
+            "offset": "00:03",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "War Wolf Raid on Ab'Dendriel / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/3/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20164:1107805",
+            "selector": "Badger Raid in Ab'dendriel / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/10/facts/schedule",
+      "original_global_fact": {
+        "value": {
+          "source_frequency": "occurs every 6 months",
+          "exact_calendar_dates": null
+        },
+        "classification": "PROVEN",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_SOURCE_RETRIEVED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:103960:1082105",
+            "selector": "Infobox Quest / time"
+          }
+        ],
+        "note": "Source-stated six-month recurrence; no exact calendar dates, durations or fixed number of seconds are inferred."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/11/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Orc Raid on Femor Hills / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/12/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20163:1107807",
+            "selector": "Hunter and Wild Warrior Raid near Femor Hills / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/18/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Goblins are converging west of Edron."
+          },
+          {
+            "offset": "00:04",
+            "message": ""
+          },
+          {
+            "offset": "00:05",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Goblin Raid / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/22/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Skunk Raid in Edron / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/23/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Skunk Raid in Stonehome / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/24/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Dwarf Soldier Raid in Cormaya / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/25/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20157:1112936",
+            "selector": "Ghoul Raid in Stonehome / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/33/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Kaplar! Flee before it is too late! Minos in the Kazordoon Mines!"
+          },
+          {
+            "offset": "00:08",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Minotaur Raid in Kazordoon Mines / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/37/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20165:1135570",
+            "selector": "Spider Raid in Kazordoon / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/38/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:78933:887897",
+            "selector": "Crystal Crusher and Drillworm Raid in the Mines / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/45/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00:00",
+            "message": "The Pale Count has risen from his crypt deep under Drefia. Blood will flow."
+          },
+          {
+            "offset": "00:04:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "The Pale Count / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/48/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "One of the black rituals in Drefia has succeeded. Dead meat is walking the ritual halls."
+          },
+          {
+            "offset": "00:07",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Zombies in Star Room / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/51/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20158:1135815",
+            "selector": "Wasps in Darashia / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/56/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rat Plague in Rookgaard / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/57/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Apprentice Sheng in Minotaur Hell / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/58/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Munster in Rookgaard Sewer / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/59/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rottie in the Katana Quest Room / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/60/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Rottie in Poison Spider Cave / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/61/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20168:887896",
+            "selector": "Teleskor in Premium Account Area / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/63/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Silencers / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/64/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:84386:889809",
+            "selector": "Terrorsleep / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/77/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20159:1107855",
+            "selector": "Dragon Raid in Dragon Lair / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/78/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00:00",
+            "message": "Rat plague in Thais!"
+          },
+          {
+            "offset": "00:00:15",
+            "message": ""
+          },
+          {
+            "offset": "00:00:25",
+            "message": ""
+          },
+          {
+            "offset": "00:01:30",
+            "message": ""
+          },
+          {
+            "offset": "00:30:00",
+            "message": "Rat plague in Thais!"
+          },
+          {
+            "offset": "00:32:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Rat Plague in Thais / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/82/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Let da mashing begin! Cyclops riot east of Thais."
+          },
+          {
+            "offset": "00:04",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Cyclops Raid east of Thais / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/83/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Insectoid Scout on Greenshore Farms / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/84/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20166:1175236",
+            "selector": "Orc Attack on Thais Lighthouse / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/89/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00:00",
+            "message": "Lizards seem to attack Port Hope from Chor."
+          },
+          {
+            "offset": "00:04:10",
+            "message": "Lizards are advancing to Port Hope from Chor."
+          },
+          {
+            "offset": "00:10:00",
+            "message": ""
+          },
+          {
+            "offset": "00:15:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Lizard Raid on Port Hope / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/92/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Midnight Panther in Tiquanda / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/93/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20160:1107846",
+            "selector": "Ape Raid on Port Hope / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/98/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Sails sighted northwest of Liberty Bay."
+          },
+          {
+            "offset": "05:00",
+            "message": "Pirates are attacking the plantations of Liberty Bay."
+          },
+          {
+            "offset": "06:00",
+            "message": ""
+          },
+          {
+            "offset": "07:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Pirate Raid on the Plantations of Liberty Bay / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/99/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Something is moving in the depths of the sea around Liberty Bay."
+          },
+          {
+            "offset": "01:00",
+            "message": "Quaras emerged from the sea to attack Liberty Bay."
+          },
+          {
+            "offset": "05:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Quara Scout Raid on Liberty Bay / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/102/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Majestic creatures with stripes roam the small desert at Meriana."
+          },
+          {
+            "offset": "05:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Tiger Raid / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/103/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": "Slowly but steadily, the population of tortoises grows on Treasure Island."
+          },
+          {
+            "offset": "05:00",
+            "message": ""
+          },
+          {
+            "offset": "09:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Tortoise Raid / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/104/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Crustacea Gigantica in Calassa or Treasure Island / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/105/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Thul in Calassa / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/106/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Grandfather Tridian in the Cults Cave / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/107/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:20161:1137696",
+            "selector": "Diblis on Nargor / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    },
+    {
+      "original_field_path": "content/encounters/raids/evidence-00000-00121.json/records/120/facts/broadcast_timeline",
+      "original_global_fact": {
+        "value": [
+          {
+            "offset": "00:00:00",
+            "message": "Like a swarm of locusts the dreaded lancer beetles are pouring over the fertile parts of Zao."
+          },
+          {
+            "offset": "00:15:00",
+            "message": ""
+          },
+          {
+            "offset": "00:30:00",
+            "message": null
+          }
+        ],
+        "classification": "DERIVED",
+        "target_cut": "2026-10-18",
+        "continuity": "LATEST_REVISION_REVALIDATED_AT_FETCH",
+        "sources": [
+          {
+            "source": "wiki:42576:1107853",
+            "selector": "Lancer Beetles raid on Muggy Plains / Raid Message"
+          }
+        ],
+        "note": "Timing/message pairs preserved. Blank messages are unknown/unannounced entries; timestamps are not a proof of spawn-wave composition."
+      }
+    }
+  ]
+}

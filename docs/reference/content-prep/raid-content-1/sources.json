@@ -2227,6 +2227,284 @@
       "supported_claim": "Raid takes place in both djinn fortresses with Blue Djinn, Green Djinn, Efreet and Marid.",
       "revid": 371579,
       "revision_url": "https://www.tibiawiki.com.br/index.php?title=Invas%C3%B5es_em_Kha%27zeel&oldid=371579"
+    },
+    "owner:oteryn-data-completion:2026-10-19": {
+      "source_class": "OWNER_AUTHORIZED_OTERYN_WORKING_PARAMETERS",
+      "instruction": "No to uzupełnij te dane bo piszę ci to5raz",
+      "prior_instruction": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+      "parameter_document": "docs/reference/content-prep/raid-content-1/oteryn-parameters.json",
+      "selection_actor": "assistant completing owner-authorized reference/data task",
+      "scope": "Populate working Oteryn data defaults, keeping evidence limits explicit; no runtime or architectural acceptance is implied."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/abdendriel/bears_and_wasps.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/abdendriel/bears_and_wasps.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/abdendriel/bears_and_wasps.xml#L1",
+      "file_sha256": "c4a6829bdf7f37f55ae290ac1c016ed09c110ddf4600c75458bdc2b173f0f91e",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/abdendriel/warwolves.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/abdendriel/warwolves.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/abdendriel/warwolves.xml#L1",
+      "file_sha256": "6fdf58b4cf28ef0ef1f04f5af786295ccc58f8135002be1e930a3be8bd129157",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/abdendriel/badgers.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/abdendriel/badgers.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/abdendriel/badgers.xml#L1",
+      "file_sha256": "c226674a6efd02a7d8542d0e6faa91359cb0e7246a1ea4f93ed0f4c23217063c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/carlin/trolls.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/carlin/trolls.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/carlin/trolls.xml#L1",
+      "file_sha256": "3c4466b111234ffa77437995e3189d93493725869fe388003cafe40f764546a5",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/carlin/willi_wasp.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/carlin/willi_wasp.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/carlin/willi_wasp.xml#L1",
+      "file_sha256": "7555dd4ac1c410a30c7f0ca0449f1e8bef5d8408440ee6226ae96250ebe5b894",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/carlin/amazons.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/carlin/amazons.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/carlin/amazons.xml#L1",
+      "file_sha256": "0054e81a8307b235e8e93b861969c1191ccac272b5618b8889e781f629334386",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/carlin/hunter_and_wild_warrior.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/carlin/hunter_and_wild_warrior.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/carlin/hunter_and_wild_warrior.xml#L1",
+      "file_sha256": "a6244d59215a4792f50bf644ac9638265de4fc200c8aaae91ba11fa8af9da69d",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/svargrond/barbarians_svargrond2.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/svargrond/barbarians_svargrond2.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/svargrond/barbarians_svargrond2.xml#L1",
+      "file_sha256": "ae0f6bb5acd1c4e2f82e16503f4c400168f0788a6cb699f44c7d1a0b6bcc695c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/darashia/zomba.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/darashia/zomba.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/darashia/zomba.xml#L1",
+      "file_sha256": "376771e5fbbe478c3dea259564d36909cba764f70ab36a48e49a41eff6a6c295",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/darashia/pirates.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/darashia/pirates.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/darashia/pirates.xml#L1",
+      "file_sha256": "eba48de852be567f89cf42a4782f327eec0e608d196566a1077b14d27c7913a2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/rookgaard/rats.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/rookgaard/rats.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/rookgaard/rats.xml#L1",
+      "file_sha256": "b66dc781890b5d52574e7b8483efcd200b5014553aa44ea7d9607bec9ac16639",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/rookgaard/apprentice_sheng.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/rookgaard/apprentice_sheng.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/rookgaard/apprentice_sheng.xml#L1",
+      "file_sha256": "86173e15949798c254b305a42240f69157d01299ef3ab117dd97435a8cae32f8",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/rookgaard/rottie_the_rotworm1.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/rookgaard/rottie_the_rotworm1.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/rookgaard/rottie_the_rotworm1.xml#L1",
+      "file_sha256": "566f970749fdd9da52c82256971f38893b5e4db64fa82e54feb5b2902ad61641",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/rookgaard/teleskor.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/rookgaard/teleskor.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/rookgaard/teleskor.xml#L1",
+      "file_sha256": "c5426451bbef43111d3cd3e2c34082f49668fca68e2e5c2132c97c92fabcbe86",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/ankrahmun/terramites.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/ankrahmun/terramites.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/ankrahmun/terramites.xml#L1",
+      "file_sha256": "ffd20fe123be5240d396cc4f5c899cb0ebd48fa419b93110a7781149ecf185ef",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/ankrahmun/scarabs.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/ankrahmun/scarabs.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/ankrahmun/scarabs.xml#L1",
+      "file_sha256": "b3bacc57d634496a227c6466a68c66f4ce6af3a882010d014640bb54a22239ce",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/ankrahmun/gargoyles.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/ankrahmun/gargoyles.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/ankrahmun/gargoyles.xml#L1",
+      "file_sha256": "c8323876cdca6e54942e9d3fb9316ecbb04063dc026345d59dfe5acc6f66e3e3",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/ankrahmun/bone_beasts.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/ankrahmun/bone_beasts.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/ankrahmun/bone_beasts.xml#L1",
+      "file_sha256": "31033ae963ca093da62e0b4475c0d9e086103cac4f2d02e33d2a760841fab3a2",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/ankrahmun/cobras.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/ankrahmun/cobras.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/ankrahmun/cobras.xml#L1",
+      "file_sha256": "0956aa0c6a7b0e2e75d36a63ebd58be104b66629359931e1e1b4ce3da7a078f7",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/thais/rats.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/thais/rats.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/thais/rats.xml#L1",
+      "file_sha256": "48a28ac333ed7e70a0ff4f2fe6fbb9c222e79e0a9fb0681f23f25e5bb80e11da",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/thais/cyclops.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/thais/cyclops.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/thais/cyclops.xml#L1",
+      "file_sha256": "e0029ff00981f4fcbb7385bd641247833eefa6c17458717d30bf6a86a4a1fbb8",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/port_hope/lizards.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/port_hope/lizards.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/port_hope/lizards.xml#L1",
+      "file_sha256": "06e4b33362e028fd7f78f59ff69e174dc130870d1bcdf3f8a8ac51be23a60a53",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/port_hope/terror_birds.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/port_hope/terror_birds.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/port_hope/terror_birds.xml#L1",
+      "file_sha256": "4588e3c0ecf523406c3ec6ccebd9704865fb62ba653e749fa1cb21506ddfe06c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/liberty_bay/pirates.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/liberty_bay/pirates.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/liberty_bay/pirates.xml#L1",
+      "file_sha256": "a13f5dde4061f15a11ee7cf6217a2f0c04f41f5ed5e80e94680d4268d3744fe7",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/liberty_bay/quaras.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/liberty_bay/quaras.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/liberty_bay/quaras.xml#L1",
+      "file_sha256": "d6c65378408ea91f70c7444c50ac8fddb5dd94f21952571e9ddfedf800ed776c",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/venore/elves.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/venore/elves.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/venore/elves.xml#L1",
+      "file_sha256": "909796c3f1c613c1ac71e074e92ff900a88c812ff6e74eb6fdd9da270089bc9b",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
+    },
+    "ots:selected:ddb493002b87b814e13453873e7db9a795933ac1:data-global/raids/yalahar/vampires.xml:1": {
+      "repository": "zimbadev/crystalserver",
+      "commit": "ddb493002b87b814e13453873e7db9a795933ac1",
+      "path": "data-global/raids/yalahar/vampires.xml",
+      "line": 1,
+      "url": "https://github.com/zimbadev/crystalserver/blob/ddb493002b87b814e13453873e7db9a795933ac1/data-global/raids/yalahar/vampires.xml#L1",
+      "file_sha256": "de3788ad90b411be4f840810c6730711e2ba67f81b727733b6af469b566e11d1",
+      "source_class": "OTS_HYPOTHESIS_ONLY",
+      "selection": "Explicit project reuse choice; native binding and Global identity are not asserted."
     }
   }
 }

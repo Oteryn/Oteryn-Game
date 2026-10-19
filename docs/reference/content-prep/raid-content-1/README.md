@@ -1,23 +1,13 @@
-# RAID-CONTENT-1: Current raid catalogue and broadcast evidence
+# RAID-CONTENT-1: populated reference data
 
-The current Raid page and all sixteen linked city/hunting-area raid pages are inventoried by raid heading. Exact broadcast text/timestamps are retained as factual game-message data with revision attribution; they are not interpreted as authoritative wave spawns. OTS raid files were not used to fill gaps.
+All 236 previously held parameter fields now contain explicit Oteryn working values in their target records. They are classified DERIVED and scoped OTERYN_REFERENCE_PARAMETER; source-backed facts retain their existing evidence classification. No runtime activation is authorized.
 
-Source registry: [sources.json](sources.json). Facts link to exact revision IDs or immutable repository blobs. `PROVEN` means the cited source states the fact; `DERIVED` means the stated transformation is reproducible; `UNKNOWN` and `CONFLICT` must remain held. Community evidence is not controlled Global telemetry. Official characters/combat/trading manual sources, where cited, were re-read live on 2026-10-18 and retain response digests. Pinned client assets carry their own version/continuity qualification.
+The [working parameter register](oteryn-parameters.json) records completion and shared policies. The [decision rationale](oteryn-proposals.json) retains every field path, source and assumption, and is marked materialized. Original unresolved Tibia observations are retained verbatim in the [Global source archive](tibia-source-archive.json), rather than being passed off as official facts.
 
-These files prepare Reference data for CP. They add no runtime admission, Rust change, generated content regeneration, or interaction/world-pin mutation. `POPULATED` describes the evidence packet, not complete gameplay readiness. The packet schema is an evidence envelope, not a newly accepted runtime schema.
+Active evidence counts: {"DERIVED": 725, "PROVEN": 288}. Remaining unfilled active parameter fields:0. [Field audit](research-audit.json); [source registry](sources.json).
 
-- Task card path mismatch: content/raids/ is not used; the accepted target is content/encounters/raids/. Counts and spawn-wave composition remain UNKNOWN where the Wiki gives only approximate totals or a creature list.
+The owner's instruction is to populate the data using explicit project assumptions. These are working reference defaults for native implementation; accepted architecture, concrete world/native bindings and gameplay activation remain coordinator responsibilities. OTS observations are pinned and labelled OTS_HYPOTHESIS_ONLY. Project choices do not establish current Global behavior.
 
-## Supplemental source research — 2026-10-18
+Some service payloads remain under target-files with a service-apply-plan because World Bundle pins and generated slots cannot be changed in this task. Index metadata owned by another open PR is recorded in coordinator-index-updates.json where necessary. The target record values themselves are populated.
 
-All 122 actual raid descriptions remain covered. Supplemental structured evidence gives the explicit Necromancer waves (1, then 5, then 4 Liches), Draconia spatial group composition, five Ghostlands waves with two unannounced, and source-qualified Terramite counts. Spatial groups are not inferred to be temporal waves. Approximate counts remain approximate; undocumented exact spawn configurations and intervals remain held.
-
-This is a sourced reference handoff, not a claim of complete gameplay knowledge. The field-level [research audit](research-audit.json) enumerates all remaining UNKNOWN/CONFLICT fields. Runtime admission stays blocked pending CP qualification.
-
-Linked Nimmersatt quest sources now establish Dragon Bride as the sole creature type and a source-stated six-month recurrence (exact dates unproven). Explicit isboss=no flags resolve the Monks and Warlocks source-listed creature set.
-
-## Full outstanding-field source sweep —2026-10-18
-
-oteryn:raid.northern_darama_raids.djinn_raid/creatures.
-
-Only explicit sourced values are selected. Wiki omissions and unsupported exact gameplay formulas remain held. Primary news retrieved from indexed official publications is labelled with the direct HTTP403 limitation. Runtime activation and integration remain blocked.
+Validation and the frozen remote candidate are recorded in the draft PR. No Rust, Cargo, migrations, protocol, CI, apps, generated slots, merge or ready transition.
