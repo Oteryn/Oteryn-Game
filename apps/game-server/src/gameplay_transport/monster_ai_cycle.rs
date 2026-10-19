@@ -4304,6 +4304,288 @@ mod tests {
     }
 
     #[test]
+    fn movement_blocked_tile_item_projectile_flag_closes_sight()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{
+            CHANNEL, Harness, SESSION, WORLD, configured_admin, debug, id, item_fence,
+        };
+        use crate::durability::item_mint::TypedDefinitionRef;
+        use crate::durability::spell_items_abi::{
+            CastCostBinding, QualifiedItemDefinition, SourceCasterOrigin, SpellItemOperation,
+            SpellItemTransactionOutcome, SpellItemTransactionRequest,
+        };
+        use crate::foundation::{
+            ChannelContentPin, ChannelId, CommandId, CommandRef, GameSessionId, NodeId, WorldId,
+        };
+
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        let executor = crate::bestiary_postgres_harness::runtime()?;
+        let harness = executor.block_on(Harness::create(admin, "blocked_tile_item_flags", true))?;
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            executor.block_on(async {
+                let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+                let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
+                let entry = crate::content::qualify_native_entry_room(world).map_err(debug)?;
+                let bundle = crate::map::spell_tiles::tests::world();
+                let start = MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                };
+                let bundle_room = entry
+                    .bundle_view(
+                        bundle
+                            .movement_cells(entry.movement_cells())
+                            .map_err(debug)?,
+                        bundle.frame_binding_digest(world),
+                        bundle.map_revision_digest(),
+                        crate::content::NativeEntryStart {
+                            x: start.x,
+                            y: start.y,
+                            floor: start.floor,
+                        },
+                    )
+                    .ok_or("qualified bundle room")?;
+                let room = &bundle_room;
+                let channel_pin = ChannelContentPin::from_activation(
+                    world,
+                    1,
+                    room.compiled().server_digest(),
+                    room.compiled().client_digest(),
+                    room.frame_binding().digest(),
+                    room.map_revision_digest(),
+                    (start.x, start.y, start.floor),
+                );
+                let node =
+                    NodeId::decode(harness.node.fact().node_id().as_bytes()).map_err(debug)?;
+                let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    node,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    8,
+                    channel_pin,
+                )
+                .map_err(debug)?;
+                let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+                let generation = runtime.binding().scope_generation();
+                let object_fence =
+                    crate::world_runtime::ScopeContentGenerationFence::for_activation(
+                        scope,
+                        generation,
+                        crate::world_runtime::ReferenceContentGeneration::from_content(room.door())
+                            .map_err(debug)?,
+                    );
+                let objects = crate::world_runtime::bind_native_entry_door(
+                    room.door(),
+                    &object_fence,
+                    scope,
+                    generation,
+                )
+                .map_err(debug)?;
+                // Existing bundle fixture: water i598 is movement-blocked and its source
+                // projectile flag is clear.
+                let water = MovementLocalPosition {
+                    x: 3,
+                    y: 0,
+                    floor: 7,
+                };
+                let cells = room.movement_cells();
+                assert_eq!(
+                    cells.index().lookup(cells.scope(), logical_cell(water)),
+                    Ok(crate::content::CollisionClass::Blocked)
+                );
+                assert!(
+                    !cells
+                        .spell_tiles()
+                        .lookup(cells.scope(), logical_cell(water))
+                        .map_err(debug)?
+                        .flags()
+                        .block_projectile
+                );
+                // A separate synthetic runtime only supplies the caster origin DATA.
+                let mut origin_owner = ChannelRuntimeV1::from_committed_assignment(
+                    world,
+                    channel,
+                    node,
+                    1,
+                    1,
+                    1,
+                    "runtime-scope-assignment:1",
+                    2,
+                    ChannelContentPin::test(world),
+                )
+                .map_err(debug)?;
+                let reservation = origin_owner
+                    .reserve_fresh_session(GameSessionId::decode(&id(SESSION)).map_err(debug)?)
+                    .map_err(debug)?;
+                let origin = SourceCasterOrigin {
+                    actor: origin_owner
+                        .commit_fresh_session(reservation)
+                        .map_err(debug)?,
+                    character_lease_generation: item_fence()?.character_lease_generation,
+                };
+                let seal = harness.recovery.seal_current().map_err(debug)?;
+                let recovery = harness
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+                    world, channel,
+                )
+                .await;
+                let mut tx = harness.pool.begin().await?;
+                let authority = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    scope,
+                    generation.get(),
+                )
+                .await
+                .map_err(debug)?;
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                let before = NativeSummonMap {
+                    tx: &mut tx,
+                    authority: &authority,
+                    room,
+                    objects: &objects,
+                    stamp,
+                    tiles: BTreeMap::new(),
+                    path: None,
+                }
+                .read_tile_facts(&runtime, water)
+                .await
+                .ok_or("known movement-blocked tile")?;
+                assert!(!before.walkable);
+                assert!(before.projectile_clear);
+                // One projectile-blocking Ground item on the same tile, through the
+                // existing spell Item writer in the same owner transaction.
+                let address =
+                    crate::spell::world_items_execution::SpellGroundTarget::for_native_tile_read(
+                        room, &runtime, water,
+                    )
+                    .map_err(debug)?;
+                let command = CommandRef::new(
+                    GameSessionId::decode(&id(SESSION)).map_err(debug)?,
+                    CommandId::new(900).map_err(debug)?,
+                );
+                let writer = item_tx::assert_spell_item_authority_in_transaction(
+                    &mut tx,
+                    &permit,
+                    &harness.root,
+                    &recovery,
+                    &harness.node,
+                    &item_fence()?,
+                    command,
+                    [7; 32],
+                )
+                .await
+                .map_err(debug)?;
+                let request = SpellItemTransactionRequest {
+                    command,
+                    spell: TypedDefinitionRef {
+                        family: "Spell".into(),
+                        production_key: "fixture:blocked_tile.spell".into(),
+                        revision_ref: "definition-r1".into(),
+                    },
+                    catalog_digest: [7; 32],
+                    transaction_id: id(160),
+                    event_id: id(161),
+                    cost: CastCostBinding {
+                        vitals_revision_before: 1,
+                        vitals_revision_after: 2,
+                        mana_before: 200,
+                        mana_after: 180,
+                        soul_before: 100,
+                        soul_after: 100,
+                        cooldowns_before: Vec::new(),
+                        cooldowns_after: vec![("spell:fixture_blocked_tile".into(), 100_000)],
+                        caster_digest_before: [11; 32],
+                        caster_digest_after: [12; 32],
+                    },
+                    caster_origin: Some(origin),
+                    operations: vec![SpellItemOperation::MintGround {
+                        item_instance_id: id(180),
+                        definition: QualifiedItemDefinition {
+                            definition: TypedDefinitionRef {
+                                family: "Item".into(),
+                                production_key: "oteryn:item.tibia.i2148".into(),
+                                revision_ref: "definition-r1".into(),
+                            },
+                            content_generation_digest: [7; 32],
+                            materializable: true,
+                            movable: true,
+                            stack_maximum: 100,
+                            container_capacity: None,
+                            inventory_destination: true,
+                            ground_destination: true,
+                            decay: None,
+                            decay_chain: Vec::new(),
+                        },
+                        quantity: 1,
+                        // Ground custody requires a nonempty source reference.
+                        placement: address.placement(id(3).to_vec()),
+                        lifetime_millis: None,
+                        blocks_movement: false,
+                        blocks_projectile: true,
+                        description: None,
+                    }],
+                    companion: None,
+                    direct_companion: None,
+                };
+                assert!(matches!(
+                    item_tx::apply_spell_items_in_transaction(&mut tx, &writer, &request)
+                        .await
+                        .map_err(debug)?,
+                    SpellItemTransactionOutcome::Applied(_)
+                ));
+                let stamp = runtime.issue_owner_work().map_err(debug)?;
+                let after = NativeSummonMap {
+                    tx: &mut tx,
+                    authority: &authority,
+                    room,
+                    objects: &objects,
+                    stamp,
+                    tiles: BTreeMap::new(),
+                    path: None,
+                }
+                .read_tile_facts(&runtime, water)
+                .await
+                .ok_or("known movement-blocked tile with item")?;
+                assert!(!after.walkable);
+                assert!(
+                    !after.projectile_clear,
+                    "a projectile-blocking item closes sight on a movement-blocked tile"
+                );
+                tx.rollback().await?;
+                Ok(())
+            })
+        }));
+        let cleanup = executor.block_on(harness.cleanup());
+        match result {
+            Ok(result) => {
+                cleanup?;
+                result
+            }
+            Err(payload) => {
+                if cleanup.is_err() {
+                    eprintln!("blocked tile item-flag fixture cleanup failed after test panic");
+                }
+                std::panic::resume_unwind(payload)
+            }
+        }
+    }
+
+    #[test]
     fn movement_blocked_thalom_tile_facts_preserve_source_projectile_flags()
     -> crate::bestiary_postgres_harness::TestResult {
         use crate::bestiary_postgres_harness::{Harness, configured_admin, debug, id};

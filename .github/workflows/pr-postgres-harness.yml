@@ -71,7 +71,7 @@ jobs:
   durability_postgres:
     name: Merge Queue / Durability PostgreSQL harness
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
     services:
@@ -227,3 +227,51 @@ jobs:
           run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
+
+      # Library-registered PostgreSQL E2E tests return early without the admin
+      # URL, so this step requires it and proves each named suite really ran.
+      - name: Run library-registered PostgreSQL E2E tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}"
+          log="$RUNNER_TEMP/lib-postgres-e2e.log"
+          cargo +1.95.0 test --locked --workspace --lib -- \
+            gameplay_transport::monk_save::postgres_tests:: \
+            promotion_npc_postgres_tests \
+            the_installed_monster_ai_wake_steps_a_creature_without_a_session_tick \
+            movement_blocked_tile_item_projectile_flag_closes_sight \
+            2>&1 | tee "$log"
+          python - "$log" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          text = pathlib.Path(sys.argv[1]).read_text(encoding='utf-8', errors='replace')
+          passed = failed = 0
+          for match in re.finditer(r'^test result: \w+\. (\d+) passed; (\d+) failed;', text, re.M):
+              passed += int(match.group(1))
+              failed += int(match.group(2))
+          ok = re.findall(r'^test (\S+) \.\.\. ok$', text, re.M)
+          required = {
+              'monk_save::postgres_tests::kill_reward_e2e::': 1,
+              'monk_save::postgres_tests::logout_e2e::': 1,
+              '::the_installed_monster_ai_wake_steps_a_creature_without_a_session_tick': 1,
+              '::movement_blocked_tile_item_projectile_flag_closes_sight': 1,
+          }
+          problems = []
+          if failed:
+              problems.append(f'{failed} failed')
+          if passed == 0:
+              problems.append('0 tests ran')
+          for needle, minimum in required.items():
+              count = sum(1 for name in ok if needle in name)
+              print(f'LIB_PG_E2E {needle} passed={count}')
+              if count < minimum:
+                  problems.append(f'filter matched no passing test: {needle}')
+          promotion = sum(1 for name in ok if 'promotion_npc' in name)
+          print(f'LIB_PG_E2E promotion_npc passed={promotion}')
+          print(f'LIB_PG_E2E total passed={passed} failed={failed}')
+          if problems:
+              raise SystemExit('library PostgreSQL E2E check failed: ' + '; '.join(problems))
+          PY
