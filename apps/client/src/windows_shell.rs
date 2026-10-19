@@ -249,7 +249,13 @@ impl ApplicationHandler for Application {
         let world = if let Some(world) = &self.world {
             Arc::clone(world)
         } else {
-            let (world, reason) = World::from_env();
+            // The window is centred on the join position, so a returning Character sees its own
+            // surroundings; offline it is the start.
+            let center = self.play.as_ref().map_or(START, |play| {
+                let own = play.view.own();
+                (own.x, own.y)
+            });
+            let (world, reason) = World::from_env_around(center);
             if let Some(reason) = reason {
                 println!("Oteryn: drawing without map sprites: {reason}");
             }
@@ -257,6 +263,8 @@ impl ApplicationHandler for Application {
                 self.fail(event_loop, ShellError::RendererInitialization);
                 return;
             };
+            let (x, y) = world.center();
+            self.offline_own = TileCoord::new(x, y);
             self.world = Some(Arc::clone(&world));
             world
         };

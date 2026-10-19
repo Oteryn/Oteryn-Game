@@ -9,7 +9,7 @@ use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
 use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
-use crate::world::{START, World};
+use crate::world::World;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
@@ -198,16 +198,15 @@ impl PlayView {
         &self.scene
     }
 
-    /// Draws `world` with the current own position on the start tile and the current floor on
-    /// the start floor.
+    /// Draws `world` with the current own position on the centre of its window and the current
+    /// floor on the map floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
+        let (x, y) = world.center();
         self.world = world;
         self.map_floor = Some(self.floor);
-        // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
-        self.anchor = TileCoord::new(
-            START.0.wrapping_sub(self.own.x),
-            START.1.wrapping_sub(self.own.y),
-        );
+        // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to the
+        // centre, so a world loaded around the join position draws it unshifted.
+        self.anchor = TileCoord::new(x.wrapping_sub(self.own.x), y.wrapping_sub(self.own.y));
         self.rebuild()
     }
 
@@ -1002,6 +1001,25 @@ mod tests {
             .map_err(|e| e.to_string())?;
         assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
         assert_eq!(view.scene().sprites().len(), on_floor);
+        Ok(())
+    }
+
+    #[test]
+    fn a_world_loaded_around_the_join_position_draws_it_unshifted() -> Result<(), String> {
+        // A returning Character joins away from the start: its window is centred on it.
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let join = (32369, 32238);
+        let world = Arc::new(World::load_around(&root, join)?);
+        assert_eq!(world.center(), join);
+        assert!(
+            world.tile(join.0, join.1).is_some(),
+            "the join tile is loaded"
+        );
+        let mut view =
+            PlayView::new(TileCoord::new(join.0, join.1), -7, &[]).map_err(|e| e.to_string())?;
+        view.set_world(world).map_err(|e| e.to_string())?;
+        assert_eq!(view.anchor, TileCoord::new(0, 0));
+        assert!(World::load_around(&root, (crate::world::RADIUS - 1, join.1)).is_err());
         Ok(())
     }
 

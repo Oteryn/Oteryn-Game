@@ -1,7 +1,7 @@
 //! The real-sprite world around the start position (CLIENT-VIS-1, milestone 1).
 //!
-//! A bounded square of the floor-7 base map around the Thais temple is decoded once from the
-//! B3 region files, every item is resolved through the pinned 15.30 appearances, and the cells
+//! A bounded square of the floor-7 base map around one centre (the join position, or [`START`]
+//! offline) is decoded once from the B3 region files, every item is resolved through the pinned 15.30 appearances, and the cells
 //! they need are copied into one static atlas. Walking only rebuilds quads over it. Full map
 //! streaming is milestone 2.
 //!
@@ -40,7 +40,7 @@ const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 /// `entry_start`, TUTORIAL-1), where the offline view starts and the play view is anchored.
 pub const START: (i32, i32) = (32534, 32513);
 pub const START_FLOOR: u8 = 7;
-/// Tiles decoded on each side of [`START`].
+/// Tiles decoded on each side of the centre.
 pub const RADIUS: i32 = 64;
 /// The default outfit (citizen).
 pub const PLAYER_LOOK_TYPE: u32 = 128;
@@ -96,6 +96,8 @@ pub struct MapTile {
 #[derive(Debug, Clone)]
 pub struct World {
     atlas: AtlasImage,
+    /// The map position the decoded window is centred on.
+    center: (i32, i32),
     tiles: HashMap<(i32, i32), MapTile>,
     /// The own player's cells per facing, in [`FACINGS`] order.
     player: [Vec<Draw>; 4],
@@ -133,6 +135,7 @@ impl World {
         let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
         Ok(Self {
             atlas,
+            center: START,
             tiles: HashMap::new(),
             player: FACINGS.map(|_| {
                 vec![Draw {
@@ -143,11 +146,18 @@ impl World {
         })
     }
 
-    /// Loads from `OTERYN_ASSET_DIR`; any failure falls back to [`World::builtin`] with the reason.
+    /// Loads around [`START`] from `OTERYN_ASSET_DIR`; any failure falls back to
+    /// [`World::builtin`] with the reason.
     pub fn from_env() -> (Result<Self, BatchError>, Option<String>) {
+        Self::from_env_around(START)
+    }
+
+    /// Loads around `center` from `OTERYN_ASSET_DIR`; any failure falls back to
+    /// [`World::builtin`] with the reason.
+    pub fn from_env_around(center: (i32, i32)) -> (Result<Self, BatchError>, Option<String>) {
         let loaded = std::env::var_os(ASSET_DIR_ENV)
             .ok_or_else(|| format!("{ASSET_DIR_ENV} is not set"))
-            .and_then(|root| Self::load(Path::new(&root)));
+            .and_then(|root| Self::load_around(Path::new(&root), center));
         match loaded {
             Ok(world) => (Ok(world), None),
             Err(reason) => (Self::builtin(), Some(reason)),
@@ -156,6 +166,16 @@ impl World {
 
     /// Decodes the start area from an asset root laid out like the repository.
     pub fn load(root: &Path) -> Result<Self, String> {
+        Self::load_around(root, START)
+    }
+
+    /// Decodes the window around `center` from an asset root laid out like the repository.
+    /// A centre whose window leaves the map coordinates is refused.
+    pub fn load_around(root: &Path, center: (i32, i32)) -> Result<Self, String> {
+        let on_map = RADIUS..=i32::from(u16::MAX) - RADIUS;
+        if !on_map.contains(&center.0) || !on_map.contains(&center.1) {
+            return Err(format!("centre {center:?} is outside the map"));
+        }
         let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
             &root.join(MANIFEST_PATH),
@@ -170,10 +190,10 @@ impl World {
         let map = read_placement_index(root)?;
 
         let (lo_x, hi_x, lo_y, hi_y) = (
-            START.0 - RADIUS,
-            START.0 + RADIUS,
-            START.1 - RADIUS,
-            START.1 + RADIUS,
+            center.0 - RADIUS,
+            center.0 + RADIUS,
+            center.1 - RADIUS,
+            center.1 + RADIUS,
         );
         // Every tile's resolved items, then the cells they use.
         let mut entries: Vec<((i32, i32), Vec<Item>)> = Vec::new();
@@ -330,6 +350,7 @@ impl World {
         let atlas = atlas_from_cells(rgba, next).map_err(|error| format!("atlas: {error}"))?;
         Ok(Self {
             atlas,
+            center,
             tiles,
             player,
         })
@@ -338,6 +359,12 @@ impl World {
     #[must_use]
     pub const fn atlas(&self) -> &AtlasImage {
         &self.atlas
+    }
+
+    /// The map position the decoded window is centred on ([`START`] for the builtin world).
+    #[must_use]
+    pub const fn center(&self) -> (i32, i32) {
+        self.center
     }
 
     /// The map tile at an absolute map position, if it lies in the loaded area.

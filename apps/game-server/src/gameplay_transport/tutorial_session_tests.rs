@@ -181,8 +181,10 @@ fn other_starts_returning_characters_without_a_row_and_failed_reads_are_not_trac
     run(async {
         for (admission, at) in [
             (TutorialAdmission::FirstLogin, START_THAIS),
-            (TutorialAdmission::Returning, ISLET_TEMPLE),
-            (TutorialAdmission::Respawned, ISLET_TEMPLE),
+            (TutorialAdmission::Returning, START_THAIS),
+            (TutorialAdmission::Respawned, START_THAIS),
+            // The documented limit: beyond the islet a missing row is not the tutorial track.
+            (TutorialAdmission::Returning, ISLAND_ARRIVAL),
         ] {
             let (sessions, store) = (
                 TutorialSessions::default(),
@@ -212,14 +214,168 @@ fn other_starts_returning_characters_without_a_row_and_failed_reads_are_not_trac
         );
         store.fail_reads.set(true);
         sessions
+            .admit(&store, session(), TutorialAdmission::Returning, START_THAIS)
+            .await;
+        assert!(!sessions.tracks(session()));
+        assert!(store.writes.borrow().is_empty());
+        Ok(())
+    })
+}
+
+#[test]
+fn a_failed_first_login_read_stays_tracked_and_reads_the_row_again_before_writing() -> TestResult {
+    run(async {
+        let (sessions, store) = (
+            TutorialSessions::default(),
+            MemoryTutorialStore::new(TutorialVocation::None, None),
+        );
+        store.fail_reads.set(true);
+        sessions
+            .admit(
+                &store,
+                session(),
+                TutorialAdmission::FirstLogin,
+                ISLET_TEMPLE,
+            )
+            .await;
+        assert!(sessions.tracks(session()));
+        assert!(
+            store.writes.borrow().is_empty(),
+            "nothing is written unread"
+        );
+        // The hole reads no progress: it is refused while the reads still fail.
+        assert!(sessions.refuses_step(session(), ISLET_TEMPLE, ISLET_HOLE));
+        assert_eq!(
+            sessions.take_notices(session()),
+            [TutorialNotice::StatusText(ISLET_HOLE_MESSAGE.to_owned())]
+        );
+        // A step while the reads still fail writes nothing and keeps the tracking.
+        sessions
+            .after_step(
+                &store,
+                session(),
+                BEFORE_FORCEFIELD,
+                ISLET_FORCEFIELD,
+                ISLAND_ARRIVAL,
+            )
+            .await;
+        assert!(store.writes.borrow().is_empty());
+        assert!(sessions.tracks(session()));
+        // Once the reads recover, the next island step reads the row and writes the island.
+        store.fail_reads.set(false);
+        let next = TutorialCell::new(ISLAND_ARRIVAL.x + 1, ISLAND_ARRIVAL.y, ISLAND_ARRIVAL.floor);
+        sessions
+            .after_step(&store, session(), ISLAND_ARRIVAL, next, next)
+            .await;
+        assert_eq!(*store.writes.borrow(), [island()]);
+        assert_eq!(
+            sessions.take_notices(session()),
+            [TutorialNotice::Hint(ISLAND_HINT)]
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn a_returning_character_without_a_row_on_the_islet_is_tracked() -> TestResult {
+    run(async {
+        for admission in [TutorialAdmission::Returning, TutorialAdmission::Respawned] {
+            let (sessions, store) = (
+                TutorialSessions::default(),
+                MemoryTutorialStore::new(TutorialVocation::None, None),
+            );
+            sessions
+                .admit(&store, session(), admission, ISLET_TEMPLE)
+                .await;
+            assert!(sessions.tracks(session()), "{admission:?}");
+            assert_eq!(store.progress(), Some(islet()), "{admission:?}");
+            assert!(sessions.refuses_step(session(), ISLET_TEMPLE, ISLET_HOLE));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_lost_forcefield_transition_is_reconciled_on_the_island() -> TestResult {
+    run(async {
+        // The forcefield write failed after the map moved the Character: its next step beyond
+        // the islet writes the island once and shows the island hint.
+        let (sessions, store) = (
+            TutorialSessions::default(),
+            MemoryTutorialStore::new(TutorialVocation::None, None),
+        );
+        sessions
+            .admit(
+                &store,
+                session(),
+                TutorialAdmission::FirstLogin,
+                ISLET_TEMPLE,
+            )
+            .await;
+        store.fail_writes.set(true);
+        sessions
+            .after_step(
+                &store,
+                session(),
+                BEFORE_FORCEFIELD,
+                ISLET_FORCEFIELD,
+                ISLAND_ARRIVAL,
+            )
+            .await;
+        assert_eq!(store.progress(), Some(islet()));
+        store.fail_writes.set(false);
+        let next = TutorialCell::new(ISLAND_ARRIVAL.x + 1, ISLAND_ARRIVAL.y, ISLAND_ARRIVAL.floor);
+        for _ in 0..2 {
+            sessions
+                .after_step(&store, session(), ISLAND_ARRIVAL, next, next)
+                .await;
+        }
+        assert_eq!(*store.writes.borrow(), [islet(), island()]);
+        assert_eq!(
+            sessions.take_notices(session()),
+            [TutorialNotice::Hint(ISLAND_HINT)]
+        );
+        // A step on the islet reconciles nothing.
+        let (sessions, store) = (
+            TutorialSessions::default(),
+            MemoryTutorialStore::new(TutorialVocation::None, None),
+        );
+        sessions
+            .admit(
+                &store,
+                session(),
+                TutorialAdmission::FirstLogin,
+                ISLET_TEMPLE,
+            )
+            .await;
+        sessions
+            .after_step(
+                &store,
+                session(),
+                ISLET_TEMPLE,
+                BEFORE_FORCEFIELD,
+                BEFORE_FORCEFIELD,
+            )
+            .await;
+        assert_eq!(*store.writes.borrow(), [islet()]);
+        // An admission beyond the islet with the islet stored reconciles it before the login.
+        let (sessions, store) = (
+            TutorialSessions::default(),
+            MemoryTutorialStore::new(TutorialVocation::None, Some(islet())),
+        );
+        sessions
             .admit(
                 &store,
                 session(),
                 TutorialAdmission::Returning,
-                ISLET_TEMPLE,
+                ISLAND_ARRIVAL,
             )
             .await;
-        assert!(!sessions.tracks(session()));
+        assert_eq!(*store.writes.borrow(), [island()]);
+        assert_eq!(
+            sessions.take_notices(session()),
+            [TutorialNotice::Hint(ISLAND_HINT)]
+        );
         Ok(())
     })
 }

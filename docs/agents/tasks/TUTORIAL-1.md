@@ -42,6 +42,8 @@ owned_paths:
   - "content/world/pins/oteryn.json, content/world/pins/README.md"
   - "deploy/synology-game/preprod-topology.toml, deploy/synology-game/README.md"
   - "apps/client/src/world.rs (START)"
+  # Codex round 2026-10-19: the client window follows the join position.
+  - "apps/client/src/world.rs (load_around, center), apps/client/src/play.rs (set_world), apps/client/src/windows_shell.rs (resumed)"
 registration_lines:
   - "apps/game-server/src/domain/mod.rs: pub mod tutorial;"
   - "apps/game-server/src/durability/mod.rs: pub mod character_tutorial;"
@@ -289,6 +291,14 @@ the stored row). `connection.rs` sends the queued notices as domain 23 deltas af
 End to end through the real dispatch:
 `tutorial_notices_follow_the_hole_and_the_forcefield_steps_through_dispatch` in the `connection.rs`
 tests (game-server lib tests, the Rust Linux lane).
+
+Codex round (2026-10-19): a failed admission read no longer drops the tracking. A Character with no row
+(or an unread one) is tracked on a first login on the island or when it was placed on the islet, and the
+row is read again before the next write. The map moves a Character through the forcefield before its
+transition is written, so a tracked Character beyond the islet whose stored step is still the islet gets
+the forcefield transition (and the island hint) written at its admission or its next step beyond the
+islet. The client decodes its map window around the join position (`World::load_around`), so a returning
+Character away from the islet sees its own surroundings.
 
 ### Q2: movement profiles and the spawn
 

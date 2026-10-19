@@ -5,10 +5,21 @@
 //!
 //! - **Admission.** After a playable fresh admission the stored progress is read under the
 //!   session's gameplay fence. A Character with a row is on the tutorial track
-//!   ([`TutorialGate::Newhaven`]); one without a row is only when this is its first login and it
-//!   entered on the Newhaven island ([`TutorialGate::for_start`] of the cell it was placed on).
-//!   Every other Character is not tracked and nothing here reads or writes for it. The tracked
-//!   session then applies `Death` when the admission placed a pending respawn, and `Login`.
+//!   ([`TutorialGate::Newhaven`]). One without a row is when this is its first login and it
+//!   entered on the Newhaven island ([`TutorialGate::for_start`] of the cell it was placed on),
+//!   or when it was placed on the islet: only the World start and the tutorial respawn place a
+//!   Character there, so a returning one missed the first write of its first login. A failed
+//!   read is decided as a missing row and the session reads the row again before its next
+//!   write; a returning Character beyond the islet whose read failed is not tracked in this
+//!   session. Every other Character is not tracked and nothing here reads or writes for it. The
+//!   tracked session then applies `Death` when the admission placed a pending respawn, the
+//!   island reconciliation below, and `Login`.
+//! - **Island reconciliation.** The map moves the Character through the forcefield before its
+//!   transition is written, so a failed actor read or write leaves the islet stored for a
+//!   Character on the island. A tracked Character beyond the islet whose stored step is the islet
+//!   (or no row) therefore gets the forcefield transition written at its admission and at each
+//!   step it ends beyond the islet, without the placement the map already made, until a write
+//!   succeeds.
 //! - **Steps.** A step onto the islet hole is refused before Movement runs and queues the
 //!   reference text; the progress is unchanged and nothing is written. After a step that moved,
 //!   the forcefield and the hunting tiles apply `StepIn` for the cell stepped onto. Other cells
@@ -40,8 +51,9 @@ use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
 
 use super::{ComposedFreshAdmission, operator_event};
 use crate::domain::tutorial::{
-    HUNTING_TILES, ISLET_FORCEFIELD, ISLET_HOLE, ISLET_HOLE_MESSAGE, TutorialActor, TutorialCell,
-    TutorialEffect, TutorialEvent, TutorialGate, TutorialVocation, apply,
+    HUNTING_TILES, ISLET_FORCEFIELD, ISLET_HOLE, ISLET_HOLE_MESSAGE, NEWHAVEN_ISLAND,
+    NEWHAVEN_ISLET, TutorialActor, TutorialCell, TutorialEffect, TutorialEvent, TutorialGate,
+    TutorialStep, TutorialVocation, apply,
 };
 use crate::durability::character_tutorial::{StoredTutorialProgress, TutorialProgressWrite};
 use crate::foundation::{GameSessionId, MovementLocalPosition};
@@ -99,7 +111,39 @@ pub(super) const fn admission_of(
 #[derive(Debug)]
 struct TutorialSession {
     stored: Option<StoredTutorialProgress>,
+    /// Whether `stored` was read. A session tracked after a failed admission read reads its row
+    /// again before its next write.
+    loaded: bool,
     notices: VecDeque<TutorialNotice>,
+}
+
+/// The track of a Character without a stored row, or whose row could not be read (see the
+/// module doc).
+const fn gate_without_row(admission: TutorialAdmission, at: TutorialCell) -> TutorialGate {
+    match admission {
+        TutorialAdmission::FirstLogin => TutorialGate::for_start(at),
+        TutorialAdmission::Returning | TutorialAdmission::Respawned => {
+            if NEWHAVEN_ISLET.contains(at) {
+                TutorialGate::Newhaven
+            } else {
+                TutorialGate::Inert
+            }
+        }
+    }
+}
+
+/// A cell of the island beyond the islet: only the forcefield moves a Character there from the
+/// islet.
+const fn beyond_the_islet(cell: TutorialCell) -> bool {
+    NEWHAVEN_ISLAND.contains(cell) && !NEWHAVEN_ISLET.contains(cell)
+}
+
+/// Whether a stored progress still has to go through the forcefield.
+fn before_the_forcefield(stored: Option<StoredTutorialProgress>) -> bool {
+    matches!(
+        stored.map(|stored| stored.progress.step),
+        None | Some(TutorialStep::Islet)
+    )
 }
 
 /// The tracked tutorial sessions of one Channel owner. A leaf lock, never held across an await.
@@ -185,7 +229,7 @@ impl TutorialSessions {
     }
 
     /// Admission: track `session` if it is on the tutorial track, then apply `Death` for a
-    /// respawn and `Login`, at the cell `at` the actor was placed on.
+    /// respawn, the island reconciliation and `Login`, at the cell `at` the actor was placed on.
     pub(crate) async fn admit<S: TutorialStore>(
         &self,
         store: &S,
@@ -193,17 +237,14 @@ impl TutorialSessions {
         admission: TutorialAdmission,
         at: TutorialCell,
     ) {
-        let stored = match store.read_progress(session).await {
-            Ok(stored) => stored,
+        let read = store.read_progress(session).await;
+        let gate = match read {
+            Ok(Some(_)) => TutorialGate::Newhaven,
+            Ok(None) => gate_without_row(admission, at),
             Err(()) => {
                 operator_event("tutorial_progress_read_failed");
-                return;
+                gate_without_row(admission, at)
             }
-        };
-        let gate = match (stored, admission) {
-            (Some(_), _) => TutorialGate::Newhaven,
-            (None, TutorialAdmission::FirstLogin) => TutorialGate::for_start(at),
-            (None, _) => TutorialGate::Inert,
         };
         if gate == TutorialGate::Inert {
             return;
@@ -212,7 +253,8 @@ impl TutorialSessions {
             sessions.insert(
                 session,
                 TutorialSession {
-                    stored,
+                    stored: read.ok().flatten(),
+                    loaded: read.is_ok(),
                     notices: VecDeque::new(),
                 },
             );
@@ -224,6 +266,9 @@ impl TutorialSessions {
         if admission == TutorialAdmission::Respawned {
             self.commit(store, session, TutorialEvent::Death(actor), at)
                 .await;
+        }
+        if beyond_the_islet(at) {
+            self.reconcile_island(store, session, actor).await;
         }
         self.commit(store, session, TutorialEvent::Login(actor), at)
             .await;
@@ -263,7 +308,9 @@ impl TutorialSessions {
     }
 
     /// After a step of `session` that moved from `from` onto `to` and ended on `landed`: the
-    /// forcefield and the hunting tiles apply `StepIn`. Every other cell reads nothing.
+    /// forcefield and the hunting tiles apply `StepIn`, and a step that ended beyond the islet
+    /// before the forcefield transition was written reconciles it. Every other step reads
+    /// nothing.
     pub(crate) async fn after_step<S: TutorialStore>(
         &self,
         store: &S,
@@ -272,28 +319,81 @@ impl TutorialSessions {
         to: TutorialCell,
         landed: TutorialCell,
     ) {
-        let relevant = match self.with(session, |entry| entry.stored) {
-            None => false,
-            Some(_) if to == ISLET_FORCEFIELD => true,
-            Some(stored) if HUNTING_TILES.contains(&to) => {
-                stored.is_some_and(|stored| stored.progress.hunting_hint_pending)
-            }
-            Some(_) => false,
+        let Some((stored, loaded)) = self.with(session, |entry| (entry.stored, entry.loaded))
+        else {
+            return;
         };
-        if !relevant {
+        let step_in = to == ISLET_FORCEFIELD
+            || (HUNTING_TILES.contains(&to)
+                && (!loaded || stored.is_some_and(|stored| stored.progress.hunting_hint_pending)));
+        let reconcile = to != ISLET_FORCEFIELD
+            && beyond_the_islet(landed)
+            && (!loaded || before_the_forcefield(stored));
+        if !step_in && !reconcile {
             return;
         }
         let Ok(actor) = store.read_actor(session).await else {
             operator_event("tutorial_actor_read_failed");
             return;
         };
-        self.commit(
-            store,
-            session,
-            TutorialEvent::StepIn { actor, from, to },
-            landed,
-        )
-        .await;
+        if reconcile {
+            self.reconcile_island(store, session, actor).await;
+        }
+        if step_in {
+            self.commit(
+                store,
+                session,
+                TutorialEvent::StepIn { actor, from, to },
+                landed,
+            )
+            .await;
+        }
+    }
+
+    /// The island reconciliation (see the module doc): the forcefield transition of a Character
+    /// the map already moved beyond the islet, written only while the stored step is before the
+    /// forcefield.
+    async fn reconcile_island<S: TutorialStore>(
+        &self,
+        store: &S,
+        session: GameSessionId,
+        actor: TutorialActor,
+    ) {
+        let crossing = TutorialEvent::StepIn {
+            actor,
+            from: ISLET_FORCEFIELD,
+            to: ISLET_FORCEFIELD,
+        };
+        if self
+            .commit_at(store, session, crossing, None)
+            .await
+            .is_some()
+        {
+            operator_event("tutorial_island_reconciled");
+        }
+    }
+
+    /// The stored progress of a tracked session, read again when its admission read failed.
+    async fn loaded<S: TutorialStore>(
+        &self,
+        store: &S,
+        session: GameSessionId,
+    ) -> Option<Option<StoredTutorialProgress>> {
+        let (stored, loaded) = self.with(session, |entry| (entry.stored, entry.loaded))?;
+        if loaded {
+            return Some(stored);
+        }
+        let Ok(read) = store.read_progress(session).await else {
+            operator_event("tutorial_progress_read_failed");
+            return None;
+        };
+        self.with(session, |entry| {
+            if !entry.loaded {
+                entry.stored = read;
+                entry.loaded = true;
+            }
+            entry.stored
+        })
     }
 
     /// Apply `event` to the stored progress and write it; the actor is on `at`. Returns the
@@ -305,11 +405,28 @@ impl TutorialSessions {
         event: TutorialEvent,
         at: TutorialCell,
     ) -> Option<TutorialEffect> {
+        self.commit_at(store, session, event, Some(at)).await
+    }
+
+    /// [`Self::commit`]; without `at` the event is the island reconciliation: it applies only
+    /// before the forcefield and its placement is not checked (the map already made it).
+    async fn commit_at<S: TutorialStore>(
+        &self,
+        store: &S,
+        session: GameSessionId,
+        event: TutorialEvent,
+        at: Option<TutorialCell>,
+    ) -> Option<TutorialEffect> {
         for _ in 0..WRITE_ATTEMPTS {
-            let stored = self.with(session, |entry| entry.stored)?;
+            let stored = self.loaded(store, session).await?;
+            if at.is_none() && !before_the_forcefield(stored) {
+                return None;
+            }
             let before = stored.map(|stored| stored.progress);
             let transition = apply(TutorialGate::Newhaven, before, event);
-            if !placement_holds(transition.effect, at) {
+            if let Some(at) = at
+                && !placement_holds(transition.effect, at)
+            {
                 operator_event("tutorial_placement_not_held");
                 return None;
             }
