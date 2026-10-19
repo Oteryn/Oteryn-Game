@@ -2844,9 +2844,83 @@ mod vip_wire {
             assert!(deltas(&frames)?.is_empty());
             let calls = authority.calls.lock().expect("calls");
             assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
-            assert_eq!(calls.delivery, vec![("bound", session_id)]);
+            // The result write is bounded too, but it does not block, so it is written.
+            assert_eq!(
+                calls.delivery,
+                vec![("bound", session_id), ("bound", session_id)]
+            );
             Ok(())
         })
+    }
+
+    /// VIP0 §8.2: while an entry is shown ONLINE, a frame the client does not drain (here the
+    /// command result) ends the connection at the confirmation deadline instead of holding it.
+    #[test]
+    fn a_stalled_command_result_ends_the_connection_at_the_confirmation_deadline()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let mut authority = VipAuthority::new();
+            authority.write_bound = Some(Duration::from_millis(100));
+            let session = admitted(&[CAPABILITY_VIP_V1])?;
+            let session_id = session.game_session_id;
+            let intent = VipIntent::Add {
+                name: "Bryn".to_owned(),
+            };
+            let payload = encode_vip_intent(&intent).map_err(|e| format!("{e:?}"))?;
+            let frame = command(1, COMMAND_TYPE_VIP_INTENT, &payload);
+            // A 16-byte pipe: the result cannot fit while the client does not read.
+            let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(16);
+            let serving = tokio::time::timeout(
+                Duration::from_secs(1),
+                serve_admitted(&mut server, session, &authority, IDLE_LIVENESS),
+            );
+            let stalling = async {
+                // Drain the admission frames, then send the command and stop reading.
+                let mut buffer = [0_u8; 4096];
+                let _ = tokio::time::timeout(Duration::from_millis(200), async {
+                    while client.read(&mut buffer).await? > 0 {}
+                    Ok::<_, std::io::Error>(())
+                })
+                .await;
+                let mut framed = (frame.len() as u32).to_be_bytes().to_vec();
+                framed.extend_from_slice(&frame);
+                client.write_all(&framed).await?;
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                Ok::<_, std::io::Error>(())
+            };
+            let (end, stalled) = join2(serving, stalling).await;
+            stalled?;
+            let end = end.map_err(|_| "the stalled write held the connection")?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            let calls = authority.calls.lock().expect("calls");
+            assert_eq!(calls.intents, vec![(session_id, 1, intent)]);
+            assert!(!calls.delivery.iter().any(|(call, _)| *call == "delivered"));
+            Ok(())
+        })
+    }
+
+    async fn join2<A: Future, B: Future>(a: A, b: B) -> (A::Output, B::Output) {
+        let (mut a, mut b) = (std::pin::pin!(a), std::pin::pin!(b));
+        let (mut x, mut y) = (None, None);
+        std::future::poll_fn(|context| {
+            if x.is_none()
+                && let std::task::Poll::Ready(value) = a.as_mut().poll(context)
+            {
+                x = Some(value);
+            }
+            if y.is_none()
+                && let std::task::Poll::Ready(value) = b.as_mut().poll(context)
+            {
+                y = Some(value);
+            }
+            if x.is_some() && y.is_some() {
+                std::task::Poll::Ready(())
+            } else {
+                std::task::Poll::Pending
+            }
+        })
+        .await;
+        (x.expect("first"), y.expect("second"))
     }
 
     #[test]

@@ -835,6 +835,15 @@ The prepush Stage C review of `7b8a05d1` made three findings:
 - Round 3 finding, fixed: while the listener is down, a receipt lookup that fails leaves the
   outcome unknown (`unknown=true`). The CommandId is then not sequenced, so a resend can still
   recover a committed outcome.
+- Round 4 finding, fixed (VIP0 §8.2): every frame the running connection writes is bounded by
+  the session's ONLINE confirmation deadline (`write_bounded` in `connection.rs`), not only domain
+  21 frames. A stalled command result or delta ends the connection at the deadline. A frame that
+  does not block is still written, and domain 21 frames keep the stricter `write_vip_frame`.
+  Only a session that selected capability 31 is bounded. The bounded write is boxed, so it does
+  not grow the session future.
+- Round 4 finding, fixed: a session keeps two full consent views of retired handle bindings
+  (`2 * (MAX_VIP_INVITATIONS + MAX_VIP_WATCHERS)`), so a reconnect from a full view keeps every
+  binding a resend can name.
 - F2, deferred: when admission refuses the VIP snapshot, the session fails closed (no VIP state).
   A mid-session snapshot retry would need a new client-visible step (a wire and CP decision). The
   client recovers by reconnecting.
@@ -849,8 +858,11 @@ Tests:
   handle-less replay case.
 - The listener-down dispatch scenario, which now also covers the locked receipt lookup that
   answers unknown.
+- `vip_wire::a_stalled_command_result_ends_the_connection_at_the_confirmation_deadline`, through
+  the real `serve_admitted` dispatch.
 
 These passed locally on PostgreSQL 17.6:
-- lib `vip`: 88 passed;
+- lib `vip`: 90 passed;
 - lib `logout_e2e`: 8 passed;
-- `durability_postgres vip`: 32 passed.
+- lib `capabilities`: 64 passed;
+- `durability_postgres vip`: 33 passed.

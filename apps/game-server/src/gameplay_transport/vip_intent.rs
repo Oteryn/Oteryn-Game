@@ -57,8 +57,12 @@ enum HandleKind {
     Watcher,
 }
 
-/// Retired handle bindings a session keeps for the receipt check of a resent ending command.
-const RETIRED_HANDLES: usize = 64;
+/// Retired handle bindings a session keeps for the receipt check of a resent ending command:
+/// two full consent views (VIP0-RL invitations and watchers). A reconnect retires the whole
+/// view of the lost connection, and the one before it stays matchable too.
+const RETIRED_HANDLES: usize = 2
+    * (oteryn_protocol_oteryn::vip::MAX_VIP_INVITATIONS
+        + oteryn_protocol_oteryn::vip::MAX_VIP_WATCHERS);
 
 struct VipSession {
     character: CharacterId,
@@ -70,7 +74,7 @@ struct VipSession {
     handle_of: BTreeMap<u64, u64>,
     bindings: BTreeMap<u64, (VipInvitationBinding, HandleKind)>,
     /// Bindings of handles no longer shown, the newest RETIRED_HANDLES, including those of the
-    /// session's earlier connections. Only the receipt replay of a resent command reads them.
+    /// session's earlier connections (at least one full view). Only the receipt replay of a resent command reads them.
     retired: BTreeMap<u64, VipInvitationBinding>,
     next_handle: u64,
     /// Highest presence revision delivered to the client.
@@ -1009,6 +1013,12 @@ mod tests {
             retire(&mut retired, [(handle, binding(handle)?)]);
         }
         assert_eq!(retired.len(), RETIRED_HANDLES);
+        // A reconnect retires a full consent view without losing any binding of it.
+        assert!(
+            RETIRED_HANDLES
+                >= oteryn_protocol_oteryn::vip::MAX_VIP_INVITATIONS
+                    + oteryn_protocol_oteryn::vip::MAX_VIP_WATCHERS
+        );
         assert_eq!(retired.keys().next(), Some(&4));
         assert_eq!(retired.keys().next_back(), Some(&count));
         assert!(

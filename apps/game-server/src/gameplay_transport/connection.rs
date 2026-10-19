@@ -2096,6 +2096,8 @@ where
     // CHASE-1: a ready client frame was already read ahead of the due chase step; the next poll
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let mut chase_yielded = false;
+    // VIP0 §8.2: every frame of a capability 31 session is bounded by its ONLINE confirmation.
+    let vip_session = vip_bounded(&admitted);
     loop {
         enum Next {
             Frame(std::io::Result<Vec<u8>>),
@@ -2258,7 +2260,10 @@ where
                 };
                 sequence = delta_sequence;
                 admitted.continuity.server_sequence = sequence;
-                if write_frame(stream, &delta).await.is_err() {
+                if write_bounded(stream, authority, vip_session, &delta)
+                    .await
+                    .is_err()
+                {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
                 admitted.continuity.vitals_revision = to;
@@ -2286,7 +2291,10 @@ where
                 };
                 sequence = delta_sequence;
                 admitted.continuity.server_sequence = sequence;
-                if write_frame(stream, &frame).await.is_err() {
+                if write_bounded(stream, authority, vip_session, &frame)
+                    .await
+                    .is_err()
+                {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
                 continue;
@@ -2311,7 +2319,10 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.chat_revision = revision;
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     // A marker takes no slot, so only a real line frees one.
@@ -2364,7 +2375,10 @@ where
                 };
                 admitted.continuity.server_sequence = sequence;
                 for frame in frames {
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -2395,7 +2409,10 @@ where
                 };
                 sequence = delta_sequence;
                 admitted.continuity.server_sequence = sequence;
-                if write_frame(stream, &frame).await.is_err() {
+                if write_bounded(stream, authority, vip_session, &frame)
+                    .await
+                    .is_err()
+                {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
                 continue;
@@ -2481,7 +2498,10 @@ where
                 sequence = to_sequence;
                 admitted.continuity.server_sequence = sequence;
                 for frame in &frames_out {
-                    if write_frame(stream, frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -2499,7 +2519,10 @@ where
                         sequence = delta_sequence;
                         admitted.continuity.server_sequence = sequence;
                         admitted.continuity.world_map_revision = view.revision();
-                        if write_frame(stream, &frame).await.is_err() {
+                        if write_bounded(stream, authority, vip_session, &frame)
+                            .await
+                            .is_err()
+                        {
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
                     }
@@ -2521,7 +2544,10 @@ where
                         sequence = delta_sequence;
                         admitted.continuity.server_sequence = sequence;
                         admitted.continuity.world_clock_revision = to;
-                        if write_frame(stream, &frame).await.is_err() {
+                        if write_bounded(stream, authority, vip_session, &frame)
+                            .await
+                            .is_err()
+                        {
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
                     }
@@ -2565,7 +2591,12 @@ where
                 };
                 // A peer that does not consume even one small probe within a cadence is not
                 // in control; an unbounded write would also stall the cadence itself.
-                match tokio::time::timeout(policy.interval, write_frame(stream, &probe)).await {
+                match tokio::time::timeout(
+                    policy.interval,
+                    write_bounded(stream, authority, vip_session, &probe),
+                )
+                .await
+                {
                     Ok(Ok(())) => continue,
                     Ok(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
                     Err(_) => return ConnectionEnd::AdmittedThenControlLost(admitted),
@@ -2618,7 +2649,7 @@ where
                 command.command_id,
                 expected,
             ) {
-                Ok(frame) => write_frame(stream, &frame).await,
+                Ok(frame) => write_bounded(stream, authority, vip_session, &frame).await,
                 Err(_) => Ok(()),
             };
             return ConnectionEnd::AdmittedThenClosed(admitted, error);
@@ -3434,7 +3465,9 @@ where
             // the transport closes cleanly; a failed write is no control loss either. A second
             // logout read before this result is still the `LOGOUT-RL-01` protocol error, but the
             // committed release keeps this a logout end.
-            if write_frame(stream, &result).await.is_ok()
+            if write_bounded(stream, authority, vip_session, &result)
+                .await
+                .is_ok()
                 && (!second_logout
                     || send_error(
                         stream,
@@ -3452,7 +3485,10 @@ where
             }
             return ConnectionEnd::AdmittedThenLoggedOut(admitted);
         }
-        if write_frame(stream, &result).await.is_err() {
+        if write_bounded(stream, authority, vip_session, &result)
+            .await
+            .is_err()
+        {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
         if matches!(dispatch, Dispatch::Logout(_)) {
@@ -3520,7 +3556,10 @@ where
                         };
                         sequence = delta_sequence;
                         admitted.continuity.server_sequence = sequence;
-                        if write_frame(stream, &frame).await.is_err() {
+                        if write_bounded(stream, authority, vip_session, &frame)
+                            .await
+                            .is_err()
+                        {
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
                     }
@@ -3545,7 +3584,10 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &delta).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &delta)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     admitted.continuity.vitals_revision = to;
@@ -3583,7 +3625,10 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &delta).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &delta)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     // r4122508665: only record the new overlay revision once the delta that
@@ -3627,7 +3672,10 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.achievement_notice_revision = Some(to);
-                    if write_frame(stream, &delta).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &delta)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3658,7 +3706,10 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &delta).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &delta)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                     admitted.continuity.vitals_revision = to;
@@ -3671,7 +3722,10 @@ where
                 };
                 sequence = delta_sequence;
                 admitted.continuity.server_sequence = sequence;
-                if write_frame(stream, &frame).await.is_err() {
+                if write_bounded(stream, authority, vip_session, &frame)
+                    .await
+                    .is_err()
+                {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
@@ -3684,7 +3738,10 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3702,7 +3759,10 @@ where
                         sequence = delta_sequence;
                         admitted.continuity.server_sequence = sequence;
                         admitted.continuity.world_map_revision = view.revision();
-                        if write_frame(stream, &frame).await.is_err() {
+                        if write_bounded(stream, authority, vip_session, &frame)
+                            .await
+                            .is_err()
+                        {
                             return ConnectionEnd::AdmittedThenDisconnected(admitted);
                         }
                     }
@@ -3715,7 +3775,10 @@ where
                 };
                 sequence = delta_sequence;
                 admitted.continuity.server_sequence = sequence;
-                if write_frame(stream, &frame).await.is_err() {
+                if write_bounded(stream, authority, vip_session, &frame)
+                    .await
+                    .is_err()
+                {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
@@ -3735,7 +3798,10 @@ where
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
                     admitted.continuity.chat_revision = revision;
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3770,7 +3836,10 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3785,7 +3854,10 @@ where
                 };
                 admitted.continuity.server_sequence = sequence;
                 for frame in frames {
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3802,7 +3874,10 @@ where
                 };
                 admitted.continuity.server_sequence = sequence;
                 for frame in frames {
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3825,7 +3900,10 @@ where
                 if let Some((delta_sequence, frame)) = change {
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &frame).await.is_err() {
+                    if write_bounded(stream, authority, vip_session, &frame)
+                        .await
+                        .is_err()
+                    {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
                 }
@@ -3994,6 +4072,7 @@ where
     S: AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let vip_session = vip_bounded(admitted);
     let selected_capabilities = admitted.continuity.selected_capabilities;
     let (frames_out, delta_sequence, new_revision) = if let Some(view) = visibility {
         let mut channel = authority.observe_visible_entities(actor).await?;
@@ -4043,7 +4122,9 @@ where
     *sequence = delta_sequence;
     admitted.continuity.server_sequence = *sequence;
     for frame in &frames_out {
-        write_frame(stream, frame).await.ok()?;
+        write_bounded(stream, authority, vip_session, frame)
+            .await
+            .ok()?;
     }
     // r4122508665: only record the new spatial revision once the delta that carries it has
     // actually been transmitted.
@@ -4058,7 +4139,9 @@ where
             let (delta_sequence, frame) = item_view_delta(generation, *sequence, &delta)?;
             *sequence = delta_sequence;
             admitted.continuity.server_sequence = *sequence;
-            write_frame(stream, &frame).await.ok()?;
+            write_bounded(stream, authority, vip_session, &frame)
+                .await
+                .ok()?;
         }
     }
     if let (Some(view), Some(items)) = (world_map, item_view) {
@@ -4068,10 +4151,53 @@ where
             *sequence = delta_sequence;
             admitted.continuity.server_sequence = *sequence;
             admitted.continuity.world_map_revision = view.revision();
-            write_frame(stream, &frame).await.ok()?;
+            write_bounded(stream, authority, vip_session, &frame)
+                .await
+                .ok()?;
         }
     }
     Some(())
+}
+
+/// VIP0 §8.2: while the client shows an entry ONLINE, no write may hold the connection past that
+/// entry's confirmation deadline. A frame the client does not drain in time ends the connection,
+/// so the client stops showing the stale status. A frame that does not block is still written at
+/// the deadline, because it discloses no presence (domain 21 frames are stricter, see
+/// `write_vip_frame`).
+///
+/// The write is boxed: each of the session's many write points then holds one pointer, so the
+/// bound does not grow the session future (a test drives several sessions on one stack).
+fn write_bounded<'a, S, A>(
+    stream: &'a mut S,
+    authority: &'a A,
+    session: Option<GameSessionId>,
+    frame: &'a [u8],
+) -> std::pin::Pin<Box<impl Future<Output = std::io::Result<()>> + 'a>>
+where
+    S: AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    Box::pin(async move {
+        let Some(session) = session else {
+            return write_frame(stream, frame).await;
+        };
+        match authority.vip_write_bound(session).await {
+            None => write_frame(stream, frame).await,
+            Some(left) => tokio::time::timeout(left, write_frame(stream, frame))
+                .await
+                .unwrap_or_else(|_| Err(std::io::ErrorKind::TimedOut.into())),
+        }
+    })
+}
+
+/// The session whose writes `write_bounded` bounds: only one that selected capability 31 can
+/// show an entry ONLINE.
+fn vip_bounded(admitted: &AdmittedSession) -> Option<GameSessionId> {
+    admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_VIP)
+        .then_some(admitted.game_session_id)
 }
 
 /// Every domain 21 delta must reach the client within the session's confirmation bound.
