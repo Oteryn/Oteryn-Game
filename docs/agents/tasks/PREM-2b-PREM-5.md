@@ -680,8 +680,10 @@ reconcile.
 Deferred review findings (tracked, outside this allocation):
 - #2256: done in this PR (CP decision 2026-10-19); see the section below.
 - #2257: CI runs no lib-registered PostgreSQL e2e (including this PR's
-  `promotion_npc_postgres_tests`). The fix is in `.github/workflows`. Locally,
-  all 3 `promotion_npc` e2e tests pass against PostgreSQL 17.6.
+  `promotion_npc_postgres_tests`). CP routes the fix to PR #2200, whose new CI
+  step also covers `promotion_npc_postgres_tests`; this PR does not touch
+  `.github/workflows` and merges main once #2200 lands. Locally, all
+  `promotion_npc` e2e tests pass against PostgreSQL 17.6.
 
 ## 2026-10-19 — #2256: gameplay readers of the durable promotion
 
@@ -700,6 +702,11 @@ transaction that holds its own current fence:
   committed meanwhile refuses the attempt with nothing written, and the next
   cadence retries it under the delivered status. A replay returns the first
   receipt whatever the new evaluation.
+  The runtime death (`settle_runtime_player_death_with_premium`) takes the
+  evaluation from a `DeathPremiumSource` (the session account's gate) only
+  once it holds the Character's revision slot, just before the death
+  transaction, so Premium that lapses while the death waits for the slot is
+  not applied (Codex P2 on 5e537d66). A retained death never asks.
 - Login/ADMIT (A4.2, D73): `admit_quest_session` calls `admit_promotion`, which
   reads the promotion with `DurablePromotionRead` under the session's current
   fence in the Character's revision slot and applies
@@ -713,7 +720,9 @@ transaction that holds its own current fence:
 Tests (PostgreSQL 17.6, locally):
 - `character_authority_postgres` (CI-registered, `pr-postgres-harness`):
   the death writer's five promotion and Premium combinations and their replay,
-  the pre-delivery death refused after the latch, the fenced login read, the
+  the pre-delivery death refused after the latch, the in-slot Premium
+  evaluation (Premium lapsing while the death waits for the slot gives the
+  full loss; the replay does not ask again), the fenced login read, the
   Wheel change refused before the promotion, and the Charm echoes after it.
 - Lib e2e
   `promotion_bought_at_the_npc_shows_at_login_and_prices_the_death`
@@ -721,7 +730,7 @@ Tests (PostgreSQL 17.6, locally):
   purchase goes through command-7 dispatch, the next admission shows
   `master_sorcerer`, and a real lethal hit commits the promoted loss (7546,
   not 10780, at level 20). Like the other lib PostgreSQL e2e, CI does not run
-  it until #2257 (and #2164) give the lib tests an admin URL.
+  it until #2257 (fixed in PR #2200) gives the lib tests an admin URL.
 
 Open (owner question): no client wire field carries the shown vocation or
 title yet, so `shown_vocation` has no wire caller.

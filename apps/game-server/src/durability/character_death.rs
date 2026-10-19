@@ -106,6 +106,33 @@ pub enum DeathPremium {
     PreDelivery,
 }
 
+/// D76 (#2256): where a runtime death attempt takes its [`DeathPremium`]. The writer asks it once
+/// the attempt holds the Character's revision slot and, for a new death, just before the death
+/// transaction, so a wait on the slot cannot carry a Premium decision taken before it into the
+/// death. A retained death replays its receipt and never asks.
+pub trait DeathPremiumSource: Sync {
+    /// The account's Premium evaluation now. An error leaves the death unsettled; the owner
+    /// retries it.
+    fn death_premium(
+        &self,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<DeathPremium>> + Send + '_>>;
+}
+
+/// The request with the Premium evaluation of `source`, taken in the slot (D76, #2256). A
+/// retained death (`original`) and a request without a source keep the request's evaluation.
+async fn premium_in_slot<const N: usize>(
+    mut request: CharacterDeathRequest<N>,
+    original: Option<CharacterRevision>,
+    source: Option<&dyn DeathPremiumSource>,
+) -> Result<CharacterDeathRequest<N>> {
+    if original.is_none()
+        && let Some(source) = source
+    {
+        request.premium = source.death_premium().await?;
+    }
+    Ok(request)
+}
+
 /// Complete semantic input of one death.  `held_blessings` is the intent's
 /// view of the held set in strictly ascending byte order; it must equal the
 /// durable set when a new death commits.  `premium` is the attempt's Premium
@@ -832,12 +859,26 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
     ) -> Result<CommittedCharacterDeath> {
+        self.settle_player_death_with_premium(sequencer, authority, node, fence, request, None)
+            .await
+    }
+
+    async fn settle_player_death_with_premium<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        premium: Option<&dyn DeathPremiumSource>,
+    ) -> Result<CommittedCharacterDeath> {
         let occurrence = request.occurrence;
         let mut slot = sequencer.acquire(fence.character_id).await;
         let original = self
             .reconcile_character_death(authority, occurrence)
             .await?
             .map(|death| death.original_character_revision);
+        let request = premium_in_slot(request, original, premium).await?;
         self.settle_player_death_in_slot(&mut slot, authority, node, fence, request, original, None)
             .await
     }
@@ -866,7 +907,7 @@ impl DurabilityRoot {
         training: Option<DeathTrainingFlush<'_>>,
     ) -> Result<CommittedCharacterDeath> {
         self.settle_player_death_with_training_inner(
-            sequencer, authority, node, fence, request, training, None,
+            sequencer, authority, node, fence, request, training, None, None,
         )
         .await
     }
@@ -895,6 +936,7 @@ impl DurabilityRoot {
             request,
             training,
             Some(formula),
+            None,
         )
         .await
     }
@@ -915,16 +957,73 @@ impl DurabilityRoot {
         request: CharacterDeathRequest<N>,
         formula: Option<&dyn BuildFormula>,
     ) -> Result<CommittedCharacterDeath> {
+        self.settle_runtime_player_death_inner(
+            sequencer, authority, node, fence, request, formula, None,
+        )
+        .await
+    }
+
+    /// [`Self::settle_runtime_player_death`] with the death's Premium evaluation taken from
+    /// `premium` in the revision slot (D76, #2256), not from the request.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the runtime death inputs plus the in-slot Premium source"
+    )]
+    pub async fn settle_runtime_player_death_with_premium<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: Option<&dyn BuildFormula>,
+        premium: &dyn DeathPremiumSource,
+    ) -> Result<CommittedCharacterDeath> {
+        self.settle_runtime_player_death_inner(
+            sequencer,
+            authority,
+            node,
+            fence,
+            request,
+            formula,
+            Some(premium),
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the runtime death inputs plus the optional in-slot Premium source"
+    )]
+    async fn settle_runtime_player_death_inner<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: Option<&dyn BuildFormula>,
+        premium: Option<&dyn DeathPremiumSource>,
+    ) -> Result<CommittedCharacterDeath> {
         match formula {
             Some(formula) if formula.content_revision() == request.context.content => {
-                self.settle_player_death_with_training_and_build(
-                    sequencer, authority, node, fence, request, None, formula,
+                self.settle_player_death_with_training_inner(
+                    sequencer,
+                    authority,
+                    node,
+                    fence,
+                    request,
+                    None,
+                    Some(formula),
+                    premium,
                 )
                 .await
             }
             _ => {
-                self.settle_player_death(sequencer, authority, node, fence, request)
-                    .await
+                self.settle_player_death_with_premium(
+                    sequencer, authority, node, fence, request, premium,
+                )
+                .await
             }
         }
     }
@@ -942,6 +1041,7 @@ impl DurabilityRoot {
         request: CharacterDeathRequest<N>,
         training: Option<DeathTrainingFlush<'_>>,
         formula: Option<&dyn BuildFormula>,
+        premium: Option<&dyn DeathPremiumSource>,
     ) -> Result<CommittedCharacterDeath> {
         validate_request(&fence, &request)?;
         let mut slot = sequencer.acquire(fence.character_id).await;
@@ -995,6 +1095,7 @@ impl DurabilityRoot {
         // A retained death supplies its historical build/formula binding. The
         // owner's newly loaded current formula is only for a new occurrence.
         let formula = if original.is_some() { None } else { formula };
+        let request = premium_in_slot(request, original, premium).await?;
         self.settle_player_death_in_slot(
             &mut slot, authority, node, fence, request, original, formula,
         )

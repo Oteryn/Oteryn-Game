@@ -1589,6 +1589,119 @@ fn a_pre_delivery_death_after_the_latch_is_refused_writing_nothing() -> TestResu
     })
 }
 
+/// #2256 (D76): a Premium source whose evaluation the test changes, counting how often the writer
+/// asks it.
+struct ScriptedPremium {
+    premium: std::sync::Mutex<crate::durability::character_death::DeathPremium>,
+    asked: std::sync::atomic::AtomicUsize,
+}
+
+impl crate::durability::character_death::DeathPremiumSource for ScriptedPremium {
+    fn death_premium(
+        &self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<
+                    Output = Result<
+                        crate::durability::character_death::DeathPremium,
+                        CharacterProgressionError,
+                    >,
+                > + Send
+                + '_,
+        >,
+    > {
+        Box::pin(async move {
+            self.asked.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(*self
+                .premium
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner))
+        })
+    }
+}
+
+/// #2256 (D76, Codex P2 on 5e537d66): the runtime death asks its Premium source only once it holds
+/// the Character's revision slot. Premium that lapses while the death waits for the slot is not
+/// current at the death, so a promoted Character loses in full; a replay of the retained death
+/// returns its receipt without asking again.
+#[test]
+fn the_runtime_death_takes_its_premium_evaluation_in_the_revision_slot() -> TestResult {
+    use crate::durability::character_death::DeathPremium;
+    use std::sync::atomic::Ordering;
+    run(|admin| {
+        Box::pin(async move {
+            let harness = create(admin, "death_promo_in_slot", &[]).await?;
+            promote(&harness.pool).await?;
+            let seal = harness
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            let source = ScriptedPremium {
+                premium: std::sync::Mutex::new(DeathPremium::Current),
+                asked: std::sync::atomic::AtomicUsize::new(0),
+            };
+            let sequencer = CharacterRevisionSequencer::new();
+            let held = sequencer.acquire(fence(1)?.character_id).await;
+            let request = death(99, &[])?;
+            let settle = harness.root.settle_runtime_player_death_with_premium(
+                &sequencer,
+                &authority,
+                &harness.node,
+                fence(1)?,
+                request.clone(),
+                None,
+                &source,
+            );
+            let source_ref = &source;
+            let lapse = async move {
+                for _ in 0..8 {
+                    tokio::task::yield_now().await;
+                }
+                let asked_while_held = source_ref.asked.load(Ordering::SeqCst);
+                *source_ref
+                    .premium
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) = DeathPremium::NotCurrent;
+                drop(held);
+                asked_while_held
+            };
+            let (settled, asked_while_held) = join_two(settle, lapse).await;
+            let settled = settled.map_err(|error| format!("{error:?}"))?;
+            assert_eq!(asked_while_held, 0);
+            assert_eq!(source.asked.load(Ordering::SeqCst), 1);
+            assert_eq!(settled.experience_lost.get(), loss(false)?);
+            // The retained death replays its receipt; the source is not asked again.
+            *source
+                .premium
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = DeathPremium::Current;
+            let replayed = harness
+                .root
+                .settle_runtime_player_death_with_premium(
+                    &sequencer,
+                    &authority,
+                    &harness.node,
+                    fence(1)?,
+                    request,
+                    None,
+                    &source,
+                )
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(replayed, settled);
+            assert_eq!(source.asked.load(Ordering::SeqCst), 1);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    })
+}
+
 /// #2256 (A4.2): the login read takes the durable promotion through the NPC purchase owner, in
 /// the Character's revision slot, under the exact current gameplay fence; a stale fence reads
 /// nothing.

@@ -911,6 +911,41 @@ fn session_progression_binding(
         .map(std::sync::Arc::clone)
 }
 
+/// D76 (#2256): a runtime death's Premium evaluation, from the gate of the account admitted with
+/// the dying session. The death writer asks it in the Character's revision slot. A session holding
+/// no Premium registration, or a node without the Premium reads, is `NotCurrent`.
+struct SessionDeathPremium<'a> {
+    coordinator: Option<&'a spell_premium_coordinator::SpellPremiumCoordinator>,
+    account: Option<[u8; 16]>,
+}
+
+impl crate::durability::character_death::DeathPremiumSource for SessionDeathPremium<'_> {
+    fn death_premium(
+        &self,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<
+                    Output = Result<
+                        crate::durability::character_death::DeathPremium,
+                        crate::durability::character_progression::CharacterProgressionError,
+                    >,
+                > + Send
+                + '_,
+        >,
+    > {
+        Box::pin(async move {
+            let (Some(coordinator), Some(account)) = (self.coordinator, self.account) else {
+                return Ok(crate::durability::character_death::DeathPremium::NotCurrent);
+            };
+            Ok(coordinator
+                .with_premium_gate(account, |status, _| {
+                    Box::pin(async move { premium_promotion::death_premium(&status) })
+                })
+                .await?)
+        })
+    }
+}
+
 /// What settling one runtime death of a session decided (DEATH-2 §4.3-§4.5,
 /// DEATH-RESTART-SAFETY-1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1824,23 +1859,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(held_blessings) = self.death_held_blessings(fence, death.occurrence).await else {
             return (DeathCommit::Unavailable, None);
         };
-        // D76 (#2256): this attempt's Premium evaluation from the account's gate; the death
-        // transaction reads the durable promotion (and, before delivery, the latch) itself.
-        let premium = match self.session_account(session) {
-            Some(account) => match self
-                .with_premium_gate(account, |status, _| {
-                    Box::pin(async move { premium_promotion::death_premium(&status) })
-                })
-                .await
-            {
-                Ok(premium) => premium,
-                Err(_) => return (DeathCommit::Unavailable, None),
-            },
-            None => crate::durability::character_death::DeathPremium::NotCurrent,
+        // D76 (#2256): the death writer asks the account's gate in the revision slot, just before
+        // the death transaction, which reads the durable promotion (and, before delivery, the
+        // latch) itself.
+        let premium = SessionDeathPremium {
+            coordinator: self.premium_coordinator,
+            account: self.session_account(session),
         };
         let request = crate::durability::character_death::CharacterDeathRequest {
             held_blessings,
-            premium,
             ..player_death_request(
                 progression,
                 (self.world_id, self.channel_id),
@@ -1857,13 +1884,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map(|formula| formula as &dyn crate::durability::character_build::BuildFormula);
         match self
             .root
-            .settle_runtime_player_death(
+            .settle_runtime_player_death_with_premium(
                 &self.revision_sequencer,
                 self.character,
                 self.holder,
                 fence,
                 request,
                 formula,
+                &premium,
             )
             .await
         {
