@@ -83,6 +83,7 @@ const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
 /// The share of [`SHUTDOWN_BUDGET`] the shutdown last-position write may take (CHAR-POSITION-1).
 const LAST_POSITION_FLUSH_BUDGET: Duration = Duration::from_secs(3);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
+const STAFF_MUTE_REFRESH_INTERVAL: Duration = Duration::from_secs(5);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
 const BOOTSTRAP_REQUEST_BYTES: usize = 64;
@@ -2134,6 +2135,30 @@ async fn audit_expiry_loop(
     }
 }
 
+/// Re-sync remote staff mute changes without putting database reads in chat.
+/// A failure is logged and retried at the next fixed interval.
+async fn staff_mute_refresh_loop(
+    root: &DurabilityRoot,
+    desk: &crate::staff::live::StaffDesk,
+    stop: &CancellationToken,
+) {
+    let mut interval = tokio::time::interval(STAFF_MUTE_REFRESH_INTERVAL);
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    while first(interval.tick(), stop.cancelled()).await.is_some() {
+        if stop.is_cancelled() {
+            return;
+        }
+        let result = root
+            .refresh_staff_mutes(desk, crate::staff::live::wall_ms())
+            .await;
+        event(&format!(
+            "event=staff_mute_refresh synced={} result={}",
+            result.as_ref().map_or(0, |count| *count),
+            if result.is_ok() { "ok" } else { "failed" }
+        ));
+    }
+}
+
 /// Resolves on SIGTERM or SIGINT.
 async fn termination() {
     use tokio::signal::unix::{SignalKind, signal};
@@ -2878,6 +2903,8 @@ async fn boot_and_serve(
         &shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));
+    let mut mute_refresh = pin!(staff_mute_refresh_loop(root, &staff_desk, &loops_stop));
+    let mut mute_refresh_done = false;
     // Never gates serving; its end is not a shutdown reason. The public
     // projections run beside it, disabled unless configured and enabled.
     let mut projection = pin!(both(
@@ -2938,6 +2965,9 @@ async fn boot_and_serve(
             expiry_done = true;
             return Poll::Ready("audit expiry loop ended");
         }
+        if !mute_refresh_done && mute_refresh.as_mut().poll(context).is_ready() {
+            mute_refresh_done = true;
+        }
         if !projection_done && projection.as_mut().poll(context).is_ready() {
             projection_done = true;
         }
@@ -2978,6 +3008,9 @@ async fn boot_and_serve(
             if !expiry_done && expiry.as_mut().poll(context).is_ready() {
                 expiry_done = true;
             }
+            if !mute_refresh_done && mute_refresh.as_mut().poll(context).is_ready() {
+                mute_refresh_done = true;
+            }
             if !projection_done && projection.as_mut().poll(context).is_ready() {
                 projection_done = true;
             }
@@ -3002,6 +3035,9 @@ async fn boot_and_serve(
         }
         if !expiry_done && expiry.as_mut().poll(context).is_ready() {
             expiry_done = true;
+        }
+        if !mute_refresh_done && mute_refresh.as_mut().poll(context).is_ready() {
+            mute_refresh_done = true;
         }
         if !projection_done && projection.as_mut().poll(context).is_ready() {
             projection_done = true;
@@ -3034,6 +3070,9 @@ async fn boot_and_serve(
     }
     if !expiry_done {
         expiry.as_mut().await;
+    }
+    if !mute_refresh_done {
+        mute_refresh.as_mut().await;
     }
     if !projection_done {
         projection.as_mut().await;

@@ -21,6 +21,7 @@ use crate::staff::signature::{
 };
 use serde_json::{Value, json};
 use sqlx::{PgConnection, Row};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Longest staff mute: 365 days, the sanction table's own bound.
@@ -771,6 +772,20 @@ pub(crate) async fn create_item_text_report_in_transaction(
         return Ok(ReportAdmission::Capacity);
     }
     // 5. The reported revision is still the item's current text.
+    // All text writers (item_text::persist_rewrite and clear_report_text)
+    // lock item instance, then revision, then text. Take the item's FK lock
+    // first, in its own statement, before admission shares the text row.
+    let item_exists: Option<i32> = sqlx::query_scalar(
+        "SELECT 1 FROM game_item_instances \
+         WHERE item_instance_id=$1::uuid AND world_id=$2::uuid FOR KEY SHARE",
+    )
+    .bind(&item)
+    .bind(&world)
+    .fetch_optional(&mut *connection)
+    .await?;
+    if item_exists.is_none() {
+        return Ok(ReportAdmission::Stale);
+    }
     let current: Option<i32> = sqlx::query_scalar(
         "SELECT 1 FROM game_item_texts t \
          JOIN game_item_text_revisions r ON r.item_instance_id=t.item_instance_id \
@@ -1034,6 +1049,59 @@ impl DurabilityRoot {
                 })
             })
             .await?
+    }
+
+    /// Re-sync this node's live Characters from staff-environment truth.
+    /// Reads are bounded to 256 Characters per statement; chat stays a lookup.
+    pub async fn refresh_staff_mutes(
+        &self,
+        desk: &StaffDesk,
+        now: u64,
+    ) -> Result<usize, StaffError> {
+        let Some(environment) = desk.environment() else {
+            return Ok(0);
+        };
+        let snapshot = desk.snapshot_mutes();
+        if snapshot.is_empty() {
+            return Ok(desk.apply_mutes(&snapshot, &HashMap::new()));
+        }
+        let now = i64::try_from(now).map_err(|_| Error::Clock)?;
+        let environment = environment.to_owned();
+        let characters: Vec<String> = snapshot.characters().map(uuid).collect();
+        let answers = self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let result: Result<_, StaffError> = async {
+                        let mut answers = HashMap::new();
+                        for chunk in characters.chunks(256) {
+                            let rows = sqlx::query(
+                                "SELECT character_id::text,max(ends_at) FROM game_character_sanctions \
+                                 WHERE character_id = ANY($1::uuid[]) AND kind='MUTE' \
+                                 AND status='ACTIVE' AND ends_at>$2 AND environment=$3 \
+                                 GROUP BY character_id",
+                            )
+                            .bind(chunk)
+                            .bind(now)
+                            .bind(&environment)
+                            .fetch_all(&mut *tx)
+                            .await?;
+                            for row in rows {
+                                let character: String = row.try_get(0)?;
+                                let character =
+                                    crate::node::uuid_bytes(&character).ok_or(Error::Invalid)?;
+                                answers.insert(character, ms(row.try_get(1)?)?);
+                            }
+                        }
+                        Ok(answers)
+                    }
+                    .await;
+                    Ok(result)
+                })
+            })
+            .await??;
+        Ok(desk.apply_mutes(&snapshot, &answers))
     }
 
     /// WRITE0 §6 report admission in one transaction. The caller's fence

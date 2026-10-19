@@ -3297,6 +3297,78 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
     }
 
     #[test]
+    fn staff_pg_mute_refresh_resyncs_other_nodes_and_scopes_the_environment() -> TestResult {
+        exec_case("muterefresh", Some("GM"), async |e| {
+            let target = id(TARGET);
+            let desk_b = StaffDesk::for_environment(Some(e.f.trust.environment()));
+            let _guard_b = desk_b.register(target, id(ACCOUNT), Some(target));
+            assert_eq!(e.desk.session_for_character(&target), None);
+            assert_eq!(desk_b.session_for_character(&target), Some(target));
+
+            let muted = e.send(mute(TARGET, 60_000)).await.map_err(debug)?;
+            assert_eq!(of(&muted), COMMITTED);
+            let sanction = muted
+                .data
+                .as_ref()
+                .and_then(|data| data["sanction_id"].as_str())
+                .ok_or("sanction id")?
+                .to_owned();
+            assert_eq!(desk_b.mute_seconds(&target, NOW), None);
+            assert_eq!(
+                e.root
+                    .refresh_staff_mutes(&desk_b, NOW)
+                    .await
+                    .map_err(debug)?,
+                1
+            );
+            assert_eq!(desk_b.mute_seconds(&target, NOW), Some(60));
+
+            let unmuted = e
+                .send(Action::Unmute {
+                    sanction_id: sanction,
+                })
+                .await
+                .map_err(debug)?;
+            assert_eq!(of(&unmuted), COMMITTED);
+            assert_eq!(desk_b.mute_seconds(&target, NOW), Some(60));
+            assert_eq!(
+                e.root
+                    .refresh_staff_mutes(&desk_b, NOW)
+                    .await
+                    .map_err(debug)?,
+                1
+            );
+            assert_eq!(desk_b.mute_seconds(&target, NOW), None);
+
+            assert_eq!(
+                of(&e.send(mute(TARGET, 60_000)).await.map_err(debug)?),
+                COMMITTED
+            );
+            let foreign = StaffDesk::for_environment(Some("other-env"));
+            let _foreign_guard = foreign.register(target, id(ACCOUNT), Some(target));
+            assert_eq!(
+                e.root
+                    .refresh_staff_mutes(&foreign, NOW)
+                    .await
+                    .map_err(debug)?,
+                1
+            );
+            assert_eq!(foreign.mute_seconds(&target, NOW), None);
+            let untrusted = StaffDesk::for_environment(None);
+            let _untrusted_guard = untrusted.register(target, id(ACCOUNT), Some(target));
+            assert_eq!(
+                e.root
+                    .refresh_staff_mutes(&untrusted, NOW)
+                    .await
+                    .map_err(debug)?,
+                0
+            );
+            assert_eq!(untrusted.mute_seconds(&target, NOW), None);
+            Ok(())
+        })
+    }
+
+    #[test]
     fn staff_pg_active_mutes_are_scoped_to_the_staff_environment() -> TestResult {
         exec_case("muteenv", Some("GM"), async |e| {
             let target = id(TARGET);
@@ -3511,6 +3583,86 @@ INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at
             let seen = e.send(inspect(TARGET)).await.map_err(debug)?;
             assert_eq!(of(&seen), COMMITTED);
             drop(guard);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn staff_pg_report_admission_locks_the_item_before_its_text() -> TestResult {
+        exec_case("reportlocks", Some("ADMIN"), async |e| {
+            use std::time::Duration;
+
+            tokio::time::timeout(Duration::from_secs(15), async {
+                // A separate connection holds the first REPORT_CLEAR_TEXT lock.
+                let mut connection = sqlx::PgConnection::connect(&e.f.url).await?;
+                let mut tx = connection.begin().await?;
+                sqlx::query("SET LOCAL lock_timeout='3s'")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("SET LOCAL statement_timeout='5s'")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query(
+                    "SELECT item_instance_id FROM game_item_instances \
+                     WHERE item_instance_id=$1::uuid AND world_id=$2::uuid FOR UPDATE",
+                )
+                .bind(item(0))
+                .bind(WORLD)
+                .fetch_one(&mut *tx)
+                .await?;
+                let admission =
+                    e.root
+                        .create_item_text_report(reported(0), REPORTED, OPEN_SNAPSHOTS_PER_WORLD);
+                let mut admission = std::pin::pin!(admission);
+                // Drive admission while waiting for actual lock contention,
+                // so a slow runtime cannot make the old lock order pass.
+                let blocked = async {
+                    loop {
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        let waiting: bool = sqlx::query_scalar(
+                            "SELECT EXISTS(SELECT 1 FROM pg_stat_activity \
+                             WHERE datname=current_database() \
+                             AND pg_backend_pid()=ANY(pg_blocking_pids(pid)))",
+                        )
+                        .fetch_one(&mut *tx)
+                        .await?;
+                        if waiting {
+                            return Ok::<(), sqlx::Error>(());
+                        }
+                    }
+                };
+                {
+                    let mut blocked =
+                        std::pin::pin!(tokio::time::timeout(Duration::from_secs(3), blocked));
+                    std::future::poll_fn(|context| {
+                        if let std::task::Poll::Ready(result) = admission.as_mut().poll(context) {
+                            return std::task::Poll::Ready(Err::<(), Box<dyn std::error::Error>>(
+                                format!("admission was not blocked: {result:?}").into(),
+                            ));
+                        }
+                        blocked.as_mut().poll(context).map(|waited| match waited {
+                            Ok(Ok(())) => Ok(()),
+                            Ok(Err(error)) => Err(error.into()),
+                            Err(elapsed) => Err(elapsed.into()),
+                        })
+                    })
+                    .await?;
+                }
+                sqlx::query(
+                    "SELECT text_revision FROM game_item_texts \
+                     WHERE item_instance_id=$1::uuid FOR UPDATE",
+                )
+                .bind(item(0))
+                .fetch_one(&mut *tx)
+                .await?;
+                tx.commit().await?;
+                let result = tokio::time::timeout(Duration::from_secs(10), admission.as_mut())
+                    .await?
+                    .map_err(debug)?;
+                admitted(result)?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })
+            .await??;
             Ok(())
         })
     }

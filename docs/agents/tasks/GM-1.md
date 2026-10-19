@@ -94,6 +94,27 @@ from the pre-push Codex review, all accepted:
   It also shows that the full evidence walk and the orphan check still
   pass after expiry.
 
+Second pre-push review round (lock order, cross-node mutes, kick):
+
+- Report admission no longer deadlocks with `REPORT_CLEAR_TEXT`. It takes
+  the world-scoped item KEY SHARE lock before it shares the text row. The text writers use item instance,
+  then revision, then text. Test:
+  `staff_pg_report_admission_locks_the_item_before_its_text`.
+- A mute or unmute committed on another node now reaches this node's live
+  chat. Each node re-syncs its live Characters' staff mutes from the
+  database every 5 s (`staff_mute_refresh_loop` in `node/serve.rs`), in
+  statements of at most 256 Characters; chat stays a map lookup.
+  Per-Character sequences keep a stale refresh from overwriting a newer
+  local mute or unmute, and a mute chat admission loads before its
+  connection registers is kept. Test:
+  `staff_pg_mute_refresh_resyncs_other_nodes_and_scopes_the_environment`.
+  Unit tests: `mute_refresh_sets_and_clears_live_characters`,
+  `mute_refresh_ignores_a_stale_snapshot_after_set_mute`,
+  `mute_refresh_drops_non_live_entries` and
+  `mute_refresh_keeps_a_mute_loaded_before_its_registration`.
+- Both PostgreSQL tests run in the `durability_postgres` job in
+  `pr-postgres-harness.yml` and `merge-group-gate.yml`.
+
 Wiring is unchanged. Production staff requests reach the executor through
 `control_loop`, then `ControlInput::Staff`, then `serve_staff_control`. The
 e2e case is `staff_pg_executor_mute_inspect_unmute_and_kick_follow_the_committed_audit`,
@@ -106,6 +127,11 @@ code fails closed.
 - Roster provisioning: moderation writes need a `game_staff_rosters` row
   for the active roster, and only the owner can insert it.
 - D1161: the four integration-test wrapper re-export lines need a CP note.
+- Kick of an in-fight session. An immediate StaffKick that ignores the combat lock needs
+  TerminalRelease::StaffKick and wire code 1201 (A7) — a protocol change
+  outside GM-1. Options: (a) keep D1437 fenced-logout kick with IN_FIGHT
+  answer for alpha; (b) allocate a follow-up packet with protocol review.
+  Recommendation: (a) now, (b) before external players.
 
 ## Previous checkpoint — merge-up, Codex review of `4b23100d`, renumbering to 0133/0134 (2026-10-18)
 
@@ -425,8 +451,9 @@ unknown.
 
 Remaining:
 
-- A mute committed on another node reaches chat only at that Character's next
-  chat open, through `staff_active_mute_until`.
+- A mute or unmute committed on another node reaches live chat on the 5 s
+  desk re-sync, subject to a successful database refresh. Chat open also
+  loads the active mute through `staff_active_mute_until`.
 - The player-facing report intent is WRITE-WIRE-1; only the storage writer
   exists here.
 - Map-object reports are out of scope.
