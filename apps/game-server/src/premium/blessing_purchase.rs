@@ -15,8 +15,10 @@ use crate::durability::item_fee_burn::{
 };
 use crate::durability::item_mint_audit::{Type2Transaction, check_technical_text, check_uuid_v7};
 use crate::durability::npc_purchase::NpcPurchaseWriteContext;
+use crate::foundation::CommandRef;
 use crate::gameplay_transport::npc_promotion::{
-    BlessingNpcOffer, BlessingPriceBand, PremiumBlessingService, check_premium_blessing_purchase,
+    BLESSING_OCCURRENCE_TAG, BlessingNpcOffer, BlessingPriceBand, PremiumBlessingService,
+    check_premium_blessing_purchase, promotion_command_id,
 };
 use crate::gameplay_transport::premium_promotion::NpcPurchaseSource;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
@@ -53,6 +55,9 @@ impl crate::durability::npc_purchase::NpcPurchaseOperation for BlessingPurchaseO
 #[derive(Debug, Clone)]
 pub(crate) struct BlessingPurchaseRequest {
     pub(crate) occurrence: [u8; 16],
+    /// The command the purchase answers; `occurrence` is derived from it and the NPC
+    /// generation, and the receipt stores it for the resumed-connection lookup.
+    pub(crate) command: CommandRef,
     pub(crate) account_id: [u8; 16],
     /// Qualified by the native blessing conversation/catalogue owner, never a promotion permit.
     pub(crate) source: NpcPurchaseSource,
@@ -225,6 +230,8 @@ fn binding(
     }
     if !valid_key(&r.offer.storage_key)
         || r.source.actor.generation == 0
+        || r.command.game_session_id() != fence.game_session_id
+        || r.occurrence != promotion_command_id(BLESSING_OCCURRENCE_TAG, r.command, r.source.actor)
         || r.source.npc != r.offer.source.npc
         || r.source.service != r.offer.source.service
         || r.fee.cause
@@ -242,6 +249,8 @@ fn binding(
         .chain_update(fence.character_id.as_bytes())
         .chain_update(fence.runtime_scope.world_id().as_bytes())
         .chain_update(r.occurrence)
+        .chain_update(r.command.game_session_id().as_bytes())
+        .chain_update(r.command.command_id().get().to_be_bytes())
         .chain_update(r.account_id)
         .chain_update(service_code(r.offer.blessing).to_be_bytes())
         .chain_update(r.source.actor.identity)
@@ -363,8 +372,8 @@ pub(crate) async fn prepare_blessing_purchase(
         return Err(DurabilityError::InvalidStoredState.into());
     }
     let bank = paid.bank_debit;
-    let inserted=sqlx::query("INSERT INTO game_character_blessing_purchase_receipts(purchase_occurrence_id,command_binding,character_id,original_character_revision,committed_character_revision,fee_transaction_id,fee_event_id,npc_definition,service_definition,npc_actor_id,npc_actor_generation,world_id,account_id,blessing_key,blessing_service,price_minimum_level,price_maximum_level,price_gold_units,bank_entry_id,bank_debit_gold_units,bank_balance_before,bank_balance_after,blessings_before,blessings_after,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) \
-        SELECT encode($1,'hex')::uuid,$2,character_id,character_revision,$3::text::numeric(20,0),encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,encode($8,'hex')::uuid,$9::text::numeric(20,0),encode($10,'hex')::uuid,encode($11,'hex')::uuid,$12,$13,$14,$15,$16,encode($17,'hex')::uuid,$18,$19,$20,$21,$22,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state WHERE character_id=encode($23,'hex')::uuid AND character_revision=$24::text::numeric(20,0)")
+    let inserted=sqlx::query("INSERT INTO game_character_blessing_purchase_receipts(purchase_occurrence_id,command_binding,character_id,original_character_revision,committed_character_revision,fee_transaction_id,fee_event_id,npc_definition,service_definition,npc_actor_id,npc_actor_generation,world_id,account_id,blessing_key,blessing_service,price_minimum_level,price_maximum_level,price_gold_units,bank_entry_id,bank_debit_gold_units,bank_balance_before,bank_balance_after,blessings_before,blessings_after,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at,game_session_id,command_id) \
+        SELECT encode($1,'hex')::uuid,$2,character_id,character_revision,$3::text::numeric(20,0),encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,encode($8,'hex')::uuid,$9::text::numeric(20,0),encode($10,'hex')::uuid,encode($11,'hex')::uuid,$12,$13,$14,$15,$16,encode($17,'hex')::uuid,$18,$19,$20,$21,$22,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,encode($25,'hex')::uuid,$26::text::numeric(20,0) FROM game_character_progression_state WHERE character_id=encode($23,'hex')::uuid AND character_revision=$24::text::numeric(20,0)")
         .bind(request.occurrence.as_slice()).bind(&intent).bind(committed.get().to_string())
         .bind(paid.transaction_id.as_slice()).bind(paid.event_id.as_slice())
         .bind(serde_json::to_vec(&request.source.npc).map_err(|_|BlessingPurchaseError::InvalidInput)?)
@@ -376,6 +385,7 @@ pub(crate) async fn prepare_blessing_purchase(
         .bind(bank.as_ref().map(|b|b.entry_id.as_slice())).bind(bank.map_or(0,|b|b.debit_gold_units as i64))
         .bind(bank.map(|b|b.balance_before_gold_units as i64)).bind(bank.map(|b|b.balance_after_gold_units as i64))
         .bind(&before).bind(&after).bind(fence.character_id.as_bytes().as_slice()).bind(fence.expected_character_revision.get().to_string())
+        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .execute(&mut ***tx).await?;
     if inserted.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState.into());
@@ -609,5 +619,74 @@ mod tests {
             price_at(&offer(vec![band(1, 1, u64::MAX, 1)]), 3),
             Err(BlessingPurchaseError::InvalidInput)
         ));
+    }
+
+    /// The promotion fixture's fence, command, account and fee, as a Blood of the Mountain
+    /// purchase at the same NPC actor.
+    fn intent() -> (CurrentCharacterGameplayFence, BlessingPurchaseRequest) {
+        let (fence, promotion) =
+            crate::gameplay_transport::premium_promotion::purchase_binding_tests::intent();
+        let offer = offer(Vec::new());
+        let mut request = BlessingPurchaseRequest {
+            occurrence: [0; 16],
+            command: promotion.command,
+            account_id: promotion.account_id,
+            source: NpcPurchaseSource {
+                npc: offer.source.npc.clone(),
+                service: offer.source.service.clone(),
+                actor: promotion.source.actor,
+                content_revision: promotion.source.content_revision,
+            },
+            offer,
+            fee: promotion.fee,
+        };
+        rebind(&mut request, BLESSING_OCCURRENCE_TAG, promotion.command);
+        (fence, request)
+    }
+
+    /// Answer `command` with an occurrence derived under `tag`, the fee cause following it.
+    fn rebind(request: &mut BlessingPurchaseRequest, tag: &[u8], command: CommandRef) {
+        request.command = command;
+        request.occurrence = promotion_command_id(tag, command, request.source.actor);
+        request.fee.cause = FeeBurnCause::BlessingPurchase {
+            occurrence: request.occurrence,
+            blessing: request.offer.storage_key.clone(),
+        };
+    }
+
+    #[test]
+    fn the_binding_derives_its_occurrence_from_the_command() {
+        use crate::foundation::{CommandId, GameSessionId};
+        use crate::gameplay_transport::npc_promotion::PROMOTION_OCCURRENCE_TAG;
+        use crate::gameplay_transport::premium_promotion::purchase_binding_tests::id;
+        let (fence, request) = intent();
+        let original = binding(&fence, &request).expect("bound fixture");
+        let next = CommandRef::new(fence.game_session_id, CommandId::new(4).expect("fixture"));
+
+        // Another command of the session is another purchase.
+        let mut other = request.clone();
+        rebind(&mut other, BLESSING_OCCURRENCE_TAG, next);
+        assert_ne!(binding(&fence, &other).expect("bound"), original);
+
+        // An occurrence of another command, a command of another session and a
+        // promotion-tagged occurrence of the same command are all refused.
+        let mut wrong = request.clone();
+        wrong.command = next;
+        let mut foreign = request.clone();
+        let session = GameSessionId::decode(&id(13)).expect("fixture");
+        rebind(
+            &mut foreign,
+            BLESSING_OCCURRENCE_TAG,
+            CommandRef::new(session, CommandId::new(3).expect("fixture")),
+        );
+        let mut promotion = request;
+        let command = promotion.command;
+        rebind(&mut promotion, PROMOTION_OCCURRENCE_TAG, command);
+        for wrong in [wrong, foreign, promotion] {
+            assert!(matches!(
+                binding(&fence, &wrong),
+                Err(BlessingPurchaseError::InvalidInput)
+            ));
+        }
     }
 }

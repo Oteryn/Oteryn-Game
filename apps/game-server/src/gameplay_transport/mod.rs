@@ -3301,7 +3301,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
-        if let Some(outcome) = npc_command::resume_premium_talk(self, actor, &command).await {
+        if let Some(outcome) = npc_command::resume_premium_talk(self, &command).await {
             return Some(outcome);
         }
         npc_command::resume_bank_talk(self, actor, command).await

@@ -707,6 +707,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 
+    /// The gameplay fence of `session` for answering an already-sent Premium purchase command
+    /// on a resumed connection: an Active session, its committed Character in this world and
+    /// this runtime's scope ownership. It needs no actor, spell state, control or Premium facts,
+    /// so a purchase whose answer was lost stays answerable while the actor re-enters. The
+    /// receipt read re-checks this fence in its own transaction; `None` holds the command.
+    pub(crate) async fn premium_reconcile_fence(
+        &self,
+        session: GameSessionId,
+    ) -> Option<crate::durability::character_progression::CurrentCharacterGameplayFence> {
+        let current = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session_at(session)
+            .await
+            .ok()?
+            .0;
+        if current.session_state() != GameSessionState::Active {
+            return None;
+        }
+        let character =
+            crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+                .ok()?;
+        let record = self
+            .root
+            .read_current_character(self.character, character)
+            .await
+            .ok()?;
+        if record.world_id.as_bytes() != self.world_id.as_bytes() {
+            return None;
+        }
+        let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+            character_id: character,
+            game_session_id: session,
+            connection_generation: current.current_connection_generation(),
+            character_lease_generation: current.current_character_lease().generation(),
+            runtime_scope: current.current_runtime_scope(),
+            scope_ownership_generation: current.current_scope_generation(),
+            expected_character_revision: record.revision,
+        };
+        let runtime = self.runtime.lock().await;
+        (fence.runtime_scope
+            == RuntimeScopeRefV1::channel(
+                runtime.binding().world_id(),
+                runtime.binding().channel_id(),
+            )
+            && fence.scope_ownership_generation == runtime.binding().scope_generation())
+        .then_some(fence)
+    }
+
     pub(crate) async fn promotion_command_facts(
         &self,
         actor: ExactActorRef,

@@ -26,7 +26,9 @@ use crate::foundation::{
 };
 use crate::foundation::{CommandId, CommandRef};
 use crate::gameplay_transport::connection::{FreshAdmissionAuthority, UseCommand};
-use crate::gameplay_transport::npc_promotion::PremiumReconcile;
+use crate::gameplay_transport::npc_promotion::{
+    BLESSING_OCCURRENCE_TAG, PROMOTION_OCCURRENCE_TAG, PremiumReconcile, promotion_command_id,
+};
 use crate::gameplay_transport::npc_talk::NpcTalkEntry;
 use crate::gameplay_transport::premium_blessing_catalogue::SourcePremiumNpcCatalogue;
 use crate::gameplay_transport::premium_blessing_catalogue::tests::npc_catalogue;
@@ -553,6 +555,7 @@ async fn promotion_steps(
             .fetch_one(&harness.pool)
             .await?;
     assert_eq!(premium_admission, 2, "admitted before Premium delivery");
+    receipt_binds_its_command(harness, Case::Promotion, at, 3).await?;
     let promoted: bool = sqlx::query_scalar(
         "SELECT promoted FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid",
     )
@@ -654,6 +657,7 @@ async fn blessing_steps(
     .fetch_one(&harness.pool)
     .await?;
     assert_eq!(receipt, (BLOOD_KEY.to_owned(), BLOOD_PRICE, 31, 119, 2));
+    receipt_binds_its_command(harness, Case::Blessing, at, 5).await?;
     assert_eq!(revision(harness).await?, before + 1);
     assert_eq!(crystals(harness).await?, 0);
 
@@ -669,7 +673,7 @@ async fn blessing_steps(
     reconciles(owner, at, 5, "You have been blessed.").await;
     assert_eq!(
         owner
-            .reconcile_premium_purchase(actor, CommandRef::new(session, CommandId::new(99)?))
+            .reconcile_premium_purchase(CommandRef::new(session, CommandId::new(99)?))
             .await,
         PremiumReconcile::None
     );
@@ -715,13 +719,29 @@ async fn blessing_steps(
 }
 
 /// The resumed connection's original command through `resume_npc_bank`: the committed Premium
-/// purchase answers it with its line and nothing is written.
+/// purchase answers it with its line and nothing is written. The receipt alone answers it even
+/// before the actor's spell state is back, so the answer needs no live actor facts.
 async fn reconciles(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     (actor, session, npc): At,
     command_id: u64,
     line: &str,
 ) {
+    let command = CommandRef::new(session, CommandId::new(command_id).expect("a command id"));
+    let spells = std::mem::take(&mut *owner.spell_states.lock().await);
+    assert!(
+        owner.promotion_actor_facts(actor, session).await.is_none(),
+        "no live actor facts while the actor re-enters"
+    );
+    let reconciled = owner.reconcile_premium_purchase(command).await;
+    *owner.spell_states.lock().await = spells;
+    assert!(
+        matches!(
+            reconciled,
+            PremiumReconcile::Committed { npc: from, line: answer } if from == npc && answer == line
+        ),
+        "{reconciled:?}"
+    );
     let outcome = owner
         .resume_npc_bank(
             actor,
@@ -739,6 +759,81 @@ async fn reconciles(
     let conversation = outcome.conversation.expect("the purchase line");
     assert_eq!(conversation.open.map(|(talking, _)| talking), Some(npc));
     assert_eq!(conversation.lines, vec![line.to_owned()]);
+}
+
+/// The single receipt of `case` stores the CommandRef it answers, and the schema derives its
+/// occurrence from that CommandRef: the SQL derivation is `promotion_command_id` (also above
+/// `i64::MAX`), and a copy of the receipt under another CommandId fails its derivation CHECK.
+async fn receipt_binds_its_command(
+    harness: &Harness,
+    case: Case,
+    (_, session, npc): At,
+    command_id: u64,
+) -> TestResult {
+    let (tag, stored, copy, insert, constraint) = match case {
+        Case::Promotion => (
+            PROMOTION_OCCURRENCE_TAG,
+            "SELECT game_session_id = encode($1,'hex')::uuid, command_id::text \
+               FROM game_character_promotion_receipts",
+            "CREATE TEMP TABLE copied ON COMMIT DROP AS \
+             SELECT * FROM game_character_promotion_receipts",
+            "INSERT INTO game_character_promotion_receipts SELECT * FROM copied",
+            "game_character_promotion_receipts_command_occurrence",
+        ),
+        Case::Blessing => (
+            BLESSING_OCCURRENCE_TAG,
+            "SELECT game_session_id = encode($1,'hex')::uuid, command_id::text \
+               FROM game_character_blessing_purchase_receipts",
+            "CREATE TEMP TABLE copied ON COMMIT DROP AS \
+             SELECT * FROM game_character_blessing_purchase_receipts",
+            "INSERT INTO game_character_blessing_purchase_receipts SELECT * FROM copied",
+            "game_character_blessing_purchase_receipts_command_occurrence",
+        ),
+    };
+    let row: (bool, String) = sqlx::query_as(stored)
+        .bind(session.as_bytes().as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+    assert_eq!(row, (true, command_id.to_string()));
+
+    for command in [command_id, u64::MAX] {
+        let derived: String = sqlx::query_scalar(
+            "SELECT replace(game_premium_command_occurrence($1, encode($2,'hex')::uuid, \
+                    $3::text::numeric, encode($4,'hex')::uuid, $5::text::numeric)::text, '-', '')",
+        )
+        .bind(tag)
+        .bind(session.as_bytes().as_slice())
+        .bind(command.to_string())
+        .bind(npc.identity.as_slice())
+        .bind(npc.generation.to_string())
+        .fetch_one(&harness.pool)
+        .await?;
+        let expected: String =
+            promotion_command_id(tag, CommandRef::new(session, CommandId::new(command)?), npc)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect();
+        assert_eq!(derived, expected, "command {command}");
+    }
+
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query(copy).execute(&mut *tx).await?;
+    sqlx::query("UPDATE copied SET command_id = command_id + 1")
+        .execute(&mut *tx)
+        .await?;
+    let refused = sqlx::query(insert)
+        .execute(&mut *tx)
+        .await
+        .expect_err("an occurrence not derived from its CommandRef is refused");
+    assert_eq!(
+        refused
+            .as_database_error()
+            .and_then(sqlx::error::DatabaseError::constraint),
+        Some(constraint),
+        "{refused}"
+    );
+    tx.rollback().await?;
+    Ok(())
 }
 
 async fn held_blessings(harness: &Harness) -> TestResult<Vec<String>> {

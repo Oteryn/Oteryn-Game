@@ -1133,10 +1133,10 @@ pub(super) async fn resume_bank_talk(
 /// The reconnect cancelled the pending Premium offer, so a resent `yes` cannot reach the
 /// purchase replay; when a promotion or blessing purchase committed under this CommandRef
 /// before the lost COMMIT outcome, its answer is the receipt's, with nothing bought again.
-/// `None`: no Premium purchase committed under it; dispatch goes on.
+/// `None`: no Premium purchase committed under it; dispatch goes on. The answer needs no live
+/// actor: the receipt is read under the session's current gameplay fence.
 pub(super) async fn resume_premium_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
-    actor: ExactActorRef,
     command: &super::connection::UseCommand,
 ) -> Option<NpcTalkOutcome> {
     use super::npc_promotion::PremiumReconcile;
@@ -1145,7 +1145,7 @@ pub(super) async fn resume_premium_talk(
     }
     let id = crate::foundation::CommandId::new(command.command_id).ok()?;
     let reference = crate::foundation::CommandRef::new(command.game_session_id, id);
-    match admission.reconcile_premium_purchase(actor, reference).await {
+    match admission.reconcile_premium_purchase(reference).await {
         PremiumReconcile::None => None,
         PremiumReconcile::Committed { npc, line } => {
             let intent = NpcTalkIntent {

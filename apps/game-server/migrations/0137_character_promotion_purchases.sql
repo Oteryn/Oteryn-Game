@@ -13,6 +13,10 @@
 --     with the server-selected price band, the optional bank part and the held set before and
 --     after; `game_character_blessings` gains its purchase INSERT (DEATH-0 reserved it for this
 --     receipt kind);
+--   * each receipt stores the CommandRef it answers (`game_session_id`, `command_id`), unique
+--     per receipt table, and `game_premium_command_occurrence` proves its occurrence is
+--     derived from that CommandRef and the NPC generation, so a resumed connection finds the
+--     purchase of a repeated command with one indexed read;
 --   * fee causes 2 (`PromotionPurchase`, coins only, exactly 20,000 gold, never the bank) and
 --     3 (`BlessingPurchase`, coins then bank, with its `blessing_key`) on `game_item_fee_burns`;
 --     `charm_key` is set exactly for cause 1;
@@ -24,7 +28,7 @@
 --     runtime role.
 --
 -- Rollback: applied migrations are immutable, so rollback is a new migration. Before any
--- receipt exists it re-issues the 0093 guard body, drops the new triggers, function and tables,
+-- receipt exists it re-issues the 0093 guard body, drops the new triggers, functions and tables,
 -- the fee CHECKs and `blessing_key`, restores `charm_key NOT NULL` and `cause_kind = 1`, and
 -- revokes the blessing INSERT. After receipts exist they, their fee records and the promotion and
 -- blessing rows are retained evidence of paid value: a rollback keeps them and may only stop new
@@ -44,6 +48,28 @@ ALTER TABLE game_item_fee_burns
     -- ACCEPT_BATCH §3: the promotion is paid in coins only, never from the bank.
     ADD CONSTRAINT game_item_fee_burns_promotion_coins_only
         CHECK (cause_kind <> 2 OR (fee_gold_units = 20000 AND bank_debit_gold_units = 0));
+
+-- The purchase occurrence of a Premium NPC command: the first 16 bytes of SHA-256 over the
+-- tag, the session id, the CommandId (u64 big-endian), the NPC actor id and its generation
+-- (u64 big-endian), with the UUIDv7 version and variant bits set. It is `promotion_command_id`
+-- in `interaction/npc_promotion.rs`. The u64 values are encoded through their two's
+-- complement int8, which has the same eight bytes.
+CREATE FUNCTION game_premium_command_occurrence(
+    tag BYTEA, session_id UUID, command NUMERIC, npc UUID, generation NUMERIC
+) RETURNS UUID
+LANGUAGE sql IMMUTABLE STRICT AS $$
+    SELECT encode(set_byte(set_byte(h, 6, (get_byte(h, 6) & 15) | 112),
+                           8, (get_byte(h, 8) & 63) | 128), 'hex')::uuid
+      FROM (SELECT substring(sha256(
+                tag
+                || uuid_send(session_id)
+                || int8send((command - CASE WHEN command > 9223372036854775807
+                                            THEN 18446744073709551616 ELSE 0 END)::bigint)
+                || uuid_send(npc)
+                || int8send((generation - CASE WHEN generation > 9223372036854775807
+                                               THEN 18446744073709551616 ELSE 0 END)::bigint))
+                FROM 1 FOR 16) AS h) AS hashed
+$$;
 
 CREATE TABLE game_character_promotion_receipts (
     purchase_occurrence_id UUID PRIMARY KEY
@@ -79,11 +105,19 @@ CREATE TABLE game_character_promotion_receipts (
     policy_revision TEXT NOT NULL CHECK (octet_length(policy_revision) BETWEEN 1 AND 128),
     reward_revision TEXT NOT NULL CHECK (octet_length(reward_revision) BETWEEN 1 AND 128),
     committed_at BIGINT NOT NULL CHECK (committed_at >= 0),
+    -- The command this purchase answers: one purchase per CommandRef.
+    game_session_id UUID NOT NULL CHECK (game_character_is_uuid_v7(game_session_id)),
+    command_id NUMERIC(20,0) NOT NULL CHECK (command_id BETWEEN 1 AND 18446744073709551615),
     -- Stamped by the insert trigger below; never caller supplied.
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     UNIQUE (character_id, original_character_revision),
     UNIQUE (character_id, committed_character_revision),
-    UNIQUE (purchase_occurrence_id, character_id)
+    UNIQUE (purchase_occurrence_id, character_id),
+    UNIQUE (game_session_id, command_id),
+    CONSTRAINT game_character_promotion_receipts_command_occurrence
+        CHECK (purchase_occurrence_id = game_premium_command_occurrence(
+            'oteryn:promotion-occurrence:v1'::bytea, game_session_id, command_id,
+            npc_actor_id, npc_actor_generation))
 );
 
 CREATE TABLE game_character_promotions (
@@ -142,6 +176,9 @@ CREATE TABLE game_character_blessing_purchase_receipts (
     policy_revision TEXT NOT NULL CHECK (octet_length(policy_revision) BETWEEN 1 AND 128),
     reward_revision TEXT NOT NULL CHECK (octet_length(reward_revision) BETWEEN 1 AND 128),
     committed_at BIGINT NOT NULL CHECK (committed_at >= 0),
+    -- The command this purchase answers: one purchase per CommandRef.
+    game_session_id UUID NOT NULL CHECK (game_character_is_uuid_v7(game_session_id)),
+    command_id NUMERIC(20,0) NOT NULL CHECK (command_id BETWEEN 1 AND 18446744073709551615),
     created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     -- The price band was selected at the locked level.
     CHECK (level_before BETWEEN price_minimum_level AND price_maximum_level),
@@ -156,7 +193,12 @@ CREATE TABLE game_character_blessing_purchase_receipts (
            AND blessing_key = ANY (blessings_after)
            AND NOT (blessing_key = ANY (blessings_before))),
     UNIQUE (character_id, original_character_revision),
-    UNIQUE (character_id, committed_character_revision)
+    UNIQUE (character_id, committed_character_revision),
+    UNIQUE (game_session_id, command_id),
+    CONSTRAINT game_character_blessing_purchase_receipts_command_occurrence
+        CHECK (purchase_occurrence_id = game_premium_command_occurrence(
+            'oteryn:blessing-occurrence:v1'::bytea, game_session_id, command_id,
+            npc_actor_id, npc_actor_generation))
 );
 
 -- D495 and the 0073 guard union: re-issues the 0093 body unchanged with the promotion and
@@ -884,3 +926,8 @@ GRANT SELECT, INSERT ON game_character_promotion_receipts, game_character_promot
 GRANT INSERT ON game_character_blessings TO oteryn_game_runtime;
 GRANT SELECT ON game_character_promotion_receipts, game_character_promotions,
     game_character_blessing_purchase_receipts TO oteryn_game_control;
+-- PostgreSQL checks EXECUTE on a function a CHECK calls as the inserting role (0018).
+REVOKE ALL ON FUNCTION game_premium_command_occurrence(BYTEA, UUID, NUMERIC, UUID, NUMERIC)
+    FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_premium_command_occurrence(BYTEA, UUID, NUMERIC, UUID, NUMERIC)
+    TO oteryn_game_runtime;

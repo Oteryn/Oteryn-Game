@@ -19,7 +19,10 @@ use crate::durability::item_fee_burn::{
 };
 use crate::durability::item_mint_audit::{Type2Transaction, check_technical_text, check_uuid_v7};
 use crate::durability::npc_purchase::NpcPurchaseWriteContext;
-use crate::gameplay_transport::npc_promotion::promotion_coin_fee_quote;
+use crate::foundation::CommandRef;
+use crate::gameplay_transport::npc_promotion::{
+    PROMOTION_OCCURRENCE_TAG, promotion_coin_fee_quote, promotion_command_id,
+};
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -112,6 +115,9 @@ pub(crate) type NpcPurchaseSource = PromotionNpcSource;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PromotionPurchaseRequest {
     pub(crate) occurrence: [u8; 16],
+    /// The command the purchase answers; `occurrence` is derived from it and the NPC
+    /// generation, and the receipt stores it for the resumed-connection lookup.
+    pub(crate) command: CommandRef,
     pub(crate) account_id: [u8; 16],
     pub(crate) source: PromotionNpcSource,
     pub(crate) fee: FeeBurnRequest,
@@ -234,6 +240,13 @@ fn promotion_binding(
             .map_err(|_| PromotionPurchaseError::InvalidInput)?;
     }
     if request.source.actor.generation == 0
+        || request.command.game_session_id() != fence.game_session_id
+        || request.occurrence
+            != promotion_command_id(
+                PROMOTION_OCCURRENCE_TAG,
+                request.command,
+                request.source.actor,
+            )
         || request.fee.fee_gold_units != PROMOTION_PRICE
         || request.fee.cause
             != (FeeBurnCause::PromotionPurchase {
@@ -247,6 +260,8 @@ fn promotion_binding(
         .chain_update(fence.character_id.as_bytes())
         .chain_update(fence.runtime_scope.world_id().as_bytes())
         .chain_update(request.occurrence)
+        .chain_update(request.command.game_session_id().as_bytes())
+        .chain_update(request.command.command_id().get().to_be_bytes())
         .chain_update(request.account_id)
         .chain_update(request.source.actor.identity)
         .chain_update(request.source.actor.generation.to_be_bytes())
@@ -358,14 +373,15 @@ async fn apply_promotion_purchase(
     let service = serde_json::to_vec(&request.source.service)
         .map_err(|_| PromotionPurchaseError::InvalidInput)?;
     let inserted = sqlx::query(
-        "INSERT INTO game_character_promotion_receipts(purchase_occurrence_id,command_binding,character_id,original_character_revision,committed_character_revision,fee_transaction_id,fee_event_id,npc_definition,service_definition,npc_actor_id,npc_actor_generation,world_id,account_id,premium_admission,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) \
-         SELECT encode($1,'hex')::uuid,$2,character_id,character_revision,$3::text::numeric(20,0),encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,encode($8,'hex')::uuid,$9::text::numeric(20,0),encode($12,'hex')::uuid,encode($13,'hex')::uuid,$14,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state WHERE character_id=encode($10,'hex')::uuid AND character_revision=$11::text::numeric(20,0)")
+        "INSERT INTO game_character_promotion_receipts(purchase_occurrence_id,command_binding,character_id,original_character_revision,committed_character_revision,fee_transaction_id,fee_event_id,npc_definition,service_definition,npc_actor_id,npc_actor_generation,world_id,account_id,premium_admission,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at,game_session_id,command_id) \
+         SELECT encode($1,'hex')::uuid,$2,character_id,character_revision,$3::text::numeric(20,0),encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,encode($8,'hex')::uuid,$9::text::numeric(20,0),encode($12,'hex')::uuid,encode($13,'hex')::uuid,$14,level,level,total_experience,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint,encode($15,'hex')::uuid,$16::text::numeric(20,0) FROM game_character_progression_state WHERE character_id=encode($10,'hex')::uuid AND character_revision=$11::text::numeric(20,0)")
         .bind(request.occurrence.as_slice()).bind(binding).bind(committed.get().to_string())
         .bind(paid.transaction_id.as_slice()).bind(paid.event_id.as_slice()).bind(npc).bind(service)
         .bind(request.source.actor.identity.as_slice()).bind(request.source.actor.generation.to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(fence.expected_character_revision.get().to_string())
         .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(request.account_id.as_slice())
         .bind(match premium { PremiumStatus::Current => 1_i16, PremiumStatus::NotActivated(_) => 2_i16, PremiumStatus::NotCurrent => return Err(PromotionPurchaseError::Eligibility(PromotionRefusal::Premium(PremiumRefusal::NotCurrent))) })
+        .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .execute(&mut ***tx).await?;
     if inserted.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState.into());
@@ -648,24 +664,25 @@ mod policy_tests {
 }
 
 #[cfg(test)]
-mod purchase_binding_tests {
+pub(crate) mod purchase_binding_tests {
     #![allow(clippy::expect_used)]
     use super::*;
     use crate::durability::item_fee_burn::FeeChangeFacts;
     use crate::durability::item_mint::TypedDefinitionRef;
     use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
     use crate::foundation::{
-        ChannelId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
+        ChannelId, CommandId, ConnectionGeneration, GameSessionId, RuntimeScopeRefV1,
         ScopeOwnershipGeneration, WorldId,
     };
 
-    fn id(seed: u8) -> [u8; 16] {
+    pub(crate) fn id(seed: u8) -> [u8; 16] {
         let mut id = [seed; 16];
         id[6] = 0x70;
         id[8] = 0x80;
         id
     }
-    fn intent() -> (CurrentCharacterGameplayFence, PromotionPurchaseRequest) {
+    /// One bound promotion request and its fence; the blessing binding tests reuse it.
+    pub(crate) fn intent() -> (CurrentCharacterGameplayFence, PromotionPurchaseRequest) {
         let definition = |key: &str| TypedDefinitionRef {
             family: "Item".into(),
             production_key: key.into(),
@@ -683,8 +700,15 @@ mod purchase_binding_tests {
             scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("fixture"),
             expected_character_revision: CharacterRevision::new(1).expect("fixture"),
         };
+        let command = CommandRef::new(fence.game_session_id, CommandId::new(3).expect("fixture"));
+        let actor = EntityRef {
+            identity: id(7),
+            generation: 1,
+        };
+        let occurrence = promotion_command_id(PROMOTION_OCCURRENCE_TAG, command, actor);
         let request = PromotionPurchaseRequest {
-            occurrence: id(5),
+            occurrence,
+            command,
             account_id: id(6),
             source: PromotionNpcSource {
                 npc: ProjectV2DefinitionRef {
@@ -697,14 +721,11 @@ mod purchase_binding_tests {
                     key: "oteryn:service.fixture".into(),
                     revision: "fixture-r1".into(),
                 },
-                actor: EntityRef {
-                    identity: id(7),
-                    generation: 1,
-                },
+                actor,
                 content_revision: "fixture-content-r1".into(),
             },
             fee: FeeBurnRequest {
-                cause: FeeBurnCause::PromotionPurchase { occurrence: id(5) },
+                cause: FeeBurnCause::PromotionPurchase { occurrence },
                 fee_gold_units: 20_000,
                 transaction_id: id(8),
                 event_id: id(9),
@@ -739,12 +760,27 @@ mod purchase_binding_tests {
             promotion_binding(&fence, &request).expect("historical binding"),
             original
         );
-        request.source.actor.generation += 1;
+        let retarget = |request: &mut PromotionPurchaseRequest, generation| {
+            request.source.actor.generation = generation;
+            request.occurrence = promotion_command_id(
+                PROMOTION_OCCURRENCE_TAG,
+                request.command,
+                request.source.actor,
+            );
+            request.fee.cause = FeeBurnCause::PromotionPurchase {
+                occurrence: request.occurrence,
+            };
+        };
+        retarget(&mut request, 2);
         assert_ne!(
             promotion_binding(&fence, &request).expect("different target"),
             original
         );
-        request.source.actor.generation -= 1;
+        retarget(&mut request, 1);
+        assert_eq!(
+            promotion_binding(&fence, &request).expect("same target"),
+            original
+        );
         request.fee.event_id = id(12);
         assert_ne!(
             promotion_binding(&fence, &request).expect("different audit identity"),
@@ -769,6 +805,45 @@ mod purchase_binding_tests {
         ));
         let mut wrong = request;
         wrong.source.service.family = ProjectV2Family::Npc;
+        assert!(matches!(
+            promotion_binding(&fence, &wrong),
+            Err(PromotionPurchaseError::InvalidInput)
+        ));
+    }
+
+    #[test]
+    fn promotion_rejects_an_occurrence_not_derived_from_its_command() {
+        let (fence, request) = intent();
+        // The fee and receipt agree, but the occurrence names another command.
+        let mut wrong = request.clone();
+        wrong.command = CommandRef::new(fence.game_session_id, CommandId::new(4).expect("fixture"));
+        assert!(matches!(
+            promotion_binding(&fence, &wrong),
+            Err(PromotionPurchaseError::InvalidInput)
+        ));
+        // A command of another session never answers this fence.
+        let mut wrong = request.clone();
+        let other = GameSessionId::decode(&id(13)).expect("fixture");
+        wrong.command = CommandRef::new(other, CommandId::new(3).expect("fixture"));
+        wrong.occurrence =
+            promotion_command_id(PROMOTION_OCCURRENCE_TAG, wrong.command, wrong.source.actor);
+        wrong.fee.cause = FeeBurnCause::PromotionPurchase {
+            occurrence: wrong.occurrence,
+        };
+        assert!(matches!(
+            promotion_binding(&fence, &wrong),
+            Err(PromotionPurchaseError::InvalidInput)
+        ));
+        // A blessing-tagged occurrence of the same command is not a promotion.
+        let mut wrong = request;
+        wrong.occurrence = promotion_command_id(
+            crate::gameplay_transport::npc_promotion::BLESSING_OCCURRENCE_TAG,
+            wrong.command,
+            wrong.source.actor,
+        );
+        wrong.fee.cause = FeeBurnCause::PromotionPurchase {
+            occurrence: wrong.occurrence,
+        };
         assert!(matches!(
             promotion_binding(&fence, &wrong),
             Err(PromotionPurchaseError::InvalidInput)

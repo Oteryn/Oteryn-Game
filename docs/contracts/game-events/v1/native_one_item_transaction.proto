@@ -367,9 +367,22 @@ message OneItemCharmUnassignV1 {
   string charm_key = 1; // oteryn:charm.<name>, <= 128 B
   bytes occurrence = 2; // the unassign command occurrence, 16-byte UUIDv7
 }
+// PREM-2b (D1106): the coins-only 20,000 gold promotion fee. The promotion
+// receipt owns the NPC and service provenance; the occurrence links the fee to it.
+message OneItemPromotionPurchaseV1 {
+  bytes occurrence = 1; // the promotion purchase occurrence, 16-byte UUIDv7
+}
+// PREM-5 (PREMIUM_ACTIVATION §4.4): a Premium blessing fee, coins then bank.
+message OneItemBlessingPurchaseV1 {
+  string blessing_key = 1; // the held blessing key, <= 128 B
+  bytes occurrence = 2;    // the blessing purchase occurrence, 16-byte UUIDv7
+}
+// Tags 2 and 3 are owner-approved (2026-10-18).
 message OneItemFeeBurnCauseV1 {
   oneof cause {
     OneItemCharmUnassignV1 charm_unassign = 1;
+    OneItemPromotionPurchaseV1 promotion_purchase = 2;
+    OneItemBlessingPurchaseV1 blessing_purchase = 3;
   }
 }
 

@@ -149,9 +149,15 @@ pub(crate) fn admitted_blessing_offer(
     Some(offer)
 }
 
+/// Tag of a promotion purchase occurrence; migration 0137 derives it again in SQL.
+pub(crate) const PROMOTION_OCCURRENCE_TAG: &[u8] = b"oteryn:promotion-occurrence:v1";
+/// Tag of a blessing purchase occurrence; migration 0137 derives it again in SQL.
+pub(crate) const BLESSING_OCCURRENCE_TAG: &[u8] = b"oteryn:blessing-occurrence:v1";
+
 /// Same CommandRef and target keep the same source occurrence and item/audit
-/// identities on every retry. Different NPC generations cannot alias it.
-fn promotion_command_id(
+/// identities on every retry. Different NPC generations cannot alias it. For the two
+/// occurrence tags, `game_premium_command_occurrence` (migration 0137) is the same function.
+pub(crate) fn promotion_command_id(
     tag: &[u8],
     command: crate::foundation::CommandRef,
     npc: oteryn_protocol_oteryn::world_spatial_entities::EntityRef,
@@ -303,7 +309,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok_or(rejected)?;
         let character = actor_facts.fence.character_id;
-        let occurrence = promotion_command_id(b"oteryn:promotion-occurrence:v1", command, npc);
+        let occurrence = promotion_command_id(PROMOTION_OCCURRENCE_TAG, command, npc);
         let mut slot = self.revision_sequencer.acquire(character).await;
         slot.commit_npc_purchase(
             self.root,
@@ -339,6 +345,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
                 let request = PromotionPurchaseRequest {
                     occurrence,
+                    command,
                     account_id: facts.account,
                     source: NpcPurchaseSource {
                         npc: offer.npc,
@@ -402,7 +409,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok_or(rejected)?;
         let character = actor_facts.fence.character_id;
-        let occurrence = promotion_command_id(b"oteryn:blessing-occurrence:v1", command, npc);
+        let occurrence = promotion_command_id(BLESSING_OCCURRENCE_TAG, command, npc);
         let mut slot = self.revision_sequencer.acquire(character).await;
         slot.commit_npc_purchase(
             self.root,
@@ -435,6 +442,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 let id = |tag: &[u8]| promotion_command_id(tag, command, npc);
                 let request = BlessingPurchaseRequest {
                     occurrence,
+                    command,
                     account_id: facts.account,
                     source: NpcPurchaseSource {
                         npc: offer.source.npc.clone(),
@@ -493,68 +501,85 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-/// The receipt keys of every Premium purchase of one Character: its occurrence, the NPC
-/// generation it was bought from and whether it is a blessing. Read, never written.
-struct PremiumReceiptKey {
+/// The Premium purchase receipt of one CommandRef: its occurrence, the NPC generation it was
+/// bought from, whether it is a blessing and whether it belongs to the fenced Character. Read,
+/// never written.
+struct PremiumCommandReceipt {
     occurrence: [u8; 16],
     npc: EntityRef,
     blessing: bool,
+    own_character: bool,
 }
 
-struct PremiumReceiptKeys(Vec<PremiumReceiptKey>);
+/// At most two rows: one is the answer, two prove a broken store.
+struct PremiumCommandReceipts(Vec<PremiumCommandReceipt>);
 
-impl crate::durability::character_revision_sequencer::SequencedOutcome for PremiumReceiptKeys {
+impl crate::durability::character_revision_sequencer::SequencedOutcome for PremiumCommandReceipts {
     fn committed_revision(&self) -> Option<crate::domain::CharacterRevision> {
         None
     }
 }
 
-struct PremiumReceiptKeysRead {
-    character: crate::domain::CharacterId,
+/// The receipt lookup of one CommandRef under the exact current gameplay fence. Both receipt
+/// tables are unique on `(game_session_id, command_id)`, so the indexed read is bounded.
+struct PremiumCommandReceiptRead {
+    fence: CurrentCharacterGameplayFence,
+    command: CommandRef,
 }
 
-impl crate::durability::npc_purchase::NpcPurchaseOperation for PremiumReceiptKeysRead {
-    type Output = PremiumReceiptKeys;
+impl crate::durability::npc_purchase::NpcPurchaseOperation for PremiumCommandReceiptRead {
+    type Output = PremiumCommandReceipts;
     type Error = BlessingPurchaseError;
 
     fn apply<'a, 't>(
         self,
-        _context: &'a crate::durability::npc_purchase::NpcPurchaseWriteContext,
+        context: &'a crate::durability::npc_purchase::NpcPurchaseWriteContext,
         tx: &'a mut Type2Transaction<'t>,
     ) -> Pin<Box<dyn Future<Output = Result<Self::Output, Self::Error>> + Send + 'a>>
     where
         Self: 'a,
     {
         Box::pin(async move {
-            let rows: Vec<(Vec<u8>, Vec<u8>, String, bool)> = sqlx::query_as(
+            context.admit_read(tx, &self.fence).await?;
+            let rows: Vec<(Vec<u8>, Vec<u8>, String, bool, bool)> = sqlx::query_as(
                 "SELECT decode(replace(purchase_occurrence_id::text,'-',''),'hex'), \
                         decode(replace(npc_actor_id::text,'-',''),'hex'), \
-                        npc_actor_generation::text, false \
+                        npc_actor_generation::text, false, \
+                        character_id = encode($3,'hex')::uuid \
                    FROM game_character_promotion_receipts \
-                  WHERE character_id = encode($1,'hex')::uuid \
+                  WHERE game_session_id = encode($1,'hex')::uuid \
+                    AND command_id = $2::text::numeric(20,0) \
                  UNION ALL \
                  SELECT decode(replace(purchase_occurrence_id::text,'-',''),'hex'), \
                         decode(replace(npc_actor_id::text,'-',''),'hex'), \
-                        npc_actor_generation::text, true \
+                        npc_actor_generation::text, true, \
+                        character_id = encode($3,'hex')::uuid \
                    FROM game_character_blessing_purchase_receipts \
-                  WHERE character_id = encode($1,'hex')::uuid",
+                  WHERE game_session_id = encode($1,'hex')::uuid \
+                    AND command_id = $2::text::numeric(20,0) \
+                 LIMIT 2",
             )
-            .bind(self.character.as_bytes().as_slice())
+            .bind(self.command.game_session_id().as_bytes().as_slice())
+            .bind(self.command.command_id().get().to_string())
+            .bind(self.fence.character_id.as_bytes().as_slice())
             .fetch_all(&mut ***tx)
             .await?;
             rows.into_iter()
-                .map(|(occurrence, identity, generation, blessing)| {
-                    Some(PremiumReceiptKey {
-                        occurrence: occurrence.try_into().ok()?,
-                        npc: EntityRef {
-                            identity: identity.try_into().ok()?,
-                            generation: generation.parse().ok()?,
-                        },
-                        blessing,
-                    })
-                })
+                .map(
+                    |(occurrence, identity, generation, blessing, own_character)| {
+                        Some(PremiumCommandReceipt {
+                            occurrence: occurrence.try_into().ok()?,
+                            npc: EntityRef {
+                                identity: identity.try_into().ok()?,
+                                generation: generation.parse().ok()?,
+                            },
+                            blessing,
+                            own_character,
+                        })
+                    },
+                )
                 .collect::<Option<Vec<_>>>()
-                .map(PremiumReceiptKeys)
+                .map(PremiumCommandReceipts)
                 .ok_or(BlessingPurchaseError::from(
                     crate::durability::DurabilityError::InvalidStoredState,
                 ))
@@ -616,52 +641,59 @@ const BLESSED_LINE: &str = "You have been blessed.";
 
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     /// Whether a promotion or blessing purchase committed under `command`, for a resumed
-    /// connection whose first command repeats an unsequenced CommandId. A purchase occurrence is
-    /// keyed by the CommandRef and the NPC generation, so every receipt of the Character is
-    /// re-keyed with this CommandRef: only the purchase of exactly this command matches. Nothing
-    /// is written and no current NPC, offer or Premium state is needed.
-    pub(crate) async fn reconcile_premium_purchase(
-        &self,
-        actor: ExactActorRef,
-        command: CommandRef,
-    ) -> PremiumReconcile {
-        use crate::durability::character_revision_sequencer::SequencedError;
-        let Some(facts) = self
-            .promotion_actor_facts(actor, command.game_session_id())
+    /// connection whose first command repeats an unsequenced CommandId. Each receipt stores the
+    /// CommandRef it was bought under, and migration 0137 proves its occurrence is derived from
+    /// that CommandRef and NPC generation, so one indexed read under the current gameplay fence
+    /// answers it. Nothing is written; no live actor, NPC, offer or Premium state is needed.
+    /// Every failure to classify, including a fence that does not hold now, is `Held`: an
+    /// accepted command is never sequenced as a new one while its payment may have committed.
+    pub(crate) async fn reconcile_premium_purchase(&self, command: CommandRef) -> PremiumReconcile {
+        let Some(fence) = self
+            .premium_reconcile_fence(command.game_session_id())
             .await
         else {
             return PremiumReconcile::Held;
         };
-        let character = facts.fence.character_id;
+        let character = fence.character_id;
         let mut slot = self.revision_sequencer.acquire(character).await;
-        let keys = slot
+        let receipts = slot
             .commit_npc_purchase(
                 self.root,
                 self.character,
                 self.holder,
-                facts.fence,
-                |owner, _fence| async move { owner.commit(PremiumReceiptKeysRead { character }).await },
+                fence,
+                |owner, fence| async move {
+                    owner
+                        .commit(PremiumCommandReceiptRead { fence, command })
+                        .await
+                },
             )
             .await;
         drop(slot);
-        let keys = match keys {
-            Ok(keys) => keys,
-            Err(error) if error.is_unknown() => return PremiumReconcile::Held,
-            // Without current authority nothing can be bought either; dispatch refuses it.
-            Err(_) => return PremiumReconcile::None,
+        let Ok(PremiumCommandReceipts(receipts)) = receipts else {
+            return PremiumReconcile::Held;
         };
-        keys.0
-            .into_iter()
-            .find_map(|key| {
-                let (tag, line): (&[u8], _) = if key.blessing {
-                    (b"oteryn:blessing-occurrence:v1", BLESSED_LINE)
+        match receipts.as_slice() {
+            [] => PremiumReconcile::None,
+            [receipt] if receipt.own_character => {
+                let (tag, line) = if receipt.blessing {
+                    (BLESSING_OCCURRENCE_TAG, BLESSED_LINE)
                 } else {
-                    (b"oteryn:promotion-occurrence:v1", PROMOTED_LINE)
+                    (PROMOTION_OCCURRENCE_TAG, PROMOTED_LINE)
                 };
-                (promotion_command_id(tag, command, key.npc) == key.occurrence)
-                    .then_some(PremiumReconcile::Committed { npc: key.npc, line })
-            })
-            .unwrap_or(PremiumReconcile::None)
+                if promotion_command_id(tag, command, receipt.npc) == receipt.occurrence {
+                    PremiumReconcile::Committed {
+                        npc: receipt.npc,
+                        line,
+                    }
+                } else {
+                    PremiumReconcile::Held
+                }
+            }
+            // Another Character's receipt or two receipts under one CommandRef: the store is
+            // inconsistent, so the command stays unsequenced.
+            _ => PremiumReconcile::Held,
+        }
     }
 
     /// DEATH_COMPLETE0 §4.7: the held blessing set a death of `occurrence` consumes. A death that

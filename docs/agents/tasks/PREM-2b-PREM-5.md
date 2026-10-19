@@ -298,8 +298,9 @@ writers overlap. No `bank.rs`, shared registration, registry or migration file i
   checks, the single Premium gate operation and COMMIT; only then does it adopt
   the source receipt. Stable CommandRef/target-derived identities survive retry.
   Historical replay precedes live NPC/catalogue lookup and grants no new authority.
-- Fee cause-kind 2 and protobuf oneof tag 2 are **proposals**, coupled to the
-  source and audit implementation; they are not a registry/slot activation.
+- Fee cause-kinds 2 and 3 and protobuf oneof tags 2 (`promotion_purchase`) and
+  3 (`blessing_purchase`) of `OneItemFeeBurnCauseV1` are owner-approved
+  (2026-10-18) and land in `native_one_item_transaction.proto` with this PR.
   Existing Charm request-binding bytes and fee tuple selection are preserved.
   Promotion cannot open the bank under either actual Type2 tuple.
 - A typed source catalogue port supplies server-resolved NPC/service and

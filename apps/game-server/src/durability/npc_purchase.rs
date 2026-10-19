@@ -72,6 +72,30 @@ impl NpcPurchaseWriteContext {
         assert_recovery_fence(tx, &self.recovery).await
     }
 
+    /// A read that answers a command under current gameplay authority: recovery and the exact
+    /// gameplay fence (session, connection, lease, scope and revision) hold on this transaction.
+    /// It reads no account, Premium or NPC state and admits no write.
+    pub(crate) async fn admit_read(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        fence: &CurrentCharacterGameplayFence,
+    ) -> Result<(), CharacterProgressionError> {
+        self.fenced_root(tx, fence).await.map(|_| ())
+    }
+
+    async fn fenced_root(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        fence: &CurrentCharacterGameplayFence,
+    ) -> Result<super::character_progression::FencedCharacterRoot, CharacterProgressionError> {
+        self.check_recovery(tx).await?;
+        if fence.character_id != self.character_id {
+            return Err(CharacterProgressionError::AuthorityRejected);
+        }
+        lock_admission_relations(tx).await?;
+        assert_gameplay_fence(tx, fence, &self.node).await?
+    }
+
     pub(crate) async fn admit(
         &self,
         tx: &mut Type2Transaction<'_>,
@@ -79,12 +103,7 @@ impl NpcPurchaseWriteContext {
         account_id: [u8; 16],
         content_revision: &str,
     ) -> Result<(), CharacterProgressionError> {
-        self.check_recovery(tx).await?;
-        if fence.character_id != self.character_id {
-            return Err(CharacterProgressionError::AuthorityRejected);
-        }
-        lock_admission_relations(tx).await?;
-        let root = assert_gameplay_fence(tx, &fence, &self.node).await??;
+        let root = self.fenced_root(tx, &fence).await?;
         // The root is locked by the real gameplay fence. The request's account
         // is compared to that current root; it is never authority by itself.
         let account_matches: bool = sqlx::query_scalar(

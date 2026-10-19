@@ -69,7 +69,8 @@ pub struct OneItemPromotionPurchaseV1 {
     pub occurrence: Vec<u8>,
 }
 
-/// Proposed blessing source shape: bounded native held key plus occurrence.
+/// PREM-5: the blessing source, its bounded native held key plus the occurrence. Oneof
+/// tags 2 and 3 are owner-approved (2026-10-18) and match `native_one_item_transaction.proto`.
 #[derive(Clone, PartialEq, Eq, Message)]
 pub struct OneItemBlessingPurchaseV1 {
     #[prost(string, tag = "1")]
