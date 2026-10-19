@@ -204,7 +204,8 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // The `npc-placements/` family directory (NPC-PLACE-1a) adds one more sibling to the package
         // root, seen by each of the 11 locator lookups: 11 more, measured.
         // LOOP-MAP-1 (#2152) adds the `content/cyclopedia/` sibling of `world` under `content/`: +1 (measured, 230).
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1,
+        // WEATHER-1 adds the `content/weather/` sibling of `world` under `content/`: +1 (measured, 231).
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1,
     }
 }
 

@@ -1,0 +1,38 @@
+{
+  "schema": "OTERYN_WEATHER_CLIMATES/v1",
+  "design_status": "OTERYN_DESIGN",
+  "notes": "Oteryn design weights, not Tibia reference values. Weather is visual only and has no gameplay effect.",
+  "duration_slots": {
+    "min": 1,
+    "max": 3
+  },
+  "intensity": {
+    "min": 1,
+    "max": 3
+  },
+  "climates": {
+    "temperate": {
+      "clear": 55,
+      "cloudy": 20,
+      "rain": 15,
+      "storm": 7,
+      "fog": 3
+    },
+    "cold": {
+      "clear": 50,
+      "snow": 35,
+      "blizzard": 15
+    },
+    "desert": {
+      "clear": 70,
+      "heat_haze": 20,
+      "sandstorm": 10
+    },
+    "jungle_swamp": {
+      "clear": 40,
+      "rain": 35,
+      "storm": 15,
+      "fog": 10
+    }
+  }
+}

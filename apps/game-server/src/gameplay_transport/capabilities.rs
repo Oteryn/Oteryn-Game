@@ -56,6 +56,9 @@ use oteryn_protocol_oteryn::world_object::{
 };
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
 use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+use oteryn_protocol_oteryn::world_weather::{
+    CAPABILITY_WORLD_WEATHER_V1, CAPABILITY_WORLD_WEATHER_V1_REQUIRES, STATE_DOMAIN_WORLD_WEATHER,
+};
 
 /// One capability the server offers, with the capabilities that must also be selected for it
 /// (the registry entry's `requires`, empty when the entry has none).
@@ -66,14 +69,41 @@ pub(crate) struct OfferedCapability {
 }
 
 /// CLOCK-1: capability 19 `WORLD_LIGHT_V1` (domain 18 and the VIS-2 `light` of domain 1), which
-/// requires 6. Every offered set ends with it, then with 21 and 31.
+/// requires 6. Every offered set ends with it, then with 21, 26 and 31.
 const WORLD_LIGHT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_WORLD_LIGHT_V1,
     requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
 };
 
-/// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Every
-/// offered set ends with it, then with 31.
+/// WEATHER-1: capability 26 `WORLD_WEATHER_V1` (domain 22), which requires 6. Offered sets
+/// stay ascending, so a higher ID follows it (D1027 signed off). A connection keeps it only when
+/// its authority exposes a weather source (the shipped Oteryn-designed data in production, CP
+/// D1448), see [`with_weather_offer`].
+pub(crate) const WORLD_WEATHER: OfferedCapability = OfferedCapability {
+    id: CAPABILITY_WORLD_WEATHER_V1,
+    requires: &CAPABILITY_WORLD_WEATHER_V1_REQUIRES,
+};
+
+/// The offered set of one connection: `base` without capability 26 unless `weather_bound`, plus
+/// 26 at its ascending position when `weather_bound` (no source means no offer: fail closed).
+pub(crate) fn with_weather_offer(
+    base: &[OfferedCapability],
+    weather_bound: bool,
+) -> Vec<OfferedCapability> {
+    let mut offered: Vec<OfferedCapability> = base
+        .iter()
+        .copied()
+        .filter(|capability| capability.id != CAPABILITY_WORLD_WEATHER_V1)
+        .collect();
+    if weather_bound {
+        let at = offered.partition_point(|capability| capability.id < CAPABILITY_WORLD_WEATHER_V1);
+        offered.insert(at, WORLD_WEATHER);
+    }
+    offered
+}
+
+/// LOGOUT-WIRE-1: capability 21 `LOGOUT_V1` (command type 23), which requires nothing. Only
+/// capabilities 26 and 31 are higher, so every offered set ends with 21, then 26, then 31.
 const LOGOUT: OfferedCapability = OfferedCapability {
     id: CAPABILITY_LOGOUT_V1,
     requires: &[],
@@ -90,8 +120,9 @@ const VIP: OfferedCapability = OfferedCapability {
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
 /// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`; CLOCK-1 offers
-/// capability 19, LOGOUT-WIRE-1 capability 21 and VIP-2 capability 31. A test keeps it equal to the registry and within
-/// `REGISTERED_CAPABILITY_IDS_V1`.
+/// capability 19, LOGOUT-WIRE-1 capability 21, WEATHER-1 capability 26 (kept per connection by
+/// [`with_weather_offer`]) and VIP-2 capability 31. A test keeps it equal to the registry and
+/// within `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -111,13 +142,14 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     WORLD_LIGHT,
     LOGOUT,
+    WORLD_WEATHER,
     VIP,
 ];
 
 /// The offered set of a World booted from a bundle (MAP-CUTOVER-1b, NPC-CMD-1a, ITEM-LOOP-1),
 /// ascending by ID: capability 3 `NPC_SERVICE_V1` (a bundle World places the NPCs), 4
 /// `ITEM_VIEW_MOVE_V1`, 6, 7, 12 `ITEM_EQUIP_DROP_V1` (requires 4), 13, 14 `CONTAINER_TREE_V1`
-/// (requires 4 and 12), 17, 18 `WORLD_MAP_VIEW_V1` (requires 4 and 6), 19, 21 and 31 `VIP_V1`. A bundle World
+/// (requires 4 and 12), 17, 18 `WORLD_MAP_VIEW_V1` (requires 4 and 6), 19, 21, 26 and 31 `VIP_V1`. A bundle World
 /// boots only against a generation whose Item key set names every bundle Item. ITEM-LOOP-1 (CP
 /// D1438) offers 12 and 14 here because only a bundle World composes their command type 9
 /// equipment, ground and container destinations (equip, drop, pickup and the container tree)
@@ -166,6 +198,7 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     WORLD_LIGHT,
     LOGOUT,
+    WORLD_WEATHER,
     VIP,
 ];
 
@@ -196,6 +229,7 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     WORLD_LIGHT,
     LOGOUT,
+    WORLD_WEATHER,
     VIP,
 ];
 
@@ -296,6 +330,13 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_WORLD_PRESENTATION,
             STATE_DOMAIN_ACTOR_COOLDOWNS,
         ],
+    ),
+    // WEATHER-1: capability 26 owns domain 22 and no command type; it is offered per connection
+    // only with a weather source (`with_weather_offer`).
+    (
+        CAPABILITY_WORLD_WEATHER_V1,
+        &[],
+        &[STATE_DOMAIN_WORLD_WEATHER],
     ),
     // ITEM-LOOK-1: capability 28 `ITEM_LOOK_V1` gates command type 30 `ITEM_LOOK_INTENT` (CP
     // D1268, D1292) and owns no domain. It is not offered and command 30 has no handler yet, so a
