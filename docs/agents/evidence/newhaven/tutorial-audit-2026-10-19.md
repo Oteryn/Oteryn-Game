@@ -156,7 +156,7 @@ Wszystkie sześć sprawdzanych typów ma definicję i tabelę zwykłego lootu. L
 
 **PROVEN:** Muglex Clan Chief nie ma spawnu pod swoim kanonicznym kluczem w żadnym shardzie `content/world/spawns/spawns-*.json`. The Corruptor ma jeden spawn (32614,32422,7), respawn 60 s.
 
-Źródłowy `#ondroploot_the_corruptor.lua` dodaje łup wspólny, a przy uzbrojonej fladze pierwszy łup zależny od profesji, po czym czyści flagę. Zwykła tabela Loot nie zastępuje tej jednorazowej akcji. Nazwa pliku zaczyna się od `#`; aktywacja callbacku w źródłowym loaderze nie została tutaj potwierdzona. Różne ID nagród w skrypcie i tabelach oraz brakujące definicje poniżej wymagają jawnego rozstrzygnięcia, nie kopiowania po numerze.
+Źródłowy `#ondroploot_the_corruptor.lua` dodaje łup wspólny, a przy uzbrojonej fladze pierwszy łup zależny od profesji, po czym czyści flagę. Zwykła tabela Loot nie zastępuje tej jednorazowej akcji. **Korekta po kontroli kompletności:** nazwa pliku zaczyna się od `#`; przypięty `src/lua/scripts/scripts.cpp:128–136` pomija takie pliki w standardowym automatycznym ładowaniu. Jest to wyłączony fragment referencyjny, a nie dowód aktywnego dodatkowego lootu. Różne ID nagród w skrypcie i tabelach oraz brakujące definicje poniżej wymagają jawnego rozstrzygnięcia, nie kopiowania po numerze.
 
 ## Przedmioty: pełny sprawdzony zbiór ID z lokalnych skryptów
 
@@ -721,3 +721,29 @@ Manifest obejmuje 19 plików z tekstowymi referencjami Newhaven. Dodatkowo bezpo
 3. B3 odkodowano repozytoryjnym `tools/content-schema/world-authoring/world_region_codec.py::decode_region`; indeksy rozwiązano przez `content/world/placements/index.json`. Sprawdzono portal, stosy POI, drzwi i regionalne wystąpienia wskazanych ID.
 4. Różnicę między danymi przejścia a wykonywaniem oceniono przez odczyt kodu boot/map i zadania NEWHAVEN-TELEPORT-1. Nie wykonywano buildów Rust ani gry; testów E2E nie zaliczono na podstawie danych.
 5. Kontrole dokumentacji i dokładny opublikowany head są raportowane w PR/handoffie. Brak zmian w runtime/content/pinach oraz brak płatnego review.
+
+## Ponowna kontrola kompletności — 2026-10-19
+
+Właściciel poprosił o sprawdzenie, czy zbadano wszystko. **Nie ma podstaw do oznaczenia całego tutoriala jako sprawdzonego w 100%.** Poniższa kontrola rozszerza dowody źródłowe, ale nie zastępuje testu gry ani ponownego odczytu każdego kadru filmu.
+
+### Dodatkowo zamknięte sprawdzenia
+
+- **PROVEN — pokrycie korpusu:** przypięte drzewo CrystalServer deklaruje 8243 ścieżki Lua/XML; blob każdej z nich jest obecny w zachowanym archiwum (8243/8243, brak brakujących ścieżek). Wszystkie zostały ponownie przeskanowane pod kątem nazwy licznika Muglexów, numeru storage 48036, książki 44774 i specjalnych nagród 48843/48845/48847. Jest to pokrycie wyszukiwania tekstowego, nie deklaracja semantycznego przeanalizowania wszystkich 8243 plików.
+- **PROVEN — wyłączony dodatkowy loot:** `src/lua/scripts/scripts.cpp`, Git blob `d17b50e14dbe15b05c9c1a7fe37663fcb0d8301a`, funkcja `Scripts::loadScripts`, linie 128–136: nazwa zaczynająca się od `#` powoduje `continue`. `#ondroploot_the_corruptor.lua` jest więc pomijany przez tę ścieżkę. Nie znaleziono jawnego odwołania aktywującego go w przeskanowanych Lua/XML. Samo istnienie callbacku nie jest wymaganiem przeniesienia jego skutków do Oteryn.
+- **PROVEN — siedem nierozwiązanych ID ma problem również u dawcy:** sprawdzono 75 ID w pełnym `data/items/items.xml`, uwzględniając zarówno `id`, jak i zakresy `fromid..toid`. Brakuje 44772, 44773, 44774, 44775, 48843, 48845 i 48847. To dokładnie te ID, dla których brakowało kluczy definicji Oteryn. Nie wolno kwalifikować tej różnicy jako samego błędu importu; źródłowy skrypt wymaga naprawy/mapowania lub odrzucenia jako wzorca. XML: Git blob `0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f`, SHA-256 `c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb`.
+- **PROVEN — nazwy istotnych obiektów:** źródłowe XML opisuje 19394..19396 jako `RESERVED SPRITE`, 37001 jako `magic forcefield`, 51777..51778 jako `sealed door`, a 3052 jako `life ring`. Komentarz Lua o „Ring of Healing” nie zmienia tożsamości i3052.
+- **DERIVED — licznik Muglexów nadal bez znalezionego producenta:** wyszukanie nazwy storage znajduje tylko deklarację i alias u Gustavo (którego użycia odczytują/zerują licznik). Jedyny dodatkowy literal `48036` w XML jest identyfikatorem przedmiotu `naga archer soul core`, a nie zapisem storage. Nie dowodzi to niemożliwości dynamicznego użycia obliczonego numeru; takiego połączenia nie ustalono.
+
+### Co nadal nie jest dowiedzione
+
+| Pytanie właściciela | Stan dowodu |
+| --- | --- |
+| Każdy komunikat słowo w słowo, bez żadnego pominięcia | 101 wystąpień w zachowanej rekonstrukcji; skan co sekundę nie wyklucza krótszych komunikatów ani pominięć OCR. Nie wykonano ponownej kontroli wszystkich klatek. |
+| Dokładnie po jakiej akcji i z jakim opóźnieniem | Część reguł ze skryptów ustalona; dokładne timery i progi dwóch bannerów nadal nieustalone. |
+| Cała kolejność, również inne profesje i odgałęzienia | Nagranie dokumentuje ścieżkę Paladina. Inne profesje, Rookgaard i zadania poboczne nie mają pełnego nagranego przejścia. |
+| Wszystkie pozycje i dojścia | Start, portal i wskazane POI ustalone źródłowo; dokładna kratka lądowania Thais Peninsula nadal nieznana. Dojścia nie zostały przegrane. |
+| Każda kratka mapy odpowiada oryginałowi | Zbadano regionalne B3 i katalog obszarów; brak porównania pełnego oryginalnego OTBM z wynikiem importu. Oryginalny `world.otbm` ma 52267895 bajtów, Git blob `e95e8f7c7a95d1b634b49a5dea5a5dc76021406b`; nie jest zawarty w użytym archiwum korpusu skryptów. |
+| Wszystkie grafiki, animacje i interfejs klienta | Nie przeprowadzono kompletnego porównania ani kontroli wizualnej w działającym kliencie Oteryn. |
+| Wszystko działa po restarcie, reconnect i śmierci | Brak przejścia E2E; same definicje i testy ogólnego teleportu tego nie dowodzą. |
+
+**Dyspozycja dla koordynatora:** raport jest inwentaryzacją z jawnymi lukami, nie certyfikatem kompletności ani gotowości do gry. Ustalenia dotyczące wyłączonego lootu i brakujących ID źródła supersedują wcześniejsze traktowanie ich jako jedynie niepotwierdzonych efektów portu. Implementacja pozostaje nieprzydzielona.
