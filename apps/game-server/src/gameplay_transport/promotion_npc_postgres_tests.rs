@@ -11,8 +11,9 @@
 //! [`ComposedFreshAdmission::install_npcs`] as `serve_gameplay` does. The blessing prices (the
 //! owner pricing ruling of 2026-10-18), NPC names and storage keys come from the embedded
 //! BLESSINGS-CONTENT-1 source. The only fabricated inputs are the session fixture, the clock, the
-//! Premium snapshot, the coins in the backpack and the NPC declarations: the pinned World content
-//! declares no promotion or blessing Service yet.
+//! Premium snapshot, the coins in the backpack (or, for the bank-paid blessing of a Character with
+//! no backpack, the bank balance and the `(2, V2)` activation) and the NPC declarations: the
+//! pinned World content declares no promotion or blessing Service yet.
 //!
 //! Nested under the monk-save PostgreSQL tests to reuse their fresh-admission fixture.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
@@ -80,16 +81,21 @@ const CRYSTAL: u8 = 63;
 enum Case {
     Promotion,
     Blessing,
+    /// Blood of the Mountain by a Character with no equipped backpack, paid from the bank.
+    BankBlessing,
 }
 
 impl Case {
     const fn npc_key(self) -> &'static str {
         match self {
             Self::Promotion => NPC_KEY,
-            Self::Blessing => BLESSING_NPC_KEY,
+            Self::Blessing | Self::BankBlessing => BLESSING_NPC_KEY,
         }
     }
 }
+
+/// The bank-paid case's balance on the fixture Account.
+const BANK_BALANCE: i64 = 10_000;
 
 struct PremiumClock(TrustedNow);
 impl clock_registration::Registered for PremiumClock {}
@@ -210,6 +216,11 @@ fn blessing_talk_through_dispatch_burns_fee_and_blesses() -> TestResult {
     on_scenario_stack("blessing-npc-e2e", Case::Blessing)
 }
 
+#[test]
+fn blessing_without_backpack_is_paid_from_the_bank() -> TestResult {
+    on_scenario_stack("bank-blessing-npc-e2e", Case::BankBlessing)
+}
+
 fn on_scenario_stack(name: &str, case: Case) -> TestResult {
     std::thread::Builder::new()
         .name(name.into())
@@ -226,6 +237,7 @@ fn scenario(case: Case) -> TestResult {
         let name = match case {
             Case::Promotion => "promotion_npc_e2e",
             Case::Blessing => "blessing_npc_e2e",
+            Case::BankBlessing => "bank_blessing_npc_e2e",
         };
         let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
         prepare_current_session(&harness).await?;
@@ -284,7 +296,8 @@ fn scenario(case: Case) -> TestResult {
             .execute(&harness.pool)
             .await?;
 
-        // The main backpack (the generation's own definition) holding three crystal coins.
+        // The main backpack (the generation's own definition) holding three crystal coins, or
+        // for the bank-paid case no backpack and a bank balance under `(2, V2)`.
         let backpack = native
             .item_policy_for_source_id(2854)
             .expect("the backpack policy")
@@ -293,32 +306,36 @@ fn scenario(case: Case) -> TestResult {
             .clone();
         let crystal = Coin::Crystal.production_key();
         let crystal_revision = index.revision(crystal).expect("the crystal coin revision");
-        seed_items(
-            &harness,
-            &format!(
-                "{backpack_item} \
+        if case == Case::BankBlessing {
+            seed_bank(&harness).await?;
+        } else {
+            seed_items(
+                &harness,
+                &format!(
+                    "{backpack_item} \
                  INSERT INTO game_item_container_slots(character_id, item_instance_id, world_id, \
                    placed_transaction_id) VALUES ({character}, {backpack_id}, {world}, {placed}); \
                  {crystal_item} \
                  INSERT INTO game_item_container_entries(item_instance_id, world_id, character_id, \
                    parent_item_instance_id, placement_ordinal, placed_transaction_id) \
                  VALUES ({crystal_id}, {world}, {character}, {backpack_id}, 1, {crystal_placed});",
-                backpack_item = item(
-                    BACKPACK,
-                    &backpack.production_key,
-                    &backpack.revision_ref,
-                    1
+                    backpack_item = item(
+                        BACKPACK,
+                        &backpack.production_key,
+                        &backpack.revision_ref,
+                        1
+                    ),
+                    character = uuid(41),
+                    backpack_id = uuid(BACKPACK),
+                    world = uuid(42),
+                    placed = uuid(BACKPACK + 2),
+                    crystal_item = item(CRYSTAL, crystal, crystal_revision, 3),
+                    crystal_id = uuid(CRYSTAL),
+                    crystal_placed = uuid(CRYSTAL + 2),
                 ),
-                character = uuid(41),
-                backpack_id = uuid(BACKPACK),
-                world = uuid(42),
-                placed = uuid(BACKPACK + 2),
-                crystal_item = item(CRYSTAL, crystal, crystal_revision, 3),
-                crystal_id = uuid(CRYSTAL),
-                crystal_placed = uuid(CRYSTAL + 2),
-            ),
-        )
-        .await?;
+            )
+            .await?;
+        }
 
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -407,7 +424,7 @@ fn scenario(case: Case) -> TestResult {
             Case::Promotion => {
                 SpellPremiumCoordinator::new(Arc::default(), None, None, Some(harness.root.clone()))
             }
-            Case::Blessing => current_premium(&harness).await?,
+            Case::Blessing | Case::BankBlessing => current_premium(&harness).await?,
         };
         let runtime = Mutex::new(runtime);
         let door = Mutex::new(door);
@@ -490,7 +507,7 @@ fn scenario(case: Case) -> TestResult {
         owner.chat.set_npc_service(session);
         let (npc_name, declared, offers): (_, &[&str], _) = match case {
             Case::Promotion => ("King Tibianus", &[SERVICE_KEY], (1, 0)),
-            Case::Blessing => ("Kais", &BLESSING_SERVICE_KEYS, (1, 1)),
+            Case::Blessing | Case::BankBlessing => ("Kais", &BLESSING_SERVICE_KEYS, (1, 1)),
         };
         let services = SourcePremiumNpcCatalogue::embedded(
             Arc::new(npc_catalogue(&[(case.npc_key(), declared)], declared)),
@@ -507,11 +524,13 @@ fn scenario(case: Case) -> TestResult {
 
         let before = revision(&harness).await?;
         assert_eq!(before, 2);
-        assert_eq!(crystals(&harness).await?, 3);
+        let seeded = if case == Case::BankBlessing { 0 } else { 3 };
+        assert_eq!(crystals(&harness).await?, seeded);
         let at = (actor, session, npc);
         match case {
             Case::Promotion => promotion_steps(&harness, &mut owner, at, before).await?,
             Case::Blessing => blessing_steps(&harness, &mut owner, at, before).await?,
+            Case::BankBlessing => bank_blessing_steps(&harness, &mut owner, at, before).await?,
         }
 
         drop(owner);
@@ -718,6 +737,98 @@ async fn blessing_steps(
     Ok(())
 }
 
+/// Blood of the Mountain bought by a Character with no equipped backpack (BANK-FEE-0 A3): no
+/// coin is eligible, so under `(2, V2)` the whole fee is the bank part, one `FEE_DEBIT` of the
+/// Account balance, and the receipt, the held blessing and the revision commit with it.
+async fn bank_blessing_steps(
+    harness: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    at: At,
+    before: u64,
+) -> TestResult {
+    const BLOOD_PRICE: i64 = 2_600 + 260 * (50 - 30);
+    talk(owner, at, 1, "hello").await;
+    let (prompt, _) = talk(owner, at, 2, "blood of the mountain").await;
+    assert_eq!(
+        prompt,
+        vec!["Do you want to receive the Blood of the Mountain blessing?".to_owned()]
+    );
+    let (actor, session, npc) = at;
+    assert!(
+        owner
+            .promotion_command_facts(actor, session, npc)
+            .await
+            .is_some(),
+        "a Character with no backpack has purchase facts"
+    );
+    let (bought, _) = talk(owner, at, 3, "yes").await;
+    assert_eq!(bought, vec!["You have been blessed.".to_owned()]);
+    assert_eq!(fee_burns(harness).await?, vec![(3, BLOOD_PRICE)]);
+    let burn: (i64, i64, bool) = sqlx::query_as(
+        "SELECT bank_debit_gold_units, burned_gold_units::bigint, \
+                backpack_item_instance_id IS NULL \
+           FROM game_item_fee_burns",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(burn, (BLOOD_PRICE, 0, true), "the bank pays the whole fee");
+    let balance: i64 = sqlx::query_scalar(
+        "SELECT balance::bigint FROM game_account_bank_balances \
+          WHERE account_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(40).as_slice())
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(balance, BANK_BALANCE - BLOOD_PRICE);
+    assert_eq!(held_blessings(harness).await?, vec![BLOOD_KEY.to_owned()]);
+    assert_eq!(revision(harness).await?, before + 1);
+    receipt_binds_its_command(harness, Case::BankBlessing, at, 3).await?;
+    reconciles(owner, at, 3, "You have been blessed.").await;
+    assert_eq!(fee_burns(harness).await?, vec![(3, BLOOD_PRICE)]);
+    assert_eq!(revision(harness).await?, before + 1);
+    Ok(())
+}
+
+/// The bank-paid case's Account balance, as one seeded deposit and its entry (the BANK-1
+/// fixture), and the `(2, V2)` activation row that opens a fee's bank part.
+async fn seed_bank(harness: &Harness) -> TestResult {
+    seed_items(
+        harness,
+        &format!(
+            "INSERT INTO game_account_bank_operations(operation_occurrence_id, transaction_id, \
+               event_id, kind, request_binding, acting_character_id, account_id, world_id, \
+               channel_id, runtime_scope_ownership_generation, amount, outcome, occurred_at, \
+               envelope_sha256, committed_at, planned_platinum_item_instance_id, \
+               planned_gold_item_instance_id, backpack_item_instance_id) \
+             VALUES ({occurrence}, {operation}, {event}, 1, sha256('seed'), {character}, \
+               {account}, {world}, {channel}, 1, 1, 0, 1, sha256('seed'), 0, {platinum}, \
+               {gold}, {backpack}); \
+             INSERT INTO game_account_bank_entries(entry_id, transaction_id, account_id, \
+               world_id, kind, amount, balance_before, balance_after, acting_character_id) \
+             VALUES ({entry}, {operation}, {account}, {world}, 1, {BANK_BALANCE}, 0, \
+               {BANK_BALANCE}, {character}); \
+             INSERT INTO game_account_bank_balances \
+             VALUES ({account}, {world}, {BANK_BALANCE}, {entry});",
+            occurrence = uuid(70),
+            operation = uuid(71),
+            event = uuid(72),
+            platinum = uuid(73),
+            gold = uuid(74),
+            entry = uuid(75),
+            backpack = uuid(BACKPACK),
+            character = uuid(41),
+            account = uuid(40),
+            world = uuid(42),
+            channel = uuid(43),
+        ),
+    )
+    .await?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES (1, now())")
+        .execute(&harness.pool)
+        .await?;
+    Ok(())
+}
+
 /// The resumed connection's original command through `resume_npc_bank`: the committed Premium
 /// purchase answers it with its line and nothing is written. The receipt alone answers it even
 /// before the actor's spell state is back, so the answer needs no live actor facts.
@@ -780,7 +891,7 @@ async fn receipt_binds_its_command(
             "INSERT INTO game_character_promotion_receipts SELECT * FROM copied",
             "game_character_promotion_receipts_command_occurrence",
         ),
-        Case::Blessing => (
+        Case::Blessing | Case::BankBlessing => (
             BLESSING_OCCURRENCE_TAG,
             "SELECT game_session_id = encode($1,'hex')::uuid, command_id::text \
                FROM game_character_blessing_purchase_receipts",

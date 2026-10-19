@@ -680,6 +680,25 @@ pub(crate) struct PromotionCommandFacts {
     pub(crate) backpack: crate::durability::item_transfer::ItemDefinitionFacts,
 }
 
+/// The change facts of a Character with no equipped backpack. The fee writer then reads no
+/// backpack and no coin, so only the bank part can pay (BANK-FEE-0 A3): a promotion is refused
+/// for insufficient funds, a blessing may be paid from the bank. The facts name no definition, so
+/// a backpack equipped before the fee transaction refuses the fee; the capacity of one only
+/// satisfies the writer's request shape and is never used without a backpack.
+fn no_backpack() -> crate::durability::item_transfer::ItemDefinitionFacts {
+    crate::durability::item_transfer::ItemDefinitionFacts {
+        weight: None,
+        definition: crate::durability::item_mint::TypedDefinitionRef {
+            family: String::new(),
+            production_key: String::new(),
+            revision_ref: String::new(),
+        },
+        stack: crate::durability::item_transfer::ItemStackClass::NonStackable,
+        container_capacity: Some(1),
+        container_slot_equip_pattern: false,
+    }
+}
+
 pub(crate) struct PromotionActorFacts {
     pub(crate) fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
 }
@@ -768,11 +787,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .root
             .read_character_backpack(self.character, binding.fence.character_id)
             .await
-            .ok()??;
+            .ok()?;
         let native = self.active_generation?.native_gameplay()?;
-        let backpack =
-            super::item_ref_admission::generation_item_facts(native, &backpack.backpack.definition)
-                .ok()?;
+        let backpack = match backpack {
+            Some(current) => super::item_ref_admission::generation_item_facts(
+                native,
+                &current.backpack.definition,
+            )
+            .ok()?,
+            None => no_backpack(),
+        };
         let runtime = self.runtime.lock().await;
         let index = super::item_ref_admission::pinned_index(&runtime, self.active_generation)?;
         let physical = runtime.player_control_facts(actor, session).ok()?;

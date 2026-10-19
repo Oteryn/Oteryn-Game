@@ -514,6 +514,10 @@ struct PremiumCommandReceipt {
 /// At most two rows: one is the answer, two prove a broken store.
 struct PremiumCommandReceipts(Vec<PremiumCommandReceipt>);
 
+/// One stored receipt row: occurrence and NPC identity bytes, NPC generation text, whether it is
+/// a blessing and whether it belongs to the fenced Character.
+type PremiumCommandReceiptRow = (Vec<u8>, Vec<u8>, String, bool, bool);
+
 impl crate::durability::character_revision_sequencer::SequencedOutcome for PremiumCommandReceipts {
     fn committed_revision(&self) -> Option<crate::domain::CharacterRevision> {
         None
@@ -541,7 +545,7 @@ impl crate::durability::npc_purchase::NpcPurchaseOperation for PremiumCommandRec
     {
         Box::pin(async move {
             context.admit_read(tx, &self.fence).await?;
-            let rows: Vec<(Vec<u8>, Vec<u8>, String, bool, bool)> = sqlx::query_as(
+            let rows: Vec<PremiumCommandReceiptRow> = sqlx::query_as(
                 "SELECT decode(replace(purchase_occurrence_id::text,'-',''),'hex'), \
                         decode(replace(npc_actor_id::text,'-',''),'hex'), \
                         npc_actor_generation::text, false, \
