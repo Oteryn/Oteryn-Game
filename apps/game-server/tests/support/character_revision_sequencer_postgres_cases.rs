@@ -481,15 +481,7 @@ pub(super) fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> 
 }
 
 fn configured_admin() -> Option<String> {
-    match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
-        Ok(value) => Some(value),
-        Err(_) => {
-            eprintln!(
-                "PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured"
-            );
-            None
-        }
-    }
+    crate::durability::pg_test_gate::configured_admin()
 }
 
 fn charm(name: &str) -> CharmKey {

@@ -90,6 +90,8 @@ jobs:
           --health-retries 20
     env:
       OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+      # PostgreSQL tests in this job fail instead of skipping when the URL is missing.
+      OTERYN_REQUIRE_PG: "1"
     steps:
       - name: Check out exact pull request head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -228,20 +230,18 @@ jobs:
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
 
-      # Library-registered PostgreSQL E2E tests return early without the admin
-      # URL, so this step requires it and proves each named suite really ran.
+      # Library-registered PostgreSQL tests return early without the admin URL.
+      # This step runs the whole library suite with it, so every library
+      # PostgreSQL test module runs, including ones added later, and proves
+      # that the PostgreSQL-backed modules really ran.
       - name: Run library-registered PostgreSQL E2E tests
         shell: bash
         run: |
           set -euo pipefail
           test -n "${OTERYN_TEST_POSTGRES_ADMIN_URL:-}"
+          test "${OTERYN_REQUIRE_PG:-}" = 1
           log="$RUNNER_TEMP/lib-postgres-e2e.log"
-          cargo +1.95.0 test --locked --workspace --lib -- \
-            gameplay_transport::monk_save::postgres_tests:: \
-            promotion_npc_postgres_tests \
-            the_installed_monster_ai_wake_steps_a_creature_without_a_session_tick \
-            movement_blocked_tile_item_projectile_flag_closes_sight \
-            2>&1 | tee "$log"
+          cargo +1.95.0 test --locked --workspace --lib 2>&1 | tee "$log"
           python - "$log" <<'PY'
           import pathlib
           import re
@@ -253,24 +253,24 @@ jobs:
               passed += int(match.group(1))
               failed += int(match.group(2))
           ok = re.findall(r'^test (\S+) \.\.\. ok$', text, re.M)
-          required = {
-              'monk_save::postgres_tests::kill_reward_e2e::': 1,
-              'monk_save::postgres_tests::logout_e2e::': 1,
-              '::the_installed_monster_ai_wake_steps_a_creature_without_a_session_tick': 1,
-              '::movement_blocked_tile_item_projectile_flag_closes_sight': 1,
-          }
+          required = (
+              'gameplay_transport::monk_save::postgres_tests::',
+              'gameplay_transport::monster_ai_cycle::tests::',
+          )
+          reported = required + (
+              'durability::',
+              'party::shared_xp_postgres_tests::',
+          )
           problems = []
           if failed:
               problems.append(f'{failed} failed')
           if passed == 0:
               problems.append('0 tests ran')
-          for needle, minimum in required.items():
+          for needle in reported:
               count = sum(1 for name in ok if needle in name)
               print(f'LIB_PG_E2E {needle} passed={count}')
-              if count < minimum:
-                  problems.append(f'filter matched no passing test: {needle}')
-          promotion = sum(1 for name in ok if 'promotion_npc' in name)
-          print(f'LIB_PG_E2E promotion_npc passed={promotion}')
+              if needle in required and count == 0:
+                  problems.append(f'no passing test in {needle}')
           print(f'LIB_PG_E2E total passed={passed} failed={failed}')
           if problems:
               raise SystemExit('library PostgreSQL E2E check failed: ' + '; '.join(problems))

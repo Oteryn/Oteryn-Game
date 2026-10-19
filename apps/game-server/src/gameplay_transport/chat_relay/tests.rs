@@ -222,7 +222,7 @@ fn run_postgres_test<F>(future: F) -> TestResult
 where
     F: Future<Output = TestResult>,
 {
-    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+    if crate::durability::pg_test_gate::configured_admin().is_none() {
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread()

@@ -43,15 +43,7 @@ pub(crate) fn debug<E: std::fmt::Debug>(error: E) -> String {
 }
 
 pub(crate) fn configured_admin() -> Option<String> {
-    match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
-        Ok(value) => Some(value),
-        Err(_) => {
-            eprintln!(
-                "PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured"
-            );
-            None
-        }
-    }
+    crate::durability::pg_test_gate::configured_admin()
 }
 
 pub(crate) fn runtime() -> TestResult<tokio::runtime::Runtime> {

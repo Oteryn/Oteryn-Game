@@ -369,7 +369,7 @@ mod tests {
     fn proficiency_read_postgres_corruption_and_raw_array_metadata() {
         tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("test runtime").block_on(async {
         use sqlx::Connection;
-        let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        let Some(url) = crate::durability::pg_test_gate::configured_admin() else {
             return;
         };
         let mut connection = sqlx::PgConnection::connect(&url).await.expect("local PG");

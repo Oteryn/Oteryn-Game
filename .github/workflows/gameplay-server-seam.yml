@@ -71,6 +71,7 @@ jobs:
         env:
           PLATFORM_SOURCE: ${{ github.workspace }}/_platform
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+          OTERYN_REQUIRE_PG: "1"
         run: |
           set -euo pipefail
           evidence="$RUNNER_TEMP/server-seam-evidence.txt"
