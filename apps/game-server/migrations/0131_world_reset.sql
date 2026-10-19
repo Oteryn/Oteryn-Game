@@ -172,6 +172,21 @@ BEGIN
  RETURN NEW;
 END $$;
 CREATE TRIGGER game_world_reset_readmission_closed BEFORE UPDATE ON game_durability_reconnect_sessions FOR EACH ROW WHEN (NEW.session_state=2 AND OLD.session_state IS DISTINCT FROM 2) EXECUTE FUNCTION game_world_reset_readmission_closed();
+-- The published cohort is every World Channel at publication, and activation requires each
+-- Channel to have a cohort row, so a Channel first assigned while RETIRING is refused (Codex
+-- local P2). Replacing an existing scope's generation (the boot run's remint) stays open. A new
+-- scope takes SHARE on the job table, which publication's SHARE ROW EXCLUSIVE excludes, so the
+-- insert either commits before publication counts the Channels or sees the committed job.
+CREATE FUNCTION game_world_reset_cohort_closed() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_runtime_scope_assignments WHERE scope_key=NEW.scope_key) THEN
+  LOCK TABLE game_world_reset_jobs IN SHARE MODE;
+  IF EXISTS(SELECT 1 FROM game_world_reset_jobs WHERE world_id=NEW.world_id AND phase='RETIRING')
+  THEN RAISE EXCEPTION 'World reset is RETIRING: the Channel cohort is closed' USING ERRCODE='OTR03'; END IF;
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER game_world_reset_cohort_closed BEFORE INSERT ON game_runtime_scope_assignments FOR EACH ROW WHEN (NEW.scope_kind=1) EXECUTE FUNCTION game_world_reset_cohort_closed();
 
 CREATE FUNCTION game_world_reset_cohort_current(w UUID,e NUMERIC,n UUID,r NUMERIC) RETURNS BOOLEAN
 LANGUAGE SQL SECURITY DEFINER AS $$
@@ -222,7 +237,7 @@ BEGIN
  RETURN TRUE;
 END $$;
 DO $$ DECLARE f TEXT; BEGIN
- FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()','game_world_reset_admission_closed()','game_world_reset_readmission_closed()'] LOOP
+ FOREACH f IN ARRAY ARRAY['game_world_reset_cohort_current(uuid,numeric,uuid,numeric)','game_world_reset_item_proven(uuid)','game_world_reset_job_initialized()','game_world_reset_receipt_revision()','game_world_reset_admission_closed()','game_world_reset_readmission_closed()','game_world_reset_cohort_closed()'] LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime,oteryn_game_control',f);
@@ -516,11 +531,12 @@ BEGIN
  THEN RAISE EXCEPTION 'World reset publication House evidence refused' USING ERRCODE='OTR03'; END IF;
  -- Activation needs each World Channel's current issuance to be the active epoch's content,
  -- so publication refuses a World whose Channels issue other content or none, and one with
- -- more Channels than the boot run binds (Codex local P2). SHARE ROW EXCLUSIVE waits out and
- -- then excludes the SHARE fence of every ordinary content activation, so none commits
- -- between this read and the job insert.
+ -- no Channel (an empty cohort recovers nothing) or more than the boot run binds (Codex
+ -- local P2). SHARE ROW EXCLUSIVE waits out and then excludes the SHARE fence of every
+ -- ordinary content activation and new Channel assignment, so none commits between this
+ -- read and the job insert.
  LOCK TABLE game_world_reset_jobs IN SHARE ROW EXCLUSIVE MODE;
- IF (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1)>128
+ IF (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1) NOT BETWEEN 1 AND 128
  OR EXISTS(SELECT 1 FROM game_runtime_scope_assignments s WHERE s.world_id=w AND s.scope_kind=1
  AND NOT EXISTS(SELECT 1 FROM (SELECT c.server_artifact_digest,c.client_artifact_digest,c.frame_binding_digest
  FROM game_content_activations c WHERE c.world_id=w AND c.channel_id=s.channel_id

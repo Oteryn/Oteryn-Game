@@ -308,7 +308,7 @@ mod tests {
     fn publication_enforces_the_drain_channel_bound() -> Result<(), Box<dyn std::error::Error>> {
         let schema = crate::durability::world_reset::candidate_schema_sql()?;
         let bound = format!(
-            "IF (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1)>{WORLD_RESET_CHANNELS_MAX}\n"
+            "IF (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1) NOT BETWEEN 1 AND {WORLD_RESET_CHANNELS_MAX}\n"
         );
         assert_eq!(schema.matches(&bound).count(), 1);
         Ok(())

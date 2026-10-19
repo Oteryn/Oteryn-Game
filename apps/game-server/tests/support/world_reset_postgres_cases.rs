@@ -1423,7 +1423,9 @@ async fn publish_ready(h: &Harness, ownership_generation: u64) -> TestResult {
             transport_profile: 1,
             ruleset_revision: "ruleset-1".into(),
             content_revision: "content-1".into(),
-            map_revision: "map-1".into(),
+            // The production readiness namespace: a bare bundle digest, never the content map
+            // revision the epoch carries.
+            map_revision: "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff".into(),
             world_policy_revision: "world-policy-1".into(),
             offer_revision: "offer-1".into(),
         },
@@ -2187,6 +2189,17 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
         let cohort: Vec<(Vec<u8>, String)> = sqlx::query_as("SELECT uuid_send(channel_id),predecessor_generation::text FROM game_world_reset_scopes WHERE world_id=encode($1,'hex')::uuid AND reset_epoch=0")
             .bind(id(WORLD).as_slice()).fetch_all(&h.pool).await?;
         assert_eq!(cohort, vec![(id(CHANNEL).to_vec(), "1".to_owned())]);
+        // Codex local P2: the committed job closes the Channel cohort, so a new Channel of the
+        // World is refused (OTR03); the boot run's remint of an existing scope stays open.
+        let mut tx = h.pool.begin().await?;
+        let joined = sqlx::query("INSERT INTO game_runtime_scope_assignments(scope_key,world_id,channel_id,ownership_generation,state,source_revision,decision_identity,operation_key,decided_at) VALUES('\\x01'::bytea||uuid_send(encode($1,'hex')::uuid)||uuid_send($2::text::uuid),encode($1,'hex')::uuid,$2::text::uuid,1,2,9000000001,'reset-cohort-closed',$3,0)")
+            .bind(id(WORLD).as_slice())
+            .bind("018f0000-0000-7000-8000-0000000000aa")
+            .bind([9_u8; 32].as_slice())
+            .execute(&mut *tx)
+            .await;
+        assert!(matches!(joined, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("OTR03")), "{joined:?}");
+        tx.rollback().await?;
         let mut tx = h.pool.begin().await?;
         let job = crate::durability::world_reset::read_locked_world_reset_target(&mut tx, world()?)
             .await

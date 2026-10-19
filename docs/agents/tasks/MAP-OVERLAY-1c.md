@@ -93,7 +93,20 @@ merge_authority: CP_ONLY (builder never marks ready)
   `WORLD_RESET_CHANNELS_MAX + 1` assignments (128, the platform `MAX_CHANNELS_PER_WORLD`)
   and refuses `CapacityExceeded` above the bound. Publication refuses a World with more than
   128 Channels, so a published reset never exceeds what the boot run reads. A unit test
-  pins the SQL bound to the constant.
+  pins the SQL bound to the constant. Publication also refuses a World with no Channel,
+  since an empty cohort cannot recover (Codex local P2).
+- Runtime guard namespace (Codex local P1). The retirement commit no longer compares the
+  runtime guard's map revision with the job's `active_map_revision`. The guard carries the
+  readiness bundle digest (`readiness.map_revision`), while the epoch carries the content
+  scope map revision, so the comparison refused every production commit and left the World
+  RETIRING. The commit still requires the typed guard, not ready, at the local generation.
+  Publication's current issuance check and activation bind the epoch content. The test
+  readiness guard now carries a bare bundle digest, as production does.
+- Cohort closure (Codex local P2). The trigger `game_world_reset_cohort_closed` refuses
+  OTR03 for a Channel assignment first inserted while the World is RETIRING. It takes
+  `SHARE` on the job table so a concurrent publication either counts the Channel or the
+  insert sees the job. A remint of an existing scope stays open. The publication case
+  asserts the refusal.
 
 ## Completion and wiring — 2026-10-18 (D1436)
 
@@ -672,7 +685,7 @@ gates; this local qualification does not cross them.
 - `commit_world_reset_item` takes that opaque candidate, independently rechecks
   current Root recovery, node incarnation, native admission relations, complete
   fresh closed cohort, no active/reconnectable sessions, actual local assignment
-  and typed native runtime guard/map revision. It durably charges one existing
+  and typed native runtime guard (not ready, current generation). It durably charges one existing
   RL-08 work unit in a separate transaction before the atomic retirement pass.
   Same-generation retries retain IDs/envelope and stop at three charges. The
   native later-generation reservation policy is preserved: a new owner generation
