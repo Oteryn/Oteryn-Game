@@ -81,6 +81,19 @@ merge_authority: CP_ONLY (builder never marks ready)
 - The e2e case `reset_operator_command_publishes_retiring_and_the_boot_run_remints_under_n_plus_one`
   runs in the `character_authority_postgres` aggregate: the PR PostgreSQL harness and the
   Merge Queue / Durability PostgreSQL harness.
+- Publication checks current Channel issuance (Codex local P2). Before this, publication
+  checked only the epoch history. A Channel that had since issued other content passed
+  publication, retired its Ground, and then failed activation, so the World stayed RETIRING.
+  `game_world_reset_publish` now takes `SHARE ROW EXCLUSIVE` on the job table after the
+  House preflight. That lock waits out, then excludes, the `SHARE` fence of every ordinary
+  content activation. It then refuses OTR03 with no job unless the latest activation of
+  every World Channel issues the active epoch's server, client and frame digests. The
+  publication case covers a Channel with no issuance and a Channel issuing other content.
+- Drain binding bound (Codex local P2). `read_world_drain_binding` reads at most
+  `WORLD_RESET_CHANNELS_MAX + 1` assignments (128, the platform `MAX_CHANNELS_PER_WORLD`)
+  and refuses `CapacityExceeded` above the bound. Publication refuses a World with more than
+  128 Channels, so a published reset never exceeds what the boot run reads. A unit test
+  pins the SQL bound to the constant.
 
 ## Completion and wiring — 2026-10-18 (D1436)
 

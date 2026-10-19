@@ -1584,8 +1584,14 @@ mod reset_activation_source_tests {
         let house = body
             .rfind("'World reset publication House evidence refused'")
             .unwrap_or(usize::MAX);
+        let issuance = position("LOCK TABLE game_world_reset_jobs IN SHARE ROW EXCLUSIVE MODE");
         let job = position("INSERT INTO game_world_reset_jobs(");
         let cohort = position("INSERT INTO game_world_reset_scopes(");
+        // Codex local P2: the current issuance of every World Channel is checked under the
+        // activation fence, after the House preflight and before the job.
+        assert!(house < issuance && issuance < job);
+        assert!(body[issuance..job].contains("ORDER BY c.activation_sequence DESC LIMIT 1"));
+        assert!(body[issuance..job].contains("l.frame_binding_digest=v_active.frame_digest"));
         assert!(capability < login && login < data && data < fence && fence < epoch);
         assert!(epoch < houses && houses < house && house < job && job < cohort);
         assert!(cohort < body.len());
@@ -2319,6 +2325,20 @@ BEGIN
  UNION SELECT house_key FROM game_world_house_instances WHERE world_id=w
  EXCEPT SELECT k FROM unnest(hs) AS s(k))
  THEN RAISE EXCEPTION 'World reset publication House evidence refused' USING ERRCODE='OTR03'; END IF;
+ -- Activation needs each World Channel's current issuance to be the active epoch's content,
+ -- so publication refuses a World whose Channels issue other content or none, and one with
+ -- more Channels than the boot run binds (Codex local P2). SHARE ROW EXCLUSIVE waits out and
+ -- then excludes the SHARE fence of every ordinary content activation, so none commits
+ -- between this read and the job insert.
+ LOCK TABLE game_world_reset_jobs IN SHARE ROW EXCLUSIVE MODE;
+ IF (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1)>128
+ OR EXISTS(SELECT 1 FROM game_runtime_scope_assignments s WHERE s.world_id=w AND s.scope_kind=1
+ AND NOT EXISTS(SELECT 1 FROM (SELECT c.server_artifact_digest,c.client_artifact_digest,c.frame_binding_digest
+ FROM game_content_activations c WHERE c.world_id=w AND c.channel_id=s.channel_id
+ ORDER BY c.activation_sequence DESC LIMIT 1) l
+ WHERE l.server_artifact_digest=v_active.server_digest AND l.client_artifact_digest=v_active.client_digest
+ AND l.frame_binding_digest=v_active.frame_digest))
+ THEN RAISE EXCEPTION 'World reset publication Channel issuance refused' USING ERRCODE='OTR03'; END IF;
  INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,active_map_revision,target_map_revision,
   target_server_digest,target_client_digest,target_frame_digest,target_calendar_policy,target_calendar_revision,
   target_calendar_parity,phase)

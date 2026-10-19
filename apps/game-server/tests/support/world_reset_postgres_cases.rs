@@ -900,6 +900,11 @@ async fn admit_qualified(h: &Harness) -> TestResult {
 /// RETIRING reset fences `game_content_record_activation` (Codex local P2), so it is recorded
 /// before publication. Returns its activation sequence.
 async fn record_predecessor_activation(h: &Harness) -> TestResult<u64> {
+    record_channel_activation(h, [[1; 32], [2; 32], [3; 32]]).await
+}
+
+/// One ordinary content activation of the Channel issuing `digests` (server, client, frame).
+async fn record_channel_activation(h: &Harness, digests: [[u8; 32]; 3]) -> TestResult<u64> {
     sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
     let previous: Option<String> = sqlx::query_scalar("SELECT max(activation_sequence)::text FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
@@ -912,7 +917,7 @@ async fn record_predecessor_activation(h: &Harness) -> TestResult<u64> {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5,$6,$7)")
         .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice())
         .bind(next.to_string()).bind(previous.map(|value| value.to_string()))
-        .bind([1_u8; 32].as_slice()).bind([2_u8; 32].as_slice()).bind([3_u8; 32].as_slice())
+        .bind(digests[0].as_slice()).bind(digests[1].as_slice()).bind(digests[2].as_slice())
         .execute(&h.pool).await?;
     Ok(next)
 }
@@ -2118,6 +2123,16 @@ fn reset_publication_runs_the_house_preflight_and_closes_admission_atomically() 
         assert!(matches!(bare, Err(sqlx::Error::Database(ref e)) if e.code().as_deref() == Some("OTR03")), "{bare:?}");
         tx.rollback().await?;
         assert_eq!(published().await?, (0, 0, None));
+        // Codex local P2: a Channel issuing no content, or content other than the active
+        // epoch's, refuses publication with no job; the predecessor issuance then admits it.
+        let unissued = h.root.publish_world_reset(&target, [7; 32], &ResetRunHouses).await;
+        assert!(matches!(unissued, Err(WorldResetError::Unavailable(_))), "{unissued:?}");
+        assert_eq!(published().await?, (0, 0, None));
+        record_channel_activation(&h, [[4; 32], [5; 32], [6; 32]]).await?;
+        let other = h.root.publish_world_reset(&target, [7; 32], &ResetRunHouses).await;
+        assert!(matches!(other, Err(WorldResetError::Unavailable(_))), "{other:?}");
+        assert_eq!(published().await?, (0, 0, None));
+        record_predecessor_activation(&h).await?;
         // Codex P1 4307818772: each capability reaches only its own owner, and a login holding
         // both is refused by both owners; a single-capability login passes its own check.
         for (role, activate) in [

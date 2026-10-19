@@ -30,6 +30,10 @@ pub(crate) const MAP01_RESET_RETIRE_MS: u64 = 600_000;
 /// precedes every current-authority check). Restart repeats the whole run after this bound.
 const ACTIVATION_ATTEMPTS: u32 = 3;
 
+/// The most World Channels one reset binds, the platform `MAX_CHANNELS_PER_WORLD`.
+/// Publication refuses a World with more, so a published reset stays within the drain read.
+pub(crate) const WORLD_RESET_CHANNELS_MAX: usize = 128;
+
 /// The measured outcome of one completed reset run.
 #[derive(Debug)]
 pub(crate) struct WorldResetRun {
@@ -122,6 +126,9 @@ impl DurabilityRoot {
         world: WorldId,
     ) -> Result<WorldDrainBinding, WorldResetError> {
         let fact = node.fact();
+        // One row past the bound proves an over-bound World without reading all of it.
+        let limit = i64::try_from(WORLD_RESET_CHANNELS_MAX + 1)
+            .map_err(|_| WorldResetError::CapacityExceeded)?;
         type Row = (Vec<u8>, String, i16, Option<Vec<u8>>, Option<String>);
         let rows: Vec<Row> = self
             .try_issue_semantic_pass()?
@@ -133,9 +140,10 @@ impl DurabilityRoot {
                          uuid_send(holder_node_id),holder_registration_revision::text \
                          FROM game_runtime_scope_assignments \
                          WHERE world_id=encode($1,'hex')::uuid AND scope_kind=1 \
-                         ORDER BY uuid_send(channel_id)",
+                         ORDER BY uuid_send(channel_id) LIMIT $2",
                     )
                     .bind(world.as_bytes().as_slice())
+                    .bind(limit)
                     .fetch_all(&mut *tx)
                     .await?;
                     super::db::commit_semantic_transaction(tx, deadline).await?;
@@ -153,6 +161,9 @@ impl DurabilityRoot {
                 })
             })
             .await?;
+        if rows.len() > WORLD_RESET_CHANNELS_MAX {
+            return Err(WorldResetError::CapacityExceeded);
+        }
         let mut channels = Vec::with_capacity(rows.len());
         for (channel, generation, state, holder, revision) in rows {
             let revision = revision
@@ -290,7 +301,18 @@ impl DurabilityRoot {
 
 #[cfg(test)]
 mod tests {
-    use super::MAP01_RESET_RETIRE_MS;
+    use super::{MAP01_RESET_RETIRE_MS, WORLD_RESET_CHANNELS_MAX};
+
+    /// Codex local P2: publication refuses a World above the drain read's Channel bound.
+    #[test]
+    fn publication_enforces_the_drain_channel_bound() -> Result<(), Box<dyn std::error::Error>> {
+        let schema = crate::durability::world_reset::candidate_schema_sql()?;
+        let bound = format!(
+            "IF (SELECT count(*) FROM game_runtime_scope_assignments WHERE world_id=w AND scope_kind=1)>{WORLD_RESET_CHANNELS_MAX}\n"
+        );
+        assert_eq!(schema.matches(&bound).count(), 1);
+        Ok(())
+    }
 
     /// The budget is the registered `MAP01-RESET-RETIRE-MS` row.
     #[test]
