@@ -1,0 +1,52 @@
+{
+  "schema": "OTERYN_CONTENT_PREP_PROPOSALS/v1",
+  "task": "ARENA-RULES-CONTENT-1",
+  "reference_only": true,
+  "runtime_switch_authorized": false,
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "global_evidence_policy": "Preserve original Tibia UNKNOWN/CONFLICT fields and source limitations. This file supplies Oteryn choices, not reclassified Global facts.",
+  "owner_authorization": {
+    "quote": "Przygotuj propozycje Oteryn z jawnymi założeniami",
+    "scope": "Authorize preparing proposals only; individual new values are not yet accepted."
+  },
+  "predecessor_sha": "560ee2e05330b34772ab5f997c1895fdb4e23d4e",
+  "original_field_list_sha256": "09f1a30fd405cd40454700f317e050e47e90541df9068de920ada5b35e03cd82",
+  "coverage": {
+    "held_fields": 1,
+    "proposals": 1,
+    "uncovered": 0,
+    "original_classifications": {
+      "UNKNOWN": 1
+    }
+  },
+  "shared_policies": {},
+  "source_observations": [],
+  "proposals": [
+    {
+      "original_field_path": "rulesets/pvp/arena/reference-evidence.json/records/0/facts/oteryn_reintroduction",
+      "subject": "pvp.arena.status",
+      "original_classification": "UNKNOWN",
+      "proposed_value": {
+        "enabled_at_launch": false,
+        "mode": "opt_in_private_duel",
+        "players": 2,
+        "round_seconds": 300,
+        "xp_loss": false,
+        "item_loss": false,
+        "frag_counting": false,
+        "rewards": []
+      },
+      "basis": {
+        "kind": "DESIGN_CHOICE",
+        "rationale": "Explicit Oteryn design choice where inspected sources do not establish a complete current Global value.",
+        "original_source_urls": [],
+        "observation_refs": [],
+        "donor_selection": null
+      },
+      "assumptions": [
+        "Historical PvP Arena is not reintroduced at launch. Optional future two-player duel is a project proposal; native instance/authority contracts required before implementation."
+      ],
+      "acceptance_status": "PROPOSED_NOT_ACCEPTED"
+    }
+  ]
+}
